@@ -1,0 +1,158 @@
+.topbar {
+  height: 72px;
+  background: #ffffff;
+  border-bottom: 1px solid #eef0f4;
+  padding: 0 18px;
+
+  display: grid;
+  grid-template-columns: 1fr 1.2fr auto;
+  align-items: center;
+  gap: 14px;
+}
+
+.left {
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.center {
+  display: flex;
+  justify-content: center;
+}
+
+.searchWrap {
+  width: 100%;
+  max-width: 520px;
+  position: relative;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  color: var(--color-main-accent);
+}
+
+.search {
+  width: 100%;
+  height: 40px;
+  padding: 0 14px 0 40px;
+  border: 1px solid #eef0f4;
+  border-radius: 20px;
+  background: #fbfcfe;
+  font-size: 13px;
+  outline: none;
+}
+
+.search:focus {
+  background: #ffffff;
+  border-color: var(--color-main-accent);
+  box-shadow: 0 0 12px rgba(69, 106, 75, 0.25);
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.iconBtn {
+  height: 40px;
+  width: 40px;
+  border-radius: 12px;
+  border: 1px solid #eef0f4;
+  background: #ffffff;
+  cursor: pointer;
+
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+}
+
+.iconBtn:hover {
+  background: #f8fafc;
+}
+
+/* Profile */
+.profileWrap {
+  position: relative;
+}
+
+.profileAvatar {
+  height: 38px;
+  width: 38px;
+  border-radius: 999px;
+  background: #e0e2e6;
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+}
+
+.profileAvatar:hover {
+  background: #d6d9dd;
+}
+
+/* Dropdown */
+.profileDropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  background: #ffffff;
+  border: 1px solid #eef0f4;
+  border-radius: 12px;
+  padding: 6px;
+  min-width: 160px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  z-index: 50;
+}
+
+.logoutBtn {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-dark-brown);
+}
+
+.logoutBtn:hover {
+  background: #f8fafc;
+  color: #c2410c;
+}
+
+@media (max-width: 900px) {
+  .topbar {
+    grid-template-columns: 1fr auto;
+  }
+
+  .center {
+    display: none;
+  }
+}

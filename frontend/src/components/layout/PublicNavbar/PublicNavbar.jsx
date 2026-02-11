@@ -1,0 +1,265 @@
+'use client'
+
+import { useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import Image from 'next/image'
+import styles from './PublicNavbar.module.css'
+
+export default function PublicNavbar() {
+  const [query, setQuery] = useState('')
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [servicesOpen, setServicesOpen] = useState(false)
+  const [howItWorksOpen, setHowItWorksOpen] = useState(false)
+  const [aboutUsOpen, setAboutUsOpen] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const router = useRouter()
+  const searchRef = useRef(null)
+
+  const servicesItems = [
+    'Funeral Packages',
+    'Wake & Viewing',
+    'Burial & Cremation',
+    'Memorial Add-Ons',
+    'Custom Packages'
+  ]
+
+  const howItWorksItems = [
+    'Step-by-Step Process',
+    'Compare Packages',
+    'Book a Service',
+    'Payment & Support'
+  ]
+
+  const aboutUsItems = [
+    'Our Story',
+    'Mission & Vision',
+    'Why La Visionario',
+    'Partners',
+    'Testimonials'
+  ]
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setSearchOpen(false)
+      }
+    }
+
+    if (searchOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [searchOpen])
+
+  const handleSearch = (e) => {
+    e.preventDefault()
+    if (!query.trim()) return
+    router.push(`/search?q=${encodeURIComponent(query)}`)
+    setQuery('')
+    setSearchOpen(false)
+  }
+
+  const handleUserIconClick = () => {
+    if (!isAuthenticated) {
+      router.push('/buyer/login')
+    } else {
+      router.push('/profile')
+    }
+  }
+
+  return (
+    <header className={styles.header}>
+      {/* Top Bar with Social & User */}
+      <div className={styles.topBar}>
+        <div className={styles.topBarInner}>
+          <div className={styles.topLeft}>
+            <span className={styles.followText}>Follow us</span>
+            <div className={styles.socialLinks}>
+              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className={styles.socialIcon}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+              </a>
+              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className={styles.socialIcon}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                </svg>
+              </a>
+              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className={styles.socialIcon}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"></path>
+                </svg>
+              </a>
+            </div>
+          </div>
+          <div className={styles.topRight}>
+            <button onClick={handleUserIconClick} className={styles.userLink} aria-label="User Account">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <span>Sign In</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Navigation */}
+      <div className={styles.mainNav}>
+        <div className={styles.mainNavInner}>
+          <Link href="/" className={styles.logo}>
+            <Image 
+              src="/logo.png" 
+              alt="La Visionario"
+              width={180}
+              height={50}
+              priority
+              className={styles.logoImage}
+            />
+          </Link>
+
+          <nav className={styles.navMenu}>
+            <div className={styles.navItem}>
+              <Link href="/" className={styles.navLink}>HOME</Link>
+            </div>
+            
+            <div 
+              className={styles.navItem}
+              onMouseEnter={() => setServicesOpen(true)}
+              onMouseLeave={() => setServicesOpen(false)}
+            >
+              <button className={styles.navLinkDropdown}>
+                SERVICES
+                <svg className={styles.dropdownIcon} xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              {servicesOpen && (
+                <div className={styles.dropdownMenu}>
+                  {servicesItems.map((item, index) => (
+                    <Link key={index} href={`/services/${item.toLowerCase().replace(/\s+/g, '-')}`} className={styles.dropdownItem}>
+                      {item}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className={styles.navItem}>
+              <Link href="/partners" className={styles.navLink}>FUNERAL HOMES / PARTNERS</Link>
+            </div>
+
+            <div 
+              className={styles.navItem}
+              onMouseEnter={() => setHowItWorksOpen(true)}
+              onMouseLeave={() => setHowItWorksOpen(false)}
+            >
+              <button className={styles.navLinkDropdown}>
+                HOW IT WORKS
+                <svg className={styles.dropdownIcon} xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              {howItWorksOpen && (
+                <div className={styles.dropdownMenu}>
+                  {howItWorksItems.map((item, index) => (
+                    <Link key={index} href={`/how-it-works/${item.toLowerCase().replace(/\s+/g, '-')}`} className={styles.dropdownItem}>
+                      {item}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div 
+              className={styles.navItem}
+              onMouseEnter={() => setAboutUsOpen(true)}
+              onMouseLeave={() => setAboutUsOpen(false)}
+            >
+              <button className={styles.navLinkDropdown}>
+                ABOUT US
+                <svg className={styles.dropdownIcon} xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              {aboutUsOpen && (
+                <div className={styles.dropdownMenu}>
+                  {aboutUsItems.map((item, index) => (
+                    <Link key={index} href={`/about/${item.toLowerCase().replace(/\s+/g, '-')}`} className={styles.dropdownItem}>
+                      {item}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className={styles.navItem}>
+              <Link href="/contact" className={styles.navLink}>CONTACT</Link>
+            </div>
+          </nav>
+
+          <div className={styles.navActions}>
+            <div className={styles.searchContainer} ref={searchRef}>
+              <button 
+                className={styles.searchBtn} 
+                aria-label="Search"
+                onClick={() => setSearchOpen(!searchOpen)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </button>
+              <div className={`${styles.searchForm} ${searchOpen ? styles.searchFormOpen : ''}`}>
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSearch(e)
+                    }
+                  }}
+                  className={styles.searchInput}
+                />
+              </div>
+            </div>
+            <button 
+              className={styles.mobileToggle}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle Menu"
+            >
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className={styles.mobileMenu}>
+          <Link href="/" className={styles.mobileLink}>HOME</Link>
+          <Link href="/services" className={styles.mobileLink}>SERVICES</Link>
+          <Link href="/partners" className={styles.mobileLink}>FUNERAL HOMES / PARTNERS</Link>
+          <Link href="/how-it-works" className={styles.mobileLink}>HOW IT WORKS</Link>
+          <Link href="/about" className={styles.mobileLink}>ABOUT US</Link>
+          <Link href="/contact" className={styles.mobileLink}>CONTACT</Link>
+          
+          <div className={styles.mobileDivider}></div>
+          
+          <Link href="/buyer/login" className={styles.mobileLink}>Sign In</Link>
+        </div>
+      )}
+    </header>
+  )
+}

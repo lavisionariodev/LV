@@ -1,0 +1,1304 @@
+:root {
+  --color-dark-brown: #4a4a4a;
+  --color-brown-hover: #35312e;
+  --color-light-bg: #f5f5f5;
+  --color-border: #d0d0d0;
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #666;
+  --color-error: #ff424f;
+  --color-main-accent: #204F38;
+  --color-secondary-accent: #279354;
+  --color-primary: #204F38;
+  --color-primary-hover: #163a29;
+}
+
+.pageWrapper {
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+/* Header */
+.header {
+  background: white;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.headerContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0.875rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logoWrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.shopeeIcon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.logoPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--color-main-accent);
+  color: white;
+  border-radius: 6px;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.logoText {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.shopeeName {
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: var(--color-main-accent);
+}
+
+.needHelp {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-size: 0.875rem;
+  transition: opacity 0.2s;
+}
+
+.needHelp:hover {
+  opacity: 0.8;
+}
+
+/* Step Indicator */
+.stepIndicator {
+  max-width: 100%;
+  margin: 0 0 2rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 0 1rem;
+}
+
+.stepItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stepCircle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #d0d0d0;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #999;
+  transition: all 0.3s;
+}
+
+.stepCircle.active {
+  background: var(--color-secondary-accent);
+  border-color: var(--color-secondary-accent);
+  color: white;
+}
+
+.stepLabel {
+  font-size: 0.75rem;
+  color: #999;
+  transition: color 0.3s;
+  white-space: nowrap;
+}
+
+.stepLabel.active {
+  color: var(--color-secondary-accent);
+  font-weight: 500;
+}
+
+.stepLine {
+  width: 60px;
+  height: 2px;
+  background: #d0d0d0;
+  margin: 0 -5px;
+  margin-bottom: 24px;
+}
+
+/* Hero Section */
+.heroSection {
+  background: 
+    linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.7)),
+    url('/path-to-your-image.jpg') center/cover;
+  padding: 80px 24px;
+  min-height: calc(100vh - 80px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-attachment: fixed;
+}
+
+.heroContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: start;
+}
+
+.heroLeft {
+  max-width: 420px;
+  margin: 40px 40px 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.marketplaceLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-main-accent);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.heroTitle {
+  font-size: 34px;
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.featuresList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.featureItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.featureIcon {
+  width: 24px;
+  height: 24px;
+  color: var(--color-main-accent);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.featureItem p {
+  font-size: 16px;
+  color: #666;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Signup Card */
+.heroRight {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  position: sticky;
+  top: 100px;
+}
+
+.signupCard {
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 40px;
+  width: 100%;
+  max-width: 420px;
+  max-height: 600px;
+  overflow-y: auto;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  position: relative;
+  animation: slideUp 0.4s ease-out;
+}
+
+.signupCard::-webkit-scrollbar {
+  width: 8px;
+}
+
+.signupCard::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.signupCard::-webkit-scrollbar-thumb {
+  background: #c0c0c0;
+  border-radius: 4px;
+}
+
+.signupCard::-webkit-scrollbar-thumb:hover {
+  background: #a0a0a0;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.backButton {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--color-primary);
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: opacity 0.2s;
+}
+
+.backButton:hover {
+  opacity: 0.7;
+}
+
+.signupTitle {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 32px 0;
+  text-align: center;
+}
+
+.verificationSubtitle {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  text-align: center;
+  margin: 8px 0 0 0;
+  line-height: 1.5;
+}
+
+.phoneDisplay {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  text-align: center;
+  margin: 16px 0 32px 0;
+}
+
+.signupForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Phone Input */
+.phoneInput {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 15px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  outline: none;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.phoneInput:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(32, 79, 56, 0.1);
+}
+
+.phoneInput::placeholder {
+  color: #999;
+}
+
+.nextButton {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--color-primary);
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.nextButton:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.nextButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.nextButton.fullWidth {
+  margin-top: 1rem;
+}
+
+/* Divider */
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 8px 0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.divider span {
+  padding: 0 16px;
+  color: #999;
+  font-size: 13px;
+}
+
+/* Social Buttons */
+.socialButtons {
+  display: flex;
+  gap: 12px;
+}
+
+.facebookBtn,
+.googleBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  background: white;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.facebookBtn:hover,
+.googleBtn:hover {
+  background: #f8f8f8;
+  border-color: #999;
+}
+
+.terms {
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+  line-height: 1.5;
+  margin: 8px 0 0 0;
+}
+
+.terms a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.terms a:hover {
+  text-decoration: underline;
+}
+
+.loginLink {
+  font-size: 14px;
+  color: #666;
+  text-align: center;
+  margin: 16px 0 0 0;
+}
+
+.loginLink a {
+  color: var(--color-primary);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.loginLink a:hover {
+  text-decoration: underline;
+}
+
+/* Verification Method */
+.verificationCard {
+  padding-top: 40px;
+}
+
+.verificationMethods {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.methodButton {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: white;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 15px;
+  color: #1a1a1a;
+  text-align: left;
+}
+
+.methodButton:hover {
+  border-color: var(--color-primary);
+  background: #f0f7f4;
+}
+
+.methodIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.viberIcon {
+  background: #7360f2;
+  color: white;
+}
+
+.whatsappIcon {
+  background: #25d366;
+}
+
+.callIcon {
+  background: #1890ff;
+}
+
+.smsIcon {
+  background: #1890ff;
+}
+
+/* OTP Input */
+.otpCard {
+  padding-top: 40px;
+}
+
+.otpInputs {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.otpInput {
+  width: 50px;
+  height: 50px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 600;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.otpInput:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(32, 79, 56, 0.1);
+}
+
+.resendText {
+  text-align: center;
+  font-size: 14px;
+  color: #999;
+  margin-bottom: 1rem;
+}
+
+.resendText a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.resendText a:hover {
+  text-decoration: underline;
+}
+
+/* Phone Reclaim Screen */
+.reclaimCard {
+  padding-top: 40px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.reclaimInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.warningIcon {
+  margin-bottom: 0.5rem;
+}
+
+.reclaimMessage {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  text-align: center;
+  line-height: 1.6;
+  max-width: 340px;
+}
+
+.reclaimMessage strong {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.existingAccountInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8f8f8;
+  border-radius: 8px;
+  width: 100%;
+}
+
+.accountAvatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #1e6b4e;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.accountDetails {
+  flex: 1;
+}
+
+.accountUsername {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 0.25rem 0;
+}
+
+.accountType {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+}
+
+.reclaimNotice {
+  width: 100%;
+  background: #fff8e1;
+  border-left: 4px solid #ff6b00;
+  padding: 1rem;
+  border-radius: 4px;
+}
+
+.reclaimNotice h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ff6b00;
+  margin: 0 0 0.75rem 0;
+}
+
+.reclaimNotice ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.reclaimNotice ul li {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.6;
+  padding-left: 1.25rem;
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+
+.reclaimNotice ul li::before {
+  content: '•';
+  color: #ff6b00;
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+}
+
+.confirmationBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 1rem;
+  background: white;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+}
+
+.confirmCheckbox {
+  margin-top: 2px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.confirmLabel {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+  cursor: pointer;
+  user-select: none;
+}
+
+.reclaimButton {
+  width: 100%;
+  padding: 12px;
+  background: #ff6b00;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 1rem;
+}
+
+.reclaimButton:hover:not(:disabled) {
+  background: #e55d00;
+}
+
+.reclaimButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cancelButton {
+  width: 100%;
+  padding: 12px;
+  background: white;
+  color: #666;
+  font-size: 15px;
+  font-weight: 600;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 0.75rem;
+}
+
+.cancelButton:hover {
+  background: #f8f8f8;
+  border-color: #999;
+}
+
+/* Reclaim Form */
+.reclaimForm {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.formTextarea {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 15px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  outline: none;
+  transition: all 0.2s;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.formTextarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(32, 79, 56, 0.1);
+}
+
+.formTextarea::placeholder {
+  color: #999;
+}
+
+.required {
+  color: #ff424f;
+  margin-left: 2px;
+}
+
+.checkboxGroup {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.checkbox {
+  margin-top: 2px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.checkboxLabel span {
+  flex: 1;
+}
+
+/* Account Check */
+.accountCheckCard {
+  padding-top: 40px;
+}
+
+.accountInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 2rem 0;
+}
+
+.accountName {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 0.5rem;
+}
+
+.accountPhone {
+  font-size: 16px;
+  color: var(--color-primary);
+  margin-bottom: 1rem;
+}
+
+.accountMessage {
+  font-size: 14px;
+  color: #666;
+  text-align: center;
+  line-height: 1.6;
+  max-width: 320px;
+}
+
+.loginButton {
+  width: 100%;
+  padding: 12px;
+  background: var(--color-primary);
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 12px;
+}
+
+.loginButton:hover {
+  background: var(--color-primary-hover);
+}
+
+.createNewButton {
+  width: 100%;
+  padding: 12px;
+  background: white;
+  color: var(--color-primary);
+  font-size: 15px;
+  font-weight: 600;
+  border: 1px solid var(--color-primary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.createNewButton:hover {
+  background: #f0f7f4;
+}
+
+/* Password Creation */
+.passwordCard {
+  padding-top: 40px;
+}
+
+.formGroup {
+  margin-bottom: 20px;
+}
+
+.formLabel {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 8px;
+}
+
+.formControl {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 15px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  outline: none;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.formControl:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(32, 79, 56, 0.1);
+}
+
+.formControl::placeholder {
+  color: #999;
+}
+
+/* Why Sell Section */
+.whySellSection {
+  background: white;
+  padding: 4rem 0 6rem;
+}
+
+.sectionTitle {
+  text-align: center;
+  color: #666666;
+  font-size: 1.125rem;
+  font-weight: 400;
+  letter-spacing: 1.5px;
+  margin-bottom: 2rem;
+}
+
+.benefitsGrid {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem 1.5rem;
+}
+
+.benefitCard {
+  text-align: center;
+  padding: 0 0.75rem;
+}
+
+.benefitIconLarge {
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.percentIcon {
+  font-size: 3.5rem;
+  font-weight: bold;
+  color: #ffc107;
+}
+
+.megaphoneIcon,
+.truckIcon,
+.basketIcon,
+.chartIcon,
+.storeIcon {
+  font-size: 3rem;
+  color: var(--color-main-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.freeBadge {
+  position: absolute;
+  top: 5px;
+  right: 30%;
+  background: #13c2c2;
+  color: white;
+  padding: 0.188rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.688rem;
+  font-weight: 600;
+}
+
+.badge99 {
+  position: absolute;
+  bottom: 5px;
+  right: 35%;
+  background: var(--color-main-accent);
+  color: white;
+  padding: 0.188rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.688rem;
+  font-weight: 600;
+}
+
+.benefitCard h3 {
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+  color: #222;
+}
+
+.benefitCard p {
+  color: #666;
+  font-size: 0.813rem;
+  line-height: 1.5;
+}
+
+/* How to Start Section */
+.howToStartSection {
+  background: linear-gradient(135deg, var(--color-main-accent) 50%, var(--color-secondary-accent) 100%);
+  padding: 3rem 0;
+  color: white;
+}
+
+.sectionTitleWhite {
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  margin-bottom: 2rem;
+}
+
+.stepsContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+}
+
+.stepCard {
+  text-align: center;
+  padding: 0 0.75rem;
+}
+
+.stepNumber {
+  font-size: 4rem;
+  font-weight: 300;
+  color: #c9b89d;
+  opacity: 0.9;
+  margin-bottom: 0.75rem;
+  line-height: 1;
+}
+
+.stepCard h3 {
+  font-size: 0.938rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.stepCard p {
+  font-size: 0.813rem;
+  line-height: 1.5;
+  opacity: 0.95;
+}
+
+/* Seller Programs */
+.sellerProgramsSection {
+  background: white;
+  padding: 5rem 0 4rem;
+}
+
+.programsGrid {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.programCard {
+  background: white;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.programHeader {
+  padding: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 140px;
+}
+
+.premiumHeader {
+  background: var(--color-main-accent);
+}
+
+.marketplaceHeader {
+  background: var(--color-secondary-accent);
+}
+
+.shopeeMallLogo {
+  color: white;
+  font-size: 2.25rem;
+  font-weight: 600;
+}
+
+.programContent {
+  padding: 1.5rem;
+}
+
+.programContent h3 {
+  font-size: 1.125rem;
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+  color: #222;
+}
+
+.programDesc {
+  color: #666;
+  font-size: 0.813rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.programFeatures {
+  list-style: none;
+  margin-bottom: 0.75rem;
+}
+
+.programFeatures li {
+  color: #666;
+  font-size: 0.813rem;
+  line-height: 1.6;
+  padding-left: 1.25rem;
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+
+.programFeatures li::before {
+  content: '•';
+  color: var(--color-main-accent);
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+}
+
+.feeNote {
+  color: #999;
+  font-size: 0.75rem;
+  margin-bottom: 1rem;
+  font-style: italic;
+}
+
+.signUpButton {
+  padding: 0.625rem 1.5rem;
+  color: white;
+  border: none;
+  border-radius: 2px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  font-family: inherit;
+}
+
+.signUpButton:hover {
+  opacity: 0.9;
+}
+
+.premiumBtn {
+  background: var(--color-main-accent);
+}
+
+.marketplaceBtn {
+  background: var(--color-secondary-accent);
+}
+
+/* Support Section */
+.supportSection {
+  background: #f8f8f8;
+  padding: 3rem 0;
+}
+
+.supportGrid {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.supportCard {
+  text-align: center;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 4px;
+}
+
+.supportIconWrapper {
+  width: 64px;
+  height: 64px;
+  border: 2px solid var(--color-main-accent);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+}
+
+.supportIcon {
+  font-size: 1.5rem;
+  color: var(--color-main-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.supportCard h3 {
+  font-size: 0.938rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: #222;
+}
+
+.supportCard p {
+  color: #666;
+  font-size: 0.813rem;
+  line-height: 1.5;
+}
+
+.supportGrid .supportCard:nth-child(4) {
+  grid-column: 2;
+}
+
+/* Responsive */
+@media (max-width: 968px) {
+  .heroContainer {
+    grid-template-columns: 1fr;
+    gap: 48px;
+  }
+
+  .heroRight {
+    position: static;
+  }
+
+  .heroTitle {
+    font-size: 36px;
+  }
+
+  .signupCard {
+    max-width: 100%;
+    max-height: 70vh;
+  }
+}
+
+@media (max-width: 1024px) {
+  .benefitsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stepsContainer {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .programsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .supportGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .supportGrid .supportCard:nth-child(4) {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .headerContent {
+    padding: 0.75rem 1.5rem;
+  }
+
+  .heroSection {
+    padding: 48px 16px;
+  }
+
+  .heroLeft {
+    margin: 20px;
+  }
+
+  .heroTitle {
+    font-size: 32px;
+  }
+
+  .signupCard {
+    padding: 32px 24px;
+    max-height: 65vh;
+  }
+
+  .socialButtons {
+    flex-direction: column;
+  }
+
+  .benefitsGrid,
+  .stepsContainer,
+  .supportGrid {
+    padding: 0 1.5rem;
+    grid-template-columns: 1fr;
+  }
+
+  .otpInputs {
+    gap: 8px;
+  }
+
+  .otpInput {
+    width: 45px;
+    height: 45px;
+    font-size: 18px;
+  }
+}

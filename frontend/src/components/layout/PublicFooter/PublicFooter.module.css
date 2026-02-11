@@ -1,0 +1,123 @@
+.footer {
+  background: #204F38;
+  color: #f5f3f0;
+}
+
+.inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 48px var(--page-padding);
+  display: flex;
+  justify-content: space-between;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.brand {
+  max-width: 320px;
+}
+
+.logo {
+  font-weight: 700;
+  font-size: 20px;
+  margin-bottom: 12px;
+  color: #279354; /* Green Accent */
+}
+
+.desc {
+  font-size: 14px;
+  color: rgba(245, 243, 240, 0.9); /* Warm Off-White */
+  line-height: 1.6;
+}
+
+.cols {
+  display: flex;
+  gap: 48px;
+  flex-wrap: wrap;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 160px;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #279354; /* Green Accent */
+}
+
+.link {
+  font-size: 14px;
+  color: rgba(245, 243, 240, 0.9);
+  transition: color 0.2s ease;
+}
+
+.link:hover {
+  color: #279354; /* Green Accent */
+}
+
+.contactItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.contactLabel {
+  font-size: 13px;
+  color: rgba(245, 243, 240, 0.9);
+  font-weight: 500;
+}
+
+.bottom {
+  border-top: 1px solid rgba(245, 243, 240, 0.25);
+  padding: 20px var(--page-padding);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 13px;
+  color: rgba(245, 243, 240, 0.8);
+}
+
+.bottomLinks {
+  display: flex;
+  gap: 24px;
+}
+
+.bottomLink {
+  font-size: 13px;
+  color: rgba(245, 243, 240, 0.8);
+  transition: color 0.2s ease;
+}
+
+.bottomLink:hover {
+  color: #279354; /* Green Accent */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .inner {
+    padding: 32px var(--page-padding);
+    gap: 32px;
+  }
+
+  .cols {
+    gap: 32px;
+  }
+
+  .bottom {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .bottomLinks {
+    justify-content: center;
+  }
+}
