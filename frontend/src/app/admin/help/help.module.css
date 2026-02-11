@@ -1,0 +1,353 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #e9e9ef;
+  border-radius: 16px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: 1px solid #e9efec;
+  background: #f8fafc;
+  display: grid;
+  place-items: center;
+  color: var(--color-gray-brown);
+  flex: 0 0 auto;
+}
+
+.cardText {
+  min-width: 0;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #000;
+}
+
+.cardDesc {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.bullets {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  color: #000;
+  display: grid;
+  gap: 6px;
+}
+
+.empty {
+  grid-column: 1 / -1;
+  background: #ffffff;
+  border: 1px dashed #d8dde6;
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.emptyTitle {
+  margin: 0;
+  font-weight: 700;
+  color: #000;
+}
+
+.emptySub {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.lower {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.panel {
+  background: #ffffff;
+  border: 1px solid #e9e9ef;
+  border-radius: 16px;
+  padding: 16px 18px;
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.panelTitle {
+  margin: 0;
+  font-weight: 700;
+  color: #000;
+}
+
+.panelSub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.faqList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.faqItem {
+  border: 1px solid #eef0f6;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.faqItemOpen {
+  border-color: var(--color-main-accent);
+  background: #fdfefe;
+  box-shadow: 0 2px 12px rgba(68, 95, 61, 0.18);
+}
+
+.faqBtn {
+  width: 100%;
+  text-align: left;
+  padding: 12px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+
+.faqBtn:hover {
+  background: #f8fafc;
+}
+
+.faqQ {
+  font-size: 13px;
+  font-weight: 600;
+  color: #000;
+}
+
+.chev {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  color: #334155;
+  transition: transform 0.15s ease;
+}
+
+.chevOpen {
+  transform: rotate(180deg);
+}
+
+.faqA {
+  padding: 0 12px 12px;
+  font-size: 13px;
+  color: #000;
+  line-height: 1.5;
+}
+
+.faqEmpty {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #64748b;
+  border: 1px dashed #d8dde6;
+  border-radius: 14px;
+}
+
+.playbooks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.playbook {
+  border: 1px solid #eef0f6;
+  border-radius: 14px;
+  padding: 16px 18px;
+  background: #ffffff;
+}
+
+.playbookTitle {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #000;
+}
+
+.steps {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  color: #000;
+  display: grid;
+  gap: 6px;
+}
+
+.contactGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.contactCard {
+  border: 1px solid #eef0f6;
+  border-radius: 14px;
+  padding: 12px;
+  background: #ffffff;
+}
+
+.contactTitle {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #000;
+}
+
+.contactDesc {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.contactMeta {
+  margin-top: 16px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-main-accent);
+}
+
+.supportBar {
+  margin-top: 14px;
+  border: 1px solid #e9efec;
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.supportLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.supportIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  border: 1px solid #e9efec;
+  background: #ffffff;
+  display: grid;
+  place-items: center;
+  color: var(--color-gray-brown);
+}
+
+.supportTitle {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #000;
+}
+
+.supportSub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.primaryBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #e9efec;
+  background-color: var(--color-gray-brown);
+  color: #ffffff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.primaryBtn:hover {
+  opacity: 0.92;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .search {
+    min-width: 240px;
+  }
+
+  .playbooks {
+    grid-template-columns: 1fr;
+  }
+
+  .contactGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search {
+    min-width: 0;
+  }
+
+  .supportBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .primaryBtn {
+    justify-content: center;
+  }
+}

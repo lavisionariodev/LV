@@ -1,0 +1,155 @@
+"use client"
+
+import { useEffect, useMemo, useRef, useState } from "react"
+import { usePathname, useRouter } from "next/navigation"
+import styles from "./AdminTopbar.module.css"
+import { MdNotificationsNone } from "react-icons/md"
+import { IoSearch } from "react-icons/io5"
+import { FaUser } from "react-icons/fa6"
+import { LuLogOut } from "react-icons/lu"
+import { Logout } from '@/components/ui'
+
+const ROUTE_TITLES = [
+  { match: "/admin/sellers", title: "Sellers", subtitle: "Manage registered sellers" },
+  { match: "/admin/users", title: "Users", subtitle: "View and manage user accounts" },
+  { match: "/admin/transactions", title: "Transactions", subtitle: "Track payments and activity" },
+  { match: "/admin/disputes", title: "Disputes", subtitle: "Review and resolve issues" },
+  { match: "/admin/content", title: "Content", subtitle: "Manage platform content" },
+  { match: "/admin/settings", title: "Settings", subtitle: "Manage your account information and security" },
+  { match: "/admin/packages", title: "Packages", subtitle: "Manage packages & pricing" },
+  { match: "/admin/help", title: "Help Center", subtitle: "CEO essentials: approvals, disputes, policies, and platform health." },
+]
+
+export default function AdminTopbar({ onLogout }) {
+  const pathname = usePathname()
+  const router = useRouter()
+
+  const [open, setOpen] = useState(false)
+  const [showLogout, setShowLogout] = useState(false)
+
+  const menuRef = useRef(null)
+  const btnRef = useRef(null)
+
+  const current = useMemo(() => {
+    const found = ROUTE_TITLES.find((item) => pathname?.startsWith(item.match))
+    return (
+      found || {
+        title: "Dashboard",
+        subtitle: "Overview & quick actions",
+      }
+    )
+  }, [pathname])
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (!open) return
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target) &&
+        btnRef.current &&
+        !btnRef.current.contains(e.target)
+      ) {
+        setOpen(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClick)
+    return () => document.removeEventListener("mousedown", handleClick)
+  }, [open])
+
+  // Close dropdown on Esc
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === "Escape") setOpen(false)
+    }
+
+    document.addEventListener("keydown", handleKey)
+    return () => document.removeEventListener("keydown", handleKey)
+  }, [])
+
+  const handleLogout = async () => {
+    setOpen(false)
+
+    if (typeof onLogout === "function") {
+      await onLogout()
+      return
+    }
+
+    localStorage.clear()
+    router.push("/administrator")
+  }
+
+  const onClickLogout = () => {
+    setOpen(false)
+    setShowLogout(true)
+  }
+
+  const onCancelLogout = () => {
+    setShowLogout(false)
+  }
+
+  const onConfirmLogout = async () => {
+    setShowLogout(false)
+    await handleLogout()
+  }
+
+  return (
+    <>
+      <header className={styles.topbar}>
+        <div className={styles.left}>
+          <p className={styles.title}>{current.title}</p>
+          <p className={styles.subtitle}>{current.subtitle}</p>
+        </div>
+
+        <div className={styles.center}>
+          <div className={styles.searchWrap}>
+            <span className={styles.searchIcon}>
+              <IoSearch />
+            </span>
+            <input
+              type="text"
+              className={styles.search}
+              placeholder="Search..."
+              aria-label="Search admin panel"
+            />
+          </div>
+        </div>
+
+        <div className={styles.right}>
+          <button className={styles.iconBtn} type="button" aria-label="Notifications">
+            <MdNotificationsNone />
+          </button>
+
+          <div className={styles.profileWrap}>
+            <button
+              ref={btnRef}
+              type="button"
+              className={styles.profileAvatar}
+              aria-label="Admin menu"
+              aria-expanded={open}
+              onClick={() => setOpen((p) => !p)}
+            >
+              <FaUser />
+            </button>
+
+            {open && (
+              <div ref={menuRef} className={styles.profileDropdown}>
+                <button
+                  type="button"
+                  className={styles.logoutBtn}
+                  onClick={onClickLogout}
+                >
+                  <LuLogOut />
+                  <span>Log out</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <Logout open={showLogout} onCancel={onCancelLogout} onConfirm={onConfirmLogout} />
+    </>
+  )
+}

@@ -1,0 +1,559 @@
+.pageWrapper {
+  min-height: 100vh;
+  background: #f5f5f5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Header */
+.header {
+  background: white;
+  border-bottom: 1px solid #e5e5e5;
+  padding: 0;
+}
+
+.headerContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logoIcon {
+  width: 40px;
+  height: 40px;
+  background: #204F38;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logoText {
+  font-size: 24px;
+  font-weight: 500;
+  color: #204F38;
+}
+
+.sellerBadge {
+  font-size: 20px;
+  color: #333;
+  font-weight: 400;
+  padding-left: 12px;
+  border-left: 1px solid #ddd;
+}
+
+.needHelp {
+  color: #204F38;
+  text-decoration: none;
+  font-size: 0.875rem;
+  transition: opacity 0.2s;
+}
+
+.needHelp:hover {
+  opacity: 0.8;
+}
+
+/* Main Content */
+.mainContent {
+  padding: 60px 20px;
+}
+
+.contentWrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
+}
+
+/* Left Section - Illustration */
+.leftSection {
+  padding: 0 40px;
+}
+
+.mainTitle {
+  font-size: 40px;
+  color: #204F38;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+
+.mainSubtitle {
+  font-size: 16px;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 40px;
+}
+
+.illustration {
+  width: 100%;
+  max-width: 500px;
+}
+
+.illustrationSvg {
+  width: 100%;
+  height: auto;
+}
+
+/* Right Section - Login Form */
+.rightSection {
+  display: flex;
+  justify-content: center;
+}
+
+.loginCard {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  padding: 32px;
+  width: 100%;
+  max-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.loginHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.loginTitle {
+  font-size: 20px;
+  color: #333;
+  font-weight: 500;
+}
+
+.toggleMode {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid #ffa500;
+  border-radius: 4px;
+  color: #333;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toggleMode:hover {
+  background: #fff8e6;
+}
+
+.toggleMode svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Login Form */
+.loginForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  border-color: #204F38;
+}
+
+.passwordWrapper {
+  position: relative;
+}
+
+.eyeIcon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #999;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.eyeIcon:hover {
+  color: #666;
+}
+
+.loginButton {
+  width: 100%;
+  padding: 12px;
+  background: #204F38;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-transform: uppercase;
+  margin-top: 8px;
+  transition: background 0.2s;
+}
+
+.loginButton:hover {
+  background: #163d2e;
+}
+
+.forgotPassword {
+  text-align: center;
+  margin-top: 12px;
+}
+
+.forgotPassword a {
+  color: #05a;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.forgotPassword a:hover {
+  text-decoration: underline;
+}
+
+.divider {
+  text-align: center;
+  margin: 20px 0;
+  position: relative;
+  color: #999;
+  font-size: 13px;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 43%;
+  height: 1px;
+  background: #e0e0e0;
+}
+
+.divider::before {
+  left: 0;
+}
+
+.divider::after {
+  right: 0;
+}
+
+.divider span {
+  background: white;
+  padding: 0 10px;
+  position: relative;
+}
+
+.socialButtons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.socialButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background: white;
+  color: #333;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.socialButton:hover {
+  border-color: #ccc;
+  background: #f9f9f9;
+}
+
+/* QR Section */
+.qrSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.qrCodeWrapper {
+  margin: 20px 0;
+}
+
+.qrCode {
+  width: 200px;
+  height: 200px;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.qrSvg {
+  width: 100%;
+  height: 100%;
+}
+
+.qrText {
+  font-size: 14px;
+  color: #555;
+  margin: 16px 0;
+}
+
+.howToScanBtn {
+  color: #05a;
+  background: none;
+  border: none;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: none;
+  padding: 8px 0;
+}
+
+.howToScanBtn:hover {
+  text-decoration: underline;
+}
+
+/* Bottom Links */
+.signupText {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 14px;
+  color: #999;
+}
+
+.signupText a {
+  color: #204F38;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.signupText a:hover {
+  text-decoration: underline;
+}
+
+/* Footer */
+.footer {
+  background: #204F38;
+  color: white;
+  padding: 20px;
+  text-align: center;
+  font-size: 14px;
+  margin-top: 40px;
+}
+
+.footer p {
+  margin: 0;
+  max-width: none;
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modalContent {
+  background: white;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.modalHeader h3 {
+  font-size: 18px;
+  font-weight: 500;
+  color: #333;
+}
+
+.closeModal {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.closeModal:hover {
+  color: #333;
+}
+
+.modalBody {
+  padding: 32px 24px;
+}
+
+.phonePreview {
+  background: #333;
+  border-radius: 24px;
+  padding: 12px;
+  max-width: 280px;
+  margin: 0 auto 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.phoneScreen {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  min-height: 400px;
+}
+
+.shopeeAppHeader {
+  background: linear-gradient(135deg, #204F38 0%, #279354 100%);
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shopeeAppHeader input {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.appIcons {
+  font-size: 18px;
+  display: flex;
+  gap: 8px;
+}
+
+.scanIconArea {
+  padding: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+
+.scanIcon {
+  width: 80px;
+  height: 80px;
+  background: #f5f5f5;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  border: 2px dashed #ccc;
+}
+
+.modalText {
+  text-align: center;
+  color: #555;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Responsive */
+@media (max-width: 968px) {
+  .contentWrapper {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .leftSection {
+    text-align: center;
+  }
+
+  .mainTitle {
+    font-size: 32px;
+  }
+
+  .illustration {
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .headerContent {
+    padding: 16px 20px;
+  }
+
+  .logoText {
+    font-size: 20px;
+  }
+
+  .sellerBadge {
+    font-size: 16px;
+  }
+
+  .mainContent {
+    padding: 40px 20px;
+  }
+
+  .leftSection {
+    padding: 0 20px;
+  }
+
+  .loginCard {
+    padding: 24px;
+  }
+
+  .toggleMode span {
+    display: none;
+  }
+
+  .socialButtons {
+    grid-template-columns: 1fr;
+  }
+}

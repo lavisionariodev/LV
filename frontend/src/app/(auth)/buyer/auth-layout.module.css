@@ -1,0 +1,397 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+
+/* Base Container */
+.authContainer {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  font-family: 'Montserrat', sans-serif;
+  transition: flex-direction 0.6s ease-in-out;
+}
+
+/* Default (single form - forgot password, reset password) */
+.authContainer.default {
+  background: #f5f5f5;
+  flex-direction: column;
+}
+
+/* Sign In Layout (white left, red right) */
+.authContainer.signin {
+  background: transparent;
+  padding: 0;
+}
+
+.authContainer.signin .formSection {
+  animation: formInSignIn 0.6s ease-in-out forwards;
+}
+
+.authContainer.signin .panelSection {
+  animation: panelInSignIn 0.6s ease-in-out forwards;
+}
+
+/* Sign Up Layout (red left, white right) */
+.authContainer.signup {
+  background: transparent;
+  padding: 0;
+  flex-direction: row-reverse;
+}
+
+.authContainer.signup .formSection {
+  animation: formInSignUp 0.6s ease-in-out forwards;
+}
+
+.authContainer.signup .panelSection {
+  animation: panelInSignUp 0.6s ease-in-out forwards;
+}
+
+/* Form Section */
+.formSection {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 40px;
+  background-color: #fff;
+  position: relative;
+}
+
+/* Panel Section */
+.panelSection {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  position: relative;
+  background-color: var(--color-main-accent);
+}
+
+.panelContent {
+  text-align: center;
+  color: #fff;
+  padding: 40px;
+  max-width: 500px;
+}
+
+.panelContent h1 {
+  font-size: 48px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.panelContent p {
+  font-size: 14px;
+  margin-bottom: 30px;
+  opacity: 0.95;
+}
+
+.panelButton {
+  display: inline-block;
+  background-color: transparent;
+  color: #fff;
+  font-size: 12px;
+  padding: 12px 45px;
+  border: 2px solid #fff;
+  border-radius: 6px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.panelButton:hover {
+  background-color: #fff;
+  color: var(--color-main-accent);
+  transform: translateY(-2px);
+}
+
+/* Auth Form Card */
+.authForm {
+  background: #fff;
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 40px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+}
+
+.authForm > * {
+  width: 100%;
+}
+
+/* Form Elements Styling */
+.authForm h1 {
+  font-size: 30px;
+  margin: 0 0 6px 0;
+  padding: 0;
+  font-weight: 700;
+  color: var(--color-main-accent);
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.authForm p {
+  font-size: 13px;
+  line-height: 20px;
+  letter-spacing: 0.3px;
+  margin: 15px 0;
+  padding: 0;
+  color: #666;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.authForm span {
+  font-size: 12px;
+  margin: 10px 0;
+  padding: 0;
+  color: #666;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.authForm a {
+  color: #333;
+  font-size: 13px;
+  text-decoration: none;
+  margin: 15px 0 10px;
+  padding: 0;
+  cursor: pointer;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.authForm a:hover {
+  text-decoration: underline;
+  color: var(--color-main-accent);
+}
+
+.authForm button {
+  background-color: var(--color-main-accent);
+  color: #fff;
+  font-size: 12px;
+  padding: 12px 40px;
+  margin: 15px 0 0 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.authForm button:hover {
+  background-color: var(--color-secondary-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(32, 79, 56, 0.3);
+}
+
+.authForm input {
+  margin: 10px 0;
+  padding: 12px 15px;
+  font-size: 13px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  width: 100%;
+  outline: none;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.authForm input:focus {
+  border-color: var(--color-main-accent);
+  box-shadow: 0 0 6px 4px rgba(32, 79, 56, 0.1);
+}
+
+/* Social Icons */
+.socialIcons {
+  margin: 20px 0 15px 0;
+  padding: 0;
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  flex-wrap: wrap;
+}
+
+.socialIcons a {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.socialIcons a:hover {
+  border-color: var(--color-main-accent);
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.socialIcons i {
+  font-size: 18px;
+  color: #666;
+}
+
+/* Auth Footer */
+.authFooter {
+  margin: 20px 0 0 0;
+  padding: 0;
+  font-size: 13px;
+  color: #666;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.authFooter a {
+  color: var(--color-main-accent);
+  font-weight: 600;
+  margin: 0;
+  padding: 0;
+}
+
+.authFooter a:hover {
+  color: var(--color-secondary-accent);
+}
+
+/* Icon Container (for forgot/reset password) */
+.iconContainer {
+  width: 60px;
+  height: 60px;
+  background-color: rgba(255, 30, 30, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0 15px 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.iconContainer i {
+  font-size: 30px;
+  color: var(--color-dark-brown);
+}
+
+/* Success Message */
+.successMessage {
+  text-align: center;
+  padding: 10px;
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.successIcon {
+  width: 60px;
+  height: 60px;
+  background-color: rgba(34, 197, 94, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 15px;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.successIcon i {
+  font-size: 30px;
+  color: rgb(34, 197, 94);
+}
+
+/* Exchange Position Animations */
+@keyframes formInSignIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes panelInSignIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes formInSignUp {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes panelInSignUp {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Password Requirements */
+.passwordRequirements {
+  font-size: 11px;
+  color: #666;
+  margin: 5px 0 10px 0;
+  padding: 0 0 0 5px;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Responsive Design */
+@media (max-width: 968px) {
+  .authContainer.signin,
+  .authContainer.signup {
+    flex-direction: column;
+    background: #f5f5f5;
+  }
+
+  .panelSection {
+    display: none;
+  }
+
+  .formSection {
+    min-height: auto;
+  }
+}

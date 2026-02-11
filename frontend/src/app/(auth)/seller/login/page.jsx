@@ -1,0 +1,309 @@
+'use client';
+
+import { useState } from 'react';
+import styles from './login.module.css';
+
+export default function LoginPage() {
+  const [loginMode, setLoginMode] = useState('password'); // 'password' or 'qr'
+  const [showPassword, setShowPassword] = useState(false);
+  const [showHowToScan, setShowHowToScan] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    alert('Login functionality would be implemented here!');
+  };
+
+  const handleSocialLogin = (provider) => {
+    alert(`${provider} login would be implemented here!`);
+  };
+
+  return (
+    <div className={styles.pageWrapper}>
+      {/* Header */}
+      <header className={styles.header}>
+        <div className={styles.headerContent}>
+          <div className={styles.logo}>
+            <div className={styles.logoIcon}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+              </svg>
+            </div>
+            <span className={styles.logoText}>Lavisionario</span>
+            <span className={styles.sellerBadge}>Seller Centre</span>
+          </div>
+          <a href="#" className={styles.needHelp}>Need help?</a>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div className={styles.mainContent}>
+        <div className={styles.contentWrapper}>
+          {/* Left Side - Illustration */}
+          <div className={styles.leftSection}>
+            <h1 className={styles.mainTitle}>Be a Power Seller</h1>
+            <p className={styles.mainSubtitle}>
+              Manage your shop efficiently on Lavisionario with our<br />
+              Lavisionario Seller Centre
+            </p>
+            <div className={styles.illustration}>
+              <svg viewBox="0 0 500 400" className={styles.illustrationSvg}>
+                {/* Cloud */}
+                <ellipse cx="80" cy="140" rx="35" ry="20" fill="#c5e5f2" opacity="0.6"/>
+                <ellipse cx="100" cy="135" rx="40" ry="25" fill="#c5e5f2" opacity="0.6"/>
+                
+                {/* Delivery Truck */}
+                <rect x="80" y="220" width="100" height="60" fill="#4db8ac" rx="5"/>
+                <rect x="80" y="200" width="50" height="20" fill="#4db8ac" rx="3"/>
+                <rect x="90" y="210" width="30" height="25" fill="#75d4c8" rx="2"/>
+                
+                {/* Wheels */}
+                <circle cx="105" cy="290" r="18" fill="#2c3e50"/>
+                <circle cx="105" cy="290" r="12" fill="#ecf0f1"/>
+                <circle cx="155" cy="290" r="18" fill="#2c3e50"/>
+                <circle cx="155" cy="290" r="12" fill="#ecf0f1"/>
+                
+                {/* Store Front */}
+                <rect x="200" y="180" width="120" height="130" fill="#f5f5f5" rx="5"/>
+                
+                {/* Awning */}
+                <path d="M 190 180 Q 260 150 330 180" fill="#ee4d2d"/>
+                <path d="M 200 180 Q 260 165 320 180" fill="#ff6347"/>
+                <rect x="205" y="175" width="20" height="5" fill="#ffd700"/>
+                <rect x="230" y="175" width="20" height="5" fill="#ee4d2d"/>
+                <rect x="255" y="175" width="20" height="5" fill="#ffd700"/>
+                <rect x="280" y="175" width="20" height="5" fill="#ee4d2d"/>
+                <rect x="305" y="175" width="20" height="5" fill="#ffd700"/>
+                
+                {/* Windows/Products */}
+                <rect x="215" y="200" width="25" height="35" fill="white" stroke="#ddd" strokeWidth="2" rx="2"/>
+                <rect x="250" y="200" width="25" height="35" fill="white" stroke="#ddd" strokeWidth="2" rx="2"/>
+                <rect x="285" y="200" width="25" height="35" fill="white" stroke="#ddd" strokeWidth="2" rx="2"/>
+                
+                {/* Door */}
+                <rect x="240" y="250" width="40" height="60" fill="white" stroke="#ddd" strokeWidth="2" rx="2"/>
+                <circle cx="265" cy="280" r="2" fill="#ee4d2d"/>
+                
+                {/* Open Sign */}
+                <rect x="248" y="260" width="24" height="15" fill="#ee4d2d" rx="2"/>
+                <text x="260" y="271" fontSize="8" fill="white" textAnchor="middle" fontWeight="bold">OPEN</text>
+                
+                {/* Products in windows */}
+                <rect x="218" y="210" width="8" height="12" fill="#ee4d2d" rx="1"/>
+                <rect x="228" y="205" width="10" height="15" fill="#ff6347" rx="1"/>
+                <rect x="253" y="208" width="12" height="18" fill="#ffd700" rx="1"/>
+                <rect x="288" y="212" width="10" height="15" fill="#ee4d2d" rx="1"/>
+                
+                {/* Computer/Monitor */}
+                <rect x="200" y="305" width="120" height="5" fill="#34495e" rx="2"/>
+                <rect x="250" y="310" width="20" height="8" fill="#34495e"/>
+                
+                {/* Trees */}
+                <rect x="350" y="265" width="10" height="45" fill="#8b4513"/>
+                <circle cx="355" cy="250" r="25" fill="#52b788"/>
+                <circle cx="345" cy="245" r="18" fill="#52b788"/>
+                <circle cx="365" cy="245" r="18" fill="#52b788"/>
+                
+                <rect x="385" y="275" width="8" height="35" fill="#8b4513"/>
+                <circle cx="389" cy="265" r="18" fill="#74c69d"/>
+                <circle cx="382" cy="262" r="13" fill="#74c69d"/>
+                <circle cx="396" cy="262" r="13" fill="#74c69d"/>
+              </svg>
+            </div>
+          </div>
+
+          {/* Right Side - Login Form */}
+          <div className={styles.rightSection}>
+            <div className={styles.loginCard}>
+              <div className={styles.loginHeader}>
+                <h2 className={styles.loginTitle}>
+                  {loginMode === 'password' ? 'Log In' : 'Log in with QR'}
+                </h2>
+                <button 
+                  className={styles.toggleMode}
+                  onClick={() => setLoginMode(loginMode === 'password' ? 'qr' : 'password')}
+                >
+                  {loginMode === 'password' ? (
+                    <>
+                      <span>Log in with QR</span>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="#204F38">
+                        <path d="M3 3h8v8H3V3zm2 2v4h4V5H5zm8-2h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5zm13-2h3v3h-3v-3zm-3 0h2v2h-2v-2zm5 3h3v3h-3v-3zm-2 2h2v2h-2v-2zm-3 0h2v2h-2v-2z"/>
+                      </svg>
+                    </>
+                  ) : (
+                    <>
+                      <span>Log in with password</span>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="#204F38">
+                        <path d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6z"/>
+                      </svg>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {loginMode === 'password' ? (
+                <form onSubmit={handleSubmit} className={styles.loginForm}>
+                  <div className={styles.formGroup}>
+                    <input 
+                      type="text" 
+                      placeholder="Phone number / Username / Email"
+                      className={styles.input}
+                    />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <div className={styles.passwordWrapper}>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Password"
+                        className={styles.input}
+                      />
+                      <button
+                        type="button"
+                        className={styles.eyeIcon}
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        ) : (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <circle cx="12" cy="12" r="3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button type="submit" className={styles.loginButton}>
+                    LOG IN
+                  </button>
+
+                  <a href="#" className={styles.forgotPassword}>Forgot Password</a>
+
+                  <div className={styles.divider}>
+                    <span>OR</span>
+                  </div>
+
+                  <div className={styles.socialButtons}>
+                    <button 
+                      type="button"
+                      className={styles.socialButton}
+                      onClick={() => handleSocialLogin('Facebook')}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="#1877f2">
+                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                      </svg>
+                      Facebook
+                    </button>
+                    <button 
+                      type="button"
+                      className={styles.socialButton}
+                      onClick={() => handleSocialLogin('Google')}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24">
+                        <path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34a853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#fbbc05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#ea4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                      </svg>
+                      Google
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className={styles.qrSection}>
+                  <div className={styles.qrCodeWrapper}>
+                    <div className={styles.qrCode}>
+                      <svg viewBox="0 0 200 200" className={styles.qrSvg}>
+                        {/* QR Code Pattern */}
+                        <rect width="200" height="200" fill="white"/>
+                        {/* Pattern simulation */}
+                        {Array.from({length: 10}).map((_, i) => 
+                          Array.from({length: 10}).map((_, j) => 
+                            Math.random() > 0.5 && (
+                              <rect 
+                                key={`${i}-${j}`}
+                                x={10 + j * 18} 
+                                y={10 + i * 18} 
+                                width="16" 
+                                height="16" 
+                                fill="black"
+                              />
+                            )
+                          )
+                        )}
+                        {/* Corner markers */}
+                        <rect x="10" y="10" width="50" height="50" fill="none" stroke="black" strokeWidth="8"/>
+                        <rect x="25" y="25" width="20" height="20" fill="black"/>
+                        <rect x="140" y="10" width="50" height="50" fill="none" stroke="black" strokeWidth="8"/>
+                        <rect x="155" y="25" width="20" height="20" fill="black"/>
+                        <rect x="10" y="140" width="50" height="50" fill="none" stroke="black" strokeWidth="8"/>
+                        <rect x="25" y="155" width="20" height="20" fill="black"/>
+                        {/* Lavisionario logo in center */}
+                        <circle cx="100" cy="100" r="20" fill="#204F38"/>
+                        <text x="100" y="108" fontSize="24" fill="white" textAnchor="middle" fontWeight="bold">L</text>
+                      </svg>
+                    </div>
+                  </div>
+
+                  <p className={styles.qrText}>Scan QR code with Lavisionario App</p>
+                  
+                  <button 
+                    className={styles.howToScanBtn}
+                    onClick={() => setShowHowToScan(!showHowToScan)}
+                  >
+                    How To Scan
+                  </button>
+                </div>
+              )}
+
+              <p className={styles.signupText}>
+                New to Lavisionario? <a href="#">Sign Up</a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer className={styles.footer}>
+        <p>© 2026 Lavisionario. All Rights Reserved.</p>
+      </footer>
+
+      {/* How To Scan Modal */}
+      {showHowToScan && (
+        <div className={styles.modal} onClick={() => setShowHowToScan(false)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>How To Scan</h3>
+              <button 
+                className={styles.closeModal}
+                onClick={() => setShowHowToScan(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <div className={styles.phonePreview}>
+                <div className={styles.phoneScreen}>
+                  <div className={styles.shopeeAppHeader}>
+                    <input placeholder="🔍 Lavisionario" readOnly />
+                    <div className={styles.appIcons}>🛒 💬</div>
+                  </div>
+                  <div className={styles.scanIconArea}>
+                    <div className={styles.scanIcon}>📱</div>
+                  </div>
+                </div>
+              </div>
+              <p className={styles.modalText}>
+                Press the scan icon on the Lavisionario app to open the QR code scanner
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
