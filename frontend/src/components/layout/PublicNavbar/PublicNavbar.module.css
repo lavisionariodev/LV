@@ -1,16 +1,24 @@
+:root {
+  --color-gold-darkest: #8B7500;
+  --color-gold-dark: #B8A000;
+  --color-gold-base: #D4AF37;
+  --color-gold-bright: #FFD700;
+  --color-gold-light: #FFED4E;
+}
+
 /* ===== HEADER ===== */
 .header {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: #ffffff;
+  background: white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 /* ===== TOP BAR ===== */
 .topBar {
-  background: #f5f3f0;
-  border-bottom: 1px solid #e5e2dd;
+  background: rgb(46, 125, 50);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
@@ -31,9 +39,23 @@
 
 .followText {
   font-size: 11px;
-  color: #6b6b6b;
-  text-transform: capitalize;
+  color: #fff;
   letter-spacing: 0.3px;
+}
+
+.topLink {
+  color: #fff;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.topLink:hover {
+  color: var(--color-gold-bright);
+}
+
+.divider {
+  margin: 0 6px;
+  opacity: 0.6;
 }
 
 .socialLinks {
@@ -46,16 +68,17 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: #c9b89d;
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
+  color: var(--color-gold-base);
   transition: all 0.3s ease;
 }
 
 .socialIcon:hover {
-  background: #b8a78c;
+  background: rgba(255, 215, 0, 0.15);
+  color: var(--color-gold-bright);
   transform: translateY(-2px);
 }
 
@@ -69,9 +92,8 @@
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: #333333;
+  color: #fff;
   font-weight: 500;
-  text-decoration: none;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -80,16 +102,16 @@
 }
 
 .userLink svg {
-  color: #5B5043;
+  color: var(--color-gold-base);
 }
 
 .userLink:hover {
-  color: #5B5043;
+  color: var(--color-gold-bright);
 }
 
 /* ===== MAIN NAVIGATION ===== */
 .mainNav {
-  background: #4a4a4a;
+  background: white;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
@@ -141,7 +163,7 @@
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 1.2px;
-  color: #ffffff;
+  color: rgb(46, 125, 50);
   text-decoration: none;
   background: transparent;
   border: none;
@@ -153,8 +175,8 @@
 
 .navLink:hover,
 .navLinkDropdown:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #c9b89d;
+  background: rgba(212, 175, 55, 0.12);
+  color: var(--color-gold-base);
 }
 
 .dropdownIcon {
@@ -171,7 +193,7 @@
   position: absolute;
   top: 100%;
   left: 0;
-  background: #ffffff;
+  background: #F9F8F4;
   min-width: 220px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   border-radius: 4px;
@@ -202,17 +224,17 @@
   padding: 12px 20px;
   font-size: 12px;
   font-weight: 400;
-  color: #333333;
+  color: #2B2B2B;
   text-decoration: none;
   transition: all 0.2s ease;
   border-left: 3px solid transparent;
 }
 
 .dropdownItem:hover {
-  background: #f5f3f0;
-  border-left-color: #c9b89d;
+  background: #F9F8F4;
+  border-left-color: var(--color-gold-base);
   padding-left: 24px;
-  color: #5B5043;
+  color: rgb(46, 125, 50);
 }
 
 /* ===== NAVIGATION ACTIONS ===== */
@@ -232,7 +254,7 @@
 .searchBtn {
   background: transparent;
   border: none;
-  color: #ffffff;
+  color: rgb(46, 125, 50);
   cursor: pointer;
   padding: 8px;
   display: flex;
@@ -244,8 +266,8 @@
 }
 
 .searchBtn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #c9b89d;
+  background: rgba(212, 175, 55, 0.12);
+  color: var(--color-gold-base);
   transform: scale(1.05);
 }
 
@@ -265,36 +287,32 @@
 }
 
 .searchFormOpen {
-  width: 200px; /* reduced width */
+  width: 200px;
   max-width: 200px;
   opacity: 1;
   visibility: visible;
   padding: 0;
-  background: #4a4a4a;
+  background: white;
   z-index: 10;
-  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 0.3s ease,
-              visibility 0s linear 0s;
 }
 
 .searchInput {
   width: 100%;
   padding: 8px 4px 8px 0;
   border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+  border-bottom: 1px solid rgba(46, 125, 50, 0.4);
   background: transparent;
   font-size: 14px;
-  color: #ffffff;
+  color: rgb(46, 125, 50);
   outline: none;
-  transition: border-color 0.3s ease;
 }
 
 .searchInput:focus {
-  border-bottom-color: #c9b89d;
+  border-bottom-color: var(--color-gold-base);
 }
 
 .searchInput::placeholder {
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(46, 125, 50, 0.6);
 }
 
 .mobileToggle {
@@ -310,20 +328,20 @@
 .mobileToggle span {
   width: 22px;
   height: 2px;
-  background: #ffffff;
+  background: rgb(46, 125, 50);
   transition: all 0.3s ease;
 }
 
 .mobileToggle:hover span {
-  background: #c9b89d;
+  background: var(--color-gold-base);
 }
 
 /* ===== MOBILE MENU ===== */
 .mobileMenu {
   display: none;
-  background: #4a4a4a;
+  background: white;
   padding: 16px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(212, 175, 55, 0.15);
   animation: slideDown 0.3s ease;
 }
 
@@ -344,21 +362,21 @@
   font-size: 12px;
   font-weight: 500;
   letter-spacing: 1px;
-  color: #ffffff;
+  color: rgb(46, 125, 50);
   text-decoration: none;
   text-transform: uppercase;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.15);
   transition: all 0.3s ease;
 }
 
 .mobileLink:hover {
-  color: #c9b89d;
+  color: var(--color-gold-base);
   padding-left: 8px;
 }
 
 .mobileDivider {
   height: 1px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(46, 125, 50, 0.2);
   margin: 16px 0;
 }
 
@@ -367,15 +385,15 @@
   .navMenu {
     display: none;
   }
-  
+
   .mobileToggle {
     display: flex;
   }
-  
+
   .mobileMenu {
     display: block;
   }
-  
+
   .searchFormOpen {
     width: 170px;
     max-width: 170px;
@@ -386,20 +404,20 @@
   .topBarInner {
     padding: 8px 16px;
   }
-  
+
   .mainNavInner {
     padding: 0 16px;
   }
-  
+
   .logoImage {
     max-height: 40px;
   }
-  
+
   .searchFormOpen {
     width: 150px;
     max-width: 150px;
   }
-  
+
   .followText {
     display: none;
   }
@@ -409,20 +427,20 @@
   .socialLinks {
     gap: 6px;
   }
-  
+
   .socialIcon {
     width: 24px;
     height: 24px;
   }
-  
+
   .userLink span {
     display: none;
   }
-  
+
   .logoImage {
     max-height: 35px;
   }
-  
+
   .searchFormOpen {
     width: 120px;
     max-width: 120px;
