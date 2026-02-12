@@ -78,7 +78,18 @@ export default function PublicNavbar() {
       <div className={styles.topBar}>
         <div className={styles.topBarInner}>
           <div className={styles.topLeft}>
-            <span className={styles.followText}>Follow us</span>
+            <div className={styles.followText}>
+              <Link href="/seller/login" className={styles.topLink}>
+                Become a Seller
+              </Link>
+              <span className={styles.divider}>|</span>
+              <Link href="/seller/centre" className={styles.topLink}>
+                Seller Centre
+              </Link>
+              <span className={styles.divider}>|</span>
+              <span>Follow Us</span>
+            </div>
+
             <div className={styles.socialLinks}>
               <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className={styles.socialIcon}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -99,6 +110,7 @@ export default function PublicNavbar() {
               </a>
             </div>
           </div>
+
           <div className={styles.topRight}>
             <button onClick={handleUserIconClick} className={styles.userLink} aria-label="User Account">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

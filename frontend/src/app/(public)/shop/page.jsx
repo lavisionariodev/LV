@@ -137,7 +137,7 @@ export default function ShopPage() {
   const [activeCategory, setActiveCategory] = useState('All')
   const [activeQuick, setActiveQuick] = useState('') // New Arrival | Best Seller | On Discount
 
-  // ✅ NEW: toggle state for nested categories
+  // toggle state for nested categories
   const [isCategoryOpen, setIsCategoryOpen] = useState(true)
 
   const filtered = useMemo(() => {
