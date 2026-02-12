@@ -45,37 +45,35 @@ function HeroSection() {
 
 /* ---------------- SHOP BY CATEGORY (REFERENCE IMAGE STYLE) ---------------- */
 function ShopByCategorySection() {
-  const [scrollPosition, setScrollPosition] = useState(0)
-
   const categories = [
     {
       title: 'Funeral Packages',
-      image: 'https://i.pinimg.com/736x/8d/6f/3a/8d6f3a0c3e8f5b4c6d8e9f0a1b2c3d4e.jpg',
+      image: '/sample/services/1.jpg',
       link: '/packages',
     },
     {
       title: 'Cremation Services',
-      image: 'https://i.pinimg.com/736x/a1/b2/c3/a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6.jpg',
+      image: '/sample/services/2.jpg',
       link: '/cremation',
     },
     {
       title: 'Burial Services',
-      image: 'https://i.pinimg.com/736x/d4/e5/f6/d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9.jpg',
+      image: '/sample/services/3.jpg',
       link: '/burial',
     },
     {
       title: 'Memorial & Wake',
-      image: 'https://i.pinimg.com/736x/c5/d6/e7/c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0.jpg',
+      image: '/sample/services/4.jpg',
       link: '/memorial',
     },
     {
       title: 'Flowers & Items',
-      image: 'https://i.pinimg.com/736x/f8/a9/b0/f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3.jpg',
+      image: '/sample/services/5.jpg',
       link: '/flowers',
     },
     {
       title: 'Transport & Docs',
-      image: 'https://i.pinimg.com/736x/b6/c7/d8/b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1.jpg',
+      image: '/sample/services/6.jpg',
       link: '/transport',
     },
   ]
@@ -96,8 +94,6 @@ function ShopByCategorySection() {
       left: newPosition,
       behavior: 'smooth'
     })
-
-    setScrollPosition(newPosition)
   }
 
   return (
@@ -236,7 +232,7 @@ function FinalCTASection() {
           <h2 className={styles.ctaTitle}>Ready to Begin?</h2>
           <p className={styles.ctaDescription}>
             Start planning with confidence. Explore our services or speak with
-            a compassionate advisor who understands what you're going through.
+            a compassionate advisor who understands what you&apos;re going through.
           </p>
 
           <div className={styles.ctaButtons}>
