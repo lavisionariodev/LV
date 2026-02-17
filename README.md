@@ -1,24 +1,11 @@
 # Lavisionario
 
-A full-stack web application built with **Express.js** backend and **Next.js** frontend with TypeScript support.
+A web application built with **Next.js** frontend with TypeScript support.
 
 ## Project Structure
 
 ```
 Lavisionario/
-├── backend/                  # Express.js server (Node.js)
-│   ├── src/
-│   │   ├── app.js           # Express app configuration
-│   │   ├── server.js        # Server entry point
-│   │   ├── middlewares/     # Custom middleware
-│   │   ├── modules/         # Feature modules
-│   │   │   ├── auth/        # Authentication module
-│   │   │   └── users/       # User management module
-│   │   └── utils/           # Utility functions
-│   ├── package.json
-│   ├── package-lock.json
-│   └── .env                 # Environment variables
-│
 ├── frontend/                # Next.js application (React)
 │   ├── src/
 │   │   ├── app/             # App router (Next.js 13+)
@@ -141,33 +128,6 @@ Lavisionario/
 
 ## Getting Started
 
-### Backend Setup (Express.js)
-
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Create/configure a `.env` file in the backend directory with required environment variables:
-   ```
-   PORT=5000
-   NODE_ENV=development
-   ```
-
-4. Start the server:
-   ```bash
-   npm start
-   # or for development with auto-reload (requires nodemon)
-   npm run dev
-   ```
-
-The backend server will run on `http://localhost:5000` (or your configured port).
-
 ### Frontend Setup (Next.js)
 
 1. Navigate to the frontend directory:
@@ -180,12 +140,7 @@ The backend server will run on `http://localhost:5000` (or your configured port)
    npm install
    ```
 
-3. Create a `.env.local` file in the frontend directory (optional, for API integration):
-   ```
-   NEXT_PUBLIC_API_URL=http://localhost:5000
-   ```
-
-4. Start the development server:
+3. Start the development server:
    ```bash
    npm run dev
    ```
@@ -196,10 +151,6 @@ The frontend will run on `http://localhost:3000`.
 
 ### Available Scripts
 
-**Backend:**
-- `npm start` - Start the production server
-- `npm run dev` - Start the development server with auto-reload (if nodemon is installed)
-
 **Frontend:**
 - `npm run dev` - Start the development server
 - `npm run build` - Build for production
@@ -207,11 +158,6 @@ The frontend will run on `http://localhost:3000`.
 - `npm run lint` - Run ESLint and check code quality
 
 ## Technology Stack
-
-### Backend
-- **Node.js** - JavaScript runtime
-- **Express.js** - Web framework
-- **Environment Management** - dotenv for configuration
 
 ### Frontend
 - **Next.js** 16.1.2 - React framework with App Router
@@ -227,12 +173,8 @@ The frontend will run on `http://localhost:3000`.
 
 ## Environment Variables
 
-### Backend (.env)
-- `PORT` - Server port (default: 5000)
-- `NODE_ENV` - Environment mode (development/production)
-
 ### Frontend (.env.local)
-- `NEXT_PUBLIC_API_URL` - Backend API base URL (optional, for API integration)
+- Configure environment variables as needed for your application
 
 ## Features
 
@@ -244,61 +186,19 @@ The frontend will run on `http://localhost:3000`.
 - **Layout Components** - Reusable Navbar and Sidebar components
 - **UI Components** - Modular components (Modal, Cards, Feedback)
 - **Custom Hooks** - Reusable React logic
-- **API Integration** - Services layer for backend communication
 - **Optimized Performance** - React Compiler for automatic optimization
 
-### Backend (Express.js)
-- **Modular Architecture** - Feature-based module organization (auth, users)
-- **Middleware Support** - Custom middleware for request processing
-- **RESTful API** - Express.js for building REST endpoints
-- **Environment Configuration** - Environment-based configuration
-- **Utility Functions** - Shared utility functions
-
-## API Integration
-
-The frontend communicates with the backend through the `NEXT_PUBLIC_API_URL` environment variable. Create API service files in the `src/services/` directory to handle requests to backend endpoints.
-
-### Setup Steps
-1. Ensure both backend and frontend servers are running
-2. Verify `NEXT_PUBLIC_API_URL` in frontend `.env.local` points to backend URL
-3. Create service files in `frontend/src/services/` for API calls
-4. Use services in components or hooks for data fetching
-
-## Running Both Servers
-
-### Terminal 1 - Backend
-```bash
-cd backend
-npm install
-npm start
-```
-
-### Terminal 2 - Frontend
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Visit `http://localhost:3000` for the frontend and `http://localhost:5000` for the backend API.
-
 ## Deployment
-
-### Backend
-- Deploy to Heroku, Railway, Render, or any Node.js hosting platform
-- Set environment variables on the hosting platform
-- Update frontend `NEXT_PUBLIC_API_URL` to point to production backend URL
 
 ### Frontend
 - Deploy to Vercel (recommended for Next.js), Netlify, or similar platforms
 - Set environment variables on the hosting platform
-- Update `NEXT_PUBLIC_API_URL` for production environment
 
 ## Project Standards
 
 - **Code Style** - ESLint enforces consistent code quality
-- **Type Safety** - TypeScript in frontend for better development experience
-- **File Organization** - Feature-based module structure in backend, component-based in frontend
+- **Type Safety** - TypeScript for better development experience
+- **File Organization** - Component-based structure with features and utilities
 - **Naming Conventions** - Use meaningful names for files, components, and functions
 
 ## Contributing
