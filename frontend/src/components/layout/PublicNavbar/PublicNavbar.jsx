@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import styles from './PublicNavbar.module.css'
 
 export default function PublicNavbar() {
@@ -126,15 +125,9 @@ export default function PublicNavbar() {
       {/* Main Navigation */}
       <div className={styles.mainNav}>
         <div className={styles.mainNavInner}>
-          <Link href="/" className={styles.logo}>
-            <Image 
-              src="/logo.png" 
-              alt="La Visionario"
-              width={180}
-              height={50}
-              priority
-              className={styles.logoImage}
-            />
+          <Link href="/" className={styles.logo} aria-label="La Visionario home">
+            <span className={styles.logoIcon}><span className={styles.logoLetter}>L</span></span>
+            <span className={styles.logoText}>Lavisionario</span>
           </Link>
 
           <nav className={styles.navMenu}>

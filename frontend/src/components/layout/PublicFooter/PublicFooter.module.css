@@ -18,10 +18,36 @@
 }
 
 .logo {
-  font-weight: 700;
-  font-size: 20px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin-bottom: 12px;
-  color: #A8894A;
+}
+
+.logoIcon {
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  background: #204F38;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logoLetter {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #fff;
+  font-family: "Roboto", "Open Sans", sans-serif;
+  line-height: 1;
+}
+
+.logoText {
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: #F7F4EF;
+  font-family: "Roboto", "Open Sans", sans-serif;
 }
 
 .desc {
