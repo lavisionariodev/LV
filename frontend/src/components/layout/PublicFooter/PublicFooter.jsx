@@ -7,7 +7,10 @@ export default function PublicFooter() {
     <footer className={styles.footer}>
       <div className={styles.inner}>
         <div className={styles.brand}>
-          <div className={styles.logo}>LaVisionario</div>
+          <div className={styles.logo}>
+            <span className={styles.logoIcon}><span className={styles.logoLetter}>L</span></span>
+            <span className={styles.logoText}>Lavisionario</span>
+          </div>
           <p className={styles.desc}>
             A trusted funeral services marketplace connecting families with compassionate providers during life's most difficult moments.
           </p>

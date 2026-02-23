@@ -27,22 +27,22 @@
   gap: 0.625rem;
 }
 
-.shopeeIcon svg {
-  width: 32px;
-  height: 32px;
-}
-
-.logoPlaceholder {
+.shopeeIcon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   background: var(--color-main-accent);
-  color: white;
-  border-radius: 6px;
-  font-size: 1.125rem;
+  border-radius: 8px;
+}
+
+.logoPlaceholder {
+  font-size: 1.25rem;
   font-weight: 700;
+  color: #fff;
+  font-family: "Roboto", "Open Sans", sans-serif;
+  line-height: 1;
 }
 
 .logoText {

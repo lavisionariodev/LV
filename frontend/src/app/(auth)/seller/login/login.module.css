@@ -30,10 +30,18 @@
   width: 40px;
   height: 40px;
   background: #204F38;
-  border-radius: 4px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.logoLetter {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  font-family: "Roboto", "Open Sans", sans-serif;
+  line-height: 1;
 }
 
 .logoText {
