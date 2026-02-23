@@ -494,6 +494,12 @@
 /* =========================
    CARD
 ========================= */
+.cardLink {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
 .card {
   background: #FFFFFF;
   border: 1px solid rgba(16, 40, 32, 0.1);
@@ -620,6 +626,13 @@
   color: var(--color-green);
   font-family: "Cormorant Garamond", serif;
   letter-spacing: 0.5px;
+}
+
+.actionsWrap {
+  padding: 0 20px 18px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
 
 .actions {
