@@ -1,199 +1,460 @@
-/* Container */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@400;600;700&display=swap');
+
+/* =========================
+   Shopee-style Help Center layout
+   White page + content wrapper (white margins on sides), white nav, green hero, advisory, categories grid
+========================= */
 .container {
   min-height: 100vh;
-  background-color: #fff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: #FFFFFF;
+  font-family: "Roboto", "Open Sans", system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  overflow-x: hidden;
 }
 
-/* Top Navigation */
+.contentWrap {
+  max-width: var(--max-width, 1200px);
+  margin: 0 auto;
+  background-color: #FFFFFF;
+}
+
+/* Top Navigation – white bar, dark text (like Shopee) */
 .topNav {
-  background-color: #fff;
-  border-bottom: 1px solid #f0f0f0;
+  background-color: #FFFFFF;
+  border-bottom: 1px solid #e0e0e0;
   position: sticky;
   top: 0;
   z-index: 100;
 }
 
 .navContent {
-  max-width: 1200px;
-  margin: 0 auto;
   padding: 1rem 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.logo {
+.logoGroup {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  text-decoration: none;
+  color: inherit;
+  font: inherit;
+}
+
+button.logoGroup {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
 }
 
 .logoIcon {
-  font-size: 1.75rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex-shrink: 0;
+  background: #204F38;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logoLetter {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  font-family: "Roboto", "Open Sans", sans-serif;
+  line-height: 1;
 }
 
 .logoText {
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 700;
-  color: #ee4d2d;
+  color: #204F38;
+  font-family: "Roboto", "Open Sans", sans-serif;
 }
 
-.navLinks {
-  display: flex;
-  gap: 2rem;
+.helpCenterText {
+  font-size: 1rem;
+  font-weight: 400;
+  color: #4a4a4a;
+  margin-left: 0.25rem;
+  font-family: "Roboto", "Open Sans", sans-serif;
 }
 
-.navLinks a {
-  color: #555;
+.policiesLink {
+  color: #4a4a4a;
   text-decoration: none;
   font-size: 0.9375rem;
-  transition: color 0.2s;
+  font-family: "Roboto", "Open Sans", sans-serif;
 }
 
-.navLinks a:hover {
-  color: #ee4d2d;
+.policiesLink:hover {
+  color: #1A1A1A;
 }
 
-/* Main Content */
+/* Main content area */
 .main {
-  max-width: 1200px;
-  margin: 0 auto;
   padding: 0 1.5rem 4rem;
+  background-color: #FFFFFF;
 }
 
-/* Hero Section */
+/* Article view: sidebar (dropdown) + article panel (like Shopee) */
+.articleLayout {
+  display: flex;
+  min-height: 400px;
+  background-color: #FFFFFF;
+}
+
+.sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  border-right: 1px solid #e0e0e0;
+  padding: 1.5rem 0;
+  background-color: #FFFFFF;
+}
+
+.sidebarCategory {
+  margin-bottom: 0.25rem;
+}
+
+.sidebarCategoryBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.6rem 1.25rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.9375rem;
+  color: #1A1A1A;
+  text-align: left;
+  font-family: "Roboto", "Open Sans", sans-serif;
+  transition: background 0.2s;
+}
+
+.sidebarCategoryBtn:hover {
+  background-color: #f5f5f5;
+}
+
+.sidebarCaret {
+  width: 0.75rem;
+  height: 0.75rem;
+  color: #6B6B6B;
+  flex-shrink: 0;
+}
+
+.sidebarSubList {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 1.5rem;
+}
+
+.sidebarSubList li {
+  margin: 0;
+}
+
+.sidebarSubItem {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #1A1A1A;
+  text-align: left;
+  font-family: "Roboto", "Open Sans", sans-serif;
+  transition: background 0.2s, color 0.2s;
+}
+
+.sidebarSubItem:hover {
+  background-color: #f5f5f5;
+}
+
+.sidebarSubItemActive {
+  color: #204F38;
+  font-weight: 500;
+}
+
+.articlePanel {
+  flex: 1;
+  padding: 2rem 2.5rem 3rem;
+  min-width: 0;
+}
+
+.articleTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1A1A1A;
+  margin-bottom: 1.25rem;
+  font-family: "Roboto", "Open Sans", sans-serif;
+  line-height: 1.35;
+}
+
+.articleContent {
+  font-size: 0.9375rem;
+  color: #333;
+  line-height: 1.7;
+  margin-bottom: 1.5rem;
+  font-family: "Roboto", "Open Sans", sans-serif;
+}
+
+.articleNote {
+  background-color: #FFFDE7;
+  border-left: 4px solid #204F38;
+  padding: 1rem 1.25rem;
+  margin-top: 1.5rem;
+  font-size: 0.875rem;
+  color: #333;
+  line-height: 1.6;
+  font-family: "Roboto", "Open Sans", sans-serif;
+}
+
+.articleNote p {
+  margin: 0;
+}
+
+.articlePlaceholder {
+  font-size: 0.9375rem;
+  color: #6B6B6B;
+  font-family: "Roboto", "Open Sans", sans-serif;
+}
+
+/* Hero – full viewport width (edge-to-edge), not the whole page height */
+.heroWrap {
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  margin-right: calc(-50vw + 50%);
+  background-color: #204F38;
+  margin-bottom: 0;
+}
+
 .hero {
   text-align: center;
-  padding: 3rem 1rem 2rem;
+  padding: 2.5rem 1.5rem 3rem;
+  max-width: var(--max-width, 1200px);
+  margin: 0 auto;
 }
 
 .heroTitle {
   font-size: 2rem;
-  font-weight: 500;
-  color: #222;
-  margin-bottom: 0.5rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-bottom: 1.5rem;
+  letter-spacing: 0.3px;
+  font-family: "Roboto", "Open Sans", sans-serif;
 }
 
-.heroSubtitle {
-  font-size: 1.125rem;
-  color: #555;
-  margin-bottom: 2rem;
-  font-weight: 400;
-}
-
-/* Search Form */
+/* Search Form – white input + green button, rounded (like Shopee) */
 .searchForm {
   max-width: 600px;
-  margin: 0 auto 3rem;
+  margin: 0 auto;
 }
 
 .searchWrapper {
-  position: relative;
   display: flex;
-  align-items: center;
-  background: #fff;
-  border: 1px solid #dbdbdb;
-  border-radius: 2px;
-  transition: all 0.2s;
+  align-items: stretch;
+  background: #FFFFFF;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.2s;
 }
 
 .searchWrapper:focus-within {
-  border-color: #ee4d2d;
-  box-shadow: 0 0 0 2px rgba(238, 77, 45, 0.1);
+  border-color: #b0b0b0;
 }
 
-.searchIcon {
-  position: absolute;
-  left: 1rem;
-  color: #999;
-  pointer-events: none;
+.searchInputWrap {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .searchInput {
   width: 100%;
   border: none;
   outline: none;
-  padding: 0.875rem 1rem 0.875rem 3rem;
+  padding: 0.875rem 1rem 0.875rem 1.25rem;
   font-size: 0.9375rem;
-  color: #222;
+  color: #1A1A1A;
+  background: #FFFFFF;
 }
 
 .searchInput::placeholder {
-  color: #999;
+  color: #9e9e9e;
 }
 
-/* Section Titles */
-.sectionTitle {
+/* Advisory banner – light yellow/cream (like Shopee) */
+.advisoryBanner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 1rem 3rem 1rem 1.5rem;
+  background-color: #FFFDE7;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.advisoryText {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: #4a4a4a;
+  text-align: center;
+  font-family: "Roboto", "Open Sans", sans-serif;
+}
+
+.advisoryClose {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: #4a4a4a;
   font-size: 1.25rem;
-  font-weight: 500;
-  color: #222;
-  margin-bottom: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  border-radius: 4px;
+  font-family: inherit;
 }
 
-/* Categories Section */
+.advisoryClose:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #1A1A1A;
+}
+
+.searchBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  min-width: 52px;
+  background: #204F38;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: #F2F2F2;
+  transition: background 0.2s;
+}
+
+.searchBtn:hover {
+  background: #163a29;
+}
+
+.searchIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #F2F2F2;
+  pointer-events: none;
+}
+
+/* Section Titles – large bold dark grey, left-aligned (like Shopee) */
+.sectionTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1A1A1A;
+  margin-bottom: 1.5rem;
+  letter-spacing: 0.3px;
+  font-family: "Roboto", "Open Sans", sans-serif;
+  text-align: left;
+}
+
+/* Categories Section – Shopee style: icon above title, white cards, rounded */
 .categoriesSection {
   margin-bottom: 3rem;
+  padding-top: 2rem;
 }
 
 .categoriesGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
+}
+
+@media (max-width: 900px) {
+  .categoriesGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 500px) {
+  .categoriesGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .categoryCard {
-  background: #fff;
-  border: 1px solid #e5e5e5;
-  border-radius: 4px;
+  background: #FFFFFF;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
   padding: 1.5rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  text-align: center;
 }
 
 .categoryCard:hover {
-  border-color: #ee4d2d;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  border-color: #b0b0b0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-.categoryIcon {
-  font-size: 2.5rem;
+/* Category icon – circle + color (orange, teal, blue like Shopee) */
+.categoryIconCircle {
   flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
 }
 
-.categoryContent {
-  flex: 1;
-  min-width: 0;
+.categoryIconCircle_orange {
+  background: rgba(238, 77, 45, 0.12);
+  color: #E85D4A;
+}
+
+.categoryIconCircle_teal {
+  background: rgba(13, 148, 136, 0.15);
+  color: #0D9488;
+}
+
+.categoryIconCircle_blue {
+  background: rgba(59, 130, 246, 0.15);
+  color: #2563EB;
+}
+
+.categoryIconSvg {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: inherit;
 }
 
 .categoryTitle {
-  font-size: 1rem;
-  font-weight: 500;
-  color: #222;
-  margin-bottom: 0.25rem;
-}
-
-.categorySubtitle {
-  font-size: 0.875rem;
-  color: #888;
+  font-size: 0.9375rem;
+  font-weight: 400;
+  color: #1A1A1A;
+  margin: 0;
+  font-family: "Roboto", "Open Sans", sans-serif;
   line-height: 1.4;
 }
 
-.categoryArrow {
-  color: #ccc;
-  flex-shrink: 0;
-  transition: all 0.2s;
-}
-
-.categoryCard:hover .categoryArrow {
-  color: #ee4d2d;
-  transform: translateX(4px);
-}
-
-/* Popular Questions Section */
+/* Popular Questions Section – list on white like homepage sections */
 .popularSection {
   margin-bottom: 3rem;
 }
@@ -202,111 +463,173 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  border: 1px solid #e5e5e5;
-  border-radius: 4px;
-  background: #fff;
+  border: 1px solid rgba(16, 40, 32, 0.12);
+  border-radius: 0;
+  background: #FFFFFF;
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(16, 40, 32, 0.06);
 }
 
 .questionItem {
   padding: 1.125rem 1.5rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.2s;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid rgba(16, 40, 32, 0.08);
 }
 
-.questionItem:last-child {
+.questionsList .questionItem:last-child {
   border-bottom: none;
 }
 
 .questionItem:hover {
-  background-color: #fafafa;
+  background-color: #F7F4EF;
 }
 
 .questionText {
   font-size: 0.9375rem;
-  color: #222;
+  color: #2B2B2B;
   flex: 1;
+  font-family: "Roboto", "Open Sans", sans-serif;
 }
 
 .questionArrow {
-  color: #ccc;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #102820;
   flex-shrink: 0;
-  transition: all 0.2s;
+  transition: transform 0.2s ease;
 }
 
 .questionItem:hover .questionArrow {
-  color: #ee4d2d;
   transform: translateX(4px);
 }
 
-/* Contact Section */
-.contactSection {
-  margin-bottom: 3rem;
+/* Still need help? – contact strip (cream bg like homepage .partnerSection / .guidanceBtn) */
+.contactStrip {
+  background: #F7F4EF;
+  border: 1px solid rgba(16, 40, 32, 0.15);
+  border-radius: 0;
+  padding: 2rem 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 16px rgba(16, 40, 32, 0.08);
+}
+
+.contactStripContent {
+  max-width: 100%;
+}
+
+.contactStripTitle {
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: #102820;
+  margin-bottom: 0.25rem;
+  font-family: "Roboto", "Open Sans", sans-serif;
+  letter-spacing: 0.5px;
+}
+
+.contactStripText {
+  font-size: 0.9375rem;
+  color: #6B6B6B;
+  margin-bottom: 1.5rem;
+  font-family: "Roboto", "Open Sans", sans-serif;
 }
 
 .contactGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
 }
 
 .contactCard {
-  background: #fff;
-  border: 1px solid #e5e5e5;
-  border-radius: 4px;
-  padding: 2rem 1.5rem;
+  background: #FFFFFF;
+  border: 1px solid rgba(16, 40, 32, 0.15);
+  border-radius: 0;
+  padding: 1.5rem;
   text-align: center;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
   cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+  appearance: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.contactCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #A8894A;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .contactCard:hover {
-  border-color: #ee4d2d;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  border-color: #102820;
+  box-shadow: 0 8px 24px rgba(16, 40, 32, 0.12);
 }
 
-.contactIconWrapper {
-  margin-bottom: 1rem;
+.contactCard:hover::before {
+  opacity: 1;
 }
 
 .contactIcon {
-  font-size: 2.5rem;
+  width: 2rem;
+  height: 2rem;
+  display: block;
+  margin: 0 auto 0.75rem;
+  color: #102820;
 }
 
 .contactTitle {
-  font-size: 1rem;
-  font-weight: 500;
-  color: #222;
-  margin-bottom: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #102820;
+  margin-bottom: 0.25rem;
+  letter-spacing: 0.5px;
+  font-family: "Roboto", "Open Sans", sans-serif;
 }
 
 .contactText {
-  font-size: 0.875rem;
-  color: #888;
+  font-size: 0.8125rem;
+  color: #6B6B6B;
+  font-family: "Roboto", "Open Sans", sans-serif;
 }
 
-/* Footer */
+/* Footer – full viewport width (no white on the sides) */
 .footer {
-  background-color: #f5f5f5;
-  border-top: 1px solid #e5e5e5;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  margin-right: calc(-50vw + 50%);
+  background-color: #204F38;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding: 2rem 1.5rem;
-  margin-top: 4rem;
+  margin-top: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .footerContent {
-  max-width: 1200px;
-  margin: 0 auto;
   text-align: center;
 }
 
 .footerContent p {
+  margin: 0;
   font-size: 0.875rem;
-  color: #888;
+  color: rgba(255, 255, 255, 0.9);
+  font-family: "Roboto", "Open Sans", sans-serif;
 }
 
 /* Responsive Design */
@@ -338,6 +661,14 @@
   .contactGrid {
     grid-template-columns: 1fr;
   }
+
+  .contactStrip {
+    padding: 1.5rem 1rem;
+  }
+
+  .contactStripTitle {
+    font-size: 1.125rem;
+  }
 }
 
 /* Animations */
@@ -353,7 +684,7 @@
 }
 
 .categoryCard,
-.questionItem,
+.questionBlock,
 .contactCard {
   animation: fadeIn 0.3s ease-out forwards;
   opacity: 0;
@@ -366,18 +697,14 @@
 .categoryCard:nth-child(5) { animation-delay: 0.25s; }
 .categoryCard:nth-child(6) { animation-delay: 0.3s; }
 .categoryCard:nth-child(7) { animation-delay: 0.35s; }
-.categoryCard:nth-child(8) { animation-delay: 0.4s; }
-.categoryCard:nth-child(9) { animation-delay: 0.45s; }
-.categoryCard:nth-child(10) { animation-delay: 0.5s; }
 
-.questionItem:nth-child(1) { animation-delay: 0.1s; }
-.questionItem:nth-child(2) { animation-delay: 0.15s; }
-.questionItem:nth-child(3) { animation-delay: 0.2s; }
-.questionItem:nth-child(4) { animation-delay: 0.25s; }
-.questionItem:nth-child(5) { animation-delay: 0.3s; }
-.questionItem:nth-child(6) { animation-delay: 0.35s; }
-.questionItem:nth-child(7) { animation-delay: 0.4s; }
-.questionItem:nth-child(8) { animation-delay: 0.45s; }
+.questionBlock:nth-child(1) { animation-delay: 0.1s; }
+.questionBlock:nth-child(2) { animation-delay: 0.15s; }
+.questionBlock:nth-child(3) { animation-delay: 0.2s; }
+.questionBlock:nth-child(4) { animation-delay: 0.25s; }
+.questionBlock:nth-child(5) { animation-delay: 0.3s; }
+.questionBlock:nth-child(6) { animation-delay: 0.35s; }
+.questionBlock:nth-child(7) { animation-delay: 0.4s; }
 
 .contactCard:nth-child(1) { animation-delay: 0.1s; }
 .contactCard:nth-child(2) { animation-delay: 0.2s; }
