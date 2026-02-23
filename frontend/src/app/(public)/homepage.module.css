@@ -7,7 +7,7 @@
   position: relative;
   min-height: 700px;
   padding: 60px var(--page-padding, 24px) 100px;
-  background-image: url('https://wallpapercave.com/wp/wp11416377.jpg');
+  background-image: url('https://static.vecteezy.com/system/resources/previews/027/844/422/large_2x/funeral-white-roses-on-dark-background-with-copy-space-free-photo.jpg');
   background-size: cover;
   background-position: center;
   overflow: hidden;
@@ -21,7 +21,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(35, 95, 45, 0.5);
+  background: rgba(16, 40, 32, 0.58);
   z-index: 1;
 }
 
@@ -82,17 +82,17 @@
 }
 
 .ctaPrimary {
-  background: rgb(35, 95, 45);
+  background: #102820;
   color: #FFFFFF;
-  border: 2px solid rgb(35, 95, 45);
-  box-shadow: 0 4px 14px rgba(35, 95, 45, 0.3);
+  border: 2px solid #102820;
+  box-shadow: 0 4px 14px rgba(16, 40, 32, 0.3);
 }
 
 .ctaPrimary:hover {
-  background: var(--color-gold-base);
-  border-color: var(--color-gold-base);
+  background: #A8894A;
+  border-color: #A8894A;
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+  box-shadow: 0 6px 20px rgba(168, 137, 74, 0.4);
 }
 
 .ctaSecondary {
@@ -125,7 +125,7 @@
   font-family: "Cormorant Garamond", serif;
   font-style: italic;
   letter-spacing: 0.5px;
-  color: var(--color-gold-base);
+  color: #A8894A;
   font-size: 15px;
   margin-bottom: 12px;
   font-weight: 400;
@@ -140,7 +140,7 @@
   font-family: "Cormorant Garamond", serif;
   letter-spacing: 3px;
   margin-bottom: 20px;
-  color: var(--color-green);
+  color: #102820;
   text-align: center;
 }
 
@@ -222,7 +222,7 @@
 }
 
 .categoryCard:hover .categoryContent {
-  background: var(--color-off-white);
+  background: #F7F4EF;
 }
 
 .categoryTitle {
@@ -237,7 +237,7 @@
 }
 
 .categoryCard:hover .categoryTitle {
-  color: var(--color-green);
+  color: #102820;
 }
 
 /* Carousel Navigation Arrows */
@@ -248,8 +248,8 @@
   width: 50px;
   height: 50px;
   background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(46, 125, 50, 0.2);
-  color: var(--color-green);
+  border: 1px solid rgba(16, 40, 32, 0.2);
+  color: #102820;
   font-size: 32px;
   font-weight: 300;
   cursor: pointer;
@@ -265,9 +265,9 @@
 
 .carouselArrow:hover {
   background: #FFFFFF;
-  border-color: var(--color-green);
-  color: var(--color-green);
-  box-shadow: 0 4px 16px rgba(46, 125, 50, 0.2);
+  border-color: #102820;
+  color: #102820;
+  box-shadow: 0 4px 16px rgba(16, 40, 32, 0.2);
 }
 
 .carouselArrowLeft {
@@ -283,7 +283,7 @@
 ========================= */
 .partnerSection {
   padding: 100px var(--page-padding, 24px);
-  background: var(--color-off-white);
+  background: #F7F4EF;
 }
 
 .partnerCarousel {
@@ -296,9 +296,9 @@
   grid-template-columns: 1fr 1fr;
   gap: 50px;
   background: #FFFFFF;
-  border: 1px solid rgba(46, 125, 50, 0.12);
+  border: 1px solid rgba(16, 40, 32, 0.12);
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(46, 125, 50, 0.08);
+  box-shadow: 0 8px 32px rgba(16, 40, 32, 0.08);
 }
 
 .partnerImageWrapper {
@@ -324,7 +324,7 @@
 .partnerName {
   font-size: 28px;
   font-weight: 500;
-  color: var(--color-green);
+  color: #102820;
   margin-bottom: 8px;
   font-family: "Cormorant Garamond", serif;
   letter-spacing: 0.5px;
@@ -338,14 +338,14 @@
 
 .partnerYears {
   font-size: 13px;
-  color: var(--color-gold-base);
+  color: #A8894A;
   margin-bottom: 12px;
   font-weight: 500;
 }
 
 .partnerRating {
   font-size: 14px;
-  color: var(--color-gold-base);
+  color: #A8894A;
   margin-bottom: 16px;
   font-weight: 600;
 }
@@ -361,8 +361,8 @@
 .viewProviderBtn {
   padding: 14px 36px;
   background: transparent;
-  color: rgb(35, 95, 45);
-  border: 1.5px solid rgb(35, 95, 45);
+  color: #4D2D18;
+  border: 1.5px solid #4D2D18;
   font-size: 13px;
   font-weight: 500;
   letter-spacing: 2px;
@@ -373,10 +373,10 @@
 }
 
 .viewProviderBtn:hover {
-  background: rgb(35, 95, 45);
+  background: #102820;
   color: #FFFFFF;
-  border-color: rgb(35, 95, 45);
-  box-shadow: 0 4px 16px rgba(35, 95, 45, 0.25);
+  border-color: #4D2D18;
+  box-shadow: 0 4px 16px rgba(16, 40, 32, 0.25);
 }
 
 .carouselDots {
@@ -390,7 +390,7 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: rgba(46, 125, 50, 0.2);
+  background: rgba(16, 40, 32, 0.2);
   border: none;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -398,14 +398,14 @@
 }
 
 .dot:hover {
-  background: rgba(46, 125, 50, 0.4);
+  background: rgba(16, 40, 32, 0.35);
 }
 
 .activeDot {
-  background: var(--color-green);
+  background: #A8894A;
   width: 32px;
   border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(46, 125, 50, 0.3);
+  box-shadow: 0 2px 8px rgba(168, 137, 74, 0.4);
 }
 
 /* =========================
@@ -444,8 +444,8 @@
   align-items: center;
   gap: 12px;
   padding: 32px 24px;
-  background: var(--color-off-white);
-  border: 1px solid rgba(46, 125, 50, 0.15);
+  background: #F7F4EF;
+  border: 1px solid rgba(16, 40, 32, 0.15);
   text-decoration: none;
   transition: all 0.3s ease;
   position: relative;
@@ -459,16 +459,16 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: var(--color-green);
+  background: #A8894A;
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
 .guidanceBtn:hover {
   background: #FFFFFF;
-  border-color: var(--color-green);
+  border-color: #102820;
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(46, 125, 50, 0.15);
+  box-shadow: 0 8px 24px rgba(16, 40, 32, 0.12);
 }
 
 .guidanceBtn:hover::before {
@@ -490,12 +490,12 @@
 }
 
 .comfortQuote {
-  background: var(--color-off-white);
+  background: #F7F4EF;
   padding: 40px;
-  border-left: 3px solid var(--color-green);
+  border-left: 3px solid #A8894A;
   max-width: 700px;
   margin: 0 auto;
-  box-shadow: 0 4px 16px rgba(46, 125, 50, 0.08);
+  box-shadow: 0 4px 16px rgba(16, 40, 32, 0.08);
 }
 
 .comfortQuote p {
@@ -513,12 +513,7 @@
 ========================= */
 .finalCTA {
   padding: 120px var(--page-padding, 24px);
-  background: linear-gradient(
-    to bottom,
-    rgba(35, 95, 45, 0.5),
-    rgba(35, 95, 45, 0.6)
-  ),
-  url('https://i.pinimg.com/1200x/f7/e8/f5/f7e8f5eee6539001caeb1a2dee135285.jpg');
+  background: url('https://i.pinimg.com/1200x/f7/e8/f5/f7e8f5eee6539001caeb1a2dee135285.jpg');
   background-size: cover;
   background-position: center;
   position: relative;
