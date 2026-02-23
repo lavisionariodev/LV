@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import styles from './login.module.css';
 
 export default function LoginPage() {
@@ -260,7 +261,7 @@ export default function LoginPage() {
               )}
 
               <p className={styles.signupText}>
-                New to Lavisionario? <a href="#">Sign Up</a>
+                New to Lavisionario? <Link href="/seller/signup">Sign Up</Link>
               </p>
             </div>
           </div>

@@ -1,11 +1,3 @@
-:root {
-  --color-gold-darkest: #4D2D18;
-  --color-gold-dark: #8A6240;
-  --color-gold-base: #A8894A;
-  --color-gold-bright: #BFA96B;
-  --color-gold-light: #F7F4EF;
-}
-
 /* ===== HEADER ===== */
 .header {
   position: sticky;

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import styles from './signup.module.css';
 import { FaStore, FaGift, FaHandshake, FaBullhorn, FaTruck,
          FaShoppingBasket, FaChartLine, FaWarehouse, FaGraduationCap,
@@ -76,7 +77,7 @@ const Step1PhoneInput = ({ phoneNumber, setPhoneNumber, onNext, currentStep }) =
       </p>
 
       <p className={styles.loginLink}>
-        Have an account? <a href="#">Log In</a>
+        Have an account? <Link href="/seller/login">Log In</Link>
       </p>
     </div>
   </div>
