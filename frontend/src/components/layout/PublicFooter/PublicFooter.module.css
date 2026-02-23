@@ -1,5 +1,5 @@
 .footer {
-  background: rgb(46, 125, 50);
+  background: #102820;
   color: #ffffff;
 }
 
@@ -21,7 +21,7 @@
   font-weight: 700;
   font-size: 20px;
   margin-bottom: 12px;
-  color: var(--color-gold-base);
+  color: #A8894A;
 }
 
 .desc {
@@ -47,7 +47,7 @@
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 8px;
-  color: var(--color-gold-base);
+  color: #A8894A;
 }
 
 .link {
@@ -58,7 +58,7 @@
 }
 
 .link:hover {
-  color: var(--color-gold-bright);
+  color: #BFA96B;
 }
 
 .contactItem {
@@ -75,7 +75,7 @@
 }
 
 .bottom {
-  border-top: 1px solid rgba(255, 215, 0, 0.25);
+  border-top: 1px solid rgba(168, 137, 74, 0.25);
   padding: 20px var(--page-padding);
   display: flex;
   justify-content: space-between;
@@ -99,7 +99,7 @@
 }
 
 .bottomLink:hover {
-  color: var(--color-gold-bright);
+  color: #BFA96B;
 }
 
 /* Responsive */

@@ -1,9 +1,9 @@
 :root {
-  --color-gold-darkest: #8B7500;
-  --color-gold-dark: #B8A000;
-  --color-gold-base: #D4AF37;
-  --color-gold-bright: #FFD700;
-  --color-gold-light: #FFED4E;
+  --color-gold-darkest: #4D2D18;
+  --color-gold-dark: #8A6240;
+  --color-gold-base: #A8894A;
+  --color-gold-bright: #BFA96B;
+  --color-gold-light: #F7F4EF;
 }
 
 /* ===== HEADER ===== */
@@ -11,13 +11,13 @@
   position: sticky;
   top: 0;
   z-index: 50;
-  background: white;
+  background: #FFFFFF;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 /* ===== TOP BAR ===== */
 .topBar {
-  background: rgb(46, 125, 50);
+  background: #102820;
   border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
@@ -111,7 +111,7 @@
 
 /* ===== MAIN NAVIGATION ===== */
 .mainNav {
-  background: white;
+  background: #FFFFFF;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
@@ -163,7 +163,7 @@
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 1.2px;
-  color: rgb(46, 125, 50);
+  color: #4D2D18;
   text-decoration: none;
   background: transparent;
   border: none;
@@ -175,7 +175,7 @@
 
 .navLink:hover,
 .navLinkDropdown:hover {
-  background: rgba(212, 175, 55, 0.12);
+  background: rgba(168, 137, 74, 0.10);
   color: var(--color-gold-base);
 }
 
@@ -193,7 +193,7 @@
   position: absolute;
   top: 100%;
   left: 0;
-  background: #F9F8F4;
+  background: #F7F4EF;
   min-width: 220px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   border-radius: 4px;
@@ -231,10 +231,10 @@
 }
 
 .dropdownItem:hover {
-  background: #F9F8F4;
+  background: #F7F4EF;
   border-left-color: var(--color-gold-base);
   padding-left: 24px;
-  color: rgb(46, 125, 50);
+  color: #4D2D18;
 }
 
 /* ===== NAVIGATION ACTIONS ===== */
@@ -254,7 +254,7 @@
 .searchBtn {
   background: transparent;
   border: none;
-  color: rgb(46, 125, 50);
+  color: #4D2D18;
   cursor: pointer;
   padding: 8px;
   display: flex;
@@ -266,7 +266,7 @@
 }
 
 .searchBtn:hover {
-  background: rgba(212, 175, 55, 0.12);
+  background: rgba(168, 137, 74, 0.10);
   color: var(--color-gold-base);
   transform: scale(1.05);
 }
@@ -300,10 +300,10 @@
   width: 100%;
   padding: 8px 4px 8px 0;
   border: none;
-  border-bottom: 1px solid rgba(46, 125, 50, 0.4);
+  border-bottom: 1px solid rgba(16, 40, 32, 0.3);
   background: transparent;
   font-size: 14px;
-  color: rgb(46, 125, 50);
+  color: #4D2D18;
   outline: none;
 }
 
@@ -312,7 +312,7 @@
 }
 
 .searchInput::placeholder {
-  color: rgba(46, 125, 50, 0.6);
+  color: rgba(16, 40, 32, 0.5);
 }
 
 .mobileToggle {
@@ -328,7 +328,7 @@
 .mobileToggle span {
   width: 22px;
   height: 2px;
-  background: rgb(46, 125, 50);
+  background: #102820;
   transition: all 0.3s ease;
 }
 
@@ -339,9 +339,9 @@
 /* ===== MOBILE MENU ===== */
 .mobileMenu {
   display: none;
-  background: white;
+  background: #FFFFFF;
   padding: 16px 24px;
-  border-top: 1px solid rgba(212, 175, 55, 0.15);
+  border-top: 1px solid rgba(168, 137, 74, 0.2);
   animation: slideDown 0.3s ease;
 }
 
@@ -362,10 +362,10 @@
   font-size: 12px;
   font-weight: 500;
   letter-spacing: 1px;
-  color: rgb(46, 125, 50);
+  color: #4D2D18;
   text-decoration: none;
   text-transform: uppercase;
-  border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+  border-bottom: 1px solid rgba(168, 137, 74, 0.15);
   transition: all 0.3s ease;
 }
 
@@ -376,7 +376,7 @@
 
 .mobileDivider {
   height: 1px;
-  background: rgba(46, 125, 50, 0.2);
+  background: rgba(16, 40, 32, 0.15);
   margin: 16px 0;
 }
 
