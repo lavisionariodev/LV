@@ -1,30 +1,122 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600&family=Lato:wght@300;400;700&display=swap');
+
 .aboutPage {
+  width: 100%;
   min-height: 100vh;
-  padding: 80px 20px;
-  background-color: #f9f9f9;
+  padding-bottom: 4rem;
+  background: var(--color-light-gray, #EDE8E0);
+  font-family: "Lato", sans-serif;
 }
 
-.container {
+.hero {
+  width: 100%;
+  min-height: 260px;
+  padding: 90px 24px 60px;
+  position: relative;
+  overflow: hidden;
+  background: url('/sample/services/hero-section.png') center / cover no-repeat;
+  display: flex;
+  align-items: center;
+}
+
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(16, 40, 32, 0.72);
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--color-gold-base);
+  opacity: 0.7;
+}
+
+.heroInner {
+  max-width: 1400px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  width: 100%;
+}
+
+.heroTitle {
+  margin: 0;
+  font-size: clamp(32px, 5vw, 48px);
+  font-weight: 300;
+  color: #FFFFFF;
+  line-height: 1.1;
+  font-family: "Cormorant Garamond", serif;
+  letter-spacing: 4px;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.25);
+}
+
+.breadcrumb {
+  margin: 16px auto 0;
+  width: fit-content;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-family: "Lato", sans-serif;
+}
+
+.crumb {
+  color: rgba(255, 255, 255, 0.55);
+  transition: color 0.3s ease;
+}
+
+.crumb:hover {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.slash {
+  color: var(--color-gold-base);
+  opacity: 0.7;
+}
+
+.crumbActive {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+.content {
   max-width: 900px;
   margin: 0 auto;
+  padding: 48px 24px 60px;
 }
 
-.title {
-  font-size: 40px;
-  font-weight: 700;
+.section {
+  margin-bottom: 48px;
+  scroll-margin-top: 100px;
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.sectionTitle {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--color-green, #102820);
   margin-bottom: 12px;
-  color: #111;
+  font-family: "Cormorant Garamond", serif;
 }
 
-.subtitle {
-  font-size: 18px;
+.sectionText {
+  font-size: 15px;
+  line-height: 1.65;
   color: #555;
-  margin-bottom: 32px;
+  margin-bottom: 16px;
 }
 
-.content p {
-  font-size: 16px;
-  line-height: 1.7;
-  color: #333;
-  margin-bottom: 20px;
+.sectionText:last-child {
+  margin-bottom: 0;
 }
