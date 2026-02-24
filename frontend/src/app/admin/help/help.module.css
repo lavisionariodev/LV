@@ -34,7 +34,7 @@
   background: #f8fafc;
   display: grid;
   place-items: center;
-  color: var(--color-gray-brown);
+  color: var(--color-gold-base);
   flex: 0 0 auto;
 }
 
@@ -277,7 +277,7 @@
   background: #ffffff;
   display: grid;
   place-items: center;
-  color: var(--color-gray-brown);
+  color: var(--color-gold-base);
 }
 
 .supportTitle {
@@ -303,7 +303,7 @@
   padding: 10px 14px;
   border-radius: 8px;
   border: 1px solid #e9efec;
-  background-color: var(--color-gray-brown);
+  background-color: var(--color-gold-base);
   color: #ffffff;
   cursor: pointer;
   white-space: nowrap;
