@@ -19,16 +19,19 @@ import {
   FiPercent,
   FiShoppingCart,
   FiCreditCard,
+  FiChevronRight,
+  FiMapPin,
 } from 'react-icons/fi'
 
 const LOGIN_URL = '/buyer/login?redirect=/shop'
 
 const CATEGORY_ITEMS = [
-  { key: 'All', label: 'All Product', icon: FiBox, count: 32 },
+  { key: 'All', label: 'All Products', icon: FiBox },
   { key: 'For Home', label: 'For Home', icon: FiHome, nested: true },
   { key: 'For Music', label: 'For Music', icon: FiMusic, nested: true },
   { key: 'For Phone', label: 'For Phone', icon: FiSmartphone, nested: true },
   { key: 'For Storage', label: 'For Storage', icon: FiHardDrive, nested: true },
+  { key: 'Other', label: 'Other', icon: FiTag, nested: true },
 ]
 
 const QUICK_FILTERS = [
@@ -37,13 +40,39 @@ const QUICK_FILTERS = [
   { key: 'On Discount', label: 'On Discount', icon: FiPercent },
 ]
 
+// Mock seller data per product
+const PRODUCT_SELLERS = {
+  1: { name: 'St. Peter Lifestyle', slug: 'st-peter' },
+  2: { name: 'St. Peter Lifestyle', slug: 'st-peter' },
+  3: { name: 'Funeraria Nacional', slug: 'funeraria-nacional' },
+  4: { name: 'St. Peter Lifestyle', slug: 'st-peter' },
+  5: { name: 'Memoria Services', slug: 'memoria-services' },
+  6: { name: 'Memoria Services', slug: 'memoria-services' },
+  7: { name: 'Funeraria Nacional', slug: 'funeraria-nacional' },
+  8: { name: 'Funeraria Nacional', slug: 'funeraria-nacional' },
+  9: { name: 'St. Peter Lifestyle', slug: 'st-peter' },
+  10: { name: 'Funeraria Nacional', slug: 'funeraria-nacional' },
+  11: { name: 'Memoria Services', slug: 'memoria-services' },
+  12: { name: 'St. Peter Lifestyle', slug: 'st-peter' },
+}
+
+// Category sections config for grouped display
+const CATEGORY_SECTIONS = [
+  { key: 'Other', label: 'General Services' },
+  { key: 'For Home', label: 'Home Viewing' },
+  { key: 'For Music', label: 'Music & Audio' },
+  { key: 'For Phone', label: 'Phone & Communication' },
+  { key: 'For Storage', label: 'Storage & Documents' },
+]
+
+const PREVIEW_COUNT = 3
+
 export default function ShopPage() {
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
-  const [activeQuick, setActiveQuick] = useState('') // New Arrival | Best Seller | On Discount
-
-  // toggle state for nested categories
+  const [activeQuick, setActiveQuick] = useState('')
   const [isCategoryOpen, setIsCategoryOpen] = useState(true)
+  const [expandedSections, setExpandedSections] = useState({})
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -58,7 +87,6 @@ export default function ShopPage() {
       const matchesCategory =
         activeCategory === 'All' ? true : p.category === activeCategory
 
-      // simple mock quick-filter mapping
       const matchesQuick =
         !activeQuick ||
         (activeQuick === 'New Arrival' && p.id >= 9) ||
@@ -69,14 +97,28 @@ export default function ShopPage() {
     })
   }, [search, activeCategory, activeQuick])
 
+  const toggleSection = (key) => {
+    setExpandedSections((prev) => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  // Group filtered products by category for "All" view
+  const groupedProducts = useMemo(() => {
+    if (activeCategory !== 'All') return null
+    const groups = {}
+    CATEGORY_SECTIONS.forEach(({ key }) => {
+      groups[key] = filtered.filter((p) => p.category === key)
+    })
+    return groups
+  }, [filtered, activeCategory])
+
   return (
     <section className={styles.shopPage}>
       {/* HERO */}
       <header className={styles.hero}>
         <div className={styles.heroOverlay} />
         <div className={styles.heroInner}>
+          <span className={styles.heroEyebrow}>La Visionario</span>
           <h1 className={styles.heroTitle}>Shop</h1>
-
           <p className={styles.breadcrumb}>
             <span className={styles.crumb}>Home</span>
             <span className={styles.slash}>/</span>
@@ -94,11 +136,10 @@ export default function ShopPage() {
               className={styles.searchInput}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search services..."
+              placeholder="Search products and services..."
               aria-label="Search services"
             />
           </div>
-
           <button className={styles.searchBtn} type="button">
             Search
           </button>
@@ -109,16 +150,15 @@ export default function ShopPage() {
       <div className={styles.content}>
         {/* LEFT SIDEBAR */}
         <aside className={styles.sidebar}>
+          {/* CATEGORY FILTER */}
           <div className={styles.filterGroup}>
             <h3 className={styles.filterTitle}>Category</h3>
 
-            {/* All Product row (same style, now supports open/close chevron) */}
             <div
               className={`${styles.categorySelect} ${
                 activeCategory === 'All' ? styles.categorySelectActive : ''
               }`}
             >
-              {/* left side: selects "All Product" */}
               <button
                 type="button"
                 className={styles.categoryMainBtn}
@@ -126,14 +166,12 @@ export default function ShopPage() {
               >
                 <span className={styles.categorySelectLeft}>
                   <FiBox className={styles.categoryIcon} />
-                  <span className={styles.categorySelectText}>All Product</span>
+                  <span className={styles.categorySelectText}>All Products</span>
                 </span>
               </button>
 
-              {/* right side: badge + chevron toggle */}
               <span className={styles.categorySelectRight}>
                 <span className={styles.badge}>32</span>
-
                 <button
                   type="button"
                   className={styles.categoryToggleBtn}
@@ -142,9 +180,7 @@ export default function ShopPage() {
                     setIsCategoryOpen((prev) => !prev)
                   }}
                   aria-expanded={isCategoryOpen}
-                  aria-label={
-                    isCategoryOpen ? 'Collapse categories' : 'Expand categories'
-                  }
+                  aria-label={isCategoryOpen ? 'Collapse categories' : 'Expand categories'}
                 >
                   <FiChevronDown
                     className={`${styles.categoryChevron} ${
@@ -155,7 +191,6 @@ export default function ShopPage() {
               </span>
             </div>
 
-            {/* Nested category list (collapsible) */}
             <div
               className={`${styles.categoryTreeWrapper} ${
                 isCategoryOpen ? styles.categoryTreeOpen : ''
@@ -165,14 +200,11 @@ export default function ShopPage() {
                 {CATEGORY_ITEMS.filter((c) => c.nested).map((item) => {
                   const Icon = item.icon
                   const isActive = activeCategory === item.key
-
                   return (
                     <button
                       key={item.key}
                       type="button"
-                      className={`${styles.treeItem} ${
-                        isActive ? styles.treeItemActive : ''
-                      }`}
+                      className={`${styles.treeItem} ${isActive ? styles.treeItemActive : ''}`}
                       onClick={() => setActiveCategory(item.key)}
                     >
                       <span className={styles.treeLine} aria-hidden="true" />
@@ -187,17 +219,15 @@ export default function ShopPage() {
 
           {/* QUICK FILTERS */}
           <div className={styles.filterGroup}>
+            <h3 className={styles.filterTitle}>Quick Filters</h3>
             {QUICK_FILTERS.map((f) => {
               const Icon = f.icon
               const isActive = activeQuick === f.key
-
               return (
                 <button
                   key={f.key}
                   type="button"
-                  className={`${styles.quickRow} ${
-                    isActive ? styles.quickRowActive : ''
-                  }`}
+                  className={`${styles.quickRow} ${isActive ? styles.quickRowActive : ''}`}
                   onClick={() => setActiveQuick(isActive ? '' : f.key)}
                 >
                   <span className={styles.quickLeft}>
@@ -209,59 +239,98 @@ export default function ShopPage() {
               )
             })}
           </div>
+
+          {/* SELLER INFO PANEL */}
+          <div className={styles.filterGroup}>
+            <h3 className={styles.filterTitle}>Our Sellers</h3>
+            <div className={styles.sellerList}>
+              {[
+                { name: 'St. Peter Lifestyle', slug: 'st-peter', count: 5 },
+                { name: 'Funeraria Nacional', slug: 'funeraria-nacional', count: 4 },
+                { name: 'Memoria Services', slug: 'memoria-services', count: 3 },
+              ].map((seller) => (
+                <Link
+                  key={seller.slug}
+                  href={`/shop/seller/${seller.slug}`}
+                  className={styles.sellerRow}
+                >
+                  <span className={styles.sellerDot} />
+                  <span className={styles.sellerRowName}>{seller.name}</span>
+                  <span className={styles.sellerRowCount}>{seller.count}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
         </aside>
 
         {/* RIGHT PRODUCTS */}
         <section className={styles.products}>
-          <div className={styles.grid}>
-            {filtered.map((p) => (
-              <article key={p.id} className={styles.card}>
-                <Link href={`/shop/${p.id}`} className={styles.cardLink}>
-                  {/* TOP: image edge-to-edge + pill overlay */}
-                  <div className={styles.cardTop}>
-                    <div className={styles.imageWrap}>
-                      <Image
-                        src={p.img}
-                        alt={p.name}
-                        width={900}
-                        height={650}
-                        className={styles.productImg}
-                        priority={p.id <= 3}
-                      />
-                    </div>
+          {activeCategory === 'All' && !search && !activeQuick ? (
+            // GROUPED VIEW by category
+            CATEGORY_SECTIONS.map(({ key, label }) => {
+              const sectionProducts = groupedProducts?.[key] ?? []
+              if (sectionProducts.length === 0) return null
+              const isExpanded = expandedSections[key]
+              const displayProducts = isExpanded
+                ? sectionProducts
+                : sectionProducts.slice(0, PREVIEW_COUNT)
 
-                    <span className={styles.pill}>{p.category}</span>
-                  </div>
-
-                  {/* BODY */}
-                  <div className={styles.cardBody}>
-                    <h3 className={styles.name}>{p.name}</h3>
-                    <p className={styles.desc}>{p.desc}</p>
-
-                    <div className={styles.priceRow}>
-                      <span className={styles.price}>
-                        ₱{p.price.toLocaleString()}
+              return (
+                <div key={key} className={styles.categorySection}>
+                  <div className={styles.sectionHeader}>
+                    <div className={styles.sectionHeaderLeft}>
+                      <h2 className={styles.sectionTitle}>{label}</h2>
+                      <span className={styles.sectionCount}>
+                        {sectionProducts.length} items
                       </span>
                     </div>
+                    {sectionProducts.length > PREVIEW_COUNT && (
+                      <button
+                        type="button"
+                        className={styles.seeMoreBtn}
+                        onClick={() => toggleSection(key)}
+                      >
+                        {isExpanded ? 'Show Less' : 'See All'}
+                        <FiChevronRight
+                          className={`${styles.seeMoreIcon} ${isExpanded ? styles.seeMoreIconOpen : ''}`}
+                        />
+                      </button>
+                    )}
                   </div>
-                </Link>
 
-                <div className={styles.actionsWrap} role="group" aria-label="Product actions">
-                  <Link href={LOGIN_URL} className={styles.btnGhost}>
-                    <FiShoppingCart />
-                    Add to Cart
-                  </Link>
-                  <Link href={LOGIN_URL} className={styles.btnSolid}>
-                    <FiCreditCard />
-                    Buy Now
-                  </Link>
+                  <div className={styles.grid}>
+                    {displayProducts.map((p) => (
+                      <ProductCard key={p.id} p={p} seller={PRODUCT_SELLERS[p.id]} />
+                    ))}
+                  </div>
                 </div>
-              </article>
-            ))}
-          </div>
+              )
+            })
+          ) : (
+            // FLAT filtered view
+            <>
+              {filtered.length > 0 && (
+                <div className={styles.filteredHeader}>
+                  <span className={styles.filteredLabel}>
+                    {filtered.length} result{filtered.length !== 1 ? 's' : ''}{' '}
+                    {activeCategory !== 'All' ? `in ${activeCategory}` : ''}
+                    {search ? ` for "${search}"` : ''}
+                  </span>
+                </div>
+              )}
+              <div className={styles.grid}>
+                {filtered.map((p) => (
+                  <ProductCard key={p.id} p={p} seller={PRODUCT_SELLERS[p.id]} />
+                ))}
+              </div>
+            </>
+          )}
 
           {filtered.length === 0 && (
             <div className={styles.empty}>
+              <div className={styles.emptyIcon}>
+                <FiSearch />
+              </div>
               <h4 className={styles.emptyTitle}>No results found</h4>
               <p className={styles.emptySub}>
                 Try a different keyword or choose another category.
@@ -271,5 +340,66 @@ export default function ShopPage() {
         </section>
       </div>
     </section>
+  )
+}
+
+// Extracted ProductCard component
+function ProductCard({ p, seller }) {
+  return (
+    <article className={styles.card}>
+      <Link href={`/shop/${p.id}`} className={styles.cardLink}>
+        {/* IMAGE */}
+        <div className={styles.cardTop}>
+          <div className={styles.imageWrap}>
+            <Image
+              src={p.img}
+              alt={p.name}
+              width={900}
+              height={650}
+              className={styles.productImg}
+              priority={p.id <= 3}
+            />
+          </div>
+          <span className={styles.pill}>{p.category}</span>
+        </div>
+
+        {/* BODY */}
+        <div className={styles.cardBody}>
+          {/* Seller tag */}
+          {seller && (
+            <div className={styles.sellerTagWrap} onClick={(e) => e.preventDefault()}>
+              <Link
+                href={`/shop/seller/${seller.slug}`}
+                className={styles.sellerTag}
+                title={`View all products from ${seller.name}`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <FiMapPin className={styles.sellerTagIcon} />
+                <span>{seller.name}</span>
+                <span className={styles.sellerTooltip}>{seller.name}</span>
+              </Link>
+            </div>
+          )}
+
+          <h3 className={styles.name}>{p.name}</h3>
+          <p className={styles.desc}>{p.desc}</p>
+
+          <div className={styles.priceRow}>
+            <span className={styles.price}>₱{p.price.toLocaleString()}</span>
+          </div>
+        </div>
+      </Link>
+
+      <div className={styles.actionsWrap} role="group" aria-label="Product actions">
+        <Link href={LOGIN_URL} className={styles.btnGhost}>
+          <FiShoppingCart />
+          Add to Cart
+        </Link>
+        <Link href={LOGIN_URL} className={styles.btnSolid}>
+          <FiCreditCard />
+          Buy Now
+        </Link>
+      </div>
+    </article>
   )
 }
