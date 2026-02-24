@@ -206,36 +206,23 @@ export default function PublicNavbar() {
             </div>
 
             <div className={styles.navItem}>
-              <Link href="/contact" className={styles.navLink}>CONTACT</Link>
+              <Link href="/book-now" className={styles.navLink}>BOOK NOW</Link>
             </div>
           </nav>
 
           <div className={styles.navActions}>
-            <div className={styles.searchContainer} ref={searchRef}>
+            <div className={styles.searchContainer}>
               <button 
                 className={styles.searchBtn} 
-                aria-label="Search"
-                onClick={() => setSearchOpen(!searchOpen)}
+                aria-label="Cart"
+                onClick={() => router.push('/cart')}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  <circle cx="9" cy="21" r="1"></circle>
+                  <circle cx="20" cy="21" r="1"></circle>
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
                 </svg>
               </button>
-              <div className={`${styles.searchForm} ${searchOpen ? styles.searchFormOpen : ''}`}>
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      handleSearch(e)
-                    }
-                  }}
-                  className={styles.searchInput}
-                />
-              </div>
             </div>
             <button 
               className={styles.mobileToggle}
@@ -258,7 +245,7 @@ export default function PublicNavbar() {
           <Link href="/partners" className={styles.mobileLink}>FUNERAL HOMES / PARTNERS</Link>
           <Link href="/how-it-works" className={styles.mobileLink}>HOW IT WORKS</Link>
           <Link href="/about" className={styles.mobileLink}>ABOUT US</Link>
-          <Link href="/contact" className={styles.mobileLink}>CONTACT</Link>
+          <Link href="/book-now" className={styles.mobileLink}>BOOK NOW</Link>
           
           <div className={styles.mobileDivider}></div>
           
