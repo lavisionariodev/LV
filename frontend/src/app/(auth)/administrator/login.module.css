@@ -48,6 +48,16 @@
   line-height: 18px;
 }
 
+.error {
+  margin: 0 0 12px 0;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #b91c1c;
+  background: #fef2f2;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
+}
+
 .form {
   display: flex;
   flex-direction: column;

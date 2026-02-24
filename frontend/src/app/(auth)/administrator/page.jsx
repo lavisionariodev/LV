@@ -1,12 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { MdOutlineAdminPanelSettings } from "react-icons/md";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
+import { supabase } from "@/lib/supabase/client";
+import { isAdmin } from "@/lib/auth/admin";
+import { signOut } from "@/lib/auth/session";
 import styles from "./login.module.css";
 
 export default function AdminLoginPage() {
+  const router = useRouter();
   const [signInData, setSignInData] = useState({ email: "", password: "" });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
   const [forgotPasswordSubmitted, setForgotPasswordSubmitted] = useState(false);
@@ -19,22 +26,46 @@ export default function AdminLoginPage() {
 
   const handleSignIn = async (e) => {
     e.preventDefault();
-
     if (!signInData.email || !signInData.password) {
-      alert("Please fill in all fields");
+      setError("Please fill in all fields");
       return;
     }
-
-    alert("Login successful! (mock)");
-    window.location.href = "/admin";
+    setLoading(true);
+    setError("");
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      email: signInData.email,
+      password: signInData.password,
+    });
+    if (signInError) {
+      setError(signInError.message);
+      setLoading(false);
+      return;
+    }
+    const admin = await isAdmin(supabase, data.user?.id);
+    if (!admin) {
+      await signOut();
+      setError("Access denied. Admin only.");
+      setLoading(false);
+      return;
+    }
+    setLoading(false);
+    router.push("/admin");
   };
 
   const handleForgotPasswordSubmit = async () => {
     if (!forgotPasswordEmail) {
-      alert("Please enter your email address");
+      setError("Please enter your email address");
       return;
     }
-
+    setError("");
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+      forgotPasswordEmail,
+      { redirectTo: `${typeof window !== "undefined" ? window.location.origin : ""}/administrator?reset=1` }
+    );
+    if (resetError) {
+      setError(resetError.message);
+      return;
+    }
     setForgotPasswordSubmitted(true);
   };
 
@@ -42,6 +73,7 @@ export default function AdminLoginPage() {
     setShowForgotPasswordModal(false);
     setForgotPasswordEmail("");
     setForgotPasswordSubmitted(false);
+    setError("");
   };
 
   return (
@@ -54,6 +86,12 @@ export default function AdminLoginPage() {
 
           <h1 className={styles.heading}>Administrator Login</h1>
           <p className={styles.subheading}>Enter your credentials to continue.</p>
+
+          {error && !showForgotPasswordModal && (
+            <p className={styles.error} role="alert">
+              {error}
+            </p>
+          )}
 
           <form className={styles.form} onSubmit={handleSignIn}>
             <div className={styles.field}>
@@ -110,8 +148,8 @@ export default function AdminLoginPage() {
               </button>
             </div>
 
-            <button type="submit" className={styles.primaryBtn}>
-              Log in
+            <button type="submit" className={styles.primaryBtn} disabled={loading}>
+              {loading ? "Signing in…" : "Log in"}
             </button>
           </form>
         </div>
@@ -134,8 +172,14 @@ export default function AdminLoginPage() {
 
                 <h2 className={styles.modalTitle}>Reset Password</h2>
                 <p className={styles.modalText}>
-                  Enter your admin email and we&quot;ll send a reset link.
+                  Enter your admin email and we&apos;ll send a reset link.
                 </p>
+
+                {error && (
+                  <p className={styles.error} role="alert">
+                    {error}
+                  </p>
+                )}
 
                 <div className={styles.field}>
                   <label className={styles.label} htmlFor="forgotEmail">

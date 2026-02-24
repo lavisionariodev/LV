@@ -2,6 +2,15 @@
    ADMIN LAYOUT (MVP)
    ========================= */
 
+.authLoading {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  background: #f9fcff;
+  font-size: 14px;
+  color: #6b7280;
+}
+
 .shell {
   display: grid;
   grid-template-columns: 240px 1fr;
