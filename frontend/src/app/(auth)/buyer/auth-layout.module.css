@@ -379,12 +379,19 @@
   box-sizing: border-box;
 }
 
-/* Responsive Design */
+/* Responsive Design – different transitions on mobile only (wide screen unchanged) */
 @media (max-width: 968px) {
   .authContainer.signin,
   .authContainer.signup {
     flex-direction: column;
     background: #f5f5f5;
+    padding: 0;
+    transition: none; /* instant stack on mobile; keep 0.6s ease-in-out on wide */
+  }
+
+  .authContainer.signin .formSection,
+  .authContainer.signup .formSection {
+    animation: formFadeIn 0.35s ease-out forwards; /* shorter fade on mobile instead of slide */
   }
 
   .panelSection {
@@ -393,5 +400,107 @@
 
   .formSection {
     min-height: auto;
+    padding: 24px 20px;
+    width: 100%;
+  }
+
+  .authForm {
+    max-width: 100%;
+    padding: 32px 24px;
+  }
+
+  .authForm h1 {
+    font-size: 26px;
+  }
+
+  .panelContent h1 {
+    font-size: 36px;
+  }
+
+  .panelContent p {
+    font-size: 13px;
+  }
+}
+
+@keyframes formFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .authContainer {
+    padding: 0;
+    min-height: 100vh;
+    align-items: stretch;
+  }
+
+  .formSection {
+    padding: 16px 16px 24px;
+    min-height: auto;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: max(16px, env(safe-area-inset-top));
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  .authForm {
+    padding: 24px 20px;
+    border-radius: 12px;
+    max-width: 100%;
+  }
+
+  .authForm h1 {
+    font-size: 22px;
+    margin-bottom: 16px;
+  }
+
+  .authForm span,
+  .authForm p {
+    font-size: 12px;
+    margin: 10px 0;
+  }
+
+  .authForm input {
+    padding: 12px 14px;
+    font-size: 16px; /* prevents zoom on focus on iOS */
+    margin: 8px 0;
+    transition: border-color 0.2s ease-out, box-shadow 0.2s ease-out; /* snappier on mobile */
+  }
+
+  .authForm button {
+    padding: 14px 24px;
+    font-size: 13px;
+    margin-top: 12px;
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out;
+  }
+
+  .socialIcons {
+    gap: 12px;
+    margin: 12px 0;
+  }
+
+  .socialIcons a {
+    width: 44px;
+    height: 44px;
+    transition: transform 0.2s ease-out, border-color 0.2s ease-out, box-shadow 0.2s ease-out;
+  }
+
+  .socialIcons i {
+    font-size: 20px;
+  }
+
+  .authFooter {
+    font-size: 12px;
+    margin-top: 16px;
+  }
+
+  .panelButton {
+    transition: transform 0.2s ease-out, background-color 0.2s ease-out, color 0.2s ease-out;
   }
 }

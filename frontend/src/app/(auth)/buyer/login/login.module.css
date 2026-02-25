@@ -312,3 +312,156 @@
   width: 100%;
   box-sizing: border-box;
 }
+
+/* Mobile responsive – different transitions only on mobile (wide screen unchanged) */
+@media (max-width: 768px) {
+  .authContainer {
+    padding: 16px;
+  }
+
+  .authForm {
+    padding: 32px 24px;
+  }
+
+  .authContainer h1 {
+    font-size: 26px;
+  }
+
+  .authContainer button {
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out;
+  }
+
+  .authContainer input {
+    transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out;
+  }
+
+  .socialIcons a {
+    transition: transform 0.2s ease-out, border-color 0.2s ease-out, box-shadow 0.2s ease-out;
+  }
+
+  .modalOverlay {
+    padding: 16px;
+    align-items: flex-start;
+    padding-top: max(24px, env(safe-area-inset-top));
+  }
+
+  .modalContent {
+    padding: 40px 24px 32px;
+    max-width: 100%;
+    margin: auto 0;
+    animation: modalSlideUp 0.25s ease-out; /* snappier on mobile */
+  }
+
+  .modalContent h2 {
+    font-size: 22px;
+  }
+
+  .modalContent p {
+    font-size: 12px;
+  }
+
+  .modalContent input {
+    font-size: 16px; /* prevents zoom on iOS */
+    padding: 12px 14px;
+    transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out;
+  }
+
+  .closeButton {
+    top: 12px;
+    right: 16px;
+    font-size: 28px;
+    transition: color 0.2s ease-out, transform 0.2s ease-out;
+  }
+
+  .submitButton {
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out;
+  }
+}
+
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 480px) {
+  .authContainer {
+    padding: 12px;
+  }
+
+  .authForm {
+    padding: 24px 20px;
+  }
+
+  .authContainer h1 {
+    font-size: 22px;
+    margin-bottom: 16px;
+  }
+
+  .authContainer input {
+    padding: 12px 14px;
+    font-size: 16px;
+    transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out;
+  }
+
+  .authContainer button {
+    padding: 14px 24px;
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out;
+  }
+
+  .socialIcons a {
+    width: 44px;
+    height: 44px;
+    transition: transform 0.2s ease-out, border-color 0.2s ease-out, box-shadow 0.2s ease-out;
+  }
+
+  .modalOverlay {
+    padding: 12px;
+    padding-top: max(16px, env(safe-area-inset-top));
+  }
+
+  .modalContent {
+    padding: 32px 20px 28px;
+    animation: modalSlideUp 0.22s ease-out;
+  }
+
+  .modalContent h2 {
+    font-size: 20px;
+    margin: 16px 0 12px;
+  }
+
+  .modalContent input {
+    margin: 12px 0;
+  }
+
+  .submitButton {
+    margin-top: 16px;
+    padding: 14px 24px;
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out;
+  }
+
+  .iconContainer,
+  .successIcon {
+    width: 52px;
+    height: 52px;
+  }
+
+  .iconContainer i,
+  .successIcon i {
+    font-size: 26px;
+  }
+
+  .closeButton {
+    top: 10px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    font-size: 24px;
+    transition: color 0.2s ease-out, transform 0.2s ease-out;
+  }
+}

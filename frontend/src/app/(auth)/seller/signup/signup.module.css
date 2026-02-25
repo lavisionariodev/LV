@@ -1248,27 +1248,91 @@
 @media (max-width: 768px) {
   .headerContent {
     padding: 0.75rem 1.5rem;
+    padding-left: max(1.5rem, env(safe-area-inset-left));
+    padding-right: max(1.5rem, env(safe-area-inset-right));
   }
 
   .heroSection {
     padding: 48px 16px;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  .heroContainer {
+    gap: 40px;
   }
 
   .heroLeft {
     margin: 20px;
+    margin-top: 0;
   }
 
   .heroTitle {
     font-size: 32px;
   }
 
+  .heroRight {
+    order: -1; /* signup form first on mobile */
+  }
+
   .signupCard {
     padding: 32px 24px;
     max-height: 65vh;
+    max-width: 100%;
+  }
+
+  .signupTitle {
+    font-size: 22px;
+    margin-bottom: 24px;
+  }
+
+  .phoneInput {
+    font-size: 16px; /* prevents zoom on iOS */
+    padding: 12px 14px;
+  }
+
+  .nextButton {
+    padding: 12px 14px;
   }
 
   .socialButtons {
     flex-direction: column;
+  }
+
+  .facebookBtn,
+  .googleBtn {
+    padding: 12px;
+  }
+
+  .stepIndicator {
+    padding: 0 0.5rem;
+  }
+
+  .stepCircle {
+    width: 36px;
+    height: 36px;
+    font-size: 0.875rem;
+  }
+
+  .stepLabel {
+    font-size: 0.6875rem;
+  }
+
+  .stepLine {
+    width: 40px;
+  }
+
+  .verificationMethods {
+    gap: 10px;
+  }
+
+  .methodButton {
+    padding: 14px 16px;
+  }
+
+  .backButton {
+    top: 16px;
+    left: 16px;
   }
 
   .benefitsGrid,
@@ -1286,5 +1350,164 @@
     width: 45px;
     height: 45px;
     font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .headerContent {
+    padding: 0.625rem 1rem;
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  .logoWrapper {
+    gap: 0.5rem;
+  }
+
+  .shopeeIcon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .logoPlaceholder {
+    font-size: 1.125rem;
+  }
+
+  .shopeeName {
+    font-size: 1.125rem;
+  }
+
+  .needHelp {
+    font-size: 0.8125rem;
+  }
+
+  .heroSection {
+    padding: 32px 12px 40px;
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+
+  .heroContainer {
+    gap: 28px;
+  }
+
+  .heroLeft {
+    margin: 0 12px;
+    gap: 20px;
+  }
+
+  .marketplaceLabel {
+    font-size: 12px;
+  }
+
+  .heroTitle {
+    font-size: 24px;
+  }
+
+  .featuresList {
+    gap: 14px;
+  }
+
+  .featureItem p {
+    font-size: 14px;
+  }
+
+  .signupCard {
+    padding: 24px 20px;
+    max-height: 72vh;
+    border-radius: 12px;
+  }
+
+  .signupTitle {
+    font-size: 20px;
+    margin-bottom: 20px;
+  }
+
+  .verificationSubtitle {
+    font-size: 13px;
+  }
+
+  .phoneDisplay {
+    font-size: 15px;
+    margin: 12px 0 24px;
+  }
+
+  .signupForm {
+    gap: 14px;
+  }
+
+  .phoneInput {
+    padding: 12px 14px;
+    font-size: 16px;
+  }
+
+  .nextButton {
+    padding: 14px;
+    font-size: 14px;
+  }
+
+  .stepIndicator {
+    margin-bottom: 1.5rem;
+    padding: 0 0.25rem;
+  }
+
+  .stepCircle {
+    width: 32px;
+    height: 32px;
+    font-size: 0.75rem;
+  }
+
+  .stepLabel {
+    font-size: 0.625rem;
+  }
+
+  .stepLine {
+    width: 28px;
+    margin-bottom: 20px;
+  }
+
+  .backButton {
+    top: 14px;
+    left: 14px;
+    font-size: 20px;
+  }
+
+  .verificationMethods {
+    gap: 8px;
+  }
+
+  .methodButton {
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+
+  .methodIcon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .terms {
+    font-size: 11px;
+  }
+
+  .loginLink {
+    font-size: 13px;
+    margin-top: 14px;
+  }
+
+  .otpInputs {
+    gap: 6px;
+  }
+
+  .otpInput {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+
+  .benefitsGrid,
+  .stepsContainer,
+  .supportGrid {
+    padding: 0 1rem;
   }
 }
