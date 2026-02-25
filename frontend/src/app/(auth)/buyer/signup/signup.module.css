@@ -147,3 +147,85 @@
 .authFooter a:hover {
   color: #279354;
 }
+
+/* Mobile responsive – different transitions only on mobile (wide screen unchanged) */
+@media (max-width: 768px) {
+  .authContainer {
+    padding: 16px;
+  }
+
+  .authForm {
+    padding: 32px 24px;
+    max-width: 100%;
+  }
+
+  .authContainer h1 {
+    font-size: 26px;
+  }
+
+  .authContainer input {
+    padding: 12px 14px;
+    transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out;
+  }
+
+  .authContainer button {
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out;
+  }
+
+  .socialIcons a {
+    transition: transform 0.2s ease-out, border-color 0.2s ease-out, box-shadow 0.2s ease-out;
+  }
+}
+
+@media (max-width: 480px) {
+  .authContainer {
+    padding: 12px;
+  }
+
+  .authForm {
+    padding: 24px 20px;
+  }
+
+  .authContainer h1 {
+    font-size: 22px;
+    margin-bottom: 16px;
+  }
+
+  .authContainer span {
+    font-size: 12px;
+    margin: 12px 0;
+  }
+
+  .authContainer input {
+    padding: 12px 14px;
+    font-size: 16px; /* prevents zoom on iOS */
+    margin: 8px 0;
+    transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out;
+  }
+
+  .authContainer button {
+    padding: 14px 24px;
+    margin-top: 12px;
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out;
+  }
+
+  .socialIcons {
+    gap: 12px;
+    margin: 12px 0;
+  }
+
+  .socialIcons a {
+    width: 44px;
+    height: 44px;
+    transition: transform 0.2s ease-out, border-color 0.2s ease-out, box-shadow 0.2s ease-out;
+  }
+
+  .socialIcons i {
+    font-size: 20px;
+  }
+
+  .authFooter {
+    font-size: 12px;
+    margin-top: 16px;
+  }
+}
