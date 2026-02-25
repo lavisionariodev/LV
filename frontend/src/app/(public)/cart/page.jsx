@@ -1,90 +1,121 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { getCart, setCartItemQty, removeFromCart } from '@/lib/cart'
-import { getPackageById } from '@/app/(public)/packages/data'
-import { getServiceById } from '@/app/(public)/services/data'
 import styles from './cart.module.css'
+import { FiX, FiTrash2, FiShoppingBag } from 'react-icons/fi'
 
-function getProductById(id) {
-  const pkg = getPackageById(id)
-  if (pkg) {
-    const priceMatch = pkg.price && String(pkg.price).match(/[\d,]+/)
-    const price = priceMatch ? Number(priceMatch[0].replace(/,/g, '')) : 0
-    return { id: pkg.id, name: pkg.name, img: pkg.image, price }
-  }
-  const svc = getServiceById(id)
-  if (svc) return { id: svc.id, name: svc.name, img: svc.image, price: 0 }
-  return null
-}
-import { FiX } from 'react-icons/fi'
+// ─── Hardcoded sample data for UI preview ────────────────────────────────────
+const SAMPLE_ROWS = [
+  {
+    id:          'cremation-premium',
+    name:        'Premium Cremation Package',
+    img:         '/sample/services/2.jpg',
+    price:       45000,
+    description: 'Maharlika Funeral Homes · Full cremation service, urn of choice',
+    qty:         1,
+  },
+  {
+    id:          'burial-full',
+    name:        'Full Burial Service',
+    img:         '/sample/services/3.jpg',
+    price:       78500,
+    description: 'Sancta Maria · Casket viewing, embalming, burial coordination',
+    qty:         1,
+  },
+  {
+    id:          'memorial-classic',
+    name:        'Classic Memorial Service',
+    img:         '/sample/services/4.jpg',
+    price:       32000,
+    description: 'Garden of Peace · Chapel use, floral arrangements',
+    qty:         2,
+  },
+]
 
 function formatPrice(n) {
   return `₱${Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
 }
 
 export default function CartPage() {
-  const [cartItems, setCartItems] = useState([])
-  const [coupon, setCoupon] = useState('')
-  const [qtyEdits, setQtyEdits] = useState({})
+  const [cartItems, setCartItems] = useState(SAMPLE_ROWS)
+  const [coupon, setCoupon]       = useState('')
+  const [qtyEdits, setQtyEdits]   = useState({})
+  const [selected, setSelected]   = useState(new Set())
 
-  useEffect(() => {
-    const sync = () => setCartItems(getCart())
-    sync()
-    window.addEventListener('storage', sync)
-    return () => window.removeEventListener('storage', sync)
-  }, [])
+  const rows = cartItems.map((item) => ({
+    ...item,
+    subtotal: item.price * item.qty,
+  }))
 
-  const rows = cartItems
-    .map(({ id, qty }) => {
-      const product = getProductById(id)
-      if (!product) return null
-      return {
-        id: product.id,
-        name: product.name,
-        img: product.img,
-        price: product.price,
-        qty,
-        subtotal: product.price * qty,
-      }
+  // Derive totals based on selected items (or all if none selected)
+  const activeRows = selected.size > 0 ? rows.filter((r) => selected.has(r.id)) : rows
+  const subtotal   = activeRows.reduce((sum, r) => sum + r.subtotal, 0)
+  const total      = subtotal
+
+  // ── selection helpers ──────────────────────────────────────
+  const allSelected  = rows.length > 0 && rows.every((r) => selected.has(r.id))
+  const someSelected = selected.size > 0 && !allSelected
+
+  const toggleAll = () => {
+    if (allSelected) {
+      setSelected(new Set())
+    } else {
+      setSelected(new Set(rows.map((r) => r.id)))
+    }
+  }
+
+  const toggleItem = (id) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
     })
-    .filter(Boolean)
+  }
 
-  const subtotal = rows.reduce((sum, r) => sum + r.subtotal, 0)
-  const total = subtotal
-
+  // ── qty helpers ───────────────────────────────────────────
   const handleUpdateQty = (productId, newQty) => {
     const num = parseInt(newQty, 10)
     if (Number.isNaN(num) || num < 1) return
-    setCartItemQty(productId, num)
+    setCartItems((prev) =>
+      prev.map((item) => item.id === productId ? { ...item, qty: num } : item)
+    )
     setQtyEdits((prev) => ({ ...prev, [productId]: undefined }))
-    setCartItems(getCart())
   }
 
   const handleRemove = (productId) => {
-    removeFromCart(productId)
-    setCartItems(getCart())
+    setCartItems((prev) => prev.filter((item) => item.id !== productId))
+    setSelected((prev) => {
+      const next = new Set(prev)
+      next.delete(productId)
+      return next
+    })
   }
 
-  const handlePrintInvoice = () => {
-    window.print()
+  const handleRemoveSelected = () => {
+    setCartItems((prev) => prev.filter((item) => !selected.has(item.id)))
+    setSelected(new Set())
   }
+
+  const handlePrintInvoice = () => window.print()
+
+  const checkoutHref =
+    selected.size > 0
+      ? `/buyer/login?redirect=/cart&items=${[...selected].join(',')}`
+      : `/buyer/login?redirect=/cart`
 
   const isEmpty = rows.length === 0
 
   return (
     <section className={styles.cartPage}>
-      {/* HERO: breadcrumbs + page name */}
+      {/* HERO */}
       <header className={styles.hero}>
         <div className={styles.heroOverlay} />
         <div className={styles.heroInner}>
           <h1 className={styles.heroTitle}>Cart</h1>
           <p className={styles.breadcrumb}>
-            <Link href="/" className={styles.crumb}>
-              Home
-            </Link>
+            <Link href="/" className={styles.crumb}>Home</Link>
             <span className={styles.slash}>/</span>
             <span className={styles.crumbActive}>Cart</span>
           </p>
@@ -94,29 +125,147 @@ export default function CartPage() {
       <div className={styles.content}>
         {isEmpty ? (
           <div className={styles.emptySection}>
+            <div className={styles.emptyIcon}><FiShoppingBag /></div>
             <h2 className={styles.emptyTitle}>Your cart is empty</h2>
-            <p className={styles.emptySub}>
-              Add packages or services to see them here.
-            </p>
-            <Link href="/packages" className={styles.emptyLink}>
-              Browse packages
-            </Link>
+            <p className={styles.emptySub}>Add packages or services to see them here.</p>
+            <Link href="/packages" className={styles.emptyLink}>Browse packages</Link>
           </div>
         ) : (
           <>
-            {/* LEFT: Products table, coupon, disclaimer */}
+            {/* LEFT: Products table */}
             <div className={styles.productsSection}>
+              {/* Table header */}
               <div className={styles.tableHeader}>
+                <span className={styles.thCheck}>
+                  <input
+                    type="checkbox"
+                    className={styles.checkbox}
+                    checked={allSelected}
+                    ref={(el) => { if (el) el.indeterminate = someSelected }}
+                    onChange={toggleAll}
+                    aria-label="Select all items"
+                  />
+                </span>
                 <span>Product</span>
                 <span>Price</span>
                 <span>Quantity</span>
                 <span>Subtotal</span>
+                <span></span>
               </div>
-              <div className={styles.productsLabel}>Products</div>
+
+              {/* Bulk action bar */}
+              {selected.size > 0 && (
+                <div className={styles.bulkBar}>
+                  <span className={styles.bulkCount}>
+                    {selected.size} item{selected.size > 1 ? 's' : ''} selected
+                  </span>
+                  <button
+                    type="button"
+                    className={styles.bulkDeleteBtn}
+                    onClick={handleRemoveSelected}
+                  >
+                    <FiTrash2 />
+                    Remove selected
+                  </button>
+                </div>
+              )}
 
               {rows.map((row) => (
-                <div key={row.id} className={styles.itemRow}>
+                <div
+                  key={row.id}
+                  className={`${styles.itemRow} ${selected.has(row.id) ? styles.itemRowSelected : ''}`}
+                >
+                  {/* Checkbox */}
+                  <div className={styles.itemCheck}>
+                    <input
+                      type="checkbox"
+                      className={styles.checkbox}
+                      checked={selected.has(row.id)}
+                      onChange={() => toggleItem(row.id)}
+                      aria-label={`Select ${row.name}`}
+                    />
+                  </div>
+
+                  {/* Product info */}
                   <div className={styles.itemProduct}>
+                    <div className={styles.thumbWrap}>
+                      <Image
+                        src={row.img}
+                        alt={row.name}
+                        width={72}
+                        height={72}
+                        className={styles.thumb}
+                      />
+                    </div>
+                    <div className={styles.productInfo}>
+                      <h3 className={styles.productName}>{row.name}</h3>
+                      {row.description && (
+                        <p className={styles.productDesc}>{row.description}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Price */}
+                  <div className={styles.itemPrice} data-label="Price">
+                    {row.price > 0
+                      ? formatPrice(row.price)
+                      : <span className={styles.contactBadge}>Contact us</span>}
+                  </div>
+
+                  {/* Qty */}
+                  <div className={styles.itemQty} data-label="Qty">
+                    <div className={styles.qtyControl}>
+                      <button
+                        type="button"
+                        className={styles.qtyBtn}
+                        onClick={() => {
+                          const cur = qtyEdits[row.id] ?? row.qty
+                          handleUpdateQty(row.id, Math.max(1, Number(cur) - 1))
+                        }}
+                        aria-label="Decrease quantity"
+                      >−</button>
+                      <input
+                        type="number"
+                        min={1}
+                        className={styles.qtyInput}
+                        value={qtyEdits[row.id] ?? row.qty}
+                        onChange={(e) =>
+                          setQtyEdits((prev) => ({
+                            ...prev,
+                            [row.id]: e.target.value === '' ? '' : parseInt(e.target.value, 10),
+                          }))
+                        }
+                        onBlur={(e) => {
+                          const num = parseInt(e.target.value, 10)
+                          if (!Number.isNaN(num) && num >= 1) handleUpdateQty(row.id, num)
+                          else setQtyEdits((prev) => ({ ...prev, [row.id]: undefined }))
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const num = parseInt(qtyEdits[row.id] ?? row.qty, 10)
+                            if (!Number.isNaN(num) && num >= 1) handleUpdateQty(row.id, num)
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className={styles.qtyBtn}
+                        onClick={() => {
+                          const cur = qtyEdits[row.id] ?? row.qty
+                          handleUpdateQty(row.id, Number(cur) + 1)
+                        }}
+                        aria-label="Increase quantity"
+                      >+</button>
+                    </div>
+                  </div>
+
+                  {/* Subtotal */}
+                  <div className={styles.itemSubtotal} data-label="Subtotal">
+                    {row.price > 0 ? formatPrice(row.subtotal) : '—'}
+                  </div>
+
+                  {/* Remove */}
+                  <div className={styles.itemRemove}>
                     <button
                       type="button"
                       className={styles.removeBtn}
@@ -125,55 +274,11 @@ export default function CartPage() {
                     >
                       <FiX />
                     </button>
-                    <div className={styles.thumbWrap}>
-                      <Image
-                        src={row.img}
-                        alt=""
-                        width={56}
-                        height={56}
-                        className={styles.thumb}
-                      />
-                    </div>
-                    <h3 className={styles.productName}>{row.name}</h3>
-                  </div>
-                  <div className={styles.itemPrice}>
-                    {formatPrice(row.price)}
-                  </div>
-                  <div className={styles.itemQty}>
-                    <input
-                      type="number"
-                      min={1}
-                      className={styles.qtyInput}
-                      value={qtyEdits[row.id] ?? row.qty}
-                      onChange={(e) =>
-                        setQtyEdits((prev) => ({
-                          ...prev,
-                          [row.id]: e.target.value === '' ? '' : parseInt(e.target.value, 10),
-                        }))
-                      }
-                      onBlur={(e) => {
-                        const v = e.target.value
-                        const num = parseInt(v, 10)
-                        if (!Number.isNaN(num) && num >= 1)
-                          handleUpdateQty(row.id, num)
-                        else
-                          setQtyEdits((prev) => ({ ...prev, [row.id]: undefined }))
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          const num = parseInt(qtyEdits[row.id] ?? row.qty, 10)
-                          if (!Number.isNaN(num) && num >= 1)
-                            handleUpdateQty(row.id, num)
-                        }
-                      }}
-                    />
-                  </div>
-                  <div className={styles.itemSubtotal}>
-                    {formatPrice(row.subtotal)}
                   </div>
                 </div>
               ))}
 
+              {/* Update + coupon footer */}
               <div className={styles.updateWrap}>
                 <button
                   type="button"
@@ -181,11 +286,9 @@ export default function CartPage() {
                   onClick={() => {
                     Object.entries(qtyEdits).forEach(([id, val]) => {
                       const num = parseInt(val, 10)
-                      if (!Number.isNaN(num) && num >= 1)
-                        setCartItemQty(Number(id), num)
+                      if (!Number.isNaN(num) && num >= 1) handleUpdateQty(id, num)
                     })
                     setQtyEdits({})
-                    setCartItems(getCart())
                   }}
                 >
                   Update cart
@@ -196,29 +299,34 @@ export default function CartPage() {
                 <input
                   type="text"
                   className={styles.couponInput}
-                  placeholder="Coupon"
+                  placeholder="Coupon code"
                   value={coupon}
                   onChange={(e) => setCoupon(e.target.value)}
                   aria-label="Coupon code"
                 />
-                <button type="button" className={styles.applyCouponBtn}>
-                  Apply coupon
-                </button>
+                <button type="button" className={styles.applyCouponBtn}>Apply coupon</button>
               </div>
 
               <div className={styles.disclaimerSection}>
                 <h4 className={styles.disclaimerTitle}>Disclaimer</h4>
                 <p className={styles.disclaimerText}>
-                  Note: Please note that all orders will be verified by our sales
-                  team. They may contact you to confirm details such as the order
-                  placement, confirmed date, and the service you are availing.
+                  Note: Please note that all orders will be verified by our sales team. They may
+                  contact you to confirm details such as the order placement, confirmed date, and
+                  the service you are availing.
                 </p>
               </div>
             </div>
 
-            {/* RIGHT: Cart totals + actions */}
+            {/* RIGHT: Totals */}
             <aside className={styles.totalsSection}>
-              <h2 className={styles.totalsTitle}>Cart totals</h2>
+              <h2 className={styles.totalsTitle}>
+                {selected.size > 0 ? 'Selected totals' : 'Cart totals'}
+              </h2>
+              {selected.size > 0 && (
+                <p className={styles.totalsNote}>
+                  Showing totals for {selected.size} selected item{selected.size > 1 ? 's' : ''}
+                </p>
+              )}
               <table className={styles.totalsTable}>
                 <tbody>
                   <tr>
@@ -232,19 +340,17 @@ export default function CartPage() {
                 </tbody>
               </table>
               <div className={styles.actions}>
-                <button
-                  type="button"
-                  className={styles.printBtn}
-                  onClick={handlePrintInvoice}
-                >
+                <button type="button" className={styles.printBtn} onClick={handlePrintInvoice}>
                   Print Invoice
                 </button>
                 <Link
-                  href="/buyer/login?redirect=/cart"
-                  className={styles.checkoutBtn}
+                  href={checkoutHref}
+                  className={`${styles.checkoutBtn} ${selected.size === 0 ? styles.checkoutBtnAll : ''}`}
                   style={{ textAlign: 'center', display: 'block', textDecoration: 'none' }}
                 >
-                  Proceed to checkout
+                  {selected.size > 0
+                    ? `Book Now (${selected.size} item${selected.size > 1 ? 's' : ''})`
+                    : 'Proceed to checkout'}
                 </Link>
               </div>
             </aside>

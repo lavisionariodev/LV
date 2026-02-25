@@ -9,19 +9,17 @@ export default function PublicNavbar() {
   const [query, setQuery] = useState('')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
-  const [servicesOpen, setServicesOpen] = useState(false)
+  const [shopOpen, setShopOpen] = useState(false)
   const [howItWorksOpen, setHowItWorksOpen] = useState(false)
   const [aboutUsOpen, setAboutUsOpen] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const router = useRouter()
   const searchRef = useRef(null)
 
-  const servicesItems = [
-    'Funeral Packages',
-    'Wake & Viewing',
-    'Burial & Cremation',
-    'Memorial Add-Ons',
-    'Custom Packages'
+  const shopItems = [
+    { label: 'Service Listings', href: '/services' },
+    { label: 'Custom Packages', href: '/packages' },
+    { label: 'Marketplace Products', href: '/marketplace' }
   ]
 
   const howItWorksItems = [
@@ -32,11 +30,11 @@ export default function PublicNavbar() {
   ]
 
   const aboutUsItems = [
-    'Our Story',
-    'Mission & Vision',
-    'Why La Visionario',
-    'Partners',
-    'Testimonials'
+    { label: 'Our Story', sectionId: 'our-story' },
+    { label: 'Mission & Vision', sectionId: 'mission-vision' },
+    { label: 'Why La Visionario', sectionId: 'why-la-visionario' },
+    { label: 'Partners', sectionId: 'partners' },
+    { label: 'Testimonials', sectionId: 'testimonials' }
   ]
 
   useEffect(() => {
@@ -137,20 +135,20 @@ export default function PublicNavbar() {
             
             <div 
               className={styles.navItem}
-              onMouseEnter={() => setServicesOpen(true)}
-              onMouseLeave={() => setServicesOpen(false)}
+              onMouseEnter={() => setShopOpen(true)}
+              onMouseLeave={() => setShopOpen(false)}
             >
               <button className={styles.navLinkDropdown}>
-                SERVICES
+                SHOP
                 <svg className={styles.dropdownIcon} xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
               </button>
-              {servicesOpen && (
+              {shopOpen && (
                 <div className={styles.dropdownMenu}>
-                  {servicesItems.map((item, index) => (
-                    <Link key={index} href={`/services/${item.toLowerCase().replace(/\s+/g, '-')}`} className={styles.dropdownItem}>
-                      {item}
+                  {shopItems.map((item, index) => (
+                    <Link key={index} href={item.href} className={styles.dropdownItem}>
+                      {item.label}
                     </Link>
                   ))}
                 </div>
@@ -197,8 +195,8 @@ export default function PublicNavbar() {
               {aboutUsOpen && (
                 <div className={styles.dropdownMenu}>
                   {aboutUsItems.map((item, index) => (
-                    <Link key={index} href={`/about/${item.toLowerCase().replace(/\s+/g, '-')}`} className={styles.dropdownItem}>
-                      {item}
+                    <Link key={index} href={`/about#${item.sectionId}`} className={styles.dropdownItem}>
+                      {item.label}
                     </Link>
                   ))}
                 </div>
@@ -241,10 +239,23 @@ export default function PublicNavbar() {
       {mobileMenuOpen && (
         <div className={styles.mobileMenu}>
           <Link href="/" className={styles.mobileLink}>HOME</Link>
-          <Link href="/services" className={styles.mobileLink}>SERVICES</Link>
+          <div className={styles.mobileSubsection}>
+            <span className={styles.mobileSubsectionTitle}>SHOP</span>
+            <Link href="/services" className={styles.mobileLink}>Service Listings</Link>
+            <Link href="/packages" className={styles.mobileLink}>Custom Packages</Link>
+            <Link href="/marketplace" className={styles.mobileLink}>Marketplace Products</Link>
+          </div>
           <Link href="/partners" className={styles.mobileLink}>FUNERAL HOMES / PARTNERS</Link>
           <Link href="/how-it-works" className={styles.mobileLink}>HOW IT WORKS</Link>
-          <Link href="/about" className={styles.mobileLink}>ABOUT US</Link>
+          <div className={styles.mobileSubsection}>
+            <span className={styles.mobileSubsectionTitle}>ABOUT US</span>
+            <Link href="/about" className={styles.mobileLink}>About</Link>
+            {aboutUsItems.map((item, index) => (
+              <Link key={index} href={`/about#${item.sectionId}`} className={styles.mobileLink}>
+                {item.label}
+              </Link>
+            ))}
+          </div>
           <Link href="/book-now" className={styles.mobileLink}>BOOK NOW</Link>
           
           <div className={styles.mobileDivider}></div>

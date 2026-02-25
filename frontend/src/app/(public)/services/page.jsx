@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { SERVICES, CATEGORIES, PROVIDERS, LISTINGS } from './data'
 import styles from './services.module.css'
 
@@ -11,6 +11,9 @@ export default function ServicesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState('popular')
   const [compareIds, setCompareIds] = useState([])
+  const [showCompareModal, setShowCompareModal] = useState(false)
+  const [compareStep, setCompareStep] = useState('selecting') // 'selecting' | 'ready' | 'viewing'
+  const [searchFocused, setSearchFocused] = useState(false)
 
   const filteredListings = useMemo(() => {
     let list = [...LISTINGS]
@@ -56,26 +59,74 @@ export default function ServicesPage() {
     return map
   }, [filteredListings, activeCategory, searchQuery])
 
+  // Derive comparison data
+  const compareListings = useMemo(() => {
+    return compareIds.map((id) => {
+      const listing = LISTINGS.find((l) => l.id === id)
+      const provider = PROVIDERS.find((p) => p.id === listing?.providerId)
+      const service = SERVICES.find((s) => s.id === listing?.serviceId)
+      return { listing, provider, service }
+    }).filter((x) => x.listing)
+  }, [compareIds])
+
   function toggleCompare(id) {
-    setCompareIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : prev.length < 3 ? [...prev, id] : prev
-    )
+    setCompareIds((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id)
+      if (prev.length < 3) return [...prev, id]
+      return prev
+    })
+  }
+
+  function handleViewComparison() {
+    if (compareIds.length >= 2) {
+      setShowCompareModal(true)
+    }
+  }
+
+  function closeCompareModal() {
+    setShowCompareModal(false)
   }
 
   const isFiltered = activeCategory !== 'all' || !!searchQuery.trim()
 
+  // Compute compare highlights
+  const lowestPriceId = useMemo(() => {
+    if (compareListings.length < 2) return null
+    return compareListings.reduce((a, b) => (a.listing.price <= b.listing.price ? a : b)).listing?.id
+  }, [compareListings])
+
+  const highestRatedId = useMemo(() => {
+    if (compareListings.length < 2) return null
+    return compareListings.reduce((a, b) => ((a.provider?.rating ?? 0) >= (b.provider?.rating ?? 0) ? a : b)).listing?.id
+  }, [compareListings])
+
+  const mostPopularId = useMemo(() => {
+    if (compareListings.length < 2) return null
+    const pop = compareListings.find((x) => x.listing.popular)
+    return pop?.listing?.id ?? null
+  }, [compareListings])
+
+  // Best value = highest inclusions per price ratio
+  const bestValueId = useMemo(() => {
+    if (compareListings.length < 2) return null
+    return compareListings.reduce((a, b) => {
+      const aScore = (a.listing.inclusions.length / a.listing.price) * (a.provider?.rating ?? 1)
+      const bScore = (b.listing.inclusions.length / b.listing.price) * (b.provider?.rating ?? 1)
+      return aScore >= bScore ? a : b
+    }).listing?.id
+  }, [compareListings])
+
   return (
     <section className={styles.servicesPage}>
 
-      {/* ── Hero — unchanged ── */}
+      {/* ── Hero ── */}
       <header className={styles.hero}>
         <div className={styles.heroOverlay} />
         <div className={styles.heroInner}>
+          <p className={styles.heroEyebrow}>La Visionario</p>
           <h1 className={styles.heroTitle}>Our Services</h1>
           <p className={styles.breadcrumb}>
-            <Link href="/" className={styles.crumb}>
-              Home
-            </Link>
+            <Link href="/" className={styles.crumb}>Home</Link>
             <span className={styles.slash}>/</span>
             <span className={styles.crumbActive}>Services</span>
           </p>
@@ -84,17 +135,19 @@ export default function ServicesPage() {
 
       <div className={styles.content}>
 
-        {/* ── Intro — unchanged ── */}
+        {/* ── Intro ── */}
         <div className={styles.intro}>
-          <h2 className={styles.introTitle}>What we offer</h2>
+          <div className={styles.introRule} />
+          <h2 className={styles.introTitle}>What We Offer</h2>
           <p className={styles.introText}>
             We provide a range of funeral and memorial services to support you and your family with care and respect.
           </p>
+          <div className={styles.introRule} />
         </div>
 
         {/* ── Search + Sort bar ── */}
         <div className={styles.toolbar}>
-          <div className={styles.searchWrap}>
+          <div className={`${styles.searchWrap}${searchFocused ? ` ${styles.searchWrapFocused}` : ''}`}>
             <svg className={styles.searchIcon} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
               <circle cx="9" cy="9" r="6" />
               <path d="M15 15l3 3" strokeLinecap="round" />
@@ -102,13 +155,17 @@ export default function ServicesPage() {
             <input
               className={styles.searchInput}
               type="text"
-              placeholder="Search services or providers…"
+              placeholder="Search services, providers, or inclusions…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
             />
             {searchQuery && (
-              <button className={styles.searchClear} onClick={() => setSearchQuery('')} aria-label="Clear">
-                ×
+              <button className={styles.searchClear} onClick={() => setSearchQuery('')} aria-label="Clear search">
+                <svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M2 2l8 8M10 2l-8 8" />
+                </svg>
               </button>
             )}
           </div>
@@ -132,69 +189,142 @@ export default function ServicesPage() {
               onClick={() => setActiveCategory(cat.id)}
             >
               {cat.label}
+              {activeCategory === cat.id && cat.id !== 'all' && (
+                <span className={styles.catPillCount}>
+                  {filteredListings.length}
+                </span>
+              )}
             </button>
           ))}
         </div>
 
         {/* ── Compare bar ── */}
         {compareIds.length > 0 && (
-          <div className={styles.compareBar}>
+          <div className={`${styles.compareBar}${compareIds.length >= 2 ? ` ${styles.compareBarReady}` : ''}`}>
             <div className={styles.compareBarInner}>
-              <span className={styles.compareBarLabel}>
-                Comparing {compareIds.length} service{compareIds.length > 1 ? 's' : ''}
-              </span>
+              <div className={styles.compareBarLeft}>
+                <div className={styles.compareBarIcon}>
+                  <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+                    <path d="M2 4h12M2 8h8M2 12h10" />
+                  </svg>
+                </div>
+                <div>
+                  <span className={styles.compareBarLabel}>
+                    {compareIds.length < 2
+                      ? `Select ${2 - compareIds.length} more to compare`
+                      : `${compareIds.length} service${compareIds.length > 1 ? 's' : ''} ready to compare`}
+                  </span>
+                  <div className={styles.compareProgress}>
+                    {[0, 1, 2].map((i) => (
+                      <div
+                        key={i}
+                        className={`${styles.compareProgressDot}${i < compareIds.length ? ` ${styles.compareProgressDotFilled}` : ''}`}
+                      />
+                    ))}
+                    <span className={styles.compareProgressHint}>max 3</span>
+                  </div>
+                </div>
+              </div>
+
               <div className={styles.compareChips}>
                 {compareIds.map((id) => {
                   const listing = LISTINGS.find((l) => l.id === id)
                   return (
                     <span key={id} className={styles.compareChip}>
-                      {listing?.name}
-                      <button className={styles.compareChipRemove} onClick={() => toggleCompare(id)}>×</button>
+                      <span className={styles.compareChipName}>{listing?.name}</span>
+                      <button className={styles.compareChipRemove} onClick={() => toggleCompare(id)} aria-label={`Remove ${listing?.name}`}>
+                        <svg viewBox="0 0 10 10" width="9" height="9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                          <path d="M2 2l6 6M8 2l-6 6" />
+                        </svg>
+                      </button>
                     </span>
                   )
                 })}
               </div>
-              {compareIds.length >= 2 && (
-                <button className={styles.compareBarCta}>View Comparison</button>
-              )}
-              <button className={styles.compareBarClear} onClick={() => setCompareIds([])}>Clear all</button>
+
+              <div className={styles.compareBarActions}>
+                {compareIds.length >= 2 && (
+                  <button className={styles.compareBarCta} onClick={handleViewComparison}>
+                    Compare Now
+                    <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ marginLeft: 5 }}>
+                      <path d="M2 6h8M7 3l3 3-3 3" />
+                    </svg>
+                  </button>
+                )}
+                <button className={styles.compareBarClear} onClick={() => setCompareIds([])}>Clear all</button>
+              </div>
             </div>
           </div>
         )}
 
-        {/* ── Results count ── */}
+        {/* ── Results count + active filter pills ── */}
         {isFiltered && (
-          <p className={styles.resultsCount}>
-            {filteredListings.length} result{filteredListings.length !== 1 ? 's' : ''}
-            {activeCategory !== 'all' ? ` in ${CATEGORIES.find((c) => c.id === activeCategory)?.label}` : ''}
-            {searchQuery ? ` for "${searchQuery}"` : ''}
-          </p>
+          <div className={styles.resultsBar}>
+            <p className={styles.resultsCount}>
+              <span className={styles.resultsNum}>{filteredListings.length}</span>
+              {' '}result{filteredListings.length !== 1 ? 's' : ''}
+              {activeCategory !== 'all' && (
+                <span className={styles.resultsFilter}>
+                  {' '}in <strong>{CATEGORIES.find((c) => c.id === activeCategory)?.label}</strong>
+                </span>
+              )}
+              {searchQuery && (
+                <span className={styles.resultsFilter}>
+                  {' '}for <strong>"{searchQuery}"</strong>
+                </span>
+              )}
+            </p>
+            {(activeCategory !== 'all' || searchQuery) && (
+              <button
+                className={styles.resultsClearAll}
+                onClick={() => { setSearchQuery(''); setActiveCategory('all') }}
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
         )}
 
         {/* ── Empty state ── */}
         {filteredListings.length === 0 && (
           <div className={styles.emptyState}>
-            <p className={styles.emptyText}>No services match your search.</p>
+            <div className={styles.emptyIcon}>
+              <svg viewBox="0 0 40 40" width="40" height="40" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+                <circle cx="18" cy="18" r="10" />
+                <path d="M26 26l8 8" />
+                <path d="M14 18h8M18 14v8" opacity="0.3" />
+              </svg>
+            </div>
+            <p className={styles.emptyTitle}>No services found</p>
+            <p className={styles.emptyText}>
+              Try adjusting your search or browsing a different category.
+            </p>
             <button className={styles.emptyReset} onClick={() => { setSearchQuery(''); setActiveCategory('all') }}>
-              Reset filters
+              Reset all filters
             </button>
           </div>
         )}
 
-        {/* ── GROUPED VIEW (default: all categories, no search) ── */}
+        {/* ── GROUPED VIEW ── */}
         {grouped && filteredListings.length > 0 && (
           <div className={styles.groupedView}>
             {Object.values(grouped).map(({ service, items }) => (
               <div key={service.id} className={styles.serviceGroup}>
                 <div className={styles.groupHeader}>
                   <div className={styles.groupHeaderLeft}>
-                    <h3 className={styles.groupTitle}>{service.name}</h3>
-                    <p className={styles.groupDesc}>{service.description}</p>
+                    <span className={styles.groupAccent} />
+                    <div>
+                      <h3 className={styles.groupTitle}>{service.name}</h3>
+                      <p className={styles.groupDesc}>{service.description}</p>
+                    </div>
                   </div>
                   <div className={styles.groupHeaderRight}>
                     <span className={styles.groupCount}>{items.length} provider{items.length !== 1 ? 's' : ''}</span>
                     <Link href={`/services/${service.id}`} className={styles.groupViewAll}>
-                      View all →
+                      View all
+                      <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ marginLeft: 4 }}>
+                        <path d="M2 6h8M7 3l3 3-3 3" />
+                      </svg>
                     </Link>
                   </div>
                 </div>
@@ -217,7 +347,7 @@ export default function ServicesPage() {
           </div>
         )}
 
-        {/* ── FLAT VIEW (filtered / searched) ── */}
+        {/* ── FLAT VIEW ── */}
         {!grouped && filteredListings.length > 0 && (
           <div className={styles.grid}>
             {filteredListings.map((listing) => {
@@ -238,21 +368,186 @@ export default function ServicesPage() {
         )}
 
       </div>
+
+      {/* ── Compare Modal ── */}
+      {showCompareModal && (
+        <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && closeCompareModal()}>
+          <div className={styles.modal}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h2 className={styles.modalTitle}>Service Comparison</h2>
+                <p className={styles.modalSubtitle}>Comparing {compareListings.length} services side by side</p>
+              </div>
+              <button className={styles.modalClose} onClick={closeCompareModal} aria-label="Close">
+                <svg viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M2 2l10 10M12 2L2 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Highlight badges */}
+            <div className={styles.compareHighlights}>
+              {lowestPriceId && (
+                <div className={styles.compareHighlight}>
+                  <span className={styles.highlightIcon}>💰</span>
+                  <div>
+                    <p className={styles.highlightLabel}>Lowest Price</p>
+                    <p className={styles.highlightValue}>
+                      {compareListings.find((x) => x.listing.id === lowestPriceId)?.listing.name}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {highestRatedId && (
+                <div className={styles.compareHighlight}>
+                  <span className={styles.highlightIcon}>⭐</span>
+                  <div>
+                    <p className={styles.highlightLabel}>Highest Rated</p>
+                    <p className={styles.highlightValue}>
+                      {compareListings.find((x) => x.listing.id === highestRatedId)?.listing.name}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {mostPopularId && (
+                <div className={styles.compareHighlight}>
+                  <span className={styles.highlightIcon}>🔥</span>
+                  <div>
+                    <p className={styles.highlightLabel}>Most Popular</p>
+                    <p className={styles.highlightValue}>
+                      {compareListings.find((x) => x.listing.id === mostPopularId)?.listing.name}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {bestValueId && (
+                <div className={styles.compareHighlight}>
+                  <span className={styles.highlightIcon}>✦</span>
+                  <div>
+                    <p className={styles.highlightLabel}>Best Value</p>
+                    <p className={styles.highlightValue}>
+                      {compareListings.find((x) => x.listing.id === bestValueId)?.listing.name}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Comparison table */}
+            <div className={styles.compareTableWrap}>
+              <table className={styles.compareTable}>
+                <thead>
+                  <tr>
+                    <th className={styles.compareTableLabel} />
+                    {compareListings.map(({ listing, provider }) => (
+                      <th key={listing.id} className={styles.compareTableHead}>
+                        <div className={styles.compareColHeader}>
+                          <div className={styles.compareColAvatar}>{provider?.name.charAt(0)}</div>
+                          <p className={styles.compareColName}>{listing.name}</p>
+                          <p className={styles.compareColProvider}>{provider?.name}</p>
+                          {listing.id === bestValueId && (
+                            <span className={styles.compareColBestBadge}>Best Value</span>
+                          )}
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className={styles.compareRow}>
+                    <td className={styles.compareRowLabel}>Starting Price</td>
+                    {compareListings.map(({ listing }) => (
+                      <td key={listing.id} className={`${styles.compareRowCell} ${listing.id === lowestPriceId ? styles.compareCellHighlight : ''}`}>
+                        <span className={styles.comparePriceVal}>₱{listing.price.toLocaleString('en-PH')}</span>
+                        {listing.id === lowestPriceId && <span className={styles.compareCellTag}>Lowest</span>}
+                      </td>
+                    ))}
+                  </tr>
+                  <tr className={styles.compareRow}>
+                    <td className={styles.compareRowLabel}>Provider Rating</td>
+                    {compareListings.map(({ listing, provider }) => (
+                      <td key={listing.id} className={`${styles.compareRowCell} ${listing.id === highestRatedId ? styles.compareCellHighlight : ''}`}>
+                        <div className={styles.compareRating}>
+                          <span className={styles.compareRatingNum}>{provider?.rating}</span>
+                          <span className={styles.compareRatingMax}>/5</span>
+                          <span className={styles.compareRatingCount}>({provider?.reviews} reviews)</span>
+                        </div>
+                        {listing.id === highestRatedId && <span className={styles.compareCellTag}>Top Rated</span>}
+                      </td>
+                    ))}
+                  </tr>
+                  <tr className={styles.compareRow}>
+                    <td className={styles.compareRowLabel}>Location</td>
+                    {compareListings.map(({ listing, provider }) => (
+                      <td key={listing.id} className={styles.compareRowCell}>
+                        <span className={styles.compareText}>{provider?.location}</span>
+                      </td>
+                    ))}
+                  </tr>
+                  <tr className={styles.compareRow}>
+                    <td className={styles.compareRowLabel}>Inclusions</td>
+                    {compareListings.map(({ listing }) => (
+                      <td key={listing.id} className={styles.compareRowCell}>
+                        <ul className={styles.compareInclusionList}>
+                          {listing.inclusions.map((inc, i) => (
+                            <li key={i} className={styles.compareInclusionItem}>
+                              <svg viewBox="0 0 10 10" width="9" height="9" fill="none" stroke="var(--color-gold-base, #B8962E)" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}>
+                                <path d="M2 5l2 2 4-4" />
+                              </svg>
+                              {inc}
+                            </li>
+                          ))}
+                        </ul>
+                      </td>
+                    ))}
+                  </tr>
+                  <tr className={styles.compareRow}>
+                    <td className={styles.compareRowLabel}>Popularity</td>
+                    {compareListings.map(({ listing }) => (
+                      <td key={listing.id} className={`${styles.compareRowCell} ${listing.id === mostPopularId ? styles.compareCellHighlight : ''}`}>
+                        {listing.popular
+                          ? <span className={styles.comparePopularBadge}>Most Popular</span>
+                          : <span className={styles.compareText}>—</span>}
+                      </td>
+                    ))}
+                  </tr>
+                  <tr className={styles.compareRowActions}>
+                    <td className={styles.compareRowLabel} />
+                    {compareListings.map(({ listing }) => (
+                      <td key={listing.id} className={styles.compareRowCell}>
+                        <Link href={`/services/${listing.serviceId}`} className={styles.compareViewBtn}>
+                          View Details
+                        </Link>
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button className={styles.modalDismiss} onClick={closeCompareModal}>Close</button>
+              <button className={styles.modalClearCompare} onClick={() => { setCompareIds([]); closeCompareModal() }}>
+                Clear & Start Over
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </section>
   )
 }
 
 // ─── ListingCard ──────────────────────────────────────────────────────────────
-// Reuses .card, .cardImage, .cardBody, .cardTitle, .cardDesc, .cardCta
-// New marketplace elements use new classes defined in the CSS module
 
 function ListingCard({ listing, service, styles, inCompare, onToggleCompare, compareDisabled }) {
   const provider = PROVIDERS.find((p) => p.id === listing.providerId)
 
   return (
-    <div className={`${styles.card} ${styles.listingCard}`}>
+    <div className={`${styles.card} ${styles.listingCard}${inCompare ? ` ${styles.listingCardSelected}` : ''}`}>
 
-      {/* Image wrapper with badge overlays */}
+      {/* Image wrapper */}
       <div className={styles.listingImageWrap}>
         <Image
           src={service?.image ?? '/sample/services/2.jpg'}
@@ -267,15 +562,20 @@ function ListingCard({ listing, service, styles, inCompare, onToggleCompare, com
             {provider.badge}
           </span>
         )}
+        {inCompare && (
+          <div className={styles.compareSelectedOverlay}>
+            <span className={styles.compareSelectedCheck}>✓</span>
+          </div>
+        )}
       </div>
 
-      {/* Body — reuses .cardBody */}
+      {/* Body */}
       <div className={`${styles.cardBody} ${styles.listingBody}`}>
 
         {/* Provider row */}
         <div className={styles.providerRow}>
           <div className={styles.providerAvatar}>{provider?.name.charAt(0)}</div>
-          <div>
+          <div className={styles.providerInfo}>
             <p className={styles.providerName}>{provider?.name}</p>
             <p className={styles.providerLocation}>
               <svg viewBox="0 0 12 14" width="9" height="9" fill="var(--color-gold-base, #B8962E)" style={{ marginRight: 3, flexShrink: 0, display: 'inline-block', verticalAlign: 'middle' }}>
@@ -301,9 +601,8 @@ function ListingCard({ listing, service, styles, inCompare, onToggleCompare, com
 
         <div className={styles.listingDivider} />
 
-        {/* Service name + price row */}
+        {/* Service name + price */}
         <div className={styles.listingTitleRow}>
-          {/* reuses .cardTitle */}
           <h3 className={styles.cardTitle}>{listing.name}</h3>
           <div className={styles.priceBlock}>
             <span className={styles.priceLabel}>Starting at</span>
@@ -330,16 +629,26 @@ function ListingCard({ listing, service, styles, inCompare, onToggleCompare, com
 
         {/* Actions */}
         <div className={styles.cardActions}>
-          {/* reuses .cardCta as base, extended via .ctaBtn */}
           <Link href={`/services/${listing.serviceId}`} className={`${styles.cardCta} ${styles.ctaBtn}`}>
-            View details →
+            View details
+            <svg viewBox="0 0 12 12" width="9" height="9" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" style={{ marginLeft: 5 }}>
+              <path d="M2 6h8M7 3l3 3-3 3" />
+            </svg>
           </Link>
           <button
-            className={`${styles.compareBtn}${inCompare ? ` ${styles.compareBtnActive}` : ''}`}
+            className={`${styles.compareBtn}${inCompare ? ` ${styles.compareBtnActive}` : ''}${compareDisabled ? ` ${styles.compareBtnDisabled}` : ''}`}
             onClick={() => onToggleCompare(listing.id)}
             disabled={compareDisabled}
+            title={compareDisabled ? 'Maximum 3 services can be compared at once' : inCompare ? 'Remove from comparison' : 'Add to comparison'}
           >
-            {inCompare ? '✓ Added' : '+ Compare'}
+            {inCompare ? (
+              <>
+                <svg viewBox="0 0 10 10" width="9" height="9" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ marginRight: 4 }}>
+                  <path d="M2 5l2 2 4-4" />
+                </svg>
+                Added
+              </>
+            ) : '+ Compare'}
           </button>
         </div>
 
