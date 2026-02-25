@@ -271,6 +271,7 @@
   margin: 0 0 16px;
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -668,6 +669,29 @@
   .tabBtn {
     padding: 12px 14px;
     font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero {
+    padding: 80px 16px 40px;
+    min-height: 200px;
+  }
+
+  .content {
+    padding: 32px 16px 48px;
+  }
+
+  .galleryCol {
+    padding: 16px 16px 12px;
+  }
+
+  .body {
+    padding: 20px 16px 24px;
+  }
+
+  .notFound {
+    padding: 40px 16px;
   }
 }
 

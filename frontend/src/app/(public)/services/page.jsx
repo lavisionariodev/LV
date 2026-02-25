@@ -123,7 +123,6 @@ export default function ServicesPage() {
       <header className={styles.hero}>
         <div className={styles.heroOverlay} />
         <div className={styles.heroInner}>
-          <p className={styles.heroEyebrow}>La Visionario</p>
           <h1 className={styles.heroTitle}>Our Services</h1>
           <p className={styles.breadcrumb}>
             <Link href="/" className={styles.crumb}>Home</Link>

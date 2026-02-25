@@ -3,11 +3,16 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useCart } from '@/contexts/CartContext'
 import styles from './PublicNavbar.module.css'
 
 export default function PublicNavbar() {
+  const { cartCount } = useCart()
   const [query, setQuery] = useState('')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mobileShopOpen, setMobileShopOpen] = useState(false)
+  const [mobileHowItWorksOpen, setMobileHowItWorksOpen] = useState(false)
+  const [mobileAboutUsOpen, setMobileAboutUsOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [shopOpen, setShopOpen] = useState(false)
   const [howItWorksOpen, setHowItWorksOpen] = useState(false)
@@ -214,17 +219,24 @@ export default function PublicNavbar() {
 
           <div className={styles.navActions}>
             <div className={styles.searchContainer}>
-              <button 
-                className={styles.searchBtn} 
-                aria-label="Cart"
-                onClick={() => router.push('/cart')}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="9" cy="21" r="1"></circle>
-                  <circle cx="20" cy="21" r="1"></circle>
-                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-                </svg>
-              </button>
+              <span className={styles.cartBtnWrap}>
+                <button 
+                  className={styles.searchBtn} 
+                  aria-label="Cart"
+                  onClick={() => router.push('/cart')}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="9" cy="21" r="1"></circle>
+                    <circle cx="20" cy="21" r="1"></circle>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                  </svg>
+                </button>
+                {cartCount > 0 && (
+                  <span className={styles.cartDot} aria-label={`${cartCount} items in cart`}>
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                )}
+              </span>
             </div>
             <button 
               className={styles.mobileToggle}
@@ -241,41 +253,91 @@ export default function PublicNavbar() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className={styles.mobileMenu}>
+        <div className={styles.mobileMenu} onClick={() => setMobileMenuOpen(false)} role="presentation">
           <Link href="/" className={styles.mobileLink}>HOME</Link>
+
           <div className={styles.mobileSubsection}>
-            <span className={styles.mobileSubsectionTitle}>SHOP</span>
-            <Link href="/services" className={styles.mobileLink}>Service Listings</Link>
-            <Link href="/packages" className={styles.mobileLink}>Custom Packages</Link>
-            <Link href="/marketplace" className={styles.mobileLink}>Marketplace Products</Link>
+            <button
+              type="button"
+              className={styles.mobileSubsectionToggle}
+              onClick={(e) => { e.stopPropagation(); setMobileShopOpen((o) => !o) }}
+              aria-expanded={mobileShopOpen}
+              aria-controls="mobile-shop-links"
+            >
+              <span className={styles.mobileSubsectionTitle}>SHOP</span>
+              <span className={`${styles.mobileSubsectionArrow} ${mobileShopOpen ? styles.mobileSubsectionArrowOpen : ''}`} aria-hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </span>
+            </button>
+            <div id="mobile-shop-links" className={`${styles.mobileSubsectionContent} ${mobileShopOpen ? styles.mobileSubsectionContentOpen : ''}`}>
+              <Link href="/services" className={styles.mobileLink}>Service Listings</Link>
+              <Link href="/packages" className={styles.mobileLink}>Custom Packages</Link>
+              <Link href="/marketplace" className={styles.mobileLink}>Marketplace Products</Link>
+            </div>
           </div>
+
           <Link href="/partners" className={styles.mobileLink}>FUNERAL HOMES / PARTNERS</Link>
+
           <div className={styles.mobileSubsection}>
-            <span className={styles.mobileSubsectionTitle}>HOW IT WORKS</span>
-            <Link href="/how-it-works" className={styles.mobileLink}>Overview</Link>
-            {howItWorksItems.map((item, index) => (
-              <Link
-                key={index}
-                href={`/how-it-works#${item.sectionId}`}
-                className={styles.mobileLink}
-              >
-                {item.label}
-              </Link>
-            ))}
+            <button
+              type="button"
+              className={styles.mobileSubsectionToggle}
+              onClick={(e) => { e.stopPropagation(); setMobileHowItWorksOpen((o) => !o) }}
+              aria-expanded={mobileHowItWorksOpen}
+              aria-controls="mobile-how-it-works-links"
+            >
+              <span className={styles.mobileSubsectionTitle}>HOW IT WORKS</span>
+              <span className={`${styles.mobileSubsectionArrow} ${mobileHowItWorksOpen ? styles.mobileSubsectionArrowOpen : ''}`} aria-hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </span>
+            </button>
+            <div id="mobile-how-it-works-links" className={`${styles.mobileSubsectionContent} ${mobileHowItWorksOpen ? styles.mobileSubsectionContentOpen : ''}`}>
+              <Link href="/how-it-works" className={styles.mobileLink}>Overview</Link>
+              {howItWorksItems.map((item, index) => (
+                <Link
+                  key={index}
+                  href={`/how-it-works#${item.sectionId}`}
+                  className={styles.mobileLink}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
           </div>
+
           <div className={styles.mobileSubsection}>
-            <span className={styles.mobileSubsectionTitle}>ABOUT US</span>
-            <Link href="/about" className={styles.mobileLink}>About</Link>
-            {aboutUsItems.map((item, index) => (
-              <Link key={index} href={`/about#${item.sectionId}`} className={styles.mobileLink}>
-                {item.label}
-              </Link>
-            ))}
+            <button
+              type="button"
+              className={styles.mobileSubsectionToggle}
+              onClick={(e) => { e.stopPropagation(); setMobileAboutUsOpen((o) => !o) }}
+              aria-expanded={mobileAboutUsOpen}
+              aria-controls="mobile-about-us-links"
+            >
+              <span className={styles.mobileSubsectionTitle}>ABOUT US</span>
+              <span className={`${styles.mobileSubsectionArrow} ${mobileAboutUsOpen ? styles.mobileSubsectionArrowOpen : ''}`} aria-hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </span>
+            </button>
+            <div id="mobile-about-us-links" className={`${styles.mobileSubsectionContent} ${mobileAboutUsOpen ? styles.mobileSubsectionContentOpen : ''}`}>
+              <Link href="/about" className={styles.mobileLink}>About</Link>
+              {aboutUsItems.map((item, index) => (
+                <Link key={index} href={`/about#${item.sectionId}`} className={styles.mobileLink}>
+                  {item.label}
+                </Link>
+              ))}
+            </div>
           </div>
+
           <Link href="/book-now" className={styles.mobileLink}>BOOK NOW</Link>
-          
+
           <div className={styles.mobileDivider}></div>
-          
+
           <Link href="/buyer/login" className={styles.mobileLink}>Sign In</Link>
         </div>
       )}

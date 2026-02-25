@@ -223,3 +223,18 @@
   }
 }
 
+@media (max-width: 480px) {
+  .hero {
+    padding: 60px 12px 32px;
+    min-height: 200px;
+  }
+
+  .content {
+    padding: 24px 12px 36px;
+  }
+
+  .card {
+    padding: 14px 14px 18px;
+  }
+}
+

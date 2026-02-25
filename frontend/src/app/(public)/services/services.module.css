@@ -1553,3 +1553,14 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 480px) {
+  .hero {
+    padding: 80px 16px 50px;
+    min-height: 260px;
+  }
+
+  .content {
+    padding: 24px 16px 40px;
+  }
+}
