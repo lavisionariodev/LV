@@ -283,6 +283,29 @@
   transform: scale(1.05);
 }
 
+.cartBtnWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.cartDot {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: 7px;
+  background: var(--color-gold-base);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 14px;
+  text-align: center;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
 .searchForm {
   position: absolute;
   right: 0;
@@ -390,6 +413,56 @@
   border-bottom: 1px solid rgba(168, 137, 74, 0.15);
 }
 
+.mobileSubsectionToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 0;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: #4D2D18;
+  text-transform: uppercase;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.2s ease;
+}
+
+.mobileSubsectionToggle:hover {
+  color: var(--color-gold-base);
+}
+
+.mobileSubsectionToggle .mobileSubsectionTitle {
+  padding: 0;
+}
+
+.mobileSubsectionArrow {
+  flex-shrink: 0;
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.25s ease;
+}
+
+.mobileSubsectionArrowOpen {
+  transform: rotate(180deg);
+}
+
+.mobileSubsectionContent {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease;
+}
+
+.mobileSubsectionContentOpen {
+  max-height: 400px;
+}
+
 .mobileSubsectionTitle {
   display: block;
   padding: 14px 0 8px 0;
@@ -440,6 +513,7 @@
 
   .mainNavInner {
     padding: 0 16px;
+    height: 58px;
   }
 
   .logoIcon {
@@ -459,9 +533,40 @@
   .followText {
     display: none;
   }
+
+  /* Touch targets: min 44px for hamburger and cart on mobile */
+  .mobileToggle {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px;
+    justify-content: center;
+  }
+
+  .searchBtn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px;
+  }
+
+  /* Mobile menu: scrollable, wrapped labels */
+  .mobileMenu {
+    max-height: calc(100vh - 110px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mobileLink,
+  .mobileSubsectionTitle {
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
 }
 
 @media (max-width: 480px) {
+  .topBarInner {
+    padding: 8px 12px;
+  }
+
   .socialLinks {
     gap: 6px;
   }
@@ -473,6 +578,17 @@
 
   .userLink span {
     display: none;
+  }
+
+  .userLink {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px;
+    justify-content: center;
+  }
+
+  .mainNavInner {
+    padding: 0 12px;
   }
 
   .logoIcon {
@@ -491,5 +607,9 @@
   .searchFormOpen {
     width: 120px;
     max-width: 120px;
+  }
+
+  .mobileMenu {
+    padding: 12px 16px;
   }
 }

@@ -182,3 +182,39 @@
 .card:hover .cardCta {
   text-decoration: underline;
 }
+
+/* ===== Mobile only ===== */
+@media (max-width: 768px) {
+  .hero {
+    padding: 70px 16px 40px;
+    min-height: 220px;
+  }
+
+  .content {
+    padding: 32px 16px 48px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero {
+    padding: 60px 12px 32px;
+    min-height: 200px;
+  }
+
+  .content {
+    padding: 24px 12px 40px;
+  }
+
+  .intro {
+    margin-bottom: 28px;
+  }
+
+  .cardBody {
+    padding: 16px 18px;
+  }
+}

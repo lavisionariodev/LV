@@ -120,3 +120,42 @@
 .sectionText:last-child {
   margin-bottom: 0;
 }
+
+/* ===== Mobile only ===== */
+@media (max-width: 768px) {
+  .hero {
+    padding: 70px 16px 40px;
+    min-height: 220px;
+  }
+
+  .content {
+    padding: 32px 16px 48px;
+  }
+
+  .section {
+    scroll-margin-top: 120px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero {
+    padding: 60px 12px 32px;
+    min-height: 200px;
+  }
+
+  .content {
+    padding: 24px 12px 40px;
+  }
+
+  .section {
+    scroll-margin-top: 100px;
+  }
+
+  .sectionTitle {
+    font-size: 20px;
+  }
+
+  .sectionText {
+    font-size: 14px;
+  }
+}

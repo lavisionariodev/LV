@@ -5,41 +5,14 @@ import Image from 'next/image'
 import Link from 'next/link'
 import styles from './cart.module.css'
 import { FiX, FiTrash2, FiShoppingBag } from 'react-icons/fi'
-
-// ─── Hardcoded sample data for UI preview ────────────────────────────────────
-const SAMPLE_ROWS = [
-  {
-    id:          'cremation-premium',
-    name:        'Premium Cremation Package',
-    img:         '/sample/services/2.jpg',
-    price:       45000,
-    description: 'Maharlika Funeral Homes · Full cremation service, urn of choice',
-    qty:         1,
-  },
-  {
-    id:          'burial-full',
-    name:        'Full Burial Service',
-    img:         '/sample/services/3.jpg',
-    price:       78500,
-    description: 'Sancta Maria · Casket viewing, embalming, burial coordination',
-    qty:         1,
-  },
-  {
-    id:          'memorial-classic',
-    name:        'Classic Memorial Service',
-    img:         '/sample/services/4.jpg',
-    price:       32000,
-    description: 'Garden of Peace · Chapel use, floral arrangements',
-    qty:         2,
-  },
-]
+import { useCart } from '@/contexts/CartContext'
 
 function formatPrice(n) {
   return `₱${Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
 }
 
 export default function CartPage() {
-  const [cartItems, setCartItems] = useState(SAMPLE_ROWS)
+  const { items: cartItems, updateQty, removeItem } = useCart()
   const [coupon, setCoupon]       = useState('')
   const [qtyEdits, setQtyEdits]   = useState({})
   const [selected, setSelected]   = useState(new Set())
@@ -78,14 +51,12 @@ export default function CartPage() {
   const handleUpdateQty = (productId, newQty) => {
     const num = parseInt(newQty, 10)
     if (Number.isNaN(num) || num < 1) return
-    setCartItems((prev) =>
-      prev.map((item) => item.id === productId ? { ...item, qty: num } : item)
-    )
+    updateQty(productId, num)
     setQtyEdits((prev) => ({ ...prev, [productId]: undefined }))
   }
 
   const handleRemove = (productId) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== productId))
+    removeItem(productId)
     setSelected((prev) => {
       const next = new Set(prev)
       next.delete(productId)
@@ -94,7 +65,7 @@ export default function CartPage() {
   }
 
   const handleRemoveSelected = () => {
-    setCartItems((prev) => prev.filter((item) => !selected.has(item.id)))
+    selected.forEach((id) => removeItem(id))
     setSelected(new Set())
   }
 
@@ -128,7 +99,7 @@ export default function CartPage() {
             <div className={styles.emptyIcon}><FiShoppingBag /></div>
             <h2 className={styles.emptyTitle}>Your cart is empty</h2>
             <p className={styles.emptySub}>Add packages or services to see them here.</p>
-            <Link href="/packages" className={styles.emptyLink}>Browse packages</Link>
+            <Link href="/services" className={styles.emptyLink}>Browse services</Link>
           </div>
         ) : (
           <>

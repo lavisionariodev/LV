@@ -2,14 +2,40 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState } from 'react'
-import { getServiceById } from '../data'
+import { use, useState, useEffect } from 'react'
+import { getServiceById, LISTINGS, PROVIDERS } from '../data'
+import { useCart } from '@/contexts/CartContext'
 import styles from './detail.module.css'
 
-// Main page component — must be a Server Component (no 'use client' at top level)
-export default async function ServiceDetailPage({ params }) {
-  const { id } = await params
+export default function ServiceDetailPage({ params }) {
+  const { id } = use(params)
   const service = getServiceById(id)
+  const { addItem } = useCart()
+  const listingsForService = service ? LISTINGS.filter((l) => l.serviceId === service.id) : []
+  const [selectedListingId, setSelectedListingId] = useState(listingsForService[0]?.id ?? '')
+  const [quantity, setQuantity] = useState(1)
+  const [addedMessage, setAddedMessage] = useState(false)
+
+  useEffect(() => {
+    setSelectedListingId(listingsForService[0]?.id ?? '')
+  }, [id])
+
+  const selectedListing = listingsForService.find((l) => l.id === selectedListingId)
+  const provider = selectedListing ? PROVIDERS.find((p) => p.id === selectedListing.providerId) : null
+
+  const handleAddToCart = () => {
+    if (!selectedListing || !service) return
+    addItem({
+      id: selectedListing.id,
+      name: selectedListing.name,
+      img: service.image,
+      price: selectedListing.price,
+      description: provider ? `${provider.name} · ${selectedListing.inclusions?.[0] ?? ''}` : (selectedListing.inclusions?.[0] ?? ''),
+      qty: quantity,
+    })
+    setAddedMessage(true)
+    setTimeout(() => setAddedMessage(false), 2000)
+  }
 
   if (!service) {
     return (
@@ -98,7 +124,7 @@ export default async function ServiceDetailPage({ params }) {
             {/* Price */}
             <div className={styles.priceRow}>
               <span className={styles.price}>
-                {service.price ? `₱${service.price.toLocaleString()}` : '₱ Contact for pricing'}
+                {selectedListing?.price != null ? `₱${Number(selectedListing.price).toLocaleString()}` : '₱ Contact for pricing'}
               </span>
               {service.priceNote && (
                 <span className={styles.priceNote}>{service.priceNote}</span>
@@ -139,18 +165,27 @@ export default async function ServiceDetailPage({ params }) {
             <div className={styles.selectors}>
               <div className={styles.selectorGroup}>
                 <label className={styles.selectorLabel}>Package</label>
-                <select className={styles.select}>
-                  <option>Standard</option>
-                  <option>Premium</option>
-                  <option>Deluxe</option>
+                <select
+                  className={styles.select}
+                  value={selectedListingId}
+                  onChange={(e) => setSelectedListingId(e.target.value)}
+                >
+                  {listingsForService.map((listing) => (
+                    <option key={listing.id} value={listing.id}>
+                      {listing.name}
+                    </option>
+                  ))}
+                  {listingsForService.length === 0 && (
+                    <option value="">Select package</option>
+                  )}
                 </select>
               </div>
               <div className={styles.selectorGroup}>
                 <label className={styles.selectorLabel}>Quantity</label>
                 <div className={styles.qtyControl}>
-                  <button className={styles.qtyBtn} type="button">−</button>
-                  <span className={styles.qtyValue}>1</span>
-                  <button className={styles.qtyBtn} type="button">+</button>
+                  <button className={styles.qtyBtn} type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))}>−</button>
+                  <span className={styles.qtyValue}>{quantity}</span>
+                  <button className={styles.qtyBtn} type="button" onClick={() => setQuantity((q) => q + 1)}>+</button>
                 </div>
               </div>
             </div>
@@ -158,7 +193,13 @@ export default async function ServiceDetailPage({ params }) {
             {/* Action buttons */}
             <div className={styles.actions}>
               <button className={styles.btnBookNow}>Book Now</button>
-              <button className={styles.btnAddToCart}>Add to Cart</button>
+              <button
+                className={styles.btnAddToCart}
+                onClick={handleAddToCart}
+                disabled={!selectedListing}
+              >
+                {addedMessage ? 'Added to cart' : 'Add to Cart'}
+              </button>
               <button className={styles.btnSave} aria-label="Save">♡ Save</button>
             </div>
 
@@ -173,9 +214,8 @@ export default async function ServiceDetailPage({ params }) {
   )
 }
 
-/* ─── Client component: tabbed full description below the fold ─── */
+/* ─── Tabbed full description below the fold ─── */
 function FullDescriptionSection({ service, styles }) {
-  'use client'
   const [activeTab, setActiveTab] = useState('description')
   const [expanded, setExpanded] = useState(false)
 
