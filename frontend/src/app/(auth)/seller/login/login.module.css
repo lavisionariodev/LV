@@ -512,17 +512,19 @@
   line-height: 1.6;
 }
 
-/* Responsive */
+/* Responsive – mobile only; wide screen layout unchanged */
 @media (max-width: 968px) {
   .contentWrapper {
     grid-template-columns: 1fr;
     gap: 40px;
     padding: 0 16px;
+    align-items: start;
   }
 
   .leftSection {
     text-align: center;
     padding: 0 20px;
+    order: -1; /* "Be a Power Seller" on top on mobile */
   }
 
   .mainTitle {
@@ -539,17 +541,67 @@
   }
 
   .rightSection {
-    order: -1; /* form first on mobile */
+    order: 1; /* login form below left section on mobile */
+    width: 100%;
+    display: flex;
+    justify-content: center;
   }
 
   .loginCard {
     max-width: 100%;
+    width: 100%;
   }
 }
 
 @media (max-width: 640px) {
+  .pageWrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  .mainContent {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 20px 32px;
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+  }
+
+  .contentWrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    padding: 0;
+    min-height: 0;
+  }
+
+  .leftSection {
+    order: -1; /* "Be a Power Seller" on top on mobile */
+    padding: 0 8px;
+    flex-shrink: 0;
+  }
+
+  .rightSection {
+    order: 1; /* login form below left section on mobile */
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  .loginCard {
+    padding: 28px 22px;
+    max-height: none;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
   .headerContent {
-    padding: 16px 20px;
+    padding: 14px 20px;
     padding-left: max(20px, env(safe-area-inset-left));
     padding-right: max(20px, env(safe-area-inset-right));
   }
@@ -580,16 +632,6 @@
     font-size: 0.8125rem;
   }
 
-  .mainContent {
-    padding: 32px 20px 24px;
-    padding-left: max(20px, env(safe-area-inset-left));
-    padding-right: max(20px, env(safe-area-inset-right));
-  }
-
-  .leftSection {
-    padding: 0 12px;
-  }
-
   .mainTitle {
     font-size: 26px;
     margin-bottom: 12px;
@@ -597,16 +639,13 @@
 
   .mainSubtitle {
     font-size: 14px;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
+    line-height: 1.5;
   }
 
   .illustration {
-    max-width: 280px;
-  }
-
-  .loginCard {
-    padding: 24px 20px;
-    max-height: none;
+    max-width: 260px;
+    margin: 0 auto;
   }
 
   .loginHeader {
@@ -661,8 +700,8 @@
   }
 
   .footer {
-    padding: 16px 20px;
-    margin-top: 32px;
+    padding: 14px 20px;
+    margin-top: auto;
     font-size: 13px;
     padding-left: max(20px, env(safe-area-inset-left));
     padding-right: max(20px, env(safe-area-inset-right));
@@ -741,11 +780,20 @@
   }
 
   .mainContent {
-    padding: 24px 16px 20px;
+    padding: 20px 16px 24px;
   }
 
   .contentWrapper {
-    gap: 24px;
+    gap: 28px;
+  }
+
+  .rightSection {
+    align-items: stretch;
+  }
+
+  .loginCard {
+    padding: 24px 18px;
+    max-width: 100%;
   }
 
   .mainTitle {
@@ -757,11 +805,7 @@
   }
 
   .illustration {
-    max-width: 240px;
-  }
-
-  .loginCard {
-    padding: 20px 16px;
+    max-width: 220px;
   }
 
   .loginTitle {
@@ -782,7 +826,7 @@
   }
 
   .footer {
-    padding: 14px 16px;
+    padding: 12px 16px;
     font-size: 12px;
   }
 

@@ -399,14 +399,19 @@
   }
 
   .formSection {
-    min-height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
     padding: 24px 20px;
     width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .authForm {
     max-width: 100%;
     padding: 32px 24px;
+    width: 100%;
   }
 
   .authForm h1 {
@@ -440,8 +445,10 @@
 
   .formSection {
     padding: 16px 16px 24px;
-    min-height: auto;
-    align-items: flex-start;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
     justify-content: center;
     padding-top: max(16px, env(safe-area-inset-top));
     padding-bottom: max(24px, env(safe-area-inset-bottom));
@@ -453,6 +460,7 @@
     padding: 24px 20px;
     border-radius: 12px;
     max-width: 100%;
+    width: 100%;
   }
 
   .authForm h1 {
