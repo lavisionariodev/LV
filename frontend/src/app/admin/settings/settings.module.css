@@ -64,7 +64,7 @@
   cursor: pointer;
   border: 1px solid #eef0f6;
   background: #ffffff;
-  color: var(--color-dark-brown);
+  color: var(--color-gold-base);
   white-space: nowrap;
   outline: none;
 }
@@ -72,7 +72,7 @@
 .primaryBtn {
   border-color: #e3e4ea;
   background: #FFFFFF;
-  color: var(--color-dark-brown);
+  color: var(--color-gold-base);
 }
 
 .primaryBtn:hover {

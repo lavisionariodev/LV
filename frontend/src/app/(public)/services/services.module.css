@@ -1,0 +1,765 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600&family=Lato:wght@300;400;700&display=swap');
+
+.servicesPage {
+  width: 100%;
+  min-height: 100vh;
+  padding-bottom: 4rem;
+  background: var(--color-light-gray, #EDE8E0);
+  font-family: "Lato", sans-serif;
+}
+
+.hero {
+  width: 100%;
+  min-height: 260px;
+  padding: 90px 24px 60px;
+  position: relative;
+  overflow: hidden;
+  background: url('/sample/services/hero-section.png') center / cover no-repeat;
+  display: flex;
+  align-items: center;
+}
+
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(16, 40, 32, 0.72);
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--color-gold-base);
+  opacity: 0.7;
+}
+
+.heroInner {
+  max-width: 1400px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  width: 100%;
+}
+
+.heroTitle {
+  margin: 0;
+  font-size: clamp(32px, 5vw, 48px);
+  font-weight: 300;
+  color: #FFFFFF;
+  line-height: 1.1;
+  font-family: "Cormorant Garamond", serif;
+  letter-spacing: 4px;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.25);
+}
+
+.breadcrumb {
+  margin: 16px auto 0;
+  width: fit-content;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-family: "Lato", sans-serif;
+}
+
+.crumb {
+  color: rgba(255, 255, 255, 0.55);
+  transition: color 0.3s ease;
+}
+
+.crumb:hover {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.slash {
+  color: var(--color-gold-base);
+  opacity: 0.7;
+}
+
+.crumbActive {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+.content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 48px 24px 60px;
+}
+
+.intro {
+  text-align: center;
+  margin-bottom: 40px;
+  max-width: 640px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.introTitle {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--color-green, #102820);
+  margin-bottom: 12px;
+  font-family: "Cormorant Garamond", serif;
+}
+
+.introText {
+  font-size: 15px;
+  line-height: 1.65;
+  color: #555;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 28px;
+}
+
+.card {
+  display: block;
+  background: #FFFFFF;
+  border: 1px solid rgba(16, 40, 32, 0.1);
+  box-shadow: 0 4px 20px rgba(16, 40, 32, 0.06);
+  border-radius: 4px;
+  overflow: hidden;
+  transition: box-shadow 0.25s ease, transform 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+}
+
+.card:hover {
+  box-shadow: 0 8px 28px rgba(16, 40, 32, 0.12);
+  transform: translateY(-2px);
+}
+
+.cardImage {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  background: var(--color-cream, #F7F4EF);
+}
+
+.cardBody {
+  padding: 20px 22px;
+}
+
+.cardTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-green, #102820);
+  margin: 0 0 8px;
+  font-family: "Cormorant Garamond", serif;
+}
+
+.cardDesc {
+  font-size: 14px;
+  line-height: 1.55;
+  color: #555;
+  margin: 0;
+}
+
+.cardCta {
+  margin-top: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-gold-base);
+  letter-spacing: 0.5px;
+}
+
+.card:hover .cardCta {
+  text-decoration: underline;
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MARKETPLACE EXTENSIONS
+   All rules below are additive. Nothing above has been changed.
+───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Toolbar: search + sort ── */
+.toolbar {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.searchWrap {
+  flex: 1;
+  min-width: 240px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 13px;
+  width: 15px;
+  height: 15px;
+  color: #9e9589;
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 10px 38px 10px 38px;
+  border: 1px solid rgba(16, 40, 32, 0.15);
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: "Lato", sans-serif;
+  background: #FFFFFF;
+  color: #222;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.searchInput:focus {
+  border-color: rgba(16, 40, 32, 0.35);
+  box-shadow: 0 0 0 3px rgba(16, 40, 32, 0.06);
+}
+
+.searchClear {
+  position: absolute;
+  right: 11px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  line-height: 1;
+  color: #aaa;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+.sortWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.sortLabel {
+  font-size: 13px;
+  color: #777;
+  font-family: "Lato", sans-serif;
+  white-space: nowrap;
+}
+
+.sortSelect {
+  padding: 10px 12px;
+  border: 1px solid rgba(16, 40, 32, 0.15);
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: "Lato", sans-serif;
+  background: #FFFFFF;
+  color: #222;
+  cursor: pointer;
+  outline: none;
+}
+
+/* ── Category pills ── */
+.catRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 36px;
+}
+
+.catPill {
+  padding: 7px 18px;
+  border: 1px solid rgba(16, 40, 32, 0.2);
+  border-radius: 100px;
+  font-size: 13px;
+  font-family: "Lato", sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  background: #FFFFFF;
+  color: #555;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.catPill:hover {
+  background: rgba(16, 40, 32, 0.05);
+}
+
+.catPillActive {
+  background: var(--color-green, #102820);
+  color: #FFFFFF;
+  border-color: var(--color-green, #102820);
+}
+
+/* ── Compare bar ── */
+.compareBar {
+  background: var(--color-green, #102820);
+  border-radius: 4px;
+  padding: 13px 18px;
+  margin-bottom: 28px;
+}
+
+.compareBarInner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.compareBarLabel {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 13px;
+  font-family: "Lato", sans-serif;
+  white-space: nowrap;
+}
+
+.compareChips {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.compareChip {
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+  font-size: 12px;
+  font-family: "Lato", sans-serif;
+  padding: 4px 10px;
+  border-radius: 100px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.compareChipRemove {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.compareBarCta {
+  padding: 7px 16px;
+  background: var(--color-gold-base, #B8962E);
+  border: none;
+  border-radius: 4px;
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: "Lato", sans-serif;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
+}
+
+.compareBarCta:hover {
+  opacity: 0.88;
+}
+
+.compareBarClear {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 12px;
+  font-family: "Lato", sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* ── Results count ── */
+.resultsCount {
+  font-size: 13px;
+  color: #888;
+  font-family: "Lato", sans-serif;
+  margin-bottom: 24px;
+  margin-top: -8px;
+}
+
+/* ── Empty state ── */
+.emptyState {
+  text-align: center;
+  padding: 64px 24px;
+}
+
+.emptyText {
+  font-size: 15px;
+  color: #777;
+  font-family: "Lato", sans-serif;
+  margin-bottom: 20px;
+}
+
+.emptyReset {
+  padding: 10px 24px;
+  background: var(--color-green, #102820);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: "Lato", sans-serif;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.emptyReset:hover {
+  opacity: 0.85;
+}
+
+/* ── Grouped view ── */
+.groupedView {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.serviceGroup {
+  margin-bottom: 52px;
+}
+
+.groupHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(16, 40, 32, 0.1);
+  margin-bottom: 24px;
+}
+
+.groupHeaderLeft {
+  flex: 1;
+}
+
+.groupTitle {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--color-green, #102820);
+  margin: 0 0 4px;
+  letter-spacing: 0.5px;
+}
+
+.groupDesc {
+  font-size: 13px;
+  color: #888;
+  font-family: "Lato", sans-serif;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.groupHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.groupCount {
+  font-size: 12px;
+  color: #aaa;
+  font-family: "Lato", sans-serif;
+  letter-spacing: 0.4px;
+}
+
+.groupViewAll {
+  font-size: 12px;
+  font-weight: 600;
+  font-family: "Lato", sans-serif;
+  color: var(--color-gold-base, #B8962E);
+  text-decoration: none;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+
+.groupViewAll:hover {
+  text-decoration: underline;
+}
+
+/* ── Listing card extensions ── */
+.listingCard {
+  display: flex;
+  flex-direction: column;
+}
+
+.listingImageWrap {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.popularBadge {
+  position: absolute;
+  top: 11px;
+  left: 11px;
+  background: var(--color-gold-base, #B8962E);
+  color: #FFFFFF;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-family: "Lato", sans-serif;
+  pointer-events: none;
+}
+
+.providerBadge {
+  position: absolute;
+  top: 11px;
+  right: 11px;
+  color: #FFFFFF;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-family: "Lato", sans-serif;
+  background: rgba(16, 40, 32, 0.82);
+  pointer-events: none;
+}
+
+.badgePremium {
+  background: var(--color-gold-base, #B8962E);
+}
+
+.badgeTopRated {
+  background: rgba(16, 40, 32, 0.82);
+}
+
+.badgeVerified {
+  background: rgba(16, 40, 32, 0.82);
+}
+
+.listingBody {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* Provider row */
+.providerRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.providerAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-green, #102820);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: "Cormorant Garamond", serif;
+  flex-shrink: 0;
+}
+
+.providerInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.providerName {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-green, #102820);
+  font-family: "Lato", sans-serif;
+  margin: 0 0 2px;
+  line-height: 1.2;
+}
+
+.providerLocation {
+  font-size: 11px;
+  color: #999;
+  font-family: "Lato", sans-serif;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  line-height: 1.3;
+}
+
+/* Rating */
+.ratingGroup {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.ratingStars {
+  display: inline-flex;
+  gap: 1px;
+}
+
+.ratingNum {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-green, #102820);
+  font-family: "Lato", sans-serif;
+  margin-left: 2px;
+}
+
+.ratingReviews {
+  font-size: 11px;
+  color: #aaa;
+  font-family: "Lato", sans-serif;
+}
+
+/* Divider */
+.listingDivider {
+  height: 1px;
+  background: rgba(16, 40, 32, 0.07);
+  margin-bottom: 14px;
+}
+
+/* Title + price row */
+.listingTitleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.listingTitleRow .cardTitle {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.3;
+  flex: 1;
+}
+
+.priceBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.priceLabel {
+  font-size: 9px;
+  color: #bbb;
+  font-family: "Lato", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  margin-bottom: 1px;
+}
+
+.price {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-gold-base, #B8962E);
+  font-family: "Cormorant Garamond", serif;
+  letter-spacing: 0.3px;
+  line-height: 1.1;
+}
+
+/* Inclusions */
+.inclusions {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+}
+
+.inclusionItem {
+  font-size: 12px;
+  color: #555;
+  font-family: "Lato", sans-serif;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  line-height: 1.45;
+}
+
+.inclusionMore {
+  font-size: 12px;
+  color: #aaa;
+  font-style: italic;
+  font-family: "Lato", sans-serif;
+  padding-left: 17px;
+}
+
+/* Card actions */
+.cardActions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 2px;
+}
+
+/* Override .cardCta for the button variant */
+.ctaBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 9px 12px;
+  background: var(--color-green, #102820);
+  color: #FFFFFF !important;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: "Lato", sans-serif;
+  letter-spacing: 0.4px;
+  text-decoration: none !important;
+  transition: opacity 0.2s ease;
+  margin-top: 0;
+}
+
+.ctaBtn:hover {
+  opacity: 0.87;
+  text-decoration: none !important;
+}
+
+.compareBtn {
+  padding: 9px 13px;
+  background: transparent;
+  color: #888;
+  border: 1px solid rgba(16, 40, 32, 0.18);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: "Lato", sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  letter-spacing: 0.3px;
+}
+
+.compareBtn:hover:not(:disabled) {
+  background: rgba(16, 40, 32, 0.05);
+}
+
+.compareBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.compareBtnActive {
+  background: rgba(16, 40, 32, 0.07);
+  color: var(--color-green, #102820);
+  border-color: rgba(16, 40, 32, 0.3);
+}
