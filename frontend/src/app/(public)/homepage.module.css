@@ -6,7 +6,7 @@
 .hero {
   position: relative;
   min-height: 700px;
-  padding: 60px var(--page-padding, 24px) 100px;
+  padding: 20px var(--page-padding, 24px) 100px;
   background-image: url('https://static.vecteezy.com/system/resources/previews/027/844/422/large_2x/funeral-white-roses-on-dark-background-with-copy-space-free-photo.jpg');
   background-size: cover;
   background-position: center;
