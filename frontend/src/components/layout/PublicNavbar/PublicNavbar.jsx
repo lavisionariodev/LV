@@ -23,10 +23,10 @@ export default function PublicNavbar() {
   ]
 
   const howItWorksItems = [
-    'Step-by-Step Process',
-    'Compare Packages',
-    'Book a Service',
-    'Payment & Support'
+    { label: 'Step-by-Step Process', sectionId: 'step-by-step-process' },
+    { label: 'Compare Packages', sectionId: 'compare-packages' },
+    { label: 'Book a Service', sectionId: 'book-a-service' },
+    { label: 'Payment & Support', sectionId: 'payment-support' }
   ]
 
   const aboutUsItems = [
@@ -173,8 +173,12 @@ export default function PublicNavbar() {
               {howItWorksOpen && (
                 <div className={styles.dropdownMenu}>
                   {howItWorksItems.map((item, index) => (
-                    <Link key={index} href={`/how-it-works/${item.toLowerCase().replace(/\s+/g, '-')}`} className={styles.dropdownItem}>
-                      {item}
+                    <Link
+                      key={index}
+                      href={`/how-it-works#${item.sectionId}`}
+                      className={styles.dropdownItem}
+                    >
+                      {item.label}
                     </Link>
                   ))}
                 </div>
@@ -246,7 +250,19 @@ export default function PublicNavbar() {
             <Link href="/marketplace" className={styles.mobileLink}>Marketplace Products</Link>
           </div>
           <Link href="/partners" className={styles.mobileLink}>FUNERAL HOMES / PARTNERS</Link>
-          <Link href="/how-it-works" className={styles.mobileLink}>HOW IT WORKS</Link>
+          <div className={styles.mobileSubsection}>
+            <span className={styles.mobileSubsectionTitle}>HOW IT WORKS</span>
+            <Link href="/how-it-works" className={styles.mobileLink}>Overview</Link>
+            {howItWorksItems.map((item, index) => (
+              <Link
+                key={index}
+                href={`/how-it-works#${item.sectionId}`}
+                className={styles.mobileLink}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
           <div className={styles.mobileSubsection}>
             <span className={styles.mobileSubsectionTitle}>ABOUT US</span>
             <Link href="/about" className={styles.mobileLink}>About</Link>
