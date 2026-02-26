@@ -48,7 +48,7 @@
   display: grid;
   place-items: center;
   font-size: 20px;
-  color: var(--color-light-brown);
+  color: var(--color-green-700);
 }
 
 .title {
@@ -104,7 +104,7 @@
   justify-content: center;
   gap: 8px;
 
-  box-shadow: 0 10px 18px rgba(138, 127, 107, 0.25);
+  box-shadow: 0 10px 18px rgba(45, 74, 56, 0.25);
 }
 
 .logoutBtn:hover {

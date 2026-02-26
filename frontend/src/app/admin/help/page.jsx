@@ -87,9 +87,6 @@ export default function AdminHelpCenterPage() {
     []
   )
 
-    const filteredTopics = topics
-    const filteredFaqs = faqs
-
   const playbooks = useMemo(
     () => [
       {
@@ -124,7 +121,7 @@ export default function AdminHelpCenterPage() {
     <div className={styles.wrap}>
 
       <section className={styles.grid}>
-        {filteredTopics.map((t) => (
+        {topics.map((t) => (
           <article className={styles.card} key={t.title}>
             <div className={styles.cardTop}>
               <div className={styles.icon}>{t.icon}</div>
@@ -142,7 +139,7 @@ export default function AdminHelpCenterPage() {
           </article>
         ))}
 
-        {filteredTopics.length === 0 && (
+        {topics.length === 0 && (
           <div className={styles.empty}>
             <p className={styles.emptyTitle}>No matching topics</p>
             <p className={styles.emptySub}>Try a different keyword.</p>
@@ -160,7 +157,7 @@ export default function AdminHelpCenterPage() {
           </div>
 
           <div className={styles.faqList}>
-            {filteredFaqs.map((f, idx) => {
+            {faqs.map((f, idx) => {
               const isOpen = openFaq === idx
               return (
                 <div
@@ -187,7 +184,7 @@ export default function AdminHelpCenterPage() {
               )
             })}
 
-            {filteredFaqs.length === 0 && (
+            {faqs.length === 0 && (
               <div className={styles.faqEmpty}>
                 No matching FAQs found for this search.
               </div>
