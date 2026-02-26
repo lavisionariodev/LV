@@ -16,9 +16,9 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 
-// Site accent palette (from globals.css)
-const BAR_COLORS = ['#102820', '#204F38', '#8A6240', '#A8894A']
-const CHART_ACCENT = '#102820'
+// Bar chart: green shades only (values match globals.css --color-green-*)
+const BAR_COLORS = ['#1F312B', '#2D4A38', '#3D683A', '#4A7C47']
+const CHART_ACCENT = '#1F312B'
 
 function formatShortDate(dateStr) {
   const d = new Date(dateStr)

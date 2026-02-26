@@ -100,8 +100,18 @@ p {
   --color-gold-base: #A8894A;
   --color-gold-bright: #BFA96B;
   --color-green: #102820;
+  /* Green shades (charts, bars, accents — no gold/brown) */
+  --color-green-900: #1F312B;
+  --color-green-700: #2D4A38;
+  --color-green-500: #3D683A;
+  --color-green-400: #4A7C47;
   --color-cream: #F7F4EF;
   --color-light-gray: #EDE8E0;
+
+  /* Light green focus shadow (replaces brown/gold focus rings in admin) */
+  --focus-shadow-green: 0 0 0 2px rgba(45, 74, 56, 0.35);
+  --focus-shadow-green-glow: 0 0 12px rgba(45, 74, 56, 0.22);
+  --focus-shadow-green-soft: 0 2px 12px rgba(45, 74, 56, 0.18);
 
   --max-width: 1200px;
   --page-padding: 1.25rem;

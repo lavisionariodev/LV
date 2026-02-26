@@ -139,12 +139,12 @@
 
   font-size: 13px;
   font-weight: 600;
-  color: var(--color-gold-base);
+  color: var(--color-green-700);
 }
 
 .logoutBtn:hover {
   background: #f8fafc;
-  color: #c2410c;
+  color: var(--color-green-900);
 }
 
 @media (max-width: 900px) {

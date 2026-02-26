@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import layoutStyles from '../admin.module.css'
 import styles from './seller-template.module.css'
 import { defaultSellerFormTemplate } from '@/data/adminSampleData'
@@ -35,7 +35,7 @@ export default function AdminSellerTemplatePage() {
   const [isAdding, setIsAdding] = useState(false)
   const [form, setForm] = useState(() => newField())
 
-  const sortedFields = useCallback(
+  const fieldList = useMemo(
     () => [...fields].sort((a, b) => a.order - b.order),
     [fields]
   )
@@ -75,12 +75,11 @@ export default function AdminSellerTemplatePage() {
   }
 
   const moveField = (id, direction) => {
-    const list = sortedFields()
-    const idx = list.findIndex((f) => f.id === id)
+    const idx = fieldList.findIndex((f) => f.id === id)
     if (idx < 0) return
     const swap = direction === 'up' ? idx - 1 : idx + 1
-    if (swap < 0 || swap >= list.length) return
-    const reordered = list.map((f, i) => ({ ...f, order: i }))
+    if (swap < 0 || swap >= fieldList.length) return
+    const reordered = [...fieldList].map((f, i) => ({ ...f, order: i }))
     ;[reordered[idx].order, reordered[swap].order] = [
       reordered[swap].order,
       reordered[idx].order,
@@ -113,8 +112,6 @@ export default function AdminSellerTemplatePage() {
     }
     resetForm()
   }
-
-  const fieldList = sortedFields()
 
   return (
     <div className={layoutStyles.dashWrap}>

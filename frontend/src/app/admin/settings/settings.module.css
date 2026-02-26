@@ -64,15 +64,9 @@
   cursor: pointer;
   border: 1px solid #eef0f6;
   background: #ffffff;
-  color: var(--color-gold-base);
+  color: #000;
   white-space: nowrap;
   outline: none;
-}
-
-.primaryBtn {
-  border-color: #e3e4ea;
-  background: #FFFFFF;
-  color: var(--color-gold-base);
 }
 
 .primaryBtn:hover {
@@ -216,7 +210,7 @@
 .input:focus {
   background: #ffffff;
   border-color: var(--color-main-accent);
-  box-shadow: 0 0 12px rgba(69, 106, 78, 0.25);
+  box-shadow: var(--focus-shadow-green-glow);
 }
 
 .input:disabled {
