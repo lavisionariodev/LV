@@ -355,17 +355,23 @@
 }
 
 .actionBtn {
+  display: block;
+  text-align: center;
+  text-decoration: none;
   font-size: 14px;
   padding: 12px 12px;
-  border-radius: 12px;
-  border: 1px solid #e9efec;
-  background-color: var(--color-main-accent);
-  color: #ffffff;
+  border-radius: 10px;
+  border: 1px solid var(--color-main-accent);
+  background-color: rgba(16, 40, 32, 0.06);
+  color: var(--color-main-accent);
+  font-weight: 600;
   cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .actionBtn:hover {
-  opacity: 0.92;
+  background-color: rgba(16, 40, 32, 0.12);
+  border-color: var(--color-main-accent);
 }
 
 /* =========================

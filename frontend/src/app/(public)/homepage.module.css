@@ -88,6 +88,12 @@
   box-shadow: 0 4px 14px rgba(16, 40, 32, 0.3);
 }
 
+a.ctaPrimary {
+  display: inline-block;
+  text-decoration: none;
+  text-align: center;
+}
+
 .ctaPrimary:hover {
   background: #A8894A;
   border-color: #A8894A;

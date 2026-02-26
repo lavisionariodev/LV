@@ -13,7 +13,7 @@ import {
   TbReportSearch
 } from 'react-icons/tb'
 import { TbLayoutDashboardFilled } from 'react-icons/tb'
-import { LuPackage, LuUserCheck } from 'react-icons/lu'
+import { LuUserCheck } from 'react-icons/lu'
 import { HiOutlineNewspaper } from 'react-icons/hi'
 import { FaUser } from 'react-icons/fa6'
 
@@ -86,6 +86,17 @@ export default function AdminSidebar({ collapsed = false, onToggle }) {
         </Link>
 
         <Link
+          href="/admin/payments"
+          className={`${styles.link} ${isActive('/admin/payments') ? styles.active : ''}`}
+          title={collapsed ? 'Payments' : undefined}
+        >
+          <span className={styles.iconWrap}>
+            <TbReportSearch />
+          </span>
+          <span className={styles.linkText}>Payments</span>
+        </Link>
+
+        <Link
           href="/admin/disputes"
           className={`${styles.link} ${isActive('/admin/disputes') ? styles.active : ''}`}
           title={collapsed ? 'Dispute' : undefined}
@@ -116,17 +127,6 @@ export default function AdminSidebar({ collapsed = false, onToggle }) {
             <LuUserCheck />
           </span>
           <span className={styles.linkText}>Sellers</span>
-        </Link>
-
-        <Link
-          href="/admin/packages"
-          className={`${styles.link} ${isActive('/admin/packages') ? styles.active : ''}`}
-          title={collapsed ? 'Packages' : undefined}
-        >
-          <span className={styles.iconWrap}>
-            <LuPackage />
-          </span>
-          <span className={styles.linkText}>Packages</span>
         </Link>
 
         <Link
