@@ -1,0 +1,48 @@
+/* Payments admin page */
+
+.page {
+  width: 100%;
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+}
+
+.searchInputWrap {
+  max-width: 260px;
+}
+
+.meta {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.actionsCell {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.completed {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.failed {
+  font-size: 12px;
+  color: #b91c1c;
+}
+
+.empty {
+  padding: 16px;
+  font-size: 13px;
+  color: #64748b;
+  border-radius: 12px;
+  border: 1px dashed #e5e7eb;
+  text-align: center;
+}
+
+.actionsHead {
+  text-align: right;
+}

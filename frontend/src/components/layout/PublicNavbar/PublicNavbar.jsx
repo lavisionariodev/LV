@@ -10,22 +10,14 @@ export default function PublicNavbar() {
   const { cartCount } = useCart()
   const [query, setQuery] = useState('')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [mobileShopOpen, setMobileShopOpen] = useState(false)
   const [mobileHowItWorksOpen, setMobileHowItWorksOpen] = useState(false)
   const [mobileAboutUsOpen, setMobileAboutUsOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
-  const [shopOpen, setShopOpen] = useState(false)
   const [howItWorksOpen, setHowItWorksOpen] = useState(false)
   const [aboutUsOpen, setAboutUsOpen] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const router = useRouter()
   const searchRef = useRef(null)
-
-  const shopItems = [
-    { label: 'Service Listings', href: '/services' },
-    { label: 'Custom Packages', href: '/packages' },
-    { label: 'Marketplace Products', href: '/marketplace' }
-  ]
 
   const howItWorksItems = [
     { label: 'Step-by-Step Process', sectionId: 'step-by-step-process' },
@@ -137,27 +129,9 @@ export default function PublicNavbar() {
             <div className={styles.navItem}>
               <Link href="/" className={styles.navLink}>HOME</Link>
             </div>
-            
-            <div 
-              className={styles.navItem}
-              onMouseEnter={() => setShopOpen(true)}
-              onMouseLeave={() => setShopOpen(false)}
-            >
-              <button className={styles.navLinkDropdown}>
-                SHOP
-                <svg className={styles.dropdownIcon} xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </button>
-              {shopOpen && (
-                <div className={styles.dropdownMenu}>
-                  {shopItems.map((item, index) => (
-                    <Link key={index} href={item.href} className={styles.dropdownItem}>
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
+
+            <div className={styles.navItem}>
+              <Link href="/shop" className={styles.navLink}>SHOP</Link>
             </div>
 
             <div className={styles.navItem}>
@@ -211,10 +185,6 @@ export default function PublicNavbar() {
                 </div>
               )}
             </div>
-
-            <div className={styles.navItem}>
-              <Link href="/book-now" className={styles.navLink}>BOOK NOW</Link>
-            </div>
           </nav>
 
           <div className={styles.navActions}>
@@ -255,28 +225,7 @@ export default function PublicNavbar() {
       {mobileMenuOpen && (
         <div className={styles.mobileMenu} onClick={() => setMobileMenuOpen(false)} role="presentation">
           <Link href="/" className={styles.mobileLink}>HOME</Link>
-
-          <div className={styles.mobileSubsection}>
-            <button
-              type="button"
-              className={styles.mobileSubsectionToggle}
-              onClick={(e) => { e.stopPropagation(); setMobileShopOpen((o) => !o) }}
-              aria-expanded={mobileShopOpen}
-              aria-controls="mobile-shop-links"
-            >
-              <span className={styles.mobileSubsectionTitle}>SHOP</span>
-              <span className={`${styles.mobileSubsectionArrow} ${mobileShopOpen ? styles.mobileSubsectionArrowOpen : ''}`} aria-hidden>
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </span>
-            </button>
-            <div id="mobile-shop-links" className={`${styles.mobileSubsectionContent} ${mobileShopOpen ? styles.mobileSubsectionContentOpen : ''}`}>
-              <Link href="/services" className={styles.mobileLink}>Service Listings</Link>
-              <Link href="/packages" className={styles.mobileLink}>Custom Packages</Link>
-              <Link href="/marketplace" className={styles.mobileLink}>Marketplace Products</Link>
-            </div>
-          </div>
+          <Link href="/shop" className={styles.mobileLink}>SHOP</Link>
 
           <Link href="/partners" className={styles.mobileLink}>FUNERAL HOMES / PARTNERS</Link>
 
@@ -333,8 +282,6 @@ export default function PublicNavbar() {
               ))}
             </div>
           </div>
-
-          <Link href="/book-now" className={styles.mobileLink}>BOOK NOW</Link>
 
           <div className={styles.mobileDivider}></div>
 

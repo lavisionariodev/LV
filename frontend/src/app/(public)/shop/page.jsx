@@ -4,9 +4,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useMemo, useEffect } from 'react'
 import { SERVICES, CATEGORIES, PROVIDERS, LISTINGS } from './data'
-import styles from './services.module.css'
+import styles from './shop.module.css'
 
-export default function ServicesPage() {
+export default function ShopPage() {
   const [activeCategory, setActiveCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState('popular')
@@ -61,12 +61,14 @@ export default function ServicesPage() {
 
   // Derive comparison data
   const compareListings = useMemo(() => {
-    return compareIds.map((id) => {
-      const listing = LISTINGS.find((l) => l.id === id)
-      const provider = PROVIDERS.find((p) => p.id === listing?.providerId)
-      const service = SERVICES.find((s) => s.id === listing?.serviceId)
-      return { listing, provider, service }
-    }).filter((x) => x.listing)
+    return compareIds
+      .map((id) => {
+        const listing = LISTINGS.find((l) => l.id === id)
+        const provider = PROVIDERS.find((p) => p.id === listing?.providerId)
+        const service = SERVICES.find((s) => s.id === listing?.serviceId)
+        return { listing, provider, service }
+      })
+      .filter((x) => x.listing)
   }, [compareIds])
 
   function toggleCompare(id) {
@@ -97,7 +99,8 @@ export default function ServicesPage() {
 
   const highestRatedId = useMemo(() => {
     if (compareListings.length < 2) return null
-    return compareListings.reduce((a, b) => ((a.provider?.rating ?? 0) >= (b.provider?.rating ?? 0) ? a : b)).listing?.id
+    return compareListings.reduce((a, b) => ((a.provider?.rating ?? 0) >= (b.provider?.rating ?? 0) ? a : b))
+      .listing?.id
   }, [compareListings])
 
   const mostPopularId = useMemo(() => {
@@ -109,31 +112,33 @@ export default function ServicesPage() {
   // Best value = highest inclusions per price ratio
   const bestValueId = useMemo(() => {
     if (compareListings.length < 2) return null
-    return compareListings.reduce((a, b) => {
-      const aScore = (a.listing.inclusions.length / a.listing.price) * (a.provider?.rating ?? 1)
-      const bScore = (b.listing.inclusions.length / b.listing.price) * (b.provider?.rating ?? 1)
-      return aScore >= bScore ? a : b
-    }).listing?.id
+    return compareListings
+      .reduce((a, b) => {
+        const aScore = (a.listing.inclusions.length / a.listing.price) * (a.provider?.rating ?? 1)
+        const bScore = (b.listing.inclusions.length / b.listing.price) * (b.provider?.rating ?? 1)
+        return aScore >= bScore ? a : b
+      })
+      .listing?.id
   }, [compareListings])
 
   return (
     <section className={styles.servicesPage}>
-
       {/* ── Hero ── */}
       <header className={styles.hero}>
         <div className={styles.heroOverlay} />
         <div className={styles.heroInner}>
-          <h1 className={styles.heroTitle}>Our Services</h1>
+          <h1 className={styles.heroTitle}>Shop</h1>
           <p className={styles.breadcrumb}>
-            <Link href="/" className={styles.crumb}>Home</Link>
+            <Link href="/" className={styles.crumb}>
+              Home
+            </Link>
             <span className={styles.slash}>/</span>
-            <span className={styles.crumbActive}>Services</span>
+            <span className={styles.crumbActive}>Shop</span>
           </p>
         </div>
       </header>
 
       <div className={styles.content}>
-
         {/* ── Intro ── */}
         <div className={styles.intro}>
           <div className={styles.introRule} />
@@ -161,8 +166,20 @@ export default function ServicesPage() {
               onBlur={() => setSearchFocused(false)}
             />
             {searchQuery && (
-              <button className={styles.searchClear} onClick={() => setSearchQuery('')} aria-label="Clear search">
-                <svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <button
+                className={styles.searchClear}
+                onClick={() => setSearchQuery('')}
+                aria-label="Clear search"
+              >
+                <svg
+                  viewBox="0 0 12 12"
+                  width="12"
+                  height="12"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                >
                   <path d="M2 2l8 8M10 2l-8 8" />
                 </svg>
               </button>
@@ -170,7 +187,11 @@ export default function ServicesPage() {
           </div>
           <div className={styles.sortWrap}>
             <span className={styles.sortLabel}>Sort by</span>
-            <select className={styles.sortSelect} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+            <select
+              className={styles.sortSelect}
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+            >
               <option value="popular">Most Popular</option>
               <option value="price-asc">Price: Low to High</option>
               <option value="price-desc">Price: High to Low</option>
@@ -189,9 +210,7 @@ export default function ServicesPage() {
             >
               {cat.label}
               {activeCategory === cat.id && cat.id !== 'all' && (
-                <span className={styles.catPillCount}>
-                  {filteredListings.length}
-                </span>
+                <span className={styles.catPillCount}>{filteredListings.length}</span>
               )}
             </button>
           ))}
@@ -203,7 +222,15 @@ export default function ServicesPage() {
             <div className={styles.compareBarInner}>
               <div className={styles.compareBarLeft}>
                 <div className={styles.compareBarIcon}>
-                  <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+                  <svg
+                    viewBox="0 0 16 16"
+                    width="14"
+                    height="14"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                  >
                     <path d="M2 4h12M2 8h8M2 12h10" />
                   </svg>
                 </div>
@@ -217,7 +244,9 @@ export default function ServicesPage() {
                     {[0, 1, 2].map((i) => (
                       <div
                         key={i}
-                        className={`${styles.compareProgressDot}${i < compareIds.length ? ` ${styles.compareProgressDotFilled}` : ''}`}
+                        className={`${styles.compareProgressDot}${
+                          i < compareIds.length ? ` ${styles.compareProgressDotFilled}` : ''
+                        }`}
                       />
                     ))}
                     <span className={styles.compareProgressHint}>max 3</span>
@@ -231,8 +260,20 @@ export default function ServicesPage() {
                   return (
                     <span key={id} className={styles.compareChip}>
                       <span className={styles.compareChipName}>{listing?.name}</span>
-                      <button className={styles.compareChipRemove} onClick={() => toggleCompare(id)} aria-label={`Remove ${listing?.name}`}>
-                        <svg viewBox="0 0 10 10" width="9" height="9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                      <button
+                        className={styles.compareChipRemove}
+                        onClick={() => toggleCompare(id)}
+                        aria-label={`Remove ${listing?.name}`}
+                      >
+                        <svg
+                          viewBox="0 0 10 10"
+                          width="9"
+                          height="9"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                        >
                           <path d="M2 2l6 6M8 2l-6 6" />
                         </svg>
                       </button>
@@ -245,12 +286,23 @@ export default function ServicesPage() {
                 {compareIds.length >= 2 && (
                   <button className={styles.compareBarCta} onClick={handleViewComparison}>
                     Compare Now
-                    <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ marginLeft: 5 }}>
+                    <svg
+                      viewBox="0 0 12 12"
+                      width="10"
+                      height="10"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      style={{ marginLeft: 5 }}
+                    >
                       <path d="M2 6h8M7 3l3 3-3 3" />
                     </svg>
                   </button>
                 )}
-                <button className={styles.compareBarClear} onClick={() => setCompareIds([])}>Clear all</button>
+                <button className={styles.compareBarClear} onClick={() => setCompareIds([])}>
+                  Clear all
+                </button>
               </div>
             </div>
           </div>
@@ -260,23 +312,28 @@ export default function ServicesPage() {
         {isFiltered && (
           <div className={styles.resultsBar}>
             <p className={styles.resultsCount}>
-              <span className={styles.resultsNum}>{filteredListings.length}</span>
-              {' '}result{filteredListings.length !== 1 ? 's' : ''}
+              <span className={styles.resultsNum}>{filteredListings.length}</span> result
+              {filteredListings.length !== 1 ? 's' : ''}
               {activeCategory !== 'all' && (
                 <span className={styles.resultsFilter}>
-                  {' '}in <strong>{CATEGORIES.find((c) => c.id === activeCategory)?.label}</strong>
+                  {' '}
+                  in <strong>{CATEGORIES.find((c) => c.id === activeCategory)?.label}</strong>
                 </span>
               )}
               {searchQuery && (
                 <span className={styles.resultsFilter}>
-                  {' '}for <strong>"{searchQuery}"</strong>
+                  {' '}
+                  for <strong>"{searchQuery}"</strong>
                 </span>
               )}
             </p>
             {(activeCategory !== 'all' || searchQuery) && (
               <button
                 className={styles.resultsClearAll}
-                onClick={() => { setSearchQuery(''); setActiveCategory('all') }}
+                onClick={() => {
+                  setSearchQuery('')
+                  setActiveCategory('all')
+                }}
               >
                 Clear filters
               </button>
@@ -288,7 +345,15 @@ export default function ServicesPage() {
         {filteredListings.length === 0 && (
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>
-              <svg viewBox="0 0 40 40" width="40" height="40" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+              <svg
+                viewBox="0 0 40 40"
+                width="40"
+                height="40"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+              >
                 <circle cx="18" cy="18" r="10" />
                 <path d="M26 26l8 8" />
                 <path d="M14 18h8M18 14v8" opacity="0.3" />
@@ -298,7 +363,13 @@ export default function ServicesPage() {
             <p className={styles.emptyText}>
               Try adjusting your search or browsing a different category.
             </p>
-            <button className={styles.emptyReset} onClick={() => { setSearchQuery(''); setActiveCategory('all') }}>
+            <button
+              className={styles.emptyReset}
+              onClick={() => {
+                setSearchQuery('')
+                setActiveCategory('all')
+              }}
+            >
               Reset all filters
             </button>
           </div>
@@ -318,10 +389,21 @@ export default function ServicesPage() {
                     </div>
                   </div>
                   <div className={styles.groupHeaderRight}>
-                    <span className={styles.groupCount}>{items.length} provider{items.length !== 1 ? 's' : ''}</span>
-                    <Link href={`/services/${service.id}`} className={styles.groupViewAll}>
+                    <span className={styles.groupCount}>
+                      {items.length} provider{items.length !== 1 ? 's' : ''}
+                    </span>
+                    <Link href={`/shop/${service.id}`} className={styles.groupViewAll}>
                       View all
-                      <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ marginLeft: 4 }}>
+                      <svg
+                        viewBox="0 0 12 12"
+                        width="10"
+                        height="10"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        style={{ marginLeft: 4 }}
+                      >
                         <path d="M2 6h8M7 3l3 3-3 3" />
                       </svg>
                     </Link>
@@ -365,20 +447,36 @@ export default function ServicesPage() {
             })}
           </div>
         )}
-
       </div>
 
       {/* ── Compare Modal ── */}
       {showCompareModal && (
-        <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && closeCompareModal()}>
+        <div
+          className={styles.modalOverlay}
+          onClick={(e) => e.target === e.currentTarget && closeCompareModal()}
+        >
           <div className={styles.modal}>
             <div className={styles.modalHeader}>
               <div>
                 <h2 className={styles.modalTitle}>Service Comparison</h2>
-                <p className={styles.modalSubtitle}>Comparing {compareListings.length} services side by side</p>
+                <p className={styles.modalSubtitle}>
+                  Comparing {compareListings.length} services side by side
+                </p>
               </div>
-              <button className={styles.modalClose} onClick={closeCompareModal} aria-label="Close">
-                <svg viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <button
+                className={styles.modalClose}
+                onClick={closeCompareModal}
+                aria-label="Close"
+              >
+                <svg
+                  viewBox="0 0 14 14"
+                  width="14"
+                  height="14"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                >
                   <path d="M2 2l10 10M12 2L2 12" />
                 </svg>
               </button>
@@ -456,22 +554,40 @@ export default function ServicesPage() {
                   <tr className={styles.compareRow}>
                     <td className={styles.compareRowLabel}>Starting Price</td>
                     {compareListings.map(({ listing }) => (
-                      <td key={listing.id} className={`${styles.compareRowCell} ${listing.id === lowestPriceId ? styles.compareCellHighlight : ''}`}>
-                        <span className={styles.comparePriceVal}>₱{listing.price.toLocaleString('en-PH')}</span>
-                        {listing.id === lowestPriceId && <span className={styles.compareCellTag}>Lowest</span>}
+                      <td
+                        key={listing.id}
+                        className={`${styles.compareRowCell}${
+                          listing.id === lowestPriceId ? ` ${styles.compareCellHighlight}` : ''
+                        }`}
+                      >
+                        <span className={styles.comparePriceVal}>
+                          ₱{listing.price.toLocaleString('en-PH')}
+                        </span>
+                        {listing.id === lowestPriceId && (
+                          <span className={styles.compareCellTag}>Lowest</span>
+                        )}
                       </td>
                     ))}
                   </tr>
                   <tr className={styles.compareRow}>
                     <td className={styles.compareRowLabel}>Provider Rating</td>
                     {compareListings.map(({ listing, provider }) => (
-                      <td key={listing.id} className={`${styles.compareRowCell} ${listing.id === highestRatedId ? styles.compareCellHighlight : ''}`}>
+                      <td
+                        key={listing.id}
+                        className={`${styles.compareRowCell}${
+                          listing.id === highestRatedId ? ` ${styles.compareCellHighlight}` : ''
+                        }`}
+                      >
                         <div className={styles.compareRating}>
                           <span className={styles.compareRatingNum}>{provider?.rating}</span>
                           <span className={styles.compareRatingMax}>/5</span>
-                          <span className={styles.compareRatingCount}>({provider?.reviews} reviews)</span>
+                          <span className={styles.compareRatingCount}>
+                            ({provider?.reviews} reviews)
+                          </span>
                         </div>
-                        {listing.id === highestRatedId && <span className={styles.compareCellTag}>Top Rated</span>}
+                        {listing.id === highestRatedId && (
+                          <span className={styles.compareCellTag}>Top Rated</span>
+                        )}
                       </td>
                     ))}
                   </tr>
@@ -490,7 +606,16 @@ export default function ServicesPage() {
                         <ul className={styles.compareInclusionList}>
                           {listing.inclusions.map((inc, i) => (
                             <li key={i} className={styles.compareInclusionItem}>
-                              <svg viewBox="0 0 10 10" width="9" height="9" fill="none" stroke="var(--color-gold-base, #B8962E)" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}>
+                              <svg
+                                viewBox="0 0 10 10"
+                                width="9"
+                                height="9"
+                                fill="none"
+                                stroke="var(--color-gold-base, #B8962E)"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                style={{ flexShrink: 0, marginTop: 1 }}
+                              >
                                 <path d="M2 5l2 2 4-4" />
                               </svg>
                               {inc}
@@ -503,10 +628,17 @@ export default function ServicesPage() {
                   <tr className={styles.compareRow}>
                     <td className={styles.compareRowLabel}>Popularity</td>
                     {compareListings.map(({ listing }) => (
-                      <td key={listing.id} className={`${styles.compareRowCell} ${listing.id === mostPopularId ? styles.compareCellHighlight : ''}`}>
-                        {listing.popular
-                          ? <span className={styles.comparePopularBadge}>Most Popular</span>
-                          : <span className={styles.compareText}>—</span>}
+                      <td
+                        key={listing.id}
+                        className={`${styles.compareRowCell}${
+                          listing.id === mostPopularId ? ` ${styles.compareCellHighlight}` : ''
+                        }`}
+                      >
+                        {listing.popular ? (
+                          <span className={styles.comparePopularBadge}>Most Popular</span>
+                        ) : (
+                          <span className={styles.compareText}>—</span>
+                        )}
                       </td>
                     ))}
                   </tr>
@@ -514,7 +646,7 @@ export default function ServicesPage() {
                     <td className={styles.compareRowLabel} />
                     {compareListings.map(({ listing }) => (
                       <td key={listing.id} className={styles.compareRowCell}>
-                        <Link href={`/services/${listing.serviceId}`} className={styles.compareViewBtn}>
+                        <Link href={`/shop/${listing.serviceId}`} className={styles.compareViewBtn}>
                           View Details
                         </Link>
                       </td>
@@ -525,15 +657,22 @@ export default function ServicesPage() {
             </div>
 
             <div className={styles.modalFooter}>
-              <button className={styles.modalDismiss} onClick={closeCompareModal}>Close</button>
-              <button className={styles.modalClearCompare} onClick={() => { setCompareIds([]); closeCompareModal() }}>
+              <button className={styles.modalDismiss} onClick={closeCompareModal}>
+                Close
+              </button>
+              <button
+                className={styles.modalClearCompare}
+                onClick={() => {
+                  setCompareIds([])
+                  closeCompareModal()
+                }}
+              >
                 Clear & Start Over
               </button>
             </div>
           </div>
         </div>
       )}
-
     </section>
   )
 }
@@ -544,8 +683,11 @@ function ListingCard({ listing, service, styles, inCompare, onToggleCompare, com
   const provider = PROVIDERS.find((p) => p.id === listing.providerId)
 
   return (
-    <div className={`${styles.card} ${styles.listingCard}${inCompare ? ` ${styles.listingCardSelected}` : ''}`}>
-
+    <div
+      className={`${styles.card} ${styles.listingCard}${
+        inCompare ? ` ${styles.listingCardSelected}` : ''
+      }`}
+    >
       {/* Image wrapper */}
       <div className={styles.listingImageWrap}>
         <Image
@@ -557,7 +699,11 @@ function ListingCard({ listing, service, styles, inCompare, onToggleCompare, com
         />
         {listing.popular && <span className={styles.popularBadge}>Most Popular</span>}
         {provider?.badge && (
-          <span className={`${styles.providerBadge} ${styles[`badge${provider.badge.replace(' ', '')}`]}`}>
+          <span
+            className={`${styles.providerBadge} ${
+              styles[`badge${provider.badge.replace(' ', '')}`]
+            }`}
+          >
             {provider.badge}
           </span>
         )}
@@ -570,14 +716,19 @@ function ListingCard({ listing, service, styles, inCompare, onToggleCompare, com
 
       {/* Body */}
       <div className={`${styles.cardBody} ${styles.listingBody}`}>
-
         {/* Provider row */}
         <div className={styles.providerRow}>
           <div className={styles.providerAvatar}>{provider?.name.charAt(0)}</div>
           <div className={styles.providerInfo}>
             <p className={styles.providerName}>{provider?.name}</p>
             <p className={styles.providerLocation}>
-              <svg viewBox="0 0 12 14" width="9" height="9" fill="var(--color-gold-base, #B8962E)" style={{ marginRight: 3, flexShrink: 0, display: 'inline-block', verticalAlign: 'middle' }}>
+              <svg
+                viewBox="0 0 12 14"
+                width="9"
+                height="9"
+                fill="var(--color-gold-base, #B8962E)"
+                style={{ marginRight: 3, flexShrink: 0, display: 'inline-block', verticalAlign: 'middle' }}
+              >
                 <path d="M6 0a5 5 0 0 1 5 5c0 4.5-5 9-5 9S1 9.5 1 5a5 5 0 0 1 5-5z" />
                 <circle cx="6" cy="5" r="1.8" fill="white" />
               </svg>
@@ -587,8 +738,13 @@ function ListingCard({ listing, service, styles, inCompare, onToggleCompare, com
           <div className={styles.ratingGroup}>
             <span className={styles.ratingStars}>
               {[1, 2, 3, 4, 5].map((s) => (
-                <svg key={s} width="11" height="11" viewBox="0 0 12 12"
-                  fill={s <= Math.round(provider?.rating ?? 0) ? 'var(--color-gold-base, #B8962E)' : '#D5CCBC'}>
+                <svg
+                  key={s}
+                  width="11"
+                  height="11"
+                  viewBox="0 0 12 12"
+                  fill={s <= Math.round(provider?.rating ?? 0) ? 'var(--color-gold-base, #B8962E)' : '#D5CCBC'}
+                >
                   <path d="M6 1l1.35 2.73L10.5 4.2l-2.25 2.19.53 3.1L6 7.9l-2.78 1.6.53-3.1L1.5 4.2l3.15-.47z" />
                 </svg>
               ))}
@@ -605,7 +761,9 @@ function ListingCard({ listing, service, styles, inCompare, onToggleCompare, com
           <h3 className={styles.cardTitle}>{listing.name}</h3>
           <div className={styles.priceBlock}>
             <span className={styles.priceLabel}>Starting at</span>
-            <span className={styles.price}>₱{listing.price.toLocaleString('en-PH')}</span>
+            <span className={styles.price}>
+              ₱{listing.price.toLocaleString('en-PH')}
+            </span>
           </div>
         </div>
 
@@ -613,45 +771,82 @@ function ListingCard({ listing, service, styles, inCompare, onToggleCompare, com
         <ul className={styles.inclusions}>
           {listing.inclusions.slice(0, 4).map((inc, i) => (
             <li key={i} className={styles.inclusionItem}>
-              <svg viewBox="0 0 12 12" width="11" height="11" fill="none"
-                stroke="var(--color-gold-base, #B8962E)" strokeWidth="2" strokeLinecap="round"
-                style={{ flexShrink: 0, marginTop: 1 }}>
+              <svg
+                viewBox="0 0 12 12"
+                width="11"
+                height="11"
+                fill="none"
+                stroke="var(--color-gold-base, #B8962E)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                style={{ flexShrink: 0, marginTop: 1 }}
+              >
                 <path d="M2 6l3 3 5-5" />
               </svg>
               {inc}
             </li>
           ))}
           {listing.inclusions.length > 4 && (
-            <li className={styles.inclusionMore}>+{listing.inclusions.length - 4} more inclusions</li>
+            <li className={styles.inclusionMore}>
+              +{listing.inclusions.length - 4} more inclusions
+            </li>
           )}
         </ul>
 
         {/* Actions */}
         <div className={styles.cardActions}>
-          <Link href={`/services/${listing.serviceId}`} className={`${styles.cardCta} ${styles.ctaBtn}`}>
+          <Link href={`/shop/${listing.serviceId}`} className={`${styles.cardCta} ${styles.ctaBtn}`}>
             View details
-            <svg viewBox="0 0 12 12" width="9" height="9" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" style={{ marginLeft: 5 }}>
+            <svg
+              viewBox="0 0 12 12"
+              width="9"
+              height="9"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              style={{ marginLeft: 5 }}
+            >
               <path d="M2 6h8M7 3l3 3-3 3" />
             </svg>
           </Link>
           <button
-            className={`${styles.compareBtn}${inCompare ? ` ${styles.compareBtnActive}` : ''}${compareDisabled ? ` ${styles.compareBtnDisabled}` : ''}`}
+            className={`${styles.compareBtn}${inCompare ? ` ${styles.compareBtnActive}` : ''}${
+              compareDisabled ? ` ${styles.compareBtnDisabled}` : ''
+            }`}
             onClick={() => onToggleCompare(listing.id)}
             disabled={compareDisabled}
-            title={compareDisabled ? 'Maximum 3 services can be compared at once' : inCompare ? 'Remove from comparison' : 'Add to comparison'}
+            title={
+              compareDisabled
+                ? 'Maximum 3 services can be compared at once'
+                : inCompare
+                ? 'Remove from comparison'
+                : 'Add to comparison'
+            }
           >
             {inCompare ? (
               <>
-                <svg viewBox="0 0 10 10" width="9" height="9" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ marginRight: 4 }}>
+                <svg
+                  viewBox="0 0 10 10"
+                  width="9"
+                  height="9"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  style={{ marginRight: 4 }}
+                >
                   <path d="M2 5l2 2 4-4" />
                 </svg>
                 Added
               </>
-            ) : '+ Compare'}
+            ) : (
+              '+ Compare'
+            )}
           </button>
         </div>
-
       </div>
     </div>
   )
 }
+

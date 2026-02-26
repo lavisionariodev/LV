@@ -820,9 +820,17 @@
   backdrop-filter: blur(4px);
 }
 
-.badgePremium { background: var(--color-gold-base, #B8962E); }
-.badgeTopRated { background: rgba(16, 40, 32, 0.82); }
-.badgeVerified { background: rgba(16, 40, 32, 0.82); }
+.badgePremium {
+  background: var(--color-gold-base, #B8962E);
+}
+
+.badgeTopRated {
+  background: rgba(16, 40, 32, 0.82);
+}
+
+.badgeVerified {
+  background: rgba(16, 40, 32, 0.82);
+}
 
 .compareSelectedOverlay {
   position: absolute;
@@ -1094,8 +1102,12 @@
 }
 
 @keyframes modalFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .modal {
@@ -1112,8 +1124,14 @@
 }
 
 @keyframes modalSlideUp {
-  from { transform: translateY(16px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .modalHeader {
@@ -1240,7 +1258,9 @@
   vertical-align: top;
 }
 
-.compareTableHead:last-child { border-right: none; }
+.compareTableHead:last-child {
+  border-right: none;
+}
 
 .compareColHeader {
   display: flex;
@@ -1323,7 +1343,9 @@
   border-top: 1px solid rgba(16, 40, 32, 0.05);
 }
 
-.compareRowCell:last-child { border-right: none; }
+.compareRowCell:last-child {
+  border-right: none;
+}
 
 .compareCellHighlight {
   background: rgba(184, 150, 46, 0.05) !important;
@@ -1564,3 +1586,4 @@
     padding: 24px 16px 40px;
   }
 }
+

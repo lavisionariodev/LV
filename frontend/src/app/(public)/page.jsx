@@ -38,8 +38,7 @@ function HeroSection() {
           </p>
 
           <div className={styles.ctaGroup}>
-            <button className={styles.ctaPrimary}>Browse Services</button>
-            <button className={styles.ctaSecondary}>Get Guidance</button>
+            <Link href="/shop" className={styles.ctaPrimary}>Browse Services</Link>
           </div>
         </div>
       </div>
@@ -53,32 +52,32 @@ function ShopByCategorySection() {
     {
       title: 'Funeral Packages',
       image: '/sample/services/1.jpg',
-      link: '/packages',
+      link: '/shop',
     },
     {
       title: 'Cremation Services',
       image: '/sample/services/2.jpg',
-      link: '/cremation',
+      link: '/shop',
     },
     {
       title: 'Burial Services',
       image: '/sample/services/3.jpg',
-      link: '/burial',
+      link: '/shop',
     },
     {
       title: 'Memorial & Wake',
       image: '/sample/services/4.jpg',
-      link: '/memorial',
+      link: '/shop',
     },
     {
       title: 'Flowers & Items',
       image: '/sample/services/5.jpg',
-      link: '/flowers',
+      link: '/shop',
     },
     {
       title: 'Transport & Docs',
       image: '/sample/services/6.jpg',
-      link: '/transport',
+      link: '/shop',
     },
   ]
 
@@ -240,8 +239,7 @@ function FinalCTASection() {
           </p>
 
           <div className={styles.ctaButtons}>
-            <button className={styles.ctaPrimary}>Browse Services</button>
-            <button className={styles.ctaSecondary}>Get Guidance</button>
+            <Link href="/shop" className={styles.ctaPrimary}>Browse Services</Link>
           </div>
         </div>
       </div>

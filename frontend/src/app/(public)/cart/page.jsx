@@ -99,7 +99,7 @@ export default function CartPage() {
             <div className={styles.emptyIcon}><FiShoppingBag /></div>
             <h2 className={styles.emptyTitle}>Your cart is empty</h2>
             <p className={styles.emptySub}>Add packages or services to see them here.</p>
-            <Link href="/services" className={styles.emptyLink}>Browse services</Link>
+            <Link href="/shop" className={styles.emptyLink}>Browse services</Link>
           </div>
         ) : (
           <>

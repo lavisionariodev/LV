@@ -19,11 +19,11 @@ export default function PublicFooter() {
         <div className={styles.cols}>
           <div className={styles.col}>
             <h4 className={styles.title}>Quick Links</h4>
-            <Link href="/services" className={styles.link}>Browse Services</Link>
-            <Link href="/cremation" className={styles.link}>Cremation Packages</Link>
-            <Link href="/burial" className={styles.link}>Burial Packages</Link>
-            <Link href="/memorial-lots" className={styles.link}>Memorial Lots</Link>
-            <Link href="/chapels" className={styles.link}>Chapels</Link>
+            <Link href="/shop" className={styles.link}>Browse Services</Link>
+            <Link href="/shop" className={styles.link}>Cremation Packages</Link>
+            <Link href="/shop" className={styles.link}>Burial Packages</Link>
+            <Link href="/shop" className={styles.link}>Memorial Lots</Link>
+            <Link href="/shop" className={styles.link}>Chapels</Link>
           </div>
 
           <div className={styles.col}>

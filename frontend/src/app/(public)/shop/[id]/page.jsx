@@ -30,7 +30,9 @@ export default function ServiceDetailPage({ params }) {
       name: selectedListing.name,
       img: service.image,
       price: selectedListing.price,
-      description: provider ? `${provider.name} · ${selectedListing.inclusions?.[0] ?? ''}` : (selectedListing.inclusions?.[0] ?? ''),
+      description: provider
+        ? `${provider.name} · ${selectedListing.inclusions?.[0] ?? ''}`
+        : selectedListing.inclusions?.[0] ?? '',
       qty: quantity,
     })
     setAddedMessage(true)
@@ -46,8 +48,8 @@ export default function ServiceDetailPage({ params }) {
             <p className={styles.notFoundText}>
               The service you are looking for does not exist or has been removed.
             </p>
-            <Link href="/services" className={styles.notFoundLink}>
-              ← Back to Services
+            <Link href="/shop" className={styles.notFoundLink}>
+              ← Back to Shop
             </Link>
           </div>
         </div>
@@ -63,9 +65,13 @@ export default function ServiceDetailPage({ params }) {
         <div className={styles.heroInner}>
           <h1 className={styles.heroTitle}>{service.name}</h1>
           <p className={styles.breadcrumb}>
-            <Link href="/" className={styles.crumb}>Home</Link>
+            <Link href="/" className={styles.crumb}>
+              Home
+            </Link>
             <span className={styles.slash}>/</span>
-            <Link href="/services" className={styles.crumb}>Services</Link>
+            <Link href="/shop" className={styles.crumb}>
+              Shop
+            </Link>
             <span className={styles.slash}>/</span>
             <span className={styles.crumbActive}>{service.name}</span>
           </p>
@@ -75,7 +81,6 @@ export default function ServiceDetailPage({ params }) {
       {/* Main content area */}
       <div className={styles.content}>
         <article className={styles.card}>
-
           {/* ── LEFT: Image gallery ── */}
           <div className={styles.galleryCol}>
             <div className={styles.mainImageWrap}>
@@ -90,25 +95,31 @@ export default function ServiceDetailPage({ params }) {
             </div>
             {/* Thumbnail strip — uses service.gallery if available, else repeats main image */}
             <div className={styles.thumbStrip}>
-              {(service.gallery || [service.image, service.image, service.image, service.image]).map((src, i) => (
-                <div key={i} className={`${styles.thumb} ${i === 0 ? styles.thumbActive : ''}`}>
-                  <Image
-                    src={src}
-                    alt={`${service.name} view ${i + 1}`}
-                    fill
-                    sizes="80px"
-                    className={styles.thumbImg}
-                  />
-                </div>
-              ))}
+              {(service.gallery || [service.image, service.image, service.image, service.image]).map(
+                (src, i) => (
+                  <div
+                    key={i}
+                    className={`${styles.thumb} ${i === 0 ? styles.thumbActive : ''}`}
+                  >
+                    <Image
+                      src={src}
+                      alt={`${service.name} view ${i + 1}`}
+                      fill
+                      sizes="80px"
+                      className={styles.thumbImg}
+                    />
+                  </div>
+                ),
+              )}
             </div>
           </div>
 
           {/* ── RIGHT: Product details ── */}
           <div className={styles.body}>
-
             {/* Back link */}
-            <Link href="/services" className={styles.backLink}>← Back to Services</Link>
+            <Link href="/shop" className={styles.backLink}>
+              ← Back to Shop
+            </Link>
 
             {/* Title */}
             <h2 className={styles.title}>{service.name}</h2>
@@ -124,11 +135,11 @@ export default function ServiceDetailPage({ params }) {
             {/* Price */}
             <div className={styles.priceRow}>
               <span className={styles.price}>
-                {selectedListing?.price != null ? `₱${Number(selectedListing.price).toLocaleString()}` : '₱ Contact for pricing'}
+                {selectedListing?.price != null
+                  ? `₱${Number(selectedListing.price).toLocaleString()}`
+                  : '₱ Contact for pricing'}
               </span>
-              {service.priceNote && (
-                <span className={styles.priceNote}>{service.priceNote}</span>
-              )}
+              {service.priceNote && <span className={styles.priceNote}>{service.priceNote}</span>}
             </div>
 
             {/* Short description — 2–3 lines max */}
@@ -183,9 +194,21 @@ export default function ServiceDetailPage({ params }) {
               <div className={styles.selectorGroup}>
                 <label className={styles.selectorLabel}>Quantity</label>
                 <div className={styles.qtyControl}>
-                  <button className={styles.qtyBtn} type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))}>−</button>
+                  <button
+                    className={styles.qtyBtn}
+                    type="button"
+                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  >
+                    −
+                  </button>
                   <span className={styles.qtyValue}>{quantity}</span>
-                  <button className={styles.qtyBtn} type="button" onClick={() => setQuantity((q) => q + 1)}>+</button>
+                  <button
+                    className={styles.qtyBtn}
+                    type="button"
+                    onClick={() => setQuantity((q) => q + 1)}
+                  >
+                    +
+                  </button>
                 </div>
               </div>
             </div>
@@ -200,15 +223,15 @@ export default function ServiceDetailPage({ params }) {
               >
                 {addedMessage ? 'Added to cart' : 'Add to Cart'}
               </button>
-              <button className={styles.btnSave} aria-label="Save">♡ Save</button>
+              <button className={styles.btnSave} aria-label="Save">
+                ♡ Save
+              </button>
             </div>
-
           </div>
         </article>
 
         {/* ── BELOW THE FOLD: Full description (tabbed) ── */}
         <FullDescriptionSection service={service} styles={styles} />
-
       </div>
     </section>
   )
@@ -221,16 +244,16 @@ function FullDescriptionSection({ service, styles }) {
 
   const tabs = [
     { id: 'description', label: "What's Included" },
-    { id: 'who',         label: 'Who This Is For' },
-    { id: 'notes',       label: 'Important Notes' },
-    { id: 'similar',     label: 'Similar Services' },
+    { id: 'who', label: 'Who This Is For' },
+    { id: 'notes', label: 'Important Notes' },
+    { id: 'similar', label: 'Similar Services' },
   ]
 
   return (
     <div className={styles.fullDesc}>
       {/* Tab nav */}
       <div className={styles.tabNav}>
-        {tabs.map(tab => (
+        {tabs.map((tab) => (
           <button
             key={tab.id}
             className={`${styles.tabBtn} ${activeTab === tab.id ? styles.tabActive : ''}`}
@@ -244,7 +267,6 @@ function FullDescriptionSection({ service, styles }) {
       {/* Tab content with expand/collapse */}
       <div className={styles.tabContent}>
         <div className={`${styles.tabBody} ${expanded ? styles.tabBodyExpanded : ''}`}>
-
           {activeTab === 'description' && (
             <>
               <p className={styles.tabText}>
@@ -266,12 +288,30 @@ function FullDescriptionSection({ service, styles }) {
               {/* Specs table */}
               <table className={styles.specsTable}>
                 <tbody>
-                  <tr><td>Display</td><td>Full chapel setup, candle lighting</td></tr>
-                  <tr><td>Transportation</td><td>Within Metro Manila (included)</td></tr>
-                  <tr><td>Embalming</td><td>Up to 5 days standard</td></tr>
-                  <tr><td>Coordinator</td><td>1 dedicated family coordinator</td></tr>
-                  <tr><td>Programs</td><td>50 printed memorial booklets</td></tr>
-                  <tr><td>Venue Capacity</td><td>Up to 120 guests</td></tr>
+                  <tr>
+                    <td>Display</td>
+                    <td>Full chapel setup, candle lighting</td>
+                  </tr>
+                  <tr>
+                    <td>Transportation</td>
+                    <td>Within Metro Manila (included)</td>
+                  </tr>
+                  <tr>
+                    <td>Embalming</td>
+                    <td>Up to 5 days standard</td>
+                  </tr>
+                  <tr>
+                    <td>Coordinator</td>
+                    <td>1 dedicated family coordinator</td>
+                  </tr>
+                  <tr>
+                    <td>Programs</td>
+                    <td>50 printed memorial booklets</td>
+                  </tr>
+                  <tr>
+                    <td>Venue Capacity</td>
+                    <td>Up to 120 guests</td>
+                  </tr>
                 </tbody>
               </table>
             </>
@@ -299,7 +339,10 @@ function FullDescriptionSection({ service, styles }) {
             <p className={styles.tabText}>
               Browse our other memorial packages — from intimate private services to full traditional
               ceremonies — all crafted with the same care and compassion. Visit our{' '}
-              <Link href="/services" className={styles.inlineLink}>Services page</Link> to explore more.
+              <Link href="/shop" className={styles.inlineLink}>
+                Shop page
+              </Link>{' '}
+              to explore more.
             </p>
           )}
 
@@ -308,7 +351,7 @@ function FullDescriptionSection({ service, styles }) {
 
         <button
           className={styles.seeMoreBtn}
-          onClick={() => setExpanded(prev => !prev)}
+          onClick={() => setExpanded((prev) => !prev)}
           aria-expanded={expanded}
         >
           {expanded ? 'See Less ↑' : 'Read More ↓'}
@@ -317,3 +360,4 @@ function FullDescriptionSection({ service, styles }) {
     </div>
   )
 }
+
