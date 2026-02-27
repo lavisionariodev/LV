@@ -395,8 +395,16 @@
 
 .facebookBtn:hover,
 .googleBtn:hover {
-  background: #f8f8f8;
-  border-color: #999;
+  background-color: #102820;
+  border-color: #102820;
+  color: #fff;
+}
+
+.facebookBtn:hover svg,
+.facebookBtn:hover svg path,
+.googleBtn:hover svg,
+.googleBtn:hover svg path {
+  fill: #fff;
 }
 
 .terms {
@@ -413,7 +421,7 @@
 }
 
 .terms a:hover {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 .loginLink {
@@ -430,7 +438,7 @@
 }
 
 .loginLink a:hover {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 /* Verification Method */
@@ -534,7 +542,7 @@
 }
 
 .resendText a:hover {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 /* Phone Reclaim Screen */

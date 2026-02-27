@@ -146,12 +146,6 @@ function BuyerLoginPageInner() {
           <a onClick={() => handleSocialAuth('facebook')}>
             <i className="bx bxl-facebook"></i>
           </a>
-          <a onClick={() => handleSocialAuth('github')}>
-            <i className="bx bxl-github"></i>
-          </a>
-          <a onClick={() => handleSocialAuth('linkedin')}>
-            <i className="bx bxl-linkedin"></i>
-          </a>
         </div>
 
         <span>Sign in With Email &amp; Password</span>

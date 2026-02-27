@@ -123,14 +123,20 @@
 }
 
 .socialIcons a:hover {
-  border-color: var(--color-main-accent);
+  background-color: #102820;
+  border-color: #102820;
   transform: translateY(-3px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px rgba(16, 40, 32, 0.25);
+}
+
+.socialIcons a:hover i {
+  color: #fff;
 }
 
 .socialIcons i {
   font-size: 18px;
   color: #666;
+  transition: color 0.3s ease;
 }
 
 .authFooter {
