@@ -209,6 +209,45 @@
   color: #333;
 }
 
+.socialButtons {
+  margin: 15px 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Match buyer login social button style (white button, icon + label) */
+button.socialButton {
+  background-color: #ffffff !important;
+  color: #333 !important;
+  border: 1px solid #e0e0e0;
+  padding: 10px;
+  font-size: 12px;
+  text-transform: none;
+}
+
+.socialButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+/* Keep Facebook/Google logo colors visible */
+.socialButton svg {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
+button.socialButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(32, 79, 56, 0.3);
+}
+
 .authFooter {
   margin-top: 20px;
   font-size: 13px;
@@ -250,8 +289,12 @@
     transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out;
   }
 
-  .socialIcons a {
-    transition: transform 0.2s ease-out, border-color 0.2s ease-out, box-shadow 0.2s ease-out;
+  .socialButtons {
+    grid-template-columns: 1fr;
+  }
+
+  .socialButton {
+    padding: 12px;
   }
 }
 
@@ -287,20 +330,14 @@
     transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out;
   }
 
-  .socialIcons {
+  .socialButtons {
+    grid-template-columns: 1fr;
     gap: 12px;
     margin: 12px 0;
   }
 
-  .socialIcons a {
-    min-width: 44px;
-    height: 44px;
-    padding: 0 18px;
-    transition: transform 0.2s ease-out, border-color 0.2s ease-out, box-shadow 0.2s ease-out;
-  }
-
-  .socialIcons i {
-    font-size: 20px;
+  .socialButton {
+    padding: 12px;
   }
 
   .authFooter {
