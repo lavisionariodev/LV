@@ -245,7 +245,7 @@
 }
 
 .forgotPassword a:hover {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 .divider {
@@ -302,8 +302,14 @@
 }
 
 .socialButton:hover {
-  border-color: #ccc;
-  background: #f9f9f9;
+  background-color: #102820;
+  border-color: #102820;
+  color: #fff;
+}
+
+.socialButton:hover svg,
+.socialButton:hover svg path {
+  fill: #fff;
 }
 
 /* QR Section */
@@ -350,7 +356,7 @@
 }
 
 .howToScanBtn:hover {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 /* Bottom Links */
@@ -368,7 +374,7 @@
 }
 
 .signupText a:hover {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 /* Footer */
