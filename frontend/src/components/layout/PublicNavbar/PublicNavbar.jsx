@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useCart } from '@/contexts/CartContext'
 import { getUser, onAuthStateChange, signOut } from '@/lib/auth/session'
+import { supabase } from '@/lib/supabase/client'
 import LogoutModal from '@/components/ui/Modal/Logout'
 import styles from './PublicNavbar.module.css'
 
@@ -18,6 +19,7 @@ export default function PublicNavbar() {
   const [howItWorksOpen, setHowItWorksOpen] = useState(false)
   const [aboutUsOpen, setAboutUsOpen] = useState(false)
   const [user, setUser] = useState(null)
+  const [profile, setProfile] = useState({ full_name: '', avatar_url: '' })
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const [logoutOpen, setLogoutOpen] = useState(false)
   const router = useRouter()
@@ -82,6 +84,38 @@ export default function PublicNavbar() {
   }, [])
 
   useEffect(() => {
+    if (!user) {
+      setProfile({ full_name: '', avatar_url: '' })
+      return
+    }
+
+    let cancelled = false
+
+    const loadProfile = async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('full_name, avatar_url')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (cancelled) return
+
+      if (!error && data) {
+        setProfile({
+          full_name: data.full_name || '',
+          avatar_url: data.avatar_url || '',
+        })
+      }
+    }
+
+    loadProfile()
+
+    return () => {
+      cancelled = true
+    }
+  }, [user])
+
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setProfileMenuOpen(false)
@@ -98,6 +132,9 @@ export default function PublicNavbar() {
   }, [profileMenuOpen])
 
   const isAuthenticated = !!user
+
+  const displayName =
+    (profile && profile.full_name) || user?.user_metadata?.full_name || ''
 
   const openLogoutModal = () => {
     setMobileMenuOpen(false)
@@ -124,11 +161,11 @@ export default function PublicNavbar() {
         <div className={styles.topBarInner}>
           <div className={styles.topLeft}>
             <div className={styles.followText}>
-              <Link href="/seller/login" className={styles.topLink}>
+              <Link href="/seller/signup" className={styles.topLink}>
                 Become a Seller
               </Link>
               <span className={styles.divider}>|</span>
-              <Link href="/seller/centre" className={styles.topLink}>
+              <Link href="/seller/login" className={styles.topLink}>
                 Seller Centre
               </Link>
               <span className={styles.divider}>|</span>
@@ -156,8 +193,8 @@ export default function PublicNavbar() {
             </div>
           </div>
 
-          {!isAuthenticated && (
-            <div className={styles.topRight}>
+          <div className={styles.topRight}>
+            {!isAuthenticated ? (
               <button
                 onClick={() => {
                   const target = pathname || '/'
@@ -182,8 +219,29 @@ export default function PublicNavbar() {
                 </svg>
                 <span>Sign In</span>
               </button>
-            </div>
-          )}
+            ) : (
+              <button
+                type="button"
+                className={styles.userLink}
+                aria-label="Notifications"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -279,30 +337,53 @@ export default function PublicNavbar() {
               </span>
             </div>
             {isAuthenticated && (
-              <div className={styles.profileMenuWrap} ref={profileRef}>
+              <div
+                className={styles.profileMenuWrap}
+                ref={profileRef}
+                onMouseEnter={() => setProfileMenuOpen(true)}
+                onMouseLeave={() => setProfileMenuOpen(false)}
+              >
                 <button
                   type="button"
                   className={styles.profileBtn}
                   aria-label="User menu"
                   aria-expanded={profileMenuOpen}
+                  title={displayName || undefined}
                   onClick={() => {
                     setProfileMenuOpen((open) => !open)
                   }}
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="12" cy="7" r="4"></circle>
-                  </svg>
+                  {profile.avatar_url ? (
+                    <img
+                      src={profile.avatar_url}
+                      alt={displayName || 'User avatar'}
+                      className={styles.profileAvatar}
+                      onError={(event) => {
+                        event.currentTarget.onerror = null
+                        setProfile((prev) => ({ ...prev, avatar_url: '' }))
+                      }}
+                    />
+                  ) : (
+                    <span className={styles.profileIcon} aria-hidden="true">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                      </svg>
+                    </span>
+                  )}
+                  {displayName && (
+                    <span className={styles.profileName}>{displayName}</span>
+                  )}
                 </button>
                 {profileMenuOpen && user && (
                   <div className={styles.profileDropdown} role="menu">
@@ -314,7 +395,17 @@ export default function PublicNavbar() {
                         router.push('/profile')
                       }}
                     >
-                      Manage Profile
+                      My profile
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.profileDropdownItem}
+                      onClick={() => {
+                        setProfileMenuOpen(false)
+                        router.push('/purchases')
+                      }}
+                    >
+                      Purchases
                     </button>
                     <button
                       type="button"
