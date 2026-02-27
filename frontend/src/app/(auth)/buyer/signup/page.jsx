@@ -1,6 +1,7 @@
 // signup.jsx
 'use client';
 import { useState } from 'react';
+import { supabase } from '@/lib/supabase/client';
 import AuthLayout from '../AuthLayout';
 import styles from './signup.module.css';
 
@@ -36,23 +37,24 @@ export default function SignUpPage() {
     }
 
     try {
-      const response = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const { error } = await supabase.auth.signUp({
+        email: signUpData.email,
+        password: signUpData.password,
+        options: {
+          data: {
+            full_name: signUpData.name,
+          },
         },
-        body: JSON.stringify(signUpData),
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        alert('Sign up successful! Please login.');
-        setSignUpData({ name: '', email: '', password: '' });
-        window.location.href = '/buyer/login';
-      } else {
-        alert(data.message || 'Sign up failed. Please try again.');
+      if (error) {
+        alert(error.message || 'Sign up failed. Please try again.');
+        return;
       }
+
+      alert('Sign up successful! Please check your email to confirm your account, then sign in.');
+      setSignUpData({ name: '', email: '', password: '' });
+      window.location.href = '/buyer/login';
     } catch (error) {
       console.error('Sign up error:', error);
       alert('An error occurred. Please try again later.');

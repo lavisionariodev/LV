@@ -1,10 +1,15 @@
 // login.jsx
 'use client';
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { supabase } from '@/lib/supabase/client';
 import AuthLayout from '../AuthLayout';
 import styles from './login.module.css';
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect') || '/';
+
   const [signInData, setSignInData] = useState({
     email: '',
     password: ''
@@ -34,22 +39,18 @@ export default function LoginPage() {
     }
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(signInData),
+      const { error } = await supabase.auth.signInWithPassword({
+        email: signInData.email,
+        password: signInData.password,
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        alert('Login successful!');
-        window.location.href = '/dashboard';
-      } else {
-        alert(data.message || 'Login failed. Please check your credentials.');
+      if (error) {
+        alert(error.message || 'Login failed. Please check your credentials.');
+        return;
       }
+
+      alert('Login successful!');
+      window.location.href = redirect || '/';
     } catch (error) {
       console.error('Login error:', error);
       alert('An error occurred. Please try again later.');
