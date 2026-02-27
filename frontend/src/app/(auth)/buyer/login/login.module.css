@@ -95,7 +95,6 @@
 
 .authContainer button:hover {
   background-color: #279354;
-  transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(32, 79, 56, 0.3);
 }
 
@@ -177,54 +176,43 @@
   font-size: 20px;
 }
 
-.socialIcons {
+.socialButtons {
   margin: 15px 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Override layout’s green .authForm button so social buttons stay white with visible icons */
+button.socialButton {
+  background-color: #ffffff !important;
+  color: #333 !important;
+  border: 1px solid #e0e0e0;
+  padding: 10px;
+  font-size: 12px;
+  text-transform: none;
+}
+
+.socialButton {
   display: flex;
-  gap: 10px;
-  justify-content: center;
-  width: 100%;
-}
-
-.socialIcons a {
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  display: inline-flex;
-  justify-content: center;
   align-items: center;
-  min-width: 40px;
-  height: 40px;
-  padding: 0 16px;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 4px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  margin: 0;
+  transition: all 0.2s;
 }
 
-.socialIcons a:hover {
-  background-color: transparent;
-  border-color: #102820;
-  transform: translateY(-3px);
-  box-shadow: 0 4px 8px rgba(16, 40, 32, 0.25);
+/* Keep Facebook/Google logo colors visible */
+.socialButton svg {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
 }
 
-.socialIcons i {
-  font-size: 18px;
-  color: #666;
-  transition: color 0.3s ease;
-}
-
-/* Brand colors for individual social icons */
-.socialIcons a:first-child i {
-  color: #DB4437; /* Google red */
-}
-
-.socialIcons a:last-child i {
-  color: #1877F2; /* Facebook blue */
-}
-
-.socialLabel {
-  margin-left: 8px;
-  font-size: 13px;
-  color: #333;
+button.socialButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(32, 79, 56, 0.3);
 }
 
 .authFooter {
@@ -305,7 +293,6 @@
 
 .closeButton:hover {
   color: #333;
-  transform: rotate(90deg);
 }
 
 .modalContent h2 {
@@ -325,12 +312,11 @@
 }
 
 .modalContent input {
-  background-color: #eee;
-  border: none;
-  margin: 15px 0;
+  margin: 20px 0 10px 0;
   padding: 12px 15px;
   font-size: 13px;
-  border-radius: 6px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
   width: 100%;
   outline: none;
   transition: all 0.3s ease;
@@ -338,8 +324,8 @@
 }
 
 .modalContent input:focus {
-  background-color: #e0e0e0;
-  box-shadow: 0 0 0 2px rgba(125, 147, 112, 0.2);
+  border-color: var(--color-main-accent);
+  box-shadow: 0 0 6px 4px rgba(32, 79, 56, 0.1);
 }
 
 .submitButton {
@@ -361,7 +347,6 @@
 
 .submitButton:hover {
   background-color: #279354;
-  transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(32, 79, 56, 0.3);
 }
 
@@ -429,8 +414,12 @@
     transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out;
   }
 
-  .socialIcons a {
-    transition: transform 0.2s ease-out, border-color 0.2s ease-out, box-shadow 0.2s ease-out;
+  .socialButtons {
+    grid-template-columns: 1fr;
+  }
+
+  .socialButton {
+    padding: 12px;
   }
 
   .modalOverlay {
@@ -508,11 +497,12 @@
     transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out;
   }
 
-  .socialIcons a {
-    min-width: 44px;
-    height: 44px;
-    padding: 0 18px;
-    transition: transform 0.2s ease-out, border-color 0.2s ease-out, box-shadow 0.2s ease-out;
+  .socialButtons {
+    grid-template-columns: 1fr;
+  }
+
+  .socialButton {
+    padding: 12px;
   }
 
   .modalOverlay {
@@ -531,7 +521,7 @@
   }
 
   .modalContent input {
-    margin: 12px 0;
+    margin: 10px 0;
   }
 
   .submitButton {
