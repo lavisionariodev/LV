@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useCart } from '@/contexts/CartContext'
 import { getUser, onAuthStateChange, signOut } from '@/lib/auth/session'
+import LogoutModal from '@/components/ui/Modal/Logout'
 import styles from './PublicNavbar.module.css'
 
 export default function PublicNavbar() {
@@ -18,6 +19,7 @@ export default function PublicNavbar() {
   const [aboutUsOpen, setAboutUsOpen] = useState(false)
   const [user, setUser] = useState(null)
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const [logoutOpen, setLogoutOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
   const searchRef = useRef(null)
@@ -95,15 +97,24 @@ export default function PublicNavbar() {
     }
   }, [profileMenuOpen])
 
-  const handleUserIconClick = () => {
-    const target = pathname || '/'
+  const isAuthenticated = !!user
 
-    if (!user) {
-      router.push(`/buyer/login?redirect=${encodeURIComponent(target)}`)
-      return
-    }
+  const openLogoutModal = () => {
+    setMobileMenuOpen(false)
+    setProfileMenuOpen(false)
+    setLogoutOpen(true)
+  }
 
-    router.push('/profile')
+  const handleConfirmLogout = async () => {
+    await signOut()
+    setLogoutOpen(false)
+    setProfileMenuOpen(false)
+    setMobileMenuOpen(false)
+    router.push('/')
+  }
+
+  const handleCancelLogout = () => {
+    setLogoutOpen(false)
   }
 
   return (
@@ -145,15 +156,34 @@ export default function PublicNavbar() {
             </div>
           </div>
 
-          <div className={styles.topRight}>
-            <button onClick={handleUserIconClick} className={styles.userLink} aria-label="User Account">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-              <span>Sign In</span>
-            </button>
-          </div>
+          {!isAuthenticated && (
+            <div className={styles.topRight}>
+              <button
+                onClick={() => {
+                  const target = pathname || '/'
+                  router.push(`/buyer/login?redirect=${encodeURIComponent(target)}`)
+                }}
+                className={styles.userLink}
+                aria-label="Sign in"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <span>Sign In</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -248,67 +278,55 @@ export default function PublicNavbar() {
                 )}
               </span>
             </div>
-            <div className={styles.profileMenuWrap} ref={profileRef}>
-              <button
-                type="button"
-                className={styles.profileBtn}
-                aria-label={user ? 'User menu' : 'Sign in'}
-                aria-expanded={profileMenuOpen}
-                onClick={() => {
-                  const target = pathname || '/'
-                  if (!user) {
-                    router.push(`/buyer/login?redirect=${encodeURIComponent(target)}`)
-                    return
-                  }
-                  setProfileMenuOpen((open) => !open)
-                }}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="12" cy="7" r="4"></circle>
-                </svg>
-              </button>
-              {profileMenuOpen && user && (
-                <div className={styles.profileDropdown} role="menu">
-                  <button
-                    type="button"
-                    className={styles.profileDropdownItem}
-                    onClick={() => {
-                      setProfileMenuOpen(false)
-                      router.push('/profile')
-                    }}
+            {isAuthenticated && (
+              <div className={styles.profileMenuWrap} ref={profileRef}>
+                <button
+                  type="button"
+                  className={styles.profileBtn}
+                  aria-label="User menu"
+                  aria-expanded={profileMenuOpen}
+                  onClick={() => {
+                    setProfileMenuOpen((open) => !open)
+                  }}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   >
-                    Manage Profile
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.profileDropdownItem}
-                    onClick={async () => {
-                      await signOut()
-                      setProfileMenuOpen(false)
-                      router.push('/')
-                    }}
-                  >
-                    Logout
-                  </button>
-                </div>
-              )}
-              {profileMenuOpen && !user && (
-                <div className={styles.profileDropdown} role="menu">
-                  <button
-                    type="button"
-                    className={styles.profileDropdownItem}
-                    onClick={() => {
-                      setProfileMenuOpen(false)
-                      const target = pathname || '/'
-                      router.push(`/buyer/login?redirect=${encodeURIComponent(target)}`)
-                    }}
-                  >
-                    Sign In
-                  </button>
-                </div>
-              )}
-            </div>
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                </button>
+                {profileMenuOpen && user && (
+                  <div className={styles.profileDropdown} role="menu">
+                    <button
+                      type="button"
+                      className={styles.profileDropdownItem}
+                      onClick={() => {
+                        setProfileMenuOpen(false)
+                        router.push('/profile')
+                      }}
+                    >
+                      Manage Profile
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.profileDropdownItem}
+                      onClick={openLogoutModal}
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
             <button 
               className={styles.mobileToggle}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -398,10 +416,7 @@ export default function PublicNavbar() {
               <button
                 type="button"
                 className={styles.mobileLinkButton}
-                onClick={async () => {
-                  await signOut()
-                  router.push('/')
-                }}
+                onClick={openLogoutModal}
               >
                 Logout
               </button>
@@ -409,6 +424,8 @@ export default function PublicNavbar() {
           )}
         </div>
       )}
+
+      <LogoutModal open={logoutOpen} onConfirm={handleConfirmLogout} onCancel={handleCancelLogout} />
     </header>
   )
 }

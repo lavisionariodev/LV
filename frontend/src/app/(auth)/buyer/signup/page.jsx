@@ -1,9 +1,11 @@
 // signup.jsx
-'use client';
-import { useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
-import AuthLayout from '../AuthLayout';
-import styles from './signup.module.css';
+"use client";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase/client";
+import { getUser } from "@/lib/auth/session";
+import AuthLayout from "../AuthLayout";
+import styles from "./signup.module.css";
 
 export default function SignUpPage() {
   const [signUpData, setSignUpData] = useState({
@@ -11,6 +13,21 @@ export default function SignUpPage() {
     email: '',
     password: ''
   });
+
+  const router = useRouter();
+
+  useEffect(() => {
+    let mounted = true;
+    getUser().then((currentUser) => {
+      if (!mounted) return;
+      if (currentUser) {
+        router.replace("/");
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [router]);
 
   const handleSignUpChange = (e) => {
     setSignUpData({

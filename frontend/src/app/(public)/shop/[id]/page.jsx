@@ -3,18 +3,22 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { use, useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { getServiceById, LISTINGS, PROVIDERS } from '../data'
 import { useCart } from '@/contexts/CartContext'
+import { getUser } from '@/lib/auth/session'
 import styles from './detail.module.css'
 
 export default function ServiceDetailPage({ params }) {
   const { id } = use(params)
   const service = getServiceById(id)
   const { addItem } = useCart()
+  const router = useRouter()
   const listingsForService = service ? LISTINGS.filter((l) => l.serviceId === service.id) : []
   const [selectedListingId, setSelectedListingId] = useState(listingsForService[0]?.id ?? '')
   const [quantity, setQuantity] = useState(1)
   const [addedMessage, setAddedMessage] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(null)
 
   useEffect(() => {
     setSelectedListingId(listingsForService[0]?.id ?? '')
@@ -22,10 +26,17 @@ export default function ServiceDetailPage({ params }) {
 
   const selectedListing = listingsForService.find((l) => l.id === selectedListingId)
   const provider = selectedListing ? PROVIDERS.find((p) => p.id === selectedListing.providerId) : null
-
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!selectedListing || !service) return
-    addItem({
+
+    const currentUser = await getUser()
+    if (!currentUser) {
+      const target = `/shop/${id}`
+      router.push(`/buyer/login?redirect=${encodeURIComponent(target)}`)
+      return
+    }
+
+    await addItem({
       id: selectedListing.id,
       name: selectedListing.name,
       img: service.image,

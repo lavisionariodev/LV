@@ -3,30 +3,14 @@
 import { createContext, useContext, useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { getUser, onAuthStateChange } from '@/lib/auth/session'
-import { fetchCart, addItem as supabaseAddItem, updateQty as supabaseUpdateQty, removeItem as supabaseRemoveItem } from '@/lib/cart/supabaseCart'
-
-const CART_STORAGE_KEY = 'lavisionario_cart'
+import {
+  fetchCart,
+  addItem as supabaseAddItem,
+  updateQty as supabaseUpdateQty,
+  removeItem as supabaseRemoveItem,
+} from '@/lib/cart/supabaseCart'
 
 const CartContext = createContext(null)
-
-function loadFromStorage() {
-  if (typeof window === 'undefined') return []
-  try {
-    const raw = localStorage.getItem(CART_STORAGE_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
-
-function saveToStorage(items) {
-  if (typeof window === 'undefined') return
-  try {
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
-  } catch (_) {}
-}
 
 export function CartProvider({ children }) {
   const [items, setItems] = useState([])
@@ -41,7 +25,7 @@ export function CartProvider({ children }) {
       else setItems([])
     } else {
       setUserId(null)
-      setItems(loadFromStorage())
+      setItems([])
     }
   }, [])
 
@@ -61,73 +45,61 @@ export function CartProvider({ children }) {
     }
   }, [loadCart])
 
-  const addItem = useCallback(async (item) => {
-    const { id, name, img, price, description, qty } = item
-    const safeQty = Math.max(1, Number(qty) || 1)
-    if (userId) {
-      const { error } = await supabaseAddItem(supabase, userId, { id, name, img, price, description, qty: safeQty })
+  const addItem = useCallback(
+    async (item) => {
+      const { id, name, img, price, description, qty } = item
+      const safeQty = Math.max(1, Number(qty) || 1)
+      if (!userId) {
+        return { error: new Error('User must be authenticated to add items to cart') }
+      }
+      const { error } = await supabaseAddItem(supabase, userId, {
+        id,
+        name,
+        img,
+        price,
+        description,
+        qty: safeQty,
+      })
       if (error) return { error }
       const { items: next } = await fetchCart(supabase, userId)
       setItems(next)
       return { error: null }
-    }
-    setItems((prev) => {
-      const idx = prev.findIndex((i) => i.id === id)
-      let next
-      if (idx >= 0) {
-        next = prev.slice()
-        next[idx] = { ...next[idx], qty: next[idx].qty + safeQty }
-      } else {
-        next = [...prev, { id, name, img: img ?? '', price: price ?? 0, description: description ?? '', qty: safeQty }]
-      }
-      saveToStorage(next)
-      return next
-    })
-    return { error: null }
-  }, [userId])
+    },
+    [userId],
+  )
 
-  const updateQty = useCallback(async (productId, qty) => {
-    const num = parseInt(qty, 10)
-    if (userId) {
+  const updateQty = useCallback(
+    async (productId, qty) => {
+      if (!userId) {
+        return { error: new Error('User must be authenticated to update cart quantities') }
+      }
+      const num = parseInt(qty, 10)
       const { error } = await supabaseUpdateQty(supabase, userId, productId, num)
       if (error) return { error }
       const { items: next } = await fetchCart(supabase, userId)
       setItems(next)
       return { error: null }
-    }
-    setItems((prev) => {
-      if (num < 1) {
-        const next = prev.filter((i) => i.id !== productId)
-        saveToStorage(next)
-        return next
-      }
-      const next = prev.map((i) => (i.id === productId ? { ...i, qty: num } : i))
-      saveToStorage(next)
-      return next
-    })
-    return { error: null }
-  }, [userId])
+    },
+    [userId],
+  )
 
-  const removeItem = useCallback(async (productId) => {
-    if (userId) {
+  const removeItem = useCallback(
+    async (productId) => {
+      if (!userId) {
+        return { error: new Error('User must be authenticated to remove cart items') }
+      }
       const { error } = await supabaseRemoveItem(supabase, userId, productId)
       if (error) return { error }
       const { items: next } = await fetchCart(supabase, userId)
       setItems(next)
       return { error: null }
-    }
-    setItems((prev) => {
-      const next = prev.filter((i) => i.id !== productId)
-      saveToStorage(next)
-      return next
-    })
-    return { error: null }
-  }, [userId])
+    },
+    [userId],
+  )
 
   const setItemsOverride = useCallback((newItems) => {
     setItems(Array.isArray(newItems) ? newItems : [])
-    if (!userId) saveToStorage(Array.isArray(newItems) ? newItems : [])
-  }, [userId])
+  }, [])
 
   const cartCount = items.reduce((sum, i) => sum + (i.qty ?? 1), 0)
 
