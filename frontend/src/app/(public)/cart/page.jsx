@@ -1,11 +1,12 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
-import Image from 'next/image'
-import Link from 'next/link'
-import styles from './cart.module.css'
-import { FiX, FiTrash2, FiShoppingBag } from 'react-icons/fi'
-import { useCart } from '@/contexts/CartContext'
+import { useEffect, useState } from "react"
+import Image from "next/image"
+import Link from "next/link"
+import styles from "./cart.module.css"
+import { FiX, FiTrash2, FiShoppingBag } from "react-icons/fi"
+import { useCart } from "@/contexts/CartContext"
+import { getUser } from "@/lib/auth/session"
 
 function formatPrice(n) {
   return `₱${Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
@@ -16,6 +17,18 @@ export default function CartPage() {
   const [coupon, setCoupon]       = useState('')
   const [qtyEdits, setQtyEdits]   = useState({})
   const [selected, setSelected]   = useState(new Set())
+  const [isAuthenticated, setIsAuthenticated] = useState(null)
+
+  useEffect(() => {
+    let mounted = true
+    getUser().then((currentUser) => {
+      if (!mounted) return
+      setIsAuthenticated(!!currentUser)
+    })
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   const rows = cartItems.map((item) => ({
     ...item,
@@ -71,10 +84,18 @@ export default function CartPage() {
 
   const handlePrintInvoice = () => window.print()
 
-  const checkoutHref =
-    selected.size > 0
-      ? `/buyer/login?redirect=/cart&items=${[...selected].join(',')}`
-      : `/buyer/login?redirect=/cart`
+  const selectedItemsParam =
+    selected.size > 0 ? `items=${[...selected].join(',')}` : ''
+
+  let checkoutHref = '/buyer/login?redirect=/checkout'
+  if (isAuthenticated === true) {
+    checkoutHref =
+      selectedItemsParam ? `/checkout?${selectedItemsParam}` : '/checkout'
+  } else if (isAuthenticated === false) {
+    checkoutHref = selectedItemsParam
+      ? `/buyer/login?redirect=/checkout&${selectedItemsParam}`
+      : `/buyer/login?redirect=/checkout`
+  }
 
   const isEmpty = rows.length === 0
 
