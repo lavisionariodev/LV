@@ -84,7 +84,7 @@
 }
 
 .authContainer input {
-  background-color: #eee;
+  background-color: #ffffff;
   border: none;
   margin: 10px 0;
   padding: 12px 15px;
@@ -98,6 +98,67 @@
 .authContainer input:focus {
   background-color: #e0e0e0;
   box-shadow: 0 0 6px 4px rgba(32, 79, 56, 0.1);
+}
+
+.passwordInputWrap {
+  position: relative;
+  width: 100%;
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  background-color: #ffffff;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.passwordInputWrap:focus-within {
+  border-color: var(--color-main-accent);
+  box-shadow: 0 0 6px 4px rgba(32, 79, 56, 0.1);
+}
+
+.passwordInputWrap input {
+  flex: 1;
+  padding: 12px 44px 12px 15px;
+  margin: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 13px;
+  border-radius: 6px;
+}
+
+.passwordInputWrap input::placeholder {
+  color: #999;
+}
+
+.passwordToggle {
+  position: absolute;
+  left: auto;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  padding: 4px;
+  cursor: pointer;
+  color: #666;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  transition: color 0.2s ease;
+  user-select: none;
+}
+
+.passwordToggle:hover {
+  color: #333;
+}
+
+.passwordToggle i {
+  font-size: 20px;
 }
 
 .socialIcons {
@@ -114,27 +175,39 @@
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  width: 40px;
+  min-width: 40px;
   height: 40px;
+  padding: 0 16px;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .socialIcons a:hover {
-  background-color: #102820;
+  background-color: transparent;
   border-color: #102820;
   transform: translateY(-3px);
   box-shadow: 0 4px 8px rgba(16, 40, 32, 0.25);
-}
-
-.socialIcons a:hover i {
-  color: #fff;
 }
 
 .socialIcons i {
   font-size: 18px;
   color: #666;
   transition: color 0.3s ease;
+}
+
+/* Brand colors for individual social icons */
+.socialIcons a:first-child i {
+  color: #DB4437; /* Google red */
+}
+
+.socialIcons a:last-child i {
+  color: #1877F2; /* Facebook blue */
+}
+
+.socialLabel {
+  margin-left: 8px;
+  font-size: 13px;
+  color: #333;
 }
 
 .authFooter {
@@ -221,8 +294,9 @@
   }
 
   .socialIcons a {
-    width: 44px;
+    min-width: 44px;
     height: 44px;
+    padding: 0 18px;
     transition: transform 0.2s ease-out, border-color 0.2s ease-out, box-shadow 0.2s ease-out;
   }
 
