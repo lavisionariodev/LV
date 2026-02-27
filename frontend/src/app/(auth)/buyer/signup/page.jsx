@@ -13,6 +13,7 @@ export default function SignUpPage() {
     email: '',
     password: ''
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   const router = useRouter();
 
@@ -87,11 +88,21 @@ export default function SignUpPage() {
       <h1>Create Account</h1>
       
       <div className={styles.socialIcons}>
-        <a onClick={() => handleSocialAuth('google')}>
+        <a
+          onClick={() => handleSocialAuth('google')}
+          aria-label="Google"
+          title="Google"
+        >
           <i className='bx bxl-google'></i>
+          <span className={styles.socialLabel}>Google</span>
         </a>
-        <a onClick={() => handleSocialAuth('facebook')}>
+        <a
+          onClick={() => handleSocialAuth('facebook')}
+          aria-label="Facebook"
+          title="Facebook"
+        >
           <i className='bx bxl-facebook'></i>
+          <span className={styles.socialLabel}>Facebook</span>
         </a>
       </div>
 
@@ -111,13 +122,33 @@ export default function SignUpPage() {
         value={signUpData.email}
         onChange={handleSignUpChange}
       />
-      <input
-        type="password"
-        name="password"
-        placeholder="Enter Password"
-        value={signUpData.password}
-        onChange={handleSignUpChange}
-      />
+      <div className={styles.passwordInputWrap}>
+        <input
+          type={showPassword ? "text" : "password"}
+          name="password"
+          placeholder="Enter Password"
+          value={signUpData.password}
+          onChange={handleSignUpChange}
+        />
+        <span
+          className={styles.passwordToggle}
+          style={{
+            position: "absolute",
+            right: "12px",
+            top: "50%",
+            transform: "translateY(-80%)",
+            left: "auto",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "24px",
+            height: "24px",
+          }}
+          onClick={() => setShowPassword((p) => !p)}
+        >
+          <i className={showPassword ? "bx bx-hide" : "bx bx-show"} />
+        </span>
+      </div>
 
       <button onClick={handleSignUp}>Sign Up</button>
 

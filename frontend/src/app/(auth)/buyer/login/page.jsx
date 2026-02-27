@@ -21,6 +21,7 @@ function BuyerLoginPageInner() {
     email: '',
     password: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [forgotPasswordSubmitted, setForgotPasswordSubmitted] = useState(false);
@@ -140,11 +141,21 @@ function BuyerLoginPageInner() {
         <h1>Sign In</h1>
 
         <div className={styles.socialIcons}>
-          <a onClick={() => handleSocialAuth('google')}>
+          <a
+            onClick={() => handleSocialAuth('google')}
+            aria-label="Google"
+            title="Google"
+          >
             <i className="bx bxl-google"></i>
+            <span className={styles.socialLabel}>Google</span>
           </a>
-          <a onClick={() => handleSocialAuth('facebook')}>
+          <a
+            onClick={() => handleSocialAuth('facebook')}
+            aria-label="Facebook"
+            title="Facebook"
+          >
             <i className="bx bxl-facebook"></i>
+            <span className={styles.socialLabel}>Facebook</span>
           </a>
         </div>
 
@@ -157,20 +168,42 @@ function BuyerLoginPageInner() {
           value={signInData.email}
           onChange={handleSignInChange}
         />
-        <input
-          type="password"
-          name="password"
-          placeholder="Enter Password"
-          value={signInData.password}
-          onChange={handleSignInChange}
-        />
+        <div className={styles.passwordInputWrap}>
+          <input
+            type={showPassword ? "text" : "password"}
+            name="password"
+            placeholder="Enter Password"
+            value={signInData.password}
+            onChange={handleSignInChange}
+          />
+          <span
+            className={styles.passwordToggle}
+            style={{
+              position: "absolute",
+              right: "12px",
+              top: "50%",
+              transform: "translateY(-80%)",
+              left: "auto",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "24px",
+              height: "24px",
+            }}
+            onClick={() => setShowPassword((p) => !p)}
+          >
+            <i className={showPassword ? "bx bx-hide" : "bx bx-show"} />
+          </span>
+        </div>
 
-        <a
-          onClick={() => setShowForgotPasswordModal(true)}
-          style={{ cursor: 'pointer' }}
-        >
-          Forgot Password?
-        </a>
+        <div className={styles.forgotPasswordWrap}>
+          <a
+            className={styles.forgotPasswordLink}
+            onClick={() => setShowForgotPasswordModal(true)}
+          >
+            Forgot Password?
+          </a>
+        </div>
 
         <button onClick={handleSignIn}>Sign In</button>
 
