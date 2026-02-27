@@ -321,7 +321,13 @@ export default function PublicNavbar() {
                 <button 
                   className={styles.searchBtn} 
                   aria-label="Cart"
-                  onClick={() => router.push('/cart')}
+                  onClick={() => {
+                    if (!isAuthenticated) {
+                      router.push(`/buyer/login?redirect=${encodeURIComponent('/cart')}`)
+                      return
+                    }
+                    router.push('/cart')
+                  }}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="9" cy="21" r="1"></circle>
@@ -392,17 +398,17 @@ export default function PublicNavbar() {
                       className={styles.profileDropdownItem}
                       onClick={() => {
                         setProfileMenuOpen(false)
-                        router.push('/profile')
+                        router.push('/profile/account')
                       }}
                     >
-                      My profile
+                      My account
                     </button>
                     <button
                       type="button"
                       className={styles.profileDropdownItem}
                       onClick={() => {
                         setProfileMenuOpen(false)
-                        router.push('/purchases')
+                        router.push('/profile/purchases')
                       }}
                     >
                       Purchases
