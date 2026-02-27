@@ -2,13 +2,13 @@
 
 import { createContext, useContext, useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { getUser, onAuthStateChange } from '@/lib/auth/session'
 import {
   fetchCart,
   addItem as supabaseAddItem,
   updateQty as supabaseUpdateQty,
   removeItem as supabaseRemoveItem,
 } from '@/lib/cart/supabaseCart'
+import { useAuth } from '@/contexts/AuthContext'
 
 const CartContext = createContext(null)
 
@@ -16,11 +16,12 @@ export function CartProvider({ children }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState(null)
+  const { user, authLoading } = useAuth()
 
-  const loadCart = useCallback(async (user) => {
-    if (user?.id) {
-      setUserId(user.id)
-      const { items: fetched, error } = await fetchCart(supabase, user.id)
+  const loadCart = useCallback(async (nextUser) => {
+    if (nextUser?.id) {
+      setUserId(nextUser.id)
+      const { items: fetched, error } = await fetchCart(supabase, nextUser.id)
       if (!error) setItems(fetched)
       else setItems([])
     } else {
@@ -31,19 +32,21 @@ export function CartProvider({ children }) {
 
   useEffect(() => {
     let mounted = true
-    getUser().then((user) => {
-      if (mounted) loadCart(user)
-    }).finally(() => {
-      if (mounted) setLoading(false)
+
+    if (authLoading) {
+      return
+    }
+
+    loadCart(user).finally(() => {
+      if (mounted) {
+        setLoading(false)
+      }
     })
-    const unsubscribe = onAuthStateChange(() => {
-      getUser().then((user) => mounted && loadCart(user))
-    })
+
     return () => {
       mounted = false
-      unsubscribe()
     }
-  }, [loadCart])
+  }, [authLoading, user, loadCart])
 
   const addItem = useCallback(
     async (item) => {
@@ -111,7 +114,7 @@ export function CartProvider({ children }) {
     updateQty,
     removeItem,
     setItems: setItemsOverride,
-    refreshCart: () => getUser().then(loadCart),
+    refreshCart: () => loadCart(user),
   }
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>

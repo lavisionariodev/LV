@@ -4,13 +4,14 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useCart } from '@/contexts/CartContext'
-import { getUser, onAuthStateChange, signOut } from '@/lib/auth/session'
-import { supabase } from '@/lib/supabase/client'
+import { signOut } from '@/lib/auth/session'
 import LogoutModal from '@/components/ui/Modal/Logout'
 import styles from './PublicNavbar.module.css'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function PublicNavbar() {
   const { cartCount } = useCart()
+  const { user, profile } = useAuth()
   const [query, setQuery] = useState('')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mobileHowItWorksOpen, setMobileHowItWorksOpen] = useState(false)
@@ -18,8 +19,6 @@ export default function PublicNavbar() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [howItWorksOpen, setHowItWorksOpen] = useState(false)
   const [aboutUsOpen, setAboutUsOpen] = useState(false)
-  const [user, setUser] = useState(null)
-  const [profile, setProfile] = useState({ full_name: '', avatar_url: '' })
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const [logoutOpen, setLogoutOpen] = useState(false)
   const router = useRouter()
@@ -57,63 +56,6 @@ export default function PublicNavbar() {
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [searchOpen])
-
-  useEffect(() => {
-    let mounted = true
-
-    getUser().then((currentUser) => {
-      if (mounted) {
-        setUser(currentUser)
-      }
-    })
-
-    const unsubscribe = onAuthStateChange((_event, session) => {
-      const nextUser = session?.user ?? null
-      setUser(nextUser)
-      if (!nextUser) {
-        setProfileMenuOpen(false)
-      }
-    })
-
-    return () => {
-      mounted = false
-      if (typeof unsubscribe === 'function') {
-        unsubscribe()
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!user) {
-      setProfile({ full_name: '', avatar_url: '' })
-      return
-    }
-
-    let cancelled = false
-
-    const loadProfile = async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('full_name, avatar_url')
-        .eq('id', user.id)
-        .maybeSingle()
-
-      if (cancelled) return
-
-      if (!error && data) {
-        setProfile({
-          full_name: data.full_name || '',
-          avatar_url: data.avatar_url || '',
-        })
-      }
-    }
-
-    loadProfile()
-
-    return () => {
-      cancelled = true
-    }
-  }, [user])
 
   useEffect(() => {
     const handleClickOutside = (event) => {

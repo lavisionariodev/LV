@@ -79,7 +79,6 @@
 
 .authContainer button:hover {
   background-color: #279354;
-  transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(32, 79, 56, 0.3);
 }
 
