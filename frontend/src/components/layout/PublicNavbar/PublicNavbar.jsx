@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useCart } from '@/contexts/CartContext'
+import { getUser, onAuthStateChange, signOut } from '@/lib/auth/session'
 import styles from './PublicNavbar.module.css'
 
 export default function PublicNavbar() {
@@ -15,9 +16,12 @@ export default function PublicNavbar() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [howItWorksOpen, setHowItWorksOpen] = useState(false)
   const [aboutUsOpen, setAboutUsOpen] = useState(false)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [user, setUser] = useState(null)
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const router = useRouter()
+  const pathname = usePathname()
   const searchRef = useRef(null)
+  const profileRef = useRef(null)
 
   const howItWorksItems = [
     { label: 'Step-by-Step Process', sectionId: 'step-by-step-process' },
@@ -50,20 +54,56 @@ export default function PublicNavbar() {
     }
   }, [searchOpen])
 
-  const handleSearch = (e) => {
-    e.preventDefault()
-    if (!query.trim()) return
-    router.push(`/search?q=${encodeURIComponent(query)}`)
-    setQuery('')
-    setSearchOpen(false)
-  }
+  useEffect(() => {
+    let mounted = true
+
+    getUser().then((currentUser) => {
+      if (mounted) {
+        setUser(currentUser)
+      }
+    })
+
+    const unsubscribe = onAuthStateChange((_event, session) => {
+      const nextUser = session?.user ?? null
+      setUser(nextUser)
+      if (!nextUser) {
+        setProfileMenuOpen(false)
+      }
+    })
+
+    return () => {
+      mounted = false
+      if (typeof unsubscribe === 'function') {
+        unsubscribe()
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setProfileMenuOpen(false)
+      }
+    }
+
+    if (profileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [profileMenuOpen])
 
   const handleUserIconClick = () => {
-    if (!isAuthenticated) {
-      router.push('/buyer/login')
-    } else {
-      router.push('/profile')
+    const target = pathname || '/'
+
+    if (!user) {
+      router.push(`/buyer/login?redirect=${encodeURIComponent(target)}`)
+      return
     }
+
+    router.push('/profile')
   }
 
   return (
@@ -208,6 +248,67 @@ export default function PublicNavbar() {
                 )}
               </span>
             </div>
+            <div className={styles.profileMenuWrap} ref={profileRef}>
+              <button
+                type="button"
+                className={styles.profileBtn}
+                aria-label={user ? 'User menu' : 'Sign in'}
+                aria-expanded={profileMenuOpen}
+                onClick={() => {
+                  const target = pathname || '/'
+                  if (!user) {
+                    router.push(`/buyer/login?redirect=${encodeURIComponent(target)}`)
+                    return
+                  }
+                  setProfileMenuOpen((open) => !open)
+                }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              </button>
+              {profileMenuOpen && user && (
+                <div className={styles.profileDropdown} role="menu">
+                  <button
+                    type="button"
+                    className={styles.profileDropdownItem}
+                    onClick={() => {
+                      setProfileMenuOpen(false)
+                      router.push('/profile')
+                    }}
+                  >
+                    Manage Profile
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.profileDropdownItem}
+                    onClick={async () => {
+                      await signOut()
+                      setProfileMenuOpen(false)
+                      router.push('/')
+                    }}
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+              {profileMenuOpen && !user && (
+                <div className={styles.profileDropdown} role="menu">
+                  <button
+                    type="button"
+                    className={styles.profileDropdownItem}
+                    onClick={() => {
+                      setProfileMenuOpen(false)
+                      const target = pathname || '/'
+                      router.push(`/buyer/login?redirect=${encodeURIComponent(target)}`)
+                    }}
+                  >
+                    Sign In
+                  </button>
+                </div>
+              )}
+            </div>
             <button 
               className={styles.mobileToggle}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -285,7 +386,27 @@ export default function PublicNavbar() {
 
           <div className={styles.mobileDivider}></div>
 
-          <Link href="/buyer/login" className={styles.mobileLink}>Sign In</Link>
+          {!user ? (
+            <Link href="/buyer/login?redirect=/profile" className={styles.mobileLink}>
+              Sign In
+            </Link>
+          ) : (
+            <>
+              <Link href="/profile" className={styles.mobileLink}>
+                Profile
+              </Link>
+              <button
+                type="button"
+                className={styles.mobileLinkButton}
+                onClick={async () => {
+                  await signOut()
+                  router.push('/')
+                }}
+              >
+                Logout
+              </button>
+            </>
+          )}
         </div>
       )}
     </header>
