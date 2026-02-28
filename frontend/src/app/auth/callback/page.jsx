@@ -2,6 +2,7 @@
 
 /**
  * OAuth callback for buyer sign-in only (e.g. Google).
+ * Code exchange (PKCE) is performed in middleware; this page only reads session from cookies and enforces role.
  * Seller OAuth is not wired here yet. Enforces buyer role; admins/sellers are redirected to login.
  */
 import { Suspense, useEffect, useState } from "react";
@@ -56,22 +57,13 @@ function AuthCallbackInner() {
         router.replace(`/buyer/login${message ? `?error=${encodeURIComponent(message)}` : ""}`);
       };
 
-      if (!code && !hasHash) {
-        fail(
-          "Missing sign-in data. Ensure Supabase Redirect URLs include this page (e.g. http://localhost:3000/auth/callback)."
-        );
+      if (code) {
+        fail("Sign-in could not be completed. Please try again.");
         return;
       }
 
       try {
-        if (code) {
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
-          if (!mounted) return;
-          if (error) {
-            fail(error.message);
-            return;
-          }
-        } else if (hasHash) {
+        if (hasHash) {
           const { data, error } = await supabase.auth.getSession();
           if (!mounted) return;
           if (error || !data?.session) {
@@ -82,10 +74,13 @@ function AuthCallbackInner() {
 
         const {
           data: { user },
+          error: userError,
         } = await supabase.auth.getUser();
         if (!mounted) return;
-        if (!user) {
-          fail("Unable to load your account. Please try again.");
+        if (userError || !user) {
+          fail(
+            "Missing sign-in data. Ensure Supabase Redirect URLs include this page (e.g. http://localhost:3000/auth/callback)."
+          );
           return;
         }
 
