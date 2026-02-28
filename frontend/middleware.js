@@ -1,6 +1,6 @@
 /**
- * Supabase auth middleware: exchanges OAuth code for session on /auth/callback (PKCE),
- * refreshes session on other requests. Session is stored in cookies for SSR.
+ * Supabase auth middleware: refreshes session (token refresh) so cookies stay up to date.
+ * OAuth code exchange is done in app/auth/callback/route.js so cookies set correctly in production.
  */
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
@@ -14,7 +14,6 @@ export async function middleware(request) {
   }
 
   let response = NextResponse.next({ request });
-  const cookiesToSet = [];
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -24,40 +23,10 @@ export async function middleware(request) {
       setAll(cookies) {
         cookies.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);
-          cookiesToSet.push({ name, value, options });
         });
       },
     },
   });
-
-  const { pathname, searchParams } = request.nextUrl;
-  const code = searchParams.get("code");
-
-  if (pathname === "/auth/callback" && code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (error) {
-      const loginUrl = new URL("/buyer/login", request.url);
-      loginUrl.searchParams.set(
-        "error",
-        "Sign-in could not be completed. Please try again."
-      );
-      return NextResponse.redirect(loginUrl);
-    }
-    const redirectUrl = new URL("/auth/callback", request.url);
-    const redirectParam = searchParams.get("redirect");
-    if (redirectParam) redirectUrl.searchParams.set("redirect", redirectParam);
-    const redirectResponse = NextResponse.redirect(redirectUrl);
-    const isHttps = request.nextUrl.protocol === "https:";
-    cookiesToSet.forEach(({ name, value, options }) => {
-      redirectResponse.cookies.set(name, value, {
-        ...options,
-        path: options?.path ?? "/",
-        sameSite: options?.sameSite ?? "lax",
-        secure: options?.secure ?? isHttps,
-      });
-    });
-    return redirectResponse;
-  }
 
   await supabase.auth.getUser();
   return response;
