@@ -50,16 +50,23 @@ export async function GET(request) {
     return NextResponse.redirect(loginUrl);
   }
 
-  const { data: userRow } = await supabase
+  let { data: userRow } = await supabase
     .from("users")
     .select("role")
     .eq("id", user.id)
     .maybeSingle();
 
+  // If no users row (e.g. OAuth signup before trigger ran or trigger not applied), create one as buyer.
   if (!userRow?.role) {
-    await supabase.auth.signOut();
-    loginUrl.searchParams.set("error", "Your account is not configured for this portal.");
-    return NextResponse.redirect(loginUrl);
+    const { error: insertError } = await supabase
+      .from("users")
+      .insert({ id: user.id, email: user.email ?? "", role: "buyer" });
+    if (insertError) {
+      await supabase.auth.signOut();
+      loginUrl.searchParams.set("error", "Your account is not configured for this portal.");
+      return NextResponse.redirect(loginUrl);
+    }
+    userRow = { role: "buyer" };
   }
   if (userRow.role !== "buyer") {
     await supabase.auth.signOut();
