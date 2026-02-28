@@ -56,18 +56,35 @@ export async function GET(request) {
     .eq("id", user.id)
     .maybeSingle();
 
-  // If no users row (e.g. OAuth signup before trigger ran or trigger not applied), create one as buyer.
+  const email = user.email ?? "";
+  const fullName =
+    user.user_metadata?.full_name ??
+    user.user_metadata?.name ??
+    "";
+
+  // If no users row (e.g. OAuth signup before trigger ran or trigger not applied), create one as buyer and ensure profile exists.
   if (!userRow?.role) {
     const { error: insertError } = await supabase
       .from("users")
-      .insert({ id: user.id, email: user.email ?? "", role: "buyer" });
+      .insert({ id: user.id, email, role: "buyer" });
     if (insertError) {
       await supabase.auth.signOut();
       loginUrl.searchParams.set("error", "Your account is not configured for this portal.");
       return NextResponse.redirect(loginUrl);
     }
     userRow = { role: "buyer" };
+    await supabase.from("profiles").upsert(
+      { id: user.id, email, full_name: fullName },
+      { onConflict: "id" }
+    );
   }
+
+  // Ensure profile row exists (fixes OAuth users who have users but no profile, or updates name from provider).
+  await supabase.from("profiles").upsert(
+    { id: user.id, email, full_name: fullName },
+    { onConflict: "id" }
+  );
+
   if (userRow.role !== "buyer") {
     await supabase.auth.signOut();
     loginUrl.searchParams.set("error", "Please use the correct portal for your account.");
