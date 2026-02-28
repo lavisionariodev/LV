@@ -1,11 +1,10 @@
 "use client";
 
-import { Suspense } from "react";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AuthLayout from '../AuthLayout';
 import styles from './login.module.css';
-import { loginWithEmailPassword } from '@/lib/auth/client';
+import { loginWithEmailPassword, signInWithOAuth } from '@/lib/auth/client';
 import {
   requestPasswordReset,
   resetPasswordWithToken,
@@ -37,6 +36,15 @@ function BuyerLoginPageInner() {
     confirmPassword: '',
   });
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const hasShownErrorRef = useRef(false);
+
+  useEffect(() => {
+    const errorParam = searchParams.get("error");
+    if (errorParam && !hasShownErrorRef.current) {
+      hasShownErrorRef.current = true;
+      toast.error(decodeURIComponent(errorParam));
+    }
+  }, [searchParams, toast]);
 
   useEffect(() => {
     let mounted = true;
@@ -108,7 +116,17 @@ function BuyerLoginPageInner() {
     }
   };
 
-  const handleSocialAuth = (provider) => {
+  const handleSocialAuth = async (provider) => {
+    if (provider === "Google") {
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const redirectTo =
+        redirect && redirect !== "/"
+          ? `${origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`
+          : `${origin}/auth/callback`;
+      const { error } = await signInWithOAuth({ provider: "google", redirectTo });
+      if (error) toast.error(error);
+      return;
+    }
     toast.info(`${provider} authentication would be implemented here`);
   };
 
@@ -342,8 +360,8 @@ function BuyerLoginPageInner() {
             </div>
             <h2>Reset Password</h2>
             <p>
-              Enter your new password below. Make sure it's at least 6 characters
-              long.
+              Enter your new password below. Use at least 8 characters with
+              lowercase, uppercase, and digits.
             </p>
 
             <input
@@ -354,7 +372,9 @@ function BuyerLoginPageInner() {
               onChange={handleResetPasswordChange}
             />
             <div className={styles.passwordRequirements}>
-              • Minimum 6 characters
+              • At least 8 characters
+              <br />
+              • Lowercase, uppercase, and digits
             </div>
 
             <input

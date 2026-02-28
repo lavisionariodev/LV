@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getUser } from "@/lib/auth/session";
-import { signUpWithEmailPassword } from "@/lib/auth/client";
+import { signUpWithEmailPassword, signInWithOAuth } from "@/lib/auth/client";
 import AuthLayout from "../AuthLayout";
 import styles from "./signup.module.css";
 import { useToast } from "@/contexts/ToastContext";
@@ -62,7 +62,14 @@ export default function SignUpPage() {
     }
   };
 
-  const handleSocialAuth = (provider) => {
+  const handleSocialAuth = async (provider) => {
+    if (provider === "Google") {
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const redirectTo = `${origin}/auth/callback`;
+      const { error } = await signInWithOAuth({ provider: "google", redirectTo });
+      if (error) toast.error(error);
+      return;
+    }
     toast.info(`${provider} authentication would be implemented here`);
   };
 

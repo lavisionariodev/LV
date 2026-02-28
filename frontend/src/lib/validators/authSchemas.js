@@ -4,8 +4,25 @@
  */
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MIN_PASSWORD_LENGTH = 6;
-const PASSWORD_TOO_SHORT_MESSAGE = "Password must be at least 6 characters long";
+const MIN_PASSWORD_LENGTH = 8;
+const PASSWORD_TOO_SHORT_MESSAGE = "Password must be at least 8 characters long";
+
+/** Check password composition: at least one lowercase, one uppercase, one digit (matches Supabase Email provider). */
+function validatePasswordStrength(password) {
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return { valid: false, message: PASSWORD_TOO_SHORT_MESSAGE };
+  }
+  if (!/[a-z]/.test(password)) {
+    return { valid: false, message: "Password must include at least one lowercase letter" };
+  }
+  if (!/[A-Z]/.test(password)) {
+    return { valid: false, message: "Password must include at least one uppercase letter" };
+  }
+  if (!/\d/.test(password)) {
+    return { valid: false, message: "Password must include at least one digit" };
+  }
+  return { valid: true, message: "" };
+}
 
 export function isValidEmail(email) {
   if (!email) {
@@ -36,8 +53,9 @@ export function validateSignUpPayload({ name, email, password }) {
   if (!emailCheck.valid) {
     return emailCheck;
   }
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    return { valid: false, message: PASSWORD_TOO_SHORT_MESSAGE };
+  const strength = validatePasswordStrength(password);
+  if (!strength.valid) {
+    return strength;
   }
   return { valid: true, message: "" };
 }
@@ -46,8 +64,9 @@ export function validateNewPassword(password, confirmPassword) {
   if (!password || !confirmPassword) {
     return { valid: false, message: "Please fill in all fields" };
   }
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    return { valid: false, message: PASSWORD_TOO_SHORT_MESSAGE };
+  const strength = validatePasswordStrength(password);
+  if (!strength.valid) {
+    return strength;
   }
   if (password !== confirmPassword) {
     return { valid: false, message: "Passwords do not match" };
