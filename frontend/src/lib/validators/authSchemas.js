@@ -4,6 +4,8 @@
  */
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MIN_PASSWORD_LENGTH = 6;
+const PASSWORD_TOO_SHORT_MESSAGE = "Password must be at least 6 characters long";
 
 export function isValidEmail(email) {
   if (!email) {
@@ -26,19 +28,29 @@ export function validateLoginPayload({ email, password }) {
   return { valid: true, message: "" };
 }
 
+export function validateSignUpPayload({ name, email, password }) {
+  if (!name?.trim() || !email || !password) {
+    return { valid: false, message: "Please fill in all fields" };
+  }
+  const emailCheck = isValidEmail(email);
+  if (!emailCheck.valid) {
+    return emailCheck;
+  }
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return { valid: false, message: PASSWORD_TOO_SHORT_MESSAGE };
+  }
+  return { valid: true, message: "" };
+}
+
 export function validateNewPassword(password, confirmPassword) {
   if (!password || !confirmPassword) {
     return { valid: false, message: "Please fill in all fields" };
   }
-  if (password.length < 6) {
-    return {
-      valid: false,
-      message: "Password must be at least 6 characters long",
-    };
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return { valid: false, message: PASSWORD_TOO_SHORT_MESSAGE };
   }
   if (password !== confirmPassword) {
     return { valid: false, message: "Passwords do not match" };
   }
   return { valid: true, message: "" };
 }
-
