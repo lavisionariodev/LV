@@ -12,7 +12,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 /**
  * Create a Supabase client for Server Components, Route Handlers, and Server Actions.
- * Session refresh that requires setting cookies is handled by middleware; setAll may no-op in some contexts.
+ * Used by GET /auth/callback for OAuth code exchange. Session refresh is handled by middleware.
  */
 export async function createClient() {
   const cookieStore = await cookies();
@@ -28,7 +28,7 @@ export async function createClient() {
             cookieStore.set(name, value, options)
           );
         } catch {
-          // Ignored when called from Server Component; middleware handles token refresh.
+          // Ignored when called from Server Component; middleware handles session refresh.
         }
       },
     },
