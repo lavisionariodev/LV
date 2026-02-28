@@ -23,9 +23,9 @@ export function ToastProvider({ children }) {
     info: (message, duration) => show('info', message, duration),
   };
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setToastState(null);
-  };
+  }, []);
 
   return (
     <ToastContext.Provider value={api}>

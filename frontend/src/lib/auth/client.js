@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase/client";
-import { validateLoginPayload } from "@/lib/validators/authSchemas";
+import { validateLoginPayload, validateSignUpPayload } from "@/lib/validators/authSchemas";
 
 export async function loginWithEmailPassword({ email, password }) {
   const validation = validateLoginPayload({ email, password });
@@ -22,3 +22,34 @@ export async function loginWithEmailPassword({ email, password }) {
   return { data, error: null };
 }
 
+/**
+ * Sign up with email/password (buyer or seller).
+ * Users and profiles rows are created by DB trigger on auth.users insert.
+ * @param {{ name: string, email: string, password: string, role?: 'buyer' | 'seller' }}
+ */
+export async function signUpWithEmailPassword({ name, email, password, role = "buyer" }) {
+  const validation = validateSignUpPayload({ name, email, password });
+  if (!validation.valid) {
+    return { data: null, error: validation.message };
+  }
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        full_name: name.trim(),
+        role: role === "seller" ? "seller" : "buyer",
+      },
+    },
+  });
+
+  if (error) {
+    return {
+      data: null,
+      error: error.message || "Sign up failed. Please try again.",
+    };
+  }
+
+  return { data, error: null };
+}

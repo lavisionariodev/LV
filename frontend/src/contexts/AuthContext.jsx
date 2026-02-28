@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { getUser, onAuthStateChange } from '@/lib/auth/session';
 
@@ -75,12 +75,15 @@ export function AuthProvider({ children }) {
     };
   }, [loadProfile]);
 
-  const value = {
-    user,
-    profile,
-    authLoading,
-    refreshProfile,
-  };
+  const value = useMemo(
+    () => ({
+      user,
+      profile,
+      authLoading,
+      refreshProfile,
+    }),
+    [user, profile, authLoading, refreshProfile]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

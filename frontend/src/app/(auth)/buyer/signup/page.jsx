@@ -2,8 +2,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/client";
 import { getUser } from "@/lib/auth/session";
+import { signUpWithEmailPassword } from "@/lib/auth/client";
 import AuthLayout from "../AuthLayout";
 import styles from "./signup.module.css";
 import { useToast } from "@/contexts/ToastContext";
@@ -40,58 +40,17 @@ export default function SignUpPage() {
   };
 
   const handleSignUp = async () => {
-    if (!signUpData.name || !signUpData.email || !signUpData.password) {
-      toast.error('Please fill in all fields');
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(signUpData.email)) {
-      toast.error('Please enter a valid email address');
-      return;
-    }
-
-    if (signUpData.password.length < 6) {
-      toast.error('Password must be at least 6 characters long');
-      return;
-    }
-
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await signUpWithEmailPassword({
+        name: signUpData.name,
         email: signUpData.email,
         password: signUpData.password,
-        options: {
-          data: {
-            full_name: signUpData.name,
-          },
-        },
+        role: 'buyer',
       });
 
       if (error) {
-        toast.error(error.message || 'Sign up failed. Please try again.');
+        toast.error(error);
         return;
-      }
-
-      try {
-        let userId = data?.user?.id || null;
-        let email = data?.user?.email || null;
-
-        if (!userId) {
-          const { data: userData } = await supabase.auth.getUser();
-          userId = userData?.user?.id ?? null;
-          email = userData?.user?.email ?? null;
-        }
-
-        if (userId && email) {
-          await supabase.from('users').upsert({
-            id: userId,
-            email,
-            role: 'buyer',
-          });
-        }
-      } catch (roleError) {
-        console.error('Error upserting user role:', roleError);
-        // Do not block signup on role upsert failure
       }
 
       toast.success('Sign up successful! Please check your email to confirm your account, then sign in.');
