@@ -53,3 +53,19 @@ export async function signUpWithEmailPassword({ name, email, password, role = "b
 
   return { data, error: null };
 }
+
+/**
+ * Start OAuth sign-in (e.g. Google). Redirects the user to the provider.
+ * After auth, the provider redirects to redirectTo (e.g. /auth/callback).
+ * @param {{ provider: 'google' | 'facebook' | 'github' | string, redirectTo: string }}
+ */
+export async function signInWithOAuth({ provider, redirectTo }) {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: { redirectTo },
+  });
+  if (error) {
+    return { data: null, error: error.message };
+  }
+  return { data, error: null };
+}

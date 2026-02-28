@@ -7,6 +7,7 @@ import { FaUser, FaUpload } from 'react-icons/fa6'
 import { TbTrash } from 'react-icons/tb'
 import { FiEdit } from 'react-icons/fi'
 import { MdCheckCircle, MdErrorOutline } from 'react-icons/md'
+import { validateNewPassword } from '@/lib/validators/authSchemas'
 
 const MAX_MB = 2
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp']
@@ -152,18 +153,14 @@ export default function SettingsPage() {
     setPassError('')
     setPassStatus('')
 
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      setPassError('Please complete all fields.')
+    if (!currentPassword) {
+      setPassError('Please enter your current password.')
       return
     }
 
-    if (newPassword !== confirmPassword) {
-      setPassError('Passwords do not match.')
-      return
-    }
-
-    if (newPassword.length < 8) {
-      setPassError('Password must be at least 8 characters.')
+    const validation = validateNewPassword(newPassword, confirmPassword)
+    if (!validation.valid) {
+      setPassError(validation.message)
       return
     }
 

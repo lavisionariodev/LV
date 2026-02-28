@@ -7,6 +7,7 @@ import { FaStore, FaGift, FaHandshake, FaBullhorn, FaTruck,
          FaShoppingBasket, FaChartLine, FaWarehouse, FaGraduationCap,
          FaFacebook, FaYoutube, FaViber, FaShoppingBag } from 'react-icons/fa';
 import PublicFooter from '@/components/layout/PublicFooter/PublicFooter';
+import { validateNewPassword } from '@/lib/validators/authSchemas';
 
 const StepIndicator = ({ currentStep }) => (
   <div className={styles.stepIndicator}>
@@ -413,13 +414,13 @@ const Step5CreatePassword = ({ password, setPassword, confirmPassword, setConfir
     <StepIndicator currentStep={currentStep} />
     <button className={styles.backButton} onClick={onBack}>←</button>
     <h2 className={styles.signupTitle}>Create Password</h2>
-    <p className={styles.verificationSubtitle}>Create a secure password for your account</p>
+    <p className={styles.verificationSubtitle}>At least 8 characters with lowercase, uppercase, and digits.</p>
     
     <div className={styles.formGroup}>
       <label className={styles.formLabel}>Password</label>
       <input 
         type="password"
-        placeholder="At least 8 characters"
+        placeholder="At least 8 characters; lowercase, uppercase, digit"
         className={styles.formControl}
         value={password}
         onChange={(e) => setPassword(e.target.value)}
@@ -550,15 +551,12 @@ const Page = () => {
   };
 
   const handleComplete = () => {
-    if (password !== confirmPassword) {
-      alert('Passwords do not match!');
+    const validation = validateNewPassword(password, confirmPassword);
+    if (!validation.valid) {
+      alert(validation.message);
       return;
     }
-    if (password.length < 8) {
-      alert('Password must be at least 8 characters');
-      return;
-    }
-    
+
     // Register this phone number (simulating saving to database)
     setRegisteredPhones(prev => new Set([...prev, phoneNumber]));
     
