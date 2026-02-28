@@ -47,8 +47,14 @@ export async function middleware(request) {
     const redirectParam = searchParams.get("redirect");
     if (redirectParam) redirectUrl.searchParams.set("redirect", redirectParam);
     const redirectResponse = NextResponse.redirect(redirectUrl);
+    const isHttps = request.nextUrl.protocol === "https:";
     cookiesToSet.forEach(({ name, value, options }) => {
-      redirectResponse.cookies.set(name, value, options);
+      redirectResponse.cookies.set(name, value, {
+        ...options,
+        path: options?.path ?? "/",
+        sameSite: options?.sameSite ?? "lax",
+        secure: options?.secure ?? isHttps,
+      });
     });
     return redirectResponse;
   }
