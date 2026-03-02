@@ -63,10 +63,16 @@ export default function SignUpPage() {
   };
 
   const handleSocialAuth = async (provider) => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const redirectTo = `${origin}/auth/callback`;
+
     if (provider === "Google") {
-      const origin = typeof window !== "undefined" ? window.location.origin : "";
-      const redirectTo = `${origin}/auth/callback`;
       const { error } = await signInWithOAuth({ provider: "google", redirectTo });
+      if (error) toast.error(error);
+      return;
+    }
+    if (provider === "Facebook") {
+      const { error } = await signInWithOAuth({ provider: "facebook", redirectTo });
       if (error) toast.error(error);
       return;
     }
