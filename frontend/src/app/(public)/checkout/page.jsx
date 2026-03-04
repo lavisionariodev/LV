@@ -4,8 +4,9 @@
  import { useRouter, useSearchParams } from "next/navigation"
  import Link from "next/link"
  import styles from "./checkout.module.css"
- import { useCart } from "@/contexts/CartContext"
- import { getUser } from "@/lib/auth/session"
+import { useCart } from "@/contexts/CartContext"
+import { getUser } from "@/lib/auth/session"
+import { getUserRole, ROLE_SELLER } from "@/lib/auth/roles"
 
  function formatPrice(n) {
    return `₱${Number(n).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`
@@ -17,18 +18,26 @@
    const { items: cartItems } = useCart()
    const [loadingUser, setLoadingUser] = useState(true)
    const [user, setUser] = useState(null)
+  const [isSeller, setIsSeller] = useState(false)
 
    useEffect(() => {
      let mounted = true
-     getUser().then((currentUser) => {
-       if (!mounted) return
-       if (!currentUser) {
-         router.replace("/buyer/login?redirect=/checkout")
-         return
-       }
-       setUser(currentUser)
-       setLoadingUser(false)
-     })
+    getUser().then(async (currentUser) => {
+      if (!mounted) return
+      if (!currentUser) {
+        router.replace("/buyer/login?redirect=/checkout")
+        return
+      }
+      const role = await getUserRole(currentUser.id)
+      if (role === ROLE_SELLER) {
+        setIsSeller(true)
+        setUser(currentUser)
+        setLoadingUser(false)
+        return
+      }
+      setUser(currentUser)
+      setLoadingUser(false)
+    })
      return () => {
        mounted = false
      }
@@ -61,11 +70,31 @@
      )
    }
 
-   if (!user) {
+  if (!user) {
      return null
    }
 
-   const isEmpty = filteredItems.length === 0
+  const isEmpty = filteredItems.length === 0
+
+  if (isSeller) {
+    return (
+      <main className={styles.checkoutPage}>
+        <div className={styles.centeredBox}>
+          <h1 className={styles.heroTitle}>Checkout (Buyer only)</h1>
+          <p className={styles.muted}>
+            You are currently signed in as a seller. Sellers cannot book services or complete checkout.
+          </p>
+          <button
+            type="button"
+            className={styles.primaryButton}
+            onClick={() => router.push('/')}
+          >
+            Back to homepage
+          </button>
+        </div>
+      </main>
+    )
+  }
 
    return (
      <main className={styles.checkoutPage}>

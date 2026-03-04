@@ -7,6 +7,7 @@ import styles from "./cart.module.css"
 import { FiX, FiTrash2, FiShoppingBag } from "react-icons/fi"
 import { useCart } from "@/contexts/CartContext"
 import { getUser } from "@/lib/auth/session"
+import { getUserRole, ROLE_SELLER } from "@/lib/auth/roles"
 
 function formatPrice(n) {
   return `₱${Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
@@ -18,12 +19,20 @@ export default function CartPage() {
   const [qtyEdits, setQtyEdits]   = useState({})
   const [selected, setSelected]   = useState(new Set())
   const [isAuthenticated, setIsAuthenticated] = useState(null)
+  const [isSeller, setIsSeller] = useState(false)
 
   useEffect(() => {
     let mounted = true
-    getUser().then((currentUser) => {
+    getUser().then(async (currentUser) => {
       if (!mounted) return
-      setIsAuthenticated(!!currentUser)
+      if (!currentUser) {
+        setIsAuthenticated(false)
+        setIsSeller(false)
+        return
+      }
+      setIsAuthenticated(true)
+      const role = await getUserRole(currentUser.id)
+      setIsSeller(role === ROLE_SELLER)
     })
     return () => {
       mounted = false
@@ -98,6 +107,34 @@ export default function CartPage() {
   }
 
   const isEmpty = rows.length === 0
+
+  if (isSeller) {
+    return (
+      <section className={styles.cartPage}>
+        <header className={styles.hero}>
+          <div className={styles.heroOverlay} />
+          <div className={styles.heroInner}>
+            <h1 className={styles.heroTitle}>Cart (Buyer only)</h1>
+            <p className={styles.breadcrumb}>
+              <Link href="/" className={styles.crumb}>Home</Link>
+              <span className={styles.slash}>/</span>
+              <span className={styles.crumbActive}>Cart</span>
+            </p>
+          </div>
+        </header>
+        <div className={styles.content}>
+          <div className={styles.emptySection}>
+            <div className={styles.emptyIcon}><FiShoppingBag /></div>
+            <h2 className={styles.emptyTitle}>Cart is available for buyers only</h2>
+            <p className={styles.emptySub}>
+              You are currently signed in as a seller. Sellers cannot add items to cart or book services.
+            </p>
+            <Link href="/" className={styles.emptyLink}>Back to homepage</Link>
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section className={styles.cartPage}>
