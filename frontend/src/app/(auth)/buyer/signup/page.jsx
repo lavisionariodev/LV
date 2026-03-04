@@ -49,7 +49,13 @@ export default function SignUpPage() {
       });
 
       if (error) {
-        toast.error(error);
+        const message = typeof error === "string" ? error : String(error);
+        if (message.toLowerCase().includes("already registered")) {
+          toast.error("This email is already registered. Please sign in instead.");
+          router.push("/buyer/login");
+        } else {
+          toast.error(message);
+        }
         return;
       }
 
