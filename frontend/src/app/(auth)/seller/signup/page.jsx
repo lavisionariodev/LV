@@ -9,7 +9,7 @@ import { FaStore, FaGift, FaHandshake, FaBullhorn, FaTruck,
          FaFacebook, FaYoutube, FaViber, FaShoppingBag } from 'react-icons/fa';
 import PublicFooter from '@/components/layout/PublicFooter/PublicFooter';
 import { validateNewPassword } from '@/lib/validators/authSchemas';
-import { sendEmailOtpForSignup, verifyEmailOtpForSignup } from '@/lib/auth/client';
+import { sendEmailOtpForSignup, verifyEmailOtpForSignup, signInWithOAuth } from '@/lib/auth/client';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/contexts/ToastContext';
 
@@ -19,12 +19,12 @@ const StepIndicator = ({ currentStep }) => (
       <div className={`${styles.stepCircle} ${currentStep >= 1 ? styles.active : ''}`}>1</div>
       <span className={`${styles.stepLabel} ${currentStep >= 1 ? styles.active : ''}`}>Verify email</span>
     </div>
-    <div className={styles.stepLine}></div>
+    <div className={`${styles.stepLine} ${currentStep >= 2 ? styles.active : ''}`}></div>
     <div className={styles.stepItem}>
       <div className={`${styles.stepCircle} ${currentStep >= 2 ? styles.active : ''}`}>2</div>
       <span className={`${styles.stepLabel} ${currentStep >= 2 ? styles.active : ''}`}>Create password</span>
     </div>
-    <div className={styles.stepLine}></div>
+    <div className={`${styles.stepLine} ${currentStep >= 3 ? styles.active : ''}`}></div>
     <div className={styles.stepItem}>
       <div className={`${styles.stepCircle} ${currentStep >= 3 ? styles.active : ''}`}>
         {currentStep >= 3 ? '✓' : ''}
@@ -34,7 +34,7 @@ const StepIndicator = ({ currentStep }) => (
   </div>
 );
 
-const Step1PhoneInput = ({ phoneNumber, setPhoneNumber, onNext, currentStep }) => (
+const Step1PhoneInput = ({ phoneNumber, setPhoneNumber, onNext, currentStep, onSocialAuth }) => (
   <div className={styles.signupCard}>
     {currentStep > 1 && <StepIndicator currentStep={currentStep} />}
     <h2 className={styles.signupTitle}>Sign Up</h2>
@@ -60,13 +60,21 @@ const Step1PhoneInput = ({ phoneNumber, setPhoneNumber, onNext, currentStep }) =
       </div>
 
       <div className={styles.socialButtons}>
-        <button type="button" className={styles.facebookBtn}>
+        <button
+          type="button"
+          className={styles.facebookBtn}
+          onClick={() => onSocialAuth && onSocialAuth('Facebook')}
+        >
           <svg viewBox="0 0 24 24" width="20" height="20" fill="#1877f2">
             <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
           </svg>
           Facebook
         </button>
-        <button type="button" className={styles.googleBtn}>
+        <button
+          type="button"
+          className={styles.googleBtn}
+          onClick={() => onSocialAuth && onSocialAuth('Google')}
+        >
           <svg viewBox="0 0 24 24" width="20" height="20">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -500,6 +508,35 @@ const Page = () => {
     }
   }, [countdown]);
 
+  const handleSocialSignup = async (provider) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const redirectPath = '/seller/onboarding';
+
+    const baseRedirect =
+      redirectPath && redirectPath !== '/'
+        ? `${origin}/auth/callback?redirect=${encodeURIComponent(redirectPath)}`
+        : `${origin}/auth/callback`;
+
+    const redirectTo =
+      baseRedirect.includes('?')
+        ? `${baseRedirect}&portal=seller`
+        : `${baseRedirect}?portal=seller`;
+
+    if (provider === 'Google') {
+      const { error } = await signInWithOAuth({ provider: 'google', redirectTo });
+      if (error) toast.error(error);
+      return;
+    }
+
+    if (provider === 'Facebook') {
+      const { error } = await signInWithOAuth({ provider: 'facebook', redirectTo });
+      if (error) toast.error(error);
+      return;
+    }
+
+    toast.info(`${provider} authentication would be implemented here`);
+  };
+
   const handlePhoneNext = () => {
     const trimmedEmail = phoneNumber.trim();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -526,6 +563,18 @@ const Page = () => {
 
     setIsSendingCode(true);
     try {
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', trimmedEmail)
+        .maybeSingle();
+
+      if (existingProfile) {
+        toast.error('This email is already registered. Please sign in instead of signing up again.');
+        router.push('/seller/login');
+        return;
+      }
+
       const { error } = await sendEmailOtpForSignup({
         email: trimmedEmail,
         role: 'seller',
@@ -560,6 +609,18 @@ const Page = () => {
 
     setIsSendingCode(true);
     try {
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', trimmedEmail)
+        .maybeSingle();
+
+      if (existingProfile) {
+        toast.error('This email is already registered. Please sign in instead of signing up again.');
+        router.push('/seller/login');
+        return;
+      }
+
       const { error } = await sendEmailOtpForSignup({
         email: trimmedEmail,
         role: 'seller',
@@ -752,6 +813,7 @@ const Page = () => {
                 setPhoneNumber={setPhoneNumber}
                 onNext={handlePhoneNext}
                 currentStep={1}
+                onSocialAuth={handleSocialSignup}
               />
             )}
             {step === 2 && (
