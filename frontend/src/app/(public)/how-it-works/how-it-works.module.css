@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600&family=Lato:wght@300;400;700&display=swap');
 
-.aboutPage {
+.howItWorksPage {
   width: 100%;
   min-height: 100vh;
   padding-bottom: 4rem;
@@ -120,3 +120,16 @@
 .sectionText:last-child {
   margin-bottom: 0;
 }
+
+.stepList {
+  margin: 8px 0 0;
+  padding-left: 1.25rem;
+  font-size: 15px;
+  line-height: 1.65;
+  color: #555;
+}
+
+.stepList li + li {
+  margin-top: 4px;
+}
+
