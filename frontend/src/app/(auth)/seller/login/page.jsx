@@ -1,21 +1,126 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import styles from './login.module.css';
+import { loginWithEmailPassword, signInWithOAuth } from '@/lib/auth/client';
+import { supabase } from '@/lib/supabase/client';
+import { isAdmin } from '@/lib/auth/admin';
+import { getUser } from '@/lib/auth/session';
+import { getUserRole, ROLE_SELLER } from '@/lib/auth/roles';
+import { useToast } from '@/contexts/ToastContext';
 
-export default function LoginPage() {
+function SellerLoginPageInner() {
   const [loginMode, setLoginMode] = useState('password'); // 'password' or 'qr'
   const [showPassword, setShowPassword] = useState(false);
   const [showHowToScan, setShowHowToScan] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect') || '/';
+  const toast = useToast();
+
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam) {
+      toast.error(decodeURIComponent(errorParam));
+    }
+  }, [searchParams, toast]);
+
+  useEffect(() => {
+    let mounted = true;
+    getUser().then(async (currentUser) => {
+      if (!mounted || !currentUser) return;
+      const role = await getUserRole(currentUser.id);
+      if (role === ROLE_SELLER) {
+        router.replace(redirect || '/');
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [redirect, router]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert('Login functionality would be implemented here!');
+    if (submitting) return;
+
+    setSubmitting(true);
+    try {
+      const { error } = await loginWithEmailPassword({ email, password });
+      if (error) {
+        toast.error(error);
+        return;
+      }
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        toast.error('Unable to load your account. Please try again.');
+        return;
+      }
+
+      const admin = await isAdmin(supabase, user.id);
+      if (admin) {
+        await supabase.auth.signOut();
+        toast.error('Please use the admin portal to sign in.');
+        return;
+      }
+
+      const role = await getUserRole(user.id);
+      if (!role) {
+        toast.error('Your account is not configured for this portal.');
+        await supabase.auth.signOut();
+        return;
+      }
+
+      if (role !== ROLE_SELLER) {
+        toast.error('Please use the correct portal for your account.');
+        await supabase.auth.signOut();
+        return;
+      }
+
+      toast.success('Welcome back to Seller Centre!');
+      router.replace(redirect || '/');
+    } catch (err) {
+      console.error('Seller login error:', err);
+      toast.error('An error occurred. Please try again later.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleSocialLogin = (provider) => {
-    alert(`${provider} login would be implemented here!`);
+  const handleSocialLogin = async (provider) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const baseRedirect =
+      redirect && redirect !== '/'
+        ? `${origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`
+        : `${origin}/auth/callback`;
+
+    const redirectTo =
+      baseRedirect.includes('?')
+        ? `${baseRedirect}&portal=seller`
+        : `${baseRedirect}?portal=seller`;
+
+    if (provider === 'Google') {
+      const { error } = await signInWithOAuth({ provider: 'google', redirectTo });
+      if (error) toast.error(error);
+      return;
+    }
+
+    if (provider === 'Facebook') {
+      const { error } = await signInWithOAuth({ provider: 'facebook', redirectTo });
+      if (error) toast.error(error);
+      return;
+    }
+
+    toast.info(`${provider} authentication would be implemented here`);
   };
 
   return (
@@ -143,9 +248,12 @@ export default function LoginPage() {
                 <form onSubmit={handleSubmit} className={styles.loginForm}>
                   <div className={styles.formGroup}>
                     <input 
-                      type="text" 
-                      placeholder="Phone number / Username / Email"
+                      type="email" 
+                      placeholder="Email"
                       className={styles.input}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
                     />
                   </div>
 
@@ -155,6 +263,9 @@ export default function LoginPage() {
                         type={showPassword ? 'text' : 'password'}
                         placeholder="Password"
                         className={styles.input}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
                       />
                       <button
                         type="button"
@@ -175,11 +286,17 @@ export default function LoginPage() {
                     </div>
                   </div>
 
-                  <button type="submit" className={styles.loginButton}>
-                    LOG IN
+                  <button type="submit" className={styles.loginButton} disabled={submitting}>
+                    {submitting ? 'Logging in...' : 'LOG IN'}
                   </button>
 
-                  <a href="#" className={styles.forgotPassword}>Forgot Password</a>
+                  <button
+                    type="button"
+                    className={styles.forgotPassword}
+                    onClick={() => toast.info('Password reset for sellers will be available soon.')}
+                  >
+                    Forgot Password?
+                  </button>
 
                   <div className={styles.divider}>
                     <span>OR</span>
@@ -304,5 +421,13 @@ export default function LoginPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function SellerLoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <SellerLoginPageInner />
+    </Suspense>
   );
 }

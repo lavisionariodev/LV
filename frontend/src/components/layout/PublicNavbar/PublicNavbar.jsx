@@ -1,26 +1,30 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { useCart } from '@/contexts/CartContext'
+import { signOut } from '@/lib/auth/session'
+import LogoutModal from '@/components/ui/Modal/Logout'
 import styles from './PublicNavbar.module.css'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function PublicNavbar() {
+  const { cartCount } = useCart()
+  const { user, profile, role, isBuyer, isSeller } = useAuth()
   const [query, setQuery] = useState('')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mobileHowItWorksOpen, setMobileHowItWorksOpen] = useState(false)
+  const [mobileAboutUsOpen, setMobileAboutUsOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
-  const [shopOpen, setShopOpen] = useState(false)
   const [howItWorksOpen, setHowItWorksOpen] = useState(false)
   const [aboutUsOpen, setAboutUsOpen] = useState(false)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const [logoutOpen, setLogoutOpen] = useState(false)
   const router = useRouter()
+  const pathname = usePathname()
   const searchRef = useRef(null)
-
-  const shopItems = [
-    { label: 'Service Listings', href: '/services' },
-    { label: 'Custom Packages', href: '/packages' },
-    { label: 'Marketplace Products', href: '/marketplace' }
-  ]
+  const profileRef = useRef(null)
 
   const howItWorksItems = [
     { label: 'Step-by-Step Process', sectionId: 'step-by-step-process' },
@@ -53,20 +57,43 @@ export default function PublicNavbar() {
     }
   }, [searchOpen])
 
-  const handleSearch = (e) => {
-    e.preventDefault()
-    if (!query.trim()) return
-    router.push(`/search?q=${encodeURIComponent(query)}`)
-    setQuery('')
-    setSearchOpen(false)
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setProfileMenuOpen(false)
+      }
+    }
+
+    if (profileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [profileMenuOpen])
+
+  const isAuthenticated = !!user
+
+  const displayName =
+    (profile && profile.full_name) || user?.user_metadata?.full_name || ''
+
+  const openLogoutModal = () => {
+    setMobileMenuOpen(false)
+    setProfileMenuOpen(false)
+    setLogoutOpen(true)
   }
 
-  const handleUserIconClick = () => {
-    if (!isAuthenticated) {
-      router.push('/buyer/login')
-    } else {
-      router.push('/profile')
-    }
+  const handleConfirmLogout = async () => {
+    await signOut()
+    setLogoutOpen(false)
+    setProfileMenuOpen(false)
+    setMobileMenuOpen(false)
+    router.push('/')
+  }
+
+  const handleCancelLogout = () => {
+    setLogoutOpen(false)
   }
 
   return (
@@ -76,11 +103,11 @@ export default function PublicNavbar() {
         <div className={styles.topBarInner}>
           <div className={styles.topLeft}>
             <div className={styles.followText}>
-              <Link href="/seller/login" className={styles.topLink}>
+              <Link href="/seller/signup" className={styles.topLink}>
                 Become a Seller
               </Link>
               <span className={styles.divider}>|</span>
-              <Link href="/seller/centre" className={styles.topLink}>
+              <Link href="/seller/login" className={styles.topLink}>
                 Seller Centre
               </Link>
               <span className={styles.divider}>|</span>
@@ -109,13 +136,53 @@ export default function PublicNavbar() {
           </div>
 
           <div className={styles.topRight}>
-            <button onClick={handleUserIconClick} className={styles.userLink} aria-label="User Account">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-              <span>Sign In</span>
-            </button>
+            {!isAuthenticated ? (
+              <button
+                onClick={() => {
+                  const target = pathname || '/'
+                  router.push(`/buyer/login?redirect=${encodeURIComponent(target)}`)
+                }}
+                className={styles.userLink}
+                aria-label="Sign in"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <span>Sign In</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                className={styles.userLink}
+                aria-label="Notifications"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -132,27 +199,9 @@ export default function PublicNavbar() {
             <div className={styles.navItem}>
               <Link href="/" className={styles.navLink}>HOME</Link>
             </div>
-            
-            <div 
-              className={styles.navItem}
-              onMouseEnter={() => setShopOpen(true)}
-              onMouseLeave={() => setShopOpen(false)}
-            >
-              <button className={styles.navLinkDropdown}>
-                SHOP
-                <svg className={styles.dropdownIcon} xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </button>
-              {shopOpen && (
-                <div className={styles.dropdownMenu}>
-                  {shopItems.map((item, index) => (
-                    <Link key={index} href={item.href} className={styles.dropdownItem}>
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
+
+            <div className={styles.navItem}>
+              <Link href="/shop" className={styles.navLink}>SHOP</Link>
             </div>
 
             <div className={styles.navItem}>
@@ -206,26 +255,179 @@ export default function PublicNavbar() {
                 </div>
               )}
             </div>
-
-            <div className={styles.navItem}>
-              <Link href="/book-now" className={styles.navLink}>BOOK NOW</Link>
-            </div>
           </nav>
 
           <div className={styles.navActions}>
             <div className={styles.searchContainer}>
-              <button 
-                className={styles.searchBtn} 
-                aria-label="Cart"
-                onClick={() => router.push('/cart')}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="9" cy="21" r="1"></circle>
-                  <circle cx="20" cy="21" r="1"></circle>
-                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-                </svg>
-              </button>
+              {!isSeller && (
+                <span className={styles.cartBtnWrap}>
+                  <button 
+                    className={styles.searchBtn} 
+                    aria-label="Cart"
+                    onClick={() => {
+                      if (!isAuthenticated) {
+                        router.push(`/buyer/login?redirect=${encodeURIComponent('/cart')}`)
+                        return
+                      }
+                      router.push('/cart')
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="9" cy="21" r="1"></circle>
+                      <circle cx="20" cy="21" r="1"></circle>
+                      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                    </svg>
+                  </button>
+                  {cartCount > 0 && (
+                    <span className={styles.cartDot} aria-label={`${cartCount} items in cart`}>
+                      {cartCount > 99 ? '99+' : cartCount}
+                    </span>
+                  )}
+                </span>
+              )}
             </div>
+            {isAuthenticated && (
+              <div
+                className={styles.profileMenuWrap}
+                ref={profileRef}
+                onMouseEnter={() => setProfileMenuOpen(true)}
+                onMouseLeave={() => setProfileMenuOpen(false)}
+              >
+                <button
+                  type="button"
+                  className={styles.profileBtn}
+                  aria-label="User menu"
+                  aria-expanded={profileMenuOpen}
+                  title={displayName || undefined}
+                  onClick={() => {
+                    setProfileMenuOpen((open) => !open)
+                  }}
+                >
+                  {profile.avatar_url ? (
+                    <img
+                      src={profile.avatar_url}
+                      alt={displayName || 'User avatar'}
+                      className={styles.profileAvatar}
+                    />
+                  ) : (
+                    <span className={styles.profileIcon} aria-hidden="true">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                      </svg>
+                    </span>
+                  )}
+                  {displayName && (
+                    <span className={styles.profileName}>{displayName}</span>
+                  )}
+                </button>
+                {profileMenuOpen && user && (
+                  <div className={styles.profileDropdown} role="menu">
+                    {isSeller ? (
+                      <>
+                        <button
+                          type="button"
+                          className={styles.profileDropdownItem}
+                          onClick={() => {
+                            setProfileMenuOpen(false)
+                            router.push('/seller/my-sales')
+                          }}
+                        >
+                          My Sales
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.profileDropdownItem}
+                          onClick={() => {
+                            setProfileMenuOpen(false)
+                            router.push('/seller/shop-performance')
+                          }}
+                        >
+                          Shop Performance
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.profileDropdownItem}
+                          onClick={() => {
+                            setProfileMenuOpen(false)
+                            router.push('/seller/my-services')
+                          }}
+                        >
+                          My Services
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.profileDropdownItem}
+                          onClick={() => {
+                            setProfileMenuOpen(false)
+                            router.push('/seller/my-account')
+                          }}
+                        >
+                          My Account
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.profileDropdownItem}
+                          onClick={() => {
+                            setProfileMenuOpen(false)
+                            router.push('/seller/notifications')
+                          }}
+                        >
+                          Notifications
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.profileDropdownItem}
+                          onClick={openLogoutModal}
+                        >
+                          Logout
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          className={styles.profileDropdownItem}
+                          onClick={() => {
+                            setProfileMenuOpen(false)
+                            router.push('/profile/account')
+                          }}
+                        >
+                          My account
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.profileDropdownItem}
+                          onClick={() => {
+                            setProfileMenuOpen(false)
+                            router.push('/profile/purchases')
+                          }}
+                        >
+                          Purchases
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.profileDropdownItem}
+                          onClick={openLogoutModal}
+                        >
+                          Logout
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             <button 
               className={styles.mobileToggle}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -241,44 +443,109 @@ export default function PublicNavbar() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className={styles.mobileMenu}>
+        <div className={styles.mobileMenu} onClick={() => setMobileMenuOpen(false)} role="presentation">
           <Link href="/" className={styles.mobileLink}>HOME</Link>
-          <div className={styles.mobileSubsection}>
-            <span className={styles.mobileSubsectionTitle}>SHOP</span>
-            <Link href="/services" className={styles.mobileLink}>Service Listings</Link>
-            <Link href="/packages" className={styles.mobileLink}>Custom Packages</Link>
-            <Link href="/marketplace" className={styles.mobileLink}>Marketplace Products</Link>
-          </div>
+          <Link href="/shop" className={styles.mobileLink}>SHOP</Link>
+
           <Link href="/partners" className={styles.mobileLink}>FUNERAL HOMES / PARTNERS</Link>
+
           <div className={styles.mobileSubsection}>
-            <span className={styles.mobileSubsectionTitle}>HOW IT WORKS</span>
-            <Link href="/how-it-works" className={styles.mobileLink}>Overview</Link>
-            {howItWorksItems.map((item, index) => (
-              <Link
-                key={index}
-                href={`/how-it-works#${item.sectionId}`}
-                className={styles.mobileLink}
-              >
-                {item.label}
-              </Link>
-            ))}
+            <button
+              type="button"
+              className={styles.mobileSubsectionToggle}
+              onClick={(e) => { e.stopPropagation(); setMobileHowItWorksOpen((o) => !o) }}
+              aria-expanded={mobileHowItWorksOpen}
+              aria-controls="mobile-how-it-works-links"
+            >
+              <span className={styles.mobileSubsectionTitle}>HOW IT WORKS</span>
+              <span className={`${styles.mobileSubsectionArrow} ${mobileHowItWorksOpen ? styles.mobileSubsectionArrowOpen : ''}`} aria-hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </span>
+            </button>
+            <div id="mobile-how-it-works-links" className={`${styles.mobileSubsectionContent} ${mobileHowItWorksOpen ? styles.mobileSubsectionContentOpen : ''}`}>
+              <Link href="/how-it-works" className={styles.mobileLink}>Overview</Link>
+              {howItWorksItems.map((item, index) => (
+                <Link
+                  key={index}
+                  href={`/how-it-works#${item.sectionId}`}
+                  className={styles.mobileLink}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
           </div>
+
           <div className={styles.mobileSubsection}>
-            <span className={styles.mobileSubsectionTitle}>ABOUT US</span>
-            <Link href="/about" className={styles.mobileLink}>About</Link>
-            {aboutUsItems.map((item, index) => (
-              <Link key={index} href={`/about#${item.sectionId}`} className={styles.mobileLink}>
-                {item.label}
-              </Link>
-            ))}
+            <button
+              type="button"
+              className={styles.mobileSubsectionToggle}
+              onClick={(e) => { e.stopPropagation(); setMobileAboutUsOpen((o) => !o) }}
+              aria-expanded={mobileAboutUsOpen}
+              aria-controls="mobile-about-us-links"
+            >
+              <span className={styles.mobileSubsectionTitle}>ABOUT US</span>
+              <span className={`${styles.mobileSubsectionArrow} ${mobileAboutUsOpen ? styles.mobileSubsectionArrowOpen : ''}`} aria-hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </span>
+            </button>
+            <div id="mobile-about-us-links" className={`${styles.mobileSubsectionContent} ${mobileAboutUsOpen ? styles.mobileSubsectionContentOpen : ''}`}>
+              <Link href="/about" className={styles.mobileLink}>About</Link>
+              {aboutUsItems.map((item, index) => (
+                <Link key={index} href={`/about#${item.sectionId}`} className={styles.mobileLink}>
+                  {item.label}
+                </Link>
+              ))}
+            </div>
           </div>
-          <Link href="/book-now" className={styles.mobileLink}>BOOK NOW</Link>
-          
+
           <div className={styles.mobileDivider}></div>
-          
-          <Link href="/buyer/login" className={styles.mobileLink}>Sign In</Link>
+
+          {!user ? (
+            <Link href="/buyer/login?redirect=/profile" className={styles.mobileLink}>
+              Sign In
+            </Link>
+          ) : isSeller ? (
+            <>
+              <Link href="/seller/my-sales" className={styles.mobileLink}>
+                My Sales
+              </Link>
+              <Link href="/seller/my-account" className={styles.mobileLink}>
+                My Account
+              </Link>
+              <Link href="/seller/notifications" className={styles.mobileLink}>
+                Notifications
+              </Link>
+              <button
+                type="button"
+                className={styles.mobileLinkButton}
+                onClick={openLogoutModal}
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link href="/profile" className={styles.mobileLink}>
+                Profile
+              </Link>
+              <button
+                type="button"
+                className={styles.mobileLinkButton}
+                onClick={openLogoutModal}
+              >
+                Logout
+              </button>
+            </>
+          )}
         </div>
       )}
+
+      <LogoutModal open={logoutOpen} onConfirm={handleConfirmLogout} onCancel={handleCancelLogout} />
     </header>
   )
 }

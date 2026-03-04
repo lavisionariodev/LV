@@ -88,6 +88,12 @@
   box-shadow: 0 4px 14px rgba(16, 40, 32, 0.3);
 }
 
+a.ctaPrimary {
+  display: inline-block;
+  text-decoration: none;
+  text-align: center;
+}
+
 .ctaPrimary:hover {
   background: #A8894A;
   border-color: #A8894A;
@@ -672,5 +678,46 @@
 
   .partnerContent {
     padding: 30px 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero {
+    min-height: 500px;
+    padding: 70px 16px 50px;
+  }
+
+  .title {
+    font-size: 34px;
+  }
+
+  .categoryGrid {
+    padding: 0 20px;
+  }
+
+  .categoryCard {
+    flex: 0 0 220px;
+  }
+
+  .sectionTitle {
+    font-size: 28px;
+  }
+
+  .categorySection,
+  .partnerSection,
+  .guidanceSection {
+    padding: 60px 16px;
+  }
+
+  .finalCTA {
+    padding: 60px 16px;
+  }
+
+  .ctaTitle {
+    font-size: 30px;
+  }
+
+  .partnerContent {
+    padding: 24px 16px;
   }
 }

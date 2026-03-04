@@ -1,124 +1,6 @@
 # Lavisionario
 
-A web application built with **Next.js** frontend with TypeScript support.
-
-## Project Structure
-
-```
-Lavisionario/
-├── frontend/                # Next.js application (React)
-│   ├── src/
-│   │   ├── app/             # App router (Next.js 13+)
-│   │   │   ├── (public)/    # Public pages layout group
-│   │   │   │   ├── layout.jsx
-│   │   │   │   ├── page.jsx
-│   │   │   │   ├── about/
-│   │   │   │   │   ├── page.jsx
-│   │   │   │   │   └── about.module.css
-│   │   │   │   └── home/
-│   │   │   │       └── index.js
-│   │   │   ├── (auth)/      # Auth layout group
-│   │   │   │   ├── administrator/
-│   │   │   │   │   ├── login/
-│   │   │   │   │   │   ├── page.jsx
-│   │   │   │   │   │   └── login.module.css
-│   │   │   │   ├── buyer/
-│   │   │   │   │   ├── layout.jsx
-│   │   │   │   │   ├── login/
-│   │   │   │   │   │   ├── page.jsx
-│   │   │   │   │   │   └── login.module.css
-│   │   │   │   │   ├── signup/
-│   │   │   │   │   │   ├── page.jsx
-│   │   │   │   │   │   └── signup.module.css
-│   │   │   │   │   ├── forgot-password/
-│   │   │   │   │   │   ├── page.jsx
-│   │   │   │   │   │   └── forgot-password.module.css
-│   │   │   │   │   └── reset-password/
-│   │   │   │   │       ├── page.jsx
-│   │   │   │   │       └── reset-password.module.css
-│   │   │   │   └── seller/
-│   │   │   │       ├── layout.jsx
-│   │   │   │       ├── login/
-│   │   │   │       │   ├── page.jsx
-│   │   │   │       │   └── login.module.css
-│   │   │   │       └── signup/
-│   │   │   │           ├── page.jsx
-│   │   │   │           └── signup.module.css
-│   │   │   ├── admin/       # Admin dashboard
-│   │   │   │   ├── layout.jsx
-│   │   │   │   ├── page.jsx
-│   │   │   │   ├── admin.module.css
-│   │   │   │   ├── users/
-│   │   │   │   │   ├── page.jsx
-│   │   │   │   │   └── users.module.css
-│   │   │   │   ├── sellers/
-│   │   │   │   │   ├── page.jsx
-│   │   │   │   │   └── sellers.module.css
-│   │   │   │   ├── packages/
-│   │   │   │   │   ├── page.jsx
-│   │   │   │   │   └── packages.module.css
-│   │   │   │   ├── content/
-│   │   │   │   │   ├── page.jsx
-│   │   │   │   │   └── content.module.css
-│   │   │   │   └── settings/
-│   │   │   │       ├── page.jsx
-│   │   │   │       └── settings.module.css
-│   │   │   ├── api/         # API routes
-│   │   │   │   ├── auth/
-│   │   │   │   └── seller/
-│   │   │   ├── layout.jsx   # Root layout
-│   │   │   └── globals.css  # Global styles (Tailwind)
-│   │   ├── components/      # Reusable components
-│   │   │   ├── feedback/    # Feedback components
-│   │   │   │   ├── index.js
-│   │   │   │   ├── Alert/
-│   │   │   │   │   └── Alert.jsx
-│   │   │   │   └── Toast/
-│   │   │   │       └── Toast.jsx
-│   │   │   ├── layout/      # Layout components
-│   │   │   │   ├── index.js
-│   │   │   │   ├── AdminSidebar/
-│   │   │   │   │   ├── AdminSidebar.jsx
-│   │   │   │   │   └── AdminSidebar.module.css
-│   │   │   │   ├── AdminTopbar/
-│   │   │   │   │   ├── AdminTopbar.jsx
-│   │   │   │   │   └── AdminTopbar.module.css
-│   │   │   │   ├── PublicNavbar/
-│   │   │   │   │   ├── PublicNavbar.jsx
-│   │   │   │   │   └── PublicNavbar.module.css
-│   │   │   │   └── PublicFooter/
-│   │   │   │       ├── PublicFooter.jsx
-│   │   │   │       └── PublicFooter.module.css
-│   │   │   └── ui/          # UI components
-│   │   │       ├── index.js
-│   │   │       └── Modal/
-│   │   │           └── Modal.jsx
-│   │   ├── features/        # Redux features
-│   │   │   └── auth/
-│   │   │       ├── authSlice.js
-│   │   │       └── authService.js
-│   │   ├── hooks/           # Custom React hooks
-│   │   ├── lib/             # Library functions
-│   │   │   ├── auth/
-│   │   │   │   ├── guards.js
-│   │   │   │   ├── session.js
-│   │   │   │   └── tokens.js
-│   │   │   └── validators/
-│   │   │       └── authSchemas.js
-│   │   └── services/        # API services
-│   ├── public/              # Static assets
-│   ├── package.json
-│   ├── package-lock.json
-│   ├── next.config.ts
-│   ├── tsconfig.json
-│   ├── postcss.config.mjs   # Tailwind CSS config
-│   ├── eslint.config.mjs    # ESLint configuration
-│   ├── next-env.d.ts
-│   └── .next/               # Build output (auto-generated)
-│
-├── .gitignore
-└── README.md
-```
+A web application built with **Next.js** (App Router) and **React**, with TypeScript support.
 
 ## Prerequisites
 
@@ -160,13 +42,16 @@ The frontend will run on `http://localhost:3000`.
 ## Technology Stack
 
 ### Frontend
-- **Next.js** 16.1.2 - React framework with App Router
+- **Next.js** 16.1.6 - React framework with App Router
 - **React** 19.2.3 - UI library
 - **React DOM** 19.2.3 - React DOM rendering
 - **TypeScript** 5 - Type safety
 - **Tailwind CSS** 4 - Utility-first CSS framework
-- **ESLint** 9 - Code quality and linting
-- **React Compiler** - Babel plugin for optimized React code
+- **ESLint** 10 - Code quality and linting
+- **React Compiler** - Built-in React optimization via Next.js 16
+- **Supabase JS** 2.x - Backend-as-a-service client SDK
+- **Recharts** 3.x - Charting and data visualization
+- **Icon Libraries** - Font Awesome, Lucide, and React Icons
 
 ### Package Manager
 - **npm** - Node.js package manager

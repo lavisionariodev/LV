@@ -10,13 +10,12 @@ import { LuLogOut } from "react-icons/lu"
 import { Logout } from '@/components/ui'
 
 const ROUTE_TITLES = [
+  { match: "/admin/payments", title: "Payments", subtitle: "Approve and transfer payments to sellers" },
   { match: "/admin/sellers", title: "Sellers", subtitle: "Manage registered sellers" },
   { match: "/admin/users", title: "Users", subtitle: "View and manage user accounts" },
-  { match: "/admin/transactions", title: "Transactions", subtitle: "Track payments and activity" },
   { match: "/admin/disputes", title: "Disputes", subtitle: "Review and resolve issues" },
   { match: "/admin/content", title: "Content", subtitle: "Manage platform content" },
   { match: "/admin/settings", title: "Settings", subtitle: "Manage your account information and security" },
-  { match: "/admin/packages", title: "Packages", subtitle: "Manage packages & pricing" },
   { match: "/admin/help", title: "Help Center", subtitle: "CEO essentials: approvals, disputes, policies, and platform health." },
 ]
 

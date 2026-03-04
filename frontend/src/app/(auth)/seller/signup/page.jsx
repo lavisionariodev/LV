@@ -2,17 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import styles from './signup.module.css';
 import { FaStore, FaGift, FaHandshake, FaBullhorn, FaTruck,
          FaShoppingBasket, FaChartLine, FaWarehouse, FaGraduationCap,
          FaFacebook, FaYoutube, FaViber, FaShoppingBag } from 'react-icons/fa';
 import PublicFooter from '@/components/layout/PublicFooter/PublicFooter';
+import { validateNewPassword } from '@/lib/validators/authSchemas';
+import { sendEmailOtpForSignup, verifyEmailOtpForSignup } from '@/lib/auth/client';
+import { supabase } from '@/lib/supabase/client';
+import { useToast } from '@/contexts/ToastContext';
 
 const StepIndicator = ({ currentStep }) => (
   <div className={styles.stepIndicator}>
     <div className={styles.stepItem}>
       <div className={`${styles.stepCircle} ${currentStep >= 1 ? styles.active : ''}`}>1</div>
-      <span className={`${styles.stepLabel} ${currentStep >= 1 ? styles.active : ''}`}>Verify phone no.</span>
+      <span className={`${styles.stepLabel} ${currentStep >= 1 ? styles.active : ''}`}>Verify email</span>
     </div>
     <div className={styles.stepLine}></div>
     <div className={styles.stepItem}>
@@ -34,9 +39,9 @@ const Step1PhoneInput = ({ phoneNumber, setPhoneNumber, onNext, currentStep }) =
     {currentStep > 1 && <StepIndicator currentStep={currentStep} />}
     <h2 className={styles.signupTitle}>Sign Up</h2>
     <div className={styles.signupForm}>
-      <input 
-        type="tel"
-        placeholder="Phone Number"
+      <input
+        type="email"
+        placeholder="Email Address"
         className={styles.phoneInput}
         value={phoneNumber}
         onChange={(e) => setPhoneNumber(e.target.value)}
@@ -83,62 +88,40 @@ const Step1PhoneInput = ({ phoneNumber, setPhoneNumber, onNext, currentStep }) =
   </div>
 );
 
-const Step2VerificationMethod = ({ phoneNumber, onSelectMethod, onBack, currentStep }) => {
-  const formattedPhone = `(+63) ${phoneNumber.slice(0, 3)} ${phoneNumber.slice(3, 6)} ${phoneNumber.slice(6)}`;
-  
+const Step2VerificationMethod = ({ email, onSelectMethod, onBack, currentStep, isSending }) => {
   return (
     <div className={`${styles.signupCard} ${styles.verificationCard}`}>
       <StepIndicator currentStep={currentStep} />
       <button className={styles.backButton} onClick={onBack}>←</button>
-      <h2 className={styles.signupTitle}>Select Verification Method</h2>
+      <h2 className={styles.signupTitle}>Verify your email</h2>
       <p className={styles.verificationSubtitle}>
-        Select one of the methods below to send verification code to
+        We will send a verification code to:
       </p>
-      <p className={styles.phoneDisplay}>{formattedPhone}</p>
-      
-      <div className={styles.verificationMethods}>
-        <button className={styles.methodButton} onClick={() => onSelectMethod('viber')}>
-          <div className={`${styles.methodIcon} ${styles.viberIcon}`}>
-            <FaViber size={24} />
-          </div>
-          <span>Viber</span>
-        </button>
-        
-        <button className={styles.methodButton} onClick={() => onSelectMethod('whatsapp')}>
-          <div className={`${styles.methodIcon} ${styles.whatsappIcon}`}>
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="white">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-            </svg>
-          </div>
-          <span>WhatsApp</span>
-        </button>
-        
-        <button className={styles.methodButton} onClick={() => onSelectMethod('call')}>
-          <div className={`${styles.methodIcon} ${styles.callIcon}`}>
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="white">
-              <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
-            </svg>
-          </div>
-          <span>Voice Call</span>
-        </button>
-        
-        <button className={styles.methodButton} onClick={() => onSelectMethod('sms')}>
-          <div className={`${styles.methodIcon} ${styles.smsIcon}`}>
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="white">
-              <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9 11H7V9h2v2zm4 0h-2V9h2v2zm4 0h-2V9h2v2z"/>
-            </svg>
-          </div>
-          <span>SMS</span>
-        </button>
-      </div>
+      <p className={styles.phoneDisplay}>{email}</p>
+
+      <button
+        type="button"
+        className={`${styles.nextButton} ${styles.fullWidth}`}
+        onClick={() => onSelectMethod('email')}
+        disabled={isSending}
+      >
+        {isSending ? 'Sending...' : 'Send verification code'}
+      </button>
     </div>
   );
 };
 
-const Step3OTPInput = ({ phoneNumber, method, countdown, onResend, otpValue, setOtpValue, onNext, onBack, currentStep }) => {
-  const formattedPhone = `(+63) ${phoneNumber.slice(0, 3)} ${phoneNumber.slice(3, 6)} ${phoneNumber.slice(6)}`;
-  const methodText = method === 'sms' ? 'SMS' : method === 'call' ? 'voice call' : method;
-  
+const Step3OTPInput = ({
+  email,
+  countdown,
+  onResend,
+  otpValue,
+  setOtpValue,
+  onNext,
+  onBack,
+  currentStep,
+  isVerifying,
+}) => {
   const handleOtpChange = (index, value) => {
     if (value.length > 1) return;
     if (!/^\d*$/.test(value)) return;
@@ -164,9 +147,9 @@ const Step3OTPInput = ({ phoneNumber, method, countdown, onResend, otpValue, set
       <button className={styles.backButton} onClick={onBack}>←</button>
       <h2 className={styles.signupTitle}>Enter Verification Code</h2>
       <p className={styles.verificationSubtitle}>
-        Your verification code is sent by {methodText} to
+        We have sent a 6-digit verification code to your email address:
       </p>
-      <p className={styles.phoneDisplay}>{formattedPhone}</p>
+      <p className={styles.phoneDisplay}>{email}</p>
       
       <div className={styles.otpInputs}>
         {[0, 1, 2, 3, 4, 5].map((index) => (
@@ -194,9 +177,9 @@ const Step3OTPInput = ({ phoneNumber, method, countdown, onResend, otpValue, set
       <button 
         className={`${styles.nextButton} ${styles.fullWidth}`}
         onClick={onNext}
-        disabled={otpValue.some(digit => !digit)}
+        disabled={otpValue.some(digit => !digit) || isVerifying}
       >
-        NEXT
+        {isVerifying ? 'Verifying...' : 'NEXT'}
       </button>
     </div>
   );
@@ -408,27 +391,62 @@ const Step4AccountCheck = ({ phoneNumber, existingAccount, onLogin, onCreateNew,
   );
 };
 
-const Step5CreatePassword = ({ password, setPassword, confirmPassword, setConfirmPassword, onComplete, onBack, currentStep }) => (
+const Step5CreatePassword = ({
+  fullName,
+  setFullName,
+  email,
+  setEmail,
+  password,
+  setPassword,
+  confirmPassword,
+  setConfirmPassword,
+  onComplete,
+  onBack,
+  currentStep,
+  isSubmitting,
+}) => (
   <div className={`${styles.signupCard} ${styles.passwordCard}`}>
     <StepIndicator currentStep={currentStep} />
     <button className={styles.backButton} onClick={onBack}>←</button>
     <h2 className={styles.signupTitle}>Create Password</h2>
-    <p className={styles.verificationSubtitle}>Create a secure password for your account</p>
-    
+    <p className={styles.verificationSubtitle}>Enter your seller account details and secure password.</p>
+
+    <div className={styles.formGroup}>
+      <label className={styles.formLabel}>Full Name</label>
+      <input
+        type="text"
+        placeholder="Your full name"
+        className={styles.formControl}
+        value={fullName}
+        onChange={(e) => setFullName(e.target.value)}
+      />
+    </div>
+
+    <div className={styles.formGroup}>
+      <label className={styles.formLabel}>Email</label>
+      <input
+        type="email"
+        placeholder="you@example.com"
+        className={styles.formControl}
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+    </div>
+
     <div className={styles.formGroup}>
       <label className={styles.formLabel}>Password</label>
-      <input 
+      <input
         type="password"
-        placeholder="At least 8 characters"
+        placeholder="At least 8 characters; lowercase, uppercase, digit"
         className={styles.formControl}
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
     </div>
-    
+
     <div className={styles.formGroup}>
       <label className={styles.formLabel}>Confirm Password</label>
-      <input 
+      <input
         type="password"
         placeholder="Re-enter your password"
         className={styles.formControl}
@@ -436,13 +454,21 @@ const Step5CreatePassword = ({ password, setPassword, confirmPassword, setConfir
         onChange={(e) => setConfirmPassword(e.target.value)}
       />
     </div>
-    
-    <button 
+
+    <button
       className={`${styles.nextButton} ${styles.fullWidth}`}
       onClick={onComplete}
-      disabled={!password || !confirmPassword || password !== confirmPassword || password.length < 8}
+      disabled={
+        !fullName.trim() ||
+        !email.trim() ||
+        !password ||
+        !confirmPassword ||
+        password !== confirmPassword ||
+        password.length < 8 ||
+        isSubmitting
+      }
     >
-      CREATE ACCOUNT
+      {isSubmitting ? 'Creating account...' : 'CREATE ACCOUNT'}
     </button>
   </div>
 );
@@ -455,14 +481,18 @@ const Page = () => {
   const [countdown, setCountdown] = useState(0);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
   const [existingAccount, setExistingAccount] = useState(null);
   const [showStepIndicator, setShowStepIndicator] = useState(false);
   const [isSellerCenterSignup, setIsSellerCenterSignup] = useState(false);
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const router = useRouter();
+  const toast = useToast();
   
-  // Track registered phone numbers (simulating a database)
-  // In production, this would be checked via API call
-  const [registeredPhones, setRegisteredPhones] = useState(new Set(['9123456789']));
-
   useEffect(() => {
     if (countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
@@ -471,51 +501,112 @@ const Page = () => {
   }, [countdown]);
 
   const handlePhoneNext = () => {
-    const cleaned = phoneNumber.replace(/\D/g, '').replace(/^0+/, '');
-    if (!cleaned || cleaned.length < 9) {
-      alert('Please enter a valid phone number (at least 9 digits)');
+    const trimmedEmail = phoneNumber.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
+      alert('Please enter a valid email address.');
       return;
     }
-    setPhoneNumber(cleaned);
+    // Reuse phoneNumber state as the email entered in step 1
+    setPhoneNumber(trimmedEmail);
+    setEmail(trimmedEmail);
     setShowStepIndicator(true);
     setStep(2);
   };
 
-  const handleMethodSelect = (method) => {
-    setVerificationMethod(method);
-    setCountdown(60);
-    setStep(3);
+  const handleMethodSelect = async (method) => {
+    if (method !== 'email') return;
+
+    const trimmedEmail = phoneNumber.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
+      toast.error('Please enter a valid email address.');
+      return;
+    }
+
+    setIsSendingCode(true);
+    try {
+      const { error } = await sendEmailOtpForSignup({
+        email: trimmedEmail,
+        role: 'seller',
+      });
+
+      if (error) {
+        toast.error(error);
+        return;
+      }
+
+      setVerificationMethod('email');
+      setCountdown(60);
+      toast.success('Verification code sent to your email.');
+      setStep(3);
+    } catch (err) {
+      console.error('Error sending email OTP:', err);
+      toast.error('Failed to send verification code. Please try again.');
+    } finally {
+      setIsSendingCode(false);
+    }
   };
 
-  const handleResendOTP = () => {
-    setCountdown(60);
-    alert(`Verification code resent via ${verificationMethod}!`);
+  const handleResendOTP = async () => {
+    if (countdown > 0) return;
+
+    const trimmedEmail = phoneNumber.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
+      toast.error('Please enter a valid email address.');
+      return;
+    }
+
+    setIsSendingCode(true);
+    try {
+      const { error } = await sendEmailOtpForSignup({
+        email: trimmedEmail,
+        role: 'seller',
+      });
+
+      if (error) {
+        toast.error(error);
+        return;
+      }
+
+      setCountdown(60);
+      toast.success('Verification code resent to your email.');
+    } catch (err) {
+      console.error('Error resending email OTP:', err);
+      toast.error('Failed to resend verification code. Please try again.');
+    } finally {
+      setIsSendingCode(false);
+    }
   };
 
-  const handleOTPNext = () => {
+  const handleOTPNext = async () => {
     const code = otpValue.join('');
     if (code.length !== 6) {
       alert('Please enter the complete 6-digit code');
       return;
     }
-    
-    // Check if this phone number is already registered
-    const phoneHasUserAccount = registeredPhones.has(phoneNumber);
-    
-    if (phoneHasUserAccount) {
-      // Phone is already registered to a buyer account
-      const existingUserAccount = { 
-        name: 'sammyboado', 
-        type: 'buyer'
-      };
-      setExistingAccount(existingUserAccount);
-      
-      // Show reclaim screen - user wants to use this phone for seller account
-      setIsSellerCenterSignup(true);
-      setStep(3.5); // Phone reclaim step
-    } else {
-      // Phone number is not registered yet, proceed to create new account
+
+    setIsVerifyingCode(true);
+    try {
+      const { error } = await verifyEmailOtpForSignup({
+        email: phoneNumber,
+        token: code,
+      });
+
+      if (error) {
+        toast.error(error);
+        return;
+      }
+
+      setIsEmailVerified(true);
+      toast.success('Email verified. Now create your password.');
       setStep(5);
+    } catch (err) {
+      console.error('Error verifying email OTP:', err);
+      toast.error('Failed to verify code. Please try again.');
+    } finally {
+      setIsVerifyingCode(false);
     }
   };
 
@@ -549,34 +640,64 @@ const Page = () => {
     setStep(5);
   };
 
-  const handleComplete = () => {
-    if (password !== confirmPassword) {
-      alert('Passwords do not match!');
+  const handleComplete = async () => {
+    const trimmedName = fullName.trim();
+    const trimmedEmail = email.trim();
+
+    if (!trimmedName || !trimmedEmail) {
+      alert('Please provide your full name and email address.');
       return;
     }
-    if (password.length < 8) {
-      alert('Password must be at least 8 characters');
+
+    const validation = validateNewPassword(password, confirmPassword);
+    if (!validation.valid) {
+      alert(validation.message);
       return;
     }
-    
-    // Register this phone number (simulating saving to database)
-    setRegisteredPhones(prev => new Set([...prev, phoneNumber]));
-    
-    if (isSellerCenterSignup) {
-      alert('Seller Centre account created successfully! Welcome to Lavisionario Seller Centre.');
-    } else {
-      alert('Account created successfully! Welcome to Lavisionario.');
+
+    if (!isEmailVerified) {
+      toast.error('Please verify your email before creating your account.');
+      return;
     }
-    
-    // Reset form
-    setStep(1);
-    setShowStepIndicator(false);
-    setPhoneNumber('');
-    setOtpValue(['', '', '', '', '', '']);
-    setPassword('');
-    setConfirmPassword('');
-    setExistingAccount(null);
-    setIsSellerCenterSignup(false);
+
+    setIsCompleting(true);
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        toast.error('Your session has expired. Please restart the signup process.');
+        return;
+      }
+
+      const { error: updateError } = await supabase.auth.updateUser({
+        password,
+        data: {
+          full_name: trimmedName,
+          role: 'seller',
+        },
+      });
+
+      if (updateError) {
+        toast.error(updateError.message || 'Failed to finalize your account. Please try again.');
+        return;
+      }
+
+      await supabase
+        .from('profiles')
+        .update({ full_name: trimmedName })
+        .eq('id', user.id);
+
+      toast.success('Seller Centre account created! Please complete your shop onboarding.');
+      router.replace('/seller/onboarding');
+    } catch (err) {
+      console.error('Seller signup error:', err);
+      toast.error('An error occurred while creating your account. Please try again.');
+    } finally {
+      setIsCompleting(false);
+    }
   };
 
   const heroSectionStyle = {
@@ -625,12 +746,52 @@ const Page = () => {
           </div>
 
           <div className={styles.heroRight}>
-            {step === 1 && <Step1PhoneInput phoneNumber={phoneNumber} setPhoneNumber={setPhoneNumber} onNext={handlePhoneNext} currentStep={step === 5 ? 2 : step === 4 ? 1 : step - 1} />}
-            {step === 2 && <Step2VerificationMethod phoneNumber={phoneNumber} onSelectMethod={handleMethodSelect} onBack={() => setStep(1)} currentStep={step === 5 ? 2 : step === 4 ? 1 : step - 1} />}
-            {step === 3 && <Step3OTPInput phoneNumber={phoneNumber} method={verificationMethod} countdown={countdown} onResend={handleResendOTP} otpValue={otpValue} setOtpValue={setOtpValue} onNext={handleOTPNext} onBack={() => setStep(2)} currentStep={step === 5 ? 2 : step === 4 ? 1 : step - 1} />}
-            {step === 3.5 && <StepPhoneReclaim phoneNumber={phoneNumber} existingAccount={existingAccount} onProceed={handleReclaimProceed} onBack={handleReclaimBack} currentStep={1} />}
-            {step === 4 && <Step4AccountCheck phoneNumber={phoneNumber} existingAccount={existingAccount} onLogin={handleLogin} onCreateNew={handleCreateNew} currentStep={step === 5 ? 2 : step === 4 ? 1 : step - 1} />}
-            {step === 5 && <Step5CreatePassword password={password} setPassword={setPassword} confirmPassword={confirmPassword} setConfirmPassword={setConfirmPassword} onComplete={handleComplete} onBack={() => setStep(3)} currentStep={step === 5 ? 2 : step === 4 ? 1 : step - 1} />}
+            {step === 1 && (
+              <Step1PhoneInput
+                phoneNumber={phoneNumber}
+                setPhoneNumber={setPhoneNumber}
+                onNext={handlePhoneNext}
+                currentStep={1}
+              />
+            )}
+            {step === 2 && (
+              <Step2VerificationMethod
+                email={phoneNumber}
+                onSelectMethod={handleMethodSelect}
+                onBack={() => setStep(1)}
+                currentStep={2}
+                isSending={isSendingCode}
+              />
+            )}
+            {step === 3 && (
+              <Step3OTPInput
+                email={phoneNumber}
+                countdown={countdown}
+                onResend={handleResendOTP}
+                otpValue={otpValue}
+                setOtpValue={setOtpValue}
+                onNext={handleOTPNext}
+                onBack={() => setStep(2)}
+                currentStep={2}
+                isVerifying={isVerifyingCode}
+              />
+            )}
+            {step === 5 && (
+              <Step5CreatePassword
+                fullName={fullName}
+                setFullName={setFullName}
+                email={email}
+                setEmail={setEmail}
+                password={password}
+                setPassword={setPassword}
+                confirmPassword={confirmPassword}
+                setConfirmPassword={setConfirmPassword}
+                onComplete={handleComplete}
+                onBack={() => setStep(3)}
+                currentStep={3}
+                isSubmitting={isCompleting}
+              />
+            )}
           </div>
         </div>
       </section>

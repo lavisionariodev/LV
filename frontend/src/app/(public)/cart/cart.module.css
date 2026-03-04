@@ -609,3 +609,31 @@
 .emptyLink:hover {
   background: var(--color-primary-hover);
 }
+
+/* ===== Mobile small screens ===== */
+@media (max-width: 480px) {
+  .hero {
+    padding: 80px 16px 50px;
+    min-height: 220px;
+  }
+
+  .content {
+    padding: 24px 16px 48px;
+  }
+
+  .totalsSection {
+    top: 80px;
+  }
+
+  .couponSection {
+    padding: 16px;
+  }
+
+  .couponInput {
+    min-width: 0;
+  }
+
+  .emptySection {
+    padding: 48px 16px;
+  }
+}

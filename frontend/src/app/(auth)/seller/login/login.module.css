@@ -234,18 +234,19 @@
 }
 
 .forgotPassword {
-  text-align: center;
   margin-top: 12px;
-}
-
-.forgotPassword a {
-  color: #05a;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 14px;
+  color: var(--color-main-accent);
+  cursor: pointer;
   text-decoration: none;
-  font-size: 13px;
 }
 
-.forgotPassword a:hover {
-  text-decoration: underline;
+.forgotPassword:hover {
+  color: #279354;
+  text-decoration: none;
 }
 
 .divider {
@@ -302,8 +303,14 @@
 }
 
 .socialButton:hover {
-  border-color: #ccc;
-  background: #f9f9f9;
+  background-color: #102820;
+  border-color: #102820;
+  color: #fff;
+}
+
+.socialButton:hover svg,
+.socialButton:hover svg path {
+  fill: #fff;
 }
 
 /* QR Section */
@@ -350,7 +357,7 @@
 }
 
 .howToScanBtn:hover {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 /* Bottom Links */
@@ -368,7 +375,7 @@
 }
 
 .signupText a:hover {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 /* Footer */
@@ -512,29 +519,111 @@
   line-height: 1.6;
 }
 
-/* Responsive */
+/* Responsive – mobile only; wide screen layout unchanged */
 @media (max-width: 968px) {
   .contentWrapper {
     grid-template-columns: 1fr;
     gap: 40px;
+    padding: 0 16px;
+    align-items: start;
   }
 
   .leftSection {
     text-align: center;
+    padding: 0 20px;
+    order: -1; /* "Be a Power Seller" on top on mobile */
   }
 
   .mainTitle {
     font-size: 32px;
   }
 
+  .mainSubtitle br {
+    display: none;
+  }
+
   .illustration {
     margin: 0 auto;
+    max-width: 380px;
+  }
+
+  .rightSection {
+    order: 1; /* login form below left section on mobile */
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .loginCard {
+    max-width: 100%;
+    width: 100%;
   }
 }
 
 @media (max-width: 640px) {
+  .pageWrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  .mainContent {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 20px 32px;
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+  }
+
+  .contentWrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    padding: 0;
+    min-height: 0;
+  }
+
+  .leftSection {
+    order: -1; /* "Be a Power Seller" on top on mobile */
+    padding: 0 8px;
+    flex-shrink: 0;
+  }
+
+  .rightSection {
+    order: 1; /* login form below left section on mobile */
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  .loginCard {
+    padding: 28px 22px;
+    max-height: none;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
   .headerContent {
-    padding: 16px 20px;
+    padding: 14px 20px;
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+  }
+
+  .logo {
+    gap: 8px;
+  }
+
+  .logoIcon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .logoLetter {
+    font-size: 1.25rem;
   }
 
   .logoText {
@@ -543,25 +632,214 @@
 
   .sellerBadge {
     font-size: 16px;
+    padding-left: 10px;
   }
 
-  .mainContent {
-    padding: 40px 20px;
+  .needHelp {
+    font-size: 0.8125rem;
   }
 
-  .leftSection {
-    padding: 0 20px;
+  .mainTitle {
+    font-size: 26px;
+    margin-bottom: 12px;
   }
 
-  .loginCard {
-    padding: 24px;
+  .mainSubtitle {
+    font-size: 14px;
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+
+  .illustration {
+    max-width: 260px;
+    margin: 0 auto;
+  }
+
+  .loginHeader {
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .loginTitle {
+    font-size: 18px;
+  }
+
+  .toggleMode {
+    padding: 8px 12px;
+    font-size: 12px;
   }
 
   .toggleMode span {
     display: none;
   }
 
+  .toggleMode svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .input {
+    padding: 12px 14px;
+    font-size: 16px; /* prevents zoom on iOS */
+  }
+
+  .loginButton {
+    padding: 14px;
+  }
+
   .socialButtons {
     grid-template-columns: 1fr;
+  }
+
+  .socialButton {
+    padding: 12px;
+  }
+
+  .qrCode {
+    width: 180px;
+    height: 180px;
+    padding: 12px;
+  }
+
+  .qrText {
+    font-size: 13px;
+  }
+
+  .footer {
+    padding: 14px 20px;
+    margin-top: auto;
+    font-size: 13px;
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+  }
+
+  /* Modal */
+  .modal {
+    padding: 16px;
+    padding-top: max(16px, env(safe-area-inset-top));
+    align-items: flex-start;
+    overflow-y: auto;
+  }
+
+  .modalContent {
+    max-width: 100%;
+    margin: auto 0;
+  }
+
+  .modalHeader {
+    padding: 16px 20px;
+  }
+
+  .modalHeader h3 {
+    font-size: 16px;
+  }
+
+  .modalBody {
+    padding: 24px 20px;
+  }
+
+  .phonePreview {
+    max-width: 260px;
+    padding: 10px;
+  }
+
+  .phoneScreen {
+    min-height: 320px;
+  }
+
+  .scanIconArea {
+    padding: 24px;
+    min-height: 200px;
+  }
+
+  .scanIcon {
+    width: 64px;
+    height: 64px;
+    font-size: 32px;
+  }
+
+  .modalText {
+    font-size: 13px;
+  }
+
+  .closeModal {
+    width: 36px;
+    height: 36px;
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .headerContent {
+    padding: 12px 16px;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  .logoText {
+    font-size: 1.125rem;
+  }
+
+  .sellerBadge {
+    font-size: 14px;
+    padding-left: 8px;
+  }
+
+  .mainContent {
+    padding: 20px 16px 24px;
+  }
+
+  .contentWrapper {
+    gap: 28px;
+  }
+
+  .rightSection {
+    align-items: stretch;
+  }
+
+  .loginCard {
+    padding: 24px 18px;
+    max-width: 100%;
+  }
+
+  .mainTitle {
+    font-size: 22px;
+  }
+
+  .mainSubtitle {
+    font-size: 13px;
+  }
+
+  .illustration {
+    max-width: 220px;
+  }
+
+  .loginTitle {
+    font-size: 17px;
+  }
+
+  .loginForm {
+    gap: 14px;
+  }
+
+  .input {
+    padding: 12px 14px;
+  }
+
+  .signupText {
+    font-size: 13px;
+    margin-top: 20px;
+  }
+
+  .footer {
+    padding: 12px 16px;
+    font-size: 12px;
+  }
+
+  .modalHeader,
+  .modalBody {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
   }
 }

@@ -1,48 +1,43 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
-import Image from 'next/image'
-import Link from 'next/link'
-import styles from './cart.module.css'
-import { FiX, FiTrash2, FiShoppingBag } from 'react-icons/fi'
-
-// ─── Hardcoded sample data for UI preview ────────────────────────────────────
-const SAMPLE_ROWS = [
-  {
-    id:          'cremation-premium',
-    name:        'Premium Cremation Package',
-    img:         '/sample/services/2.jpg',
-    price:       45000,
-    description: 'Maharlika Funeral Homes · Full cremation service, urn of choice',
-    qty:         1,
-  },
-  {
-    id:          'burial-full',
-    name:        'Full Burial Service',
-    img:         '/sample/services/3.jpg',
-    price:       78500,
-    description: 'Sancta Maria · Casket viewing, embalming, burial coordination',
-    qty:         1,
-  },
-  {
-    id:          'memorial-classic',
-    name:        'Classic Memorial Service',
-    img:         '/sample/services/4.jpg',
-    price:       32000,
-    description: 'Garden of Peace · Chapel use, floral arrangements',
-    qty:         2,
-  },
-]
+import { useEffect, useState } from "react"
+import Image from "next/image"
+import Link from "next/link"
+import styles from "./cart.module.css"
+import { FiX, FiTrash2, FiShoppingBag } from "react-icons/fi"
+import { useCart } from "@/contexts/CartContext"
+import { getUser } from "@/lib/auth/session"
+import { getUserRole, ROLE_SELLER } from "@/lib/auth/roles"
 
 function formatPrice(n) {
   return `₱${Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
 }
 
 export default function CartPage() {
-  const [cartItems, setCartItems] = useState(SAMPLE_ROWS)
+  const { items: cartItems, updateQty, removeItem } = useCart()
   const [coupon, setCoupon]       = useState('')
   const [qtyEdits, setQtyEdits]   = useState({})
   const [selected, setSelected]   = useState(new Set())
+  const [isAuthenticated, setIsAuthenticated] = useState(null)
+  const [isSeller, setIsSeller] = useState(false)
+
+  useEffect(() => {
+    let mounted = true
+    getUser().then(async (currentUser) => {
+      if (!mounted) return
+      if (!currentUser) {
+        setIsAuthenticated(false)
+        setIsSeller(false)
+        return
+      }
+      setIsAuthenticated(true)
+      const role = await getUserRole(currentUser.id)
+      setIsSeller(role === ROLE_SELLER)
+    })
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   const rows = cartItems.map((item) => ({
     ...item,
@@ -78,14 +73,12 @@ export default function CartPage() {
   const handleUpdateQty = (productId, newQty) => {
     const num = parseInt(newQty, 10)
     if (Number.isNaN(num) || num < 1) return
-    setCartItems((prev) =>
-      prev.map((item) => item.id === productId ? { ...item, qty: num } : item)
-    )
+    updateQty(productId, num)
     setQtyEdits((prev) => ({ ...prev, [productId]: undefined }))
   }
 
   const handleRemove = (productId) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== productId))
+    removeItem(productId)
     setSelected((prev) => {
       const next = new Set(prev)
       next.delete(productId)
@@ -94,18 +87,54 @@ export default function CartPage() {
   }
 
   const handleRemoveSelected = () => {
-    setCartItems((prev) => prev.filter((item) => !selected.has(item.id)))
+    selected.forEach((id) => removeItem(id))
     setSelected(new Set())
   }
 
   const handlePrintInvoice = () => window.print()
 
-  const checkoutHref =
-    selected.size > 0
-      ? `/buyer/login?redirect=/cart&items=${[...selected].join(',')}`
-      : `/buyer/login?redirect=/cart`
+  const selectedItemsParam =
+    selected.size > 0 ? `items=${[...selected].join(',')}` : ''
+
+  let checkoutHref = '/buyer/login?redirect=/checkout'
+  if (isAuthenticated === true) {
+    checkoutHref =
+      selectedItemsParam ? `/checkout?${selectedItemsParam}` : '/checkout'
+  } else if (isAuthenticated === false) {
+    checkoutHref = selectedItemsParam
+      ? `/buyer/login?redirect=/checkout&${selectedItemsParam}`
+      : `/buyer/login?redirect=/checkout`
+  }
 
   const isEmpty = rows.length === 0
+
+  if (isSeller) {
+    return (
+      <section className={styles.cartPage}>
+        <header className={styles.hero}>
+          <div className={styles.heroOverlay} />
+          <div className={styles.heroInner}>
+            <h1 className={styles.heroTitle}>Cart (Buyer only)</h1>
+            <p className={styles.breadcrumb}>
+              <Link href="/" className={styles.crumb}>Home</Link>
+              <span className={styles.slash}>/</span>
+              <span className={styles.crumbActive}>Cart</span>
+            </p>
+          </div>
+        </header>
+        <div className={styles.content}>
+          <div className={styles.emptySection}>
+            <div className={styles.emptyIcon}><FiShoppingBag /></div>
+            <h2 className={styles.emptyTitle}>Cart is available for buyers only</h2>
+            <p className={styles.emptySub}>
+              You are currently signed in as a seller. Sellers cannot add items to cart or book services.
+            </p>
+            <Link href="/" className={styles.emptyLink}>Back to homepage</Link>
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section className={styles.cartPage}>
@@ -128,7 +157,7 @@ export default function CartPage() {
             <div className={styles.emptyIcon}><FiShoppingBag /></div>
             <h2 className={styles.emptyTitle}>Your cart is empty</h2>
             <p className={styles.emptySub}>Add packages or services to see them here.</p>
-            <Link href="/packages" className={styles.emptyLink}>Browse packages</Link>
+            <Link href="/shop" className={styles.emptyLink}>Browse services</Link>
           </div>
         ) : (
           <>

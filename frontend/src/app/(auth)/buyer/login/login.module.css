@@ -62,6 +62,21 @@
   color: var(--color-main-accent);
 }
 
+.forgotPasswordWrap {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+  margin-bottom: 10px;
+}
+
+.forgotPasswordWrap .forgotPasswordLink {
+  width: auto;
+  text-align: right;
+  cursor: pointer;
+  margin: 0;
+}
+
 .authContainer button {
   background-color: var(--color-main-accent);
   color: #fff;
@@ -80,12 +95,11 @@
 
 .authContainer button:hover {
   background-color: #279354;
-  transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(32, 79, 56, 0.3);
 }
 
 .authContainer input {
-  background-color: #eee;
+  background-color: #ffffff;
   border: none;
   margin: 10px 0;
   padding: 12px 15px;
@@ -101,36 +115,104 @@
   box-shadow: 0 0 0 2px rgba(125, 147, 112, 0.2);
 }
 
-.socialIcons {
-  margin: 15px 0;
-  display: flex;
-  gap: 10px;
-  justify-content: center;
+.passwordInputWrap {
+  position: relative;
   width: 100%;
-}
-
-.socialIcons a {
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  display: inline-flex;
-  justify-content: center;
+  margin: 10px 0;
+  display: flex;
   align-items: center;
-  width: 40px;
-  height: 40px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin: 0;
+  justify-content: flex-start;
+  background-color: #ffffff;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-.socialIcons a:hover {
+.passwordInputWrap:focus-within {
   border-color: var(--color-main-accent);
-  transform: translateY(-3px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 6px 4px rgba(32, 79, 56, 0.1);
 }
 
-.socialIcons i {
-  font-size: 18px;
+.passwordInputWrap input {
+  flex: 1;
+  padding: 12px 44px 12px 15px;
+  margin: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 13px;
+  border-radius: 6px;
+}
+
+.passwordInputWrap input::placeholder {
+  color: #999;
+}
+
+.passwordToggle {
+  position: absolute;
+  left: auto;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  padding: 4px;
+  cursor: pointer;
   color: #666;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  transition: color 0.2s ease;
+  user-select: none;
+}
+
+.passwordToggle:hover {
+  color: #333;
+}
+
+.passwordToggle i {
+  font-size: 20px;
+}
+
+.socialButtons {
+  margin: 15px 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Override layout’s green .authForm button so social buttons stay white with visible icons */
+button.socialButton {
+  background-color: #ffffff !important;
+  color: #333 !important;
+  border: 1px solid #e0e0e0;
+  padding: 10px;
+  font-size: 12px;
+  text-transform: none;
+}
+
+.socialButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+/* Keep Facebook/Google logo colors visible */
+.socialButton svg {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
+button.socialButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(32, 79, 56, 0.3);
 }
 
 .authFooter {
@@ -211,7 +293,6 @@
 
 .closeButton:hover {
   color: #333;
-  transform: rotate(90deg);
 }
 
 .modalContent h2 {
@@ -231,12 +312,11 @@
 }
 
 .modalContent input {
-  background-color: #eee;
-  border: none;
-  margin: 15px 0;
+  margin: 20px 0 10px 0;
   padding: 12px 15px;
   font-size: 13px;
-  border-radius: 6px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
   width: 100%;
   outline: none;
   transition: all 0.3s ease;
@@ -244,8 +324,8 @@
 }
 
 .modalContent input:focus {
-  background-color: #e0e0e0;
-  box-shadow: 0 0 0 2px rgba(125, 147, 112, 0.2);
+  border-color: var(--color-main-accent);
+  box-shadow: 0 0 6px 4px rgba(32, 79, 56, 0.1);
 }
 
 .submitButton {
@@ -267,7 +347,6 @@
 
 .submitButton:hover {
   background-color: #279354;
-  transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(32, 79, 56, 0.3);
 }
 
@@ -311,4 +390,163 @@
   text-align: left;
   width: 100%;
   box-sizing: border-box;
+}
+
+/* Mobile responsive – different transitions only on mobile (wide screen unchanged) */
+@media (max-width: 768px) {
+  .authContainer {
+    padding: 16px;
+  }
+
+  .authForm {
+    padding: 32px 24px;
+  }
+
+  .authContainer h1 {
+    font-size: 26px;
+  }
+
+  .authContainer button {
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out;
+  }
+
+  .authContainer input {
+    transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out;
+  }
+
+  .socialButtons {
+    grid-template-columns: 1fr;
+  }
+
+  .socialButton {
+    padding: 12px;
+  }
+
+  .modalOverlay {
+    padding: 16px;
+    align-items: flex-start;
+    padding-top: max(24px, env(safe-area-inset-top));
+  }
+
+  .modalContent {
+    padding: 40px 24px 32px;
+    max-width: 100%;
+    margin: auto 0;
+    animation: modalSlideUp 0.25s ease-out; /* snappier on mobile */
+  }
+
+  .modalContent h2 {
+    font-size: 22px;
+  }
+
+  .modalContent p {
+    font-size: 12px;
+  }
+
+  .modalContent input {
+    font-size: 16px; /* prevents zoom on iOS */
+    padding: 12px 14px;
+    transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out;
+  }
+
+  .closeButton {
+    top: 12px;
+    right: 16px;
+    font-size: 28px;
+    transition: color 0.2s ease-out, transform 0.2s ease-out;
+  }
+
+  .submitButton {
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out;
+  }
+}
+
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 480px) {
+  .authContainer {
+    padding: 12px;
+  }
+
+  .authForm {
+    padding: 24px 20px;
+  }
+
+  .authContainer h1 {
+    font-size: 22px;
+    margin-bottom: 16px;
+  }
+
+  .authContainer input {
+    padding: 12px 14px;
+    font-size: 16px;
+    transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out;
+  }
+
+  .authContainer button {
+    padding: 14px 24px;
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out;
+  }
+
+  .socialButtons {
+    grid-template-columns: 1fr;
+  }
+
+  .socialButton {
+    padding: 12px;
+  }
+
+  .modalOverlay {
+    padding: 12px;
+    padding-top: max(16px, env(safe-area-inset-top));
+  }
+
+  .modalContent {
+    padding: 32px 20px 28px;
+    animation: modalSlideUp 0.22s ease-out;
+  }
+
+  .modalContent h2 {
+    font-size: 20px;
+    margin: 16px 0 12px;
+  }
+
+  .modalContent input {
+    margin: 10px 0;
+  }
+
+  .submitButton {
+    margin-top: 16px;
+    padding: 14px 24px;
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out;
+  }
+
+  .iconContainer,
+  .successIcon {
+    width: 52px;
+    height: 52px;
+  }
+
+  .iconContainer i,
+  .successIcon i {
+    font-size: 26px;
+  }
+
+  .closeButton {
+    top: 10px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    font-size: 24px;
+    transition: color 0.2s ease-out, transform 0.2s ease-out;
+  }
 }

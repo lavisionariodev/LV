@@ -1,0 +1,71 @@
+/* Dispute detail page */
+
+.page {
+  width: 100%;
+}
+
+.notFoundHint {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 8px;
+}
+
+.backBtnWrap {
+  margin-top: 12px;
+}
+
+.detailGrid {
+  display: grid;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.descriptionBlock {
+  margin-top: 4px;
+  font-size: 13px;
+  color: #111827;
+}
+
+.divider {
+  margin: 16px 0;
+  border: none;
+  border-top: 1px solid #e5e7eb;
+}
+
+.demoNote {
+  display: grid;
+  gap: 8px;
+}
+
+.demoHint {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.statusActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.footerNote {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.footerNote p {
+  margin: 0;
+}
+
+.footerNote p + p {
+  margin-top: 4px;
+}
+
+.link {
+  color: var(--color-main-accent, #204F38);
+  text-decoration: underline;
+}
+
+.link:hover {
+  text-decoration: none;
+}

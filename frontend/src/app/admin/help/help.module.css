@@ -34,7 +34,7 @@
   background: #f8fafc;
   display: grid;
   place-items: center;
-  color: var(--color-gold-base);
+  color: var(--color-green-700);
   flex: 0 0 auto;
 }
 
@@ -133,7 +133,7 @@
 .faqItemOpen {
   border-color: var(--color-main-accent);
   background: #fdfefe;
-  box-shadow: 0 2px 12px rgba(68, 95, 61, 0.18);
+  box-shadow: var(--focus-shadow-green-soft);
 }
 
 .faqBtn {
@@ -277,7 +277,7 @@
   background: #ffffff;
   display: grid;
   place-items: center;
-  color: var(--color-gold-base);
+  color: var(--color-green-700);
 }
 
 .supportTitle {
@@ -303,7 +303,7 @@
   padding: 10px 14px;
   border-radius: 8px;
   border: 1px solid #e9efec;
-  background-color: var(--color-gold-base);
+  background-color: var(--color-green-700);
   color: #ffffff;
   cursor: pointer;
   white-space: nowrap;

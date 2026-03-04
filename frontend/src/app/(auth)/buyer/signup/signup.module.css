@@ -57,7 +57,7 @@
 }
 
 .authContainer a:hover {
-  text-decoration: underline;
+  text-decoration: none;
   color: var(--color-main-accent);
 }
 
@@ -79,12 +79,11 @@
 
 .authContainer button:hover {
   background-color: #279354;
-  transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(32, 79, 56, 0.3);
 }
 
 .authContainer input {
-  background-color: #eee;
+  background-color: #ffffff;
   border: none;
   margin: 10px 0;
   padding: 12px 15px;
@@ -98,6 +97,67 @@
 .authContainer input:focus {
   background-color: #e0e0e0;
   box-shadow: 0 0 6px 4px rgba(32, 79, 56, 0.1);
+}
+
+.passwordInputWrap {
+  position: relative;
+  width: 100%;
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  background-color: #ffffff;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.passwordInputWrap:focus-within {
+  border-color: var(--color-main-accent);
+  box-shadow: 0 0 6px 4px rgba(32, 79, 56, 0.1);
+}
+
+.passwordInputWrap input {
+  flex: 1;
+  padding: 12px 44px 12px 15px;
+  margin: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 13px;
+  border-radius: 6px;
+}
+
+.passwordInputWrap input::placeholder {
+  color: #999;
+}
+
+.passwordToggle {
+  position: absolute;
+  left: auto;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  padding: 4px;
+  cursor: pointer;
+  color: #666;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  transition: color 0.2s ease;
+  user-select: none;
+}
+
+.passwordToggle:hover {
+  color: #333;
+}
+
+.passwordToggle i {
+  font-size: 20px;
 }
 
 .socialIcons {
@@ -114,21 +174,78 @@
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  width: 40px;
+  min-width: 40px;
   height: 40px;
+  padding: 0 16px;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .socialIcons a:hover {
-  border-color: var(--color-main-accent);
+  background-color: transparent;
+  border-color: #102820;
   transform: translateY(-3px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px rgba(16, 40, 32, 0.25);
 }
 
 .socialIcons i {
   font-size: 18px;
   color: #666;
+  transition: color 0.3s ease;
+}
+
+/* Brand colors for individual social icons */
+.socialIcons a:first-child i {
+  color: #DB4437; /* Google red */
+}
+
+.socialIcons a:last-child i {
+  color: #1877F2; /* Facebook blue */
+}
+
+.socialLabel {
+  margin-left: 8px;
+  font-size: 13px;
+  color: #333;
+}
+
+.socialButtons {
+  margin: 15px 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Match buyer login social button style (white button, icon + label) */
+button.socialButton {
+  background-color: #ffffff !important;
+  color: #333 !important;
+  border: 1px solid #e0e0e0;
+  padding: 10px;
+  font-size: 12px;
+  text-transform: none;
+}
+
+.socialButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+/* Keep Facebook/Google logo colors visible */
+.socialButton svg {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
+button.socialButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(32, 79, 56, 0.3);
 }
 
 .authFooter {
@@ -146,4 +263,85 @@
 
 .authFooter a:hover {
   color: #279354;
+}
+
+/* Mobile responsive – different transitions only on mobile (wide screen unchanged) */
+@media (max-width: 768px) {
+  .authContainer {
+    padding: 16px;
+  }
+
+  .authForm {
+    padding: 32px 24px;
+    max-width: 100%;
+  }
+
+  .authContainer h1 {
+    font-size: 26px;
+  }
+
+  .authContainer input {
+    padding: 12px 14px;
+    transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out;
+  }
+
+  .authContainer button {
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out;
+  }
+
+  .socialButtons {
+    grid-template-columns: 1fr;
+  }
+
+  .socialButton {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .authContainer {
+    padding: 12px;
+  }
+
+  .authForm {
+    padding: 24px 20px;
+  }
+
+  .authContainer h1 {
+    font-size: 22px;
+    margin-bottom: 16px;
+  }
+
+  .authContainer span {
+    font-size: 12px;
+    margin: 12px 0;
+  }
+
+  .authContainer input {
+    padding: 12px 14px;
+    font-size: 16px; /* prevents zoom on iOS */
+    margin: 8px 0;
+    transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out;
+  }
+
+  .authContainer button {
+    padding: 14px 24px;
+    margin-top: 12px;
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out;
+  }
+
+  .socialButtons {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin: 12px 0;
+  }
+
+  .socialButton {
+    padding: 12px;
+  }
+
+  .authFooter {
+    font-size: 12px;
+    margin-top: 16px;
+  }
 }

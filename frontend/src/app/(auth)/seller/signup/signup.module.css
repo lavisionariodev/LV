@@ -395,8 +395,16 @@
 
 .facebookBtn:hover,
 .googleBtn:hover {
-  background: #f8f8f8;
-  border-color: #999;
+  background-color: #102820;
+  border-color: #102820;
+  color: #fff;
+}
+
+.facebookBtn:hover svg,
+.facebookBtn:hover svg path,
+.googleBtn:hover svg,
+.googleBtn:hover svg path {
+  fill: #fff;
 }
 
 .terms {
@@ -413,7 +421,7 @@
 }
 
 .terms a:hover {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 .loginLink {
@@ -430,7 +438,7 @@
 }
 
 .loginLink a:hover {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 /* Verification Method */
@@ -534,7 +542,7 @@
 }
 
 .resendText a:hover {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 /* Phone Reclaim Screen */
@@ -1202,15 +1210,24 @@
   grid-column: 2;
 }
 
-/* Responsive */
+/* Responsive – mobile only; wide screen layout unchanged */
 @media (max-width: 968px) {
   .heroContainer {
     grid-template-columns: 1fr;
     gap: 48px;
+    align-items: start;
+  }
+
+  .heroLeft {
+    order: 1;
   }
 
   .heroRight {
+    order: -1; /* form first on mobile */
     position: static;
+    width: 100%;
+    display: flex;
+    justify-content: center;
   }
 
   .heroTitle {
@@ -1219,6 +1236,7 @@
 
   .signupCard {
     max-width: 100%;
+    width: 100%;
     max-height: 70vh;
   }
 }
@@ -1248,27 +1266,97 @@
 @media (max-width: 768px) {
   .headerContent {
     padding: 0.75rem 1.5rem;
+    padding-left: max(1.5rem, env(safe-area-inset-left));
+    padding-right: max(1.5rem, env(safe-area-inset-right));
   }
 
   .heroSection {
-    padding: 48px 16px;
+    padding: 40px 16px 48px;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  .heroContainer {
+    gap: 36px;
   }
 
   .heroLeft {
-    margin: 20px;
+    order: 1;
+    margin: 0 20px;
+    text-align: center;
   }
 
   .heroTitle {
     font-size: 32px;
   }
 
+  .heroRight {
+    order: -1;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
   .signupCard {
     padding: 32px 24px;
     max-height: 65vh;
+    max-width: 100%;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .signupTitle {
+    font-size: 22px;
+    margin-bottom: 24px;
+  }
+
+  .phoneInput {
+    font-size: 16px; /* prevents zoom on iOS */
+    padding: 12px 14px;
+  }
+
+  .nextButton {
+    padding: 12px 14px;
   }
 
   .socialButtons {
     flex-direction: column;
+  }
+
+  .facebookBtn,
+  .googleBtn {
+    padding: 12px;
+  }
+
+  .stepIndicator {
+    padding: 0 0.5rem;
+  }
+
+  .stepCircle {
+    width: 36px;
+    height: 36px;
+    font-size: 0.875rem;
+  }
+
+  .stepLabel {
+    font-size: 0.6875rem;
+  }
+
+  .stepLine {
+    width: 40px;
+  }
+
+  .verificationMethods {
+    gap: 10px;
+  }
+
+  .methodButton {
+    padding: 14px 16px;
+  }
+
+  .backButton {
+    top: 16px;
+    left: 16px;
   }
 
   .benefitsGrid,
@@ -1286,5 +1374,265 @@
     width: 45px;
     height: 45px;
     font-size: 18px;
+  }
+
+  /* Reclaim screen mobile */
+  .reclaimCard {
+    padding-top: 32px;
+    max-height: 75vh;
+  }
+
+  .reclaimMessage {
+    font-size: 13px;
+    max-width: 100%;
+  }
+
+  .existingAccountInfo {
+    flex-direction: column;
+    text-align: center;
+    padding: 0.75rem;
+  }
+
+  .reclaimNotice {
+    padding: 0.75rem 1rem;
+  }
+
+  .reclaimNotice h4 {
+    font-size: 13px;
+  }
+
+  .reclaimNotice ul li {
+    font-size: 12px;
+  }
+
+  .reclaimForm input,
+  .formTextarea {
+    font-size: 16px;
+    padding: 12px 14px;
+  }
+
+  .reclaimButton,
+  .cancelButton {
+    padding: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .headerContent {
+    padding: 0.625rem 1rem;
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  .logoWrapper {
+    gap: 0.5rem;
+  }
+
+  .shopeeIcon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .logoPlaceholder {
+    font-size: 1.125rem;
+  }
+
+  .shopeeName {
+    font-size: 1.125rem;
+  }
+
+  .needHelp {
+    font-size: 0.8125rem;
+  }
+
+  .heroSection {
+    padding: 24px 12px 36px;
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+
+  .heroContainer {
+    gap: 28px;
+  }
+
+  .heroLeft {
+    order: 1;
+    margin: 0 12px;
+    gap: 20px;
+    text-align: center;
+  }
+
+  .heroRight {
+    order: -1;
+    align-items: stretch;
+  }
+
+  .marketplaceLabel {
+    font-size: 12px;
+  }
+
+  .heroTitle {
+    font-size: 24px;
+  }
+
+  .featuresList {
+    gap: 14px;
+  }
+
+  .featureItem {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .featureItem p {
+    font-size: 14px;
+  }
+
+  .signupCard {
+    padding: 24px 20px;
+    max-height: 72vh;
+    border-radius: 12px;
+    width: 100%;
+  }
+
+  .signupTitle {
+    font-size: 20px;
+    margin-bottom: 20px;
+  }
+
+  .verificationSubtitle {
+    font-size: 13px;
+  }
+
+  .phoneDisplay {
+    font-size: 15px;
+    margin: 12px 0 24px;
+  }
+
+  .signupForm {
+    gap: 14px;
+  }
+
+  .phoneInput {
+    padding: 12px 14px;
+    font-size: 16px;
+  }
+
+  .nextButton {
+    padding: 14px;
+    font-size: 14px;
+  }
+
+  .stepIndicator {
+    margin-bottom: 1.5rem;
+    padding: 0 0.25rem;
+  }
+
+  .stepCircle {
+    width: 32px;
+    height: 32px;
+    font-size: 0.75rem;
+  }
+
+  .stepLabel {
+    font-size: 0.625rem;
+  }
+
+  .stepLine {
+    width: 28px;
+    margin-bottom: 20px;
+  }
+
+  .backButton {
+    top: 14px;
+    left: 14px;
+    font-size: 20px;
+  }
+
+  .verificationMethods {
+    gap: 8px;
+  }
+
+  .methodButton {
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+
+  .methodIcon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .terms {
+    font-size: 11px;
+  }
+
+  .loginLink {
+    font-size: 13px;
+    margin-top: 14px;
+  }
+
+  .otpInputs {
+    gap: 6px;
+  }
+
+  .otpInput {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+
+  .benefitsGrid,
+  .stepsContainer,
+  .supportGrid {
+    padding: 0 1rem;
+  }
+
+  /* Reclaim screen small phones */
+  .reclaimCard {
+    padding-top: 28px;
+    max-height: 78vh;
+  }
+
+  .reclaimMessage {
+    font-size: 12px;
+  }
+
+  .accountAvatar {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+  }
+
+  .accountUsername {
+    font-size: 15px;
+  }
+
+  .accountType {
+    font-size: 12px;
+  }
+
+  .reclaimNotice {
+    padding: 0.625rem 0.75rem;
+  }
+
+  .reclaimNotice h4 {
+    font-size: 12px;
+  }
+
+  .reclaimNotice ul li {
+    font-size: 11px;
+    padding-left: 1rem;
+  }
+
+  .confirmLabel {
+    font-size: 12px;
+  }
+
+  .reclaimButton,
+  .cancelButton {
+    padding: 14px;
+    font-size: 14px;
   }
 }

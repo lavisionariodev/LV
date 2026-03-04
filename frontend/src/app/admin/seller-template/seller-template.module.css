@@ -1,0 +1,213 @@
+/* Seller service form template (admin-defined form for sellers) */
+
+.page {
+  width: 100%;
+}
+
+.intro {
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 16px;
+}
+
+.intro strong {
+  color: #334155;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.builder {
+  min-width: 0;
+}
+
+.formCard {
+  background: #fff;
+  border: 1px solid #e9efec;
+  border-radius: 14px;
+  padding: 18px;
+}
+
+.formTitle {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #000;
+}
+
+.fieldForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.labelSpan {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.input {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: #fff;
+  font-size: 13px;
+}
+
+.checkLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #334155;
+  cursor: pointer;
+}
+
+.checkLabel input {
+  width: 16px;
+  height: 16px;
+}
+
+.formActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.addBtn {
+  margin-bottom: 12px;
+}
+
+.fieldList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fieldItem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #e9efec;
+  border-radius: 10px;
+}
+
+.fieldLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #000;
+  flex: 1;
+  min-width: 100px;
+}
+
+.fieldMeta {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.fieldActions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.emptyHint {
+  font-size: 13px;
+  color: #64748b;
+  padding: 12px 0;
+  margin: 0;
+}
+
+/* Preview (seller view) */
+
+.preview {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 14px;
+  padding: 18px;
+  position: sticky;
+  top: 20px;
+}
+
+.previewTitle {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.previewDesc {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0 0 14px;
+}
+
+.previewForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.previewLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.previewLabelText {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.previewInput {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: #fff;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.previewInput:focus {
+  outline: none;
+}
+
+.previewSubmit {
+  margin-top: 8px;
+  padding: 10px 14px;
+  background: #cbd5e1;
+  color: #64748b;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .preview {
+    position: static;
+  }
+}
