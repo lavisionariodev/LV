@@ -9,7 +9,8 @@ import { FaStore, FaGift, FaHandshake, FaBullhorn, FaTruck,
          FaFacebook, FaYoutube, FaViber, FaShoppingBag } from 'react-icons/fa';
 import PublicFooter from '@/components/layout/PublicFooter/PublicFooter';
 import { validateNewPassword } from '@/lib/validators/authSchemas';
-import { signUpWithEmailPassword } from '@/lib/auth/client';
+import { sendEmailOtpForSignup, verifyEmailOtpForSignup } from '@/lib/auth/client';
+import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/contexts/ToastContext';
 
 const StepIndicator = ({ currentStep }) => (
@@ -87,7 +88,7 @@ const Step1PhoneInput = ({ phoneNumber, setPhoneNumber, onNext, currentStep }) =
   </div>
 );
 
-const Step2VerificationMethod = ({ email, onSelectMethod, onBack, currentStep }) => {
+const Step2VerificationMethod = ({ email, onSelectMethod, onBack, currentStep, isSending }) => {
   return (
     <div className={`${styles.signupCard} ${styles.verificationCard}`}>
       <StepIndicator currentStep={currentStep} />
@@ -102,14 +103,25 @@ const Step2VerificationMethod = ({ email, onSelectMethod, onBack, currentStep })
         type="button"
         className={`${styles.nextButton} ${styles.fullWidth}`}
         onClick={() => onSelectMethod('email')}
+        disabled={isSending}
       >
-        Send verification code
+        {isSending ? 'Sending...' : 'Send verification code'}
       </button>
     </div>
   );
 };
 
-const Step3OTPInput = ({ email, countdown, onResend, otpValue, setOtpValue, onNext, onBack, currentStep }) => {
+const Step3OTPInput = ({
+  email,
+  countdown,
+  onResend,
+  otpValue,
+  setOtpValue,
+  onNext,
+  onBack,
+  currentStep,
+  isVerifying,
+}) => {
   const handleOtpChange = (index, value) => {
     if (value.length > 1) return;
     if (!/^\d*$/.test(value)) return;
@@ -165,9 +177,9 @@ const Step3OTPInput = ({ email, countdown, onResend, otpValue, setOtpValue, onNe
       <button 
         className={`${styles.nextButton} ${styles.fullWidth}`}
         onClick={onNext}
-        disabled={otpValue.some(digit => !digit)}
+        disabled={otpValue.some(digit => !digit) || isVerifying}
       >
-        NEXT
+        {isVerifying ? 'Verifying...' : 'NEXT'}
       </button>
     </div>
   );
@@ -391,6 +403,7 @@ const Step5CreatePassword = ({
   onComplete,
   onBack,
   currentStep,
+  isSubmitting,
 }) => (
   <div className={`${styles.signupCard} ${styles.passwordCard}`}>
     <StepIndicator currentStep={currentStep} />
@@ -451,10 +464,11 @@ const Step5CreatePassword = ({
         !password ||
         !confirmPassword ||
         password !== confirmPassword ||
-        password.length < 8
+        password.length < 8 ||
+        isSubmitting
       }
     >
-      CREATE ACCOUNT
+      {isSubmitting ? 'Creating account...' : 'CREATE ACCOUNT'}
     </button>
   </div>
 );
@@ -472,6 +486,10 @@ const Page = () => {
   const [existingAccount, setExistingAccount] = useState(null);
   const [showStepIndicator, setShowStepIndicator] = useState(false);
   const [isSellerCenterSignup, setIsSellerCenterSignup] = useState(false);
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
   const router = useRouter();
   const toast = useToast();
   
@@ -496,25 +514,100 @@ const Page = () => {
     setStep(2);
   };
 
-  const handleMethodSelect = (method) => {
-    setVerificationMethod(method);
-    setCountdown(60);
-    setStep(3);
+  const handleMethodSelect = async (method) => {
+    if (method !== 'email') return;
+
+    const trimmedEmail = phoneNumber.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
+      toast.error('Please enter a valid email address.');
+      return;
+    }
+
+    setIsSendingCode(true);
+    try {
+      const { error } = await sendEmailOtpForSignup({
+        email: trimmedEmail,
+        role: 'seller',
+      });
+
+      if (error) {
+        toast.error(error);
+        return;
+      }
+
+      setVerificationMethod('email');
+      setCountdown(60);
+      toast.success('Verification code sent to your email.');
+      setStep(3);
+    } catch (err) {
+      console.error('Error sending email OTP:', err);
+      toast.error('Failed to send verification code. Please try again.');
+    } finally {
+      setIsSendingCode(false);
+    }
   };
 
-  const handleResendOTP = () => {
-    setCountdown(60);
-    alert('Verification code resent to your email address.');
+  const handleResendOTP = async () => {
+    if (countdown > 0) return;
+
+    const trimmedEmail = phoneNumber.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
+      toast.error('Please enter a valid email address.');
+      return;
+    }
+
+    setIsSendingCode(true);
+    try {
+      const { error } = await sendEmailOtpForSignup({
+        email: trimmedEmail,
+        role: 'seller',
+      });
+
+      if (error) {
+        toast.error(error);
+        return;
+      }
+
+      setCountdown(60);
+      toast.success('Verification code resent to your email.');
+    } catch (err) {
+      console.error('Error resending email OTP:', err);
+      toast.error('Failed to resend verification code. Please try again.');
+    } finally {
+      setIsSendingCode(false);
+    }
   };
 
-  const handleOTPNext = () => {
+  const handleOTPNext = async () => {
     const code = otpValue.join('');
     if (code.length !== 6) {
       alert('Please enter the complete 6-digit code');
       return;
     }
-    // Email verified successfully, proceed to create account details
-    setStep(5);
+
+    setIsVerifyingCode(true);
+    try {
+      const { error } = await verifyEmailOtpForSignup({
+        email: phoneNumber,
+        token: code,
+      });
+
+      if (error) {
+        toast.error(error);
+        return;
+      }
+
+      setIsEmailVerified(true);
+      toast.success('Email verified. Now create your password.');
+      setStep(5);
+    } catch (err) {
+      console.error('Error verifying email OTP:', err);
+      toast.error('Failed to verify code. Please try again.');
+    } finally {
+      setIsVerifyingCode(false);
+    }
   };
 
   const handleReclaimProceed = () => {
@@ -562,24 +655,48 @@ const Page = () => {
       return;
     }
 
-    try {
-      const { error } = await signUpWithEmailPassword({
-        name: trimmedName,
-        email: trimmedEmail,
-        password,
-        role: 'seller',
-      });
+    if (!isEmailVerified) {
+      toast.error('Please verify your email before creating your account.');
+      return;
+    }
 
-      if (error) {
-        toast.error(error);
+    setIsCompleting(true);
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        toast.error('Your session has expired. Please restart the signup process.');
         return;
       }
+
+      const { error: updateError } = await supabase.auth.updateUser({
+        password,
+        data: {
+          full_name: trimmedName,
+          role: 'seller',
+        },
+      });
+
+      if (updateError) {
+        toast.error(updateError.message || 'Failed to finalize your account. Please try again.');
+        return;
+      }
+
+      await supabase
+        .from('profiles')
+        .update({ full_name: trimmedName })
+        .eq('id', user.id);
 
       toast.success('Seller Centre account created! Please complete your shop onboarding.');
       router.replace('/seller/onboarding');
     } catch (err) {
       console.error('Seller signup error:', err);
       toast.error('An error occurred while creating your account. Please try again.');
+    } finally {
+      setIsCompleting(false);
     }
   };
 
@@ -643,6 +760,7 @@ const Page = () => {
                 onSelectMethod={handleMethodSelect}
                 onBack={() => setStep(1)}
                 currentStep={2}
+                isSending={isSendingCode}
               />
             )}
             {step === 3 && (
@@ -655,6 +773,7 @@ const Page = () => {
                 onNext={handleOTPNext}
                 onBack={() => setStep(2)}
                 currentStep={2}
+                isVerifying={isVerifyingCode}
               />
             )}
             {step === 5 && (
@@ -670,6 +789,7 @@ const Page = () => {
                 onComplete={handleComplete}
                 onBack={() => setStep(3)}
                 currentStep={3}
+                isSubmitting={isCompleting}
               />
             )}
           </div>
