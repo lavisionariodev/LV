@@ -3,12 +3,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { getUser, onAuthStateChange } from '@/lib/auth/session';
+import { getUserRole, isBuyerRole, isSellerRole } from '@/lib/auth/roles';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState({ full_name: '', avatar_url: '' });
+  const [role, setRole] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
   const loadProfile = useCallback(async (nextUser) => {
@@ -33,10 +35,24 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const loadRole = useCallback(async (nextUser) => {
+    if (!nextUser) {
+      setRole(null);
+      return;
+    }
+    const nextRole = await getUserRole(nextUser.id);
+    setRole(nextRole || null);
+  }, []);
+
   const refreshProfile = useCallback(async () => {
     if (!user) return;
     await loadProfile(user);
   }, [user, loadProfile]);
+
+  const refreshRole = useCallback(async () => {
+    if (!user) return;
+    await loadRole(user);
+  }, [user, loadRole]);
 
   useEffect(() => {
     let mounted = true;
@@ -48,9 +64,10 @@ export function AuthProvider({ children }) {
 
         setUser(currentUser);
         if (currentUser) {
-          await loadProfile(currentUser);
+          await Promise.all([loadProfile(currentUser), loadRole(currentUser)]);
         } else {
           setProfile({ full_name: '', avatar_url: '' });
+          setRole(null);
         }
       } finally {
         if (mounted) {
@@ -64,7 +81,13 @@ export function AuthProvider({ children }) {
     const unsubscribe = onAuthStateChange((_event, session) => {
       const nextUser = session?.user ?? null;
       setUser(nextUser);
-      loadProfile(nextUser);
+      if (nextUser) {
+        loadProfile(nextUser);
+        loadRole(nextUser);
+      } else {
+        setProfile({ full_name: '', avatar_url: '' });
+        setRole(null);
+      }
     });
 
     return () => {
@@ -73,16 +96,20 @@ export function AuthProvider({ children }) {
         unsubscribe();
       }
     };
-  }, [loadProfile]);
+  }, [loadProfile, loadRole]);
 
   const value = useMemo(
     () => ({
       user,
       profile,
+      role,
       authLoading,
       refreshProfile,
+      refreshRole,
+      isBuyer: isBuyerRole(role),
+      isSeller: isSellerRole(role),
     }),
-    [user, profile, authLoading, refreshProfile]
+    [user, profile, role, authLoading, refreshProfile, refreshRole]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -95,4 +122,5 @@ export function useAuth() {
   }
   return ctx;
 }
+
 

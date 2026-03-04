@@ -13,7 +13,7 @@ import { getUser } from "@/lib/auth/session";
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase/client';
 import { isAdmin } from '@/lib/auth/admin';
-import { getUserRole } from '@/lib/auth/roles';
+import { getUserRole, ROLE_BUYER } from '@/lib/auth/roles';
 
 function BuyerLoginPageInner() {
   const searchParams = useSearchParams();
@@ -102,7 +102,7 @@ function BuyerLoginPageInner() {
         return;
       }
 
-      if (role !== 'buyer') {
+      if (role !== ROLE_BUYER) {
         toast.error('Please use the correct portal for your account.');
         await supabase.auth.signOut();
         return;

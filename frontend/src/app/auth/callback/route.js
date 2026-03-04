@@ -10,8 +10,10 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
   const redirectParam = searchParams.get("redirect") ?? "/";
+  const portal = searchParams.get("portal") ?? "buyer"; // "buyer" | "seller"
   const baseUrl = new URL(request.url).origin;
-  const loginUrl = new URL("/buyer/login", baseUrl);
+  const loginPath = portal === "seller" ? "/seller/login" : "/buyer/login";
+  const loginUrl = new URL(loginPath, baseUrl);
 
   const supabase = await createClient();
 
@@ -23,6 +25,9 @@ export async function GET(request) {
     }
     const callbackUrl = new URL("/auth/callback", baseUrl);
     callbackUrl.searchParams.set("redirect", redirectParam);
+    if (portal && portal !== "buyer") {
+      callbackUrl.searchParams.set("portal", portal);
+    }
     return NextResponse.redirect(callbackUrl);
   }
 
@@ -62,21 +67,64 @@ export async function GET(request) {
     user.user_metadata?.name ??
     "";
 
-  // If no users row (e.g. OAuth signup before trigger ran or trigger not applied), create one as buyer and ensure profile exists.
+  // If no users row (e.g. OAuth signup before trigger ran or trigger not applied).
   if (!userRow?.role) {
-    const { error: insertError } = await supabase
-      .from("users")
-      .insert({ id: user.id, email, role: "buyer" });
-    if (insertError) {
+    if (portal === "buyer") {
+      // For buyer portal, create a buyer account and ensure profile exists.
+      const { error: insertError } = await supabase
+        .from("users")
+        .insert({ id: user.id, email, role: "buyer" });
+      if (insertError) {
+        await supabase.auth.signOut();
+        loginUrl.searchParams.set("error", "Your account is not configured for this portal.");
+        return NextResponse.redirect(loginUrl);
+      }
+      userRow = { role: "buyer" };
+      await supabase.from("profiles").upsert(
+        { id: user.id, email, full_name: fullName },
+        { onConflict: "id" }
+      );
+    } else if (portal === "seller") {
+      // For seller portal, create a seller account and initial seller record.
+      const { error: insertError } = await supabase
+        .from("users")
+        .insert({ id: user.id, email, role: "seller" });
+      if (insertError) {
+        await supabase.auth.signOut();
+        loginUrl.searchParams.set("error", "Your account is not configured for this portal.");
+        return NextResponse.redirect(loginUrl);
+      }
+
+      userRow = { role: "seller" };
+
+      await supabase.from("profiles").upsert(
+        { id: user.id, email, full_name: fullName },
+        { onConflict: "id" }
+      );
+
+      const sellerPayload = {
+        user_id: user.id,
+        email,
+        contact_name: fullName || email,
+        status: "pending",
+        registered_at: new Date().toISOString(),
+      };
+
+      const { error: sellerError } = await supabase
+        .from("sellers")
+        .upsert(sellerPayload, { onConflict: "user_id" });
+
+      if (sellerError) {
+        await supabase.auth.signOut();
+        loginUrl.searchParams.set("error", "We could not complete your seller setup. Please try again.");
+        return NextResponse.redirect(loginUrl);
+      }
+    } else {
+      // Unknown portal type – treat as misconfiguration.
       await supabase.auth.signOut();
       loginUrl.searchParams.set("error", "Your account is not configured for this portal.");
       return NextResponse.redirect(loginUrl);
     }
-    userRow = { role: "buyer" };
-    await supabase.from("profiles").upsert(
-      { id: user.id, email, full_name: fullName },
-      { onConflict: "id" }
-    );
   }
 
   // Ensure profile row exists (fixes OAuth users who have users but no profile, or updates name from provider).
@@ -85,7 +133,14 @@ export async function GET(request) {
     { onConflict: "id" }
   );
 
-  if (userRow.role !== "buyer") {
+  // Enforce portal-specific role.
+  if (portal === "buyer" && userRow.role !== "buyer") {
+    await supabase.auth.signOut();
+    loginUrl.searchParams.set("error", "Please use the correct portal for your account.");
+    return NextResponse.redirect(loginUrl);
+  }
+
+  if (portal === "seller" && userRow.role !== "seller") {
     await supabase.auth.signOut();
     loginUrl.searchParams.set("error", "Please use the correct portal for your account.");
     return NextResponse.redirect(loginUrl);

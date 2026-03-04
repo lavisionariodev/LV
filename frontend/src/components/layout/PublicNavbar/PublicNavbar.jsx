@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext'
 
 export default function PublicNavbar() {
   const { cartCount } = useCart()
-  const { user, profile } = useAuth()
+  const { user, profile, role, isBuyer, isSeller } = useAuth()
   const [query, setQuery] = useState('')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mobileHowItWorksOpen, setMobileHowItWorksOpen] = useState(false)
@@ -259,30 +259,32 @@ export default function PublicNavbar() {
 
           <div className={styles.navActions}>
             <div className={styles.searchContainer}>
-              <span className={styles.cartBtnWrap}>
-                <button 
-                  className={styles.searchBtn} 
-                  aria-label="Cart"
-                  onClick={() => {
-                    if (!isAuthenticated) {
-                      router.push(`/buyer/login?redirect=${encodeURIComponent('/cart')}`)
-                      return
-                    }
-                    router.push('/cart')
-                  }}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="9" cy="21" r="1"></circle>
-                    <circle cx="20" cy="21" r="1"></circle>
-                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-                  </svg>
-                </button>
-                {cartCount > 0 && (
-                  <span className={styles.cartDot} aria-label={`${cartCount} items in cart`}>
-                    {cartCount > 99 ? '99+' : cartCount}
-                  </span>
-                )}
-              </span>
+              {!isSeller && (
+                <span className={styles.cartBtnWrap}>
+                  <button 
+                    className={styles.searchBtn} 
+                    aria-label="Cart"
+                    onClick={() => {
+                      if (!isAuthenticated) {
+                        router.push(`/buyer/login?redirect=${encodeURIComponent('/cart')}`)
+                        return
+                      }
+                      router.push('/cart')
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="9" cy="21" r="1"></circle>
+                      <circle cx="20" cy="21" r="1"></circle>
+                      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                    </svg>
+                  </button>
+                  {cartCount > 0 && (
+                    <span className={styles.cartDot} aria-label={`${cartCount} items in cart`}>
+                      {cartCount > 99 ? '99+' : cartCount}
+                    </span>
+                  )}
+                </span>
+              )}
             </div>
             {isAuthenticated && (
               <div
@@ -306,10 +308,6 @@ export default function PublicNavbar() {
                       src={profile.avatar_url}
                       alt={displayName || 'User avatar'}
                       className={styles.profileAvatar}
-                      onError={(event) => {
-                        event.currentTarget.onerror = null
-                        setProfile((prev) => ({ ...prev, avatar_url: '' }))
-                      }}
                     />
                   ) : (
                     <span className={styles.profileIcon} aria-hidden="true">
@@ -335,33 +333,97 @@ export default function PublicNavbar() {
                 </button>
                 {profileMenuOpen && user && (
                   <div className={styles.profileDropdown} role="menu">
-                    <button
-                      type="button"
-                      className={styles.profileDropdownItem}
-                      onClick={() => {
-                        setProfileMenuOpen(false)
-                        router.push('/profile/account')
-                      }}
-                    >
-                      My account
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.profileDropdownItem}
-                      onClick={() => {
-                        setProfileMenuOpen(false)
-                        router.push('/profile/purchases')
-                      }}
-                    >
-                      Purchases
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.profileDropdownItem}
-                      onClick={openLogoutModal}
-                    >
-                      Logout
-                    </button>
+                    {isSeller ? (
+                      <>
+                        <button
+                          type="button"
+                          className={styles.profileDropdownItem}
+                          onClick={() => {
+                            setProfileMenuOpen(false)
+                            router.push('/seller/my-sales')
+                          }}
+                        >
+                          My Sales
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.profileDropdownItem}
+                          onClick={() => {
+                            setProfileMenuOpen(false)
+                            router.push('/seller/shop-performance')
+                          }}
+                        >
+                          Shop Performance
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.profileDropdownItem}
+                          onClick={() => {
+                            setProfileMenuOpen(false)
+                            router.push('/seller/my-services')
+                          }}
+                        >
+                          My Services
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.profileDropdownItem}
+                          onClick={() => {
+                            setProfileMenuOpen(false)
+                            router.push('/seller/my-account')
+                          }}
+                        >
+                          My Account
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.profileDropdownItem}
+                          onClick={() => {
+                            setProfileMenuOpen(false)
+                            router.push('/seller/notifications')
+                          }}
+                        >
+                          Notifications
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.profileDropdownItem}
+                          onClick={openLogoutModal}
+                        >
+                          Logout
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          className={styles.profileDropdownItem}
+                          onClick={() => {
+                            setProfileMenuOpen(false)
+                            router.push('/profile/account')
+                          }}
+                        >
+                          My account
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.profileDropdownItem}
+                          onClick={() => {
+                            setProfileMenuOpen(false)
+                            router.push('/profile/purchases')
+                          }}
+                        >
+                          Purchases
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.profileDropdownItem}
+                          onClick={openLogoutModal}
+                        >
+                          Logout
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -447,6 +509,25 @@ export default function PublicNavbar() {
             <Link href="/buyer/login?redirect=/profile" className={styles.mobileLink}>
               Sign In
             </Link>
+          ) : isSeller ? (
+            <>
+              <Link href="/seller/my-sales" className={styles.mobileLink}>
+                My Sales
+              </Link>
+              <Link href="/seller/my-account" className={styles.mobileLink}>
+                My Account
+              </Link>
+              <Link href="/seller/notifications" className={styles.mobileLink}>
+                Notifications
+              </Link>
+              <button
+                type="button"
+                className={styles.mobileLinkButton}
+                onClick={openLogoutModal}
+              >
+                Logout
+              </button>
+            </>
           ) : (
             <>
               <Link href="/profile" className={styles.mobileLink}>

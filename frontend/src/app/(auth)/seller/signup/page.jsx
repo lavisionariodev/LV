@@ -2,12 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import styles from './signup.module.css';
 import { FaStore, FaGift, FaHandshake, FaBullhorn, FaTruck,
          FaShoppingBasket, FaChartLine, FaWarehouse, FaGraduationCap,
          FaFacebook, FaYoutube, FaViber, FaShoppingBag } from 'react-icons/fa';
 import PublicFooter from '@/components/layout/PublicFooter/PublicFooter';
 import { validateNewPassword } from '@/lib/validators/authSchemas';
+import { signUpWithEmailPassword } from '@/lib/auth/client';
+import { useToast } from '@/contexts/ToastContext';
 
 const StepIndicator = ({ currentStep }) => (
   <div className={styles.stepIndicator}>
@@ -409,16 +412,50 @@ const Step4AccountCheck = ({ phoneNumber, existingAccount, onLogin, onCreateNew,
   );
 };
 
-const Step5CreatePassword = ({ password, setPassword, confirmPassword, setConfirmPassword, onComplete, onBack, currentStep }) => (
+const Step5CreatePassword = ({
+  fullName,
+  setFullName,
+  email,
+  setEmail,
+  password,
+  setPassword,
+  confirmPassword,
+  setConfirmPassword,
+  onComplete,
+  onBack,
+  currentStep,
+}) => (
   <div className={`${styles.signupCard} ${styles.passwordCard}`}>
     <StepIndicator currentStep={currentStep} />
     <button className={styles.backButton} onClick={onBack}>←</button>
     <h2 className={styles.signupTitle}>Create Password</h2>
-    <p className={styles.verificationSubtitle}>At least 8 characters with lowercase, uppercase, and digits.</p>
-    
+    <p className={styles.verificationSubtitle}>Enter your seller account details and secure password.</p>
+
+    <div className={styles.formGroup}>
+      <label className={styles.formLabel}>Full Name</label>
+      <input
+        type="text"
+        placeholder="Your full name"
+        className={styles.formControl}
+        value={fullName}
+        onChange={(e) => setFullName(e.target.value)}
+      />
+    </div>
+
+    <div className={styles.formGroup}>
+      <label className={styles.formLabel}>Email</label>
+      <input
+        type="email"
+        placeholder="you@example.com"
+        className={styles.formControl}
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+    </div>
+
     <div className={styles.formGroup}>
       <label className={styles.formLabel}>Password</label>
-      <input 
+      <input
         type="password"
         placeholder="At least 8 characters; lowercase, uppercase, digit"
         className={styles.formControl}
@@ -426,10 +463,10 @@ const Step5CreatePassword = ({ password, setPassword, confirmPassword, setConfir
         onChange={(e) => setPassword(e.target.value)}
       />
     </div>
-    
+
     <div className={styles.formGroup}>
       <label className={styles.formLabel}>Confirm Password</label>
-      <input 
+      <input
         type="password"
         placeholder="Re-enter your password"
         className={styles.formControl}
@@ -437,11 +474,18 @@ const Step5CreatePassword = ({ password, setPassword, confirmPassword, setConfir
         onChange={(e) => setConfirmPassword(e.target.value)}
       />
     </div>
-    
-    <button 
+
+    <button
       className={`${styles.nextButton} ${styles.fullWidth}`}
       onClick={onComplete}
-      disabled={!password || !confirmPassword || password !== confirmPassword || password.length < 8}
+      disabled={
+        !fullName.trim() ||
+        !email.trim() ||
+        !password ||
+        !confirmPassword ||
+        password !== confirmPassword ||
+        password.length < 8
+      }
     >
       CREATE ACCOUNT
     </button>
@@ -456,9 +500,13 @@ const Page = () => {
   const [countdown, setCountdown] = useState(0);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
   const [existingAccount, setExistingAccount] = useState(null);
   const [showStepIndicator, setShowStepIndicator] = useState(false);
   const [isSellerCenterSignup, setIsSellerCenterSignup] = useState(false);
+  const router = useRouter();
+  const toast = useToast();
   
   // Track registered phone numbers (simulating a database)
   // In production, this would be checked via API call
@@ -550,31 +598,43 @@ const Page = () => {
     setStep(5);
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
+    const trimmedName = fullName.trim();
+    const trimmedEmail = email.trim();
+
+    if (!trimmedName || !trimmedEmail) {
+      alert('Please provide your full name and email address.');
+      return;
+    }
+
     const validation = validateNewPassword(password, confirmPassword);
     if (!validation.valid) {
       alert(validation.message);
       return;
     }
 
-    // Register this phone number (simulating saving to database)
-    setRegisteredPhones(prev => new Set([...prev, phoneNumber]));
-    
-    if (isSellerCenterSignup) {
-      alert('Seller Centre account created successfully! Welcome to Lavisionario Seller Centre.');
-    } else {
-      alert('Account created successfully! Welcome to Lavisionario.');
+    try {
+      const { error } = await signUpWithEmailPassword({
+        name: trimmedName,
+        email: trimmedEmail,
+        password,
+        role: 'seller',
+      });
+
+      if (error) {
+        toast.error(error);
+        return;
+      }
+
+      // Register this phone number (simulating saving to database)
+      setRegisteredPhones(prev => new Set([...prev, phoneNumber]));
+
+      toast.success('Seller Centre account created! Please complete your shop onboarding.');
+      router.replace('/seller/onboarding');
+    } catch (err) {
+      console.error('Seller signup error:', err);
+      toast.error('An error occurred while creating your account. Please try again.');
     }
-    
-    // Reset form
-    setStep(1);
-    setShowStepIndicator(false);
-    setPhoneNumber('');
-    setOtpValue(['', '', '', '', '', '']);
-    setPassword('');
-    setConfirmPassword('');
-    setExistingAccount(null);
-    setIsSellerCenterSignup(false);
   };
 
   const heroSectionStyle = {
@@ -628,7 +688,21 @@ const Page = () => {
             {step === 3 && <Step3OTPInput phoneNumber={phoneNumber} method={verificationMethod} countdown={countdown} onResend={handleResendOTP} otpValue={otpValue} setOtpValue={setOtpValue} onNext={handleOTPNext} onBack={() => setStep(2)} currentStep={step === 5 ? 2 : step === 4 ? 1 : step - 1} />}
             {step === 3.5 && <StepPhoneReclaim phoneNumber={phoneNumber} existingAccount={existingAccount} onProceed={handleReclaimProceed} onBack={handleReclaimBack} currentStep={1} />}
             {step === 4 && <Step4AccountCheck phoneNumber={phoneNumber} existingAccount={existingAccount} onLogin={handleLogin} onCreateNew={handleCreateNew} currentStep={step === 5 ? 2 : step === 4 ? 1 : step - 1} />}
-            {step === 5 && <Step5CreatePassword password={password} setPassword={setPassword} confirmPassword={confirmPassword} setConfirmPassword={setConfirmPassword} onComplete={handleComplete} onBack={() => setStep(3)} currentStep={step === 5 ? 2 : step === 4 ? 1 : step - 1} />}
+            {step === 5 && (
+              <Step5CreatePassword
+                fullName={fullName}
+                setFullName={setFullName}
+                email={email}
+                setEmail={setEmail}
+                password={password}
+                setPassword={setPassword}
+                confirmPassword={confirmPassword}
+                setConfirmPassword={setConfirmPassword}
+                onComplete={handleComplete}
+                onBack={() => setStep(3)}
+                currentStep={step === 5 ? 2 : step === 4 ? 1 : step - 1}
+              />
+            )}
           </div>
         </div>
       </section>
