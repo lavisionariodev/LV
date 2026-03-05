@@ -598,7 +598,7 @@
   }
 
   .mobileToggle {
-    display: flex;
+    display: none;
   }
 
   .mobileMenu {
@@ -665,6 +665,120 @@
     word-break: break-word;
     overflow-wrap: break-word;
   }
+}
+
+/* ===== BOTTOM MOBILE NAVIGATION ===== */
+.bottomNav {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .bottomNav {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-around;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: #ffffff;
+    border-top: 1px solid rgba(168, 137, 74, 0.2);
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
+    height: 62px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  /* Push page content up so nothing sits behind the bottom nav */
+  :global(body) {
+    padding-bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.bottomNavItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  flex: 1;
+  padding: 6px 4px;
+  color: #4D2D18;
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bottomNavItem:hover {
+  color: #A8894A;
+  background: rgba(168, 137, 74, 0.07);
+}
+
+.bottomNavItemActive {
+  color: #204F38;
+}
+
+.bottomNavItemActive svg {
+  stroke: #204F38;
+}
+
+.bottomNavItemActive::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  background: #A8894A;
+  border-radius: 0 0 3px 3px;
+}
+
+.bottomNavLabel {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  line-height: 1;
+  color: inherit;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.bottomNavCartWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bottomNavBadge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: #A8894A;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.bottomNavAvatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid rgba(168, 137, 74, 0.45);
 }
 
 @media (max-width: 480px) {

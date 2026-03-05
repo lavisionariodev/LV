@@ -546,6 +546,121 @@ export default function PublicNavbar() {
       )}
 
       <LogoutModal open={logoutOpen} onConfirm={handleConfirmLogout} onCancel={handleCancelLogout} />
+
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className={styles.bottomNav} aria-label="Mobile navigation">
+        <Link
+          href="/"
+          className={`${styles.bottomNavItem} ${pathname === '/' ? styles.bottomNavItemActive : ''}`}
+          aria-label="Home"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+          <span className={styles.bottomNavLabel}>Home</span>
+        </Link>
+
+        <Link
+          href="/shop"
+          className={`${styles.bottomNavItem} ${pathname?.startsWith('/shop') ? styles.bottomNavItemActive : ''}`}
+          aria-label="Shop"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <path d="M16 10a4 4 0 0 1-8 0"></path>
+          </svg>
+          <span className={styles.bottomNavLabel}>Shop</span>
+        </Link>
+
+        <Link
+          href="/how-it-works"
+          className={`${styles.bottomNavItem} ${pathname?.startsWith('/how-it-works') ? styles.bottomNavItemActive : ''}`}
+          aria-label="How it works"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          <span className={styles.bottomNavLabel}>How It Works</span>
+        </Link>
+
+        {!isSeller && (
+          <button
+            type="button"
+            className={`${styles.bottomNavItem} ${pathname === '/cart' ? styles.bottomNavItemActive : ''}`}
+            aria-label="Cart"
+            onClick={() => {
+              if (!isAuthenticated) {
+                router.push(`/buyer/login?redirect=${encodeURIComponent('/cart')}`)
+                return
+              }
+              router.push('/cart')
+            }}
+          >
+            <span className={styles.bottomNavCartWrap}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="9" cy="21" r="1"></circle>
+                <circle cx="20" cy="21" r="1"></circle>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+              </svg>
+              {cartCount > 0 && (
+                <span className={styles.bottomNavBadge} aria-label={`${cartCount} items in cart`}>
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
+            </span>
+            <span className={styles.bottomNavLabel}>Cart</span>
+          </button>
+        )}
+
+        {isAuthenticated ? (
+          <button
+            type="button"
+            className={`${styles.bottomNavItem} ${pathname?.startsWith('/profile') || pathname?.startsWith('/seller/my') ? styles.bottomNavItemActive : ''}`}
+            aria-label="Profile"
+            onClick={() => {
+              if (isSeller) {
+                router.push('/seller/my-account')
+              } else {
+                router.push('/profile/account')
+              }
+            }}
+          >
+            {profile?.avatar_url ? (
+              <img
+                src={profile.avatar_url}
+                alt={displayName || 'User avatar'}
+                className={styles.bottomNavAvatar}
+              />
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            )}
+            <span className={styles.bottomNavLabel}>Profile</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            className={styles.bottomNavItem}
+            aria-label="Sign In"
+            onClick={() => {
+              const target = pathname || '/'
+              router.push(`/buyer/login?redirect=${encodeURIComponent(target)}`)
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span className={styles.bottomNavLabel}>Sign In</span>
+          </button>
+        )}
+      </nav>
     </header>
   )
 }
