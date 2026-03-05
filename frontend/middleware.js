@@ -1,6 +1,6 @@
 /**
  * Supabase auth middleware: refreshes session (token refresh) so cookies stay up to date.
- * OAuth code exchange is done in app/auth/callback/route.js so cookies set correctly in production.
+ * OAuth code exchange is done in app/(auth)/auth/callback/route.js so cookies set correctly in production.
  */
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
