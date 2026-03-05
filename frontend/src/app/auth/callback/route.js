@@ -133,16 +133,40 @@ export async function GET(request) {
     { onConflict: "id" }
   );
 
-  // Enforce portal-specific role.
+  // Enforce portal-specific role with clearer messaging.
   if (portal === "buyer" && userRow.role !== "buyer") {
     await supabase.auth.signOut();
-    loginUrl.searchParams.set("error", "Please use the correct portal for your account.");
+
+    if (userRow.role === "seller") {
+      loginUrl.searchParams.set(
+        "error",
+        "This account is registered as a seller. Please use the Seller Centre login instead."
+      );
+    } else {
+      loginUrl.searchParams.set(
+        "error",
+        "Your account is not configured for the buyer portal. Please use the correct portal for your account."
+      );
+    }
+
     return NextResponse.redirect(loginUrl);
   }
 
   if (portal === "seller" && userRow.role !== "seller") {
     await supabase.auth.signOut();
-    loginUrl.searchParams.set("error", "Please use the correct portal for your account.");
+
+    if (userRow.role === "buyer") {
+      loginUrl.searchParams.set(
+        "error",
+        "This account is registered as a buyer. Please sign in on the buyer portal or start seller onboarding from your buyer account."
+      );
+    } else {
+      loginUrl.searchParams.set(
+        "error",
+        "Your account is not configured for the seller portal. Please use the correct portal for your account."
+      );
+    }
+
     return NextResponse.redirect(loginUrl);
   }
 
