@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
+import Image from "next/image"
 import styles from "./AdminTopbar.module.css"
 import { MdNotificationsNone } from "react-icons/md"
 import { IoSearch } from "react-icons/io5"
@@ -9,6 +10,8 @@ import { FaUser } from "react-icons/fa6"
 import { LuLogOut } from "react-icons/lu"
 import { RxHamburgerMenu } from "react-icons/rx"
 import { Logout } from '@/components/ui'
+import { useAuth } from '@/contexts/AuthContext'
+import { fetchCurrentAdminProfile } from '@/features/admin/settings/api'
 
 const ROUTE_TITLES = [
   { match: "/admin/payments", title: "Payments", subtitle: "Approve and transfer payments to sellers" },
@@ -23,6 +26,9 @@ const ROUTE_TITLES = [
 export default function AdminTopbar({ onLogout, onToggleSidebar }) {
   const pathname = usePathname()
   const router = useRouter()
+  const { profile } = useAuth()
+
+  const [adminProfile, setAdminProfile] = useState(null)
 
   const [open, setOpen] = useState(false)
   const [showLogout, setShowLogout] = useState(false)
@@ -94,6 +100,30 @@ export default function AdminTopbar({ onLogout, onToggleSidebar }) {
     await handleLogout()
   }
 
+  // Load admins row so avatar/name/email come from admins table.
+  useEffect(() => {
+    let cancelled = false
+
+    const loadAdmin = async () => {
+      try {
+        const data = await fetchCurrentAdminProfile()
+        if (!cancelled) {
+          setAdminProfile(data)
+        }
+      } catch {
+        // ignore; fall back to AuthContext profile
+      }
+    }
+
+    loadAdmin()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const avatarUrl = adminProfile?.avatarUrl || profile?.avatar_url || ""
+
   return (
     <>
       <header className={styles.topbar}>
@@ -141,7 +171,18 @@ export default function AdminTopbar({ onLogout, onToggleSidebar }) {
               aria-expanded={open}
               onClick={() => setOpen((p) => !p)}
             >
-              <FaUser />
+              {avatarUrl ? (
+                <Image
+                  src={avatarUrl}
+                  alt="Admin avatar"
+                  width={32}
+                  height={32}
+                  className={styles.profileAvatarImg}
+                  unoptimized
+                />
+              ) : (
+                <FaUser />
+              )}
             </button>
 
             {open && (

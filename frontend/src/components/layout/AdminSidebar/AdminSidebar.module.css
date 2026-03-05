@@ -109,6 +109,17 @@
   place-items: center;
   font-size: 16px;
   flex-shrink: 0;
+
+  /* Clip any nested image to a perfect circle */
+  overflow: hidden;
+}
+
+.profileAvatarImg {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  object-fit: cover;
+  display: block;
 }
 
 .profileMeta {

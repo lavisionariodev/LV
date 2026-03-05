@@ -131,10 +131,22 @@
   display: grid;
   place-items: center;
   font-size: 16px;
+
+  /* Ensure nested img is clipped to a circle */
+  overflow: hidden;
 }
 
 .profileAvatar:hover {
   background: #d6d9dd;
+}
+
+/* Actual avatar image inside the circular button */
+.profileAvatarImg {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  object-fit: cover;
+  display: block;
 }
 
 /* Dropdown */
