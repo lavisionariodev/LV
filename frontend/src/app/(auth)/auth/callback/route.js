@@ -170,11 +170,16 @@ export async function GET(request) {
     return NextResponse.redirect(loginUrl);
   }
 
+  let desiredRedirect = redirectParam;
+  if (portal === "seller" && (!desiredRedirect || desiredRedirect === "/")) {
+    desiredRedirect = "/seller";
+  }
+
   const safePath =
-    typeof redirectParam === "string" &&
-    redirectParam.startsWith("/") &&
-    !redirectParam.startsWith("//")
-      ? redirectParam
+    typeof desiredRedirect === "string" &&
+    desiredRedirect.startsWith("/") &&
+    !desiredRedirect.startsWith("//")
+      ? desiredRedirect
       : "/";
   return NextResponse.redirect(new URL(safePath, baseUrl));
 }
