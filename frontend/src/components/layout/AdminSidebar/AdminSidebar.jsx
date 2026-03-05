@@ -1,6 +1,8 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
+import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import styles from './AdminSidebar.module.css'
 
@@ -16,9 +18,13 @@ import { TbLayoutDashboardFilled } from 'react-icons/tb'
 import { LuUserCheck } from 'react-icons/lu'
 import { HiOutlineNewspaper } from 'react-icons/hi'
 import { FaUser } from 'react-icons/fa6'
+import { useAuth } from '@/contexts/AuthContext'
+import { fetchCurrentAdminProfile } from '@/features/admin/settings/api'
 
 export default function AdminSidebar({ collapsed = false, onToggle }) {
   const pathname = usePathname()
+  const { user, profile } = useAuth()
+  const [adminProfile, setAdminProfile] = useState(null)
 
   // Active logic:
   // - Dashboard (/admin) = exact match only
@@ -28,6 +34,35 @@ export default function AdminSidebar({ collapsed = false, onToggle }) {
     if (href === '/admin') return pathname === '/admin'
     return pathname === href || pathname.startsWith(`${href}/`)
   }
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadAdmin = async () => {
+      try {
+        const data = await fetchCurrentAdminProfile()
+        if (!cancelled) {
+          setAdminProfile(data)
+        }
+      } catch {
+        // ignore; fall back to AuthContext profile
+      }
+    }
+
+    loadAdmin()
+
+    return () => {
+      cancelled = false
+    }
+  }, [])
+
+  const avatarUrl = adminProfile?.avatarUrl || profile?.avatar_url || ''
+  const displayName =
+    adminProfile?.fullName?.trim() ||
+    profile?.full_name?.trim() ||
+    user?.email?.split('@')[0] ||
+    'Admin User'
+  const displayEmail = adminProfile?.email || user?.email || ''
 
   return (
     <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''}`}>
@@ -57,17 +92,30 @@ export default function AdminSidebar({ collapsed = false, onToggle }) {
       {/* Profile (ALWAYS VISIBLE) */}
       <div
         className={styles.profileCard}
-        title={collapsed ? 'Admin User' : undefined}
+        title={collapsed ? displayName : undefined}
         aria-label="Admin profile"
       >
         <div className={styles.profileAvatar}>
-          <FaUser />
+          {avatarUrl ? (
+            <Image
+              src={avatarUrl}
+              alt="Admin avatar"
+              width={40}
+              height={40}
+              className={styles.profileAvatarImg}
+              unoptimized
+            />
+          ) : (
+            <FaUser />
+          )}
         </div>
 
-        <div className={styles.profileMeta}>
-          <p className={styles.profileName}>Admin User</p>
-          <p className={styles.profileRole}>Administrator</p>
-        </div>
+        {!collapsed && (
+          <div className={styles.profileMeta}>
+            <p className={styles.profileName}>{displayName}</p>
+            <p className={styles.profileRole}>{displayEmail}</p>
+          </div>
+        )}
       </div>
 
       {!collapsed && <p className={styles.sectionLabel}>MENU</p>}
