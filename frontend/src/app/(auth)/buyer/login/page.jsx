@@ -47,6 +47,13 @@ function BuyerLoginPageInner() {
   }, [searchParams, toast]);
 
   useEffect(() => {
+    const token = searchParams.get("token");
+    if (token) {
+      setShowResetPasswordModal(true);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     let mounted = true;
     getUser().then((currentUser) => {
       if (!mounted) return;

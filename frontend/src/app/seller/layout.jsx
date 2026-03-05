@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
+import { PublicNavbar, PublicFooter } from '@/components/layout'
+import { CartProvider } from '@/contexts/CartContext'
 import { requireSeller } from '@/lib/auth/guards'
 
 export default function SellerLayout({ children }) {
@@ -18,7 +20,9 @@ export default function SellerLayout({ children }) {
       if (cancelled) return
 
       if (!user || !isSeller) {
-        const redirectTo = encodeURIComponent(pathname || '/seller/my-sales')
+        const targetPath =
+          pathname && pathname.startsWith('/seller') ? pathname : '/seller'
+        const redirectTo = encodeURIComponent(targetPath)
         router.replace(`/seller/login?redirect=${redirectTo}`)
         setAuthStatus('denied')
         return
@@ -52,22 +56,26 @@ export default function SellerLayout({ children }) {
   }
 
   return (
-    <div>
-      {sellerStatus === 'pending' && (
-        <div
-          style={{
-            backgroundColor: '#FFF7E6',
-            borderBottom: '1px solid #FACC6B',
-            padding: '0.75rem 1.25rem',
-            fontSize: '0.9rem',
-          }}
-        >
-          Your seller account is currently <strong>pending review</strong>. You can review your
-          details, but some actions may be limited until an administrator approves your shop.
-        </div>
-      )}
-      {children}
-    </div>
+    <CartProvider>
+      <PublicNavbar />
+      <main>
+        {sellerStatus === 'pending' && (
+          <div
+            style={{
+              backgroundColor: '#FFF7E6',
+              borderBottom: '1px solid #FACC6B',
+              padding: '0.75rem 1.25rem',
+              fontSize: '0.9rem',
+            }}
+          >
+            Your seller account is currently <strong>pending review</strong>. You can review your
+            details, but some actions may be limited until an administrator approves your shop.
+          </div>
+        )}
+        {children}
+      </main>
+      <PublicFooter />
+    </CartProvider>
   )
 }
 

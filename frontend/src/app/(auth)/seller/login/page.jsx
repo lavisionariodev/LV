@@ -21,7 +21,7 @@ function SellerLoginPageInner() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect') || '/';
+  const redirect = searchParams.get('redirect') || '/seller';
   const toast = useToast();
 
   useEffect(() => {
@@ -37,7 +37,8 @@ function SellerLoginPageInner() {
       if (!mounted || !currentUser) return;
       const role = await getUserRole(currentUser.id);
       if (role === ROLE_SELLER) {
-        router.replace(redirect || '/');
+        const target = !redirect || redirect === '/' ? '/seller' : redirect;
+        router.replace(target);
       }
     });
     return () => {
@@ -87,7 +88,8 @@ function SellerLoginPageInner() {
       }
 
       toast.success('Welcome back to Seller Centre!');
-      router.replace(redirect || '/');
+      const target = !redirect || redirect === '/' ? '/seller' : redirect;
+      router.replace(target);
     } catch (err) {
       console.error('Seller login error:', err);
       toast.error('An error occurred. Please try again later.');

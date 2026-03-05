@@ -196,65 +196,92 @@ export default function PublicNavbar() {
           </Link>
 
           <nav className={styles.navMenu}>
-            <div className={styles.navItem}>
-              <Link href="/" className={styles.navLink}>HOME</Link>
-            </div>
-
-            <div className={styles.navItem}>
-              <Link href="/shop" className={styles.navLink}>SHOP</Link>
-            </div>
-
-            <div className={styles.navItem}>
-              <Link href="/partners" className={styles.navLink}>FUNERAL HOMES / PARTNERS</Link>
-            </div>
-
-            <div 
-              className={styles.navItem}
-              onMouseEnter={() => setHowItWorksOpen(true)}
-              onMouseLeave={() => setHowItWorksOpen(false)}
-            >
-              <button className={styles.navLinkDropdown}>
-                HOW IT WORKS
-                <svg className={styles.dropdownIcon} xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </button>
-              {howItWorksOpen && (
-                <div className={styles.dropdownMenu}>
-                  {howItWorksItems.map((item, index) => (
-                    <Link
-                      key={index}
-                      href={`/how-it-works#${item.sectionId}`}
-                      className={styles.dropdownItem}
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
+            {isSeller && pathname.startsWith('/seller') ? (
+              <>
+                <div className={styles.navItem}>
+                  <Link href="/seller" className={styles.navLink}>
+                    Overview
+                  </Link>
                 </div>
-              )}
-            </div>
-
-            <div 
-              className={styles.navItem}
-              onMouseEnter={() => setAboutUsOpen(true)}
-              onMouseLeave={() => setAboutUsOpen(false)}
-            >
-              <button className={styles.navLinkDropdown}>
-                ABOUT US
-                <svg className={styles.dropdownIcon} xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </button>
-              {aboutUsOpen && (
-                <div className={styles.dropdownMenu}>
-                  {aboutUsItems.map((item, index) => (
-                    <Link key={index} href={`/about#${item.sectionId}`} className={styles.dropdownItem}>
-                      {item.label}
-                    </Link>
-                  ))}
+                <div className={styles.navItem}>
+                  <Link href="/seller/my-sales" className={styles.navLink}>
+                    My Sales
+                  </Link>
                 </div>
-              )}
-            </div>
+                <div className={styles.navItem}>
+                  <Link href="/seller/shop-performance" className={styles.navLink}>
+                    My Performance
+                  </Link>
+                </div>
+                <div className={styles.navItem}>
+                  <Link href="/seller/my-services" className={styles.navLink}>
+                    My Services
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className={styles.navItem}>
+                  <Link href="/" className={styles.navLink}>HOME</Link>
+                </div>
+
+                <div className={styles.navItem}>
+                  <Link href="/shop" className={styles.navLink}>SHOP</Link>
+                </div>
+
+                <div className={styles.navItem}>
+                  <Link href="/partners" className={styles.navLink}>FUNERAL HOMES / PARTNERS</Link>
+                </div>
+
+                <div 
+                  className={styles.navItem}
+                  onMouseEnter={() => setHowItWorksOpen(true)}
+                  onMouseLeave={() => setHowItWorksOpen(false)}
+                >
+                  <button className={styles.navLinkDropdown}>
+                    HOW IT WORKS
+                    <svg className={styles.dropdownIcon} xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </button>
+                  {howItWorksOpen && (
+                    <div className={styles.dropdownMenu}>
+                      {howItWorksItems.map((item, index) => (
+                        <Link
+                          key={index}
+                          href={`/how-it-works#${item.sectionId}`}
+                          className={styles.dropdownItem}
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div 
+                  className={styles.navItem}
+                  onMouseEnter={() => setAboutUsOpen(true)}
+                  onMouseLeave={() => setAboutUsOpen(false)}
+                >
+                  <button className={styles.navLinkDropdown}>
+                    ABOUT US
+                    <svg className={styles.dropdownIcon} xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </button>
+                  {aboutUsOpen && (
+                    <div className={styles.dropdownMenu}>
+                      {aboutUsItems.map((item, index) => (
+                        <Link key={index} href={`/about#${item.sectionId}`} className={styles.dropdownItem}>
+                          {item.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </nav>
 
           <div className={styles.navActions}>
@@ -340,50 +367,10 @@ export default function PublicNavbar() {
                           className={styles.profileDropdownItem}
                           onClick={() => {
                             setProfileMenuOpen(false)
-                            router.push('/seller/my-sales')
-                          }}
-                        >
-                          My Sales
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.profileDropdownItem}
-                          onClick={() => {
-                            setProfileMenuOpen(false)
-                            router.push('/seller/shop-performance')
-                          }}
-                        >
-                          Shop Performance
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.profileDropdownItem}
-                          onClick={() => {
-                            setProfileMenuOpen(false)
-                            router.push('/seller/my-services')
-                          }}
-                        >
-                          My Services
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.profileDropdownItem}
-                          onClick={() => {
-                            setProfileMenuOpen(false)
                             router.push('/seller/my-account')
                           }}
                         >
                           My Account
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.profileDropdownItem}
-                          onClick={() => {
-                            setProfileMenuOpen(false)
-                            router.push('/seller/notifications')
-                          }}
-                        >
-                          Notifications
                         </button>
                         <button
                           type="button"
@@ -511,14 +498,20 @@ export default function PublicNavbar() {
             </Link>
           ) : isSeller ? (
             <>
+              <Link href="/seller" className={styles.mobileLink}>
+                Overview
+              </Link>
               <Link href="/seller/my-sales" className={styles.mobileLink}>
                 My Sales
               </Link>
+              <Link href="/seller/shop-performance" className={styles.mobileLink}>
+                My Performance
+              </Link>
+              <Link href="/seller/my-services" className={styles.mobileLink}>
+                My Services
+              </Link>
               <Link href="/seller/my-account" className={styles.mobileLink}>
                 My Account
-              </Link>
-              <Link href="/seller/notifications" className={styles.mobileLink}>
-                Notifications
               </Link>
               <button
                 type="button"
