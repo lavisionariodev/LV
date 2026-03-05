@@ -75,6 +75,7 @@ export default function PublicNavbar() {
 
   const isAuthenticated = !!user
   const isOnSellerPortal = isSeller && pathname?.startsWith('/seller')
+  const showSellerEntryCtas = !isSeller
 
   const displayName =
     (profile && profile.full_name) || user?.user_metadata?.full_name || ''
@@ -104,7 +105,7 @@ export default function PublicNavbar() {
         <div className={styles.topBarInner}>
           <div className={styles.topLeft}>
             <div className={styles.followText}>
-              {!isOnSellerPortal && (
+              {showSellerEntryCtas && (
                 <>
                   <Link href="/seller/signup" className={styles.topLink}>
                     Become a Seller
