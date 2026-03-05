@@ -104,14 +104,18 @@ export default function PublicNavbar() {
         <div className={styles.topBarInner}>
           <div className={styles.topLeft}>
             <div className={styles.followText}>
-              <Link href="/seller/signup" className={styles.topLink}>
-                Become a Seller
-              </Link>
-              <span className={styles.divider}>|</span>
-              <Link href="/seller/login" className={styles.topLink}>
-                Seller Centre
-              </Link>
-              <span className={styles.divider}>|</span>
+              {!isOnSellerPortal && (
+                <>
+                  <Link href="/seller/signup" className={styles.topLink}>
+                    Become a Seller
+                  </Link>
+                  <span className={styles.divider}>|</span>
+                  <Link href="/seller/login" className={styles.topLink}>
+                    Seller Centre
+                  </Link>
+                  <span className={styles.divider}>|</span>
+                </>
+              )}
               <span>Follow Us</span>
             </div>
 

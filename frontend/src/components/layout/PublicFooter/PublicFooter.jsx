@@ -12,19 +12,9 @@ export default function PublicFooter() {
   if (isSeller) {
     return (
       <footer className={styles.footer}>
-        <div className={styles.sellerBottom}>
-          <div className={styles.sellerBottomLeft}>
-            <div className={styles.logo}>
-              <span className={styles.logoIcon}>
-                <span className={styles.logoLetter}>L</span>
-              </span>
-              <span className={styles.logoText}>Lavisionario</span>
-            </div>
-          </div>
-          <div className={styles.sellerBottomCenter}>
-            <span>© 2026 LaVisionario. All rights reserved.</span>
-          </div>
-          <div className={styles.sellerBottomRight}>
+        <div className={styles.bottom}>
+          <span>© 2026 LaVisionario. All rights reserved.</span>
+          <div className={styles.bottomLinks}>
             <Link href="/help" className={styles.bottomLink}>
               Help Center
             </Link>
