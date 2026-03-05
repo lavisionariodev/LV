@@ -518,19 +518,6 @@ function ListingCard({ listing, service, styles, inCompare, onToggleCompare, com
           </div>
         </div>
 
-        <ul className={styles.inclusions}>
-          {listing.inclusions.slice(0, 4).map((inc, i) => (
-            <li key={i} className={styles.inclusionItem}>
-              <svg viewBox="0 0 12 12" width="11" height="11" fill="none" stroke="var(--color-gold-base, #B8962E)" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}>
-                <path d="M2 6l3 3 5-5" />
-              </svg>
-              {inc}
-            </li>
-          ))}
-          {listing.inclusions.length > 4 && (
-            <li className={styles.inclusionMore}>+{listing.inclusions.length - 4} more inclusions</li>
-          )}
-        </ul>
 
         <div className={styles.cardActions}>
           <button className={`${styles.cardCta} ${styles.ctaBtn}`} onClick={() => {}}>
