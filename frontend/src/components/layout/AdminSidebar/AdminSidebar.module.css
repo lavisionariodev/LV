@@ -229,3 +229,25 @@
   justify-content: center;
   padding: 10px;
 }
+
+@media (max-width: 860px) {
+  .sidebar {
+    position: fixed;
+    top: 72px;
+    left: 0;
+    height: calc(100vh - 72px);
+    width: 260px;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.28);
+    transform: translateX(0);
+    transition: transform 0.25s ease;
+    z-index: 40;
+  }
+
+  .collapsed {
+    transform: translateX(-100%);
+  }
+
+  .collapseBtn {
+    display: none;
+  }
+}

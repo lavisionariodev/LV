@@ -57,24 +57,26 @@ export default function SellerLayout({ children }) {
 
   return (
     <CartProvider>
-      <PublicNavbar />
-      <main>
-        {sellerStatus === 'pending' && (
-          <div
-            style={{
-              backgroundColor: '#FFF7E6',
-              borderBottom: '1px solid #FACC6B',
-              padding: '0.75rem 1.25rem',
-              fontSize: '0.9rem',
-            }}
-          >
-            Your seller account is currently <strong>pending review</strong>. You can review your
-            details, but some actions may be limited until an administrator approves your shop.
-          </div>
-        )}
-        {children}
-      </main>
-      <PublicFooter />
+      <div className="seller-layout">
+        <PublicNavbar />
+        <main>
+          {sellerStatus === 'pending' && (
+            <div
+              style={{
+                backgroundColor: '#FFF7E6',
+                borderBottom: '1px solid #FACC6B',
+                padding: '0.75rem 1.25rem',
+                fontSize: '0.9rem',
+              }}
+            >
+              Your seller account is currently <strong>pending review</strong>. You can review your
+              details, but some actions may be limited until an administrator approves your shop.
+            </div>
+          )}
+          {children}
+        </main>
+        <PublicFooter />
+      </div>
     </CartProvider>
   )
 }

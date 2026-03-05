@@ -7,6 +7,7 @@ import { MdNotificationsNone } from "react-icons/md"
 import { IoSearch } from "react-icons/io5"
 import { FaUser } from "react-icons/fa6"
 import { LuLogOut } from "react-icons/lu"
+import { RxHamburgerMenu } from "react-icons/rx"
 import { Logout } from '@/components/ui'
 
 const ROUTE_TITLES = [
@@ -19,7 +20,7 @@ const ROUTE_TITLES = [
   { match: "/admin/help", title: "Help Center", subtitle: "CEO essentials: approvals, disputes, policies, and platform health." },
 ]
 
-export default function AdminTopbar({ onLogout }) {
+export default function AdminTopbar({ onLogout, onToggleSidebar }) {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -97,8 +98,19 @@ export default function AdminTopbar({ onLogout }) {
     <>
       <header className={styles.topbar}>
         <div className={styles.left}>
-          <p className={styles.title}>{current.title}</p>
-          <p className={styles.subtitle}>{current.subtitle}</p>
+          <button
+            type="button"
+            className={styles.menuBtn}
+            aria-label="Toggle sidebar"
+            onClick={() => onToggleSidebar && onToggleSidebar()}
+          >
+            <RxHamburgerMenu />
+          </button>
+
+          <div className={styles.titleWrap}>
+            <p className={styles.title}>{current.title}</p>
+            <p className={styles.subtitle}>{current.subtitle}</p>
+          </div>
         </div>
 
         <div className={styles.center}>
