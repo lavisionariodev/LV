@@ -24,10 +24,51 @@ export default function SellerMySalesPage() {
   }, [])
 
   return (
-    <main style={{ padding: '2rem 1.5rem', maxWidth: 1040, margin: '0 auto' }}>
-      <header style={{ marginBottom: '1.5rem' }}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.25rem' }}>My Sales</h1>
-        <p style={{ fontSize: '0.95rem', color: '#4b5563' }}>
+    <main
+      style={{
+        padding: '2.5rem 1.5rem 3rem',
+        maxWidth: 1120,
+        margin: '0 auto',
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      }}
+    >
+      <header
+        style={{
+          marginBottom: '1.85rem',
+          paddingBottom: '1.25rem',
+          borderBottom: '1px solid rgba(168, 137, 74, 0.22)',
+        }}
+      >
+        <p
+          style={{
+            fontSize: '0.78rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.14em',
+            color: 'var(--color-gold-bright)',
+            fontWeight: 700,
+            marginBottom: '0.3rem',
+          }}
+        >
+          Sales overview
+        </p>
+        <h1
+          style={{
+            fontSize: '1.6rem',
+            fontWeight: 650,
+            marginBottom: '0.35rem',
+            color: '#102820',
+          }}
+        >
+          My Sales
+        </h1>
+        <p
+          style={{
+            fontSize: '0.95rem',
+            color: '#4D2D18',
+            maxWidth: 520,
+            lineHeight: 1.6,
+          }}
+        >
           View your recent bookings, status, platform commission, and net earnings.
         </p>
       </header>
@@ -35,13 +76,13 @@ export default function SellerMySalesPage() {
       {rows.length === 0 ? (
         <div
           style={{
-            padding: '2rem 1.5rem',
-            borderRadius: '0.75rem',
-            border: '1px dashed #e5e7eb',
+            padding: '2rem 1.7rem',
+            borderRadius: '0.85rem',
+            border: '1px dashed rgba(168, 137, 74, 0.65)',
             textAlign: 'center',
-            backgroundColor: '#f9fafb',
+            backgroundColor: '#F7F4EF',
             fontSize: '0.95rem',
-            color: '#6b7280',
+            color: '#4D2D18',
           }}
         >
           You don&apos;t have any sales yet. Once buyers book your services, they will appear here.
@@ -49,14 +90,15 @@ export default function SellerMySalesPage() {
       ) : (
         <div
           style={{
-            borderRadius: '0.75rem',
-            border: '1px solid #e5e7eb',
+            borderRadius: '0.9rem',
+            border: '1px solid rgba(168, 137, 74, 0.25)',
             overflow: 'hidden',
             backgroundColor: '#ffffff',
+            boxShadow: '0 18px 40px rgba(0, 0, 0, 0.06)',
           }}
         >
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-            <thead style={{ backgroundColor: '#f9fafb' }}>
+            <thead style={{ backgroundColor: 'rgb(232 250 241)' }}>
               <tr>
                 <th style={thStyle}>Date</th>
                 <th style={thStyle}>Order Ref</th>
@@ -99,7 +141,7 @@ const thStyle = {
   fontSize: '0.8rem',
   textTransform: 'uppercase',
   letterSpacing: '0.03em',
-  color: '#6b7280',
+  color: '#4D2D18',
 }
 
 const tdStyle = {
@@ -118,14 +160,14 @@ function statusPillStyle(status) {
   let color = '#374151'
 
   if (status === 'pending') {
-    background = '#fef3c7'
-    color = '#92400e'
+    background = '#FEF3C7'
+    color = '#92400E'
   } else if (status === 'approved' || status === 'transferred') {
-    background = '#dcfce7'
-    color = '#166534'
+    background = 'rgb(232 250 241)'
+    color = '#204F38'
   } else if (status === 'failed' || status === 'cancelled') {
-    background = '#fee2e2'
-    color = '#b91c1c'
+    background = '#FEE2E2'
+    color = '#B91C1C'
   }
 
   return {
@@ -134,7 +176,7 @@ function statusPillStyle(status) {
     padding: '0.125rem 0.5rem',
     borderRadius: '999px',
     fontSize: '0.75rem',
-    fontWeight: 500,
+    fontWeight: 600,
     textTransform: 'capitalize',
     backgroundColor: background,
     color,
