@@ -74,6 +74,7 @@ export default function PublicNavbar() {
   }, [profileMenuOpen])
 
   const isAuthenticated = !!user
+  const isOnSellerPortal = isSeller && pathname?.startsWith('/seller')
 
   const displayName =
     (profile && profile.full_name) || user?.user_metadata?.full_name || ''
@@ -196,7 +197,7 @@ export default function PublicNavbar() {
           </Link>
 
           <nav className={styles.navMenu}>
-            {isSeller && pathname.startsWith('/seller') ? (
+            {isOnSellerPortal ? (
               <>
                 <div className={styles.navItem}>
                   <Link href="/seller" className={styles.navLink}>
@@ -362,6 +363,18 @@ export default function PublicNavbar() {
                   <div className={styles.profileDropdown} role="menu">
                     {isSeller ? (
                       <>
+                        {!isOnSellerPortal && (
+                          <button
+                            type="button"
+                            className={styles.profileDropdownItem}
+                            onClick={() => {
+                              setProfileMenuOpen(false)
+                              router.push('/seller')
+                            }}
+                          >
+                            Back to Seller Dashboard
+                          </button>
+                        )}
                         <button
                           type="button"
                           className={styles.profileDropdownItem}

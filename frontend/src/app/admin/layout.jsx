@@ -7,6 +7,7 @@ import { requireAdmin } from '@/lib/auth/guards'
 import { signOut } from '@/lib/auth/session'
 import styles from './admin.module.css'
 import { Inter } from 'next/font/google'
+import { useState } from 'react'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -56,7 +57,10 @@ export default function AdminLayout({ children }) {
       />
 
       <div className={styles.main}>
-        <AdminTopbar onLogout={handleLogout} />
+        <AdminTopbar
+          onLogout={handleLogout}
+          onToggleSidebar={() => setCollapsed((prev) => !prev)}
+        />
         <div className={styles.content}>{children}</div>
       </div>
     </div>

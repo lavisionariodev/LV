@@ -116,3 +116,17 @@ p {
   --max-width: 1200px;
   --page-padding: 1.25rem;
 }
+
+/* ================================
+   SELLER LAYOUT
+================================ */
+
+.seller-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.seller-layout > main {
+  flex: 1 0 auto;
+}

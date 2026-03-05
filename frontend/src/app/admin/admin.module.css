@@ -414,3 +414,13 @@
     padding: 16px;
   }
 }
+
+@media (max-width: 600px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .content {
+    padding: 14px;
+  }
+}
