@@ -1,22 +1,17 @@
 .sidebar {
   width: 240px;
   height: 100vh;
-  box-sizing: border-box;
   position: sticky;
   top: 0;
-  z-index: 20;
   background: #ffffff;
   border-right: 1px solid #eef0f4;
   display: flex;
   flex-direction: column;
   transition: width 0.25s ease;
-  font-family: 'Poppins', sans-serif;
-  overflow: visible;
 }
 
 .collapsed {
   width: 78px;
-  overflow: visible;
 }
 
 /* Logo Row */
@@ -34,8 +29,6 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  text-decoration: none;
-  color: inherit;
 }
 
 .logoMark {
@@ -92,16 +85,54 @@
   top: 50%;
   transform: translateY(-50%);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-  z-index: 50;
+}
+
+/* Profile */
+.profileCard {
+  margin: 14px;
+  padding: 12px;
+  border: 1px solid #eef0f4;
+  border-radius: 14px;
+  background: #fbfcfe;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profileAvatar {
+  height: 38px;
+  width: 38px;
+  border-radius: 999px;
+  background: #e0e2e6; 
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.profileMeta {
+  flex: 1;
+}
+
+.profileName {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.profileRole {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #64748b;
 }
 
 /* Labels */
 .sectionLabel {
-  margin: 12px 30px 8px;
+  margin: 10px 30px 8px;
   font-size: 11px;
   font-weight: 600;
   color: #b2b6b1;
-  font-family: 'Poppins', sans-serif;
 }
 
 /* Nav */
@@ -109,22 +140,22 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 0 14px;
-  overflow-y: auto;
+  gap: 2px;
+  padding: 0 10px;
 }
 
 .link,
 .footerLink {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 6px 14px;
+  gap: 10px;
+  padding: 6px 12px;
   border-radius: 12px;
   text-decoration: none;
+  color: #334155;
   font-size: 13px;
   font-weight: 400;
-  color: #64748b;
+  color: #b6b5b1;
 }
 
 .link:hover,
@@ -133,40 +164,36 @@
 }
 
 .iconWrap {
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.navIcon {
-  font-size: 20px;
-  color: #64748b;
+  height: 34px;
+  width: 34px;
+  border-radius: 12px;
+  background: #f3f6fb;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  color: #B1B6B4;
 }
 
 .linkText {
   flex: 1;
-  min-width: 0;
 }
 
 .active {
-  color: var(--color-green-700);
+  color: black;
   font-weight: 700;
 }
 
-.active .navIcon {
+.active .iconWrap {
+  background: #ffffff;
   color: var(--color-green-700);
 }
 
 /* Footer Nav */
 .footerNav {
-  padding: 6px 14px;
+  padding: 10px;
   border-top: 1px solid #eef4f1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
 }
 
 /* Collapse behavior */
@@ -176,27 +203,39 @@
   display: none;
 }
 
-.collapsed .nav {
-  padding: 0 14px;
+.collapsed .profileMeta {
+  display: none;
 }
 
-.collapsed .footerNav {
-  padding: 6px 14px;
+.collapsed .profileCard {
+  justify-content: center;
+  padding: 10px;
 }
 
 .collapsed .link,
 .collapsed .footerLink {
   justify-content: center;
-  padding: 6px 0;
-  gap: 0;
+}
+
+.collapsed .profileAvatar {
+  height: 34px;
+  width: 34px;
+  min-height: 34px;
+  min-width: 34px;
+  font-size: 14px;
+}
+
+.collapsed .profileCard {
+  justify-content: center;
+  padding: 10px;
 }
 
 @media (max-width: 860px) {
   .sidebar {
     position: fixed;
-    top: 0;
+    top: 72px;
     left: 0;
-    height: 100vh;
+    height: calc(100vh - 72px);
     width: 260px;
     box-shadow: 0 16px 40px rgba(15, 23, 42, 0.28);
     transform: translateX(0);
@@ -205,7 +244,6 @@
   }
 
   .collapsed {
-    width: 78px;
     transform: translateX(-100%);
   }
 
