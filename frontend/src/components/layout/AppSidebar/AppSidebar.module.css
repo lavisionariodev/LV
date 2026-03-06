@@ -97,6 +97,7 @@
   font-size: 11px;
   font-weight: 600;
   color: #b2b6b1;
+  font-family: 'Poppins', sans-serif;
 }
 
 /* Nav */
@@ -126,14 +127,11 @@
   background: #f7f9fc;
 }
 
-.iconWrap {
-  height: 34px;
-  width: 34px;
-  border-radius: 12px;
-  background: #f3f6fb;
-  display: grid;
-  place-items: center;
-  font-size: 18px;
+.navIcon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  font-size: 20px;
   color: #64748b;
 }
 
@@ -146,8 +144,7 @@
   font-weight: 700;
 }
 
-.active .iconWrap {
-  background: #ffffff;
+.active .navIcon {
   color: var(--color-green-700);
 }
 

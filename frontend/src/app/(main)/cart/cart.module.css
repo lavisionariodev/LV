@@ -4,94 +4,78 @@
   width: 100%;
   min-height: 100vh;
   padding-bottom: 6rem;
-  background: var(--color-light-gray, #EDE8E0);
+  background: #FFFFFF;
   font-family: "Lato", sans-serif;
 }
 
 /* =========================
-   HERO
+   HEADER (compact, left-aligned, light gray)
 ========================= */
 .hero {
   width: 100%;
-  min-height: 280px;
-  padding: 90px 24px 70px;
-  position: relative;
-  overflow: hidden;
-  background: url('/sample/services/hero-section.png') center / cover no-repeat;
+  padding: 52px 0 52px;
+  background: #f5f5f5;
   display: flex;
   align-items: center;
-}
-
-.heroOverlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(16, 40, 32, 0.72);
-}
-
-.hero::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--color-gold-base);
-  opacity: 0.7;
 }
 
 .heroInner {
   max-width: 1400px;
   margin: 0 auto;
-  position: relative;
-  z-index: 1;
-  text-align: center;
   width: 100%;
-}
-
-.heroTitle {
-  margin: 0;
-  font-size: clamp(34px, 5vw, 56px);
-  font-weight: 300;
-  color: #FFFFFF;
-  line-height: 1.1;
-  font-family: "Cormorant Garamond", serif;
-  letter-spacing: 4px;
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.25);
+  padding: 0 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 .breadcrumb {
-  margin: 18px auto 0;
-  width: fit-content;
+  margin: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-size: 12px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
   font-family: "Lato", sans-serif;
+  color: #8a8a8a;
 }
 
 .crumb {
-  color: rgba(255, 255, 255, 0.55);
-  transition: color 0.3s ease;
-}
-.crumb:hover {
-  color: rgba(255, 255, 255, 0.85);
-}
-.slash {
-  color: var(--color-gold-base);
-  opacity: 0.7;
-}
-.crumbActive {
-  color: rgba(255, 255, 255, 0.9);
+  color: #777777;
+  text-decoration: none;
   font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.crumb:hover {
+  color: #5a5a5a;
+}
+
+.slash {
+  color: #b0b0b0;
+  user-select: none;
+}
+
+.crumbActive {
+  color: #333333;
+  font-weight: 600;
+}
+
+.heroTitle {
+  margin: 0 0 12px;
+  font-size: clamp(20px, 3vw, 26px);
+  font-weight: 600;
+  color: #2d2d2d;
+  line-height: 1.25;
+  font-family: "Lato", sans-serif;
+  letter-spacing: 0.3px;
 }
 
 /* =========================
    MAIN CONTENT
 ========================= */
 .content {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 40px 24px 60px;
   display: grid;
@@ -569,39 +553,44 @@
 ========================= */
 .emptySection {
   grid-column: 1 / -1;
-  text-align: center;
-  padding: 80px 24px;
+  width: 100%;
+  margin: 40px 0 80px;
+  padding: 28px 24px 32px;
   background: #FFFFFF;
-  border: 1px solid rgba(16, 40, 32, 0.1);
-  box-shadow: 0 4px 20px rgba(16, 40, 32, 0.06);
+  border: 1px solid rgba(16, 40, 32, 0.08);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(16, 40, 32, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  text-align: center;
 }
 
 .emptyIcon {
-  font-size: 48px;
-  color: rgba(16, 40, 32, 0.18);
-  margin-bottom: 20px;
-  display: flex;
-  justify-content: center;
+  font-size: 28px;
+  color: rgba(16, 40, 32, 0.28);
 }
 
 .emptyTitle {
-  margin: 0 0 12px;
-  font-size: 22px;
+  margin: 0;
+  font-size: 18px;
   font-weight: 600;
   color: var(--color-text-primary);
 }
 .emptySub {
-  margin: 0 0 24px;
-  font-size: 15px;
+  margin: 0 0 8px;
+  font-size: 14px;
   color: var(--color-text-secondary);
 }
 .emptyLink {
   display: inline-block;
-  padding: 12px 28px;
+  align-self: center;
+  padding: 9px 20px;
   background: var(--color-primary);
   color: #FFFFFF;
   border-radius: 4px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   text-decoration: none;
   transition: background 0.2s;
@@ -613,8 +602,11 @@
 /* ===== Mobile small screens ===== */
 @media (max-width: 480px) {
   .hero {
-    padding: 80px 16px 50px;
-    min-height: 220px;
+    padding: 38px 0 38px;
+  }
+
+  .heroInner {
+    padding: 0 16px;
   }
 
   .content {
@@ -634,6 +626,8 @@
   }
 
   .emptySection {
-    padding: 48px 16px;
+    width: 100%;
+    margin: 32px 0 56px;
+    padding: 24px 16px 28px;
   }
 }

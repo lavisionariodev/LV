@@ -1,6 +1,7 @@
 'use client'
 
 import layoutStyles from '../seller.module.css'
+import SellerSettingsClient from './SellerSettingsClient'
 
 export default function SellerSettingsPage() {
   return (
@@ -8,9 +9,10 @@ export default function SellerSettingsPage() {
       <header className={layoutStyles.pageHeader}>
         <h1 className={layoutStyles.pageTitle}>Settings</h1>
         <p className={layoutStyles.pageSubtitle}>
-          Seller account and shop settings can be managed here.
+          Manage your email, avatar, name, and password.
         </p>
       </header>
+      <SellerSettingsClient />
     </div>
   )
 }

@@ -128,15 +128,14 @@ export default function CartPage() {
 
   return (
     <section className={styles.cartPage}>
-      {/* HERO */}
+      {/* Header: compact, centered, light gray */}
       <header className={styles.hero}>
-        <div className={styles.heroOverlay} />
         <div className={styles.heroInner}>
-          <h1 className={styles.heroTitle}>Cart</h1>
+          <h1 className={styles.heroTitle}>Shopping Cart</h1>
           <p className={styles.breadcrumb}>
             <Link href="/" className={styles.crumb}>Home</Link>
             <span className={styles.slash}>/</span>
-            <span className={styles.crumbActive}>Cart</span>
+            <span className={styles.crumbActive}>Shopping Cart</span>
           </p>
         </div>
       </header>
