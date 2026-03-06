@@ -4,18 +4,23 @@
 
 .servicesPage {
   width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
   min-height: 100vh;
   padding-bottom: 5rem;
   background: var(--color-light-gray, #EDE8E0);
   font-family: "Lato", sans-serif;
+  box-sizing: border-box;
 }
 
 /* ─── Content Wrapper ───────────────────────────────────────────────────────── */
 
 .content {
   max-width: 1280px;
+  width: 100%;
   margin: 0 auto;
   padding: 48px 28px 64px;
+  box-sizing: border-box;
 }
 
 /* ─── Shop Layout ───────────────────────────────────────────────────────────── */
@@ -338,7 +343,9 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  gap: clamp(8px, 1.3vw, 16px);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* ─── Cards ─────────────────────────────────────────────────────────────────── */
@@ -353,6 +360,8 @@
   transition: box-shadow 0.25s ease, transform 0.22s ease;
   text-decoration: none;
   color: inherit;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .card:hover {
@@ -369,20 +378,20 @@
 }
 
 .cardBody {
-  padding: 14px 16px;
+  padding: clamp(8px, 1.2vw, 14px) clamp(10px, 1.4vw, 16px);
 }
 
 .cardTitle {
-  font-size: 17px;
+  font-size: clamp(13px, 1.4vw, 17px);
   font-weight: 600;
   color: var(--color-green, #102820);
-  margin: 0 0 8px;
+  margin: 0 0 clamp(4px, 0.6vw, 8px);
   font-family: "Cormorant Garamond", serif;
   line-height: 1.3;
 }
 
 .cardDesc {
-  font-size: 14px;
+  font-size: clamp(12px, 1.1vw, 14px);
   line-height: 1.6;
   color: #666;
   margin: 0;
@@ -408,12 +417,13 @@
   gap: 12px;
   align-items: center;
   margin-bottom: 14px;
+  flex-wrap: wrap;
 }
 
 /* Search */
 .searchWrap {
   flex: 1;
-  min-width: 240px;
+  min-width: 0;
   position: relative;
   display: flex;
   align-items: center;
@@ -618,8 +628,10 @@
   transform: translateX(-50%);
   z-index: 999;
   width: min(620px, calc(100vw - 32px));
+  max-width: calc(100vw - 24px);
   animation: comparePopupIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
   pointer-events: auto;
+  box-sizing: border-box;
 }
 
 @keyframes comparePopupIn {
@@ -1101,15 +1113,15 @@
 
 .popularBadge {
   position: absolute;
-  top: 12px;
-  left: 12px;
+  top: clamp(6px, 0.9vw, 12px);
+  left: clamp(6px, 0.9vw, 12px);
   background: var(--color-gold-base, #B8962E);
   color: #FFFFFF;
-  font-size: 9.5px;
+  font-size: clamp(7.5px, 0.75vw, 9.5px);
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
-  padding: 4px 10px;
+  padding: clamp(2px, 0.35vw, 4px) clamp(6px, 0.8vw, 10px);
   border-radius: 100px;
   font-family: "Lato", sans-serif;
   pointer-events: none;
@@ -1118,14 +1130,14 @@
 
 .providerBadge {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: clamp(6px, 0.9vw, 12px);
+  right: clamp(6px, 0.9vw, 12px);
   color: #FFFFFF;
-  font-size: 9.5px;
+  font-size: clamp(7.5px, 0.75vw, 9.5px);
   font-weight: 600;
   letter-spacing: 0.7px;
   text-transform: uppercase;
-  padding: 4px 10px;
+  padding: clamp(2px, 0.35vw, 4px) clamp(6px, 0.8vw, 10px);
   border-radius: 100px;
   font-family: "Lato", sans-serif;
   background: rgba(16, 40, 32, 0.78);
@@ -1178,20 +1190,20 @@
 .providerRow {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: clamp(5px, 0.7vw, 8px);
+  margin-bottom: clamp(6px, 0.9vw, 10px);
 }
 
 .providerAvatar {
-  width: 28px;
-  height: 28px;
+  width: clamp(22px, 2.4vw, 28px);
+  height: clamp(22px, 2.4vw, 28px);
   border-radius: 50%;
   background: var(--color-green, #102820);
   color: #FFFFFF;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: clamp(9px, 0.9vw, 11px);
   font-weight: 700;
   font-family: "Cormorant Garamond", serif;
   flex-shrink: 0;
@@ -1204,7 +1216,7 @@
 }
 
 .providerName {
-  font-size: 11.5px;
+  font-size: clamp(9.5px, 1vw, 11.5px);
   font-weight: 700;
   color: var(--color-green, #102820);
   font-family: "Lato", sans-serif;
@@ -1213,7 +1225,7 @@
 }
 
 .providerLocation {
-  font-size: 10px;
+  font-size: clamp(8.5px, 0.85vw, 10px);
   color: #aaa;
   font-family: "Lato", sans-serif;
   margin: 0;
@@ -1237,7 +1249,7 @@
 }
 
 .ratingNum {
-  font-size: 12px;
+  font-size: clamp(9.5px, 1vw, 12px);
   font-weight: 700;
   color: var(--color-green, #102820);
   font-family: "Lato", sans-serif;
@@ -1245,7 +1257,7 @@
 }
 
 .ratingReviews {
-  font-size: 11px;
+  font-size: clamp(9px, 0.9vw, 11px);
   color: #bbb;
   font-family: "Lato", sans-serif;
 }
@@ -1254,7 +1266,7 @@
 .listingDivider {
   height: 1px;
   background: rgba(16, 40, 32, 0.07);
-  margin-bottom: 10px;
+  margin-bottom: clamp(6px, 0.9vw, 10px);
 }
 
 /* Title + price */
@@ -1262,13 +1274,13 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: clamp(4px, 0.6vw, 8px);
+  margin-bottom: clamp(6px, 0.9vw, 10px);
 }
 
 .listingTitleRow .cardTitle {
   margin: 0;
-  font-size: 14px;
+  font-size: clamp(11px, 1.15vw, 14px);
   line-height: 1.3;
   flex: 1;
 }
@@ -1281,7 +1293,7 @@
 }
 
 .priceLabel {
-  font-size: 8px;
+  font-size: clamp(7px, 0.65vw, 8px);
   color: #ccc;
   font-family: "Lato", sans-serif;
   text-transform: uppercase;
@@ -1290,7 +1302,7 @@
 }
 
 .price {
-  font-size: 15px;
+  font-size: clamp(12px, 1.3vw, 15px);
   font-weight: 600;
   color: var(--color-gold-base, #B8962E);
   font-family: "Cormorant Garamond", serif;
@@ -1302,37 +1314,37 @@
 .inclusions {
   list-style: none;
   padding: 0;
-  margin: 0 0 18px;
+  margin: 0 0 clamp(10px, 1.4vw, 18px);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: clamp(3px, 0.5vw, 6px);
   flex: 1;
 }
 
 .inclusionItem {
-  font-size: 12px;
+  font-size: clamp(10px, 0.95vw, 12px);
   color: #666;
   font-family: "Lato", sans-serif;
   display: flex;
   align-items: flex-start;
-  gap: 7px;
+  gap: clamp(4px, 0.6vw, 7px);
   line-height: 1.5;
 }
 
 .inclusionMore {
-  font-size: 11.5px;
+  font-size: clamp(10px, 0.9vw, 11.5px);
   color: #bbb;
   font-style: italic;
   font-family: "Lato", sans-serif;
-  padding-left: 18px;
+  padding-left: clamp(12px, 1.5vw, 18px);
 }
 
 /* Card Actions */
 .cardActions {
   display: flex;
-  gap: 8px;
+  gap: clamp(5px, 0.7vw, 8px);
   margin-top: auto;
-  padding-top: 4px;
+  padding-top: clamp(2px, 0.4vw, 4px);
 }
 
 .ctaBtn {
@@ -1340,18 +1352,19 @@
   align-items: center;
   justify-content: center;
   flex: 1;
-  padding: 8px 10px;
+  padding: clamp(6px, 0.7vw, 8px) clamp(6px, 0.9vw, 10px);
   background: var(--color-green, #102820);
   color: #FFFFFF !important;
   border: none;
   border-radius: 5px;
-  font-size: 11.5px;
+  font-size: clamp(9.5px, 0.95vw, 11.5px);
   font-weight: 600;
   font-family: "Lato", sans-serif;
   letter-spacing: 0.4px;
   text-decoration: none !important;
   transition: opacity 0.2s ease;
   margin-top: 0;
+  min-width: 0;
 }
 
 .ctaBtn:hover {
@@ -1363,18 +1376,19 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 10px 14px;
+  padding: clamp(6px, 0.7vw, 10px) clamp(8px, 1.1vw, 14px);
   background: transparent;
   color: #888;
   border: 1.5px solid rgba(16, 40, 32, 0.15);
   border-radius: 5px;
-  font-size: 12px;
+  font-size: clamp(10px, 0.95vw, 12px);
   font-weight: 600;
   font-family: "Lato", sans-serif;
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
   letter-spacing: 0.3px;
+  flex-shrink: 0;
 }
 
 .compareBtn:hover:not(:disabled) {
@@ -1831,6 +1845,14 @@
   display: none;
 }
 
+.mobileSortRow {
+  display: none;
+}
+
+.mobileActiveCatRow {
+  display: none;
+}
+
 /* ─── Mobile Filters Modal ──────────────────────────────────────────────────── */
 
 .filtersModalOverlay {
@@ -1941,40 +1963,50 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
-  /* Hide the desktop sidebar entirely */
+  /* Hide desktop sidebar */
   .sideNav {
     display: none;
   }
 
-  /* Show the mobile filter trigger bar */
+  /* Hide desktop toolbar (search + select sort) — replaced by mobile UI below */
+  .toolbar {
+    display: none;
+  }
+
+  /* ── Mobile Filter + Search Row ── */
   .mobileFilterBar {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: nowrap;
   }
 
   .mobileFilterBtn {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 9px 16px;
+    gap: 6px;
+    padding: 9px 14px;
     background: #FFFFFF;
-    border: 1.5px solid rgba(16, 40, 32, 0.15);
+    border: 1.5px solid rgba(16, 40, 32, 0.14);
     border-radius: 100px;
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 12.5px;
+    font-weight: 500;
     font-family: "Lato", sans-serif;
-    color: var(--color-green, #102820);
+    color: #666;
     cursor: pointer;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
-    position: relative;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .mobileFilterBtn:hover {
     border-color: rgba(16, 40, 32, 0.3);
     box-shadow: 0 2px 8px rgba(16, 40, 32, 0.07);
+  }
+
+  .mobileFilterBtnLabel {
+    /* visible at all mobile widths */
   }
 
   .mobileFilterBadge {
@@ -1989,6 +2021,138 @@
     align-items: center;
     justify-content: center;
     font-family: "Lato", sans-serif;
+    flex-shrink: 0;
+  }
+
+  /* Inline mobile search */
+  .mobileSearchWrap {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    border: 1.5px solid rgba(16, 40, 32, 0.14);
+    border-radius: 100px;
+    background: #FFFFFF;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .mobileSearchWrapFocused {
+    border-color: rgba(184, 150, 46, 0.5);
+    box-shadow: 0 0 0 3px rgba(184, 150, 46, 0.12);
+  }
+
+  .mobileSearchIcon {
+    position: absolute;
+    left: 12px;
+    width: 14px;
+    height: 14px;
+    color: #b0a99b;
+    pointer-events: none;
+    flex-shrink: 0;
+    transition: color 0.2s ease;
+  }
+
+  .mobileSearchWrapFocused .mobileSearchIcon {
+    color: var(--color-gold-base, #B8962E);
+  }
+
+  .mobileSearchInput {
+    width: 100%;
+    padding: 9px 34px 9px 34px;
+    border: none;
+    border-radius: 100px;
+    font-size: 13px;
+    font-family: "Lato", sans-serif;
+    background: transparent;
+    color: #222;
+    outline: none;
+  }
+
+  .mobileSearchInput::placeholder {
+    color: #b8b0a6;
+  }
+
+  .mobileSearchClear {
+    position: absolute;
+    right: 10px;
+    background: rgba(16, 40, 32, 0.07);
+    border: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    color: #888;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, color 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .mobileSearchClear:hover {
+    background: rgba(16, 40, 32, 0.13);
+    color: #444;
+  }
+
+  /* ── Mobile Sort Row ── */
+  .mobileSortRow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-bottom: 14px;
+    /* Bleed-edge scroll while keeping content padded */
+    padding-bottom: 2px;
+  }
+
+  .mobileSortRow::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobileSortPill {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 14px;
+    border: 1.5px solid rgba(16, 40, 32, 0.14);
+    border-radius: 100px;
+    background: #FFFFFF;
+    font-size: 12.5px;
+    font-weight: 500;
+    font-family: "Lato", sans-serif;
+    color: #666;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  }
+
+  .mobileSortPill:hover {
+    border-color: rgba(16, 40, 32, 0.28);
+    color: var(--color-green, #102820);
+  }
+
+  .mobileSortPillActive {
+    background: var(--color-green, #102820);
+    border-color: var(--color-green, #102820);
+    color: #FFFFFF;
+    font-weight: 600;
+  }
+
+  .mobileSortPillActive:hover {
+    opacity: 0.9;
+  }
+
+  /* ── Active category tag row ── */
+  .mobileActiveCatRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
   }
 
   .mobileActiveCat {
@@ -2229,7 +2393,7 @@
 
 @media (max-width: 640px) {
   .content {
-    padding: 28px 18px 48px;
+    padding: 28px 16px 48px;
   }
 
   .resultsBar {
@@ -2250,6 +2414,7 @@
   .compareFloatPopup {
     bottom: 20px;
     width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
   }
 
   .compareFloatInner {
@@ -2279,65 +2444,20 @@
 
   .grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
   }
 
-  .cardBody {
-    padding: 10px 12px;
-  }
-
+  /* Tighten image aspect on 2-col layout so cards aren't too tall */
   .cardImage {
     aspect-ratio: 16 / 9;
-  }
-
-  .providerAvatar {
-    width: 24px;
-    height: 24px;
-    font-size: 10px;
-  }
-
-  .providerName {
-    font-size: 10.5px;
-  }
-
-  .providerLocation {
-    font-size: 9.5px;
-  }
-
-  .ratingStars svg {
-    width: 9px;
-    height: 9px;
-  }
-
-  .ratingNum {
-    font-size: 10px;
   }
 
   .ratingReviews {
     display: none;
   }
 
-  .listingTitleRow .cardTitle {
-    font-size: 12.5px;
-  }
-
-  .price {
-    font-size: 13px;
-  }
-
-  .priceLabel {
-    font-size: 7.5px;
-  }
-
-  .ctaBtn {
-    padding: 7px 8px;
-    font-size: 10.5px;
-  }
-
-  .popularBadge,
-  .providerBadge {
-    font-size: 8px;
-    padding: 3px 7px;
+  .mobileSortPill {
+    font-size: 12px;
+    padding: 6px 12px;
   }
 }
 
@@ -2346,30 +2466,54 @@
     padding: 20px 14px 40px;
   }
 
+  /* Keep 2-col grid but tighten image further to reduce card height */
   .grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
   }
 
-  .cardBody {
-    padding: 8px 10px;
+  .cardImage {
+    aspect-ratio: 16 / 10;
   }
 
   .listingDivider {
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
 
   .providerRow {
-    margin-bottom: 8px;
-    gap: 6px;
+    margin-bottom: 6px;
   }
 
   .listingTitleRow {
-    margin-bottom: 8px;
-    gap: 6px;
+    margin-bottom: 6px;
+    flex-direction: column;
+    gap: 3px;
   }
 
+  .priceBlock {
+    align-items: flex-start;
+  }
+
+  .cardActions {
+    flex-wrap: nowrap;
+    gap: 5px;
+  }
+
+  /* Compare button: icon-only on very small screens */
   .compareBtn {
-    display: none;
+    padding: 7px 9px;
+    font-size: 0;
+    min-width: 34px;
+    flex-shrink: 0;
+  }
+
+  .compareBtn::before {
+    content: '⇄';
+    font-size: 13px;
+    display: block;
+  }
+
+  .compareBtnActive::before {
+    content: '✓';
+    font-size: 12px;
   }
 }
