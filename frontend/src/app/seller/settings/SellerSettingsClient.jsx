@@ -3,24 +3,21 @@
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase/client'
-import styles from '@/app/admin/settings/settings.module.css'
+import styles from './settings.module.css'
 import { FaUser, FaUpload } from 'react-icons/fa6'
 import { TbTrash } from 'react-icons/tb'
 import { FiEdit } from 'react-icons/fi'
 import { MdCheckCircle, MdErrorOutline } from 'react-icons/md'
 import { validateNewPassword } from '@/lib/validators/authSchemas'
-import {
-  fetchCurrentSellerProfile,
-  updateSellerProfile,
-  uploadSellerAvatar,
-  removeSellerAvatar,
-} from '@/features/seller/settings/api'
+import { fetchCurrentSellerProfile } from '@/features/seller/settings/getSellerProfile'
 
+const AVATARS_BUCKET = 'avatars'
 const MAX_MB = 2
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp']
 
 export default function SellerSettingsClient() {
   const fileRef = useRef(null)
+  const avatarPreviewRef = useRef('')
 
   const [loading, setLoading] = useState(true)
   const [isEditingPersonal, setIsEditingPersonal] = useState(false)
@@ -28,7 +25,6 @@ export default function SellerSettingsClient() {
   const [draftName, setDraftName] = useState('')
   const [draftEmail, setDraftEmail] = useState('')
   const [avatarPreview, setAvatarPreview] = useState('')
-  const [avatarFile, setAvatarFile] = useState(null)
   const [personalStatus, setPersonalStatus] = useState('')
   const [personalError, setPersonalError] = useState('')
   const [avatarLoading, setAvatarLoading] = useState(false)
@@ -41,35 +37,27 @@ export default function SellerSettingsClient() {
 
   useEffect(() => {
     let cancelled = false
-
     async function loadProfile() {
       setLoading(true)
       setPersonalError('')
       setPersonalStatus('')
-
       try {
         const data = await fetchCurrentSellerProfile()
         if (cancelled) return
-
         setProfile(data)
         setDraftName(data.fullName || '')
         setDraftEmail(data.email || '')
       } catch (err) {
-        if (!cancelled) {
-          setPersonalError(err.message || 'Failed to load profile.')
-        }
+        if (!cancelled) setPersonalError(err.message || 'Failed to load profile.')
       } finally {
         if (!cancelled) setLoading(false)
       }
     }
-
     loadProfile()
-
     return () => {
       cancelled = true
-      if (avatarPreview) URL.revokeObjectURL(avatarPreview)
+      if (avatarPreviewRef.current) URL.revokeObjectURL(avatarPreviewRef.current)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const validateImage = (file) => {
@@ -97,43 +85,41 @@ export default function SellerSettingsClient() {
   const onPickAvatar = async (e) => {
     setPersonalError('')
     setPersonalStatus('')
-
     const file = e.target.files?.[0]
     if (!file) return
-
     const error = validateImage(file)
     if (error) {
       setPersonalError(error)
       return
     }
-
     if (!profile) {
       setPersonalError('Profile is not loaded yet.')
       return
     }
-
-    if (avatarPreview) {
-      URL.revokeObjectURL(avatarPreview)
-    }
-
+    if (avatarPreviewRef.current) URL.revokeObjectURL(avatarPreviewRef.current)
     const url = URL.createObjectURL(file)
+    avatarPreviewRef.current = url
     setAvatarPreview(url)
-    setAvatarFile(file)
-
     try {
       setAvatarLoading(true)
-      const { avatarPath, avatarUrl } = await uploadSellerAvatar({
-        userId: profile.id,
-        file,
-        oldAvatarUrl: profile.avatarUrl,
-      })
-
-      setProfile((prev) =>
-        prev ? { ...prev, avatarPath, avatarUrl } : prev
-      )
-
+      const fileExt = file.name.split('.').pop()
+      const fileName = `avatar-${Date.now()}.${fileExt}`
+      const filePath = `${profile.id}/${fileName}`
+      if (profile.avatarPath) {
+        await supabase.storage.from(AVATARS_BUCKET).remove([profile.avatarPath])
+      }
+      const { error: uploadError } = await supabase.storage
+        .from(AVATARS_BUCKET)
+        .upload(filePath, file, { upsert: true, cacheControl: '3600' })
+      if (uploadError) throw uploadError
+      const { data: { publicUrl } } = supabase.storage.from(AVATARS_BUCKET).getPublicUrl(filePath)
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
+        .eq('id', profile.id)
+      if (updateError) throw updateError
+      setProfile((prev) => (prev ? { ...prev, avatarPath: filePath, avatarUrl: publicUrl } : prev))
       setPersonalStatus('Avatar updated successfully.')
-      setAvatarFile(null)
     } catch (err) {
       setPersonalError(err.message || 'Failed to upload avatar.')
     } finally {
@@ -144,28 +130,24 @@ export default function SellerSettingsClient() {
   const onRemoveAvatar = async () => {
     setPersonalError('')
     setPersonalStatus('')
-
-    if (!profile || (!profile.avatarPath && !profile.avatarUrl)) {
-      return
-    }
-
-    if (avatarPreview) {
-      URL.revokeObjectURL(avatarPreview)
+    if (!profile || (!profile.avatarPath && !profile.avatarUrl)) return
+    if (avatarPreviewRef.current) {
+      URL.revokeObjectURL(avatarPreviewRef.current)
+      avatarPreviewRef.current = ''
       setAvatarPreview('')
     }
     if (fileRef.current) fileRef.current.value = ''
-
     try {
       setAvatarLoading(true)
-      await removeSellerAvatar({
-        userId: profile.id,
-        avatarUrl: profile.avatarUrl,
-      })
-
-      setProfile((prev) =>
-        prev ? { ...prev, avatarPath: null, avatarUrl: null } : prev
-      )
-
+      if (profile.avatarPath) {
+        await supabase.storage.from(AVATARS_BUCKET).remove([profile.avatarPath])
+      }
+      const { error } = await supabase
+        .from('profiles')
+        .update({ avatar_url: null, updated_at: new Date().toISOString() })
+        .eq('id', profile.id)
+      if (error) throw error
+      setProfile((prev) => (prev ? { ...prev, avatarPath: null, avatarUrl: null } : prev))
       setPersonalStatus('Avatar removed.')
     } catch (err) {
       setPersonalError(err.message || 'Failed to remove avatar.')
@@ -177,7 +159,6 @@ export default function SellerSettingsClient() {
   const onClickEditSavePersonal = async () => {
     setPersonalError('')
     setPersonalStatus('')
-
     if (!isEditingPersonal) {
       if (profile) {
         setDraftName(profile.fullName || '')
@@ -186,41 +167,35 @@ export default function SellerSettingsClient() {
       setIsEditingPersonal(true)
       return
     }
-
     const nameErr = validateName(draftName)
     if (nameErr) {
       setPersonalError(nameErr)
       return
     }
-
     const emailErr = validateEmail(draftEmail)
     if (emailErr) {
       setPersonalError(emailErr)
       return
     }
-
     if (!profile) {
       setPersonalError('Profile is not loaded yet.')
       return
     }
-
+    const trimmedName = draftName.trim()
+    const trimmedEmail = draftEmail.trim()
     try {
-      await updateSellerProfile({
-        id: profile.id,
-        fullName: draftName,
-        email: draftEmail,
-      })
-
-      setProfile((prev) =>
-        prev
-          ? {
-              ...prev,
-              fullName: draftName.trim(),
-              email: draftEmail.trim(),
-            }
-          : prev
-      )
-
+      const { error: authError } = await supabase.auth.updateUser({ email: trimmedEmail })
+      if (authError) throw authError
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: trimmedName,
+          email: trimmedEmail,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', profile.id)
+      if (error) throw error
+      setProfile((prev) => (prev ? { ...prev, fullName: trimmedName, email: trimmedEmail } : prev))
       setIsEditingPersonal(false)
       setPersonalStatus('Personal information updated successfully.')
     } catch (err) {
@@ -231,19 +206,16 @@ export default function SellerSettingsClient() {
   const onCancelPersonalEdit = () => {
     setPersonalError('')
     setPersonalStatus('')
-
     if (profile) {
       setDraftName(profile.fullName || '')
       setDraftEmail(profile.email || '')
     }
-
-    if (avatarPreview) {
-      URL.revokeObjectURL(avatarPreview)
+    if (avatarPreviewRef.current) {
+      URL.revokeObjectURL(avatarPreviewRef.current)
+      avatarPreviewRef.current = ''
     }
     setAvatarPreview('')
-    setAvatarFile(null)
     if (fileRef.current) fileRef.current.value = ''
-
     setIsEditingPersonal(false)
   }
 
@@ -251,28 +223,21 @@ export default function SellerSettingsClient() {
     e.preventDefault()
     setPassError('')
     setPassStatus('')
-
     if (!currentPassword) {
       setPassError('Please enter your current password.')
       return
     }
-
     const validation = validateNewPassword(newPassword, confirmPassword)
     if (!validation.valid) {
       setPassError(validation.message)
       return
     }
-
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword,
-      })
-
+      const { error } = await supabase.auth.updateUser({ password: newPassword })
       if (error) {
         setPassError(error.message || 'Failed to update password.')
         return
       }
-
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
@@ -283,6 +248,8 @@ export default function SellerSettingsClient() {
   }
 
   const shownAvatar = avatarPreview || profile?.avatarUrl || ''
+  const formId = 'sellerPasswordForm'
+  const id = (name) => `seller_${name}`
 
   if (loading) {
     return (
@@ -303,24 +270,18 @@ export default function SellerSettingsClient() {
         <section className={`${styles.card} ${styles.full}`}>
           <div className={styles.cardHeadRow}>
             <p className={styles.cardTitle}>Personal Information</p>
-
             <div className={styles.headActions}>
               {isEditingPersonal && (
                 <button className={styles.secondaryBtn} onClick={onCancelPersonalEdit}>
                   Cancel
                 </button>
               )}
-
               <button
                 className={styles.primaryBtn}
                 onClick={onClickEditSavePersonal}
                 disabled={avatarLoading}
               >
-                {isEditingPersonal ? 'Save Changes' : (
-                  <>
-                    <FiEdit /> Edit
-                  </>
-                )}
+                {isEditingPersonal ? 'Save Changes' : <><FiEdit /> Edit</>}
               </button>
             </div>
           </div>
@@ -338,12 +299,9 @@ export default function SellerSettingsClient() {
                     unoptimized
                   />
                 ) : (
-                  <div className={styles.avatarFallback}>
-                    <FaUser />
-                  </div>
+                  <div className={styles.avatarFallback}><FaUser /></div>
                 )}
               </div>
-
               {isEditingPersonal && (
                 <div className={styles.piAvatarActionsRow}>
                   <button
@@ -354,7 +312,6 @@ export default function SellerSettingsClient() {
                   >
                     <FaUpload /> {avatarLoading ? 'Uploading…' : 'Change'}
                   </button>
-
                   <button
                     type="button"
                     className={styles.dangerBtn}
@@ -363,7 +320,6 @@ export default function SellerSettingsClient() {
                   >
                     <TbTrash /> Remove
                   </button>
-
                   <span className={styles.profileHintInline}>
                     PNG, JPG, or WEBP · Max {MAX_MB}MB
                   </span>
@@ -383,24 +339,19 @@ export default function SellerSettingsClient() {
           <div className={styles.piFieldsRow}>
             <div className={styles.piGrid}>
               <div className={styles.field}>
-                <label htmlFor="pi_name" className={styles.label}>
-                  Name
-                </label>
+                <label htmlFor={id('name')} className={styles.label}>Name</label>
                 <input
-                  id="pi_name"
+                  id={id('name')}
                   value={draftName}
                   onChange={(e) => setDraftName(e.target.value)}
                   className={`${styles.input} ${!isEditingPersonal ? styles.inputReadOnly : ''}`}
                   disabled={!isEditingPersonal}
                 />
               </div>
-
               <div className={styles.field}>
-                <label htmlFor="pi_email" className={styles.label}>
-                  Email
-                </label>
+                <label htmlFor={id('email')} className={styles.label}>Email</label>
                 <input
-                  id="pi_email"
+                  id={id('email')}
                   value={draftEmail}
                   onChange={(e) => setDraftEmail(e.target.value)}
                   className={`${styles.input} ${!isEditingPersonal ? styles.inputReadOnly : ''}`}
@@ -408,18 +359,11 @@ export default function SellerSettingsClient() {
                 />
               </div>
             </div>
-
             {personalError && (
-              <div className={styles.msgError}>
-                <MdErrorOutline />
-                {personalError}
-              </div>
+              <div className={styles.msgError}><MdErrorOutline /> {personalError}</div>
             )}
             {personalStatus && (
-              <div className={styles.msgOk}>
-                <MdCheckCircle />
-                {personalStatus}
-              </div>
+              <div className={styles.msgOk}><MdCheckCircle /> {personalStatus}</div>
             )}
           </div>
         </section>
@@ -427,23 +371,18 @@ export default function SellerSettingsClient() {
         <section className={styles.card}>
           <div className={styles.cardHeadRow}>
             <p className={styles.cardTitle}>Change Password</p>
-            <button form="sellerPasswordForm" className={styles.primaryBtn}>
+            <button form={formId} type="submit" className={styles.primaryBtn}>
               Save Changes
             </button>
           </div>
-
-          <form
-            id="sellerPasswordForm"
-            onSubmit={handlePasswordSubmit}
-            className={styles.form}
-          >
+          <form id={formId} onSubmit={handlePasswordSubmit} className={styles.form}>
             <div className={styles.passGrid}>
               <div className={styles.passField}>
-                <label htmlFor="seller_current_password" className={styles.label}>
+                <label htmlFor={id('current_password')} className={styles.label}>
                   Current Password
                 </label>
                 <input
-                  id="seller_current_password"
+                  id={id('current_password')}
                   type="password"
                   placeholder="Enter current password"
                   value={currentPassword}
@@ -451,13 +390,12 @@ export default function SellerSettingsClient() {
                   className={styles.input}
                 />
               </div>
-
               <div className={styles.passField}>
-                <label htmlFor="seller_new_password" className={styles.label}>
+                <label htmlFor={id('new_password')} className={styles.label}>
                   New Password
                 </label>
                 <input
-                  id="seller_new_password"
+                  id={id('new_password')}
                   type="password"
                   placeholder="Enter new password"
                   value={newPassword}
@@ -465,13 +403,12 @@ export default function SellerSettingsClient() {
                   className={styles.input}
                 />
               </div>
-
               <div className={styles.passField}>
-                <label htmlFor="seller_confirm_password" className={styles.label}>
+                <label htmlFor={id('confirm_password')} className={styles.label}>
                   Confirm New Password
                 </label>
                 <input
-                  id="seller_confirm_password"
+                  id={id('confirm_password')}
                   type="password"
                   placeholder="Re-enter new password"
                   value={confirmPassword}
@@ -480,7 +417,6 @@ export default function SellerSettingsClient() {
                 />
               </div>
             </div>
-
             <div className={styles.passwordReqBox}>
               <p className={styles.passwordReqTitle}>Password requirements</p>
               <ul className={styles.passwordReqList}>
@@ -490,19 +426,11 @@ export default function SellerSettingsClient() {
                 <li>One number</li>
               </ul>
             </div>
-
             {passError && (
-              <div className={styles.msgError}>
-                <MdErrorOutline />
-                {passError}
-              </div>
+              <div className={styles.msgError}><MdErrorOutline /> {passError}</div>
             )}
-
             {passStatus && (
-              <div className={styles.msgOk}>
-                <MdCheckCircle />
-                {passStatus}
-              </div>
+              <div className={styles.msgOk}><MdCheckCircle /> {passStatus}</div>
             )}
           </form>
         </section>

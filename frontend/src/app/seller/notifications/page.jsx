@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import layoutStyles from '../seller.module.css'
+import styles from './notifications.module.css'
 
 const MOCK_NOTIFICATIONS = [
   {
@@ -41,15 +41,15 @@ export default function SellerNotificationsPage() {
   }, [])
 
   return (
-    <div className={layoutStyles.pageWrap}>
-      <header className={layoutStyles.pageHeader}>
-        <h1 className={layoutStyles.pageTitle}>Notifications</h1>
-        <p className={layoutStyles.pageSubtitle}>
+    <div className={styles.pageWrap}>
+      <header className={styles.pageHeader}>
+        <h1 className={styles.pageTitle}>Notifications</h1>
+        <p className={styles.pageSubtitle}>
           Booking alerts, payout updates, and important messages from La Visionario.
         </p>
       </header>
 
-      <section className={layoutStyles.panel}>
+      <section className={styles.panel}>
         {groups.length === 0 ? (
           <p style={{ fontSize: '0.9rem', color: '#6b7280' }}>
             You don&apos;t have any notifications yet.

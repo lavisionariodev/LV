@@ -54,58 +54,13 @@
   font-size: 0.9rem;
 }
 
-/* =========================
-   PAGE WRAPPER (consistent structure)
-   ========================= */
+/* Page wrapper (dashboard and layout) */
 
 .pageWrap {
   display: flex;
   flex-direction: column;
   gap: 18px;
   width: 100%;
-}
-
-.pageHeader {
-  margin-bottom: 0.25rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #e9efec;
-}
-
-.pageKicker {
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--color-gold-bright);
-  font-weight: 700;
-  margin-bottom: 0.3rem;
-}
-
-.pageTitle {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #102820;
-  margin: 0 0 0.35rem;
-}
-
-.pageSubtitle {
-  font-size: 0.95rem;
-  color: #4d2d18;
-  max-width: 560px;
-  line-height: 1.5;
-  margin: 0;
-}
-
-.panel {
-  background: #ffffff;
-  border: 1px solid #e9e9ef;
-  border-radius: 16px;
-  padding: 16px;
-}
-
-.statsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 14px;
 }
 
 @media (max-width: 1100px) {
@@ -129,10 +84,6 @@
 @media (max-width: 600px) {
   .content {
     padding: 14px;
-  }
-
-  .statsGrid {
-    grid-template-columns: 1fr;
   }
 }
 

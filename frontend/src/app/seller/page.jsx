@@ -6,28 +6,34 @@ import styles from './seller.module.css'
 
 const tiles = [
   {
-    href: '/seller/my-sales',
-    title: 'My Sales',
-    description: 'View recent bookings, statuses, and payouts.',
-    badge: 'Sales overview',
+    href: '/seller/orders',
+    title: 'Orders',
+    description: 'View and manage all your orders, pending and completed.',
+    badge: 'Orders',
   },
   {
-    href: '/seller/shop-performance',
-    title: 'Shop Performance',
-    description: 'Track total sales, bookings, commission, and net earnings.',
-    badge: 'Insights',
-  },
-  {
-    href: '/seller/my-services',
-    title: 'My Services',
-    description: 'Manage the services and packages you offer on Lavisionario.',
+    href: '/seller/products',
+    title: 'Products',
+    description: 'Manage services, packages, and your catalog.',
     badge: 'Listings',
   },
   {
-    href: '/seller/my-account',
-    title: 'My Account',
-    description: 'Update your profile and business information.',
-    badge: 'Account',
+    href: '/seller/customers',
+    title: 'Customers',
+    description: 'View your customers and booking history.',
+    badge: 'Customers',
+  },
+  {
+    href: '/seller/analytics',
+    title: 'Analytics',
+    description: 'Track sales, revenue, and performance insights.',
+    badge: 'Insights',
+  },
+  {
+    href: '/seller/marketing',
+    title: 'Marketing',
+    description: 'Discounts, vouchers, and campaigns.',
+    badge: 'Marketing',
   },
   {
     href: '/seller/notifications',
