@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase/client";
 import { getSession } from "./session";
 import { isAdmin } from "./admin";
-import { getUserRole, ROLE_SELLER } from "./roles";
+import { getUserRole, ROLE_BUYER, ROLE_SELLER } from "./roles";
 import { getSellerStatusForUser } from "@/lib/sellers/client";
 
 /**
@@ -35,6 +35,31 @@ export async function requireAdmin() {
     user,
     isAdmin: admin,
     error: admin ? null : "Not an admin",
+  };
+}
+
+/**
+ * Require authenticated buyer (users.role === 'buyer').
+ * Use this for main-site features: cart, checkout, profile.
+ * Seller/admin sessions do not satisfy this guard.
+ * @returns {{ user: object | null, isBuyer: boolean, error: string | null }}
+ */
+export async function requireBuyer() {
+  const { data, error } = await getSession();
+  const user = data?.session?.user ?? null;
+  if (error || !user) {
+    return {
+      user: null,
+      isBuyer: false,
+      error: error?.message ?? "Not signed in",
+    };
+  }
+  const role = await getUserRole(user.id);
+  const buyer = role === ROLE_BUYER;
+  return {
+    user,
+    isBuyer: buyer,
+    error: buyer ? null : "Not a buyer",
   };
 }
 

@@ -6,19 +6,20 @@ import { use, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getServiceById, LISTINGS, PROVIDERS } from '../data'
 import { useCart } from '@/contexts/CartContext'
-import { getUser } from '@/lib/auth/session'
+import { useAuth } from '@/contexts/AuthContext'
 import styles from './detail.module.css'
 
 export default function ServiceDetailPage({ params }) {
   const { id } = use(params)
   const service = getServiceById(id)
   const { addItem } = useCart()
+  const { user, authLoading, isBuyer } = useAuth()
   const router = useRouter()
   const listingsForService = service ? LISTINGS.filter((l) => l.serviceId === service.id) : []
   const [selectedListingId, setSelectedListingId] = useState(listingsForService[0]?.id ?? '')
   const [quantity, setQuantity] = useState(1)
   const [addedMessage, setAddedMessage] = useState(false)
-  const [isAuthenticated, setIsAuthenticated] = useState(null)
+  const [addError, setAddError] = useState(null)
 
   useEffect(() => {
     setSelectedListingId(listingsForService[0]?.id ?? '')
@@ -26,17 +27,22 @@ export default function ServiceDetailPage({ params }) {
 
   const selectedListing = listingsForService.find((l) => l.id === selectedListingId)
   const provider = selectedListing ? PROVIDERS.find((p) => p.id === selectedListing.providerId) : null
+
   const handleAddToCart = async () => {
     if (!selectedListing || !service) return
+    setAddError(null)
 
-    const currentUser = await getUser()
-    if (!currentUser) {
+    if (!user) {
       const target = `/shop/${id}`
       router.push(`/buyer/login?redirect=${encodeURIComponent(target)}`)
       return
     }
+    if (!isBuyer) {
+      router.push(`/buyer/login?redirect=${encodeURIComponent(`/shop/${id}`)}`)
+      return
+    }
 
-    await addItem({
+    const { error } = await addItem({
       id: selectedListing.id,
       name: selectedListing.name,
       img: service.image,
@@ -46,6 +52,10 @@ export default function ServiceDetailPage({ params }) {
         : selectedListing.inclusions?.[0] ?? '',
       qty: quantity,
     })
+    if (error) {
+      setAddError(error.message || 'Could not add to cart')
+      return
+    }
     setAddedMessage(true)
     setTimeout(() => setAddedMessage(false), 2000)
   }
@@ -230,14 +240,19 @@ export default function ServiceDetailPage({ params }) {
               <button
                 className={styles.btnAddToCart}
                 onClick={handleAddToCart}
-                disabled={!selectedListing}
+                disabled={!selectedListing || authLoading}
               >
-                {addedMessage ? 'Added to cart' : 'Add to Cart'}
+                {addedMessage ? 'Added to cart' : user && !isBuyer ? 'Sign in as buyer to add to cart' : 'Add to Cart'}
               </button>
               <button className={styles.btnSave} aria-label="Save">
                 ♡ Save
               </button>
             </div>
+            {addError && (
+              <p className={styles.tabText} style={{ color: 'var(--color-error, #b91c1c)', marginTop: '0.5rem' }}>
+                {addError}
+              </p>
+            )}
           </div>
         </article>
 

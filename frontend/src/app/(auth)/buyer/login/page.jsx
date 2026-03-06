@@ -59,9 +59,11 @@ function BuyerLoginPageInner() {
 
   useEffect(() => {
     let mounted = true;
-    getUser().then((currentUser) => {
+    getUser().then(async (currentUser) => {
       if (!mounted) return;
-      if (currentUser) {
+      if (!currentUser) return;
+      const role = await getUserRole(currentUser.id);
+      if (role === ROLE_BUYER) {
         const target = redirect || "/";
         router.replace(target);
       }

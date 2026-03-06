@@ -3,23 +3,26 @@
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import styles from "./cart.module.css"
 import { FiX, FiTrash2, FiShoppingBag } from "react-icons/fi"
 import { useCart } from "@/contexts/CartContext"
 import { getUser } from "@/lib/auth/session"
-import { getUserRole, ROLE_SELLER } from "@/lib/auth/roles"
+import { getUserRole, ROLE_BUYER } from "@/lib/auth/roles"
 
 function formatPrice(n) {
   return `₱${Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
 }
 
 export default function CartPage() {
+  const router = useRouter()
   const { items: cartItems, updateQty, removeItem } = useCart()
   const [coupon, setCoupon]       = useState('')
   const [qtyEdits, setQtyEdits]   = useState({})
   const [selected, setSelected]   = useState(new Set())
+  const [authChecked, setAuthChecked] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(null)
-  const [isSeller, setIsSeller] = useState(false)
+  const [isBuyerRole, setIsBuyerRole] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -27,17 +30,28 @@ export default function CartPage() {
       if (!mounted) return
       if (!currentUser) {
         setIsAuthenticated(false)
-        setIsSeller(false)
+        setIsBuyerRole(false)
+        setAuthChecked(true)
         return
       }
-      setIsAuthenticated(true)
       const role = await getUserRole(currentUser.id)
-      setIsSeller(role === ROLE_SELLER)
+      const buyer = role === ROLE_BUYER
+      setIsAuthenticated(true)
+      setIsBuyerRole(buyer)
+      setAuthChecked(true)
     })
     return () => {
       mounted = false
     }
   }, [])
+
+  // Seller/admin have nothing to do with main page — treat as guest: redirect to buyer login.
+  useEffect(() => {
+    if (!authChecked) return
+    if (isAuthenticated && !isBuyerRole) {
+      router.replace('/buyer/login?redirect=/cart')
+    }
+  }, [authChecked, isAuthenticated, isBuyerRole, router])
 
   const rows = cartItems.map((item) => ({
     ...item,
@@ -108,32 +122,8 @@ export default function CartPage() {
 
   const isEmpty = rows.length === 0
 
-  if (isSeller) {
-    return (
-      <section className={styles.cartPage}>
-        <header className={styles.hero}>
-          <div className={styles.heroOverlay} />
-          <div className={styles.heroInner}>
-            <h1 className={styles.heroTitle}>Cart (Buyer only)</h1>
-            <p className={styles.breadcrumb}>
-              <Link href="/" className={styles.crumb}>Home</Link>
-              <span className={styles.slash}>/</span>
-              <span className={styles.crumbActive}>Cart</span>
-            </p>
-          </div>
-        </header>
-        <div className={styles.content}>
-          <div className={styles.emptySection}>
-            <div className={styles.emptyIcon}><FiShoppingBag /></div>
-            <h2 className={styles.emptyTitle}>Cart is available for buyers only</h2>
-            <p className={styles.emptySub}>
-              You are currently signed in as a seller. Sellers cannot add items to cart or book services.
-            </p>
-            <Link href="/" className={styles.emptyLink}>Back to homepage</Link>
-          </div>
-        </div>
-      </section>
-    )
+  if (authChecked && isAuthenticated && !isBuyerRole) {
+    return null
   }
 
   return (

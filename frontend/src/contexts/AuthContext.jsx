@@ -5,6 +5,11 @@ import { supabase } from '@/lib/supabase/client';
 import { getUser, onAuthStateChange } from '@/lib/auth/session';
 import { getUserRole, isBuyerRole, isSellerRole } from '@/lib/auth/roles';
 
+/**
+ * Auth context: current user, profile, and role (from public.users).
+ * On the main site, only isBuyer should be treated as "authenticated" for buyer features (cart, profile, checkout).
+ * Seller/admin auth is for their own portals only; they are treated as guests on the main site.
+ */
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {

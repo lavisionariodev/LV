@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext'
 
 export default function PublicNavbar() {
   const { cartCount } = useCart()
-  const { user, profile, isBuyer, isSeller } = useAuth()
+  const { user, profile, isBuyer } = useAuth()
   const [query, setQuery] = useState('')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mobileHowItWorksOpen, setMobileHowItWorksOpen] = useState(false)
@@ -73,8 +73,9 @@ export default function PublicNavbar() {
     }
   }, [profileMenuOpen])
 
-  const isAuthenticated = !!user
-  const showSellerEntryCtas = !isSeller
+  // Only buyers count as authenticated on the main site; seller/admin have their own portals.
+  const isAuthenticated = !!user && isBuyer
+  const showSellerEntryCtas = !isBuyer
 
   const displayName =
     (profile && profile.full_name) || user?.user_metadata?.full_name || ''
@@ -264,32 +265,30 @@ export default function PublicNavbar() {
 
           <div className={styles.navActions}>
             <div className={styles.searchContainer}>
-              {!isSeller && (
-                <span className={styles.cartBtnWrap}>
-                  <button 
-                    className={styles.searchBtn} 
-                    aria-label="Cart"
-                    onClick={() => {
-                      if (!isAuthenticated) {
-                        router.push(`/buyer/login?redirect=${encodeURIComponent('/cart')}`)
-                        return
-                      }
-                      router.push('/cart')
-                    }}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="9" cy="21" r="1"></circle>
-                      <circle cx="20" cy="21" r="1"></circle>
-                      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-                    </svg>
-                  </button>
-                  {cartCount > 0 && (
-                    <span className={styles.cartDot} aria-label={`${cartCount} items in cart`}>
-                      {cartCount > 99 ? '99+' : cartCount}
-                    </span>
-                  )}
-                </span>
-              )}
+              <span className={styles.cartBtnWrap}>
+                <button
+                  className={styles.searchBtn}
+                  aria-label="Cart"
+                  onClick={() => {
+                    if (!isAuthenticated) {
+                      router.push(`/buyer/login?redirect=${encodeURIComponent('/cart')}`)
+                      return
+                    }
+                    router.push('/cart')
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="9" cy="21" r="1"></circle>
+                    <circle cx="20" cy="21" r="1"></circle>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                  </svg>
+                </button>
+                {cartCount > 0 && (
+                  <span className={styles.cartDot} aria-label={`${cartCount} items in cart`}>
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                )}
+              </span>
             </div>
             {isAuthenticated && (
               <div
@@ -336,69 +335,35 @@ export default function PublicNavbar() {
                     <span className={styles.profileName}>{displayName}</span>
                   )}
                 </button>
-                {profileMenuOpen && user && (
+                {profileMenuOpen && (
                   <div className={styles.profileDropdown} role="menu">
-                    {isSeller ? (
-                      <>
-                        <button
-                          type="button"
-                          className={styles.profileDropdownItem}
-                          onClick={() => {
-                            setProfileMenuOpen(false)
-                            router.push('/seller')
-                          }}
-                        >
-                          Back to Seller Dashboard
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.profileDropdownItem}
-                          onClick={() => {
-                            setProfileMenuOpen(false)
-                            router.push('/seller/my-account')
-                          }}
-                        >
-                          My Account
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.profileDropdownItem}
-                          onClick={openLogoutModal}
-                        >
-                          Logout
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          type="button"
-                          className={styles.profileDropdownItem}
-                          onClick={() => {
-                            setProfileMenuOpen(false)
-                            router.push('/profile/account')
-                          }}
-                        >
-                          My account
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.profileDropdownItem}
-                          onClick={() => {
-                            setProfileMenuOpen(false)
-                            router.push('/profile/purchases')
-                          }}
-                        >
-                          Purchases
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.profileDropdownItem}
-                          onClick={openLogoutModal}
-                        >
-                          Logout
-                        </button>
-                      </>
-                    )}
+                    <button
+                      type="button"
+                      className={styles.profileDropdownItem}
+                      onClick={() => {
+                        setProfileMenuOpen(false)
+                        router.push('/profile/account')
+                      }}
+                    >
+                      My account
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.profileDropdownItem}
+                      onClick={() => {
+                        setProfileMenuOpen(false)
+                        router.push('/profile/purchases')
+                      }}
+                    >
+                      Purchases
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.profileDropdownItem}
+                      onClick={openLogoutModal}
+                    >
+                      Logout
+                    </button>
                   </div>
                 )}
               </div>
@@ -480,35 +445,10 @@ export default function PublicNavbar() {
 
           <div className={styles.mobileDivider}></div>
 
-          {!user ? (
+          {!isAuthenticated ? (
             <Link href="/buyer/login?redirect=/profile" className={styles.mobileLink}>
               Sign In
             </Link>
-          ) : isSeller ? (
-            <>
-              <Link href="/seller" className={styles.mobileLink}>
-                Overview
-              </Link>
-              <Link href="/seller/my-sales" className={styles.mobileLink}>
-                My Sales
-              </Link>
-              <Link href="/seller/shop-performance" className={styles.mobileLink}>
-                My Performance
-              </Link>
-              <Link href="/seller/my-services" className={styles.mobileLink}>
-                My Services
-              </Link>
-              <Link href="/seller/my-account" className={styles.mobileLink}>
-                My Account
-              </Link>
-              <button
-                type="button"
-                className={styles.mobileLinkButton}
-                onClick={openLogoutModal}
-              >
-                Logout
-              </button>
-            </>
           ) : (
             <>
               <Link href="/profile" className={styles.mobileLink}>
@@ -568,47 +508,39 @@ export default function PublicNavbar() {
           <span className={styles.bottomNavLabel}>How It Works</span>
         </Link>
 
-        {!isSeller && (
-          <button
-            type="button"
-            className={`${styles.bottomNavItem} ${pathname === '/cart' ? styles.bottomNavItemActive : ''}`}
-            aria-label="Cart"
-            onClick={() => {
-              if (!isAuthenticated) {
-                router.push(`/buyer/login?redirect=${encodeURIComponent('/cart')}`)
-                return
-              }
-              router.push('/cart')
-            }}
-          >
-            <span className={styles.bottomNavCartWrap}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="9" cy="21" r="1"></circle>
-                <circle cx="20" cy="21" r="1"></circle>
-                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-              </svg>
-              {cartCount > 0 && (
-                <span className={styles.bottomNavBadge} aria-label={`${cartCount} items in cart`}>
-                  {cartCount > 99 ? '99+' : cartCount}
-                </span>
-              )}
-            </span>
-            <span className={styles.bottomNavLabel}>Cart</span>
-          </button>
-        )}
+        <button
+          type="button"
+          className={`${styles.bottomNavItem} ${pathname === '/cart' ? styles.bottomNavItemActive : ''}`}
+          aria-label="Cart"
+          onClick={() => {
+            if (!isAuthenticated) {
+              router.push(`/buyer/login?redirect=${encodeURIComponent('/cart')}`)
+              return
+            }
+            router.push('/cart')
+          }}
+        >
+          <span className={styles.bottomNavCartWrap}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="9" cy="21" r="1"></circle>
+              <circle cx="20" cy="21" r="1"></circle>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+            </svg>
+            {cartCount > 0 && (
+              <span className={styles.bottomNavBadge} aria-label={`${cartCount} items in cart`}>
+                {cartCount > 99 ? '99+' : cartCount}
+              </span>
+            )}
+          </span>
+          <span className={styles.bottomNavLabel}>Cart</span>
+        </button>
 
         {isAuthenticated ? (
           <button
             type="button"
-            className={`${styles.bottomNavItem} ${pathname?.startsWith('/profile') || pathname?.startsWith('/seller/my') ? styles.bottomNavItemActive : ''}`}
+            className={`${styles.bottomNavItem} ${pathname?.startsWith('/profile') ? styles.bottomNavItemActive : ''}`}
             aria-label="Profile"
-            onClick={() => {
-              if (isSeller) {
-                router.push('/seller/my-account')
-              } else {
-                router.push('/profile/account')
-              }
-            }}
+            onClick={() => router.push('/profile/account')}
           >
             {profile?.avatar_url ? (
               <img

@@ -6,7 +6,7 @@
  import styles from "./checkout.module.css"
 import { useCart } from "@/contexts/CartContext"
 import { getUser } from "@/lib/auth/session"
-import { getUserRole, ROLE_SELLER } from "@/lib/auth/roles"
+import { getUserRole, ROLE_BUYER } from "@/lib/auth/roles"
 
  function formatPrice(n) {
    return `₱${Number(n).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`
@@ -16,26 +16,22 @@ import { getUserRole, ROLE_SELLER } from "@/lib/auth/roles"
    const router = useRouter()
    const searchParams = useSearchParams()
    const { items: cartItems } = useCart()
-   const [loadingUser, setLoadingUser] = useState(true)
-   const [user, setUser] = useState(null)
-  const [isSeller, setIsSeller] = useState(false)
+  const [loadingUser, setLoadingUser] = useState(true)
+  const [user, setUser] = useState(null)
+  const [isBuyerRole, setIsBuyerRole] = useState(false)
 
    useEffect(() => {
      let mounted = true
     getUser().then(async (currentUser) => {
       if (!mounted) return
       if (!currentUser) {
+        setLoadingUser(false)
         router.replace("/buyer/login?redirect=/checkout")
         return
       }
       const role = await getUserRole(currentUser.id)
-      if (role === ROLE_SELLER) {
-        setIsSeller(true)
-        setUser(currentUser)
-        setLoadingUser(false)
-        return
-      }
       setUser(currentUser)
+      setIsBuyerRole(role === ROLE_BUYER)
       setLoadingUser(false)
     })
      return () => {
@@ -76,24 +72,9 @@ import { getUserRole, ROLE_SELLER } from "@/lib/auth/roles"
 
   const isEmpty = filteredItems.length === 0
 
-  if (isSeller) {
-    return (
-      <main className={styles.checkoutPage}>
-        <div className={styles.centeredBox}>
-          <h1 className={styles.heroTitle}>Checkout (Buyer only)</h1>
-          <p className={styles.muted}>
-            You are currently signed in as a seller. Sellers cannot book services or complete checkout.
-          </p>
-          <button
-            type="button"
-            className={styles.primaryButton}
-            onClick={() => router.push('/')}
-          >
-            Back to homepage
-          </button>
-        </div>
-      </main>
-    )
+  if (user && !isBuyerRole) {
+    router.replace('/buyer/login?redirect=/checkout')
+    return null
   }
 
    return (

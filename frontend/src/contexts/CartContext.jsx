@@ -10,13 +10,20 @@ import {
 } from '@/lib/cart/supabaseCart'
 import { useAuth } from '@/contexts/AuthContext'
 
+/**
+ * Cart context for the main site. Must be used within AuthProvider.
+ * Only buyers get a loaded cart; seller/admin are treated as guests (empty cart, no add/update/remove).
+ */
 const CartContext = createContext(null)
 
 export function CartProvider({ children }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState(null)
-  const { user, authLoading } = useAuth()
+  const { user, authLoading, isBuyer } = useAuth()
+
+  // Only buyers get cart on the main site; seller/admin auth does not grant cart access.
+  const cartUser = isBuyer ? user : null
 
   const loadCart = useCallback(async (nextUser) => {
     if (nextUser?.id) {
@@ -37,7 +44,7 @@ export function CartProvider({ children }) {
       return
     }
 
-    loadCart(user).finally(() => {
+    loadCart(cartUser).finally(() => {
       if (mounted) {
         setLoading(false)
       }
@@ -46,7 +53,7 @@ export function CartProvider({ children }) {
     return () => {
       mounted = false
     }
-  }, [authLoading, user, loadCart])
+  }, [authLoading, cartUser, loadCart])
 
   const addItem = useCallback(
     async (item) => {
@@ -114,7 +121,7 @@ export function CartProvider({ children }) {
     updateQty,
     removeItem,
     setItems: setItemsOverride,
-    refreshCart: () => loadCart(user),
+    refreshCart: () => loadCart(cartUser),
   }
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>

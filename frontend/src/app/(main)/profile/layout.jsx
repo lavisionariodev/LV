@@ -11,13 +11,18 @@ export default function ProfileLayout({ children }) {
   const router = useRouter();
   const segment = useSelectedLayoutSegment();
   const activeTab = segment || 'account';
-  const { user, authLoading } = useAuth();
+  const { user, authLoading, isBuyer } = useAuth();
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (authLoading) return;
+    if (!user) {
+      router.replace('/buyer/login?redirect=/profile/account');
+      return;
+    }
+    if (!isBuyer) {
       router.replace('/buyer/login?redirect=/profile/account');
     }
-  }, [authLoading, user, router]);
+  }, [authLoading, user, isBuyer, router]);
 
   if (authLoading && !user) {
     return (
