@@ -50,6 +50,12 @@
   color: #000;
 }
 
+.loadingText {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
 /* Buttons */
 .primaryBtn,
 .secondaryBtn,

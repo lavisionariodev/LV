@@ -80,6 +80,12 @@ export default function PublicNavbar() {
   const displayName =
     (profile && profile.full_name) || user?.user_metadata?.full_name || ''
 
+  const isHomeActive = pathname === '/'
+  const isShopActive = pathname?.startsWith('/shop')
+  const isPartnersActive = pathname === '/partners'
+  const isHowItWorksActive = pathname?.startsWith('/how-it-works')
+  const isAboutUsActive = pathname?.startsWith('/about')
+
   const openLogoutModal = () => {
     setMobileMenuOpen(false)
     setProfileMenuOpen(false)
@@ -203,15 +209,30 @@ export default function PublicNavbar() {
 
           <nav className={styles.navMenu}>
             <div className={styles.navItem}>
-              <Link href="/" className={styles.navLink}>HOME</Link>
+              <Link
+                href="/"
+                className={`${styles.navLink} ${isHomeActive ? styles.navLinkActive : ''}`}
+              >
+                HOME
+              </Link>
             </div>
 
             <div className={styles.navItem}>
-              <Link href="/shop" className={styles.navLink}>SHOP</Link>
+              <Link
+                href="/shop"
+                className={`${styles.navLink} ${isShopActive ? styles.navLinkActive : ''}`}
+              >
+                SHOP
+              </Link>
             </div>
 
             <div className={styles.navItem}>
-              <Link href="/partners" className={styles.navLink}>FUNERAL HOMES / PARTNERS</Link>
+              <Link
+                href="/partners"
+                className={`${styles.navLink} ${isPartnersActive ? styles.navLinkActive : ''}`}
+              >
+                FUNERAL HOMES / PARTNERS
+              </Link>
             </div>
 
             <div 
@@ -219,7 +240,9 @@ export default function PublicNavbar() {
               onMouseEnter={() => setHowItWorksOpen(true)}
               onMouseLeave={() => setHowItWorksOpen(false)}
             >
-              <button className={styles.navLinkDropdown}>
+              <button
+                className={`${styles.navLinkDropdown} ${isHowItWorksActive ? styles.navLinkActive : ''}`}
+              >
                 HOW IT WORKS
                 <svg className={styles.dropdownIcon} xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="6 9 12 15 18 9"></polyline>
@@ -245,7 +268,9 @@ export default function PublicNavbar() {
               onMouseEnter={() => setAboutUsOpen(true)}
               onMouseLeave={() => setAboutUsOpen(false)}
             >
-              <button className={styles.navLinkDropdown}>
+              <button
+                className={`${styles.navLinkDropdown} ${isAboutUsActive ? styles.navLinkActive : ''}`}
+              >
                 ABOUT US
                 <svg className={styles.dropdownIcon} xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="6 9 12 15 18 9"></polyline>

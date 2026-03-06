@@ -16,7 +16,6 @@ import {
   TbList,
   TbUser,
   TbClipboardList,
-  TbHome,
 } from 'react-icons/tb'
 import { LuUserCheck } from 'react-icons/lu'
 import { HiOutlineNewspaper } from 'react-icons/hi'
@@ -35,7 +34,6 @@ const SIDEBAR_CONFIG = {
       { href: '/admin/content', label: 'Content', icon: HiOutlineNewspaper },
     ],
     footerItems: [
-      { href: '/', label: 'Back to main site', icon: TbHome },
       { href: '/admin/settings', label: 'Settings', icon: TbSettings },
       { href: '/admin/help', label: 'Help Center', icon: TbMessage2Question },
     ],
@@ -52,7 +50,6 @@ const SIDEBAR_CONFIG = {
       { href: '/seller/onboarding', label: 'Onboarding', icon: TbClipboardList },
     ],
     footerItems: [
-      { href: '/', label: 'Back to main site', icon: TbHome },
       { href: '/seller/settings', label: 'Settings', icon: TbSettings },
       { href: '/seller/help', label: 'Help Center', icon: TbMessage2Question },
     ],
@@ -110,9 +107,7 @@ export default function AppSidebar({ variant, collapsed, onToggle }) {
             className={`${styles.link} ${isActive(href) ? styles.active : ''}`}
             title={isCollapsed ? label : undefined}
           >
-            <span className={styles.iconWrap}>
-              <Icon />
-            </span>
+            <Icon className={styles.navIcon} />
             <span className={styles.linkText}>{label}</span>
           </Link>
         ))}
@@ -123,12 +118,10 @@ export default function AppSidebar({ variant, collapsed, onToggle }) {
           <Link
             key={href}
             href={href}
-            className={`${styles.footerLink} ${href !== '/' && isActive(href) ? styles.active : ''}`}
+            className={`${styles.footerLink} ${isActive(href) ? styles.active : ''}`}
             title={isCollapsed ? label : undefined}
           >
-            <span className={styles.iconWrap}>
-              <Icon />
-            </span>
+            <Icon className={styles.navIcon} />
             <span className={styles.linkText}>{label}</span>
           </Link>
         ))}

@@ -1,20 +1,19 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { getSellerByUserId, upsertSellerForUser } from '@/lib/sellers/client'
 import { useToast } from '@/contexts/ToastContext'
 import layoutStyles from '../seller.module.css'
 
 export default function SellerMyAccountPage() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const toast = useToast()
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
-    fullName: '',
-    email: '',
     phone: '',
     businessName: '',
     address: '',
@@ -35,8 +34,6 @@ export default function SellerMyAccountPage() {
         if (cancelled) return
 
         setForm({
-          fullName: user.user_metadata?.full_name || '',
-          email: user.email || '',
           phone: seller?.phone || '',
           businessName: seller?.business_name || '',
           address: seller?.address || '',
@@ -68,10 +65,11 @@ export default function SellerMyAccountPage() {
 
     setSaving(true)
     try {
+      const displayName = profile?.full_name || user.user_metadata?.full_name || ''
       const { error } = await upsertSellerForUser(user, {
         businessName: form.businessName.trim(),
-        contactName: form.fullName.trim(),
-        email: form.email.trim(),
+        contactName: displayName.trim(),
+        email: user.email || '',
         phone: form.phone.trim(),
         address: form.address.trim(),
         businessInfo: form.businessInfo.trim(),
@@ -107,39 +105,30 @@ export default function SellerMyAccountPage() {
     )
   }
 
+  const displayName = profile?.full_name || user?.user_metadata?.full_name || ''
+  const displayEmail = user?.email || ''
+
   return (
     <div className={layoutStyles.pageWrap}>
       <header className={layoutStyles.pageHeader}>
         <h1 className={layoutStyles.pageTitle}>My Account</h1>
         <p className={layoutStyles.pageSubtitle}>
-          Update your profile and business details used across the seller portal.
+          Update your business details used across the seller portal.
         </p>
       </header>
 
+      <div className={layoutStyles.panel} style={{ padding: '1.5rem 1.75rem', marginBottom: '1rem' }}>
+        <p style={readOnlyNoteStyle}>
+          Signed in as <strong>{displayName || displayEmail || '—'}</strong>
+          {displayEmail && displayName !== displayEmail && ` (${displayEmail})`}.
+          To change your name, email, or password, go to <Link href="/seller/settings" style={linkStyle}>Settings</Link>.
+        </p>
+      </div>
+
       <form onSubmit={handleSubmit} className={layoutStyles.panel} style={{ padding: '1.5rem 1.75rem' }}>
         <section style={{ marginBottom: '1.5rem' }}>
-          <h2 style={sectionTitleStyle}>Profile</h2>
+          <h2 style={sectionTitleStyle}>Business</h2>
           <div style={fieldGridStyle}>
-            <div style={fieldStyle}>
-              <label style={labelStyle}>Full name</label>
-              <input
-                type="text"
-                style={inputStyle}
-                value={form.fullName}
-                onChange={(e) => handleChange('fullName', e.target.value)}
-                placeholder="Your full name"
-              />
-            </div>
-            <div style={fieldStyle}>
-              <label style={labelStyle}>Email</label>
-              <input
-                type="email"
-                style={inputStyle}
-                value={form.email}
-                onChange={(e) => handleChange('email', e.target.value)}
-                placeholder="you@example.com"
-              />
-            </div>
             <div style={fieldStyle}>
               <label style={labelStyle}>Phone</label>
               <input
@@ -150,12 +139,6 @@ export default function SellerMyAccountPage() {
                 placeholder="+63 9XX XXX XXXX"
               />
             </div>
-          </div>
-        </section>
-
-        <section style={{ marginBottom: '1.5rem' }}>
-          <h2 style={sectionTitleStyle}>Business</h2>
-          <div style={fieldGridStyle}>
             <div style={fieldStyle}>
               <label style={labelStyle}>Business / Shop name</label>
               <input
@@ -210,6 +193,18 @@ const loadingShellStyle = {
   justifyContent: 'center',
   fontSize: '0.95rem',
   color: '#4b5563',
+}
+
+const readOnlyNoteStyle = {
+  margin: 0,
+  fontSize: '0.85rem',
+  color: '#4b5563',
+}
+
+const linkStyle = {
+  color: '#204F38',
+  fontWeight: 600,
+  textDecoration: 'underline',
 }
 
 const sectionTitleStyle = {
