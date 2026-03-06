@@ -154,20 +154,65 @@ export default function ShopPage() {
     <section className={styles.servicesPage}>
 
       <div className={styles.content}>
-        {/* ── Mobile Filter Trigger ── */}
+        {/* ── Mobile Filter + Search Row ── */}
         <div className={styles.mobileFilterBar}>
           <button className={styles.mobileFilterBtn} onClick={() => setShowFiltersModal(true)}>
             <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <path d="M1 3h14M4 8h8M7 13h2" />
             </svg>
-            Filters & Categories
+            <span className={styles.mobileFilterBtnLabel}>Filters</span>
             {(activeCategory !== 'all' || locationQuery || selectedProvider) && (
               <span className={styles.mobileFilterBadge}>
                 {[activeCategory !== 'all', !!locationQuery, !!selectedProvider].filter(Boolean).length}
               </span>
             )}
           </button>
-          {activeCategory !== 'all' && (
+          <div className={`${styles.mobileSearchWrap}${searchFocused ? ` ${styles.mobileSearchWrapFocused}` : ''}`}>
+            <svg className={styles.mobileSearchIcon} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <circle cx="9" cy="9" r="6" />
+              <path d="M15 15l3 3" strokeLinecap="round" />
+            </svg>
+            <input
+              className={styles.mobileSearchInput}
+              type="text"
+              placeholder="Search…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+            />
+            {searchQuery && (
+              <button className={styles.mobileSearchClear} onClick={() => setSearchQuery('')} aria-label="Clear search">
+                <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="M2 2l8 8M10 2l-8 8" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* ── Mobile Sort Row ── */}
+        <div className={styles.mobileSortRow}>
+          {[
+            { value: 'popular',    label: 'Most Popular' },
+            { value: 'price-asc',  label: 'Price: Low–High' },
+            { value: 'price-desc', label: 'Price: High–Low' },
+            { value: 'rating',     label: 'Highest Rated' },
+            { value: 'newest',     label: 'Newest' },
+          ].map((opt) => (
+            <button
+              key={opt.value}
+              className={`${styles.mobileSortPill}${sortBy === opt.value ? ` ${styles.mobileSortPillActive}` : ''}`}
+              onClick={() => setSortBy(opt.value)}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Active category tag (below sort row) ── */}
+        {activeCategory !== 'all' && (
+          <div className={styles.mobileActiveCatRow}>
             <span className={styles.mobileActiveCat}>
               {CATEGORIES.find(c => c.id === activeCategory)?.label}
               <button className={styles.mobileActiveCatClear} onClick={() => setActiveCategory('all')} aria-label="Clear category">
@@ -176,8 +221,8 @@ export default function ShopPage() {
                 </svg>
               </button>
             </span>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* ── Mobile Filters Modal ── */}
         {showFiltersModal && (
