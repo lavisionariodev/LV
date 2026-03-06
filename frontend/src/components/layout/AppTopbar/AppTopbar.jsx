@@ -8,7 +8,7 @@ import styles from './AppTopbar.module.css'
 import { IoSearch } from 'react-icons/io5'
 import { TbBell } from 'react-icons/tb'
 import { FaUser } from 'react-icons/fa6'
-import { LuLogOut } from 'react-icons/lu'
+import { LuLogOut, LuChevronDown } from 'react-icons/lu'
 import { Logout } from '@/components/ui'
 import { useAuth } from '@/contexts/AuthContext'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
@@ -147,6 +147,8 @@ export default function AppTopbar({ variant, onLogout }) {
     ? (adminProfile?.fullName?.trim() || profile?.full_name?.trim() || user?.email?.split('@')[0] || config.defaultDisplayName)
     : (profile?.full_name?.trim() || user?.user_metadata?.full_name || user?.email?.split('@')[0] || config.defaultDisplayName)
 
+  const displayEmail = user?.email || ''
+
   const onClickLogout = () => setShowLogout(true)
   const onCancelLogout = () => setShowLogout(false)
   const onConfirmLogout = async () => {
@@ -186,10 +188,11 @@ export default function AppTopbar({ variant, onLogout }) {
             ref={profileWrapRef}
             className={`${styles.profileWrap} ${dropdownOpen ? styles.profileWrapOpen : ''}`}
           >
-            <div
-              role="button"
-              tabIndex={0}
-              className={styles.profileTrigger}
+            <div className={styles.profileIconWrap}>
+              <div
+                role="button"
+                tabIndex={0}
+                className={styles.profileTrigger}
               onClick={() => setDropdownOpen((prev) => !prev)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -206,8 +209,8 @@ export default function AppTopbar({ variant, onLogout }) {
                   <Image
                     src={avatarUrl}
                     alt={config.avatarAlt}
-                    width={36}
-                    height={36}
+                    width={28}
+                    height={28}
                     className={styles.profileAvatarImg}
                     unoptimized
                   />
@@ -215,10 +218,37 @@ export default function AppTopbar({ variant, onLogout }) {
                   <FaUser />
                 )}
               </div>
-              <span className={styles.profileName}>{displayName}</span>
+              <span className={styles.profileChevron} aria-hidden>
+                <LuChevronDown />
+              </span>
+            </div>
             </div>
 
             <div className={styles.profileDropdown}>
+              <div className={styles.profileDropdownCard}>
+                <div className={styles.profileDropdownInfo}>
+                  <p className={styles.profileDropdownName}>{displayName}</p>
+                  {displayEmail && (
+                    <p className={styles.profileDropdownEmail}>{displayEmail}</p>
+                  )}
+                </div>
+                <div className={styles.profileDropdownAvatar}>
+                  {avatarUrl ? (
+                    <Image
+                      src={avatarUrl}
+                      alt=""
+                      width={48}
+                      height={48}
+                      className={styles.profileDropdownAvatarImg}
+                      unoptimized
+                    />
+                  ) : (
+                    <span className={styles.profileDropdownAvatarFallback}>
+                      <FaUser />
+                    </span>
+                  )}
+                </div>
+              </div>
               <button
                 type="button"
                 className={styles.logoutBtn}
