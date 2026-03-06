@@ -1,10 +1,11 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useLayoutEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import styles from './login.module.css';
 import { loginWithEmailPassword, signInWithOAuth } from '@/lib/auth/client';
+import { validateNewPassword } from '@/lib/validators/authSchemas';
 import { supabase } from '@/lib/supabase/client';
 import { isAdmin } from '@/lib/auth/admin';
 import { getUser } from '@/lib/auth/session';
@@ -19,6 +20,14 @@ function SellerLoginPageInner() {
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [forgotPasswordSubmitted, setForgotPasswordSubmitted] = useState(false);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+
+  const [resetData, setResetData] = useState({ password: '', confirmPassword: '' });
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [recoveryFromHash, setRecoveryFromHash] = useState(false);
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/seller';
@@ -30,6 +39,14 @@ function SellerLoginPageInner() {
       toast.error(decodeURIComponent(errorParam));
     }
   }, [searchParams, toast]);
+
+  useLayoutEffect(() => {
+    const hash = typeof window !== 'undefined' ? window.location.hash : '';
+    if (hash && hash.includes('type=recovery')) {
+      setRecoveryFromHash(true);
+      setShowResetPasswordModal(true);
+    }
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -123,6 +140,75 @@ function SellerLoginPageInner() {
     }
 
     toast.info(`${provider} authentication would be implemented here`);
+  };
+
+  const handleForgotPasswordSubmit = async () => {
+    if (!forgotPasswordEmail?.trim()) {
+      toast.error('Please enter your email address.');
+      return;
+    }
+    try {
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const redirectTo = `${origin}/seller/login`;
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotPasswordEmail.trim(), {
+        redirectTo,
+      });
+      if (error) {
+        toast.error(error.message || 'Failed to send reset email. Please try again.');
+        return;
+      }
+      setForgotPasswordSubmitted(true);
+    } catch (err) {
+      console.error('Forgot password error:', err);
+      toast.error('An error occurred. Please try again later.');
+    }
+  };
+
+  const closeForgotPasswordModal = () => {
+    setShowForgotPasswordModal(false);
+    setForgotPasswordEmail('');
+    setForgotPasswordSubmitted(false);
+  };
+
+  const handleResetPasswordChange = (e) => {
+    setResetData({ ...resetData, [e.target.name]: e.target.value });
+  };
+
+  const handleResetPassword = async () => {
+    const validation = validateNewPassword(resetData.password, resetData.confirmPassword);
+    if (!validation.valid) {
+      toast.error(validation.message);
+      return;
+    }
+    try {
+      if (recoveryFromHash) {
+        const { error } = await supabase.auth.updateUser({ password: resetData.password });
+        if (error) {
+          toast.error(error.message || 'Password reset failed. Please try again.');
+          return;
+        }
+        await supabase.auth.signOut();
+        toast.success('Password reset successful! Please sign in with your new password.');
+      } else {
+        toast.error('Invalid reset link. Please use the link from your email or request a new one.');
+        return;
+      }
+      setShowResetPasswordModal(false);
+      setResetData({ password: '', confirmPassword: '' });
+      setRecoveryFromHash(false);
+      if (typeof window !== 'undefined' && window.location.hash) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    } catch (err) {
+      console.error('Reset password error:', err);
+      toast.error('An error occurred. Please try again later.');
+    }
+  };
+
+  const closeResetPasswordModal = () => {
+    setShowResetPasswordModal(false);
+    setResetData({ password: '', confirmPassword: '' });
+    setRecoveryFromHash(false);
   };
 
   return (
@@ -295,7 +381,7 @@ function SellerLoginPageInner() {
                   <button
                     type="button"
                     className={styles.forgotPassword}
-                    onClick={() => toast.info('Password reset for sellers will be available soon.')}
+                    onClick={() => setShowForgotPasswordModal(true)}
                   >
                     Forgot Password?
                   </button>
@@ -389,6 +475,92 @@ function SellerLoginPageInner() {
       <footer className={styles.footer}>
         <p>© 2026 Lavisionario. All Rights Reserved.</p>
       </footer>
+
+      {/* Forgot Password Modal */}
+      {showForgotPasswordModal && (
+        <div className={styles.modal} onClick={closeForgotPasswordModal}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>{!forgotPasswordSubmitted ? 'Forgot Password?' : 'Check Your Email'}</h3>
+              <button type="button" className={styles.closeModal} onClick={closeForgotPasswordModal}>×</button>
+            </div>
+            <div className={styles.modalBody}>
+              {!forgotPasswordSubmitted ? (
+                <>
+                  <p className={styles.modalText} style={{ marginBottom: 16 }}>
+                    Enter your email and we&apos;ll send you a link to reset your password.
+                  </p>
+                  <div className={styles.formGroup}>
+                    <input
+                      type="email"
+                      placeholder="Enter your email"
+                      className={styles.input}
+                      value={forgotPasswordEmail}
+                      onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                    />
+                  </div>
+                  <button type="button" className={styles.loginButton} onClick={handleForgotPasswordSubmit}>
+                    Send Reset Link
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className={styles.modalText}>
+                    We&apos;ve sent a password reset link to <strong>{forgotPasswordEmail}</strong>. Check your inbox and click the link to set a new password.
+                  </p>
+                  <p className={styles.modalText} style={{ fontSize: 12, marginTop: 12 }}>
+                    Didn&apos;t receive it? Check spam or{' '}
+                    <button type="button" className={styles.forgotPassword} onClick={() => { setForgotPasswordSubmitted(false); setForgotPasswordEmail(''); }}>try again</button>
+                  </p>
+                  <button type="button" className={styles.loginButton} onClick={closeForgotPasswordModal} style={{ marginTop: 16 }}>
+                    Back to Sign In
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Password Modal */}
+      {showResetPasswordModal && (
+        <div className={styles.modal} onClick={closeResetPasswordModal}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>Reset Password</h3>
+              <button type="button" className={styles.closeModal} onClick={closeResetPasswordModal}>×</button>
+            </div>
+            <div className={styles.modalBody}>
+              <p className={styles.modalText} style={{ marginBottom: 16 }}>
+                Enter your new password. Use at least 8 characters with lowercase, uppercase, and digits.
+              </p>
+              <div className={styles.formGroup}>
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="New Password"
+                  className={styles.input}
+                  value={resetData.password}
+                  onChange={handleResetPasswordChange}
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  placeholder="Confirm New Password"
+                  className={styles.input}
+                  value={resetData.confirmPassword}
+                  onChange={handleResetPasswordChange}
+                />
+              </div>
+              <button type="button" className={styles.loginButton} onClick={handleResetPassword}>
+                Reset Password
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* How To Scan Modal */}
       {showHowToScan && (

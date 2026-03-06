@@ -1,14 +1,11 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AuthLayout from '../AuthLayout';
 import styles from './login.module.css';
 import { loginWithEmailPassword, signInWithOAuth } from '@/lib/auth/client';
-import {
-  requestPasswordReset,
-  resetPasswordWithToken,
-} from '@/lib/auth/password';
+import { validateNewPassword } from '@/lib/validators/authSchemas';
 import { getUser } from "@/lib/auth/session";
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase/client';
@@ -36,6 +33,7 @@ function BuyerLoginPageInner() {
     confirmPassword: '',
   });
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [recoveryFromHash, setRecoveryFromHash] = useState(false);
   const hasShownErrorRef = useRef(false);
 
   useEffect(() => {
@@ -46,9 +44,15 @@ function BuyerLoginPageInner() {
     }
   }, [searchParams, toast]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const token = searchParams.get("token");
     if (token) {
+      setShowResetPasswordModal(true);
+      return;
+    }
+    const hash = typeof window !== "undefined" ? window.location.hash : "";
+    if (hash && hash.includes("type=recovery")) {
+      setRecoveryFromHash(true);
       setShowResetPasswordModal(true);
     }
   }, [searchParams]);
@@ -144,10 +148,18 @@ function BuyerLoginPageInner() {
   };
 
   const handleForgotPasswordSubmit = async () => {
+    if (!forgotPasswordEmail?.trim()) {
+      toast.error('Please enter your email address.');
+      return;
+    }
     try {
-      const result = await requestPasswordReset(forgotPasswordEmail);
-      if (!result.ok) {
-        toast.error(result.message);
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const redirectTo = `${origin}/buyer/login`;
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotPasswordEmail.trim(), {
+        redirectTo,
+      });
+      if (error) {
+        toast.error(error.message || 'Failed to send reset email. Please try again.');
         return;
       }
       setForgotPasswordSubmitted(true);
@@ -171,33 +183,42 @@ function BuyerLoginPageInner() {
   };
 
   const handleResetPassword = async () => {
+    const validation = validateNewPassword(resetData.password, resetData.confirmPassword);
+    if (!validation.valid) {
+      toast.error(validation.message);
+      return;
+    }
     try {
-      const urlParams = new URLSearchParams(window.location.search);
-      const resetToken = urlParams.get('token');
-
-      const result = await resetPasswordWithToken(
-        resetToken,
-        resetData.password,
-        resetData.confirmPassword
-      );
-
-      if (!result.ok) {
-        alert(result.message);
+      if (recoveryFromHash) {
+        const { error } = await supabase.auth.updateUser({
+          password: resetData.password,
+        });
+        if (error) {
+          toast.error(error.message || 'Password reset failed. Please try again.');
+          return;
+        }
+        await supabase.auth.signOut();
+        toast.success('Password reset successful! Please sign in with your new password.');
+      } else {
+        toast.error('Invalid reset link. Please use the link from your email or request a new one.');
         return;
       }
-
-      alert('Password reset successful! Please login with your new password.');
       setShowResetPasswordModal(false);
       setResetData({ password: '', confirmPassword: '' });
+      setRecoveryFromHash(false);
+      if (typeof window !== "undefined" && window.location.hash) {
+        window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      }
     } catch (error) {
       console.error('Reset password error:', error);
-      alert('An error occurred. Please try again later.');
+      toast.error('An error occurred. Please try again later.');
     }
   };
 
   const closeResetPasswordModal = () => {
     setShowResetPasswordModal(false);
     setResetData({ password: '', confirmPassword: '' });
+    setRecoveryFromHash(false);
   };
 
   return (

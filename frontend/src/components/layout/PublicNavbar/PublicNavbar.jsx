@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext'
 
 export default function PublicNavbar() {
   const { cartCount } = useCart()
-  const { user, profile, role, isBuyer, isSeller } = useAuth()
+  const { user, profile, isBuyer, isSeller } = useAuth()
   const [query, setQuery] = useState('')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mobileHowItWorksOpen, setMobileHowItWorksOpen] = useState(false)
@@ -74,7 +74,6 @@ export default function PublicNavbar() {
   }, [profileMenuOpen])
 
   const isAuthenticated = !!user
-  const isOnSellerPortal = isSeller && pathname?.startsWith('/seller')
   const showSellerEntryCtas = !isSeller
 
   const displayName =
@@ -202,92 +201,65 @@ export default function PublicNavbar() {
           </Link>
 
           <nav className={styles.navMenu}>
-            {isOnSellerPortal ? (
-              <>
-                <div className={styles.navItem}>
-                  <Link href="/seller" className={styles.navLink}>
-                    Overview
-                  </Link>
-                </div>
-                <div className={styles.navItem}>
-                  <Link href="/seller/my-sales" className={styles.navLink}>
-                    My Sales
-                  </Link>
-                </div>
-                <div className={styles.navItem}>
-                  <Link href="/seller/shop-performance" className={styles.navLink}>
-                    My Performance
-                  </Link>
-                </div>
-                <div className={styles.navItem}>
-                  <Link href="/seller/my-services" className={styles.navLink}>
-                    My Services
-                  </Link>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className={styles.navItem}>
-                  <Link href="/" className={styles.navLink}>HOME</Link>
-                </div>
+            <div className={styles.navItem}>
+              <Link href="/" className={styles.navLink}>HOME</Link>
+            </div>
 
-                <div className={styles.navItem}>
-                  <Link href="/shop" className={styles.navLink}>SHOP</Link>
-                </div>
+            <div className={styles.navItem}>
+              <Link href="/shop" className={styles.navLink}>SHOP</Link>
+            </div>
 
-                <div className={styles.navItem}>
-                  <Link href="/partners" className={styles.navLink}>FUNERAL HOMES / PARTNERS</Link>
-                </div>
+            <div className={styles.navItem}>
+              <Link href="/partners" className={styles.navLink}>FUNERAL HOMES / PARTNERS</Link>
+            </div>
 
-                <div 
-                  className={styles.navItem}
-                  onMouseEnter={() => setHowItWorksOpen(true)}
-                  onMouseLeave={() => setHowItWorksOpen(false)}
-                >
-                  <button className={styles.navLinkDropdown}>
-                    HOW IT WORKS
-                    <svg className={styles.dropdownIcon} xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
-                  </button>
-                  {howItWorksOpen && (
-                    <div className={styles.dropdownMenu}>
-                      {howItWorksItems.map((item, index) => (
-                        <Link
-                          key={index}
-                          href={`/how-it-works#${item.sectionId}`}
-                          className={styles.dropdownItem}
-                        >
-                          {item.label}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
+            <div 
+              className={styles.navItem}
+              onMouseEnter={() => setHowItWorksOpen(true)}
+              onMouseLeave={() => setHowItWorksOpen(false)}
+            >
+              <button className={styles.navLinkDropdown}>
+                HOW IT WORKS
+                <svg className={styles.dropdownIcon} xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              {howItWorksOpen && (
+                <div className={styles.dropdownMenu}>
+                  {howItWorksItems.map((item, index) => (
+                    <Link
+                      key={index}
+                      href={`/how-it-works#${item.sectionId}`}
+                      className={styles.dropdownItem}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
                 </div>
+              )}
+            </div>
 
-                <div 
-                  className={styles.navItem}
-                  onMouseEnter={() => setAboutUsOpen(true)}
-                  onMouseLeave={() => setAboutUsOpen(false)}
-                >
-                  <button className={styles.navLinkDropdown}>
-                    ABOUT US
-                    <svg className={styles.dropdownIcon} xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
-                  </button>
-                  {aboutUsOpen && (
-                    <div className={styles.dropdownMenu}>
-                      {aboutUsItems.map((item, index) => (
-                        <Link key={index} href={`/about#${item.sectionId}`} className={styles.dropdownItem}>
-                          {item.label}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
+            <div 
+              className={styles.navItem}
+              onMouseEnter={() => setAboutUsOpen(true)}
+              onMouseLeave={() => setAboutUsOpen(false)}
+            >
+              <button className={styles.navLinkDropdown}>
+                ABOUT US
+                <svg className={styles.dropdownIcon} xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              {aboutUsOpen && (
+                <div className={styles.dropdownMenu}>
+                  {aboutUsItems.map((item, index) => (
+                    <Link key={index} href={`/about#${item.sectionId}`} className={styles.dropdownItem}>
+                      {item.label}
+                    </Link>
+                  ))}
                 </div>
-              </>
-            )}
+              )}
+            </div>
           </nav>
 
           <div className={styles.navActions}>
@@ -336,7 +308,7 @@ export default function PublicNavbar() {
                     setProfileMenuOpen((open) => !open)
                   }}
                 >
-                  {profile.avatar_url ? (
+                  {profile?.avatar_url ? (
                     <img
                       src={profile.avatar_url}
                       alt={displayName || 'User avatar'}
@@ -368,18 +340,16 @@ export default function PublicNavbar() {
                   <div className={styles.profileDropdown} role="menu">
                     {isSeller ? (
                       <>
-                        {!isOnSellerPortal && (
-                          <button
-                            type="button"
-                            className={styles.profileDropdownItem}
-                            onClick={() => {
-                              setProfileMenuOpen(false)
-                              router.push('/seller')
-                            }}
-                          >
-                            Back to Seller Dashboard
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          className={styles.profileDropdownItem}
+                          onClick={() => {
+                            setProfileMenuOpen(false)
+                            router.push('/seller')
+                          }}
+                        >
+                          Back to Seller Dashboard
+                        </button>
                         <button
                           type="button"
                           className={styles.profileDropdownItem}

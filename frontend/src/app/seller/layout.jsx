@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { PublicNavbar, PublicFooter } from '@/components/layout'
+import { SellerSidebar } from '@/components/layout'
 import { CartProvider } from '@/contexts/CartContext'
 import { requireSeller } from '@/lib/auth/guards'
 
@@ -57,9 +57,9 @@ export default function SellerLayout({ children }) {
 
   return (
     <CartProvider>
-      <div className="seller-layout">
-        <PublicNavbar />
-        <main>
+      <div className="seller-layout" style={{ display: 'flex', minHeight: '100vh' }}>
+        <SellerSidebar />
+        <main style={{ flex: 1, minWidth: 0 }}>
           {sellerStatus === 'pending' && (
             <div
               style={{
@@ -75,7 +75,6 @@ export default function SellerLayout({ children }) {
           )}
           {children}
         </main>
-        <PublicFooter />
       </div>
     </CartProvider>
   )
