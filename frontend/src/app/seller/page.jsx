@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
-import styles from './dashboard.module.css'
+import styles from './seller.module.css'
 
 const tiles = [
   {
@@ -48,7 +48,7 @@ export default function SellerDashboardPage() {
   const displayEmail = user?.email || ''
 
   return (
-    <main className={styles.page}>
+    <main className={styles.dashboardPage}>
       <section className={styles.hero}>
         <div className={styles.heroInner}>
           <div>

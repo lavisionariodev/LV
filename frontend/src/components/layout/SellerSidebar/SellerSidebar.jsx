@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import styles from './SellerSidebar.module.css'
@@ -13,13 +12,11 @@ import {
   TbChartBar,
   TbList,
   TbUser,
-  TbBell,
   TbClipboardList,
   TbHome,
   TbMessage2Question,
+  TbSettings,
 } from 'react-icons/tb'
-import { FaUser } from 'react-icons/fa6'
-import { useAuth } from '@/contexts/AuthContext'
 
 const navItems = [
   { href: '/seller', label: 'Dashboard', icon: TbLayoutDashboardFilled },
@@ -27,13 +24,11 @@ const navItems = [
   { href: '/seller/shop-performance', label: 'Shop Performance', icon: TbChartBar },
   { href: '/seller/my-services', label: 'My Services', icon: TbList },
   { href: '/seller/my-account', label: 'My Account', icon: TbUser },
-  { href: '/seller/notifications', label: 'Notifications', icon: TbBell },
   { href: '/seller/onboarding', label: 'Onboarding', icon: TbClipboardList },
 ]
 
 export default function SellerSidebar() {
   const pathname = usePathname()
-  const { user, profile } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
 
   const isActive = (href) => {
@@ -41,14 +36,6 @@ export default function SellerSidebar() {
     if (href === '/seller') return pathname === '/seller'
     return pathname === href || pathname.startsWith(`${href}/`)
   }
-
-  const avatarUrl = profile?.avatar_url || ''
-  const displayName =
-    profile?.full_name?.trim() ||
-    user?.user_metadata?.full_name ||
-    user?.email?.split('@')[0] ||
-    'Seller'
-  const displayEmail = user?.email || ''
 
   return (
     <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''}`}>
@@ -74,35 +61,6 @@ export default function SellerSidebar() {
         </button>
       </div>
 
-      {/* Profile - avatar (circular) + name + email */}
-      <div
-        className={styles.profileCard}
-        title={collapsed ? displayName : undefined}
-        aria-label="Seller profile"
-      >
-        <div className={styles.profileAvatar}>
-          {avatarUrl ? (
-            <Image
-              src={avatarUrl}
-              alt="Seller avatar"
-              width={40}
-              height={40}
-              className={styles.profileAvatarImg}
-              unoptimized
-            />
-          ) : (
-            <FaUser />
-          )}
-        </div>
-
-        {!collapsed && (
-          <div className={styles.profileMeta}>
-            <p className={styles.profileName}>{displayName}</p>
-            <p className={styles.profileRole}>{displayEmail}</p>
-          </div>
-        )}
-      </div>
-
       {!collapsed && <p className={styles.sectionLabel}>MENU</p>}
 
       {/* Main nav links */}
@@ -122,7 +80,7 @@ export default function SellerSidebar() {
         ))}
       </nav>
 
-      {/* Footer - Back to main site + Help Center */}
+      {/* Footer - Back to main site, Settings, Help Center */}
       <div className={styles.footerNav}>
         <Link
           href="/"
@@ -133,6 +91,17 @@ export default function SellerSidebar() {
             <TbHome />
           </span>
           <span className={styles.linkText}>Back to main site</span>
+        </Link>
+
+        <Link
+          href="/seller/settings"
+          className={`${styles.footerLink} ${isActive('/seller/settings') ? styles.active : ''}`}
+          title={collapsed ? 'Settings' : undefined}
+        >
+          <span className={styles.iconWrap}>
+            <TbSettings />
+          </span>
+          <span className={styles.linkText}>Settings</span>
         </Link>
 
         <Link
