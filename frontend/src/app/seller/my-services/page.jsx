@@ -60,17 +60,10 @@ export default function SellerMyServicesPage() {
   }
 
   return (
-    <main
-      style={{
-        padding: '2.5rem 1.5rem 3rem',
-        maxWidth: 1120,
-        margin: '0 auto',
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-      }}
-    >
+    <main style={{ width: '100%', fontFamily: "'Poppins', sans-serif" }}>
       <header
         style={{
-          marginBottom: '1.85rem',
+          marginBottom: '1.5rem',
           paddingBottom: '1.25rem',
           borderBottom: '1px solid rgba(168, 137, 74, 0.22)',
         }}

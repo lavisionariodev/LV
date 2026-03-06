@@ -40,7 +40,7 @@ export default function SellerNotificationsPage() {
   }, [])
 
   return (
-    <main style={{ padding: '2rem 1.5rem', maxWidth: 840, margin: '0 auto' }}>
+    <main style={{ maxWidth: 840, margin: '0 auto' }}>
       <header style={{ marginBottom: '1.5rem' }}>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.25rem' }}>Notifications</h1>
         <p style={{ fontSize: '0.95rem', color: '#4b5563' }}>
