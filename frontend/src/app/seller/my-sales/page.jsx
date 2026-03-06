@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import { payments, calculateCommissionSplit } from '@/data/adminSampleData'
+import layoutStyles from '../seller.module.css'
 
 const SELLER_ID = 'SEL-001'
 
@@ -24,72 +25,23 @@ export default function SellerMySalesPage() {
   }, [])
 
   return (
-    <main style={{ width: '100%', fontFamily: "'Poppins', sans-serif" }}>
-      <header
-        style={{
-          marginBottom: '1.5rem',
-          paddingBottom: '1.25rem',
-          borderBottom: '1px solid rgba(168, 137, 74, 0.22)',
-        }}
-      >
-        <p
-          style={{
-            fontSize: '0.78rem',
-            textTransform: 'uppercase',
-            letterSpacing: '0.14em',
-            color: 'var(--color-gold-bright)',
-            fontWeight: 700,
-            marginBottom: '0.3rem',
-          }}
-        >
-          Sales overview
-        </p>
-        <h1
-          style={{
-            fontSize: '1.6rem',
-            fontWeight: 650,
-            marginBottom: '0.35rem',
-            color: '#102820',
-          }}
-        >
-          My Sales
-        </h1>
-        <p
-          style={{
-            fontSize: '0.95rem',
-            color: '#4D2D18',
-            maxWidth: 520,
-            lineHeight: 1.6,
-          }}
-        >
+    <div className={layoutStyles.pageWrap}>
+      <header className={layoutStyles.pageHeader}>
+        <p className={layoutStyles.pageKicker}>Sales overview</p>
+        <h1 className={layoutStyles.pageTitle}>My Sales</h1>
+        <p className={layoutStyles.pageSubtitle}>
           View your recent bookings, status, platform commission, and net earnings.
         </p>
       </header>
 
       {rows.length === 0 ? (
-        <div
-          style={{
-            padding: '2rem 1.7rem',
-            borderRadius: '0.85rem',
-            border: '1px dashed rgba(168, 137, 74, 0.65)',
-            textAlign: 'center',
-            backgroundColor: '#F7F4EF',
-            fontSize: '0.95rem',
-            color: '#4D2D18',
-          }}
-        >
-          You don&apos;t have any sales yet. Once buyers book your services, they will appear here.
+        <div className={layoutStyles.panel} style={{ textAlign: 'center', padding: '2rem' }}>
+          <p style={{ margin: 0, fontSize: '0.95rem', color: '#4D2D18' }}>
+            You don&apos;t have any sales yet. Once buyers book your services, they will appear here.
+          </p>
         </div>
       ) : (
-        <div
-          style={{
-            borderRadius: '0.9rem',
-            border: '1px solid rgba(168, 137, 74, 0.25)',
-            overflow: 'hidden',
-            backgroundColor: '#ffffff',
-            boxShadow: '0 18px 40px rgba(0, 0, 0, 0.06)',
-          }}
-        >
+        <div className={layoutStyles.panel} style={{ overflow: 'hidden', padding: 0 }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
             <thead style={{ backgroundColor: 'rgb(232 250 241)' }}>
               <tr>
@@ -123,7 +75,7 @@ export default function SellerMySalesPage() {
           </table>
         </div>
       )}
-    </main>
+    </div>
   )
 }
 

@@ -48,7 +48,7 @@ export default function SellerDashboardPage() {
   const displayEmail = user?.email || ''
 
   return (
-    <main className={styles.dashboardPage}>
+    <div className={`${styles.pageWrap} ${styles.dashboardPage}`}>
       <section className={styles.hero}>
         <div className={styles.heroInner}>
           <div>
@@ -88,7 +88,7 @@ export default function SellerDashboardPage() {
           ))}
         </div>
       </section>
-    </main>
+    </div>
   )
 }
 

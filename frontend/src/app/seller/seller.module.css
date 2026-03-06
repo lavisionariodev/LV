@@ -1,10 +1,26 @@
-/* Seller layout: shell (sidebar + main column) — matches admin pattern */
+/* =========================
+   SELLER LAYOUT (aligned with admin)
+   ========================= */
+
+.authLoading {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  background: #f9fcff;
+  font-size: 14px;
+  color: #6b7280;
+}
 
 .shell {
   display: grid;
   grid-template-columns: 240px 1fr;
   min-height: 100vh;
-  background: #ffffff;
+  background: #f9fcff;
+  transition: grid-template-columns 0.25s ease;
+}
+
+.shellCollapsed {
+  grid-template-columns: 78px 1fr;
 }
 
 .main {
@@ -23,15 +39,97 @@
 }
 
 .content {
-  width: 100%;
-  max-width: 1120px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 1.25rem 1.5rem 2rem;
+  padding: 18px;
+  width: 100%;
   box-sizing: border-box;
 }
 
+.pendingBanner {
+  background-color: #fff7e6;
+  border-bottom: 1px solid #facc6b;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.9rem;
+}
+
+/* =========================
+   PAGE WRAPPER (consistent structure)
+   ========================= */
+
+.pageWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+}
+
+.pageHeader {
+  margin-bottom: 0.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e9efec;
+}
+
+.pageKicker {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--color-gold-bright);
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+}
+
+.pageTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #102820;
+  margin: 0 0 0.35rem;
+}
+
+.pageSubtitle {
+  font-size: 0.95rem;
+  color: #4d2d18;
+  max-width: 560px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.panel {
+  background: #ffffff;
+  border: 1px solid #e9e9ef;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 1100px) {
+  .shellCollapsed {
+    grid-template-columns: 86px 1fr;
+  }
+}
+
 @media (max-width: 860px) {
-  .shell {
+  .shell,
+  .shellCollapsed {
+    grid-template-columns: 1fr;
+  }
+
+  .content {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 600px) {
+  .content {
+    padding: 14px;
+  }
+
+  .statsGrid {
     grid-template-columns: 1fr;
   }
 }

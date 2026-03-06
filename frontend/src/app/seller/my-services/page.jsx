@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { sellerProducts } from '@/data/adminSampleData'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faTrashCan } from '@fortawesome/free-solid-svg-icons'
+import layoutStyles from '../seller.module.css'
 
 const SELLER_ID = 'SEL-001'
 
@@ -60,58 +61,16 @@ export default function SellerMyServicesPage() {
   }
 
   return (
-    <main style={{ width: '100%', fontFamily: "'Poppins', sans-serif" }}>
-      <header
-        style={{
-          marginBottom: '1.5rem',
-          paddingBottom: '1.25rem',
-          borderBottom: '1px solid rgba(168, 137, 74, 0.22)',
-        }}
-      >
-        <p
-          style={{
-            fontSize: '0.78rem',
-            textTransform: 'uppercase',
-            letterSpacing: '0.14em',
-            color: 'var(--color-gold-bright)',
-            fontWeight: 700,
-            marginBottom: '0.3rem',
-          }}
-        >
-          Listings overview
-        </p>
-        <h1
-          style={{
-            fontSize: '1.6rem',
-            fontWeight: 650,
-            marginBottom: '0.35rem',
-            color: '#102820',
-          }}
-        >
-          My Services
-        </h1>
-        <p
-          style={{
-            fontSize: '0.95rem',
-            color: '#4D2D18',
-            maxWidth: 560,
-            lineHeight: 1.6,
-          }}
-        >
+    <div className={layoutStyles.pageWrap}>
+      <header className={layoutStyles.pageHeader}>
+        <p className={layoutStyles.pageKicker}>Listings overview</p>
+        <h1 className={layoutStyles.pageTitle}>My Services</h1>
+        <p className={layoutStyles.pageSubtitle}>
           Manage the funeral services and packages you offer on La Visionario.
         </p>
       </header>
 
-      <section
-        style={{
-          borderRadius: '0.9rem',
-          border: '1px solid rgba(168, 137, 74, 0.25)',
-          padding: '1.4rem 1.6rem',
-          backgroundColor: '#ffffff',
-          boxShadow: '0 18px 40px rgba(0, 0, 0, 0.06)',
-          marginBottom: '1.7rem',
-        }}
-      >
+      <section className={layoutStyles.panel} style={{ marginBottom: '1.5rem' }}>
         <h2
           style={{
             fontSize: '1rem',
@@ -189,15 +148,7 @@ export default function SellerMyServicesPage() {
         </div>
       </section>
 
-      <section
-        style={{
-          borderRadius: '0.9rem',
-          border: '1px solid rgba(168, 137, 74, 0.25)',
-          padding: '1.35rem 1.6rem',
-          backgroundColor: '#ffffff',
-          boxShadow: '0 18px 40px rgba(0, 0, 0, 0.06)',
-        }}
-      >
+      <section className={layoutStyles.panel} style={{ padding: '1.35rem 1.6rem' }}>
         <h2
           style={{
             fontSize: '1rem',
@@ -273,7 +224,7 @@ export default function SellerMyServicesPage() {
           </div>
         )}
       </section>
-    </main>
+    </div>
   )
 }
 

@@ -14,6 +14,7 @@ const poppins = Poppins({ weight: ['400', '600', '700'], subsets: ['latin'] })
 export default function SellerLayout({ children }) {
   const router = useRouter()
   const pathname = usePathname()
+  const [collapsed, setCollapsed] = useState(false)
   const [authStatus, setAuthStatus] = useState('loading')
   const [sellerStatus, setSellerStatus] = useState(null)
 
@@ -51,16 +52,7 @@ export default function SellerLayout({ children }) {
 
   if (authStatus === 'loading' || authStatus === 'denied') {
     return (
-      <div
-        className={poppins.className}
-        style={{
-          minHeight: '60vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '0.95rem',
-        }}
-      >
+      <div className={`${styles.authLoading} ${poppins.className}`}>
         Loading seller portal…
       </div>
     )
@@ -68,19 +60,20 @@ export default function SellerLayout({ children }) {
 
   return (
     <CartProvider>
-      <div className={`${styles.shell} ${poppins.className}`}>
-        <AppSidebar variant="seller" />
+      <div
+        className={`${styles.shell} ${
+          collapsed ? styles.shellCollapsed : ''
+        } ${poppins.className}`}
+      >
+        <AppSidebar
+          variant="seller"
+          collapsed={collapsed}
+          onToggle={() => setCollapsed((prev) => !prev)}
+        />
         <div className={styles.main}>
           <AppTopbar variant="seller" onLogout={handleLogout} />
           {sellerStatus === 'pending' && (
-            <div
-              style={{
-                backgroundColor: '#FFF7E6',
-                borderBottom: '1px solid #FACC6B',
-                padding: '0.75rem 1.25rem',
-                fontSize: '0.9rem',
-              }}
-            >
+            <div className={styles.pendingBanner}>
               Your seller account is currently <strong>pending review</strong>. You can review your
               details, but some actions may be limited until an administrator approves your shop.
             </div>
