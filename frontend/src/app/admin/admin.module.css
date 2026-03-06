@@ -14,7 +14,8 @@
 .shell {
   display: grid;
   grid-template-columns: 240px 1fr;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background: #f9fcff;
   transition: grid-template-columns 0.25s ease;
 }
@@ -163,6 +164,9 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .topbar {
@@ -404,6 +408,7 @@
   .shell,
   .shellCollapsed {
     grid-template-columns: 1fr;
+    height: 100vh;
   }
 
   .topbarInner {

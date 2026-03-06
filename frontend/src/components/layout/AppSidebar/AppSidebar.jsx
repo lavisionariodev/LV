@@ -107,7 +107,9 @@ export default function AppSidebar({ variant, collapsed, onToggle }) {
             className={`${styles.link} ${isActive(href) ? styles.active : ''}`}
             title={isCollapsed ? label : undefined}
           >
-            <Icon className={styles.navIcon} />
+            <span className={styles.iconWrap}>
+              <Icon className={styles.navIcon} />
+            </span>
             <span className={styles.linkText}>{label}</span>
           </Link>
         ))}
@@ -121,7 +123,9 @@ export default function AppSidebar({ variant, collapsed, onToggle }) {
             className={`${styles.footerLink} ${isActive(href) ? styles.active : ''}`}
             title={isCollapsed ? label : undefined}
           >
-            <Icon className={styles.navIcon} />
+            <span className={styles.iconWrap}>
+              <Icon className={styles.navIcon} />
+            </span>
             <span className={styles.linkText}>{label}</span>
           </Link>
         ))}

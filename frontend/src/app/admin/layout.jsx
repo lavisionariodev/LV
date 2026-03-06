@@ -55,10 +55,11 @@ export default function AdminLayout({ children }) {
         collapsed={collapsed}
         onToggle={() => setCollapsed((prev) => !prev)}
       />
-
       <div className={styles.main}>
         <AppTopbar variant="admin" onLogout={handleLogout} />
-        <div className={styles.content}>{children}</div>
+        <div className={styles.mainScroll}>
+          <div className={styles.content}>{children}</div>
+        </div>
       </div>
     </div>
   )
