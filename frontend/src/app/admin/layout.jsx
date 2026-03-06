@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { AdminSidebar, AdminTopbar } from '@/components/layout'
+import { AppSidebar, AppTopbar } from '@/components/layout'
 import { requireAdmin } from '@/lib/auth/guards'
 import { signOut } from '@/lib/auth/session'
 import styles from './admin.module.css'
@@ -50,16 +50,14 @@ export default function AdminLayout({ children }) {
         collapsed ? styles.shellCollapsed : ''
       } ${inter.className}`}
     >
-      <AdminSidebar
+      <AppSidebar
+        variant="admin"
         collapsed={collapsed}
         onToggle={() => setCollapsed((prev) => !prev)}
       />
 
       <div className={styles.main}>
-        <AdminTopbar
-          onLogout={handleLogout}
-          onToggleSidebar={() => setCollapsed((prev) => !prev)}
-        />
+        <AppTopbar variant="admin" onLogout={handleLogout} />
         <div className={styles.content}>{children}</div>
       </div>
     </div>

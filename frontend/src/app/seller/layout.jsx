@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { Poppins } from 'next/font/google'
-import { SellerSidebar, SellerTopbar } from '@/components/layout'
+import { AppSidebar, AppTopbar } from '@/components/layout'
 import { CartProvider } from '@/contexts/CartContext'
 import { requireSeller } from '@/lib/auth/guards'
 import { signOut } from '@/lib/auth/session'
@@ -68,13 +68,10 @@ export default function SellerLayout({ children }) {
 
   return (
     <CartProvider>
-      <div
-        className={`seller-layout ${poppins.className}`}
-        style={{ display: 'flex', minHeight: '100vh' }}
-      >
-        <SellerSidebar />
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-          <SellerTopbar onLogout={handleLogout} />
+      <div className={`${styles.shell} ${poppins.className}`}>
+        <AppSidebar variant="seller" />
+        <div className={styles.main}>
+          <AppTopbar variant="seller" onLogout={handleLogout} />
           {sellerStatus === 'pending' && (
             <div
               style={{
@@ -88,9 +85,9 @@ export default function SellerLayout({ children }) {
               details, but some actions may be limited until an administrator approves your shop.
             </div>
           )}
-          <main className={styles.main}>
+          <div className={styles.mainScroll}>
             <div className={styles.content}>{children}</div>
-          </main>
+          </div>
         </div>
       </div>
     </CartProvider>

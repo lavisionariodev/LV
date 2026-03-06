@@ -1,4 +1,8 @@
 .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  flex-shrink: 0;
   height: 72px;
   background: #ffffff;
   border-bottom: 1px solid #eef0f4;
