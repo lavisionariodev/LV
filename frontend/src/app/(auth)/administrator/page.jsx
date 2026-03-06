@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useLayoutEffect } from "react";
 import { useRouter } from "next/navigation";
 import { MdOutlineAdminPanelSettings } from "react-icons/md";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 import { supabase } from "@/lib/supabase/client";
 import { isAdmin } from "@/lib/auth/admin";
 import { signOut } from "@/lib/auth/session";
+import { validateNewPassword } from "@/lib/validators/authSchemas";
 import styles from "./login.module.css";
 
 export default function AdminLoginPage() {
@@ -19,6 +20,18 @@ export default function AdminLoginPage() {
   const [forgotPasswordSubmitted, setForgotPasswordSubmitted] = useState(false);
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const [resetData, setResetData] = useState({ password: "", confirmPassword: "" });
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [recoveryFromHash, setRecoveryFromHash] = useState(false);
+
+  useLayoutEffect(() => {
+    const hash = typeof window !== "undefined" ? window.location.hash : "";
+    if (hash && hash.includes("type=recovery")) {
+      setRecoveryFromHash(true);
+      setShowResetPasswordModal(true);
+    }
+  }, []);
 
   const handleChange = (e) => {
     setSignInData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -73,6 +86,50 @@ export default function AdminLoginPage() {
     setShowForgotPasswordModal(false);
     setForgotPasswordEmail("");
     setForgotPasswordSubmitted(false);
+    setError("");
+  };
+
+  const handleResetPasswordChange = (e) => {
+    setResetData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleResetPassword = async () => {
+    const validation = validateNewPassword(resetData.password, resetData.confirmPassword);
+    if (!validation.valid) {
+      setError(validation.message);
+      return;
+    }
+    setError("");
+    try {
+      if (recoveryFromHash) {
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: resetData.password,
+        });
+        if (updateError) {
+          setError(updateError.message || "Password reset failed. Please try again.");
+          return;
+        }
+        await supabase.auth.signOut();
+        setShowResetPasswordModal(false);
+        setResetData({ password: "", confirmPassword: "" });
+        setRecoveryFromHash(false);
+        if (typeof window !== "undefined" && window.location.hash) {
+          window.history.replaceState(null, "", window.location.pathname + window.location.search);
+        }
+        setError("");
+        return;
+      }
+      setError("Invalid reset link. Please use the link from your email or request a new one.");
+    } catch (err) {
+      console.error("Reset password error:", err);
+      setError("An error occurred. Please try again later.");
+    }
+  };
+
+  const closeResetPasswordModal = () => {
+    setShowResetPasswordModal(false);
+    setResetData({ password: "", confirmPassword: "" });
+    setRecoveryFromHash(false);
     setError("");
   };
 
@@ -228,6 +285,68 @@ export default function AdminLoginPage() {
                 </button>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {showResetPasswordModal && (
+        <div className={styles.modalOverlay} onClick={closeResetPasswordModal}>
+          <div
+            className={styles.modalContent}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className={styles.closeButton}
+              onClick={closeResetPasswordModal}
+            >
+              ×
+            </button>
+            <h2 className={styles.modalTitle}>Set New Password</h2>
+            <p className={styles.modalText}>
+              Enter your new password. Use at least 8 characters with lowercase, uppercase, and digits.
+            </p>
+            {error && (
+              <p className={styles.error} role="alert">
+                {error}
+              </p>
+            )}
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="newPassword">
+                New Password
+              </label>
+              <input
+                id="newPassword"
+                type="password"
+                name="password"
+                value={resetData.password}
+                onChange={handleResetPasswordChange}
+                className={styles.input}
+                placeholder="New password"
+                autoComplete="new-password"
+              />
+            </div>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="confirmPassword">
+                Confirm Password
+              </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                name="confirmPassword"
+                value={resetData.confirmPassword}
+                onChange={handleResetPasswordChange}
+                className={styles.input}
+                placeholder="Confirm new password"
+                autoComplete="new-password"
+              />
+            </div>
+            <button
+              onClick={handleResetPassword}
+              className={styles.primaryBtn}
+              type="button"
+            >
+              Reset Password
+            </button>
           </div>
         </div>
       )}
