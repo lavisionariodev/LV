@@ -72,7 +72,7 @@
   background: #f8fafc;
 }
 
-/* Profile - hover to show dropdown */
+/* Profile - click to show dropdown */
 .profileWrap {
   position: relative;
 }
@@ -83,10 +83,15 @@
   gap: 10px;
   padding: 6px 10px;
   border-radius: 12px;
-  cursor: default;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
 }
 
-.profileWrap:hover .profileTrigger {
+.profileTrigger:hover,
+.profileWrapOpen .profileTrigger {
   background: #f8fafc;
 }
 
@@ -122,11 +127,11 @@
   white-space: nowrap;
 }
 
-/* Dropdown - visible on hover */
+/* Dropdown - visible on click, left-aligned with profile area */
 .profileDropdown {
   position: absolute;
-  right: 0;
-  top: calc(100% + 4px);
+  left: 0;
+  top: calc(100% + 2px);
   background: #ffffff;
   border: 1px solid #eef0f4;
   border-radius: 12px;
@@ -141,7 +146,7 @@
   transition: opacity 0.15s ease, visibility 0.15s ease;
 }
 
-.profileWrap[data-hover='true'] .profileDropdown {
+.profileWrapOpen .profileDropdown {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;

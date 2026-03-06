@@ -1,12 +1,16 @@
 'use client'
 
+import layoutStyles from '../seller.module.css'
+
 export default function SellerSettingsPage() {
   return (
-    <div style={{ maxWidth: 720, margin: '0 auto' }}>
-      <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Settings</h1>
-      <p style={{ color: '#64748b' }}>
-        Seller account and shop settings can be managed here.
-      </p>
+    <div className={layoutStyles.pageWrap}>
+      <header className={layoutStyles.pageHeader}>
+        <h1 className={layoutStyles.pageTitle}>Settings</h1>
+        <p className={layoutStyles.pageSubtitle}>
+          Seller account and shop settings can be managed here.
+        </p>
+      </header>
     </div>
   )
 }

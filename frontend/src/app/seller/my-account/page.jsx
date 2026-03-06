@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { getSellerByUserId, upsertSellerForUser } from '@/lib/sellers/client'
 import { useToast } from '@/contexts/ToastContext'
+import layoutStyles from '../seller.module.css'
 
 export default function SellerMyAccountPage() {
   const { user } = useAuth()
@@ -107,23 +108,15 @@ export default function SellerMyAccountPage() {
   }
 
   return (
-    <main style={{ maxWidth: 840, margin: '0 auto' }}>
-      <header style={{ marginBottom: '1.5rem' }}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.25rem' }}>My Account</h1>
-        <p style={{ fontSize: '0.95rem', color: '#4b5563' }}>
+    <div className={layoutStyles.pageWrap}>
+      <header className={layoutStyles.pageHeader}>
+        <h1 className={layoutStyles.pageTitle}>My Account</h1>
+        <p className={layoutStyles.pageSubtitle}>
           Update your profile and business details used across the seller portal.
         </p>
       </header>
 
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          borderRadius: '0.75rem',
-          border: '1px solid #e5e7eb',
-          padding: '1.5rem 1.75rem',
-          backgroundColor: '#ffffff',
-        }}
-      >
+      <form onSubmit={handleSubmit} className={layoutStyles.panel} style={{ padding: '1.5rem 1.75rem' }}>
         <section style={{ marginBottom: '1.5rem' }}>
           <h2 style={sectionTitleStyle}>Profile</h2>
           <div style={fieldGridStyle}>
@@ -206,7 +199,7 @@ export default function SellerMyAccountPage() {
           </button>
         </div>
       </form>
-    </main>
+    </div>
   )
 }
 

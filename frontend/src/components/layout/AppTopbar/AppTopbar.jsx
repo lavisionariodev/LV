@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import styles from './AppTopbar.module.css'
@@ -34,6 +34,18 @@ export default function AppTopbar({ variant, onLogout }) {
   const [showLogout, setShowLogout] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [adminProfile, setAdminProfile] = useState(null)
+  const profileWrapRef = useRef(null)
+
+  useEffect(() => {
+    if (!dropdownOpen) return
+    function handleClickOutside(e) {
+      if (profileWrapRef.current && !profileWrapRef.current.contains(e.target)) {
+        setDropdownOpen(false)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [dropdownOpen])
 
   const config = TOPBAR_CONFIG[variant]
   if (!config) return null
@@ -95,12 +107,24 @@ export default function AppTopbar({ variant, onLogout }) {
           </Link>
 
           <div
-            className={styles.profileWrap}
-            onMouseEnter={() => setDropdownOpen(true)}
-            onMouseLeave={() => setDropdownOpen(false)}
-            data-hover={dropdownOpen ? 'true' : undefined}
+            ref={profileWrapRef}
+            className={`${styles.profileWrap} ${dropdownOpen ? styles.profileWrapOpen : ''}`}
           >
-            <div className={styles.profileTrigger}>
+            <div
+              role="button"
+              tabIndex={0}
+              className={styles.profileTrigger}
+              onClick={() => setDropdownOpen((prev) => !prev)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  setDropdownOpen((prev) => !prev)
+                }
+              }}
+              aria-expanded={dropdownOpen}
+              aria-haspopup="true"
+              aria-label="Profile menu"
+            >
               <div className={styles.profileAvatar}>
                 {avatarUrl ? (
                   <Image
