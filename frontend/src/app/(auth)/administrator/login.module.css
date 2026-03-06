@@ -3,7 +3,7 @@
 .authContainer {
   width: 100%;
   min-height: 100vh;
-  background: #f6f7f7;
+  background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 35%, #dcedc8 70%, #c8e6c9 100%);
   display: grid;
   place-items: center;
   padding: 20px;
@@ -17,7 +17,10 @@
   border-radius: 14px;
   padding: 34px 32px;
   border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.04),
+    0 8px 16px rgba(0, 0, 0, 0.06),
+    0 16px 32px rgba(0, 0, 0, 0.04);
 }
 
 .adminIcon {
