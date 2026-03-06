@@ -1,0 +1,285 @@
+/* ── Purchases page layout ───────────────────────────── */
+.purchasesBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+/* ── Toolbar ─────────────────────────────────────────── */
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.searchWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 10px;
+  width: 16px;
+  height: 16px;
+  color: #999;
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 8px 12px 8px 34px;
+  border-radius: 8px;
+  border: 1px solid rgba(16, 40, 32, 0.2);
+  font-size: 0.88rem;
+  color: #2b2b2b;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.searchInput::placeholder {
+  color: #aaa;
+}
+
+.searchInput:focus {
+  border-color: #A8894A;
+  box-shadow: 0 0 0 1px rgba(168, 137, 74, 0.22);
+}
+
+/* ── Status filters ──────────────────────────────────── */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filterBtn {
+  padding: 5px 13px;
+  border-radius: 9999px;
+  border: 1px solid rgba(16, 40, 32, 0.2);
+  background: transparent;
+  font-size: 0.8rem;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.filterBtn:hover {
+  border-color: #204F38;
+  color: #204F38;
+}
+
+.filterBtnActive {
+  background: #204F38;
+  border-color: #204F38;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ── Card list ───────────────────────────────────────── */
+.cardList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Purchase card ───────────────────────────────────── */
+.card {
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid rgba(168, 137, 74, 0.18);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.cardHeader {
+  padding: 14px 16px 10px;
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.cardInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.orderId {
+  font-size: 0.75rem;
+  color: #999;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.serviceName {
+  font-size: 0.975rem;
+  font-weight: 700;
+  color: #204F38;
+  margin: 0;
+}
+
+.providerName {
+  font-size: 0.82rem;
+  color: #666;
+}
+
+/* ── Status badge ────────────────────────────────────── */
+.statusBadge {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+/* ── Meta row ────────────────────────────────────────── */
+.cardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: #555;
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.metaLabel {
+  font-size: 0.75rem;
+  color: #aaa;
+  font-weight: 500;
+}
+
+.metaDot {
+  width: 3px;
+  height: 3px;
+  border-radius: 9999px;
+  background: #ccc;
+  flex-shrink: 0;
+}
+
+.price {
+  font-weight: 700;
+  color: #204F38;
+  font-size: 0.9rem;
+}
+
+/* ── Expanded details ────────────────────────────────── */
+.cardDetails {
+  padding: 10px 16px 12px;
+  border-top: 1px solid rgba(168, 137, 74, 0.12);
+  background: rgba(247, 244, 239, 0.6);
+}
+
+.detailsHeading {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 6px;
+}
+
+.itemsList {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.itemsListItem {
+  font-size: 0.85rem;
+  color: #444;
+  line-height: 1.5;
+}
+
+/* ── Card actions ────────────────────────────────────── */
+.cardActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 16px 10px;
+  border-top: 1px solid rgba(168, 137, 74, 0.1);
+  background: rgba(247, 244, 239, 0.35);
+}
+
+.actionLink {
+  background: transparent;
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #204F38;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+}
+
+.actionLink:hover {
+  background: rgba(32, 79, 56, 0.07);
+}
+
+.actionDanger {
+  color: #dc2626;
+}
+
+.actionDanger:hover {
+  background: rgba(220, 38, 38, 0.07);
+}
+
+/* ── Empty state ─────────────────────────────────────── */
+.emptyState {
+  padding: 40px 0;
+  text-align: center;
+}
+
+.emptyText {
+  font-size: 0.9rem;
+  color: #888;
+}
+
+/* ── Responsive ──────────────────────────────────────── */
+@media (max-width: 600px) {
+  .cardMeta {
+    gap: 4px;
+    font-size: 0.78rem;
+  }
+
+  .cardTop {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .statusBadge {
+    align-self: flex-start;
+  }
+
+  .cardActions {
+    gap: 2px;
+  }
+
+  .actionLink {
+    font-size: 0.78rem;
+  }
+}
