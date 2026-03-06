@@ -11,13 +11,29 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 24px;
   font-family: 'Poppins', sans-serif;
 }
 
+.left {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.pageTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
 .searchWrap {
-  flex: 1;
-  max-width: 520px;
+  flex: 0 0 320px;
+  max-width: 420px;
   position: relative;
 }
 
@@ -51,7 +67,8 @@
 .right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
+  margin-left: auto;
 }
 
 .iconBtn {
@@ -179,6 +196,7 @@
 
 @media (max-width: 768px) {
   .searchWrap {
+    flex: 0 0 200px;
     max-width: 200px;
   }
 

@@ -2,85 +2,62 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
+import { supabase } from '@/lib/supabase/client'
 import styles from './settings.module.css'
 import { FaUser, FaUpload } from 'react-icons/fa6'
 import { TbTrash } from 'react-icons/tb'
 import { FiEdit } from 'react-icons/fi'
 import { MdCheckCircle, MdErrorOutline } from 'react-icons/md'
 import { validateNewPassword } from '@/lib/validators/authSchemas'
-import {
-  fetchCurrentAdminProfile,
-  updateAdminProfile,
-  uploadAdminAvatar,
-  removeAdminAvatar,
-} from '@/features/admin/settings/api'
+import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
 
+const AVATARS_BUCKET = 'avatars'
 const MAX_MB = 2
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp']
 
-export default function SettingsClient() {
+export default function AdminSettingsClient() {
   const fileRef = useRef(null)
+  const avatarPreviewRef = useRef('')
 
   const [loading, setLoading] = useState(true)
-
-  // Personal info edit toggle
   const [isEditingPersonal, setIsEditingPersonal] = useState(false)
-
-  // Loaded profile from Supabase
   const [profile, setProfile] = useState(null)
-
-  // Personal Information drafts
   const [draftName, setDraftName] = useState('')
   const [draftEmail, setDraftEmail] = useState('')
-
-  // Avatar state
   const [avatarPreview, setAvatarPreview] = useState('')
-  const [avatarFile, setAvatarFile] = useState(null)
-
   const [personalStatus, setPersonalStatus] = useState('')
   const [personalError, setPersonalError] = useState('')
-
   const [avatarLoading, setAvatarLoading] = useState(false)
 
-  // Password
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passStatus, setPassStatus] = useState('')
   const [passError, setPassError] = useState('')
 
-  // Initial load
   useEffect(() => {
     let cancelled = false
-
     async function loadProfile() {
       setLoading(true)
       setPersonalError('')
       setPersonalStatus('')
-
       try {
         const data = await fetchCurrentAdminProfile()
         if (cancelled) return
-
         setProfile(data)
         setDraftName(data.fullName || '')
         setDraftEmail(data.email || '')
       } catch (err) {
-        if (!cancelled) {
-          setPersonalError(err.message || 'Failed to load profile.')
-        }
+        if (!cancelled) setPersonalError(err.message || 'Failed to load profile.')
       } finally {
         if (!cancelled) setLoading(false)
       }
     }
-
     loadProfile()
-
     return () => {
       cancelled = true
-      if (avatarPreview) URL.revokeObjectURL(avatarPreview)
+      if (avatarPreviewRef.current) URL.revokeObjectURL(avatarPreviewRef.current)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const validateImage = (file) => {
@@ -108,50 +85,42 @@ export default function SettingsClient() {
   const onPickAvatar = async (e) => {
     setPersonalError('')
     setPersonalStatus('')
-
     const file = e.target.files?.[0]
     if (!file) return
-
     const error = validateImage(file)
     if (error) {
       setPersonalError(error)
       return
     }
-
     if (!profile) {
       setPersonalError('Profile is not loaded yet.')
       return
     }
-
-    if (avatarPreview) {
-      URL.revokeObjectURL(avatarPreview)
-    }
-
+    if (avatarPreviewRef.current) URL.revokeObjectURL(avatarPreviewRef.current)
     const url = URL.createObjectURL(file)
+    avatarPreviewRef.current = url
     setAvatarPreview(url)
-    setAvatarFile(file)
-
-    // Immediately upload avatar so it is persisted independently of name/email
     try {
       setAvatarLoading(true)
-      const { avatarPath, avatarUrl } = await uploadAdminAvatar({
-        adminId: profile.id,
-        file,
-        oldAvatarPath: profile.avatarPath,
-      })
-
-      setProfile((prev) =>
-        prev
-          ? {
-              ...prev,
-              avatarPath,
-              avatarUrl,
-            }
-          : prev
-      )
-
+      const fileExt = file.name.split('.').pop()
+      const fileName = `avatar-${Date.now()}.${fileExt}`
+      const filePath = `${profile.id}/${fileName}`
+      if (profile.avatarPath) {
+        await supabase.storage.from(AVATARS_BUCKET).remove([profile.avatarPath])
+      }
+      const { error: uploadError } = await supabase.storage
+        .from(AVATARS_BUCKET)
+        .upload(filePath, file, { upsert: true, cacheControl: '3600' })
+      if (uploadError) throw uploadError
+      const { error: updateError } = await supabase
+        .from('admins')
+        .update({ avatar_url: filePath, updated_at: new Date().toISOString() })
+        .eq('id', profile.id)
+      if (updateError) throw updateError
+      const { data: { publicUrl } } = supabase.storage.from(AVATARS_BUCKET).getPublicUrl(filePath)
+      await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', profile.id)
+      setProfile((prev) => (prev ? { ...prev, avatarPath: filePath, avatarUrl: publicUrl } : prev))
       setPersonalStatus('Avatar updated successfully.')
-      setAvatarFile(null)
     } catch (err) {
       setPersonalError(err.message || 'Failed to upload avatar.')
     } finally {
@@ -162,34 +131,25 @@ export default function SettingsClient() {
   const onRemoveAvatar = async () => {
     setPersonalError('')
     setPersonalStatus('')
-
-    if (!profile || (!profile.avatarPath && !profile.avatarUrl)) {
-      return
-    }
-
-    if (avatarPreview) {
-      URL.revokeObjectURL(avatarPreview)
+    if (!profile || (!profile.avatarPath && !profile.avatarUrl)) return
+    if (avatarPreviewRef.current) {
+      URL.revokeObjectURL(avatarPreviewRef.current)
+      avatarPreviewRef.current = ''
       setAvatarPreview('')
     }
     if (fileRef.current) fileRef.current.value = ''
-
     try {
       setAvatarLoading(true)
-      await removeAdminAvatar({
-        adminId: profile.id,
-        avatarPath: profile.avatarPath,
-      })
-
-      setProfile((prev) =>
-        prev
-          ? {
-              ...prev,
-              avatarPath: null,
-              avatarUrl: null,
-            }
-          : prev
-      )
-
+      if (profile.avatarPath) {
+        await supabase.storage.from(AVATARS_BUCKET).remove([profile.avatarPath])
+      }
+      const { error } = await supabase
+        .from('admins')
+        .update({ avatar_url: null, updated_at: new Date().toISOString() })
+        .eq('id', profile.id)
+      if (error) throw error
+      await supabase.from('profiles').update({ avatar_url: null }).eq('id', profile.id)
+      setProfile((prev) => (prev ? { ...prev, avatarPath: null, avatarUrl: null } : prev))
       setPersonalStatus('Avatar removed.')
     } catch (err) {
       setPersonalError(err.message || 'Failed to remove avatar.')
@@ -201,7 +161,6 @@ export default function SettingsClient() {
   const onClickEditSavePersonal = async () => {
     setPersonalError('')
     setPersonalStatus('')
-
     if (!isEditingPersonal) {
       if (profile) {
         setDraftName(profile.fullName || '')
@@ -210,41 +169,35 @@ export default function SettingsClient() {
       setIsEditingPersonal(true)
       return
     }
-
     const nameErr = validateName(draftName)
     if (nameErr) {
       setPersonalError(nameErr)
       return
     }
-
     const emailErr = validateEmail(draftEmail)
     if (emailErr) {
       setPersonalError(emailErr)
       return
     }
-
     if (!profile) {
       setPersonalError('Profile is not loaded yet.')
       return
     }
-
+    const trimmedName = draftName.trim()
+    const trimmedEmail = draftEmail.trim()
     try {
-      await updateAdminProfile({
-        id: profile.id,
-        fullName: draftName,
-        email: draftEmail,
-      })
-
-      setProfile((prev) =>
-        prev
-          ? {
-              ...prev,
-              fullName: draftName.trim(),
-              email: draftEmail.trim(),
-            }
-          : prev
-      )
-
+      const { error: authError } = await supabase.auth.updateUser({ email: trimmedEmail })
+      if (authError) throw authError
+      const { error } = await supabase
+        .from('admins')
+        .update({
+          full_name: trimmedName,
+          email: trimmedEmail,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', profile.id)
+      if (error) throw error
+      setProfile((prev) => (prev ? { ...prev, fullName: trimmedName, email: trimmedEmail } : prev))
       setIsEditingPersonal(false)
       setPersonalStatus('Personal information updated successfully.')
     } catch (err) {
@@ -255,45 +208,50 @@ export default function SettingsClient() {
   const onCancelPersonalEdit = () => {
     setPersonalError('')
     setPersonalStatus('')
-
     if (profile) {
       setDraftName(profile.fullName || '')
       setDraftEmail(profile.email || '')
     }
-
-    if (avatarPreview) {
-      URL.revokeObjectURL(avatarPreview)
+    if (avatarPreviewRef.current) {
+      URL.revokeObjectURL(avatarPreviewRef.current)
+      avatarPreviewRef.current = ''
     }
     setAvatarPreview('')
-    setAvatarFile(null)
     if (fileRef.current) fileRef.current.value = ''
-
     setIsEditingPersonal(false)
   }
 
-  const handlePasswordSubmit = (e) => {
+  const handlePasswordSubmit = async (e) => {
     e.preventDefault()
     setPassError('')
     setPassStatus('')
-
     if (!currentPassword) {
       setPassError('Please enter your current password.')
       return
     }
-
     const validation = validateNewPassword(newPassword, confirmPassword)
     if (!validation.valid) {
       setPassError(validation.message)
       return
     }
-
-    setCurrentPassword('')
-    setNewPassword('')
-    setConfirmPassword('')
-    setPassStatus('Password updated successfully.')
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword })
+      if (error) {
+        setPassError(error.message || 'Failed to update password.')
+        return
+      }
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+      setPassStatus('Password updated successfully.')
+    } catch (err) {
+      setPassError(err.message || 'Failed to update password.')
+    }
   }
 
   const shownAvatar = avatarPreview || profile?.avatarUrl || ''
+  const formId = 'adminPasswordForm'
+  const id = (name) => `admin_${name}`
 
   if (loading) {
     return (
@@ -311,28 +269,21 @@ export default function SettingsClient() {
   return (
     <div className={styles.page}>
       <div className={styles.grid}>
-        {/* PERSONAL INFORMATION */}
         <section className={`${styles.card} ${styles.full}`}>
           <div className={styles.cardHeadRow}>
             <p className={styles.cardTitle}>Personal Information</p>
-
             <div className={styles.headActions}>
               {isEditingPersonal && (
                 <button className={styles.secondaryBtn} onClick={onCancelPersonalEdit}>
                   Cancel
                 </button>
               )}
-
               <button
                 className={styles.primaryBtn}
                 onClick={onClickEditSavePersonal}
                 disabled={avatarLoading}
               >
-                {isEditingPersonal ? 'Save Changes' : (
-                  <>
-                    <FiEdit /> Edit
-                  </>
-                )}
+                {isEditingPersonal ? 'Save Changes' : <><FiEdit /> Edit</>}
               </button>
             </div>
           </div>
@@ -350,12 +301,9 @@ export default function SettingsClient() {
                     unoptimized
                   />
                 ) : (
-                  <div className={styles.avatarFallback}>
-                    <FaUser />
-                  </div>
+                  <div className={styles.avatarFallback}><FaUser /></div>
                 )}
               </div>
-
               {isEditingPersonal && (
                 <div className={styles.piAvatarActionsRow}>
                   <button
@@ -366,7 +314,6 @@ export default function SettingsClient() {
                   >
                     <FaUpload /> {avatarLoading ? 'Uploading…' : 'Change'}
                   </button>
-
                   <button
                     type="button"
                     className={styles.dangerBtn}
@@ -375,7 +322,6 @@ export default function SettingsClient() {
                   >
                     <TbTrash /> Remove
                   </button>
-
                   <span className={styles.profileHintInline}>
                     PNG, JPG, or WEBP · Max {MAX_MB}MB
                   </span>
@@ -395,24 +341,19 @@ export default function SettingsClient() {
           <div className={styles.piFieldsRow}>
             <div className={styles.piGrid}>
               <div className={styles.field}>
-                <label htmlFor="pi_name" className={styles.label}>
-                  Name
-                </label>
+                <label htmlFor={id('name')} className={styles.label}>Name</label>
                 <input
-                  id="pi_name"
+                  id={id('name')}
                   value={draftName}
                   onChange={(e) => setDraftName(e.target.value)}
                   className={`${styles.input} ${!isEditingPersonal ? styles.inputReadOnly : ''}`}
                   disabled={!isEditingPersonal}
                 />
               </div>
-
               <div className={styles.field}>
-                <label htmlFor="pi_email" className={styles.label}>
-                  Email
-                </label>
+                <label htmlFor={id('email')} className={styles.label}>Email</label>
                 <input
-                  id="pi_email"
+                  id={id('email')}
                   value={draftEmail}
                   onChange={(e) => setDraftEmail(e.target.value)}
                   className={`${styles.input} ${!isEditingPersonal ? styles.inputReadOnly : ''}`}
@@ -420,39 +361,30 @@ export default function SettingsClient() {
                 />
               </div>
             </div>
-
             {personalError && (
-              <div className={styles.msgError}>
-                <MdErrorOutline />
-                {personalError}
-              </div>
+              <div className={styles.msgError}><MdErrorOutline /> {personalError}</div>
             )}
             {personalStatus && (
-              <div className={styles.msgOk}>
-                <MdCheckCircle />
-                {personalStatus}
-              </div>
+              <div className={styles.msgOk}><MdCheckCircle /> {personalStatus}</div>
             )}
           </div>
         </section>
 
-        {/* PASSWORD */}
         <section className={styles.card}>
           <div className={styles.cardHeadRow}>
             <p className={styles.cardTitle}>Change Password</p>
-            <button form="passwordForm" className={styles.primaryBtn}>
+            <button form={formId} type="submit" className={styles.primaryBtn}>
               Save Changes
             </button>
           </div>
-
-          <form id="passwordForm" onSubmit={handlePasswordSubmit} className={styles.form}>
+          <form id={formId} onSubmit={handlePasswordSubmit} className={styles.form}>
             <div className={styles.passGrid}>
               <div className={styles.passField}>
-                <label htmlFor="current_password" className={styles.label}>
+                <label htmlFor={id('current_password')} className={styles.label}>
                   Current Password
                 </label>
                 <input
-                  id="current_password"
+                  id={id('current_password')}
                   type="password"
                   placeholder="Enter current password"
                   value={currentPassword}
@@ -460,13 +392,12 @@ export default function SettingsClient() {
                   className={styles.input}
                 />
               </div>
-
               <div className={styles.passField}>
-                <label htmlFor="new_password" className={styles.label}>
+                <label htmlFor={id('new_password')} className={styles.label}>
                   New Password
                 </label>
                 <input
-                  id="new_password"
+                  id={id('new_password')}
                   type="password"
                   placeholder="Enter new password"
                   value={newPassword}
@@ -474,13 +405,12 @@ export default function SettingsClient() {
                   className={styles.input}
                 />
               </div>
-
               <div className={styles.passField}>
-                <label htmlFor="confirm_password" className={styles.label}>
+                <label htmlFor={id('confirm_password')} className={styles.label}>
                   Confirm New Password
                 </label>
                 <input
-                  id="confirm_password"
+                  id={id('confirm_password')}
                   type="password"
                   placeholder="Re-enter new password"
                   value={confirmPassword}
@@ -489,8 +419,6 @@ export default function SettingsClient() {
                 />
               </div>
             </div>
-
-            {/* Password requirements */}
             <div className={styles.passwordReqBox}>
               <p className={styles.passwordReqTitle}>Password requirements</p>
               <ul className={styles.passwordReqList}>
@@ -500,19 +428,11 @@ export default function SettingsClient() {
                 <li>One number</li>
               </ul>
             </div>
-
             {passError && (
-              <div className={styles.msgError}>
-                <MdErrorOutline />
-                {passError}
-              </div>
+              <div className={styles.msgError}><MdErrorOutline /> {passError}</div>
             )}
-
             {passStatus && (
-              <div className={styles.msgOk}>
-                <MdCheckCircle />
-                {passStatus}
-              </div>
+              <div className={styles.msgOk}><MdCheckCircle /> {passStatus}</div>
             )}
           </form>
         </section>
@@ -520,4 +440,3 @@ export default function SettingsClient() {
     </div>
   )
 }
-

@@ -1,0 +1,29 @@
+/* Products section layout (from seller layout) */
+
+.pageWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+}
+
+.pageHeader {
+  margin-bottom: 0.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e9efec;
+}
+
+.pageTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #102820;
+  margin: 0 0 0.35rem;
+}
+
+.pageSubtitle {
+  font-size: 0.95rem;
+  color: #4d2d18;
+  max-width: 560px;
+  line-height: 1.5;
+  margin: 0;
+}

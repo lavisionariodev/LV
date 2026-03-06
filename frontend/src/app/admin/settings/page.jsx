@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import SettingsClient from './SettingsClient'
+import AdminSettingsClient from './AdminSettingsClient'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -23,5 +23,5 @@ export default async function SettingsPage() {
     redirect('/')
   }
 
-  return <SettingsClient />
+  return <AdminSettingsClient />
 }
