@@ -1,13 +1,16 @@
 'use client'
 
-import styles from './orders.module.css'
+import { usePathname, useSearchParams } from 'next/navigation'
+import OrdersContent from './OrdersContent'
 
 export default function SellerOrdersPage() {
-  return (
-    <div className={styles.pageWrap}>
-      <p className={styles.pageSubtitle}>
-        View and manage all your orders in one place.
-      </p>
-    </div>
-  )
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const tabFromRoute =
+    pathname?.endsWith('/pending') ? 'pending'
+    : pathname?.endsWith('/completed') ? 'completed'
+    : null
+  const initialTab = tabFromRoute ?? searchParams?.get('tab') ?? undefined
+
+  return <OrdersContent initialTab={initialTab} />
 }
