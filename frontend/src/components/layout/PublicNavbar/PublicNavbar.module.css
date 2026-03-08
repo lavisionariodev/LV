@@ -1,7 +1,10 @@
 /* ===== HEADER ===== */
 .header {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
   z-index: 50;
   background: #FFFFFF;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
