@@ -63,7 +63,7 @@ export default function PublicFooter() {
           <div className={styles.col}>
             <h4 className={styles.title}>Company</h4>
             <Link href="/about" className={styles.link}>
-              About Us
+              About
             </Link>
             <Link href="/how-it-works" className={styles.link}>
               How It Works

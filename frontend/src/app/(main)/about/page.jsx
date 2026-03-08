@@ -59,7 +59,7 @@ export default function AboutPage() {
   return (
     <>
       <Head>
-        <title>About Us – La Visionario</title>
+        <title>About – La Visionario</title>
         <meta
           name="description"
           content="La Visionario helps Filipino families plan funeral services in a simple, respectful, and transparent way."
