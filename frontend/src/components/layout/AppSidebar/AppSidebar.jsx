@@ -15,6 +15,7 @@ import {
   TbSpeakerphone,
   TbChevronDown,
   TbChevronRight,
+  TbMenu2,
 } from 'react-icons/tb'
 import { LuUserCheck } from 'react-icons/lu'
 import { HiOutlineNewspaper } from 'react-icons/hi'
@@ -22,6 +23,21 @@ import styles from './AppSidebar.module.css'
 
 function isLinkItem(item) {
   return 'href' in item && !('children' in item)
+}
+
+/** For bottom nav: flatten to { href, label, icon } (groups use defaultHref). Optional limit for mobile (e.g. 4). */
+function getBottomNavItems(navItems, limit) {
+  const items = navItems.map((item) => {
+    if (isLinkItem(item)) {
+      return { href: item.href, label: item.label, icon: item.icon }
+    }
+    return {
+      href: item.defaultHref,
+      label: item.label,
+      icon: item.icon,
+    }
+  })
+  return limit != null ? items.slice(0, limit) : items
 }
 
 const SIDEBAR_CONFIG = {
@@ -42,16 +58,7 @@ const SIDEBAR_CONFIG = {
     brandSub: 'Seller Centre',
     navItems: [
       { href: '/seller', label: 'Dashboard', icon: TbLayoutDashboardFilled },
-      {
-        label: 'Orders',
-        icon: TbShoppingBag,
-        defaultHref: '/seller/orders',
-        children: [
-          { href: '/seller/orders', label: 'All Orders' },
-          { href: '/seller/orders/pending', label: 'Pending' },
-          { href: '/seller/orders/completed', label: 'Completed' },
-        ],
-      },
+      { href: '/seller/orders', label: 'Orders', icon: TbShoppingBag },
       {
         label: 'Products',
         icon: TbPackage,
@@ -89,6 +96,8 @@ const SIDEBAR_CONFIG = {
   },
 }
 
+const BOTTOM_NAV_MAIN_ITEMS = 4
+
 export default function AppSidebar({
   variant,
   collapsed = false,
@@ -96,6 +105,7 @@ export default function AppSidebar({
   isMobile,
   mobileOpen,
   onMobileClose,
+  onMobileOpen,
 }) {
   const pathname = usePathname()
   const [openGroups, setOpenGroups] = useState({})
@@ -137,19 +147,23 @@ export default function AppSidebar({
     return out
   }, [hasGroups, sellerNavItems, pathname, openGroups])
 
+  const showSidebar = !(isMobile && variant === 'seller')
+
   return (
     <>
-      {showMobileOpen && (
-        <div
-          className={styles.backdrop}
-          onClick={onMobileClose}
-          aria-hidden
-          role="presentation"
-        />
-      )}
-      <aside
-        className={`${styles.sidebar} ${showCollapsed ? styles.collapsed : ''} ${showMobileOpen ? styles.mobileOpen : ''}`}
-      >
+      {showSidebar && (
+        <>
+          {showMobileOpen && (
+            <div
+              className={styles.backdrop}
+              onClick={onMobileClose}
+              aria-hidden
+              role="presentation"
+            />
+          )}
+          <aside
+            className={`${styles.sidebar} ${showCollapsed ? styles.collapsed : ''} ${showMobileOpen ? styles.mobileOpen : ''}`}
+          >
         <div className={styles.logoRow}>
           <Link href="/" className={styles.logoLeft} onClick={handleNavClose}>
             <div className={styles.logoMark}>LV</div>
@@ -259,6 +273,43 @@ export default function AppSidebar({
         })}
       </nav>
     </aside>
+        </>
+      )}
+
+      {isMobile && (
+        <nav className={styles.bottomNav} aria-label="Main navigation">
+          {getBottomNavItems(config.navItems, variant === 'seller' ? BOTTOM_NAV_MAIN_ITEMS : undefined).map((item) => {
+            const active = isActive(item.href)
+            const Icon = item.icon
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`${styles.bottomNavLink} ${active ? styles.bottomNavLinkActive : ''}`}
+                onClick={onMobileClose}
+                aria-current={active ? 'page' : undefined}
+              >
+                <span className={styles.bottomNavIcon}>
+                  <Icon size={22} aria-hidden />
+                </span>
+                <span className={styles.bottomNavLabel}>{item.label}</span>
+              </Link>
+            )
+          })}
+          {variant === 'seller' && (
+            <Link
+              href="/seller/more"
+              className={`${styles.bottomNavLink} ${pathname?.startsWith('/seller/more') ? styles.bottomNavLinkActive : ''}`}
+              aria-current={pathname?.startsWith('/seller/more') ? 'page' : undefined}
+            >
+              <span className={styles.bottomNavIcon}>
+                <TbMenu2 size={22} aria-hidden />
+              </span>
+              <span className={styles.bottomNavLabel}>More</span>
+            </Link>
+          )}
+        </nav>
+      )}
     </>
   )
 }

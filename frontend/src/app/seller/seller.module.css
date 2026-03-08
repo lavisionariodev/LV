@@ -76,14 +76,20 @@
     height: 100vh;
   }
 
+  .main {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+
   .content {
     padding: 16px;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom) + 40px);
   }
 }
 
 @media (max-width: 600px) {
   .content {
     padding: 14px;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom) + 40px);
   }
 }
 
