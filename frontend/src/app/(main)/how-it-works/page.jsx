@@ -1,89 +1,99 @@
 import Link from 'next/link'
+import { siteContent } from '@/data/adminSampleData'
 import styles from './how-it-works.module.css'
+
+export const metadata = {
+  title: 'How It Works – La Visionario',
+  description:
+    'Learn how La Visionario helps you browse, compare, book, and get support for funeral services with trusted partners.',
+}
+
+const SECTIONS = [
+  {
+    id: 'step-by-step-process',
+    title: 'Step-by-Step Process',
+    body: siteContent?.howItWorks?.stepByStep ??
+      'Browse, compare, book, and receive support from La Visionario and its partner providers.',
+    steps: [
+      'Browse our verified partner listings and service packages.',
+      'Compare options and view clear inclusions and pricing.',
+      'Book the service that fits your needs online.',
+      'Receive ongoing support from our team and your chosen provider.',
+    ],
+  },
+  {
+    id: 'compare-packages',
+    title: 'Compare Packages',
+    body: siteContent?.howItWorks?.comparePackages ??
+      'View different funeral homes, listings, and packages in one place with clear inclusions.',
+    steps: [
+      'Filter by location, category, and budget.',
+      'See side-by-side comparisons of packages and providers.',
+      'Read verified details and what’s included in each offer.',
+    ],
+  },
+  {
+    id: 'book-a-service',
+    title: 'Book a Service',
+    body: siteContent?.howItWorks?.bookAService ??
+      'Book the service online, share details, and coordinate directly with our trusted partners.',
+    steps: [
+      'Select your preferred package and complete the booking form.',
+      'Share any special requests or details with the provider.',
+      'Receive confirmation and next steps from La Visionario and the partner.',
+    ],
+  },
+  {
+    id: 'payment-support',
+    title: 'Payment & Support',
+    body: siteContent?.howItWorks?.paymentSupport ??
+      'Confirm payment through secure channels and receive ongoing support from our team.',
+    steps: [
+      'Pay through secure, verified channels as agreed with the provider.',
+      'Get documentation and receipts for your records.',
+      'Reach out to our support team anytime for questions or follow-up.',
+    ],
+  },
+]
 
 export default function HowItWorksPage() {
   return (
-    <section className={styles.howItWorksPage}>
-      <header className={styles.hero}>
+    <div className={styles.howItWorksPage}>
+      <section className={styles.hero}>
         <div className={styles.heroOverlay} />
         <div className={styles.heroInner}>
           <h1 className={styles.heroTitle}>How It Works</h1>
-          <p className={styles.breadcrumb}>
+          <nav className={styles.breadcrumb} aria-label="Breadcrumb">
             <Link href="/" className={styles.crumb}>
               Home
             </Link>
-            <span className={styles.slash}>/</span>
+            <span className={styles.slash} aria-hidden="true">
+              /
+            </span>
             <span className={styles.crumbActive}>How It Works</span>
-          </p>
+          </nav>
         </div>
-      </header>
+      </section>
 
       <div className={styles.content}>
-        <section id="step-by-step-process" className={styles.section}>
-          <h2 className={styles.sectionTitle}>Step-by-Step Process</h2>
-          <p className={styles.sectionText}>
-            La Visionario guides families through funeral planning in a way that
-            is simple, transparent, and respectful. From browsing options to
-            final support, everything is organized so you always know what comes
-            next.
-          </p>
-          <ol className={styles.stepList}>
-            <li>Browse services, packages, and marketplace products that fit your family&apos;s needs.</li>
-            <li>Compare options side by side to see inclusions, pricing, and partner details clearly.</li>
-            <li>Book the service or package that feels right, sharing key details with our partner.</li>
-            <li>Confirm payment and receive ongoing support so you can focus on honoring your loved one.</li>
-          </ol>
-        </section>
-
-        <section id="compare-packages" className={styles.section}>
-          <h2 className={styles.sectionTitle}>Compare Packages</h2>
-          <p className={styles.sectionText}>
-            On La Visionario, you can view different funeral homes, service
-            listings, and packages in one place. Each option clearly shows what
-            is included, helping you avoid hidden costs and last-minute
-            surprises.
-          </p>
-          <p className={styles.sectionText}>
-            Use the platform to compare inclusions such as viewing, transport,
-            flowers, documentation assistance, and other important details. This
-            makes it easier to choose a package that matches your family&apos;s
-            preferences, traditions, and budget.
-          </p>
-        </section>
-
-        <section id="book-a-service" className={styles.section}>
-          <h2 className={styles.sectionTitle}>Book a Service</h2>
-          <p className={styles.sectionText}>
-            Once you have chosen a package or service, you can start booking
-            directly through La Visionario. You&apos;ll share key information
-            such as preferred dates, location, and any special requests so our
-            partner can prepare accordingly.
-          </p>
-          <p className={styles.sectionText}>
-            After submitting your booking, you&apos;ll receive a confirmation
-            summary. Our partner or support team may reach out to clarify
-            details and ensure that everything is aligned with your expectations
-            and your family&apos;s needs.
-          </p>
-        </section>
-
-        <section id="payment-support" className={styles.section}>
-          <h2 className={styles.sectionTitle}>Payment &amp; Support</h2>
-          <p className={styles.sectionText}>
-            Payment details are presented clearly so you know when and how to
-            pay—whether online, at the funeral home, or through other available
-            methods. We aim to keep pricing transparent and aligned with what
-            was shown on the platform.
-          </p>
-          <p className={styles.sectionText}>
-            If you have questions before, during, or after booking, you can
-            reach out through our support channels or coordinate directly with
-            the partner funeral home. La Visionario is here to help make each
-            step of the process calmer and more manageable for your family.
-          </p>
-        </section>
+        {SECTIONS.map((section) => (
+          <section
+            key={section.id}
+            id={section.id}
+            className={styles.section}
+          >
+            <h2 className={styles.sectionTitle}>{section.title}</h2>
+            <p className={styles.sectionText}>{section.body}</p>
+            {section.steps?.length > 0 && (
+              <ul className={styles.stepList}>
+                {section.steps.map((step, i) => (
+                  <li key={i}>{step}</li>
+                ))}
+              </ul>
+            )}
+          </section>
+        ))}
       </div>
-    </section>
+    </div>
   )
 }
-

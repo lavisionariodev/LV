@@ -134,6 +134,7 @@ a.userLink {
 }
 
 .mainNavInner {
+  position: relative;
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 24px;
@@ -182,11 +183,14 @@ a.userLink {
 }
 
 .navMenu {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 0;
-  flex: 1;
   justify-content: center;
+  z-index: 1;
 }
 
 .navItem {
@@ -290,16 +294,143 @@ a.userLink {
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-shrink: 0;
+  min-width: 360px;
+  justify-content: flex-end;
 }
 
-.searchContainer {
+/* Search + Favorites group (desktop): icon-first search, then heart. Fixed width so opening search doesn't shift nav links. */
+.searchFavoritesGroup {
   display: flex;
   align-items: center;
-  position: relative;
-  margin-right: 8px;
+  gap: 4px;
+  margin-right: 4px;
+  width: 268px;
+  min-width: 268px;
+  flex-shrink: 0;
+  justify-content: flex-end;
 }
 
-.searchBtn {
+.desktopSearchWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.desktopSearchIconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: #4D2D18;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.desktopSearchIconBtn:hover {
+  color: var(--color-gold-base);
+}
+
+.desktopSearchForm {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  width: 0;
+  min-width: 0;
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-width 0.25s ease, opacity 0.2s ease;
+  z-index: 10;
+}
+
+.desktopSearchFormOpen {
+  max-width: 228px;
+  width: 228px;
+  opacity: 1;
+}
+
+.desktopSearchInput {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  padding: 6px 8px 6px 0;
+  font-size: 14px;
+  color: #4D2D18;
+  background: #FFFFFF;
+  border: none;
+  border-bottom: 1px solid rgba(77, 45, 24, 0.35);
+  border-radius: 0;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.desktopSearchInput::placeholder {
+  color: rgba(77, 45, 24, 0.5);
+}
+
+.desktopSearchInput:focus {
+  border-bottom-color: var(--color-gold-base);
+}
+
+.desktopSearchInput::-webkit-search-cancel-button,
+.desktopSearchInput::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.desktopSearchCloseBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  margin-left: 2px;
+  background: transparent;
+  border: none;
+  color: #4D2D18;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.desktopSearchCloseBtn:hover {
+  color: var(--color-gold-base);
+}
+
+.favoritesBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: #4D2D18;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.favoritesBtn:hover {
+  color: var(--color-gold-base);
+}
+
+.cartBtn {
   background: transparent;
   border: none;
   color: #4D2D18;
@@ -308,13 +439,12 @@ a.userLink {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: color 0.2s ease;
   border-radius: 4px;
   z-index: 2;
 }
 
-.searchBtn:hover {
-  background: rgba(168, 137, 74, 0.10);
+.cartBtn:hover {
   color: var(--color-gold-base);
 }
 
@@ -381,16 +511,6 @@ a.userLink {
   justify-content: center;
   width: 32px;
   height: 32px;
-}
-
-.profileName {
-  font-size: 13px;
-  font-weight: 500;
-  color: inherit;
-  max-width: 140px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .profileDropdown {
@@ -474,8 +594,8 @@ a.userLink {
 }
 
 .navbarSearchFormOpen {
-  max-width: 200px;
-  min-width: 120px;
+  max-width: 190px;
+  min-width: 110px;
   width: 100%;
   opacity: 1;
 }
@@ -571,15 +691,11 @@ a.userLink {
     height: 1.75rem;
   }
 
-  .logoText {
-    font-size: 1.125rem;
-  }
-
   .followText {
     display: none;
   }
 
-  .searchBtn {
+  .cartBtn {
     min-width: 44px;
     min-height: 44px;
     padding: 10px;
@@ -676,31 +792,6 @@ a.userLink {
   white-space: nowrap;
 }
 
-.bottomNavCartWrap {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.bottomNavBadge {
-  position: absolute;
-  top: -6px;
-  right: -8px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  border-radius: 8px;
-  background: #A8894A;
-  color: #fff;
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 16px;
-  text-align: center;
-  box-sizing: border-box;
-  pointer-events: none;
-}
-
 .bottomNavAvatar {
   width: 26px;
   height: 26px;
@@ -745,13 +836,5 @@ a.userLink {
 
   .logoLetter {
     font-size: 1rem;
-  }
-
-  .logoText {
-    font-size: 1rem;
-  }
-
-  .profileName {
-    display: none;
   }
 }
