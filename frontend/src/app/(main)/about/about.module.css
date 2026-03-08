@@ -73,7 +73,7 @@
   inset: 0;
   background:
     linear-gradient(160deg, rgba(250,247,242,0.95) 0%, rgba(242,233,220,0.92) 55%, rgba(235,227,216,0.9) 100%),
-    url('/hero-welcome-flowers.png') center/cover no-repeat;
+    url('/sample/about-us/hero-welcome-flowers.png') center/cover no-repeat;
   opacity: 0.9;
   pointer-events: none;
 }

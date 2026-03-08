@@ -157,7 +157,7 @@ export default function AboutPage() {
               <div className={styles.missionCard}>
                 <div className={styles.missionCardImageWrap}>
                   <img
-                    src="/mission-compassion-card.png"
+                    src="/sample/about-us/mission-compassion-card.png"
                     alt="Dove symbol representing compassion"
                     className={styles.missionCardImage}
                   />
@@ -215,7 +215,7 @@ export default function AboutPage() {
               <div className={styles.blob}>
                 <div className={styles.blobImageWrap}>
                   <img
-                    src="/about-us-blob.png"
+                    src="/sample/about-us/about-us-blob.png"
                     alt="La Visionario — dignified farewell care"
                     className={styles.blobImage}
                   />
