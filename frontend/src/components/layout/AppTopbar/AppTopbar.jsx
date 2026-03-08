@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import styles from './AppTopbar.module.css'
-import { IoSearch } from 'react-icons/io5'
 import { TbBell, TbMenu2 } from 'react-icons/tb'
 import { FaUser } from 'react-icons/fa6'
 import { LuLogOut, LuChevronDown } from 'react-icons/lu'
@@ -16,8 +15,6 @@ import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProf
 
 const TOPBAR_CONFIG = {
   admin: {
-    searchPlaceholder: 'Search…',
-    searchAriaLabel: 'Search admin panel',
     notificationsHref: '/admin/notifications',
     defaultDisplayName: 'Admin',
     avatarAlt: 'Admin avatar',
@@ -27,8 +24,6 @@ const TOPBAR_CONFIG = {
     ],
   },
   seller: {
-    searchPlaceholder: 'Search…',
-    searchAriaLabel: 'Search seller centre',
     notificationsHref: '/seller/notifications',
     defaultDisplayName: 'Seller',
     avatarAlt: 'Seller avatar',
@@ -76,6 +71,7 @@ const PAGE_TITLES = {
     '/seller/settings': 'Settings',
     '/seller/help': 'Help Center',
     '/seller/notifications': 'Notifications',
+    '/seller/more': 'More',
   },
 }
 
@@ -160,32 +156,10 @@ export default function AppTopbar({ variant, onLogout, isMobile, onMenuClick, si
         className={`${styles.topbar} ${!isMobile && sidebarCollapsed ? styles.sidebarCollapsed : ''}`}
       >
         <div className={styles.left}>
-          {isMobile && (
-            <button
-              type="button"
-              className={styles.menuBtn}
-              onClick={onMenuClick}
-              aria-label="Toggle menu"
-            >
-              <TbMenu2 />
-            </button>
-          )}
           {pageTitle && <h1 className={styles.pageTitle}>{pageTitle}</h1>}
         </div>
 
         <div className={styles.right}>
-          <div className={styles.searchWrap}>
-            <span className={styles.searchIcon}>
-              <IoSearch />
-            </span>
-            <input
-              type="text"
-              className={styles.search}
-              placeholder={config.searchPlaceholder}
-              aria-label={config.searchAriaLabel}
-            />
-          </div>
-
           <Link
             href={config.notificationsHref}
             className={styles.iconBtn}
