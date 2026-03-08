@@ -149,30 +149,54 @@ export default function PublicNavbar() {
 
           <div className={styles.topRight}>
             {!isAuthenticated ? (
-              <button
-                onClick={() => {
-                  const target = pathname || '/'
-                  router.push(`/buyer/login?redirect=${encodeURIComponent(target)}`)
-                }}
-                className={styles.userLink}
-                aria-label="Sign in"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+              <div className={styles.authLinks}>
+                <button
+                  onClick={() => {
+                    const target = pathname || '/'
+                    router.push(`/buyer/login?redirect=${encodeURIComponent(target)}`)
+                  }}
+                  className={styles.userLink}
+                  aria-label="Log in"
                 >
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="12" cy="7" r="4"></circle>
-                </svg>
-                <span>Sign In</span>
-              </button>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                  <span>Log In</span>
+                </button>
+                <span className={styles.authDivider} aria-hidden="true">|</span>
+                <Link
+                  href="/buyer/signup"
+                  className={styles.userLink}
+                  aria-label="Sign up"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                  <span>Sign Up</span>
+                </Link>
+              </div>
             ) : (
               <button
                 type="button"
@@ -471,9 +495,15 @@ export default function PublicNavbar() {
           <div className={styles.mobileDivider}></div>
 
           {!isAuthenticated ? (
-            <Link href="/buyer/login?redirect=/profile" className={styles.mobileLink}>
-              Sign In
-            </Link>
+            <div className={styles.mobileAuthLinks}>
+              <Link href="/buyer/login?redirect=/profile" className={styles.mobileLink}>
+                Log In
+              </Link>
+              <span className={styles.authDivider} aria-hidden="true">|</span>
+              <Link href="/buyer/signup" className={styles.mobileLink}>
+                Sign Up
+              </Link>
+            </div>
           ) : (
             <>
               <Link href="/profile" className={styles.mobileLink}>
@@ -493,8 +523,8 @@ export default function PublicNavbar() {
 
       <LogoutModal open={logoutOpen} onConfirm={handleConfirmLogout} onCancel={handleCancelLogout} />
 
-      {/* Mobile Bottom Navigation Bar */}
-      <nav className={styles.bottomNav} aria-label="Mobile navigation">
+      {/* Mobile Bottom Navigation Bar — only rendered in (main) layout; data attr used so body padding applies only when this nav exists */}
+      <nav className={styles.bottomNav} aria-label="Mobile navigation" data-bottom-nav>
         <Link
           href="/"
           className={`${styles.bottomNavItem} ${pathname === '/' ? styles.bottomNavItemActive : ''}`}
@@ -582,21 +612,35 @@ export default function PublicNavbar() {
             <span className={styles.bottomNavLabel}>Profile</span>
           </button>
         ) : (
-          <button
-            type="button"
-            className={styles.bottomNavItem}
-            aria-label="Sign In"
-            onClick={() => {
-              const target = pathname || '/'
-              router.push(`/buyer/login?redirect=${encodeURIComponent(target)}`)
-            }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-            <span className={styles.bottomNavLabel}>Sign In</span>
-          </button>
+          <div className={styles.bottomNavAuthWrap}>
+            <button
+              type="button"
+              className={styles.bottomNavItem}
+              aria-label="Log In"
+              onClick={() => {
+                const target = pathname || '/'
+                router.push(`/buyer/login?redirect=${encodeURIComponent(target)}`)
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <span className={styles.bottomNavLabel}>Log In</span>
+            </button>
+            <span className={styles.bottomNavAuthDivider} aria-hidden="true">|</span>
+            <Link
+              href="/buyer/signup"
+              className={styles.bottomNavItem}
+              aria-label="Sign Up"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <span className={styles.bottomNavLabel}>Sign Up</span>
+            </Link>
+          </div>
         )}
       </nav>
     </header>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { AppSidebar, AppTopbar } from '@/components/layout'
+import { useMediaQuery } from '@/hooks'
 import { requireAdmin } from '@/lib/auth/guards'
 import { signOut } from '@/lib/auth/session'
 import styles from './admin.module.css'
@@ -12,7 +13,9 @@ const poppins = Poppins({ weight: ['400', '600', '700'], subsets: ['latin'] })
 
 export default function AdminLayout({ children }) {
   const router = useRouter()
+  const isMobile = useMediaQuery('(max-width: 860px)')
   const [collapsed, setCollapsed] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [authStatus, setAuthStatus] = useState('loading')
 
   useEffect(() => {
@@ -54,9 +57,18 @@ export default function AdminLayout({ children }) {
         variant="admin"
         collapsed={collapsed}
         onToggle={() => setCollapsed((prev) => !prev)}
+        isMobile={isMobile}
+        mobileOpen={mobileMenuOpen}
+        onMobileClose={() => setMobileMenuOpen(false)}
       />
       <div className={styles.main}>
-        <AppTopbar variant="admin" onLogout={handleLogout} />
+        <AppTopbar
+          variant="admin"
+          onLogout={handleLogout}
+          isMobile={isMobile}
+          onMenuClick={() => setMobileMenuOpen((prev) => !prev)}
+          sidebarCollapsed={collapsed}
+        />
         <div className={styles.mainScroll}>
           <div className={styles.content}>{children}</div>
         </div>

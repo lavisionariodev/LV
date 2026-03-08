@@ -1,0 +1,561 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap");
+
+/* Page & header (merged from layout) */
+.pageWrapper {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: #f5f5f5;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+.header {
+  background: white;
+  border-bottom: 1px solid #e5e5e5;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.headerContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.logoIcon {
+  width: 40px;
+  height: 40px;
+  background: #204F38;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logoLetter {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  font-family: "Roboto", "Open Sans", sans-serif;
+  line-height: 1;
+}
+
+.logoText {
+  font-size: 24px;
+  font-weight: 500;
+  color: #204F38;
+}
+
+.badge {
+  font-size: 20px;
+  color: #333;
+  font-weight: 400;
+  padding-left: 12px;
+  border-left: 1px solid #ddd;
+}
+
+.needHelp {
+  color: #204F38;
+  text-decoration: none;
+  font-size: 0.875rem;
+  transition: opacity 0.2s;
+}
+
+.needHelp:hover {
+  opacity: 0.8;
+}
+
+/* Icon only on small screens */
+.needHelpIcon {
+  display: none;
+}
+
+.needHelpIcon svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+/* Main content */
+.mainContent {
+  padding: 70px 20px 60px;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.contentWrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
+}
+
+/* Left section */
+.leftSection {
+  padding: 0 40px;
+}
+
+.mainTitle {
+  font-size: 40px;
+  color: #204F38;
+  margin-bottom: 28px;
+  font-weight: 600;
+}
+
+.mainSubtitle {
+  font-size: 16px;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 6rem;
+}
+
+.leftSection .secureNote {
+  margin: 0;
+  text-align: left;
+  font-size: 14px;
+  color: #666;
+}
+
+.adminIcon {
+  width: 92px;
+  height: 92px;
+  margin: 0 0 20px 0;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: white;
+  color: #204F38;
+  font-size: 50px;
+}
+
+/* Right section - login card */
+.rightSection {
+  display: flex;
+  justify-content: center;
+}
+
+.loginCard {
+  width: 100%;
+  max-width: 380px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  padding: 32px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.heading {
+  margin: 0;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 500;
+  color: #333;
+}
+
+.subheading {
+  margin: 12px 0 22px 0;
+  text-align: center;
+  font-size: 13px;
+  color: #666;
+  line-height: 18px;
+}
+
+.error {
+  margin: 0 0 12px 0;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #b91c1c;
+  background: #fef2f2;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #333;
+}
+
+.input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #204F38;
+}
+
+.passwordWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.passwordWrapper .input {
+  padding-right: 40px;
+}
+
+.eyeIcon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #999;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.eyeIcon:hover {
+  color: #666;
+}
+
+.forgotBelow {
+  margin-top: 6px;
+  align-self: flex-end;
+  background: none;
+  border: none;
+  padding: 0;
+  color: #204F38;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.forgotBelow:hover {
+  color: #279354;
+  text-decoration: underline;
+}
+
+.primaryBtn {
+  margin-top: 22px;
+  width: 100%;
+  border: none;
+  border-radius: 4px;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  background: #204F38;
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.primaryBtn:hover {
+  background: #163d2e;
+}
+
+/* ----- Responsive: width ----- */
+
+/* Tablet: stack columns, icon + title on same row */
+@media (max-width: 968px) {
+  .contentWrapper {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding: 0 16px;
+    align-items: start;
+  }
+
+  .leftSection {
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 14px;
+  }
+
+  .leftSection .adminIcon {
+    margin-bottom: 0;
+    flex-shrink: 0;
+    width: 80px;
+    height: 80px;
+    font-size: 42px;
+  }
+
+  .leftSection .mainTitle {
+    font-size: 24px;
+    margin-bottom: 0;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .leftSection .mainSubtitle {
+    width: 100%;
+    margin-top: 8px;
+    margin-bottom: 2.5rem;
+  }
+
+  .leftSection .secureNote {
+    width: 100%;
+  }
+
+  .mainSubtitle {
+    margin-bottom: 2.5rem;
+  }
+}
+
+/* Small tablet / large phone */
+@media (max-width: 640px) {
+  .headerContent {
+    padding: 16px 20px;
+  }
+
+  .logoText {
+    font-size: 20px;
+  }
+
+  .badge {
+    font-size: 16px;
+    padding-left: 10px;
+  }
+
+  .mainContent {
+    padding: 32px 16px 40px;
+  }
+
+  .contentWrapper {
+    gap: 28px;
+    padding: 0 8px;
+  }
+
+  .mainTitle {
+    font-size: 20px;
+  }
+
+  .leftSection .mainTitle {
+    margin-bottom: 0;
+  }
+
+  .mainSubtitle {
+    font-size: 14px;
+    margin-bottom: 1.5rem;
+  }
+
+  .mainSubtitle br {
+    display: none;
+  }
+
+  .adminIcon {
+    width: 64px;
+    height: 64px;
+    font-size: 34px;
+  }
+
+  .leftSection .adminIcon {
+    margin-bottom: 0;
+    width: 64px;
+    height: 64px;
+    font-size: 34px;
+  }
+
+  .leftSection .secureNote {
+    font-size: 13px;
+  }
+
+  .loginCard {
+    padding: 24px 20px;
+    max-width: 100%;
+  }
+
+  .heading {
+    font-size: 18px;
+  }
+
+  .subheading {
+    font-size: 12px;
+    margin: 10px 0 18px 0;
+  }
+
+  .primaryBtn {
+    margin-top: 16px;
+    padding: 11px;
+  }
+}
+
+/* Phone */
+@media (max-width: 480px) {
+  .headerContent {
+    padding: 12px 16px;
+    gap: 8px;
+  }
+
+  .logoIcon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .logoLetter {
+    font-size: 1.25rem;
+  }
+
+  .logoText {
+    font-size: 18px;
+  }
+
+  .badge {
+    font-size: 14px;
+    padding-left: 8px;
+    border-left-width: 1px;
+  }
+
+  .needHelpText {
+    display: none;
+  }
+
+  .needHelpIcon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: 6px;
+  }
+
+  .needHelpIcon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .mainContent {
+    padding: 24px 12px 32px;
+  }
+
+  .contentWrapper {
+    padding: 0 4px;
+  }
+
+  .mainTitle {
+    font-size: 18px;
+  }
+
+  .leftSection .mainTitle {
+    margin-bottom: 0;
+  }
+
+  .mainSubtitle {
+    font-size: 13px;
+    margin-bottom: 1.25rem;
+  }
+
+  .adminIcon {
+    width: 52px;
+    height: 52px;
+    font-size: 28px;
+  }
+
+  .leftSection .adminIcon {
+    margin-bottom: 0;
+    width: 52px;
+    height: 52px;
+    font-size: 28px;
+  }
+
+  .loginCard {
+    padding: 20px 16px;
+  }
+
+  .heading {
+    font-size: 17px;
+  }
+
+  .input {
+    padding: 10px 14px;
+    font-size: 16px; /* avoids zoom on iOS */
+  }
+}
+
+/* ----- Responsive: height (short viewports) ----- */
+
+@media (max-height: 700px) {
+  .mainContent {
+    padding: 32px 20px 32px;
+  }
+
+  .contentWrapper {
+    gap: 32px;
+    align-items: flex-start;
+  }
+
+  .mainSubtitle {
+    margin-bottom: 1.5rem;
+  }
+
+  .adminIcon {
+    width: 56px;
+    height: 56px;
+    font-size: 32px;
+  }
+
+  .leftSection .adminIcon {
+    margin-bottom: 0;
+    width: 56px;
+    height: 56px;
+    font-size: 32px;
+  }
+
+  .mainTitle {
+    font-size: 28px;
+  }
+
+  .leftSection .mainTitle {
+    margin-bottom: 0;
+    font-size: 22px;
+  }
+}
+
+@media (max-height: 700px) and (max-width: 968px) {
+  .mainContent {
+    padding: 24px 16px 24px;
+  }
+
+  .mainTitle {
+    font-size: 24px;
+  }
+
+  .leftSection .mainTitle {
+    font-size: 20px;
+  }
+
+  .mainSubtitle {
+    margin-bottom: 1rem;
+  }
+}

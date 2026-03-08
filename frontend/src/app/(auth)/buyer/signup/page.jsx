@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getUser } from "@/lib/auth/session";
-import { signUpWithEmailPassword, signInWithOAuth } from "@/lib/auth/client";
-import AuthLayout from "../AuthLayout";
+import Link from "next/link";
+import { signUpWithEmailPassword, signInWithOAuth, getOAuthRedirectUrl } from "@/lib/auth/client";
+import AuthLayout, { setBuyerAuthSwitch } from "../AuthLayout";
 import styles from "./signup.module.css";
 import { useToast } from "@/contexts/ToastContext";
 
@@ -51,7 +52,7 @@ export default function SignUpPage() {
       if (error) {
         const message = typeof error === "string" ? error : String(error);
         if (message.toLowerCase().includes("already registered")) {
-          toast.error("This email is already registered. Please sign in instead.");
+          toast.error("This email is already registered. Please log in instead.");
           router.push("/buyer/login");
         } else {
           toast.error(message);
@@ -59,7 +60,7 @@ export default function SignUpPage() {
         return;
       }
 
-      toast.success('Sign up successful! Please check your email to confirm your account, then sign in.');
+      toast.success('Sign up successful! Please check your email to confirm your account, then log in.');
       setSignUpData({ name: '', email: '', password: '' });
       router.push('/buyer/login');
     } catch (error) {
@@ -69,8 +70,7 @@ export default function SignUpPage() {
   };
 
   const handleSocialAuth = async (provider) => {
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const redirectTo = `${origin}/auth/callback`;
+    const redirectTo = getOAuthRedirectUrl({ redirectPath: "/" });
 
     if (provider === "Google") {
       const { error } = await signInWithOAuth({ provider: "google", redirectTo });
@@ -121,6 +121,7 @@ export default function SignUpPage() {
         type="text"
         name="name"
         placeholder="Name"
+        className={styles.nameInput}
         value={signUpData.name}
         onChange={handleSignUpChange}
       />
@@ -128,6 +129,7 @@ export default function SignUpPage() {
         type="email"
         name="email"
         placeholder="Enter E-mail"
+        className={styles.emailInput}
         value={signUpData.email}
         onChange={handleSignUpChange}
       />
@@ -139,30 +141,29 @@ export default function SignUpPage() {
           value={signUpData.password}
           onChange={handleSignUpChange}
         />
-        <span
-          className={styles.passwordToggle}
-          style={{
-            position: "absolute",
-            right: "12px",
-            top: "50%",
-            transform: "translateY(-80%)",
-            left: "auto",
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: "24px",
-            height: "24px",
-          }}
+        <button
+          type="button"
+          className={styles.eyeIcon}
           onClick={() => setShowPassword((p) => !p)}
+          aria-label={showPassword ? 'Hide password' : 'Show password'}
         >
-          <i className={showPassword ? "bx bx-hide" : "bx bx-show"} />
-        </span>
+          {showPassword ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <circle cx="12" cy="12" r="3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          )}
+        </button>
       </div>
 
       <button onClick={handleSignUp}>Sign Up</button>
 
       <div className={styles.authFooter}>
-        Already have an account? <a href="/buyer/login">Sign In</a>
+        Already have an account? <Link href="/buyer/login" onClick={setBuyerAuthSwitch}>Log In</Link>
       </div>
     </AuthLayout>
   );

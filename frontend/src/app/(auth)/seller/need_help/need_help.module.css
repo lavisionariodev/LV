@@ -634,16 +634,8 @@ button.logoGroup {
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .navLinks {
-    display: none;
-  }
-
   .heroTitle {
     font-size: 1.5rem;
-  }
-
-  .heroSubtitle {
-    font-size: 1rem;
   }
 
   .categoriesGrid {
@@ -684,7 +676,6 @@ button.logoGroup {
 }
 
 .categoryCard,
-.questionBlock,
 .contactCard {
   animation: fadeIn 0.3s ease-out forwards;
   opacity: 0;
@@ -697,14 +688,6 @@ button.logoGroup {
 .categoryCard:nth-child(5) { animation-delay: 0.25s; }
 .categoryCard:nth-child(6) { animation-delay: 0.3s; }
 .categoryCard:nth-child(7) { animation-delay: 0.35s; }
-
-.questionBlock:nth-child(1) { animation-delay: 0.1s; }
-.questionBlock:nth-child(2) { animation-delay: 0.15s; }
-.questionBlock:nth-child(3) { animation-delay: 0.2s; }
-.questionBlock:nth-child(4) { animation-delay: 0.25s; }
-.questionBlock:nth-child(5) { animation-delay: 0.3s; }
-.questionBlock:nth-child(6) { animation-delay: 0.35s; }
-.questionBlock:nth-child(7) { animation-delay: 0.4s; }
 
 .contactCard:nth-child(1) { animation-delay: 0.1s; }
 .contactCard:nth-child(2) { animation-delay: 0.2s; }

@@ -1,12 +1,33 @@
-// AuthLayout.jsx
 'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import styles from './auth-layout.module.css';
+
+const BUYER_AUTH_SWITCH_KEY = 'buyer-auth-switch';
+
+export function setBuyerAuthSwitch() {
+  if (typeof window !== 'undefined') {
+    window.sessionStorage.setItem(BUYER_AUTH_SWITCH_KEY, '1');
+  }
+}
 
 export default function AuthLayout({ 
   children, 
   type = 'default', // 'signin', 'signup', or 'default'
   showPanel = false 
 }) {
+  const [isSwitch, setIsSwitch] = useState(false);
+
+  useEffect(() => {
+    if (!showPanel) return;
+    const flag = typeof window !== 'undefined' && window.sessionStorage.getItem(BUYER_AUTH_SWITCH_KEY);
+    if (flag === '1') {
+      window.sessionStorage.removeItem(BUYER_AUTH_SWITCH_KEY);
+      setIsSwitch(true);
+    }
+  }, [showPanel]);
+
   return (
     <>
       <link 
@@ -14,7 +35,7 @@ export default function AuthLayout({
         rel='stylesheet'
       />
       
-      <div className={`${styles.authContainer} ${styles[type]}`}>
+      <div className={`${styles.authContainer} ${styles[type]} ${showPanel && isSwitch ? styles.switch : ''}`}>
         {showPanel ? (
           <>
             {/* Left Side - Auth Form */}
@@ -33,17 +54,17 @@ export default function AuthLayout({
                     ? 'Sign up now and enjoy our site' 
                     : 'Already have an account?'}
                 </p>
-                <a 
+                <Link
                   href={type === 'signin' ? '/buyer/signup' : '/buyer/login'}
                   className={styles.panelButton}
+                  onClick={setBuyerAuthSwitch}
                 >
-                  {type === 'signin' ? 'Sign Up' : 'Sign In'}
-                </a>
+                  {type === 'signin' ? 'Sign Up' : 'Log In'}
+                </Link>
               </div>
             </div>
           </>
         ) : (
-          // Single centered form (for forgot password, reset password)
           <div className={styles.authForm}>
             {children}
           </div>

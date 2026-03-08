@@ -116,6 +116,12 @@ h6 {
 
   --max-width: 1200px;
   --page-padding: 1.25rem;
+
+  /* Admin/Seller layout: sidebar + topbar alignment */
+  --sidebar-width: 240px;
+  --sidebar-width-collapsed: 78px;
+  --sidebar-header-height: 72px;
+  --sidebar-collapse-overlap: 18px;
 }
 
 /* ================================

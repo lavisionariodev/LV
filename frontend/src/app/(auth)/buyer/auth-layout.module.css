@@ -18,17 +18,18 @@
   flex-direction: column;
 }
 
-/* Sign In Layout (white left, red right) */
+/* Log In Layout (white left, red right) */
 .authContainer.signin {
   background: transparent;
   padding: 0;
 }
 
-.authContainer.signin .formSection {
+/* Switch animation only when navigating from the other auth page (login ↔ signup) */
+.authContainer.signin.switch .formSection {
   animation: formInSignIn 0.6s ease-in-out forwards;
 }
 
-.authContainer.signin .panelSection {
+.authContainer.signin.switch .panelSection {
   animation: panelInSignIn 0.6s ease-in-out forwards;
 }
 
@@ -39,11 +40,11 @@
   flex-direction: row-reverse;
 }
 
-.authContainer.signup .formSection {
+.authContainer.signup.switch .formSection {
   animation: formInSignUp 0.6s ease-in-out forwards;
 }
 
-.authContainer.signup .panelSection {
+.authContainer.signup.switch .panelSection {
   animation: panelInSignUp 0.6s ease-in-out forwards;
 }
 
@@ -178,10 +179,8 @@
   box-sizing: border-box;
 }
 
-.authForm a:hover {
-  text-decoration: none;
-  color: var(--color-main-accent);
-}
+/* Hover for generic form links - avoid .authForm a:hover so footer "Log In/Sign Up" link
+   is only styled by each page's .authFooter a:hover and doesn't get overridden */
 
 .authForm button {
   background-color: var(--color-main-accent);
@@ -201,7 +200,7 @@
 }
 
 .authForm button:hover {
-  background-color: var(--color-secondary-accent);
+  background-color: #279354;
   box-shadow: 0 4px 8px rgba(32, 79, 56, 0.3);
 }
 
@@ -393,8 +392,8 @@
     transition: none; /* instant stack on mobile; keep 0.6s ease-in-out on wide */
   }
 
-  .authContainer.signin .formSection,
-  .authContainer.signup .formSection {
+  .authContainer.signin.switch .formSection,
+  .authContainer.signup.switch .formSection {
     animation: formFadeIn 0.35s ease-out forwards; /* shorter fade on mobile instead of slide */
   }
 

@@ -403,7 +403,6 @@
 
 .footer p {
   margin: 0;
-  max-width: none;
 }
 
 /* Modal */
@@ -487,7 +486,7 @@
   min-height: 400px;
 }
 
-.shopeeAppHeader {
+.appHeader {
   background: linear-gradient(135deg, #204F38 0%, #279354 100%);
   padding: 12px;
   display: flex;
@@ -495,7 +494,7 @@
   gap: 8px;
 }
 
-.shopeeAppHeader input {
+.appHeader input {
   flex: 1;
   padding: 8px 12px;
   border: none;
@@ -596,7 +595,6 @@
 
   .contentWrapper {
     flex: 1;
-    display: flex;
     flex-direction: column;
     gap: 32px;
     padding: 0;
@@ -604,23 +602,18 @@
   }
 
   .leftSection {
-    order: -1; /* "Be a Power Seller" on top on mobile */
     padding: 0 8px;
     flex-shrink: 0;
   }
 
   .rightSection {
-    order: 1; /* login form below left section on mobile */
     flex-shrink: 0;
-    display: flex;
-    justify-content: center;
     align-items: flex-start;
   }
 
   .loginCard {
     padding: 28px 22px;
     max-height: none;
-    width: 100%;
     max-width: 400px;
     margin: 0 auto;
   }

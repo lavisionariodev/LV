@@ -6,10 +6,10 @@ import Link from 'next/link'
 import Image from 'next/image'
 import styles from './AppTopbar.module.css'
 import { IoSearch } from 'react-icons/io5'
-import { TbBell } from 'react-icons/tb'
+import { TbBell, TbMenu2 } from 'react-icons/tb'
 import { FaUser } from 'react-icons/fa6'
 import { LuLogOut, LuChevronDown } from 'react-icons/lu'
-import { TbSettings, TbMessage2Question } from 'react-icons/tb'
+import { TbSettings, TbMessage2Question, TbClipboardList } from 'react-icons/tb'
 import { Logout } from '@/components/ui'
 import { useAuth } from '@/contexts/AuthContext'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
@@ -33,6 +33,7 @@ const TOPBAR_CONFIG = {
     defaultDisplayName: 'Seller',
     avatarAlt: 'Seller avatar',
     profileMenuItems: [
+      { href: '/seller/onboarding', label: 'Onboarding', icon: TbClipboardList },
       { href: '/seller/settings', label: 'Settings', icon: TbSettings },
       { href: '/seller/help', label: 'Help Center', icon: TbMessage2Question },
     ],
@@ -78,37 +79,25 @@ const PAGE_TITLES = {
   },
 }
 
-const getPageTitle = (variant, pathname) => {
+function getPageTitle(variant, pathname) {
   if (!pathname) return ''
-
   const cleanPath = pathname.split(/[?#]/)[0]
   const segments = cleanPath.split('/').filter(Boolean)
-
   if (segments.length === 0) return ''
-
-  // Map nested routes like /admin/users/123 to /admin/users
-  const base =
-    segments.length >= 2
-      ? `/${segments[0]}/${segments[1]}`
-      : `/${segments[0]}`
 
   const map = PAGE_TITLES[variant] || {}
   const fullPath = `/${segments.join('/')}`
-  if (map[fullPath]) return map[fullPath]
-  if (map[base]) return map[base]
+  const base = segments.length >= 2 ? `/${segments[0]}/${segments[1]}` : `/${segments[0]}`
+  const fromMap = map[fullPath] ?? map[base]
+  if (fromMap) return fromMap
 
-  // Fallback: use last segment, capitalized
   const raw = segments[segments.length - 1]
-  if (!raw) return ''
-
-  const withSpaces = raw
-    .replace(/-/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-
-  return withSpaces
+  return raw
+    ? raw.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+    : ''
 }
 
-export default function AppTopbar({ variant, onLogout }) {
+export default function AppTopbar({ variant, onLogout, isMobile, onMenuClick, sidebarCollapsed }) {
   const { user, profile } = useAuth()
   const [showLogout, setShowLogout] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -167,8 +156,20 @@ export default function AppTopbar({ variant, onLogout }) {
 
   return (
     <>
-      <header className={styles.topbar}>
+      <header
+        className={`${styles.topbar} ${!isMobile && sidebarCollapsed ? styles.sidebarCollapsed : ''}`}
+      >
         <div className={styles.left}>
+          {isMobile && (
+            <button
+              type="button"
+              className={styles.menuBtn}
+              onClick={onMenuClick}
+              aria-label="Toggle menu"
+            >
+              <TbMenu2 />
+            </button>
+          )}
           {pageTitle && <h1 className={styles.pageTitle}>{pageTitle}</h1>}
         </div>
 
@@ -202,45 +203,39 @@ export default function AppTopbar({ variant, onLogout }) {
                 role="button"
                 tabIndex={0}
                 className={styles.profileTrigger}
-              onClick={() => setDropdownOpen((prev) => !prev)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  setDropdownOpen((prev) => !prev)
-                }
-              }}
-              aria-expanded={dropdownOpen}
-              aria-haspopup="true"
-              aria-label="Profile menu"
-            >
-              <div className={styles.profileAvatar}>
-                {avatarUrl ? (
-                  <Image
-                    src={avatarUrl}
-                    alt={config.avatarAlt}
-                    width={28}
-                    height={28}
-                    className={styles.profileAvatarImg}
-                    unoptimized
-                  />
-                ) : (
-                  <FaUser />
-                )}
+                onClick={() => setDropdownOpen((o) => !o)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setDropdownOpen((o) => !o)
+                  }
+                }}
+                aria-expanded={dropdownOpen}
+                aria-haspopup="true"
+                aria-label="Profile menu"
+              >
+                <div className={styles.profileAvatar}>
+                  {avatarUrl ? (
+                    <Image
+                      src={avatarUrl}
+                      alt={config.avatarAlt}
+                      width={28}
+                      height={28}
+                      className={styles.profileAvatarImg}
+                      unoptimized
+                    />
+                  ) : (
+                    <FaUser />
+                  )}
+                </div>
+                <span className={styles.profileChevron} aria-hidden>
+                  <LuChevronDown />
+                </span>
               </div>
-              <span className={styles.profileChevron} aria-hidden>
-                <LuChevronDown />
-              </span>
-            </div>
             </div>
 
             <div className={styles.profileDropdown}>
               <div className={styles.profileDropdownCard}>
-                <div className={styles.profileDropdownInfo}>
-                  <p className={styles.profileDropdownName}>{displayName}</p>
-                  {displayEmail && (
-                    <p className={styles.profileDropdownEmail}>{displayEmail}</p>
-                  )}
-                </div>
                 <div className={styles.profileDropdownAvatar}>
                   {avatarUrl ? (
                     <Image
@@ -257,30 +252,34 @@ export default function AppTopbar({ variant, onLogout }) {
                     </span>
                   )}
                 </div>
-              </div>
-              {config.profileMenuItems?.length > 0 && (
-                <div className={styles.profileDropdownMenu}>
-                  {config.profileMenuItems.map(({ href, label, icon: Icon }) => (
-                    <Link
-                      key={href}
-                      href={href}
-                      className={styles.profileDropdownItem}
-                      onClick={() => setDropdownOpen(false)}
-                    >
-                      <Icon className={styles.profileDropdownItemIcon} />
-                      <span>{label}</span>
-                    </Link>
-                  ))}
+                <div className={styles.profileDropdownInfo}>
+                  <p className={styles.profileDropdownName}>{displayName}</p>
+                  {displayEmail && (
+                    <p className={styles.profileDropdownEmail}>{displayEmail}</p>
+                  )}
                 </div>
-              )}
-              <button
-                type="button"
-                className={styles.logoutBtn}
-                onClick={onClickLogout}
-              >
-                <LuLogOut />
-                <span>Log out</span>
-              </button>
+              </div>
+              <div className={styles.profileDropdownMenu}>
+                {config.profileMenuItems?.map(({ href, label, icon: Icon }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={styles.profileDropdownItem}
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <Icon className={styles.profileDropdownItemIcon} />
+                    <span>{label}</span>
+                  </Link>
+                ))}
+                <button
+                  type="button"
+                  className={styles.logoutBtn}
+                  onClick={onClickLogout}
+                >
+                  <LuLogOut />
+                  <span>Log out</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

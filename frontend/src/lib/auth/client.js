@@ -133,3 +133,20 @@ export async function signInWithOAuth({ provider, redirectTo }) {
   }
   return { data, error: null };
 }
+
+/**
+ * Build OAuth callback URL with optional redirect path and portal (e.g. seller).
+ * Use for signInWithOAuth options.redirectTo.
+ * @param {{ redirectPath?: string, portal?: string }}
+ */
+export function getOAuthRedirectUrl({ redirectPath, portal } = {}) {
+  if (typeof window === 'undefined') return '';
+  const origin = window.location.origin;
+  let url = redirectPath && redirectPath !== '/'
+    ? `${origin}/auth/callback?redirect=${encodeURIComponent(redirectPath)}`
+    : `${origin}/auth/callback`;
+  if (portal) {
+    url += url.includes('?') ? `&portal=${portal}` : `?portal=${portal}`;
+  }
+  return url;
+}

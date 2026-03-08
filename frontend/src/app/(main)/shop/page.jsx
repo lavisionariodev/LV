@@ -3,15 +3,16 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useMemo, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { SERVICES, CATEGORIES, PROVIDERS, LISTINGS } from './data'
 import styles from './shop.module.css'
 
 export default function ShopPage() {
+  const router = useRouter()
   const [activeCategory, setActiveCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState('popular')
   const [compareIds, setCompareIds] = useState([])
-  const [showCompareModal, setShowCompareModal] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
   const [locationQuery, setLocationQuery] = useState('')
   const [locationFocused, setLocationFocused] = useState(false)
@@ -97,17 +98,6 @@ export default function ShopPage() {
     return providers
   }, [activeCategory, locationQuery])
 
-  const compareListings = useMemo(() => {
-    return compareIds
-      .map((id) => {
-        const listing = LISTINGS.find((l) => l.id === id)
-        const provider = PROVIDERS.find((p) => p.id === listing?.providerId)
-        const service = SERVICES.find((s) => s.id === listing?.serviceId)
-        return { listing, provider, service }
-      })
-      .filter((x) => x.listing)
-  }, [compareIds])
-
   function toggleCompare(id) {
     setCompareIds((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id)
@@ -117,38 +107,10 @@ export default function ShopPage() {
   }
 
   function handleViewComparison() {
-    if (compareIds.length >= 2) setShowCompareModal(true)
+    if (compareIds.length >= 2) {
+      router.push(`/shop/compare?ids=${compareIds.join(',')}`)
+    }
   }
-
-  function closeCompareModal() {
-    setShowCompareModal(false)
-  }
-
-  const lowestPriceId = useMemo(() => {
-    if (compareListings.length < 2) return null
-    return compareListings.reduce((a, b) => (a.listing.price <= b.listing.price ? a : b)).listing?.id
-  }, [compareListings])
-
-  const highestRatedId = useMemo(() => {
-    if (compareListings.length < 2) return null
-    return compareListings.reduce((a, b) => ((a.provider?.rating ?? 0) >= (b.provider?.rating ?? 0) ? a : b)).listing?.id
-  }, [compareListings])
-
-  const mostPopularId = useMemo(() => {
-    if (compareListings.length < 2) return null
-    return compareListings.find((x) => x.listing.popular)?.listing?.id ?? null
-  }, [compareListings])
-
-  const bestValueId = useMemo(() => {
-    if (compareListings.length < 2) return null
-    return compareListings
-      .reduce((a, b) => {
-        const aScore = (a.listing.inclusions.length / a.listing.price) * (a.provider?.rating ?? 1)
-        const bScore = (b.listing.inclusions.length / b.listing.price) * (b.provider?.rating ?? 1)
-        return aScore >= bScore ? a : b
-      })
-      .listing?.id
-  }, [compareListings])
 
   return (
     <section className={styles.servicesPage}>
@@ -640,151 +602,6 @@ export default function ShopPage() {
         </div>
       </div>
 
-      {/* ── Compare Modal ── */}
-      {showCompareModal && (
-        <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && closeCompareModal()}>
-          <div className={styles.modal}>
-            <div className={styles.modalHeader}>
-              <div>
-                <h2 className={styles.modalTitle}>Service Comparison</h2>
-                <p className={styles.modalSubtitle}>Comparing {compareListings.length} services side by side</p>
-              </div>
-              <button className={styles.modalClose} onClick={closeCompareModal} aria-label="Close">
-                <svg viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M2 2l10 10M12 2L2 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Highlight row — no emojis */}
-            <div className={styles.compareHighlights}>
-              {lowestPriceId && (
-                <div className={styles.compareHighlight}>
-                  <p className={styles.highlightLabel}>Lowest Price</p>
-                  <p className={styles.highlightValue}>{compareListings.find((x) => x.listing.id === lowestPriceId)?.listing.name}</p>
-                </div>
-              )}
-              {highestRatedId && (
-                <div className={styles.compareHighlight}>
-                  <p className={styles.highlightLabel}>Highest Rated</p>
-                  <p className={styles.highlightValue}>{compareListings.find((x) => x.listing.id === highestRatedId)?.listing.name}</p>
-                </div>
-              )}
-              {mostPopularId && (
-                <div className={styles.compareHighlight}>
-                  <p className={styles.highlightLabel}>Most Popular</p>
-                  <p className={styles.highlightValue}>{compareListings.find((x) => x.listing.id === mostPopularId)?.listing.name}</p>
-                </div>
-              )}
-              {bestValueId && (
-                <div className={styles.compareHighlight}>
-                  <p className={styles.highlightLabel}>Best Value</p>
-                  <p className={styles.highlightValue}>{compareListings.find((x) => x.listing.id === bestValueId)?.listing.name}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Comparison table */}
-            <div className={styles.compareTableWrap}>
-              <table className={styles.compareTable}>
-                <thead>
-                  <tr>
-                    <th className={styles.compareTableLabel} />
-                    {compareListings.map(({ listing, provider }) => (
-                      <th key={listing.id} className={styles.compareTableHead}>
-                        <div className={styles.compareColHeader}>
-                          <div className={styles.compareColAvatar}>{provider?.name.charAt(0)}</div>
-                          <p className={styles.compareColName}>{listing.name}</p>
-                          <p className={styles.compareColProvider}>{provider?.name}</p>
-                          {listing.id === bestValueId && <span className={styles.compareColBestBadge}>Best Value</span>}
-                        </div>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className={styles.compareRow}>
-                    <td className={styles.compareRowLabel}>Starting Price</td>
-                    {compareListings.map(({ listing }) => (
-                      <td key={listing.id} className={`${styles.compareRowCell}${listing.id === lowestPriceId ? ` ${styles.compareCellHighlight}` : ''}`}>
-                        <span className={styles.comparePriceVal}>₱{listing.price.toLocaleString('en-PH')}</span>
-                        {listing.id === lowestPriceId && <span className={styles.compareCellTag}>Lowest</span>}
-                      </td>
-                    ))}
-                  </tr>
-                  <tr className={styles.compareRow}>
-                    <td className={styles.compareRowLabel}>Provider Rating</td>
-                    {compareListings.map(({ listing, provider }) => (
-                      <td key={listing.id} className={`${styles.compareRowCell}${listing.id === highestRatedId ? ` ${styles.compareCellHighlight}` : ''}`}>
-                        <div className={styles.compareRating}>
-                          <span className={styles.compareRatingNum}>{provider?.rating}</span>
-                          <span className={styles.compareRatingMax}>/5</span>
-                          <span className={styles.compareRatingCount}>({provider?.reviews} reviews)</span>
-                        </div>
-                        {listing.id === highestRatedId && <span className={styles.compareCellTag}>Top Rated</span>}
-                      </td>
-                    ))}
-                  </tr>
-                  <tr className={styles.compareRow}>
-                    <td className={styles.compareRowLabel}>Location</td>
-                    {compareListings.map(({ listing, provider }) => (
-                      <td key={listing.id} className={styles.compareRowCell}>
-                        <span className={styles.compareText}>{provider?.location}</span>
-                      </td>
-                    ))}
-                  </tr>
-                  <tr className={styles.compareRow}>
-                    <td className={styles.compareRowLabel}>Inclusions</td>
-                    {compareListings.map(({ listing }) => (
-                      <td key={listing.id} className={styles.compareRowCell}>
-                        <ul className={styles.compareInclusionList}>
-                          {listing.inclusions.map((inc, i) => (
-                            <li key={i} className={styles.compareInclusionItem}>
-                              <svg viewBox="0 0 10 10" width="9" height="9" fill="none" stroke="var(--color-gold-base, #B8962E)" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}>
-                                <path d="M2 5l2 2 4-4" />
-                              </svg>
-                              {inc}
-                            </li>
-                          ))}
-                        </ul>
-                      </td>
-                    ))}
-                  </tr>
-                  <tr className={styles.compareRow}>
-                    <td className={styles.compareRowLabel}>Popularity</td>
-                    {compareListings.map(({ listing }) => (
-                      <td key={listing.id} className={`${styles.compareRowCell}${listing.id === mostPopularId ? ` ${styles.compareCellHighlight}` : ''}`}>
-                        {listing.popular
-                          ? <span className={styles.comparePopularBadge}>Most Popular</span>
-                          : <span className={styles.compareText}>—</span>
-                        }
-                      </td>
-                    ))}
-                  </tr>
-                  <tr className={styles.compareRowActions}>
-                    <td className={styles.compareRowLabel} />
-                    {compareListings.map(({ listing }) => (
-                      <td key={listing.id} className={styles.compareRowCell}>
-                        <Link href={`/shop/${listing.serviceId}`} className={styles.compareViewBtn}>
-                          View Details
-                        </Link>
-                      </td>
-                    ))}
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div className={styles.modalFooter}>
-              <button className={styles.modalDismiss} onClick={closeCompareModal}>Close</button>
-              <button className={styles.modalClearCompare} onClick={() => { setCompareIds([]); closeCompareModal() }}>
-                Clear & Start Over
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ── Floating Compare Popup (appears when 2+ selected) ── */}
       {compareIds.length >= 2 && (
         <div className={styles.compareFloatPopup} role="dialog" aria-label="Compare services">
@@ -846,38 +663,39 @@ function ListingCard({ listing, service, styles, inCompare, onToggleCompare, com
 
   return (
     <div className={`${styles.card} ${styles.listingCard}${inCompare ? ` ${styles.listingCardSelected}` : ''}`}>
-      <div className={styles.listingImageWrap}>
-        <Image
-          src={service?.image ?? '/sample/services/2.jpg'}
-          alt={listing.name}
-          width={400}
-          height={250}
-          className={styles.cardImage}
-        />
-        {listing.popular && <span className={styles.popularBadge}>Most Popular</span>}
-        {provider?.badge && (
-          <span className={`${styles.providerBadge} ${styles[`badge${provider.badge.replace(' ', '')}`]}`}>
-            {provider.badge}
-          </span>
-        )}
-        {inCompare && (
-          <div className={styles.compareSelectedOverlay}>
-            <span className={styles.compareSelectedCheck}>✓</span>
-          </div>
-        )}
-      </div>
+      <Link href={`/shop/${listing.serviceId}`} className={styles.listingCardLink}>
+        <div className={styles.listingImageWrap}>
+          <Image
+            src={service?.image ?? '/sample/services/2.jpg'}
+            alt={listing.name}
+            width={400}
+            height={250}
+            className={styles.cardImage}
+          />
+          {listing.popular && <span className={styles.popularBadge}>Most Popular</span>}
+          {provider?.badge && (
+            <span className={`${styles.providerBadge} ${styles[`badge${provider.badge.replace(' ', '')}`]}`}>
+              {provider.badge}
+            </span>
+          )}
+          {inCompare && (
+            <div className={styles.compareSelectedOverlay}>
+              <span className={styles.compareSelectedCheck}>✓</span>
+            </div>
+          )}
+        </div>
 
-      <div className={`${styles.cardBody} ${styles.listingBody}`}>
-        <div className={styles.providerRow}>
-          <div className={styles.providerAvatar}>{provider?.name.charAt(0)}</div>
-          <div className={styles.providerInfo}>
-            <p className={styles.providerName}>{provider?.name}</p>
-            <p className={styles.providerLocation}>
-              <svg viewBox="0 0 12 14" width="9" height="9" fill="var(--color-gold-base, #B8962E)" style={{ marginRight: 3, flexShrink: 0, display: 'inline-block', verticalAlign: 'middle' }}>
-                <path d="M6 0a5 5 0 0 1 5 5c0 4.5-5 9-5 9S1 9.5 1 5a5 5 0 0 1 5-5z" />
-                <circle cx="6" cy="5" r="1.8" fill="white" />
-              </svg>
-              {provider?.location}
+        <div className={`${styles.cardBody} ${styles.listingBody}`}>
+          <div className={styles.providerRow}>
+            <div className={styles.providerAvatar}>{provider?.name.charAt(0)}</div>
+            <div className={styles.providerInfo}>
+              <p className={styles.providerName}>{provider?.name}</p>
+              <p className={styles.providerLocation}>
+                <svg viewBox="0 0 12 14" width="9" height="9" fill="var(--color-gold-base, #B8962E)" style={{ marginRight: 3, flexShrink: 0, display: 'inline-block', verticalAlign: 'middle' }}>
+                  <path d="M6 0a5 5 0 0 1 5 5c0 4.5-5 9-5 9S1 9.5 1 5a5 5 0 0 1 5-5z" />
+                  <circle cx="6" cy="5" r="1.8" fill="white" />
+                </svg>
+                {provider?.location}
             </p>
           </div>
           <div className={styles.ratingGroup}>
@@ -902,10 +720,11 @@ function ListingCard({ listing, service, styles, inCompare, onToggleCompare, com
             <span className={styles.price}>₱{listing.price.toLocaleString('en-PH')}</span>
           </div>
         </div>
+        </div>
+      </Link>
 
-
-        <div className={styles.cardActions}>
-          <button className={`${styles.cardCta} ${styles.ctaBtn}`} onClick={() => {}}>
+      <div className={styles.cardActions}>
+        <button className={`${styles.cardCta} ${styles.ctaBtn}`} onClick={() => {}}>
             <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, flexShrink: 0 }}>
               <path d="M1 1h2l1.5 7.5h8l1.5-5H4.5" />
               <circle cx="7" cy="13.5" r="1" fill="currentColor" stroke="none" />
@@ -930,6 +749,5 @@ function ListingCard({ listing, service, styles, inCompare, onToggleCompare, com
           </button>
         </div>
       </div>
-    </div>
   )
 }

@@ -9,7 +9,7 @@ import { FaStore, FaGift, FaHandshake, FaBullhorn, FaTruck,
          FaFacebook, FaYoutube, FaViber, FaShoppingBag } from 'react-icons/fa';
 import PublicFooter from '@/components/layout/PublicFooter/PublicFooter';
 import { validateNewPassword } from '@/lib/validators/authSchemas';
-import { sendEmailOtpForSignup, verifyEmailOtpForSignup, signInWithOAuth } from '@/lib/auth/client';
+import { sendEmailOtpForSignup, verifyEmailOtpForSignup, signInWithOAuth, getOAuthRedirectUrl } from '@/lib/auth/client';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/contexts/ToastContext';
 
@@ -34,7 +34,7 @@ const StepIndicator = ({ currentStep }) => (
   </div>
 );
 
-const Step1PhoneInput = ({ phoneNumber, setPhoneNumber, onNext, currentStep, onSocialAuth }) => (
+const Step1EmailInput = ({ email, setEmail, onNext, currentStep, onSocialAuth }) => (
   <div className={styles.signupCard}>
     {currentStep > 1 && <StepIndicator currentStep={currentStep} />}
     <h2 className={styles.signupTitle}>Sign Up</h2>
@@ -42,9 +42,9 @@ const Step1PhoneInput = ({ phoneNumber, setPhoneNumber, onNext, currentStep, onS
       <input
         type="email"
         placeholder="Email Address"
-        className={styles.phoneInput}
-        value={phoneNumber}
-        onChange={(e) => setPhoneNumber(e.target.value)}
+        className={styles.emailInput}
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') onNext(); }}
       />
       <button 
@@ -105,7 +105,7 @@ const Step2VerificationMethod = ({ email, onSelectMethod, onBack, currentStep, i
       <p className={styles.verificationSubtitle}>
         We will send a verification code to:
       </p>
-      <p className={styles.phoneDisplay}>{email}</p>
+      <p className={styles.emailDisplay}>{email}</p>
 
       <button
         type="button"
@@ -157,7 +157,7 @@ const Step3OTPInput = ({
       <p className={styles.verificationSubtitle}>
         We have sent a 6-digit verification code to your email address:
       </p>
-      <p className={styles.phoneDisplay}>{email}</p>
+      <p className={styles.emailDisplay}>{email}</p>
       
       <div className={styles.otpInputs}>
         {[0, 1, 2, 3, 4, 5].map((index) => (
@@ -483,8 +483,7 @@ const Step5CreatePassword = ({
 
 const Page = () => {
   const [step, setStep] = useState(1);
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [verificationMethod, setVerificationMethod] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
   const [otpValue, setOtpValue] = useState(['', '', '', '', '', '']);
   const [countdown, setCountdown] = useState(0);
   const [password, setPassword] = useState('');
@@ -492,8 +491,6 @@ const Page = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [existingAccount, setExistingAccount] = useState(null);
-  const [showStepIndicator, setShowStepIndicator] = useState(false);
-  const [isSellerCenterSignup, setIsSellerCenterSignup] = useState(false);
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
@@ -509,18 +506,10 @@ const Page = () => {
   }, [countdown]);
 
   const handleSocialSignup = async (provider) => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const redirectPath = '/seller/onboarding';
-
-    const baseRedirect =
-      redirectPath && redirectPath !== '/'
-        ? `${origin}/auth/callback?redirect=${encodeURIComponent(redirectPath)}`
-        : `${origin}/auth/callback`;
-
-    const redirectTo =
-      baseRedirect.includes('?')
-        ? `${baseRedirect}&portal=seller`
-        : `${baseRedirect}?portal=seller`;
+    const redirectTo = getOAuthRedirectUrl({
+      redirectPath: '/seller/onboarding',
+      portal: 'seller',
+    });
 
     if (provider === 'Google') {
       const { error } = await signInWithOAuth({ provider: 'google', redirectTo });
@@ -537,121 +526,84 @@ const Page = () => {
     toast.info(`${provider} authentication would be implemented here`);
   };
 
-  const handlePhoneNext = () => {
-    const trimmedEmail = phoneNumber.trim();
+  const handleEmailNext = () => {
+    const trimmedEmail = signupEmail.trim();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
-      alert('Please enter a valid email address.');
+      toast.error('Please enter a valid email address.');
       return;
     }
-    // Reuse phoneNumber state as the email entered in step 1
-    setPhoneNumber(trimmedEmail);
+    setSignupEmail(trimmedEmail);
     setEmail(trimmedEmail);
-    setShowStepIndicator(true);
     setStep(2);
+  };
+
+  const sendVerificationCode = async (isResend = false) => {
+    const trimmedEmail = signupEmail.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
+      toast.error('Please enter a valid email address.');
+      return false;
+    }
+
+    setIsSendingCode(true);
+    try {
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', trimmedEmail)
+        .maybeSingle();
+
+      if (existingProfile) {
+        toast.error('This email is already registered. Please log in instead of signing up again.');
+        router.push('/seller/login');
+        return false;
+      }
+
+      const { error } = await sendEmailOtpForSignup({
+        email: trimmedEmail,
+        role: 'seller',
+      });
+
+      if (error) {
+        toast.error(error);
+        return false;
+      }
+
+      setCountdown(60);
+      toast.success(isResend ? 'Verification code resent to your email.' : 'Verification code sent to your email.');
+      return true;
+    } catch (err) {
+      console.error('Error sending email OTP:', err);
+      toast.error(isResend ? 'Failed to resend verification code. Please try again.' : 'Failed to send verification code. Please try again.');
+      return false;
+    } finally {
+      setIsSendingCode(false);
+    }
   };
 
   const handleMethodSelect = async (method) => {
     if (method !== 'email') return;
-
-    const trimmedEmail = phoneNumber.trim();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
-      toast.error('Please enter a valid email address.');
-      return;
-    }
-
-    setIsSendingCode(true);
-    try {
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', trimmedEmail)
-        .maybeSingle();
-
-      if (existingProfile) {
-        toast.error('This email is already registered. Please sign in instead of signing up again.');
-        router.push('/seller/login');
-        return;
-      }
-
-      const { error } = await sendEmailOtpForSignup({
-        email: trimmedEmail,
-        role: 'seller',
-      });
-
-      if (error) {
-        toast.error(error);
-        return;
-      }
-
-      setVerificationMethod('email');
-      setCountdown(60);
-      toast.success('Verification code sent to your email.');
-      setStep(3);
-    } catch (err) {
-      console.error('Error sending email OTP:', err);
-      toast.error('Failed to send verification code. Please try again.');
-    } finally {
-      setIsSendingCode(false);
-    }
+    const success = await sendVerificationCode(false);
+    if (success) setStep(3);
   };
 
   const handleResendOTP = async () => {
     if (countdown > 0) return;
-
-    const trimmedEmail = phoneNumber.trim();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
-      toast.error('Please enter a valid email address.');
-      return;
-    }
-
-    setIsSendingCode(true);
-    try {
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', trimmedEmail)
-        .maybeSingle();
-
-      if (existingProfile) {
-        toast.error('This email is already registered. Please sign in instead of signing up again.');
-        router.push('/seller/login');
-        return;
-      }
-
-      const { error } = await sendEmailOtpForSignup({
-        email: trimmedEmail,
-        role: 'seller',
-      });
-
-      if (error) {
-        toast.error(error);
-        return;
-      }
-
-      setCountdown(60);
-      toast.success('Verification code resent to your email.');
-    } catch (err) {
-      console.error('Error resending email OTP:', err);
-      toast.error('Failed to resend verification code. Please try again.');
-    } finally {
-      setIsSendingCode(false);
-    }
+    await sendVerificationCode(true);
   };
 
   const handleOTPNext = async () => {
     const code = otpValue.join('');
     if (code.length !== 6) {
-      alert('Please enter the complete 6-digit code');
+      toast.error('Please enter the complete 6-digit code');
       return;
     }
 
     setIsVerifyingCode(true);
     try {
       const { error } = await verifyEmailOtpForSignup({
-        email: phoneNumber,
+        email: signupEmail,
         token: code,
       });
 
@@ -672,28 +624,19 @@ const Page = () => {
   };
 
   const handleReclaimProceed = () => {
-    // Proceed with reclaiming the phone number for Seller Centre account
-    alert('✅ Phone Number Reclaim Request Submitted!\n\n' +
-          'Your request has been received and is being processed.\n\n' +
-          'What happens next:\n' +
-          '• Our team will review your request within 24-48 hours\n' +
-          '• You will receive an email confirmation once approved\n' +
-          '• The phone number will be removed from your buyer account\n' +
-          '• You can then complete your Seller Centre registration\n\n' +
-          'Thank you for your patience!');
+    toast.success('Reclaim request submitted. Our team will review within 24-48 hours and email you once approved.');
     setStep(5);
   };
 
   const handleReclaimBack = () => {
-    // Go back to start with different number
     setStep(1);
-    setPhoneNumber('');
+    setSignupEmail('');
     setOtpValue(['', '', '', '', '', '']);
     setExistingAccount(null);
   };
 
   const handleLogin = () => {
-    alert('Redirecting to login...');
+    router.push('/seller/login');
   };
 
   const handleCreateNew = () => {
@@ -706,13 +649,13 @@ const Page = () => {
     const trimmedEmail = email.trim();
 
     if (!trimmedName || !trimmedEmail) {
-      alert('Please provide your full name and email address.');
+      toast.error('Please provide your full name and email address.');
       return;
     }
 
     const validation = validateNewPassword(password, confirmPassword);
     if (!validation.valid) {
-      alert(validation.message);
+      toast.error(validation.message);
       return;
     }
 
@@ -780,7 +723,7 @@ const Page = () => {
               <span className={styles.shopeeName}>Lavisionario</span>
             </div>
           </Link>
-          <a href="#" className={styles.needHelp}>Need help?</a>
+          <Link href="/seller/need_help" className={styles.needHelp}>Need help?</Link>
         </div>
       </header>
 
@@ -808,17 +751,17 @@ const Page = () => {
 
           <div className={styles.heroRight}>
             {step === 1 && (
-              <Step1PhoneInput
-                phoneNumber={phoneNumber}
-                setPhoneNumber={setPhoneNumber}
-                onNext={handlePhoneNext}
+              <Step1EmailInput
+                email={signupEmail}
+                setEmail={setSignupEmail}
+                onNext={handleEmailNext}
                 currentStep={1}
                 onSocialAuth={handleSocialSignup}
               />
             )}
             {step === 2 && (
               <Step2VerificationMethod
-                email={phoneNumber}
+                email={signupEmail}
                 onSelectMethod={handleMethodSelect}
                 onBack={() => setStep(1)}
                 currentStep={2}
@@ -827,7 +770,7 @@ const Page = () => {
             )}
             {step === 3 && (
               <Step3OTPInput
-                email={phoneNumber}
+                email={signupEmail}
                 countdown={countdown}
                 onResend={handleResendOTP}
                 otpValue={otpValue}
@@ -919,7 +862,7 @@ const Page = () => {
           <div className={styles.stepCard}>
             <div className={styles.stepNumber}>01</div>
             <h3>Create a Lavisionario account</h3>
-            <p>Select Sign Up via the Me tab on Lavisionario App. Then, sign up with your phone number.</p>
+            <p>Select Sign Up via the Me tab on Lavisionario App. Then, sign up with your email.</p>
           </div>
           <div className={styles.stepCard}>
             <div className={styles.stepNumber}>02</div>
