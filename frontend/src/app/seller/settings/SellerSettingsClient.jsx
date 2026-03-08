@@ -120,6 +120,7 @@ export default function SellerSettingsClient() {
       if (updateError) throw updateError
       setProfile((prev) => (prev ? { ...prev, avatarPath: filePath, avatarUrl: publicUrl } : prev))
       setPersonalStatus('Avatar updated successfully.')
+      setTimeout(() => setPersonalStatus(''), 5000)
     } catch (err) {
       setPersonalError(err.message || 'Failed to upload avatar.')
     } finally {
@@ -149,6 +150,7 @@ export default function SellerSettingsClient() {
       if (error) throw error
       setProfile((prev) => (prev ? { ...prev, avatarPath: null, avatarUrl: null } : prev))
       setPersonalStatus('Avatar removed.')
+      setTimeout(() => setPersonalStatus(''), 5000)
     } catch (err) {
       setPersonalError(err.message || 'Failed to remove avatar.')
     } finally {
@@ -198,6 +200,7 @@ export default function SellerSettingsClient() {
       setProfile((prev) => (prev ? { ...prev, fullName: trimmedName, email: trimmedEmail } : prev))
       setIsEditingPersonal(false)
       setPersonalStatus('Personal information updated successfully.')
+      setTimeout(() => setPersonalStatus(''), 5000)
     } catch (err) {
       setPersonalError(err.message || 'Failed to update personal information.')
     }

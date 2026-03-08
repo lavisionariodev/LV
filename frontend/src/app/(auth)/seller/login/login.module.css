@@ -24,6 +24,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  text-decoration: none;
+  color: inherit;
 }
 
 .logoIcon {
@@ -169,13 +171,17 @@
 .loginForm {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 6px;
 }
 
 .formGroup {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+}
+
+/* Extra space below password block (forgot password row) so it's not too close to the LOG IN button */
+.loginForm > .formGroup + .formGroup {
+  margin-bottom: 8px;
 }
 
 .input {
@@ -186,6 +192,7 @@
   font-size: 14px;
   outline: none;
   transition: border-color 0.2s;
+  margin: 4px 0;
 }
 
 .input:focus {
@@ -194,6 +201,12 @@
 
 .passwordWrapper {
   position: relative;
+}
+
+.forgotPasswordRow {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0;
 }
 
 .eyeIcon {
@@ -412,7 +425,7 @@
   background: white;
   border-radius: 8px;
   width: 100%;
-  max-width: 500px;
+  max-width: 460px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
@@ -451,6 +464,11 @@
 
 .modalBody {
   padding: 32px 24px;
+}
+
+/* Spacing between modal form fields and primary button (e.g. Send Reset Link) */
+.modalBody .formGroup + .loginButton {
+  margin-top: 1.2rem;
 }
 
 .phonePreview {

@@ -46,9 +46,11 @@ a {
   text-decoration: none;
 }
 
-button {
+button,
+[role="button"] {
   font-family: inherit;
   cursor: pointer;
+  user-select: none;
 }
 
 input,

@@ -9,8 +9,6 @@ import {
   TbLayoutDashboardFilled,
   TbReportSearch,
   TbUsers,
-  TbSettings,
-  TbMessage2Question,
   TbChartBar,
   TbClipboardList,
   TbShoppingBag,
@@ -35,10 +33,7 @@ const SIDEBAR_CONFIG = {
       { href: '/admin/sellers', label: 'Sellers', icon: LuUserCheck },
       { href: '/admin/content', label: 'Content', icon: HiOutlineNewspaper },
     ],
-    footerItems: [
-      { href: '/admin/settings', label: 'Settings', icon: TbSettings },
-      { href: '/admin/help', label: 'Help Center', icon: TbMessage2Question },
-    ],
+    footerItems: [],
   },
   seller: {
     basePath: '/seller',
@@ -90,8 +85,6 @@ const SIDEBAR_CONFIG = {
       },
     ],
     footerItems: [
-      { href: '/seller/settings', label: 'Settings', icon: TbSettings },
-      { href: '/seller/help', label: 'Help Center', icon: TbMessage2Question },
       { href: '/seller/onboarding', label: 'Onboarding', icon: TbClipboardList },
     ],
   },
