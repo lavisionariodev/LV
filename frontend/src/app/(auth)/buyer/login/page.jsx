@@ -27,16 +27,17 @@ function BuyerLoginPageInner() {
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const hasShownErrorRef = useRef(false);
+  const showForgotPasswordModalRef = useRef(false);
+  showForgotPasswordModalRef.current = showForgotPasswordModal;
 
   // Redirect recovery link to shared reset-password page (preserve hash)
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
     const hash = window.location.hash || "";
     if (hash.includes("type=recovery")) {
-      router.replace(`/auth/reset-password?portal=buyer${hash}`);
-      return;
+      window.location.replace(`${window.location.origin}/auth/reset-password?portal=buyer${hash}`);
     }
-  }, [router]);
+  }, []);
 
   // Strip OAuth hash fragment (e.g. #_=_ from Facebook) so the URL stays clean; don't strip recovery
   useEffect(() => {
@@ -58,6 +59,7 @@ function BuyerLoginPageInner() {
     getUser().then(async (currentUser) => {
       if (!mounted) return;
       if (!currentUser) return;
+      if (showForgotPasswordModalRef.current) return;
       const role = await getUserRole(currentUser.id);
       if (role === ROLE_BUYER) {
         router.replace(redirect);
@@ -211,12 +213,16 @@ function BuyerLoginPageInner() {
         </div>
 
         <div className={styles.forgotPasswordWrap}>
-          <a
+          <button
+            type="button"
             className={styles.forgotPasswordLink}
-            onClick={() => setShowForgotPasswordModal(true)}
+            onClick={() => {
+              showForgotPasswordModalRef.current = true;
+              setShowForgotPasswordModal(true);
+            }}
           >
             Forgot Password?
-          </a>
+          </button>
         </div>
 
         <button onClick={handleSignIn}>Log In</button>

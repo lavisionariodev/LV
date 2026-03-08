@@ -24,9 +24,9 @@ export default function AdminLoginPage() {
     if (typeof window === "undefined") return;
     const hash = window.location.hash || "";
     if (hash.includes("type=recovery")) {
-      router.replace(`/auth/reset-password?portal=administrator${hash}`);
+      window.location.replace(`${window.location.origin}/auth/reset-password?portal=administrator${hash}`);
     }
-  }, [router]);
+  }, []);
 
   const handleChange = (e) => {
     setSignInData((prev) => ({ ...prev, [e.target.name]: e.target.value }));

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { isValidEmail } from "@/lib/validators/authSchemas";
 import styles from "./ForgotPasswordModal.module.css";
 
 const VALID_PORTALS = ["buyer", "seller", "administrator"];
@@ -15,22 +16,30 @@ export default function ForgotPasswordModal({
 }) {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
 
   const safePortal = VALID_PORTALS.includes(portal) ? portal : "buyer";
 
   const handleSubmit = async () => {
-    if (!email?.trim()) {
+    const trimmed = email?.trim();
+    if (!trimmed) {
       onError?.("Please enter your email address.");
       return;
     }
+    const emailCheck = isValidEmail(trimmed);
+    if (!emailCheck.valid) {
+      onError?.(emailCheck.message);
+      return;
+    }
+    setSending(true);
     try {
       const origin =
         typeof window !== "undefined" ? window.location.origin : "";
-      const redirectTo = `${origin}/auth/reset-password?portal=${safePortal}`;
-      const { error } = await supabase.auth.resetPasswordForEmail(
-        email.trim(),
-        { redirectTo }
-      );
+      const requestedAt = Date.now();
+      const redirectTo = `${origin}/auth/reset-password?portal=${safePortal}&requested_at=${requestedAt}`;
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
+        redirectTo,
+      });
       if (error) {
         onError?.(
           error.message || "Failed to send reset email. Please try again."
@@ -42,6 +51,8 @@ export default function ForgotPasswordModal({
     } catch (err) {
       console.error("Forgot password error:", err);
       onError?.("An error occurred. Please try again later.");
+    } finally {
+      setSending(false);
     }
   };
 
@@ -92,8 +103,9 @@ export default function ForgotPasswordModal({
               type="button"
               onClick={handleSubmit}
               className={styles.submitButton}
+              disabled={sending}
             >
-              Send Reset Link
+              {sending ? "Sending…" : "Send Reset Link"}
             </button>
           </>
         ) : (
@@ -113,6 +125,7 @@ export default function ForgotPasswordModal({
             <p>
               We&apos;ve sent a password reset link to <strong>{email}</strong>.
               Please check your inbox and click the link to reset your password.
+              The link expires in 5 minutes.
             </p>
             <p className={styles.tryAgain}>
               Didn&apos;t receive the email? Check your spam folder or{" "}

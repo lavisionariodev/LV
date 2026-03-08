@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useLayoutEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
@@ -15,12 +15,28 @@ const LOGIN_PATHS = {
   administrator: "/administrator",
 };
 
+/** Reset link is valid for 5 minutes from requested_at in the URL. */
+const RESET_LINK_VALID_MS = 5 * 60 * 1000;
+
+/** Read recovery from URL (hash or query). Supabase puts tokens in hash; some flows use query. */
+function readRecoveryFromUrl() {
+  if (typeof window === "undefined") return false;
+  const hash = (window.location.hash || "").toLowerCase();
+  const search = (window.location.search || "").toLowerCase();
+  return hash.includes("type=recovery") || search.includes("type=recovery");
+}
+
+/** Capture recovery at module load so we have it before Supabase or other code can consume the hash. */
+const initialHasRecovery =
+  typeof window !== "undefined" ? readRecoveryFromUrl() : false;
+
 function ResetPasswordInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useToast();
   const [mounted, setMounted] = useState(false);
-  const [hasRecovery, setHasRecovery] = useState(false);
+  const [recoveryChecked, setRecoveryChecked] = useState(false);
+  const [hasRecovery, setHasRecovery] = useState(initialHasRecovery);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -29,11 +45,35 @@ function ResetPasswordInner() {
   const portal = VALID_PORTALS.includes(portalParam) ? portalParam : "buyer";
   const loginPath = LOGIN_PATHS[portal];
 
-  useEffect(() => {
+  /** If URL has requested_at, link expires after 5 minutes. */
+  const requestedAtParam = searchParams.get("requested_at");
+  const isLinkExpired =
+    requestedAtParam != null &&
+    requestedAtParam !== "" &&
+    Date.now() - Number(requestedAtParam) > RESET_LINK_VALID_MS;
+
+  useLayoutEffect(() => {
     if (typeof window === "undefined") return;
-    const hash = window.location.hash || "";
-    setHasRecovery(hash.includes("type=recovery"));
+    const fromUrl = readRecoveryFromUrl();
+    setHasRecovery((prev) => prev || fromUrl);
     setMounted(true);
+  }, []);
+
+  // Supabase may process the recovery hash and emit PASSWORD_RECOVERY (e.g. when redirect drops the fragment).
+  // Listen for it so we show the form; wait a moment before showing "Invalid or Expired".
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setHasRecovery(true);
+      }
+    });
+    const t = setTimeout(() => setRecoveryChecked(true), 1500);
+    return () => {
+      subscription?.unsubscribe();
+      clearTimeout(t);
+    };
   }, []);
 
   const handleChange = (e) => {
@@ -67,7 +107,7 @@ function ResetPasswordInner() {
     }
   };
 
-  if (!mounted) {
+  if (!mounted || (!hasRecovery && !recoveryChecked)) {
     return (
       <div className={styles.wrapper}>
         <div className={styles.card}>
@@ -77,7 +117,7 @@ function ResetPasswordInner() {
     );
   }
 
-  if (!hasRecovery) {
+  if (!hasRecovery || isLinkExpired) {
     return (
       <div className={styles.wrapper}>
         <div className={styles.card}>
@@ -86,8 +126,9 @@ function ResetPasswordInner() {
           </div>
           <h1 className={styles.title}>Invalid or Expired Link</h1>
           <p className={styles.message}>
-            This password reset link is invalid or has expired. Please request a
-            new one from the login page.
+            {isLinkExpired
+              ? "This password reset link has expired (valid for 5 minutes). Please request a new one from the login page."
+              : "This password reset link is invalid or has expired. Please request a new one from the login page."}
           </p>
           <Link href={loginPath} className={styles.primaryButton}>
             Back to Log In
