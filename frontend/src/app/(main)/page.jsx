@@ -6,6 +6,13 @@ import Image from 'next/image'
 import styles from './homepage.module.css'
 
 export default function LandingPage() {
+  // Strip OAuth hash fragment (e.g. #_=_ from Facebook) so the URL stays clean after login redirect
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search)
+    }
+  }, [])
+
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
   }, [])
@@ -227,6 +234,9 @@ function PartnerHighlightSection() {
 }
 
 /* ---------------- FINAL CTA ---------------- */
+// Placeholder: replace with La Visionario Facebook page URL when ready
+const LA_VISIONARIO_FB_URL = 'https://www.facebook.com/LaVisionario'
+
 function FinalCTASection() {
   return (
     <section className={styles.finalCTA}>
@@ -234,12 +244,18 @@ function FinalCTASection() {
         <div className={styles.ctaContent}>
           <h2 className={styles.ctaTitle}>Ready to Begin?</h2>
           <p className={styles.ctaDescription}>
-            Start planning with confidence. Explore our services or speak with
-            a compassionate advisor who understands what you&apos;re going through.
+            Start planning with confidence. Reach out to a compassionate advisor
+            who understands what you&apos;re going through.
           </p>
-
           <div className={styles.ctaButtons}>
-            <Link href="/shop" className={styles.ctaPrimary}>Browse Services</Link>
+            <a
+              href={LA_VISIONARIO_FB_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.ctaPrimary}
+            >
+              Need Assistance?
+            </a>
           </div>
         </div>
       </div>

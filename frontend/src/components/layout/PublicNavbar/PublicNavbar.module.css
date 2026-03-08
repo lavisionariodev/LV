@@ -79,6 +79,19 @@
   align-items: center;
 }
 
+.authLinks {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.authDivider {
+  margin: 0 6px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  user-select: none;
+}
+
 .userLink {
   display: flex;
   align-items: center;
@@ -99,6 +112,16 @@
 
 .userLink:hover {
   color: var(--color-gold-bright);
+}
+
+.userLink:focus-visible {
+  outline: 2px solid var(--color-gold-base);
+  outline-offset: 2px;
+}
+
+/* When userLink is an anchor (Sign Up link) */
+a.userLink {
+  text-decoration: none;
 }
 
 /* ===== MAIN NAVIGATION ===== */
@@ -595,6 +618,25 @@
   margin: 16px 0;
 }
 
+.mobileAuthLinks {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.mobileAuthLinks .mobileLink {
+  border-bottom: none;
+  padding: 14px 0;
+  display: inline-block;
+}
+
+.mobileAuthLinks .authDivider {
+  margin: 0;
+  color: rgba(77, 45, 24, 0.5);
+  font-size: 12px;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1024px) {
   .navMenu {
@@ -694,8 +736,8 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
 
-  /* Push page content up so nothing sits behind the bottom nav */
-  :global(body) {
+  /* Push page content up so nothing sits behind the bottom nav — only when this nav is in the DOM (main layout), not on admin/seller */
+  :global(body:has([data-bottom-nav])) {
     padding-bottom: calc(62px + env(safe-area-inset-bottom, 0px));
   }
 }
@@ -750,6 +792,25 @@
   color: inherit;
   text-align: center;
   white-space: nowrap;
+}
+
+.bottomNavAuthWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex: 1;
+}
+
+.bottomNavAuthWrap .bottomNavItem {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.bottomNavAuthDivider {
+  color: rgba(77, 45, 24, 0.4);
+  font-size: 10px;
+  user-select: none;
 }
 
 .bottomNavCartWrap {

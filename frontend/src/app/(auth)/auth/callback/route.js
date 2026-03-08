@@ -51,7 +51,7 @@ export async function GET(request) {
     .maybeSingle();
   if (adminRow) {
     await supabase.auth.signOut();
-    loginUrl.searchParams.set("error", "Please use the admin portal to sign in.");
+    loginUrl.searchParams.set("error", "Please use the admin portal to log in.");
     return NextResponse.redirect(loginUrl);
   }
 
@@ -158,7 +158,7 @@ export async function GET(request) {
     if (userRow.role === "buyer") {
       loginUrl.searchParams.set(
         "error",
-        "This account is registered as a buyer. Please sign in on the buyer portal or start seller onboarding from your buyer account."
+        "This account is registered as a buyer. Please log in on the buyer portal or start seller onboarding from your buyer account."
       );
     } else {
       loginUrl.searchParams.set(

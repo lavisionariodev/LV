@@ -1,67 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
 
-.authContainer {
-  background: linear-gradient(to right, #f5f5f5 50%, #204F38 50%);
-  width: 100%;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.authForm {
-  background: #fff;
-  width: 100%;
-  max-width: 400px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  padding: 50px 40px;
-  border-radius: 20px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-  position: relative;
-  z-index: 1;
-}
-
-.authContainer h1 {
-  font-size: 32px;
-  margin-bottom: 20px;
-  font-weight: 700;
-  color: #000;
-  align-self: flex-start;
-}
-
-.authContainer p {
-  font-size: 13px;
-  line-height: 20px;
-  letter-spacing: 0.3px;
-  margin: 15px 0;
-  color: #666;
-  text-align: center;
-}
-
-.authContainer span {
-  font-size: 12px;
-  margin: 15px 0;
-  color: #666;
-  align-self: flex-start;
-}
-
-.authContainer a {
-  color: #333;
-  font-size: 13px;
-  text-decoration: none;
-  margin: 15px 0 10px;
-  cursor: pointer;
-  align-self: flex-start;
-}
-
-.authContainer a:hover {
-  color: var(--color-main-accent);
-}
-
+/* Login form pieces (layout from AuthLayout) */
 .forgotPasswordWrap {
   width: 100%;
   display: flex;
@@ -77,103 +16,59 @@
   margin: 0;
 }
 
-.authContainer button {
-  background-color: var(--color-main-accent);
-  color: #fff;
-  font-size: 12px;
-  padding: 12px 40px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  margin-top: 15px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  width: 100%;
+.forgotPasswordWrap .forgotPasswordLink:hover {
+  color: var(--color-main-accent);
+  text-decoration: none;
 }
 
-.authContainer button:hover {
-  background-color: #279354;
-  box-shadow: 0 4px 8px rgba(32, 79, 56, 0.3);
+/* Tighter gap between email and password fields */
+.emailInput {
+  margin-bottom: 4px !important;
 }
 
-.authContainer input {
-  background-color: #ffffff;
-  border: none;
-  margin: 10px 0;
-  padding: 12px 15px;
-  font-size: 13px;
-  border-radius: 6px;
-  width: 100%;
-  outline: none;
-  transition: all 0.3s ease;
-}
-
-.authContainer input:focus {
-  background-color: #e0e0e0;
-  box-shadow: 0 0 0 2px rgba(125, 147, 112, 0.2);
-}
-
+/* Wrapper only for positioning the eye icon; input keeps same height as email/name */
 .passwordInputWrap {
   position: relative;
   width: 100%;
-  margin: 10px 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  background-color: #ffffff;
-  border: 1px solid #d0d0d0;
-  border-radius: 4px;
-  padding: 0;
+  margin: 4px 0 10px 0;
+}
+
+/* Same height as .authForm input: only add right padding for the eye icon; no extra margin */
+.passwordInputWrap input {
+  margin: 0;
+  padding-right: 44px;
   box-sizing: border-box;
 }
 
-.passwordInputWrap:focus-within {
-  border-color: var(--color-main-accent);
-  box-shadow: 0 0 6px 4px rgba(32, 79, 56, 0.1);
-}
-
-.passwordInputWrap input {
-  flex: 1;
-  padding: 12px 44px 12px 15px;
-  margin: 0;
-  border: none;
-  background: transparent;
-  outline: none;
-  font-size: 13px;
-  border-radius: 6px;
-}
-
-.passwordInputWrap input::placeholder {
-  color: #999;
-}
-
-.passwordToggle {
+/* Eye icon: override .authForm button so it stays a small icon (auth layout styles all buttons as primary) */
+.passwordInputWrap .eyeIcon {
   position: absolute;
-  left: auto;
   right: 12px;
   top: 50%;
   transform: translateY(-50%);
-  background: transparent;
-  padding: 4px;
+  width: auto !important;
+  min-width: unset;
+  margin: 0 !important;
+  padding: 4px !important;
+  background: none !important;
+  border: none !important;
+  border-radius: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+  color: #999;
   cursor: pointer;
-  color: #666;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  transition: color 0.2s ease;
-  user-select: none;
+  box-sizing: content-box;
 }
 
-.passwordToggle:hover {
+.passwordInputWrap .eyeIcon:hover {
   color: #333;
-}
-
-.passwordToggle i {
-  font-size: 20px;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .socialButtons {
@@ -181,36 +76,39 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  width: 100%;
 }
 
 /* Override layout’s green .authForm button so social buttons stay white with visible icons */
-button.socialButton {
+.socialButtons .socialButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   background-color: #ffffff !important;
   color: #333 !important;
   border: 1px solid #e0e0e0;
   padding: 10px;
   font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
   text-transform: none;
-}
-
-.socialButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s;
+  margin: 0;
 }
 
 /* Keep Facebook/Google logo colors visible */
-.socialButton svg {
+.socialButtons .socialButton svg {
   flex-shrink: 0;
   width: 18px;
   height: 18px;
 }
 
-button.socialButton:hover {
+.socialButtons .socialButton:hover {
+  background-color: #f8f8f8 !important;
+  border-color: var(--color-main-accent);
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(32, 79, 56, 0.3);
 }
@@ -232,321 +130,23 @@ button.socialButton:hover {
   color: #279354;
 }
 
-/* Modal Styles */
-.modalOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-}
-
-.modalContent {
-  background: #fff;
-  border-radius: 20px;
-  padding: 50px 40px;
-  max-width: 400px;
-  width: 100%;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  animation: slideUp 0.4s ease-in-out;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.closeButton {
-  position: absolute;
-  top: 15px;
-  right: 20px;
-  background: none;
-  border: none;
-  font-size: 32px;
-  cursor: pointer;
-  color: #999;
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-}
-
-.closeButton:hover {
-  color: #333;
-}
-
-.modalContent h2 {
-  font-size: 28px;
-  font-weight: 700;
-  margin: 20px 0 15px 0;
-  text-align: center;
-  width: 100%;
-}
-
-.modalContent p {
-  font-size: 13px;
-  color: #666;
-  text-align: center;
-  margin: 10px 0;
-  line-height: 1.5;
-}
-
-.modalContent input {
-  margin: 20px 0 10px 0;
-  padding: 12px 15px;
-  font-size: 13px;
-  border: 1px solid #d0d0d0;
-  border-radius: 4px;
-  width: 100%;
-  outline: none;
-  transition: all 0.3s ease;
-  box-sizing: border-box;
-}
-
-.modalContent input:focus {
-  border-color: var(--color-main-accent);
-  box-shadow: 0 0 6px 4px rgba(32, 79, 56, 0.1);
-}
-
-.submitButton {
-  background-color: var(--color-main-accent);
-  color: #fff;
-  font-size: 12px;
-  padding: 12px 40px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  margin-top: 20px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.submitButton:hover {
-  background-color: #279354;
-  box-shadow: 0 4px 8px rgba(32, 79, 56, 0.3);
-}
-
-.iconContainer {
-  width: 60px;
-  height: 60px;
-  background-color: rgba(32, 79, 56, 0.1);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0;
-}
-
-.iconContainer i {
-  font-size: 30px;
-  color: var(--color-main-accent);
-}
-
-.successIcon {
-  width: 60px;
-  height: 60px;
-  background-color: rgba(34, 197, 94, 0.1);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0;
-}
-
-.successIcon i {
-  font-size: 30px;
-  color: rgb(34, 197, 94);
-}
-
-.passwordRequirements {
-  font-size: 11px;
-  color: #666;
-  margin: 5px 0 10px 0;
-  padding: 0;
-  text-align: left;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* Mobile responsive – different transitions only on mobile (wide screen unchanged) */
+/* Mobile responsive */
 @media (max-width: 768px) {
-  .authContainer {
-    padding: 16px;
-  }
-
-  .authForm {
-    padding: 32px 24px;
-  }
-
-  .authContainer h1 {
-    font-size: 26px;
-  }
-
-  .authContainer button {
-    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out;
-  }
-
-  .authContainer input {
-    transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out;
-  }
-
   .socialButtons {
     grid-template-columns: 1fr;
   }
 
   .socialButton {
     padding: 12px;
-  }
-
-  .modalOverlay {
-    padding: 16px;
-    align-items: flex-start;
-    padding-top: max(24px, env(safe-area-inset-top));
-  }
-
-  .modalContent {
-    padding: 40px 24px 32px;
-    max-width: 100%;
-    margin: auto 0;
-    animation: modalSlideUp 0.25s ease-out; /* snappier on mobile */
-  }
-
-  .modalContent h2 {
-    font-size: 22px;
-  }
-
-  .modalContent p {
-    font-size: 12px;
-  }
-
-  .modalContent input {
-    font-size: 16px; /* prevents zoom on iOS */
-    padding: 12px 14px;
-    transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out;
-  }
-
-  .closeButton {
-    top: 12px;
-    right: 16px;
-    font-size: 28px;
-    transition: color 0.2s ease-out, transform 0.2s ease-out;
-  }
-
-  .submitButton {
-    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out;
-  }
-}
-
-@keyframes modalSlideUp {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
 
 @media (max-width: 480px) {
-  .authContainer {
-    padding: 12px;
-  }
-
-  .authForm {
-    padding: 24px 20px;
-  }
-
-  .authContainer h1 {
-    font-size: 22px;
-    margin-bottom: 16px;
-  }
-
-  .authContainer input {
-    padding: 12px 14px;
-    font-size: 16px;
-    transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out;
-  }
-
-  .authContainer button {
-    padding: 14px 24px;
-    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out;
-  }
-
   .socialButtons {
     grid-template-columns: 1fr;
   }
 
   .socialButton {
     padding: 12px;
-  }
-
-  .modalOverlay {
-    padding: 12px;
-    padding-top: max(16px, env(safe-area-inset-top));
-  }
-
-  .modalContent {
-    padding: 32px 20px 28px;
-    animation: modalSlideUp 0.22s ease-out;
-  }
-
-  .modalContent h2 {
-    font-size: 20px;
-    margin: 16px 0 12px;
-  }
-
-  .modalContent input {
-    margin: 10px 0;
-  }
-
-  .submitButton {
-    margin-top: 16px;
-    padding: 14px 24px;
-    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s ease-out;
-  }
-
-  .iconContainer,
-  .successIcon {
-    width: 52px;
-    height: 52px;
-  }
-
-  .iconContainer i,
-  .successIcon i {
-    font-size: 26px;
-  }
-
-  .closeButton {
-    top: 10px;
-    right: 12px;
-    width: 36px;
-    height: 36px;
-    font-size: 24px;
-    transition: color 0.2s ease-out, transform 0.2s ease-out;
   }
 }

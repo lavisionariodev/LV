@@ -242,7 +242,7 @@ export default function ServiceDetailPage({ params }) {
                 onClick={handleAddToCart}
                 disabled={!selectedListing || authLoading}
               >
-                {addedMessage ? 'Added to cart' : user && !isBuyer ? 'Sign in as buyer to add to cart' : 'Add to Cart'}
+                {addedMessage ? 'Added to cart' : user && !isBuyer ? 'Log in as buyer to add to cart' : 'Add to Cart'}
               </button>
               <button className={styles.btnSave} aria-label="Save">
                 ♡ Save

@@ -10,7 +10,6 @@ import {
   TbReportSearch,
   TbUsers,
   TbChartBar,
-  TbClipboardList,
   TbShoppingBag,
   TbPackage,
   TbSpeakerphone,
@@ -20,6 +19,10 @@ import {
 import { LuUserCheck } from 'react-icons/lu'
 import { HiOutlineNewspaper } from 'react-icons/hi'
 import styles from './AppSidebar.module.css'
+
+function isLinkItem(item) {
+  return 'href' in item && !('children' in item)
+}
 
 const SIDEBAR_CONFIG = {
   admin: {
@@ -33,7 +36,6 @@ const SIDEBAR_CONFIG = {
       { href: '/admin/sellers', label: 'Sellers', icon: LuUserCheck },
       { href: '/admin/content', label: 'Content', icon: HiOutlineNewspaper },
     ],
-    footerItems: [],
   },
   seller: {
     basePath: '/seller',
@@ -84,25 +86,23 @@ const SIDEBAR_CONFIG = {
         ],
       },
     ],
-    footerItems: [
-      { href: '/seller/onboarding', label: 'Onboarding', icon: TbClipboardList },
-    ],
   },
 }
 
-function isLinkItem(item) {
-  return 'href' in item && !('children' in item)
-}
-
-export default function AppSidebar({ variant, collapsed, onToggle }) {
+export default function AppSidebar({
+  variant,
+  collapsed = false,
+  onToggle,
+  isMobile,
+  mobileOpen,
+  onMobileClose,
+}) {
   const pathname = usePathname()
-  const [internalCollapsed, setInternalCollapsed] = useState(false)
-  const [openGroups, setOpenGroups] = useState(() => ({}))
+  const [openGroups, setOpenGroups] = useState({})
 
-  const isControlled =
-    collapsed !== undefined && typeof onToggle === 'function'
-  const isCollapsed = isControlled ? collapsed : internalCollapsed
-  const handleToggle = isControlled ? onToggle : () => setInternalCollapsed((c) => !c)
+  const showCollapsed = !isMobile && collapsed
+  const showMobileOpen = Boolean(isMobile && mobileOpen)
+  const handleNavClose = isMobile ? onMobileClose : undefined
 
   const config = SIDEBAR_CONFIG[variant]
   if (!config) return null
@@ -138,29 +138,51 @@ export default function AppSidebar({ variant, collapsed, onToggle }) {
   }, [hasGroups, sellerNavItems, pathname, openGroups])
 
   return (
-    <aside className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : ''}`}>
-      <div className={styles.logoRow}>
-        <Link href="/" className={styles.logoLeft}>
-          <div className={styles.logoMark}>LV</div>
-          {!isCollapsed && (
-            <div className={styles.logoText}>
-              <p className={styles.brand}>Lavisionario</p>
-              <p className={styles.brandSub}>{config.brandSub}</p>
-            </div>
+    <>
+      {showMobileOpen && (
+        <div
+          className={styles.backdrop}
+          onClick={onMobileClose}
+          aria-hidden
+          role="presentation"
+        />
+      )}
+      <aside
+        className={`${styles.sidebar} ${showCollapsed ? styles.collapsed : ''} ${showMobileOpen ? styles.mobileOpen : ''}`}
+      >
+        <div className={styles.logoRow}>
+          <Link href="/" className={styles.logoLeft} onClick={handleNavClose}>
+            <div className={styles.logoMark}>LV</div>
+            {!showCollapsed && (
+              <div className={styles.logoText}>
+                <p className={styles.brand}>Lavisionario</p>
+                <p className={styles.brandSub}>{config.brandSub}</p>
+              </div>
+            )}
+          </Link>
+
+          {isMobile ? (
+            <button
+              type="button"
+              className={styles.closeBtn}
+              onClick={onMobileClose}
+              aria-label="Close menu"
+            >
+              <TbLayoutSidebarLeftCollapse />
+            </button>
+          ) : (
+            <button
+              type="button"
+              className={styles.collapseBtn}
+              onClick={() => onToggle?.()}
+              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {collapsed ? <TbLayoutSidebarLeftExpand /> : <TbLayoutSidebarLeftCollapse />}
+            </button>
           )}
-        </Link>
+        </div>
 
-        <button
-          className={styles.collapseBtn}
-          onClick={handleToggle}
-          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          type="button"
-        >
-          {isCollapsed ? <TbLayoutSidebarLeftExpand /> : <TbLayoutSidebarLeftCollapse />}
-        </button>
-      </div>
-
-      {!isCollapsed && <p className={styles.sectionLabel}>MENU</p>}
+      {!showCollapsed && <p className={styles.sectionLabel}>MENU</p>}
 
       <nav className={styles.nav}>
         {config.navItems.map((item) => {
@@ -171,7 +193,8 @@ export default function AppSidebar({ variant, collapsed, onToggle }) {
                 key={href}
                 href={href}
                 className={`${styles.link} ${isActive(href) ? styles.active : ''}`}
-                title={isCollapsed ? label : undefined}
+                title={showCollapsed ? label : undefined}
+                onClick={handleNavClose}
               >
                 <span className={styles.iconWrap}>
                   <Icon className={styles.navIcon} />
@@ -182,16 +205,17 @@ export default function AppSidebar({ variant, collapsed, onToggle }) {
           }
 
           const { label, icon: Icon, defaultHref, children } = item
-          const expanded = isCollapsed ? false : expandedGroups[label]
+          const expanded = showCollapsed ? false : expandedGroups[label]
           const groupActive = isGroupActive(item)
 
-          if (isCollapsed) {
+          if (showCollapsed) {
             return (
               <Link
                 key={label}
                 href={defaultHref}
                 className={`${styles.link} ${groupActive ? styles.active : ''}`}
                 title={label}
+                onClick={handleNavClose}
               >
                 <span className={styles.iconWrap}>
                   <Icon className={styles.navIcon} />
@@ -223,6 +247,7 @@ export default function AppSidebar({ variant, collapsed, onToggle }) {
                       key={sub.href}
                       href={sub.href}
                       className={`${styles.subLink} ${isActive(sub.href) ? styles.active : ''}`}
+                      onClick={handleNavClose}
                     >
                       {sub.label}
                     </Link>
@@ -233,22 +258,7 @@ export default function AppSidebar({ variant, collapsed, onToggle }) {
           )
         })}
       </nav>
-
-      <div className={styles.footerNav}>
-        {config.footerItems.map(({ href, label, icon: Icon }) => (
-          <Link
-            key={href}
-            href={href}
-            className={`${styles.footerLink} ${isActive(href) ? styles.active : ''}`}
-            title={isCollapsed ? label : undefined}
-          >
-            <span className={styles.iconWrap}>
-              <Icon className={styles.navIcon} />
-            </span>
-            <span className={styles.linkText}>{label}</span>
-          </Link>
-        ))}
-      </div>
     </aside>
+    </>
   )
 }

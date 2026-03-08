@@ -33,9 +33,9 @@ const categoryIcons = {
 const categoriesWithArticles = [
   {
     id: 'shopping',
-    title: 'Shop with La Visionario',
+    title: 'Shop with Lavisionario',
     subCategories: [
-      { id: 'browse', title: 'Browse & search', article: { title: 'How do I browse and search on La Visionario?', content: 'You can browse by category from the home page or use the search bar at the top. Type keywords, filter by category, and sort by relevance or price. Save items to your wishlist for later.', note: null } },
+      { id: 'browse', title: 'Browse & search', article: { title: 'How do I browse and search on Lavisionario?', content: 'You can browse by category from the home page or use the search bar at the top. Type keywords, filter by category, and sort by relevance or price. Save items to your wishlist for later.', note: null } },
       { id: 'vouchers', title: 'Vouchers & promos', article: { title: 'How do I use vouchers?', content: 'At checkout, go to the "Vouchers" section and select a valid voucher. Vouchers may have a minimum spend or expiry date. Only one voucher can be applied per order unless otherwise stated.', note: null } },
     ],
   },
@@ -87,13 +87,13 @@ const categoriesWithArticles = [
     title: 'Policies',
     subCategories: [
       { id: 'privacy', title: 'Privacy policy', article: { title: 'Privacy policy', content: 'We collect and use your data in line with our Privacy Policy to provide services, process orders, and improve your experience. You can review the full policy on our website or in the app under Settings → Legal.', note: null } },
-      { id: 'terms', title: 'Terms of service', article: { title: 'Terms of service', content: 'By using La Visionario, you agree to our Terms of Service. These cover account use, orders, payments, and dispute resolution. Please read the full terms on our website or in the app.', note: null } },
+      { id: 'terms', title: 'Terms of service', article: { title: 'Terms of service', content: 'By using Lavisionario, you agree to our Terms of Service. These cover account use, orders, payments, and dispute resolution. Please read the full terms on our website or in the app.', note: null } },
     ],
   },
 ];
 
 const categories = [
-  { id: 'shopping', title: 'Shop with La Visionario', iconColor: 'orange' },
+  { id: 'shopping', title: 'Shop with Lavisionario', iconColor: 'orange' },
   { id: 'deals', title: 'Deals & Promos', iconColor: 'orange' },
   { id: 'payments', title: 'Payments', iconColor: 'orange' },
   { id: 'orders', title: 'Orders & Shipping', iconColor: 'teal' },
@@ -111,7 +111,7 @@ export default function NeedHelpPage() {
   const popularQuestions = [
     { question: 'What are the effective supporting documents for refund/return requests?', categoryId: 'returns', subId: 'documents' },
     { question: 'Why is my account being limited?', categoryId: 'general', subId: 'account' },
-    { question: 'How do I contact and track La Visionario supported logistics partners?', categoryId: 'orders', subId: 'tracking' },
+    { question: 'How do I contact and track Lavisionario supported logistics partners?', categoryId: 'orders', subId: 'tracking' },
     { question: 'How do I choose Payment Center or e-Wallet as a payment option?', categoryId: 'payments', subId: 'payment-options' },
     { question: 'What should I do if I have not received my order after the estimated delivery date?', categoryId: 'orders', subId: 'not-received' },
     { question: 'Can I cancel my order?', categoryId: 'orders', subId: 'cancel-order' },
@@ -122,7 +122,21 @@ export default function NeedHelpPage() {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    console.log('Searching for:', searchQuery);
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return;
+    for (const cat of categoriesWithArticles) {
+      const sub = cat.subCategories.find(
+        (s) =>
+          s.article.title.toLowerCase().includes(q) ||
+          s.article.content.toLowerCase().includes(q)
+      );
+      if (sub) {
+        setExpandedCategoryId(cat.id);
+        setSelectedArticle({ categoryId: cat.id, subId: sub.id });
+        setArticleView(true);
+        return;
+      }
+    }
   };
 
   const handleCategoryClick = (categoryId) => {
@@ -208,7 +222,7 @@ export default function NeedHelpPage() {
         {!advisoryDismissed && (
           <div className={styles.advisoryBanner}>
             <p className={styles.advisoryText}>
-              Advisory: Make sure your La Visionario app is always updated to the latest version to enjoy the newest features!
+              Advisory: Make sure your Lavisionario app is always updated to the latest version to enjoy the newest features!
             </p>
             <button
               type="button"
@@ -355,7 +369,7 @@ export default function NeedHelpPage() {
 
         <footer className={styles.footer}>
           <div className={styles.footerContent}>
-            <p>© 2026 La Visionario. All rights reserved.</p>
+            <p>© 2026 Lavisionario. All rights reserved.</p>
           </div>
         </footer>
       </div>

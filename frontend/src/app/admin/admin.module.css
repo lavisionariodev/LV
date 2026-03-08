@@ -13,7 +13,7 @@
 
 .shell {
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: var(--sidebar-width) 1fr;
   height: 100vh;
   overflow: hidden;
   background: #F5F6FA;
@@ -21,7 +21,7 @@
 }
 
 .shellCollapsed {
-  grid-template-columns: 78px 1fr;
+  grid-template-columns: var(--sidebar-width-collapsed) 1fr;
 }
 
 .sidebar {
@@ -384,11 +384,11 @@
 
 @media (max-width: 1100px) {
   .shell {
-    grid-template-columns: 240px 1fr;
+    grid-template-columns: var(--sidebar-width) 1fr;
   }
 
   .shellCollapsed {
-    grid-template-columns: 86px 1fr;
+    grid-template-columns: var(--sidebar-width-collapsed) 1fr;
   }
 
   .statsGrid {

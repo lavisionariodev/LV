@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { Poppins } from 'next/font/google'
 import { AppSidebar, AppTopbar } from '@/components/layout'
+import { useMediaQuery } from '@/hooks'
 import { CartProvider } from '@/contexts/CartContext'
 import { requireSeller } from '@/lib/auth/guards'
 import { signOut } from '@/lib/auth/session'
@@ -14,7 +15,9 @@ const poppins = Poppins({ weight: ['400', '600', '700'], subsets: ['latin'] })
 export default function SellerLayout({ children }) {
   const router = useRouter()
   const pathname = usePathname()
+  const isMobile = useMediaQuery('(max-width: 860px)')
   const [collapsed, setCollapsed] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [authStatus, setAuthStatus] = useState('loading')
   const [sellerStatus, setSellerStatus] = useState(null)
 
@@ -69,9 +72,18 @@ export default function SellerLayout({ children }) {
           variant="seller"
           collapsed={collapsed}
           onToggle={() => setCollapsed((prev) => !prev)}
+          isMobile={isMobile}
+          mobileOpen={mobileMenuOpen}
+          onMobileClose={() => setMobileMenuOpen(false)}
         />
         <div className={styles.main}>
-          <AppTopbar variant="seller" onLogout={handleLogout} />
+          <AppTopbar
+            variant="seller"
+            onLogout={handleLogout}
+            isMobile={isMobile}
+            onMenuClick={() => setMobileMenuOpen((prev) => !prev)}
+            sidebarCollapsed={collapsed}
+          />
           {sellerStatus === 'pending' && (
             <div className={styles.pendingBanner}>
               Your seller account is currently <strong>pending review</strong>. You can review your
