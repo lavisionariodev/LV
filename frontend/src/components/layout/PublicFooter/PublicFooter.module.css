@@ -3,6 +3,13 @@
   color: #ffffff;
 }
 
+/* Hide footer on mobile — bottom nav is primary; footer not needed on small screens */
+@media (max-width: 1024px) {
+  .footer {
+    display: none;
+  }
+}
+
 .inner {
   max-width: var(--max-width);
   margin: 0 auto;
