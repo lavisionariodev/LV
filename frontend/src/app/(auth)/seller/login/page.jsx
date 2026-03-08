@@ -22,6 +22,8 @@ function SellerLoginPageInner() {
 
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const hasShownErrorRef = useRef(false);
+  const showForgotPasswordModalRef = useRef(false);
+  showForgotPasswordModalRef.current = showForgotPasswordModal;
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -32,9 +34,9 @@ function SellerLoginPageInner() {
     if (typeof window === 'undefined') return;
     const hash = window.location.hash || '';
     if (hash.includes('type=recovery')) {
-      router.replace(`/auth/reset-password?portal=seller${hash}`);
+      window.location.replace(`${window.location.origin}/auth/reset-password?portal=seller${hash}`);
     }
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     const errorParam = searchParams.get('error');
@@ -48,6 +50,7 @@ function SellerLoginPageInner() {
     let mounted = true;
     getUser().then(async (currentUser) => {
       if (!mounted || !currentUser) return;
+      if (showForgotPasswordModalRef.current) return;
       const role = await getUserRole(currentUser.id);
       if (role === ROLE_SELLER) {
         const target = !redirect || redirect === '/' ? '/seller' : redirect;
@@ -297,7 +300,10 @@ function SellerLoginPageInner() {
                       <button
                         type="button"
                         className={styles.forgotPassword}
-                        onClick={() => setShowForgotPasswordModal(true)}
+                        onClick={() => {
+                          showForgotPasswordModalRef.current = true;
+                          setShowForgotPasswordModal(true);
+                        }}
                       >
                         Forgot password?
                       </button>

@@ -19,6 +19,7 @@
 .forgotPasswordWrap .forgotPasswordLink:hover {
   color: var(--color-main-accent);
   text-decoration: none;
+  box-shadow: none;
 }
 
 /* Tighter gap between email and password fields */
