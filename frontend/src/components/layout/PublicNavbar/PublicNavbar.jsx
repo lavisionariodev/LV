@@ -12,19 +12,16 @@ import { useAuth } from '@/contexts/AuthContext'
 export default function PublicNavbar() {
   const { cartCount } = useCart()
   const { user, profile, isBuyer } = useAuth()
-  const [query, setQuery] = useState('')
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [mobileHowItWorksOpen, setMobileHowItWorksOpen] = useState(false)
-  const [mobileAboutUsOpen, setMobileAboutUsOpen] = useState(false)
-  const [searchOpen, setSearchOpen] = useState(false)
   const [howItWorksOpen, setHowItWorksOpen] = useState(false)
   const [aboutUsOpen, setAboutUsOpen] = useState(false)
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const [logoutOpen, setLogoutOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
-  const searchRef = useRef(null)
   const profileRef = useRef(null)
+  const mobileSearchInputRef = useRef(null)
 
   const howItWorksItems = [
     { label: 'Step-by-Step Process', sectionId: 'step-by-step-process' },
@@ -40,22 +37,6 @@ export default function PublicNavbar() {
     { label: 'Partners', sectionId: 'partners' },
     { label: 'Testimonials', sectionId: 'testimonials' }
   ]
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (searchRef.current && !searchRef.current.contains(event.target)) {
-        setSearchOpen(false)
-      }
-    }
-
-    if (searchOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [searchOpen])
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -87,7 +68,6 @@ export default function PublicNavbar() {
   const isAboutUsActive = pathname?.startsWith('/about')
 
   const openLogoutModal = () => {
-    setMobileMenuOpen(false)
     setProfileMenuOpen(false)
     setLogoutOpen(true)
   }
@@ -96,12 +76,28 @@ export default function PublicNavbar() {
     await signOut()
     setLogoutOpen(false)
     setProfileMenuOpen(false)
-    setMobileMenuOpen(false)
     router.push('/')
   }
 
   const handleCancelLogout = () => {
     setLogoutOpen(false)
+  }
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault()
+    const q = searchQuery?.trim()
+    if (q) {
+      router.push(`/shop?q=${encodeURIComponent(q)}`)
+      setSearchQuery('')
+    } else {
+      router.push('/shop')
+    }
+    setMobileSearchOpen(false)
+  }
+
+  const openMobileSearch = () => {
+    setMobileSearchOpen(true)
+    setTimeout(() => mobileSearchInputRef.current?.focus(), 100)
   }
 
   return (
@@ -313,6 +309,7 @@ export default function PublicNavbar() {
           </nav>
 
           <div className={styles.navActions}>
+            <div className={styles.navActionsDesktop}>
             <div className={styles.searchContainer}>
               <span className={styles.cartBtnWrap}>
                 <button
@@ -417,109 +414,83 @@ export default function PublicNavbar() {
                 )}
               </div>
             )}
-            <button 
-              className={styles.mobileToggle}
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle Menu"
-            >
-              <span></span>
-              <span></span>
-              <span></span>
-            </button>
+            </div>
+
+            {/* Mobile only: Search icon → slide-in input + Cart (top right) */}
+            <div className={styles.navActionsMobile}>
+              <div className={styles.navbarSearchWrap}>
+                <button
+                  type="button"
+                  className={styles.navbarSearchIconBtn}
+                  onClick={openMobileSearch}
+                  aria-label="Open search"
+                  aria-expanded={mobileSearchOpen}
+                  style={{ display: mobileSearchOpen ? 'none' : 'flex' }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                </button>
+                <form
+                  className={`${styles.navbarSearchForm} ${mobileSearchOpen ? styles.navbarSearchFormOpen : ''}`}
+                  onSubmit={handleSearchSubmit}
+                  role="search"
+                >
+                  <input
+                    ref={mobileSearchInputRef}
+                    type="search"
+                    className={styles.navbarSearchInput}
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onBlur={() => setMobileSearchOpen(false)}
+                    aria-label="Search"
+                  />
+                  <button
+                    type="button"
+                    className={styles.navbarSearchCloseBtn}
+                    onClick={() => {
+                      setSearchQuery('')
+                      setMobileSearchOpen(false)
+                    }}
+                    aria-label="Close search"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </button>
+                </form>
+              </div>
+              <span className={styles.cartBtnWrap}>
+                <button
+                  className={styles.searchBtn}
+                  aria-label="Cart"
+                  onClick={() => {
+                    if (!isAuthenticated) {
+                      router.push(`/buyer/login?redirect=${encodeURIComponent('/cart')}`)
+                      return
+                    }
+                    router.push('/cart')
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="9" cy="21" r="1"></circle>
+                    <circle cx="20" cy="21" r="1"></circle>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                  </svg>
+                </button>
+                {cartCount > 0 && (
+                  <span className={styles.cartDot} aria-label={`${cartCount} items in cart`}>
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                )}
+              </span>
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className={styles.mobileMenu} onClick={() => setMobileMenuOpen(false)} role="presentation">
-          <Link href="/" className={styles.mobileLink}>HOME</Link>
-          <Link href="/shop" className={styles.mobileLink}>SHOP</Link>
-
-          <Link href="/partners" className={styles.mobileLink}>FUNERAL HOMES / PARTNERS</Link>
-
-          <div className={styles.mobileSubsection}>
-            <button
-              type="button"
-              className={styles.mobileSubsectionToggle}
-              onClick={(e) => { e.stopPropagation(); setMobileHowItWorksOpen((o) => !o) }}
-              aria-expanded={mobileHowItWorksOpen}
-              aria-controls="mobile-how-it-works-links"
-            >
-              <span className={styles.mobileSubsectionTitle}>HOW IT WORKS</span>
-              <span className={`${styles.mobileSubsectionArrow} ${mobileHowItWorksOpen ? styles.mobileSubsectionArrowOpen : ''}`} aria-hidden>
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </span>
-            </button>
-            <div id="mobile-how-it-works-links" className={`${styles.mobileSubsectionContent} ${mobileHowItWorksOpen ? styles.mobileSubsectionContentOpen : ''}`}>
-              <Link href="/how-it-works" className={styles.mobileLink}>Overview</Link>
-              {howItWorksItems.map((item, index) => (
-                <Link
-                  key={index}
-                  href={`/how-it-works#${item.sectionId}`}
-                  className={styles.mobileLink}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          <div className={styles.mobileSubsection}>
-            <button
-              type="button"
-              className={styles.mobileSubsectionToggle}
-              onClick={(e) => { e.stopPropagation(); setMobileAboutUsOpen((o) => !o) }}
-              aria-expanded={mobileAboutUsOpen}
-              aria-controls="mobile-about-us-links"
-            >
-              <span className={styles.mobileSubsectionTitle}>ABOUT US</span>
-              <span className={`${styles.mobileSubsectionArrow} ${mobileAboutUsOpen ? styles.mobileSubsectionArrowOpen : ''}`} aria-hidden>
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </span>
-            </button>
-            <div id="mobile-about-us-links" className={`${styles.mobileSubsectionContent} ${mobileAboutUsOpen ? styles.mobileSubsectionContentOpen : ''}`}>
-              <Link href="/about" className={styles.mobileLink}>About</Link>
-              {aboutUsItems.map((item, index) => (
-                <Link key={index} href={`/about#${item.sectionId}`} className={styles.mobileLink}>
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          <div className={styles.mobileDivider}></div>
-
-          {!isAuthenticated ? (
-            <div className={styles.mobileAuthLinks}>
-              <Link href="/buyer/login?redirect=/profile" className={styles.mobileLink}>
-                Log In
-              </Link>
-              <span className={styles.authDivider} aria-hidden="true">|</span>
-              <Link href="/buyer/signup" className={styles.mobileLink}>
-                Sign Up
-              </Link>
-            </div>
-          ) : (
-            <>
-              <Link href="/profile" className={styles.mobileLink}>
-                Profile
-              </Link>
-              <button
-                type="button"
-                className={styles.mobileLinkButton}
-                onClick={openLogoutModal}
-              >
-                Logout
-              </button>
-            </>
-          )}
-        </div>
-      )}
 
       <LogoutModal open={logoutOpen} onConfirm={handleConfirmLogout} onCancel={handleCancelLogout} />
 
@@ -565,29 +536,21 @@ export default function PublicNavbar() {
 
         <button
           type="button"
-          className={`${styles.bottomNavItem} ${pathname === '/cart' ? styles.bottomNavItemActive : ''}`}
-          aria-label="Cart"
+          className={`${styles.bottomNavItem} ${pathname?.startsWith('/profile/notifications') ? styles.bottomNavItemActive : ''}`}
+          aria-label="Notifications"
           onClick={() => {
             if (!isAuthenticated) {
-              router.push(`/buyer/login?redirect=${encodeURIComponent('/cart')}`)
+              router.push(`/buyer/login?redirect=${encodeURIComponent('/profile/notifications')}`)
               return
             }
-            router.push('/cart')
+            router.push('/profile/notifications')
           }}
         >
-          <span className={styles.bottomNavCartWrap}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="9" cy="21" r="1"></circle>
-              <circle cx="20" cy="21" r="1"></circle>
-              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-            </svg>
-            {cartCount > 0 && (
-              <span className={styles.bottomNavBadge} aria-label={`${cartCount} items in cart`}>
-                {cartCount > 99 ? '99+' : cartCount}
-              </span>
-            )}
-          </span>
-          <span className={styles.bottomNavLabel}>Cart</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span className={styles.bottomNavLabel}>Notifications</span>
         </button>
 
         {isAuthenticated ? (
@@ -612,35 +575,21 @@ export default function PublicNavbar() {
             <span className={styles.bottomNavLabel}>Profile</span>
           </button>
         ) : (
-          <div className={styles.bottomNavAuthWrap}>
-            <button
-              type="button"
-              className={styles.bottomNavItem}
-              aria-label="Log In"
-              onClick={() => {
-                const target = pathname || '/'
-                router.push(`/buyer/login?redirect=${encodeURIComponent(target)}`)
-              }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-              <span className={styles.bottomNavLabel}>Log In</span>
-            </button>
-            <span className={styles.bottomNavAuthDivider} aria-hidden="true">|</span>
-            <Link
-              href="/buyer/signup"
-              className={styles.bottomNavItem}
-              aria-label="Sign Up"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-              <span className={styles.bottomNavLabel}>Sign Up</span>
-            </Link>
-          </div>
+          <button
+            type="button"
+            className={styles.bottomNavItem}
+            aria-label="Log In"
+            onClick={() => {
+              const target = pathname || '/'
+              router.push(`/buyer/login?redirect=${encodeURIComponent(target)}`)
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span className={styles.bottomNavLabel}>Log In</span>
+          </button>
         )}
       </nav>
     </header>
