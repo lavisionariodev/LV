@@ -9,6 +9,7 @@ import { IoSearch } from 'react-icons/io5'
 import { TbBell } from 'react-icons/tb'
 import { FaUser } from 'react-icons/fa6'
 import { LuLogOut, LuChevronDown } from 'react-icons/lu'
+import { TbSettings, TbMessage2Question } from 'react-icons/tb'
 import { Logout } from '@/components/ui'
 import { useAuth } from '@/contexts/AuthContext'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
@@ -20,6 +21,10 @@ const TOPBAR_CONFIG = {
     notificationsHref: '/admin/notifications',
     defaultDisplayName: 'Admin',
     avatarAlt: 'Admin avatar',
+    profileMenuItems: [
+      { href: '/admin/settings', label: 'Settings', icon: TbSettings },
+      { href: '/admin/help', label: 'Help Center', icon: TbMessage2Question },
+    ],
   },
   seller: {
     searchPlaceholder: 'Search…',
@@ -27,6 +32,10 @@ const TOPBAR_CONFIG = {
     notificationsHref: '/seller/notifications',
     defaultDisplayName: 'Seller',
     avatarAlt: 'Seller avatar',
+    profileMenuItems: [
+      { href: '/seller/settings', label: 'Settings', icon: TbSettings },
+      { href: '/seller/help', label: 'Help Center', icon: TbMessage2Question },
+    ],
   },
 }
 
@@ -237,8 +246,8 @@ export default function AppTopbar({ variant, onLogout }) {
                     <Image
                       src={avatarUrl}
                       alt=""
-                      width={48}
-                      height={48}
+                      width={40}
+                      height={40}
                       className={styles.profileDropdownAvatarImg}
                       unoptimized
                     />
@@ -249,6 +258,21 @@ export default function AppTopbar({ variant, onLogout }) {
                   )}
                 </div>
               </div>
+              {config.profileMenuItems?.length > 0 && (
+                <div className={styles.profileDropdownMenu}>
+                  {config.profileMenuItems.map(({ href, label, icon: Icon }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={styles.profileDropdownItem}
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      <Icon className={styles.profileDropdownItemIcon} />
+                      <span>{label}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
               <button
                 type="button"
                 className={styles.logoutBtn}

@@ -216,13 +216,13 @@ function SellerLoginPageInner() {
       {/* Header */}
       <header className={styles.header}>
         <div className={styles.headerContent}>
-          <div className={styles.logo}>
+          <Link href="/" className={styles.logo} aria-label="Lavisionario home">
             <div className={styles.logoIcon}>
               <span className={styles.logoLetter}>L</span>
             </div>
             <span className={styles.logoText}>Lavisionario</span>
             <span className={styles.sellerBadge}>Seller Centre</span>
-          </div>
+          </Link>
           <a href="#" className={styles.needHelp}>Need help?</a>
         </div>
       </header>
@@ -372,18 +372,19 @@ function SellerLoginPageInner() {
                         )}
                       </button>
                     </div>
+                    <div className={styles.forgotPasswordRow}>
+                      <button
+                        type="button"
+                        className={styles.forgotPassword}
+                        onClick={() => setShowForgotPasswordModal(true)}
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
                   </div>
 
                   <button type="submit" className={styles.loginButton} disabled={submitting}>
                     {submitting ? 'Logging in...' : 'LOG IN'}
-                  </button>
-
-                  <button
-                    type="button"
-                    className={styles.forgotPassword}
-                    onClick={() => setShowForgotPasswordModal(true)}
-                  >
-                    Forgot Password?
                   </button>
 
                   <div className={styles.divider}>

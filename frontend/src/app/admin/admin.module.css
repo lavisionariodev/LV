@@ -6,7 +6,7 @@
   display: grid;
   place-items: center;
   min-height: 100vh;
-  background: #f9fcff;
+  background: #F5F6FA;
   font-size: 14px;
   color: #6b7280;
 }
@@ -16,7 +16,7 @@
   grid-template-columns: 240px 1fr;
   height: 100vh;
   overflow: hidden;
-  background: #f9fcff;
+  background: #F5F6FA;
   transition: grid-template-columns 0.25s ease;
 }
 

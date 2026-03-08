@@ -772,14 +772,14 @@ const Page = () => {
     <div className={styles.pageWrapper}>
       <header className={styles.header}>
         <div className={styles.headerContent}>
-          <div className={styles.logoWrapper}>
+          <Link href="/" className={styles.logoWrapper} aria-label="Lavisionario home">
             <div className={styles.shopeeIcon}>
               <span className={styles.logoPlaceholder}>L</span>
             </div>
             <div className={styles.logoText}>
               <span className={styles.shopeeName}>Lavisionario</span>
             </div>
-          </div>
+          </Link>
           <a href="#" className={styles.needHelp}>Need help?</a>
         </div>
       </header>
