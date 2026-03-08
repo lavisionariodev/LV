@@ -705,7 +705,7 @@ const Page = () => {
   };
 
   const heroSectionStyle = {
-    backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3)), url(/skyline-BG.png)',
+    backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3)), url(/backgrounds/new-skyline-bg.png)',
     backgroundPosition: 'center',
     backgroundSize: 'cover',
     backgroundRepeat: 'no-repeat'

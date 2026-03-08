@@ -139,7 +139,7 @@
 .heroSection {
   background: 
     linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.7)),
-    url('/path-to-your-image.jpg') center/cover;
+    url('/backgrounds/new-skyline-bg.png') center/cover;
   padding: 80px 24px;
   min-height: calc(100vh - 80px);
   display: flex;
