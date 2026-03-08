@@ -1,0 +1,4 @@
+/* Offset for fixed PublicNavbar: topBar (~40px) + mainNav (70px) */
+.main {
+  padding-top: 110px;
+}
