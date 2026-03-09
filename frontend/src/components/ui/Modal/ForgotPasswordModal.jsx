@@ -83,7 +83,33 @@ export default function ForgotPasswordModal({
               ×
             </button>
             <div className={styles.iconContainer}>
-              <i className="bx bx-envelope" aria-hidden />
+              <span className={styles.iconGraphic} aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <rect
+                    x="3"
+                    y="5"
+                    width="18"
+                    height="14"
+                    rx="2"
+                    ry="2"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                  />
+                  <polyline
+                    points="4 6.5 12 12 20 6.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
             </div>
             <h2>Forgot Password?</h2>
             <p>
@@ -119,7 +145,30 @@ export default function ForgotPasswordModal({
               ×
             </button>
             <div className={styles.successIcon}>
-              <i className="bx bx-check" aria-hidden />
+              <span className={styles.iconGraphic} aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="9"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                  />
+                  <polyline
+                    points="8 12.5 11 15.5 16 9.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
             </div>
             <h2>Check Your Email</h2>
             <p>
