@@ -10,9 +10,9 @@ import styles from './settings.module.css'
 import { FaUser } from 'react-icons/fa6'
 import { LuPencil } from 'react-icons/lu'
 import { LuLogOut } from 'react-icons/lu'
-import { FiEdit } from 'react-icons/fi'
+import { FiEdit, FiUpload } from 'react-icons/fi'
 import { MdCheckCircle, MdErrorOutline } from 'react-icons/md'
-import { TbMessage2Question } from 'react-icons/tb'
+import { TbMessage2Question, TbBell } from 'react-icons/tb'
 import { validateNewPassword } from '@/lib/validators/authSchemas'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
 
@@ -287,8 +287,6 @@ export default function AdminSettingsClient() {
 
       {/* ── MOBILE LAYOUT (≤ 640px) ── */}
       <div className={styles.mobileSettings}>
-        <p className={styles.mobilePageTitle}>Profile</p>
-
         {/* Profile hero */}
         <div className={styles.mobileProfileHero}>
           <div className={styles.mobileAvatar}>
@@ -305,8 +303,10 @@ export default function AdminSettingsClient() {
               <FaUser />
             )}
           </div>
-          <p className={styles.mobileName}>{profile?.fullName || 'Admin'}</p>
-          <p className={styles.mobileEmail}>{profile?.email || ''}</p>
+          <div className={styles.mobileProfileInfo}>
+            <p className={styles.mobileName}>{profile?.fullName || 'Admin'}</p>
+            <p className={styles.mobileEmail}>{profile?.email || ''}</p>
+          </div>
         </div>
 
         {/* Account section */}
@@ -331,6 +331,11 @@ export default function AdminSettingsClient() {
               <span className={styles.mobileMenuLabel}>Password &amp; Security</span>
               <span className={styles.mobileMenuArrow}>›</span>
             </button>
+            <a href="/admin/notifications" className={styles.mobileMenuItem}>
+              <span className={styles.mobileMenuIcon}><TbBell /></span>
+              <span className={styles.mobileMenuLabel}>Notifications</span>
+              <span className={styles.mobileMenuArrow}>›</span>
+            </a>
           </div>
         </div>
 
@@ -361,19 +366,43 @@ export default function AdminSettingsClient() {
           <div className={styles.cardHeadRow}>
             <p className={styles.cardTitle}>Profile</p>
             <div className={styles.headActions}>
-              <button
-                className={styles.primaryBtn}
-                onClick={onStartPersonalEdit}
-                disabled={avatarLoading}
-              >
-                <><FiEdit /> Edit</>
-              </button>
+              {isEditingPersonal ? (
+                <>
+                  <button
+                    className={styles.secondaryBtn}
+                    onClick={onCancelPersonalEdit}
+                    disabled={avatarLoading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className={styles.primaryBtn}
+                    onClick={onSavePersonal}
+                    disabled={avatarLoading}
+                  >
+                    Save Changes
+                  </button>
+                </>
+              ) : (
+                <button
+                  className={styles.primaryBtn}
+                  onClick={onStartPersonalEdit}
+                  disabled={avatarLoading}
+                >
+                  <FiEdit /> Edit
+                </button>
+              )}
             </div>
           </div>
 
           <div className={styles.piAvatarRow}>
             <div className={styles.piAvatarLeft}>
-              <div className={styles.avatar}>
+              <div
+                className={styles.avatar}
+                style={isEditingPersonal ? { cursor: 'pointer' } : {}}
+                onClick={isEditingPersonal ? () => fileRef.current?.click() : undefined}
+                title={isEditingPersonal ? 'Change photo' : undefined}
+              >
                 {shownAvatar ? (
                   <Image
                     src={shownAvatar}
@@ -387,6 +416,37 @@ export default function AdminSettingsClient() {
                   <div className={styles.avatarFallback}><FaUser /></div>
                 )}
               </div>
+              {isEditingPersonal && (
+                <div className={styles.avatarBtnRow}>
+                  <button
+                    type="button"
+                    className={styles.secondaryBtn}
+                    onClick={() => fileRef.current?.click()}
+                    disabled={avatarLoading}
+                    style={{ fontSize: '11px' }}
+                  >
+                    <FiUpload /> Upload
+                  </button>
+                  {shownAvatar && (
+                    <button
+                      type="button"
+                      className={styles.dangerBtn}
+                      onClick={onRemoveAvatar}
+                      disabled={avatarLoading}
+                      style={{ fontSize: '11px' }}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              )}
+              <input
+                ref={fileRef}
+                type="file"
+                accept={ALLOWED.join(',')}
+                className={styles.fileInput}
+                onChange={onPickAvatar}
+              />
             </div>
           </div>
 
@@ -398,8 +458,8 @@ export default function AdminSettingsClient() {
                   id={id('name')}
                   value={draftName}
                   onChange={(e) => setDraftName(e.target.value)}
-                  className={`${styles.input} ${styles.inputReadOnly}`}
-                  disabled
+                  className={`${styles.input} ${!isEditingPersonal ? styles.inputReadOnly : ''}`}
+                  disabled={!isEditingPersonal}
                 />
               </div>
               <div className={styles.field}>
@@ -408,12 +468,19 @@ export default function AdminSettingsClient() {
                   id={id('email')}
                   value={draftEmail}
                   onChange={(e) => setDraftEmail(e.target.value)}
-                  className={`${styles.input} ${styles.inputReadOnly}`}
-                  disabled
+                  className={`${styles.input} ${!isEditingPersonal ? styles.inputReadOnly : ''}`}
+                  disabled={!isEditingPersonal}
                 />
               </div>
             </div>
           </div>
+
+          {isEditingPersonal && personalError && (
+            <div className={styles.msgError}><MdErrorOutline /> {personalError}</div>
+          )}
+          {isEditingPersonal && personalStatus && (
+            <div className={styles.msgOk}><MdCheckCircle /> {personalStatus}</div>
+          )}
         </section>
 
         <section className={styles.card}>
@@ -485,7 +552,7 @@ export default function AdminSettingsClient() {
       </div>
 
       {isEditingPersonal && (
-        <div className={styles.bottomSheetRoot}>
+        <div className={`${styles.bottomSheetRoot} ${styles.mobileOnly}`}>
           <div
             className={styles.bottomSheetBackdrop}
             onClick={onCancelPersonalEdit}
@@ -552,7 +619,7 @@ export default function AdminSettingsClient() {
                     onClick={onRemoveAvatar}
                     disabled={avatarLoading}
                   >
-                    Remove photo
+                    Remove
                   </button>
                 )}
                 <span className={styles.sheetAvatarHint}>

@@ -116,6 +116,13 @@
   min-width: 0;
 }
 
+.avatarBtnRow {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
 .piFieldsRow {
   margin-top: 14px;
 }
@@ -349,17 +356,17 @@
 }
 
 .sheetSaveBtn {
-  color: #16a34a;
+  color: #020617;
 }
 
 .sheetSaveBtn:hover {
-  color: #166534;
+  color: #01030b;
 }
 
 .bottomSheetBody {
   max-height: 60vh;
   overflow-y: auto;
-  padding-top: 8px;
+  padding-top: 30px;
 }
 
 .sheetAvatarSection {
@@ -517,6 +524,12 @@
 }
 
 /* Hide mobile layout on desktop — must be declared BEFORE the media query */
+
+/* Bottom sheet is mobile-only */
+.mobileOnly {
+  display: none;
+}
+
 .mobileSettings {
   display: none;
 }
@@ -532,6 +545,12 @@
   }
 
   /* Show mobile layout */
+  .mobileOnly {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+
   .mobileSettings {
     display: flex;
     flex-direction: column;
@@ -551,26 +570,36 @@
   /* Profile hero */
   .mobileProfileHero {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: 6px;
-    padding: 16px 16px 22px;
+    gap: 14px;
+    padding: 14px;
     background: #fff;
-    margin-bottom: 24px;
+    border-radius: 14px;
+    overflow: hidden;
+    margin: 0 16px 24px;
+  }
+
+  .mobileProfileInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
   }
 
   .mobileAvatar {
-    width: 72px;
-    height: 72px;
+    width: 56px;
+    height: 56px;
     border-radius: 999px;
     overflow: hidden;
     background: #e0e2e6;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 28px;
+    font-size: 24px;
     color: #fff;
-    margin-bottom: 6px;
+    flex-shrink: 0;
+    margin-bottom: 0;
   }
 
   .mobileAvatarImg {
@@ -676,4 +705,4 @@
   .mobileMenuLabelDanger {
     color: #be123c;
   }
-} 
+}
