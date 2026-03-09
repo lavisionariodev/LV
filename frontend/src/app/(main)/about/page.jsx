@@ -149,7 +149,10 @@ export default function AboutPage() {
             2. MISSION & VISION
             White bg · dark card left · text right
         ══════════════════════════════════════ */}
-        <div className={`${styles.tornSectionWrap} ${styles.tornTop1}`}>
+        <div
+          id="mission-vision"
+          className={`${styles.sectionAnchorOffset} ${styles.tornSectionWrap} ${styles.tornTop1}`}
+        >
         <div className={styles.missionWrap}>
           <div className={styles.missionInner}>
 
@@ -184,10 +187,13 @@ export default function AboutPage() {
         </div>
 
         {/* ══════════════════════════════════════
-            3. OUR STORY
+            3. ABOUT US
             White bg · text left · blob right
         ══════════════════════════════════════ */}
-        <div className={`${styles.aboutWrap} ${styles.tornBottom3}`}>
+        <div
+          id="about-us"
+          className={`${styles.sectionAnchorOffset} ${styles.aboutWrap} ${styles.tornBottom3}`}
+        >
           <div className={styles.aboutInner}>
 
             <div>
@@ -237,7 +243,10 @@ export default function AboutPage() {
             5. WHY CHOOSE US
             Cream-mid bg · 3 feature cards
         ══════════════════════════════════════ */}
-        <div className={`${styles.tornSectionWrap} ${styles.tornTop3}`}>
+        <div
+          id="why-choose-us"
+          className={`${styles.sectionAnchorOffset} ${styles.tornSectionWrap} ${styles.tornTop3}`}
+        >
         <div className={styles.whyWrap}>
           <div className={styles.whyInner}>
 
@@ -270,7 +279,10 @@ export default function AboutPage() {
             Deep gradient bg · 3 quote cards
             + 1 wide featured quote at the bottom
         ══════════════════════════════════════ */}
-        <div className={styles.testimonialsWrap}>
+        <div
+          id="testimonials"
+          className={`${styles.sectionAnchorOffset} ${styles.testimonialsWrap}`}
+        >
           <div className={styles.testimonialsInner}>
 
             <div className={styles.testimonialsHeader}>

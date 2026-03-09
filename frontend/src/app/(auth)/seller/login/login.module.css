@@ -274,7 +274,7 @@
 
 .forgotPassword:hover {
   color: #279354;
-  text-decoration: none;
+  text-decoration: underline;
 }
 
 .divider {
