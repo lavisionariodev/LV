@@ -19,6 +19,7 @@ import {
 } from 'react-icons/tb'
 import { LuUserCheck } from 'react-icons/lu'
 import { HiOutlineNewspaper } from 'react-icons/hi'
+import { BsPerson } from 'react-icons/bs'
 import styles from './AppSidebar.module.css'
 
 function isLinkItem(item) {
@@ -46,7 +47,7 @@ const SIDEBAR_CONFIG = {
     brandSub: 'Admin Portal',
     navItems: [
       { href: '/admin', label: 'Dashboard', icon: TbLayoutDashboardFilled },
-      { href: '/admin/payments', label: 'Payments', icon: TbReportSearch },
+      { href: '/admin/payouts', label: 'Payouts', icon: TbReportSearch },
       { href: '/admin/disputes', label: 'Dispute', icon: TbReportSearch },
       { href: '/admin/users', label: 'Users', icon: TbUsers },
       { href: '/admin/sellers', label: 'Sellers', icon: LuUserCheck },
@@ -278,7 +279,35 @@ export default function AppSidebar({
 
       {isMobile && (
         <nav className={styles.bottomNav} aria-label="Main navigation">
-          {getBottomNavItems(config.navItems, variant === 'seller' ? BOTTOM_NAV_MAIN_ITEMS : undefined).map((item) => {
+          {(
+            variant === 'admin'
+              ? [
+                  {
+                    href: '/admin',
+                    label: 'Home',
+                    icon: TbLayoutDashboardFilled,
+                  },
+                  {
+                    href: '/admin/payouts',
+                    label: 'Payouts',
+                    icon: TbReportSearch,
+                  },
+                  {
+                    href: '/admin/analytics',
+                    label: 'Analytics',
+                    icon: TbChartBar,
+                  },
+                  {
+                    href: '/admin/settings',
+                    label: 'Profile',
+                    icon: BsPerson,
+                  },
+                ]
+              : getBottomNavItems(
+                  config.navItems,
+                  variant === 'seller' ? BOTTOM_NAV_MAIN_ITEMS : undefined,
+                )
+          ).map((item) => {
             const active = isActive(item.href)
             const Icon = item.icon
             return (

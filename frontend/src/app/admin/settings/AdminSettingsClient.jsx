@@ -1,13 +1,18 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase/client'
+import { signOut } from '@/lib/auth/session'
+import { Logout } from '@/components/ui'
 import styles from './settings.module.css'
-import { FaUser, FaUpload } from 'react-icons/fa6'
-import { TbTrash } from 'react-icons/tb'
+import { FaUser } from 'react-icons/fa6'
+import { LuPencil } from 'react-icons/lu'
+import { LuLogOut } from 'react-icons/lu'
 import { FiEdit } from 'react-icons/fi'
 import { MdCheckCircle, MdErrorOutline } from 'react-icons/md'
+import { TbMessage2Question } from 'react-icons/tb'
 import { validateNewPassword } from '@/lib/validators/authSchemas'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
 
@@ -16,11 +21,13 @@ const MAX_MB = 2
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp']
 
 export default function AdminSettingsClient() {
+  const router = useRouter()
   const fileRef = useRef(null)
   const avatarPreviewRef = useRef('')
 
   const [loading, setLoading] = useState(true)
   const [isEditingPersonal, setIsEditingPersonal] = useState(false)
+  const [isEditingPassword, setIsEditingPassword] = useState(false)
   const [profile, setProfile] = useState(null)
   const [draftName, setDraftName] = useState('')
   const [draftEmail, setDraftEmail] = useState('')
@@ -158,17 +165,19 @@ export default function AdminSettingsClient() {
     }
   }
 
-  const onClickEditSavePersonal = async () => {
+  const onStartPersonalEdit = () => {
     setPersonalError('')
     setPersonalStatus('')
-    if (!isEditingPersonal) {
-      if (profile) {
-        setDraftName(profile.fullName || '')
-        setDraftEmail(profile.email || '')
-      }
-      setIsEditingPersonal(true)
-      return
+    if (profile) {
+      setDraftName(profile.fullName || '')
+      setDraftEmail(profile.email || '')
     }
+    setIsEditingPersonal(true)
+  }
+
+  const onSavePersonal = async () => {
+    setPersonalError('')
+    setPersonalStatus('')
     const nameErr = validateName(draftName)
     if (nameErr) {
       setPersonalError(nameErr)
@@ -199,9 +208,9 @@ export default function AdminSettingsClient() {
       if (error) throw error
       setProfile((prev) => (prev ? { ...prev, fullName: trimmedName, email: trimmedEmail } : prev))
       setIsEditingPersonal(false)
-      setPersonalStatus('Personal information updated successfully.')
+      setPersonalStatus('Profile updated successfully.')
     } catch (err) {
-      setPersonalError(err.message || 'Failed to update personal information.')
+      setPersonalError(err.message || 'Failed to update profile.')
     }
   }
 
@@ -253,12 +262,19 @@ export default function AdminSettingsClient() {
   const formId = 'adminPasswordForm'
   const id = (name) => `admin_${name}`
 
+  const [showLogout, setShowLogout] = useState(false)
+
+  const handleLogout = async () => {
+    await signOut()
+    router.push('/administrator')
+  }
+
   if (loading) {
     return (
       <div className={styles.page}>
         <div className={styles.grid}>
           <section className={`${styles.card} ${styles.full}`}>
-            <p className={styles.cardTitle}>Personal Information</p>
+            <p className={styles.cardTitle}>Profile</p>
             <p className={styles.loadingText}>Loading profile…</p>
           </section>
         </div>
@@ -268,22 +284,89 @@ export default function AdminSettingsClient() {
 
   return (
     <div className={styles.page}>
+
+      {/* ── MOBILE LAYOUT (≤ 640px) ── */}
+      <div className={styles.mobileSettings}>
+        <p className={styles.mobilePageTitle}>Profile</p>
+
+        {/* Profile hero */}
+        <div className={styles.mobileProfileHero}>
+          <div className={styles.mobileAvatar}>
+            {shownAvatar ? (
+              <Image
+                src={shownAvatar}
+                alt="Profile avatar"
+                width={72}
+                height={72}
+                className={styles.mobileAvatarImg}
+                unoptimized
+              />
+            ) : (
+              <FaUser />
+            )}
+          </div>
+          <p className={styles.mobileName}>{profile?.fullName || 'Admin'}</p>
+          <p className={styles.mobileEmail}>{profile?.email || ''}</p>
+        </div>
+
+        {/* Account section */}
+        <div className={styles.mobileSection}>
+          <p className={styles.mobileSectionLabel}>Account</p>
+          <div className={styles.mobileMenuGroup}>
+            <button
+              type="button"
+              className={styles.mobileMenuItem}
+              onClick={onStartPersonalEdit}
+            >
+              <span className={styles.mobileMenuIcon}><FaUser /></span>
+              <span className={styles.mobileMenuLabel}>Manage Profile</span>
+              <span className={styles.mobileMenuArrow}>›</span>
+            </button>
+            <button
+              type="button"
+              className={styles.mobileMenuItem}
+              onClick={() => setIsEditingPassword(true)}
+            >
+              <span className={styles.mobileMenuIcon}><LuPencil /></span>
+              <span className={styles.mobileMenuLabel}>Password &amp; Security</span>
+              <span className={styles.mobileMenuArrow}>›</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Support section */}
+        <div className={styles.mobileSection}>
+          <p className={styles.mobileSectionLabel}>Support</p>
+          <div className={styles.mobileMenuGroup}>
+            <a href="/admin/help" className={styles.mobileMenuItem}>
+              <span className={styles.mobileMenuIcon}><TbMessage2Question /></span>
+              <span className={styles.mobileMenuLabel}>Help Center</span>
+              <span className={styles.mobileMenuArrow}>›</span>
+            </a>
+            <button
+              type="button"
+              className={`${styles.mobileMenuItem} ${styles.mobileMenuItemDanger}`}
+              onClick={() => setShowLogout(true)}
+            >
+              <span className={`${styles.mobileMenuIcon} ${styles.mobileMenuIconDanger}`}><LuLogOut /></span>
+              <span className={`${styles.mobileMenuLabel} ${styles.mobileMenuLabelDanger}`}>Log Out</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── DESKTOP LAYOUT (> 640px) ── */}
       <div className={styles.grid}>
         <section className={`${styles.card} ${styles.full}`}>
           <div className={styles.cardHeadRow}>
-            <p className={styles.cardTitle}>Personal Information</p>
+            <p className={styles.cardTitle}>Profile</p>
             <div className={styles.headActions}>
-              {isEditingPersonal && (
-                <button className={styles.secondaryBtn} onClick={onCancelPersonalEdit}>
-                  Cancel
-                </button>
-              )}
               <button
                 className={styles.primaryBtn}
-                onClick={onClickEditSavePersonal}
+                onClick={onStartPersonalEdit}
                 disabled={avatarLoading}
               >
-                {isEditingPersonal ? 'Save Changes' : <><FiEdit /> Edit</>}
+                <><FiEdit /> Edit</>
               </button>
             </div>
           </div>
@@ -304,39 +387,8 @@ export default function AdminSettingsClient() {
                   <div className={styles.avatarFallback}><FaUser /></div>
                 )}
               </div>
-              {isEditingPersonal && (
-                <div className={styles.piAvatarActionsRow}>
-                  <button
-                    type="button"
-                    className={styles.secondaryBtn}
-                    onClick={() => fileRef.current?.click()}
-                    disabled={avatarLoading}
-                  >
-                    <FaUpload /> {avatarLoading ? 'Uploading…' : 'Change'}
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.dangerBtn}
-                    onClick={onRemoveAvatar}
-                    disabled={avatarLoading || !shownAvatar}
-                  >
-                    <TbTrash /> Remove
-                  </button>
-                  <span className={styles.profileHintInline}>
-                    PNG, JPG, or WEBP · Max {MAX_MB}MB
-                  </span>
-                </div>
-              )}
             </div>
           </div>
-
-          <input
-            ref={fileRef}
-            type="file"
-            accept={ALLOWED.join(',')}
-            className={styles.fileInput}
-            onChange={onPickAvatar}
-          />
 
           <div className={styles.piFieldsRow}>
             <div className={styles.piGrid}>
@@ -346,8 +398,8 @@ export default function AdminSettingsClient() {
                   id={id('name')}
                   value={draftName}
                   onChange={(e) => setDraftName(e.target.value)}
-                  className={`${styles.input} ${!isEditingPersonal ? styles.inputReadOnly : ''}`}
-                  disabled={!isEditingPersonal}
+                  className={`${styles.input} ${styles.inputReadOnly}`}
+                  disabled
                 />
               </div>
               <div className={styles.field}>
@@ -356,17 +408,11 @@ export default function AdminSettingsClient() {
                   id={id('email')}
                   value={draftEmail}
                   onChange={(e) => setDraftEmail(e.target.value)}
-                  className={`${styles.input} ${!isEditingPersonal ? styles.inputReadOnly : ''}`}
-                  disabled={!isEditingPersonal}
+                  className={`${styles.input} ${styles.inputReadOnly}`}
+                  disabled
                 />
               </div>
             </div>
-            {personalError && (
-              <div className={styles.msgError}><MdErrorOutline /> {personalError}</div>
-            )}
-            {personalStatus && (
-              <div className={styles.msgOk}><MdCheckCircle /> {personalStatus}</div>
-            )}
           </div>
         </section>
 
@@ -437,6 +483,224 @@ export default function AdminSettingsClient() {
           </form>
         </section>
       </div>
+
+      {isEditingPersonal && (
+        <div className={styles.bottomSheetRoot}>
+          <div
+            className={styles.bottomSheetBackdrop}
+            onClick={onCancelPersonalEdit}
+          />
+          <div
+            className={styles.bottomSheet}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="adminPersonalSheetTitle"
+          >
+            <div className={styles.bottomSheetHandle} />
+            <div className={styles.bottomSheetHeader}>
+              <button
+                type="button"
+                className={`${styles.sheetHeaderBtn} ${styles.sheetCancelBtn}`}
+                onClick={onCancelPersonalEdit}
+              >
+                Cancel
+              </button>
+              <p id="adminPersonalSheetTitle" className={styles.bottomSheetTitle}>
+                Edit Profile
+              </p>
+              <button
+                type="button"
+                className={`${styles.sheetHeaderBtn} ${styles.sheetSaveBtn}`}
+                onClick={onSavePersonal}
+                disabled={avatarLoading}
+              >
+                Save
+              </button>
+            </div>
+
+            <div className={styles.bottomSheetBody}>
+              <div className={styles.sheetAvatarSection}>
+                <div className={styles.sheetAvatarWrap}>
+                  <div className={`${styles.avatar} ${styles.avatarLarge}`}>
+                    {shownAvatar ? (
+                      <Image
+                        src={shownAvatar}
+                        alt="Profile avatar"
+                        width={72}
+                        height={72}
+                        className={styles.avatarImg}
+                        unoptimized
+                      />
+                    ) : (
+                      <div className={styles.avatarFallback}><FaUser /></div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.avatarEditBtn}
+                    onClick={() => fileRef.current?.click()}
+                    disabled={avatarLoading}
+                    aria-label="Change profile photo"
+                  >
+                    <LuPencil />
+                  </button>
+                </div>
+                {shownAvatar && (
+                  <button
+                    type="button"
+                    className={styles.sheetRemoveBtn}
+                    onClick={onRemoveAvatar}
+                    disabled={avatarLoading}
+                  >
+                    Remove photo
+                  </button>
+                )}
+                <span className={styles.sheetAvatarHint}>
+                  PNG, JPG, or WEBP · Max {MAX_MB}MB
+                </span>
+              </div>
+
+              <input
+                ref={fileRef}
+                type="file"
+                accept={ALLOWED.join(',')}
+                className={styles.fileInput}
+                onChange={onPickAvatar}
+              />
+
+              <div className={styles.piFieldsRow}>
+                <div className={styles.piGrid}>
+                  <div className={styles.field}>
+                    <label htmlFor={`${id('name')}_sheet`} className={styles.label}>Name</label>
+                    <input
+                      id={`${id('name')}_sheet`}
+                      value={draftName}
+                      onChange={(e) => setDraftName(e.target.value)}
+                      className={styles.input}
+                    />
+                  </div>
+                  <div className={styles.field}>
+                    <label htmlFor={`${id('email')}_sheet`} className={styles.label}>Email</label>
+                    <input
+                      id={`${id('email')}_sheet`}
+                      value={draftEmail}
+                      onChange={(e) => setDraftEmail(e.target.value)}
+                      className={styles.input}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.bottomSheetFooter}>
+              {personalError && (
+                <div className={styles.msgError}><MdErrorOutline /> {personalError}</div>
+              )}
+              {personalStatus && (
+                <div className={styles.msgOk}><MdCheckCircle /> {personalStatus}</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isEditingPassword && (
+        <div className={styles.bottomSheetRoot}>
+          <div
+            className={styles.bottomSheetBackdrop}
+            onClick={() => { setIsEditingPassword(false); setPassError(''); setPassStatus('') }}
+          />
+          <div
+            className={styles.bottomSheet}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="adminPasswordSheetTitle"
+          >
+            <div className={styles.bottomSheetHandle} />
+            <div className={styles.bottomSheetHeader}>
+              <button
+                type="button"
+                className={`${styles.sheetHeaderBtn} ${styles.sheetCancelBtn}`}
+                onClick={() => { setIsEditingPassword(false); setPassError(''); setPassStatus('') }}
+              >
+                Cancel
+              </button>
+              <p id="adminPasswordSheetTitle" className={styles.bottomSheetTitle}>
+                Password &amp; Security
+              </p>
+              <button
+                type="button"
+                className={`${styles.sheetHeaderBtn} ${styles.sheetSaveBtn}`}
+                onClick={() => document.getElementById(`${formId}_sheet`).requestSubmit()}
+              >
+                Save
+              </button>
+            </div>
+
+            <div className={styles.bottomSheetBody}>
+              <form id={`${formId}_sheet`} onSubmit={async (e) => { await handlePasswordSubmit(e); if (!passError) setIsEditingPassword(false) }} className={styles.form}>
+                <div className={styles.field}>
+                  <label htmlFor={id('current_password_sheet')} className={styles.label}>Current Password</label>
+                  <input
+                    id={id('current_password_sheet')}
+                    type="password"
+                    placeholder="Enter current password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className={styles.input}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor={id('new_password_sheet')} className={styles.label}>New Password</label>
+                  <input
+                    id={id('new_password_sheet')}
+                    type="password"
+                    placeholder="Enter new password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className={styles.input}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor={id('confirm_password_sheet')} className={styles.label}>Confirm New Password</label>
+                  <input
+                    id={id('confirm_password_sheet')}
+                    type="password"
+                    placeholder="Re-enter new password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={styles.input}
+                  />
+                </div>
+                <div className={styles.passwordReqBox}>
+                  <p className={styles.passwordReqTitle}>Password requirements</p>
+                  <ul className={styles.passwordReqList}>
+                    <li>At least 8 characters</li>
+                    <li>One uppercase letter</li>
+                    <li>One lowercase letter</li>
+                    <li>One number</li>
+                  </ul>
+                </div>
+              </form>
+            </div>
+
+            <div className={styles.bottomSheetFooter}>
+              {passError && (
+                <div className={styles.msgError}><MdErrorOutline /> {passError}</div>
+              )}
+              {passStatus && (
+                <div className={styles.msgOk}><MdCheckCircle /> {passStatus}</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Logout
+        open={showLogout}
+        onCancel={() => setShowLogout(false)}
+        onConfirm={handleLogout}
+      />
     </div>
   )
 }

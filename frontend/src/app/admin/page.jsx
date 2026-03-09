@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import styles from './admin.module.css'
 import { dashboard } from '@/data/adminSampleData'
@@ -15,10 +16,20 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
+import { TbReportSearch, TbUsers, TbSearch } from 'react-icons/tb'
+import { LuUserCheck } from 'react-icons/lu'
+import { HiOutlineNewspaper } from 'react-icons/hi'
 
 // Bar chart: green shades only (values match globals.css --color-green-*)
 const BAR_COLORS = ['#1F312B', '#2D4A38', '#3D683A', '#4A7C47']
 const CHART_ACCENT = '#1F312B'
+
+const QUICK_LINKS = [
+  { id: 'disputes', label: 'Disputes', icon: TbReportSearch },
+  { id: 'sellers', label: 'Sellers', icon: LuUserCheck },
+  { id: 'users', label: 'Users', icon: TbUsers },
+  { id: 'content', label: 'Content', icon: HiOutlineNewspaper },
+]
 
 function formatShortDate(dateStr) {
   const d = new Date(dateStr)
@@ -26,9 +37,12 @@ function formatShortDate(dateStr) {
 }
 
 export default function AdminDashboardPage() {
+  const [activeQuickLink, setActiveQuickLink] = useState('disputes')
+
   return (
     <div className={styles.dashWrap}>
-      <section className={styles.statsGrid}>
+      {/* Desktop-only summary cards (analytics move to /admin/analytics on mobile) */}
+      <section className={`${styles.statsGrid} ${styles.homeDesktopOnly}`}>
         <div className={styles.statCard}>
           <p className={styles.statLabel}>Total Sellers</p>
           <p className={styles.statValue}>{dashboard.stats.totalSellers}</p>
@@ -56,7 +70,135 @@ export default function AdminDashboardPage() {
         </div>
       </section>
 
-      <section className={styles.panel}>
+      {/* Mobile-first home hub: search, quick links, highlight */}
+      <section className={styles.quickLinks}>
+        <div className={styles.homeSearchWrap}>
+          <span className={styles.homeSearchIcon}>
+            <TbSearch />
+          </span>
+          <input
+            type="search"
+            placeholder="Search users, sellers, or orders"
+            className={styles.homeSearchInput}
+          />
+        </div>
+
+        <div className={styles.quickLinksRow} role="tablist">
+          {QUICK_LINKS.map(({ id, label, icon: Icon }) => {
+            const isActive = activeQuickLink === id
+            return (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                className={`${styles.quickLinkCard} ${
+                  isActive ? styles.quickLinkCardActive : ''
+                }`}
+                onClick={() => setActiveQuickLink(id)}
+              >
+                <span className={styles.quickLinkIcon}>
+                  <Icon />
+                </span>
+                <span className={styles.quickLinkLabel}>{label}</span>
+              </button>
+            )
+          })}
+        </div>
+
+        <div className={styles.homeHighlightCard}>
+          <p className={styles.homeHighlightTitle}>Keep your marketplace healthy</p>
+          <p className={styles.homeHighlightText}>
+            Regularly review disputes and pending payouts so buyers and sellers
+            stay confident on the platform.
+          </p>
+          <Link href="/admin/analytics" className={styles.homeHighlightLink}>
+            View analytics
+          </Link>
+        </div>
+
+        <div className={styles.quickLinkContent}>
+          {activeQuickLink === 'disputes' && (
+            <div className={styles.panel}>
+              <div className={styles.panelHead}>
+                <p className={styles.panelTitle}>Disputes overview</p>
+                <Link href="/admin/disputes" className={styles.smallBtn}>
+                  View all
+                </Link>
+              </div>
+              <div className={styles.table}>
+                <div className={styles.rowHead}>
+                  <span>Date</span>
+                  <span>Type</span>
+                  <span>Status</span>
+                </div>
+                {dashboard.recentActivity.slice(0, 3).map((item) => (
+                  <div className={styles.row} key={item.id}>
+                    <span>{item.date}</span>
+                    <span>{item.type}</span>
+                    <span className={styles.badge}>{item.status}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeQuickLink === 'sellers' && (
+            <div className={styles.panel}>
+              <div className={styles.panelHead}>
+                <p className={styles.panelTitle}>Sellers</p>
+                <Link href="/admin/sellers" className={styles.smallBtn}>
+                  Manage
+                </Link>
+              </div>
+              <p className={styles.quickLinkBodyText}>
+                Total sellers: <strong>{dashboard.stats.totalSellers}</strong>
+              </p>
+              <p className={styles.quickLinkBodyText}>
+                Keep an eye on new and high-performing sellers to ensure a
+                healthy marketplace.
+              </p>
+            </div>
+          )}
+
+          {activeQuickLink === 'users' && (
+            <div className={styles.panel}>
+              <div className={styles.panelHead}>
+                <p className={styles.panelTitle}>Users</p>
+                <Link href="/admin/users" className={styles.smallBtn}>
+                  Manage
+                </Link>
+              </div>
+              <p className={styles.quickLinkBodyText}>
+                Total users: <strong>{dashboard.stats.totalUsers}</strong>
+              </p>
+              <p className={styles.quickLinkBodyText}>
+                Watch user growth and retention so you understand how the
+                platform is being used.
+              </p>
+            </div>
+          )}
+
+          {activeQuickLink === 'content' && (
+            <div className={styles.panel}>
+              <div className={styles.panelHead}>
+                <p className={styles.panelTitle}>Content</p>
+                <Link href="/admin/content" className={styles.smallBtn}>
+                  Manage
+                </Link>
+              </div>
+              <p className={styles.quickLinkBodyText}>
+                Quickly adjust homepage banners, FAQs, and other key content so
+                buyers and sellers always see up-to-date information.
+              </p>
+            </div>
+          )}
+        </div>
+
+      </section>
+
+      {/* Desktop-only revenue charts (hidden on mobile home) */}
+      <section className={`${styles.panel} ${styles.homeDesktopOnly}`}>
         <div className={styles.panelHead}>
           <p className={styles.panelTitle}>Revenue overview (sample data)</p>
         </div>
@@ -161,7 +303,8 @@ export default function AdminDashboardPage() {
         </div>
       </section>
 
-      <section className={styles.lowerGrid}>
+      {/* Desktop-only recent activity and quick actions */}
+      <section className={`${styles.lowerGrid} ${styles.homeDesktopOnly}`}>
         <div className={styles.panel}>
           <div className={styles.panelHead}>
             <p className={styles.panelTitle}>Recent activity</p>
@@ -208,6 +351,31 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       </section>
+
+      {/* Mobile-only recent activity (no quick actions) */}
+      <section className={styles.recentMobile}>
+        <div className={styles.panel}>
+          <div className={styles.panelHead}>
+            <p className={styles.panelTitle}>Recent activity</p>
+          </div>
+
+          <div className={styles.table}>
+            <div className={styles.rowHead}>
+              <span>Date</span>
+              <span>Type</span>
+              <span>Status</span>
+            </div>
+
+            {dashboard.recentActivity.map((item) => (
+              <div className={styles.row} key={item.id}>
+                <span>{item.date}</span>
+                <span>{item.type}</span>
+                <span className={styles.badge}>{item.status}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   )
-}
+} 
