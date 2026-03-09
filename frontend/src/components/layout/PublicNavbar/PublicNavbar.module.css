@@ -550,7 +550,7 @@ a.userLink {
   display: none;
   align-items: center;
   flex: 1;
-  justify-content: flex-end;
+  justify-content: space-between;
   min-width: 0;
 }
 
@@ -559,7 +559,7 @@ a.userLink {
   align-items: center;
   min-width: 0;
   flex: 1;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .navbarSearchIconBtn {
@@ -590,7 +590,7 @@ a.userLink {
   border-radius: 6px;
   border: 1px solid rgba(77, 45, 24, 0.35);
   background: #ffffff;
-  margin: 0 auto;
+  margin: 0;
 }
 
 .navbarSearchInput {
@@ -668,6 +668,21 @@ a.userLink {
     margin-left: 8px;
   }
 
+  .navActionsMobileButtons {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+
+  .navbarSearchWrap {
+    justify-content: flex-start;
+  }
+
+  .navbarSearchForm {
+    margin: 0;
+  }
+
   /* Hide top bar Log In | Sign Up (and notifications) on mobile — bottom nav has Log In / Profile */
   .topRight {
     display: none;
@@ -682,6 +697,14 @@ a.userLink {
   .mainNavInner {
     padding: 0 16px;
     height: 58px;
+  }
+
+  .navActions {
+    flex: 1;
+  }
+
+  .logo {
+    display: none;
   }
 
   .logoIcon {
