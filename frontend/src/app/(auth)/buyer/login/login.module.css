@@ -20,13 +20,13 @@
   box-shadow: none !important;
   color: var(--color-main-accent);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
   text-transform: none;
   border-radius: 0;
 }
 
 .forgotPasswordWrap .forgotPasswordLink:hover {
-  color: var(--color-main-accent);
+  color: #279354;
   text-decoration: underline;
   box-shadow: none;
 }
@@ -125,7 +125,7 @@
 
 .authFooter {
   margin-top: 20px;
-  font-size: 13px;
+  font-size: 14px;
   color: #666;
   text-align: center;
 }

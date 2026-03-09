@@ -33,10 +33,9 @@ export default function PublicNavbar() {
   ]
 
   const aboutUsItems = [
-    { label: 'Our Story', sectionId: 'our-story' },
     { label: 'Mission & Vision', sectionId: 'mission-vision' },
-    { label: 'Why La Visionario', sectionId: 'why-la-visionario' },
-    { label: 'Partners', sectionId: 'partners' },
+    { label: 'About Us', sectionId: 'about-us' },
+    { label: 'Why Choose Us', sectionId: 'why-choose-us' },
     { label: 'Testimonials', sectionId: 'testimonials' }
   ]
 
@@ -300,14 +299,15 @@ export default function PublicNavbar() {
               onMouseEnter={() => setAboutUsOpen(true)}
               onMouseLeave={() => setAboutUsOpen(false)}
             >
-              <button
+              <Link
+                href="/about"
                 className={`${styles.navLinkDropdown} ${isAboutUsActive ? styles.navLinkActive : ''}`}
               >
                 ABOUT
                 <svg className={styles.dropdownIcon} xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
-              </button>
+              </Link>
               {aboutUsOpen && (
                 <div className={styles.dropdownMenu}>
                   {aboutUsItems.map((item) => (
