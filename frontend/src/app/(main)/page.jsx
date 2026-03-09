@@ -6,7 +6,6 @@ import Image from 'next/image'
 import styles from './homepage.module.css'
 
 export default function LandingPage() {
-  // Strip OAuth hash fragment (e.g. #_=_ from Facebook) so the URL stays clean after login redirect
   useEffect(() => {
     if (typeof window !== 'undefined' && window.location.hash) {
       window.history.replaceState(null, '', window.location.pathname + window.location.search)
@@ -234,8 +233,7 @@ function PartnerHighlightSection() {
 }
 
 /* ---------------- FINAL CTA ---------------- */
-// Placeholder: replace with La Visionario Facebook page URL when ready
-const LA_VISIONARIO_FB_URL = 'https://www.facebook.com/LaVisionario'
+const LA_VISIONARIO_FB_URL = 'https://www.facebook.com/profile.php?id=61556533022289'
 
 function FinalCTASection() {
   return (

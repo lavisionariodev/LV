@@ -1,4 +1,10 @@
-/* Offset for fixed PublicNavbar: topBar (~40px) + mainNav (70px) */
+/* Offset for fixed PublicNavbar: topBar + mainNav */
 .main {
   padding-top: 110px;
+}
+
+@media (max-width: 768px) {
+  .main {
+    padding-top: 96px; /* smaller, matching shorter mobile navbar */
+  }
 }

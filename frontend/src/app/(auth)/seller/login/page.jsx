@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { TbMessage2Question } from 'react-icons/tb';
 import styles from './login.module.css';
 import { loginWithEmailPassword, signInWithOAuth, getOAuthRedirectUrl } from '@/lib/auth/client';
 import { supabase } from '@/lib/supabase/client';
@@ -147,7 +148,12 @@ function SellerLoginPageInner() {
             <span className={styles.logoText}>Lavisionario</span>
             <span className={styles.sellerBadge}>Seller Centre</span>
           </Link>
-          <Link href="/seller/need_help" className={styles.needHelp}>Need help?</Link>
+          <Link href="/seller/need_help" className={styles.needHelp} aria-label="Need help?">
+            <span className={styles.needHelpText}>Need help?</span>
+            <span className={styles.needHelpIcon} aria-hidden="true">
+              <TbMessage2Question />
+            </span>
+          </Link>
         </div>
       </header>
 

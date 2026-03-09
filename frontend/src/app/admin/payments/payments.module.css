@@ -7,6 +7,8 @@
 .toolbar {
   display: flex;
   gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .searchInputWrap {
@@ -45,4 +47,25 @@
 
 .actionsHead {
   text-align: right;
+}
+
+@media (max-width: 768px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .searchInputWrap {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .actionsCell {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .actionsHead {
+    text-align: left;
+  }
 }
