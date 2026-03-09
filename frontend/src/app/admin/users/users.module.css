@@ -7,6 +7,8 @@
 .toolbar {
   display: flex;
   gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .searchInputWrap {
@@ -30,4 +32,15 @@
   border-radius: 12px;
   border: 1px dashed #e5e7eb;
   text-align: center;
+}
+
+@media (max-width: 768px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .searchInputWrap {
+    max-width: 100%;
+  }
 }

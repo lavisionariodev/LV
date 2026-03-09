@@ -337,4 +337,39 @@
   .piAvatarActionsRow {
     width: 100%;
   }
+
+  .avatar {
+    margin-bottom: 8px;
+  }
+
+  .profileHintInline {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 16px 14px 18px;
+  }
+
+  .piAvatarRow {
+    gap: 10px;
+  }
+
+  .piAvatarLeft {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .piAvatarActionsRow {
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .primaryBtn,
+  .secondaryBtn,
+  .dangerBtn {
+    font-size: 11px;
+    padding: 8px 10px;
+  }
 }

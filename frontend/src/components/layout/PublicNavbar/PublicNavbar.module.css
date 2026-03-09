@@ -293,7 +293,7 @@ a.userLink {
 .navActionsDesktop {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   flex-shrink: 0;
   min-width: 360px;
   justify-content: flex-end;
@@ -303,10 +303,10 @@ a.userLink {
 .searchFavoritesGroup {
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin-right: 4px;
-  width: 268px;
-  min-width: 268px;
+  gap: 2px;
+  margin-right: 2px;
+  width: 248px;
+  min-width: 248px;
   flex-shrink: 0;
   justify-content: flex-end;
 }
@@ -356,8 +356,8 @@ a.userLink {
 }
 
 .desktopSearchFormOpen {
-  max-width: 228px;
-  width: 228px;
+  max-width: 208px;
+  width: 208px;
   opacity: 1;
 }
 
@@ -549,7 +549,6 @@ a.userLink {
 .navActionsMobile {
   display: none;
   align-items: center;
-  gap: 12px;
   flex: 1;
   justify-content: flex-end;
   min-width: 0;
@@ -560,7 +559,7 @@ a.userLink {
   align-items: center;
   min-width: 0;
   flex: 1;
-  justify-content: flex-end;
+  justify-content: center;
 }
 
 .navbarSearchIconBtn {
@@ -585,31 +584,24 @@ a.userLink {
 .navbarSearchForm {
   display: flex;
   align-items: center;
-  width: 0;
-  min-width: 0;
-  max-width: 0;
-  overflow: hidden;
-  opacity: 0;
-  transition: max-width 0.3s ease, opacity 0.25s ease;
-}
-
-.navbarSearchFormOpen {
-  max-width: 190px;
-  min-width: 110px;
   width: 100%;
-  opacity: 1;
+  max-width: 230px;
+  padding: 1px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(77, 45, 24, 0.35);
+  background: #ffffff;
+  margin: 0 auto;
 }
 
 .navbarSearchInput {
   flex: 1;
   min-width: 0;
   width: 100%;
-  padding: 8px 0 8px 0;
-  font-size: 14px;
+  padding: 0;
+  font-size: 13px;
   color: #4D2D18;
   background: transparent;
   border: none;
-  border-bottom: 1px solid rgba(77, 45, 24, 0.35);
   border-radius: 0;
   outline: none;
   transition: border-color 0.2s ease;
@@ -635,10 +627,10 @@ a.userLink {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   padding: 0;
-  margin-left: 4px;
+  margin-left: 6px;
   background: transparent;
   border: none;
   color: #4D2D18;
@@ -670,6 +662,12 @@ a.userLink {
     display: flex;
   }
 
+  /* Extra space between mobile search bar and favorites icon, while keeping
+     a small gap between favorites and cart */
+  .navActionsMobile .favoritesBtn {
+    margin-left: 8px;
+  }
+
   /* Hide top bar Log In | Sign Up (and notifications) on mobile — bottom nav has Log In / Profile */
   .topRight {
     display: none;
@@ -687,12 +685,8 @@ a.userLink {
   }
 
   .logoIcon {
-    width: 1.75rem;
-    height: 1.75rem;
-  }
-
-  .followText {
-    display: none;
+    width: 2rem;
+    height: 2rem;
   }
 
   .cartBtn {
@@ -706,8 +700,8 @@ a.userLink {
   }
 
   .navbarSearchInput {
-    padding: 10px 0;
-    font-size: 16px; /* avoids zoom on focus on iOS */
+    padding: 8px 6px;
+    font-size: 15px; /* keeps good tap size without making field too tall */
   }
 }
 
@@ -830,8 +824,8 @@ a.userLink {
   }
 
   .logoIcon {
-    width: 1.5rem;
-    height: 1.5rem;
+    width: 1.75rem;
+    height: 1.75rem;
   }
 
   .logoLetter {

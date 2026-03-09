@@ -371,6 +371,10 @@
     margin-bottom: 1.5rem;
   }
 
+  .leftSection .mainSubtitle {
+    display: none;
+  }
+
   .mainSubtitle br {
     display: none;
   }
@@ -390,6 +394,20 @@
 
   .leftSection .secureNote {
     font-size: 13px;
+    text-align: center;
+  }
+
+  .leftSection {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+  }
+
+  .contentWrapper {
+    justify-content: center;
   }
 
   .loginCard {
