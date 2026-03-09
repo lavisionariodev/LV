@@ -122,6 +122,18 @@ export default function AppTopbar({ variant, onLogout, isMobile, onMenuClick, si
     isAdmin && pathname && pathname.split(/[?#]/)[0] === '/admin'
   const heading = isAdminHome && isMobile ? 'Hello, Admin!' : pageTitle
 
+  const cleanPathname = pathname?.split(/[?#]/)[0] || ''
+  const isSettingsPage = isMobile && (
+    cleanPathname === '/admin/settings' || cleanPathname === '/seller/settings'
+  )
+
+  const isNotificationsPage = isMobile && (
+    cleanPathname === '/admin/notifications' || cleanPathname === '/seller/notifications'
+  )
+
+  const isCenteredPage = isSettingsPage || isNotificationsPage
+  const centeredTitle = isSettingsPage ? 'Profile' : isNotificationsPage ? 'Notifications' : ''
+
   useEffect(() => {
     if (!isAdmin) return
     let cancelled = false
@@ -157,8 +169,11 @@ export default function AppTopbar({ variant, onLogout, isMobile, onMenuClick, si
   return (
     <>
       <header
-        className={`${styles.topbar} ${!isMobile && sidebarCollapsed ? styles.sidebarCollapsed : ''}`}
+        className={`${styles.topbar} ${!isMobile && sidebarCollapsed ? styles.sidebarCollapsed : ''} ${isCenteredPage ? styles.topbarCentered : ''}`}
       >
+        {isCenteredPage ? (
+          <h1 className={styles.pageTitleCentered}>{centeredTitle}</h1>
+        ) : (<>
         <div className={styles.left}>
           {heading && <h1 className={styles.pageTitle}>{heading}</h1>}
         </div>
@@ -261,6 +276,7 @@ export default function AppTopbar({ variant, onLogout, isMobile, onMenuClick, si
             </div>
           </div>
         </div>
+        </>)}
       </header>
 
       <Logout open={showLogout} onCancel={onCancelLogout} onConfirm={onConfirmLogout} />
