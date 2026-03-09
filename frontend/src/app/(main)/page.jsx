@@ -7,8 +7,22 @@ import styles from './homepage.module.css'
 
 export default function LandingPage() {
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.hash) {
-      window.history.replaceState(null, '', window.location.pathname + window.location.search)
+    if (typeof window === 'undefined') return
+    const hash = window.location.hash || ''
+    if (!hash) return
+
+    const lower = hash.toLowerCase()
+    const isSupabaseAuthHash =
+      lower.includes('type=recovery') ||
+      lower.includes('access_token') ||
+      lower.includes('refresh_token')
+
+    if (!isSupabaseAuthHash) {
+      window.history.replaceState(
+        null,
+        '',
+        window.location.pathname + window.location.search
+      )
     }
   }, [])
 

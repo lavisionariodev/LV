@@ -13,8 +13,13 @@ export default function RecoveryRedirect() {
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
-    const hash = window.location.hash || "";
-    if (!hash.includes("type=recovery")) return;
+    const hash = (window.location.hash || "").toLowerCase();
+    const search = (window.location.search || "").toLowerCase();
+
+    const hasRecovery =
+      hash.includes("type=recovery") || search.includes("type=recovery");
+
+    if (!hasRecovery) return;
     if (pathname === "/auth/reset-password") return;
 
     // Infer portal from current path so admin/seller/buyer get the right login after reset
