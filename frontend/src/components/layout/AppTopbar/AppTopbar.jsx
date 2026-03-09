@@ -38,7 +38,8 @@ const TOPBAR_CONFIG = {
 const PAGE_TITLES = {
   admin: {
     '/admin': 'Dashboard',
-    '/admin/payments': 'Payments',
+    '/admin/payouts': 'Payouts',
+    '/admin/analytics': 'Analytics',
     '/admin/disputes': 'Disputes',
     '/admin/users': 'Users',
     '/admin/sellers': 'Sellers',
@@ -117,6 +118,9 @@ export default function AppTopbar({ variant, onLogout, isMobile, onMenuClick, si
 
   const isAdmin = variant === 'admin'
   const pageTitle = getPageTitle(variant, pathname)
+  const isAdminHome =
+    isAdmin && pathname && pathname.split(/[?#]/)[0] === '/admin'
+  const heading = isAdminHome && isMobile ? 'Hello, Admin!' : pageTitle
 
   useEffect(() => {
     if (!isAdmin) return
@@ -156,7 +160,7 @@ export default function AppTopbar({ variant, onLogout, isMobile, onMenuClick, si
         className={`${styles.topbar} ${!isMobile && sidebarCollapsed ? styles.sidebarCollapsed : ''}`}
       >
         <div className={styles.left}>
-          {pageTitle && <h1 className={styles.pageTitle}>{pageTitle}</h1>}
+          {heading && <h1 className={styles.pageTitle}>{heading}</h1>}
         </div>
 
         <div className={styles.right}>

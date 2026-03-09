@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import layoutStyles from '../admin.module.css'
-import styles from './payments.module.css'
+import styles from './payouts.module.css'
 import {
   payments as initialPayments,
   calculateCommissionSplit,
@@ -15,7 +15,7 @@ const STATUS_LABELS = {
   failed: 'Failed',
 }
 
-export default function AdminPaymentsPage() {
+export default function AdminPayoutsPage() {
   const [rows, setRows] = useState(initialPayments)
   const [statusFilter, setStatusFilter] = useState('all')
   const [search, setSearch] = useState('')
@@ -55,7 +55,7 @@ export default function AdminPaymentsPage() {
   return (
     <div className={layoutStyles.dashWrap}>
       {/* Summary cards */}
-      <section className={layoutStyles.statsGrid}>
+      <section className={styles.statsWrap}>
         <div className={layoutStyles.statCard}>
           <p className={layoutStyles.statLabel}>Total transactions</p>
           <p className={layoutStyles.statValue}>{summary.total}</p>
@@ -86,7 +86,7 @@ export default function AdminPaymentsPage() {
       {/* Table */}
       <section className={layoutStyles.panel}>
         <div className={layoutStyles.panelHead}>
-          <p className={layoutStyles.panelTitle}>Payments</p>
+          <p className={layoutStyles.panelTitle}>Payouts</p>
 
           <div className={styles.toolbar}>
             <select
@@ -193,7 +193,7 @@ export default function AdminPaymentsPage() {
 
           {filtered.length === 0 && (
             <div className={styles.empty}>
-              No payments match the current filters.
+              No payouts match the current filters.
             </div>
           )}
         </div>
@@ -201,4 +201,3 @@ export default function AdminPaymentsPage() {
     </div>
   )
 }
-
