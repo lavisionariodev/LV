@@ -1,101 +1,10 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
+import Image from 'next/image'
 import { TbSearch } from 'react-icons/tb'
 import styles from './products.module.css'
-
-const MOCK_PRODUCTS = [
-  {
-    id: 'prod-1',
-    name: 'Premium Cremation Package',
-    kind: 'package',
-    category: 'Cremation',
-    startingPrice: 38000,
-    city: 'Manila, NCR',
-    status: 'active',
-    availability: 'Available',
-    inclusions: [
-      'Death certificate processing',
-      'Mahogany urn and memorial candle set',
-      '2-day chapel viewing with floral décor',
-    ],
-  },
-  {
-    id: 'prod-2',
-    name: 'Full Traditional Burial',
-    kind: 'package',
-    category: 'Burial',
-    startingPrice: 95000,
-    city: 'Manila, NCR',
-    status: 'active',
-    availability: 'Available',
-    inclusions: [
-      'Premium casket with full embalming',
-      '5-day chapel viewing',
-      'Hearse convoy and cemetery coordination',
-    ],
-  },
-  {
-    id: 'prod-3',
-    name: 'Classic Memorial Service',
-    kind: 'service',
-    category: 'Memorial Service',
-    startingPrice: 32000,
-    city: 'Quezon City, NCR',
-    status: 'active',
-    availability: 'Weekdays only',
-    inclusions: [
-      'Venue for up to 80 guests',
-      'Custom AV tribute and live music',
-      'Memorial program and floral arrangements',
-    ],
-  },
-  {
-    id: 'prod-4',
-    name: 'Direct Cremation',
-    kind: 'service',
-    category: 'Cremation',
-    startingPrice: 18500,
-    city: 'Quezon City, NCR',
-    status: 'inactive',
-    availability: 'Temporarily unavailable',
-    inclusions: [
-      'Standard urn and ash release permit',
-      '1 viewing day',
-      'Assistance with civil paperwork',
-    ],
-  },
-  {
-    id: 'prod-5',
-    name: 'Standard Burial Package',
-    kind: 'package',
-    category: 'Burial',
-    startingPrice: 55000,
-    city: 'Pasig, NCR',
-    status: 'active',
-    availability: 'Available',
-    inclusions: [
-      'Wooden casket and 3-day viewing',
-      'Embalming',
-      'Hearse and cemetery coordination',
-    ],
-  },
-  {
-    id: 'prod-6',
-    name: 'Intimate Memorial Gathering',
-    kind: 'service',
-    category: 'Memorial Service',
-    startingPrice: 15000,
-    city: 'Caloocan, NCR',
-    status: 'active',
-    availability: 'Evenings only',
-    inclusions: [
-      'Intimate venue for up to 30 guests',
-      'Photo display setup',
-      'Sound system and memorial program',
-    ],
-  },
-]
+import { LISTINGS, SERVICES, PROVIDERS } from '../../(main)/shop/data'
 
 function formatPrice(amount) {
   if (typeof amount !== 'number') return '—'
@@ -112,11 +21,59 @@ const TYPE_FILTERS = [
   { id: 'package', label: 'Packages' },
 ]
 
+function buildProductsFromBuyerData() {
+  return LISTINGS.map((listing) => {
+    const service = SERVICES.find((s) => s.id === listing.serviceId)
+    const provider = PROVIDERS.find((p) => p.id === listing.providerId)
+
+    const name = listing.name
+    const category = service?.name ?? 'Service'
+    const startingPrice = listing.price
+    const city = provider?.location ?? 'N/A'
+
+    // Classify as package vs service using listing name heuristics
+    const lowerName = name.toLowerCase()
+    const kind =
+      lowerName.includes('package') || lowerName.includes('service') ? 'package' : 'service'
+
+    // Simple availability/status defaults; could later be tied to real data
+    const status = 'active'
+    const availability = 'Available'
+
+    const gallery = service?.gallery && service.gallery.length ? service.gallery : [service?.image ?? '/sample/services/2.jpg']
+
+    return {
+      id: listing.id,
+      name,
+      kind,
+      category,
+      startingPrice,
+      city,
+      status,
+      availability,
+      inclusions: listing.inclusions ?? [],
+      // Buyer-facing meta
+      image: service?.image ?? '/sample/services/2.jpg',
+      description: service?.description ?? '',
+      longDescription: service?.longDescription ?? '',
+      type: service?.type ?? 'Funeral Package',
+      detailCategory: service?.category ?? 'Memorial Service',
+      duration: service?.duration ?? '3–5 Days',
+      coverage: service?.coverage ?? 'Metro Manila',
+      gallery,
+    }
+  })
+}
+
 export default function ProductsContent({ initialKind = 'all' }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState(initialKind || 'all')
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [modalMode, setModalMode] = useState(null) // 'view' | 'edit'
+  const [editGallery, setEditGallery] = useState([])
+  const [products, setProducts] = useState(() => buildProductsFromBuyerData())
+  const [productPendingRemoval, setProductPendingRemoval] = useState(null)
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     if (initialKind && TYPE_FILTERS.some((t) => t.id === initialKind)) {
@@ -125,7 +82,7 @@ export default function ProductsContent({ initialKind = 'all' }) {
   }, [initialKind])
 
   const filteredProducts = useMemo(() => {
-    let list = [...MOCK_PRODUCTS]
+    let list = [...products]
 
     if (typeFilter !== 'all') {
       list = list.filter((p) => p.kind === typeFilter)
@@ -142,10 +99,10 @@ export default function ProductsContent({ initialKind = 'all' }) {
     }
 
     return list
-  }, [typeFilter, searchQuery])
+  }, [products, typeFilter, searchQuery])
 
-  const total = MOCK_PRODUCTS.length
-  const activeCount = MOCK_PRODUCTS.filter((p) => p.status === 'active').length
+  const total = products.length
+  const activeCount = products.filter((p) => p.status === 'active').length
   const inactiveCount = total - activeCount
 
   const handleOpenView = (product) => {
@@ -156,22 +113,67 @@ export default function ProductsContent({ initialKind = 'all' }) {
   const handleOpenEdit = (product) => {
     setSelectedProduct(product)
     setModalMode('edit')
+    setEditGallery(product.gallery ?? [product.image])
   }
 
   const handleCloseModal = () => {
     setSelectedProduct(null)
     setModalMode(null)
+    setEditGallery([])
+  }
+
+  const handleUploadClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click()
+    }
+  }
+
+  const handleFilesSelected = (event) => {
+    const files = Array.from(event.target.files || [])
+    if (!files.length) return
+    const newUrls = files.map((file) => URL.createObjectURL(file))
+    setEditGallery((prev) => [...prev, ...newUrls])
+  }
+
+  const handleRemoveImage = (index) => {
+    setEditGallery((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleRequestRemove = (product) => {
+    setProductPendingRemoval(product)
+  }
+
+  const handleCancelRemove = () => {
+    setProductPendingRemoval(null)
+  }
+
+  const handleConfirmRemove = () => {
+    if (!productPendingRemoval) return
+    setProducts((prev) => prev.filter((p) => p.id !== productPendingRemoval.id))
+
+    if (selectedProduct?.id === productPendingRemoval.id) {
+      setSelectedProduct(null)
+      setModalMode(null)
+    }
+
+    setProductPendingRemoval(null)
   }
 
   return (
     <div className={styles.pageWrap}>
-      <header className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>Products & services</h1>
-        <p className={styles.pageSubtitle}>
-          Manage the funeral services and packages that appear on your Lavisionario shop. Keep the
-          most accurate pricing, availability, and status so buyers can book with confidence.
-        </p>
-      </header>
+      <section className={styles.filtersRow} aria-label="Search products">
+        <div className={styles.searchWrap}>
+          <TbSearch className={styles.searchIcon} size={18} aria-hidden />
+          <input
+            type="search"
+            className={styles.searchBox}
+            placeholder="Search by name, category, or location"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            aria-label="Search products"
+          />
+        </div>
+      </section>
 
       <section className={styles.statsStrip} aria-label="Listing overview">
         <div className={styles.statCard}>
@@ -189,33 +191,6 @@ export default function ProductsContent({ initialKind = 'all' }) {
           <p className={styles.statValue}>{inactiveCount}</p>
           <p className={styles.statHint}>Hidden from shop</p>
         </div>
-      </section>
-
-      <section className={styles.filtersRow} aria-label="Filter products">
-        <div className={styles.searchWrap}>
-          <TbSearch className={styles.searchIcon} size={18} aria-hidden />
-          <input
-            type="search"
-            className={styles.searchBox}
-            placeholder="Search by name, category, or location"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            aria-label="Search products"
-          />
-        </div>
-
-        <select
-          className={styles.typeSelect}
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-          aria-label="Filter by type"
-        >
-          {TYPE_FILTERS.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.label}
-            </option>
-          ))}
-        </select>
       </section>
 
       <section className={styles.productsSection} aria-label="Products list">
@@ -276,7 +251,11 @@ export default function ProductsContent({ initialKind = 'all' }) {
                   >
                     View
                   </button>
-                  <button type="button" className={styles.productActionDanger} onClick={() => {}}>
+                  <button
+                    type="button"
+                    className={styles.productActionDanger}
+                    onClick={() => handleRequestRemove(product)}
+                  >
                     Remove
                   </button>
                 </div>
@@ -318,57 +297,89 @@ export default function ProductsContent({ initialKind = 'all' }) {
 
             <div className={styles.productModalBody}>
               {modalMode === 'view' ? (
-                <div className={styles.productModalColumns}>
-                  <div className={styles.productModalCol}>
-                    <h3 className={styles.productModalSectionTitle}>Overview</h3>
-                    <p className={styles.productModalText}>
-                      This listing describes how the service or package appears on your public
-                      Lavisionario shop. Use it to quickly review pricing, availability, and key
-                      inclusions from the buyer&apos;s perspective.
+                <div className={styles.productPreviewRow}>
+                  <div className={styles.productPreviewImageCol}>
+                    <div className={styles.productModalImageWrap}>
+                      <Image
+                        src={selectedProduct.image}
+                        alt={selectedProduct.name}
+                        fill
+                        sizes="(max-width: 800px) 100vw, 460px"
+                        className={styles.productModalImage}
+                      />
+                    </div>
+                  </div>
+
+                  <div className={styles.productPreviewBody}>
+                    <div className={styles.productPreviewHeaderRow}>
+                      <div className={styles.productPreviewRatings}>
+                        <span className={styles.productPreviewStars}>★★★★★</span>
+                        <span className={styles.productPreviewRatingScore}>4.9</span>
+                        <span className={styles.productPreviewRatingMeta}>· 42 reviews</span>
+                      </div>
+                      <span
+                        className={`${styles.productPreviewStockBadge} ${
+                          selectedProduct.status === 'active'
+                            ? styles.productPreviewStockActive
+                            : styles.productPreviewStockInactive
+                        }`}
+                      >
+                        {selectedProduct.status === 'active' ? 'In stock' : 'Inactive'}
+                      </span>
+                    </div>
+
+                    <div className={styles.productPreviewPriceRow}>
+                      <span className={styles.productPreviewPrice}>
+                        {formatPrice(selectedProduct.startingPrice)}
+                      </span>
+                    </div>
+
+                    <p className={styles.productPreviewShortDesc}>
+                      {selectedProduct.longDescription ||
+                        selectedProduct.description ||
+                        'A thoughtfully curated memorial service that honors your loved one with grace, dignity, and compassion — guiding your family through every step of the process.'}
                     </p>
 
+                    <hr className={styles.productPreviewDivider} />
+
+                    <div className={styles.productPreviewMetaGrid}>
+                      <div className={styles.productPreviewMetaItem}>
+                        <span className={styles.productPreviewMetaLabel}>Type</span>
+                        <span className={styles.productPreviewMetaValue}>
+                          {selectedProduct.type ||
+                            (selectedProduct.kind === 'service' ? 'Funeral Service' : 'Package')}
+                        </span>
+                      </div>
+                      <div className={styles.productPreviewMetaItem}>
+                        <span className={styles.productPreviewMetaLabel}>Category</span>
+                        <span className={styles.productPreviewMetaValue}>
+                          {selectedProduct.detailCategory || selectedProduct.category}
+                        </span>
+                      </div>
+                      <div className={styles.productPreviewMetaItem}>
+                        <span className={styles.productPreviewMetaLabel}>Duration</span>
+                        <span className={styles.productPreviewMetaValue}>
+                          {selectedProduct.duration || '3–5 Days'}
+                        </span>
+                      </div>
+                      <div className={styles.productPreviewMetaItem}>
+                        <span className={styles.productPreviewMetaLabel}>Coverage</span>
+                        <span className={styles.productPreviewMetaValue}>
+                          {selectedProduct.coverage || 'Metro Manila'}
+                        </span>
+                      </div>
+                    </div>
+
                     {selectedProduct.inclusions?.length ? (
-                      <>
+                      <div className={styles.productPreviewInclusions}>
                         <h3 className={styles.productModalSectionTitle}>Key inclusions</h3>
                         <ul className={styles.productModalList}>
                           {selectedProduct.inclusions.map((inc, idx) => (
                             <li key={idx}>{inc}</li>
                           ))}
                         </ul>
-                      </>
+                      </div>
                     ) : null}
-                  </div>
-
-                  <div className={styles.productModalCol}>
-                    <h3 className={styles.productModalSectionTitle}>Listing details</h3>
-                    <dl className={styles.productModalAttrs}>
-                      <div className={styles.productModalAttrRow}>
-                        <dt>Type</dt>
-                        <dd>{selectedProduct.kind === 'service' ? 'Service' : 'Package'}</dd>
-                      </div>
-                      <div className={styles.productModalAttrRow}>
-                        <dt>Category</dt>
-                        <dd>{selectedProduct.category}</dd>
-                      </div>
-                      <div className={styles.productModalAttrRow}>
-                        <dt>Location</dt>
-                        <dd>{selectedProduct.city}</dd>
-                      </div>
-                      <div className={styles.productModalAttrRow}>
-                        <dt>Availability</dt>
-                        <dd>{selectedProduct.availability}</dd>
-                      </div>
-                      <div className={styles.productModalAttrRow}>
-                        <dt>Status</dt>
-                        <dd>
-                          {selectedProduct.status === 'active' ? 'Active (visible in shop)' : 'Inactive (hidden)'}
-                        </dd>
-                      </div>
-                      <div className={styles.productModalAttrRow}>
-                        <dt>Starting price</dt>
-                        <dd>{formatPrice(selectedProduct.startingPrice)}</dd>
-                      </div>
-                    </dl>
                   </div>
                 </div>
               ) : (
@@ -424,14 +435,55 @@ export default function ProductsContent({ initialKind = 'all' }) {
                         <option value="inactive">Inactive</option>
                       </select>
                     </label>
+                    <label className={styles.productModalField}>
+                      <span className={styles.productModalLabel}>Images</span>
+                      <div className={styles.productModalUploadRow}>
+                        <div className={styles.productModalUploadList}>
+                          {editGallery.map((src, idx) => (
+                            <div key={idx} className={styles.productModalUploadPreview}>
+                              <img src={src} alt={`${selectedProduct.name} ${idx + 1}`} />
+                              <button
+                                type="button"
+                                className={styles.productModalUploadRemove}
+                                onClick={() => handleRemoveImage(idx)}
+                                aria-label="Remove image"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        <button
+                          type="button"
+                          className={styles.productModalUploadBtn}
+                          onClick={handleUploadClick}
+                        >
+                          Upload images
+                        </button>
+                      </div>
+                    </label>
+                    <label className={styles.productModalField}>
+                      <span className={styles.productModalLabel}>Description</span>
+                      <textarea
+                        className={styles.productModalTextarea}
+                        defaultValue={selectedProduct.longDescription || selectedProduct.description}
+                      />
+                    </label>
                   </div>
-                  <p className={styles.productModalNote}>
-                    These controls are for layout only in this mock. In a full integration, changes
-                    here would update your live listings.
-                  </p>
                 </div>
               )}
             </div>
+
+            {modalMode === 'edit' && (
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                style={{ display: 'none' }}
+                onChange={handleFilesSelected}
+              />
+            )}
 
             <div className={styles.productModalFooter}>
               <button
@@ -450,6 +502,42 @@ export default function ProductsContent({ initialKind = 'all' }) {
                   Save changes
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {productPendingRemoval && (
+        <div
+          className={styles.productModalOverlay}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) handleCancelRemove()
+          }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className={styles.removeConfirmCard} onClick={(e) => e.stopPropagation()}>
+            <h2 className={styles.removeConfirmTitle}>Remove listing?</h2>
+            <p className={styles.removeConfirmText}>
+              This will hide{' '}
+              <span className={styles.removeConfirmName}>{productPendingRemoval.name}</span> from your
+              products. You can add it again later if needed.
+            </p>
+            <div className={styles.removeConfirmActions}>
+              <button
+                type="button"
+                className={styles.removeConfirmCancel}
+                onClick={handleCancelRemove}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={styles.removeConfirmDelete}
+                onClick={handleConfirmRemove}
+              >
+                Remove
+              </button>
             </div>
           </div>
         </div>

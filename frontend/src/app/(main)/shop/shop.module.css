@@ -1538,6 +1538,15 @@
   flex: 1;
   border-right: 1px solid rgba(16, 40, 32, 0.07);
   min-width: 150px;
+  background: #204f38;
+  color: #FFFFFF;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.compareHighlight:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 26px rgba(16, 40, 32, 0.35);
+  background: #204f38;
 }
 
 .compareHighlight:last-child {
@@ -1549,7 +1558,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.9px;
-  color: #bbb;
+  color: rgba(255, 255, 255, 0.7);
   font-family: "Lato", sans-serif;
   margin: 0 0 3px;
 }
@@ -1557,7 +1566,7 @@
 .highlightValue {
   font-size: 13px;
   font-weight: 600;
-  color: var(--color-green, #102820);
+  color: #FFFFFF;
   font-family: "Lato", sans-serif;
   margin: 0;
   line-height: 1.3;
