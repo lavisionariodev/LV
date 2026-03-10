@@ -18,12 +18,18 @@ const LOGIN_PATHS = {
 /** Reset link is valid for 5 minutes from requested_at in the URL. */
 const RESET_LINK_VALID_MS = 5 * 60 * 1000;
 
-/** Read recovery from URL (hash or query). Supabase puts tokens in hash; some flows use query. */
+/** Read recovery from URL (hash or query). Supabase puts tokens in hash; newer PKCE flows may use ?code=... */
 function readRecoveryFromUrl() {
   if (typeof window === "undefined") return false;
   const hash = (window.location.hash || "").toLowerCase();
   const search = (window.location.search || "").toLowerCase();
-  return hash.includes("type=recovery") || search.includes("type=recovery");
+  const hasTypeRecovery =
+    hash.includes("type=recovery") || search.includes("type=recovery");
+
+  // Fallback for code-based flows (e.g. reset links like ?code=...&type=recovery or just ?code=...)
+  const hasCodeParam = search.includes("code=");
+
+  return hasTypeRecovery || hasCodeParam;
 }
 
 /** Capture recovery at module load so we have it before Supabase or other code can consume the hash. */
@@ -40,6 +46,9 @@ function ResetPasswordInner() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Supabase may send a short-lived code in the query (?code=...) for PKCE flows.
+  const code = searchParams.get("code");
 
   const portalParam = searchParams.get("portal") || "buyer";
   const portal = VALID_PORTALS.includes(portalParam) ? portalParam : "buyer";
@@ -60,8 +69,11 @@ function ResetPasswordInner() {
   }, []);
 
   // Supabase may process the recovery hash and emit PASSWORD_RECOVERY (e.g. when redirect drops the fragment).
-  // Listen for it so we show the form; wait a moment before showing "Invalid or Expired".
+  // Newer PKCE flows can also send ?code=..., which must be exchanged for a session first.
+  // Listen for PASSWORD_RECOVERY so we know it's safe to show the form; wait a moment before showing "Invalid or Expired".
   useEffect(() => {
+    let isMounted = true;
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
@@ -69,12 +81,32 @@ function ResetPasswordInner() {
         setHasRecovery(true);
       }
     });
-    const t = setTimeout(() => setRecoveryChecked(true), 1500);
+
+    // If we have a code in the query, exchange it for a session so Supabase can emit PASSWORD_RECOVERY.
+    (async () => {
+      if (!code) return;
+      try {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) {
+          console.error("Error exchanging recovery code for session:", error);
+        }
+      } catch (err) {
+        console.error("Unexpected error exchanging recovery code:", err);
+      }
+    })();
+
+    const t = setTimeout(() => {
+      if (isMounted) {
+        setRecoveryChecked(true);
+      }
+    }, 1500);
+
     return () => {
       subscription?.unsubscribe();
       clearTimeout(t);
+      isMounted = false;
     };
-  }, []);
+  }, [code]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
