@@ -40,7 +40,10 @@ function buildProductsFromBuyerData() {
     const status = 'active'
     const availability = 'Available'
 
-    const gallery = service?.gallery && service.gallery.length ? service.gallery : [service?.image ?? '/sample/services/2.jpg']
+    const gallery =
+      service?.gallery && service.gallery.length
+        ? service.gallery
+        : [service?.image ?? '/sample/about-us/hero-welcome-flowers.png']
 
     return {
       id: listing.id,
@@ -53,7 +56,7 @@ function buildProductsFromBuyerData() {
       availability,
       inclusions: listing.inclusions ?? [],
       // Buyer-facing meta
-      image: service?.image ?? '/sample/services/2.jpg',
+      image: service?.image ?? '/sample/about-us/hero-welcome-flowers.png',
       description: service?.description ?? '',
       longDescription: service?.longDescription ?? '',
       type: service?.type ?? 'Funeral Package',
@@ -74,6 +77,8 @@ export default function ProductsContent({ initialKind = 'all' }) {
   const [products, setProducts] = useState(() => buildProductsFromBuyerData())
   const [productPendingRemoval, setProductPendingRemoval] = useState(null)
   const fileInputRef = useRef(null)
+  const [categorySelect, setCategorySelect] = useState('cremation')
+  const [categoryOther, setCategoryOther] = useState('')
 
   useEffect(() => {
     if (initialKind && TYPE_FILTERS.some((t) => t.id === initialKind)) {
@@ -114,6 +119,21 @@ export default function ProductsContent({ initialKind = 'all' }) {
     setSelectedProduct(product)
     setModalMode('edit')
     setEditGallery(product.gallery ?? [product.image])
+
+    const rawCategory = (product.category || '').toLowerCase()
+    if (rawCategory === 'cremation') {
+      setCategorySelect('cremation')
+      setCategoryOther('')
+    } else if (rawCategory === 'traditional burial') {
+      setCategorySelect('traditional-burial')
+      setCategoryOther('')
+    } else if (rawCategory === 'memorial planning') {
+      setCategorySelect('memorial-planning')
+      setCategoryOther('')
+    } else {
+      setCategorySelect('other')
+      setCategoryOther(product.category || '')
+    }
   }
 
   const handleCloseModal = () => {
@@ -221,6 +241,16 @@ export default function ProductsContent({ initialKind = 'all' }) {
                   >
                     {product.status === 'active' ? 'Active' : 'Inactive'}
                   </span>
+                </div>
+
+                <div className={styles.productImageWrap}>
+                  <Image
+                    src={product.image}
+                    alt={product.name}
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 960px) 50vw, 320px"
+                    className={styles.productImage}
+                  />
                 </div>
 
                 <h2 className={styles.productTitle}>{product.name}</h2>
@@ -395,12 +425,29 @@ export default function ProductsContent({ initialKind = 'all' }) {
                     </label>
                     <label className={styles.productModalField}>
                       <span className={styles.productModalLabel}>Category</span>
-                      <input
-                        type="text"
-                        className={styles.productModalInput}
-                        defaultValue={selectedProduct.category}
-                      />
+                      <select
+                        className={styles.productModalSelect}
+                        value={categorySelect}
+                        onChange={(e) => setCategorySelect(e.target.value)}
+                      >
+                        <option value="cremation">Cremation</option>
+                        <option value="traditional-burial">Traditional burial</option>
+                        <option value="memorial-planning">Memorial planning</option>
+                        <option value="other">Other</option>
+                      </select>
                     </label>
+                    {categorySelect === 'other' && (
+                      <label className={styles.productModalField}>
+                        <span className={styles.productModalLabel}>Specify category</span>
+                        <input
+                          type="text"
+                          className={styles.productModalInput}
+                          value={categoryOther}
+                          onChange={(e) => setCategoryOther(e.target.value)}
+                          placeholder="Type category (e.g. Pet services)"
+                        />
+                      </label>
+                    )}
                     <label className={styles.productModalField}>
                       <span className={styles.productModalLabel}>Starting price (PHP)</span>
                       <input
