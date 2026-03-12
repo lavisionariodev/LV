@@ -274,6 +274,20 @@
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
 }
 
+.productImageWrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(209, 213, 219, 0.9);
+  background: #f3f4f6;
+}
+
+.productImage {
+  object-fit: cover;
+}
+
 .productHeader {
   display: flex;
   align-items: flex-start;
@@ -1038,7 +1052,12 @@
 
 @media (max-width: 640px) {
   .statsStrip {
-    grid-template-columns: repeat(1, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+
+  .statCard:nth-child(3) {
+    grid-column: 1 / -1;
   }
 
   .filtersRow {
