@@ -18,6 +18,8 @@ import {
   TbPhone,
   TbMail,
   TbFileText,
+  TbCurrencyDollar,
+  TbPhoto,
 } from 'react-icons/tb'
 import styles from './orders.module.css'
 
@@ -60,6 +62,36 @@ const MOCK_ORDERS = [
     wakeDuration: '3 days',
     burialLocation: 'Manila Memorial Park',
     paymentMethod: 'Bank Transfer',
+    refundRequested: true,
+    refundReason: 'Family requested a full refund due to scheduling conflict.',
+    refundAttachments: [
+      { type: 'receipt', label: 'Official receipt #A-1023 (PDF)' },
+      { type: 'photo', label: 'Payment screenshot.png' },
+    ],
+  },
+  {
+    id: 'LV-2024-0843',
+    customerName: 'Luis Ramirez',
+    servicePackage: 'Cremation Package',
+    dateOfService: '2025-02-28',
+    location: 'San Juan Crematorium',
+    totalPrice: 88000,
+    paymentStatus: 'paid',
+    orderStatus: 'refunded',
+    isUrgent: false,
+    customerPhone: '+63 917 555 8899',
+    customerEmail: 'luis.ramirez@email.com',
+    deceasedName: 'Andrea Ramirez',
+    dateOfDeath: '2025-02-26',
+    religion: 'Catholic',
+    specialRequests: 'Small, private ceremony only.',
+    addOns: ['Urn (premium)', 'Memorial service'],
+    wakeDuration: '1 day',
+    burialLocation: 'N/A – Cremation',
+    paymentMethod: 'Credit Card',
+    refundRequested: false,
+    refundReason: 'Approved refund after customer requested schedule change.',
+    refundAttachments: [{ type: 'receipt', label: 'Original receipt (PDF)' }],
   },
   {
     id: 'LV-2024-0846',
@@ -155,6 +187,7 @@ export default function OrdersContent({ initialTab }) {
   const [showUpdateStatus, setShowUpdateStatus] = useState(false)
   const [orders, setOrders] = useState(MOCK_ORDERS)
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false)
+  const [previewAttachment, setPreviewAttachment] = useState(null)
   const filterDropdownRef = useRef(null)
 
   useEffect(() => {
@@ -187,6 +220,11 @@ export default function OrdersContent({ initialTab }) {
     return list
   }, [orders, activeTab, searchQuery])
 
+  const refundRequests = useMemo(
+    () => orders.filter((o) => o.refundRequested),
+    [orders]
+  )
+
   const handleAcceptOrder = (order) => {
     setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, orderStatus: 'confirmed' } : o)))
     setSelectedOrder((prev) => (prev?.id === order.id ? { ...prev, orderStatus: 'confirmed' } : prev))
@@ -206,6 +244,28 @@ export default function OrdersContent({ initialTab }) {
 
   const handleMarkCompleted = (order) => {
     handleUpdateStatus(order, 'completed')
+  }
+
+  const handleApproveRefund = (order) => {
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === order.id ? { ...o, orderStatus: 'refunded', refundRequested: false } : o
+      )
+    )
+    setSelectedOrder((prev) =>
+      prev?.id === order.id ? { ...prev, orderStatus: 'refunded', refundRequested: false } : prev
+    )
+  }
+
+  const handleDeclineRefund = (order) => {
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === order.id ? { ...o, refundRequested: false } : o
+      )
+    )
+    setSelectedOrder((prev) =>
+      prev?.id === order.id ? { ...prev, refundRequested: false } : prev
+    )
   }
 
   const getTimelineProgress = (order) => {
@@ -313,6 +373,97 @@ export default function OrdersContent({ initialTab }) {
           <div className={styles.statCardDesc}>Total from completed orders</div>
         </div>
       </div>
+
+      {refundRequests.length > 0 && (
+        <section className={styles.refundListSection}>
+          <div className={styles.refundListHeader}>
+            <h2 className={styles.refundListTitle}>Refund requests</h2>
+            <span className={styles.refundListCount}>{refundRequests.length} pending</span>
+          </div>
+          <div className={styles.refundCards}>
+            {refundRequests.map((order) => (
+              <article key={order.id} className={styles.refundCard}>
+                <header className={styles.refundCardHeader}>
+                  <div>
+                    <div className={styles.refundOrderId}>{order.id}</div>
+                    <div className={styles.refundCustomerName}>{order.customerName}</div>
+                  </div>
+                  <div className={styles.refundMeta}>
+                    <span>{formatDate(order.dateOfService)}</span>
+                    <span>&middot;</span>
+                    <span>{order.location}</span>
+                  </div>
+                </header>
+                <div className={styles.refundBody}>
+                  <div className={styles.refundDetailRow}>
+                    <span className={styles.detailLabel}>Reason</span>
+                    <span className={styles.detailValue}>
+                      {order.refundReason || 'No reason provided.'}
+                    </span>
+                  </div>
+                  <div className={styles.refundDetailRow}>
+                    <span className={styles.detailLabel}>Buyer contact</span>
+                    <span className={styles.detailValue}>
+                      {order.customerName} &mdash; {order.customerPhone} &middot; {order.customerEmail}
+                    </span>
+                  </div>
+                  {order.refundAttachments?.length > 0 && (
+                    <div className={styles.refundAttachmentsRow}>
+                      <span className={styles.detailLabel}>Proof of purchase</span>
+                      <div className={styles.refundAttachments}>
+                        {order.refundAttachments.map((file) => {
+                          const Icon = file.type === 'photo' ? TbPhoto : TbReceipt
+                          return (
+                            <button
+                              key={file.label}
+                              type="button"
+                              className={styles.attachmentChip}
+                                  onClick={() =>
+                                    setPreviewAttachment({
+                                      orderId: order.id,
+                                      ...file,
+                                    })
+                                  }
+                            >
+                              <Icon size={14} />
+                              <span>{file.label}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <footer className={styles.refundFooter}>
+                  <button
+                    type="button"
+                    className={`${styles.btnTextSecondary}`}
+                    onClick={() => setSelectedOrder(order)}
+                  >
+                    Review details
+                  </button>
+                  <div className={styles.refundQuickActions}>
+                    <button
+                      type="button"
+                      className={`${styles.btnText} ${styles.btnAccept}`}
+                      onClick={() => handleApproveRefund(order)}
+                    >
+                      Approve refund
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.btnText} ${styles.btnDecline}`}
+                      onClick={() => handleDeclineRefund(order)}
+                    >
+                      Decline
+                    </button>
+                  </div>
+                </footer>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className={styles.tableWrap}>
         <table className={styles.ordersTable}>
@@ -586,6 +737,38 @@ export default function OrdersContent({ initialTab }) {
                 </div>
               </div>
 
+              {selectedOrder.refundRequested && selectedOrder.orderStatus !== 'refunded' && (
+                <div className={styles.section}>
+                  <h3 className={styles.sectionTitle}>Refund request</h3>
+                  <div className={styles.sectionBlock}>
+                    <div className={styles.detailList}>
+                      <div className={styles.detailItem}>
+                        <span className={styles.detailLabel}>Reason</span>
+                        <span className={styles.detailValue}>
+                          {selectedOrder.refundReason || 'No reason provided.'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className={styles.refundActions}>
+                      <button
+                        type="button"
+                        className={`${styles.btnText} ${styles.btnAccept}`}
+                        onClick={() => handleApproveRefund(selectedOrder)}
+                      >
+                        Approve refund
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.btnText} ${styles.btnDecline}`}
+                        onClick={() => handleDeclineRefund(selectedOrder)}
+                      >
+                        Decline refund
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className={styles.documentsSection}>
                 <h3 className={styles.documentsSectionTitle}>Documents</h3>
                 <div className={styles.documentsList}>
@@ -647,6 +830,7 @@ export default function OrdersContent({ initialTab }) {
                   { status: 'confirmed', label: 'Confirm', icon: TbCheck, iconClass: styles.updateStatusBtnIconConfirmed, btnClass: styles.updateStatusBtnConfirmed },
                   { status: 'in_progress', label: 'In progress', icon: TbTools, iconClass: styles.updateStatusBtnIconInProgress, btnClass: styles.updateStatusBtnInProgress },
                   { status: 'completed', label: 'Completed', icon: TbCircleCheck, iconClass: styles.updateStatusBtnIconCompleted, btnClass: styles.updateStatusBtnCompleted },
+                  { status: 'refunded', label: 'Refunded', icon: TbCurrencyDollar, iconClass: styles.updateStatusBtnIconRefund, btnClass: styles.updateStatusBtnRefund },
                   { status: 'cancelled', label: 'Decline', icon: TbCircleX, iconClass: styles.updateStatusBtnIconDecline, btnClass: styles.updateStatusBtnDecline },
                 ].map(({ status, label, icon: Icon, iconClass, btnClass }) => (
                   <button
@@ -661,6 +845,48 @@ export default function OrdersContent({ initialTab }) {
                     <span className={styles.updateStatusBtnLabel}>{label}</span>
                   </button>
                 ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {previewAttachment && (
+        <div
+          className={styles.modalOverlay}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="attachment-preview-title"
+          onClick={() => setPreviewAttachment(null)}
+        >
+          <div
+            className={styles.attachmentPreviewCard}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.attachmentPreviewHeader}>
+              <h2 id="attachment-preview-title" className={styles.attachmentPreviewTitle}>
+                {previewAttachment.label}
+              </h2>
+              <button
+                type="button"
+                className={styles.modalClose}
+                onClick={() => setPreviewAttachment(null)}
+                aria-label="Close preview"
+              >
+                <TbX size={22} />
+              </button>
+            </div>
+            <div className={styles.attachmentPreviewBody}>
+              <div className={styles.attachmentPreviewMeta}>
+                <span className={styles.detailLabel}>Order</span>
+                <span className={styles.detailValue}>{previewAttachment.orderId}</span>
+              </div>
+              <div className={styles.attachmentPreviewContent}>
+                <p>
+                  This is a mock preview for <strong>{previewAttachment.label}</strong>. In a real
+                  implementation, this area would show the actual image or PDF viewer for the
+                  uploaded file.
+                </p>
               </div>
             </div>
           </div>
