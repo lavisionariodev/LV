@@ -32,25 +32,25 @@
   min-width: 0;
 }
 
-/* Gradient variants – darker shades */
+/* Flat variants – aligned with header green */
 .statCardTotal {
-  background: linear-gradient(135deg, #c8d4e0 0%, #a8b8c8 100%);
-  border: 1px solid #8a9cb0;
+  background: #e1eef5;
+  border: 1px solid #a0bed4;
 }
 
 .statCardPending {
-  background: linear-gradient(135deg, #f0d890 0%, #e0c050 100%);
-  border: 1px solid #c9a030;
+  background: #f7ecd3;
+  border: 1px solid #e2c98a;
 }
 
 .statCardInProgress {
-  background: linear-gradient(135deg, #a8c8f0 0%, #78a8e0 100%);
-  border: 1px solid #5a8ed8;
+  background: #dde9fb;
+  border: 1px solid #a3bff2;
 }
 
 .statCardCompleted {
-  background: linear-gradient(135deg, #a8e0b8 0%, #78c890 100%);
-  border: 1px solid #4a9e64;
+  background: #e2f3ea;
+  border: 1px solid #97cfac;
 }
 
 .statCardTitle {
@@ -276,8 +276,8 @@
   padding: 0.75rem 1rem;
   font-weight: 600;
   font-size: 0.8rem;
-  color: var(--color-text-secondary);
-  background: var(--color-cream, #f8f7f5);
+  color: #ffffff;
+  background: #265948;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -492,9 +492,9 @@
   font-size: 0.8rem;
   font-weight: 500;
   border-radius: 8px;
-  border: 1px solid #b8b0a8;
-  background: #f7f4f0;
-  color: var(--color-text-secondary);
+  border: 1px solid #204f38;
+  background: #204f38;
+  color: #ffffff;
   cursor: pointer;
   transition: color 0.2s, background 0.2s, border-color 0.2s, box-shadow 0.2s;
   display: inline-flex;
@@ -504,10 +504,10 @@
 }
 
 .btnTextSecondary:hover {
-  color: var(--color-primary);
-  background: #eef0ec;
-  border-color: var(--color-primary);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  color: #ffffff;
+  background: #163829;
+  border-color: #163829;
+  box-shadow: 0 2px 6px rgba(22, 56, 41, 0.3);
 }
 
 /* Modal action button variants – default + hover */
@@ -637,14 +637,14 @@
   justify-content: space-between;
   padding: 1.25rem 1.5rem;
   border-bottom: 1px solid var(--color-border);
-  background: var(--color-cream, #f8f7f5);
+  background: #204f38;
   border-radius: 16px 16px 0 0;
 }
 
 .modalTitle {
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--color-main-accent);
+  color: #ffffff;
   margin: 0;
   display: flex;
   align-items: center;
@@ -662,14 +662,14 @@
   border: none;
   border-radius: 10px;
   background: transparent;
-  color: var(--color-text-secondary);
+  color: #ffffff;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
 }
 
 .modalClose:hover {
-  background: rgba(0, 0, 0, 0.06);
-  color: var(--color-text-primary);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
 }
 
 .modalBody {
@@ -1088,14 +1088,14 @@
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem 1.5rem;
-  background: linear-gradient(135deg, var(--color-cream, #f8f7f5) 0%, #f0ede8 100%);
+  background: #204f38;
   border-bottom: 1px solid var(--color-border);
 }
 
 .updateStatusTitle {
   font-size: 1.1rem;
   font-weight: 700;
-  color: var(--color-main-accent);
+  color: #ffffff;
   margin: 0;
   letter-spacing: 0.02em;
 }
@@ -1206,6 +1206,11 @@
   color: var(--color-primary);
 }
 
+.updateStatusBtnIconRefund {
+  background: rgba(92, 74, 107, 0.12);
+  color: #5c4a6b;
+}
+
 .updateStatusBtnIconDecline {
   background: rgba(198, 40, 40, 0.12);
   color: #c62828;
@@ -1223,9 +1228,223 @@
   color: #fff;
 }
 
+.updateStatusBtnRefund {
+  background: #f3e8f5;
+  color: #5c4a6b;
+  border-color: #c4b0d0;
+}
+.updateStatusBtnRefund:hover {
+  background: #5c4a6b;
+  border-color: #5c4a6b;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(92, 74, 107, 0.35);
+}
+
+.updateStatusBtnRefund:hover .updateStatusBtnIconRefund {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
 .updateStatusBtnLabel {
   flex: 1;
   text-transform: capitalize;
+}
+
+.refundActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.refundListSection {
+  margin-top: 1.5rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  transform: translateY(0);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.refundListSection:hover {
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.refundListHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 1rem;
+}
+
+.refundListTitle {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-main-accent);
+}
+
+.refundListCount {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.refundCards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.refundCard {
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  background: #faf9f7;
+  border: 1px solid #e4ded6;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.refundCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.refundOrderId {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.refundCustomerName {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.refundMeta {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.refundBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-bottom: 0.6rem;
+}
+
+.refundDetailRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.refundAttachmentsRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+}
+
+.refundAttachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.attachmentChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid #d0c7be;
+  background: #f6f2ec;
+  font-size: 0.75rem;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.attachmentChip:hover {
+  background: #f0ebe3;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.attachmentPreviewCard {
+  width: 100%;
+  max-width: 520px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  animation: slideUp 0.25s ease;
+}
+
+.attachmentPreviewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: #204f38;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.attachmentPreviewTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.attachmentPreviewBody {
+  padding: 1.25rem 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.attachmentPreviewMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.attachmentPreviewContent {
+  padding: 0.85rem 0.9rem;
+  border-radius: 10px;
+  background: #faf9f7;
+  border: 1px dashed #d4cfc8;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.refundFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  padding-top: 0.6rem;
+  margin-top: 0.4rem;
+}
+
+.refundQuickActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
 }
 
 /* Responsive */
