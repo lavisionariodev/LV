@@ -5,6 +5,9 @@
   flex-direction: column;
   gap: 18px;
   width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0.5rem 0.25rem 1.75rem;
 }
 
 .pageHeader {
@@ -48,23 +51,24 @@
 /* Summary statistic strip */
 .summaryStrip {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.9rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.3rem;
+  margin-bottom: 1.25rem;
 }
 
 .summaryCard {
   border-radius: 14px;
-  padding: 0.9rem 1rem;
-  background: #ffffff;
+  padding: 1rem 1.1rem;
+  background: #f8faf9;
   border: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03);
 }
 
 .summaryLabel {
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   text-transform: uppercase;
   letter-spacing: 0.11em;
   color: #4b5563;
@@ -101,8 +105,8 @@
 }
 
 .summaryHint {
-  font-size: 0.78rem;
-  color: #6b7280;
+  font-size: 0.76rem;
+  color: #9ca3af;
 }
 
 /* Navigation cards on main analytics page */
@@ -177,8 +181,8 @@
 /* Charts layout */
 .chartsGrid {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr);
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.2fr);
+  gap: 1.25rem;
   align-items: stretch;
 }
 
@@ -191,15 +195,15 @@
 .chartsGridTwo {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
 .chartCard {
   border-radius: 16px;
   border: 1px solid #e5e7eb;
-  background: #ffffff;
-  padding: 1rem 1.1rem 1rem;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  background: #fbfdfc;
+  padding: 1rem 1.1rem 1.1rem;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
@@ -219,15 +223,15 @@
 }
 
 .chartTitle {
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 600;
   color: #102820;
   margin: 0;
 }
 
 .chartSubtitle {
-  font-size: 0.8rem;
-  color: #6b7280;
+  font-size: 0.78rem;
+  color: #9ca3af;
   margin: 0;
 }
 
@@ -485,7 +489,7 @@
 
 @media (max-width: 1024px) {
   .summaryStrip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .navGrid {
