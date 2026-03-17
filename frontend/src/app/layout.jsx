@@ -1,7 +1,9 @@
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { ToastProvider } from '@/contexts/ToastContext'
+import { RoleProvider } from '@/contexts/RoleContext'
 import RecoveryRedirect from '@/components/auth/RecoveryRedirect'
+import RoleSwitcher from '@/components/auth/RoleSwitcher'
 
 export const metadata = {
   title: {
@@ -17,8 +19,11 @@ export default function RootLayout({ children }) {
       <body>
         <AuthProvider>
           <ToastProvider>
-            <RecoveryRedirect />
-            {children}
+            <RoleProvider>
+              <RecoveryRedirect />
+              <RoleSwitcher />
+              {children}
+            </RoleProvider>
           </ToastProvider>
         </AuthProvider>
       </body>

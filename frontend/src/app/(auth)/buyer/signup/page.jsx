@@ -8,6 +8,7 @@ import { signUpWithEmailPassword, signInWithOAuth, getOAuthRedirectUrl } from "@
 import AuthLayout, { setBuyerAuthSwitch } from "../AuthLayout";
 import styles from "./signup.module.css";
 import { useToast } from "@/contexts/ToastContext";
+import { getUserRoles, hasRole, ROLE_BUYER } from '@/lib/auth/roles';
 
 export default function SignUpPage() {
   const [signUpData, setSignUpData] = useState({
@@ -22,10 +23,13 @@ export default function SignUpPage() {
 
   useEffect(() => {
     let mounted = true;
-    getUser().then((currentUser) => {
+    getUser().then(async (currentUser) => {
       if (!mounted) return;
       if (currentUser) {
-        router.replace("/");
+        const roles = await getUserRoles(currentUser.id);
+        if (hasRole(roles, ROLE_BUYER)) {
+          router.replace("/main");
+        }
       }
     });
     return () => {
@@ -46,7 +50,7 @@ export default function SignUpPage() {
         name: signUpData.name,
         email: signUpData.email,
         password: signUpData.password,
-        role: 'buyer',
+        roles: ['buyer'],
       });
 
       if (error) {
@@ -163,7 +167,7 @@ export default function SignUpPage() {
       <button onClick={handleSignUp}>Sign Up</button>
 
       <div className={styles.authFooter}>
-        Already have an account? <Link href="/buyer/login" onClick={setBuyerAuthSwitch}>Log In</Link>
+        Already have an account? <Link href="/buyer/login" onClick={() => setBuyerAuthSwitch()}>Log In</Link>
       </div>
     </AuthLayout>
   );
