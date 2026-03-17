@@ -31,7 +31,7 @@ function SellerLoginPageInner() {
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/seller';
   const toast = useToast();
-  const { switchRole } = useRole();
+  const { currentRole, switchRole } = useRole();
 
   useLayoutEffect(() => {
     if (typeof window === 'undefined') return;
