@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useCallback } from 'react'
 import { Poppins } from 'next/font/google'
+import { FiArrowUp, FiArrowDown } from 'react-icons/fi'
 import styles from './payouts.module.css'
 
 const poppins = Poppins({ weight: ['400', '500', '600', '700', '800'], subsets: ['latin'] })
@@ -156,17 +157,27 @@ const Icon = {
 function Badge({ type, value }) {
   const meta = type === 'payment' ? PAYMENT_STATUS_META[value] : PAYOUT_STATUS_META[value]
   if (!meta) return null
+  if (type === 'payout') {
+    return <span className={`${styles.badgePayout} ${styles[`badgePayout_${meta.color}`]}`}>{meta.label}</span>
+  }
   return <span className={`${styles.badge} ${styles[`badge_${meta.color}`]}`}>{meta.label}</span>
 }
 
-function StatCard({ icon, label, value, sub, accent }) {
+function StatCard({ label, value, percent, period }) {
+  const isPositive = percent >= 0
+  const percentColor = isPositive ? '#10b981' : '#ef4444'
+  const percentBg = isPositive ? '#ecfdf5' : '#fef5f5'
+  
   return (
-    <div className={`${styles.statCard} ${accent ? styles.statCardAccent : ''}`}>
-      <div className={styles.statCardIcon}>{icon}</div>
-      <div className={styles.statCardBody}>
-        <p className={styles.statLabel}>{label}</p>
-        <p className={styles.statValue}>{value}</p>
-        {sub && <p className={styles.statSub}>{sub}</p>}
+    <div className={styles.statCard}>
+      <p className={styles.statLabel}>{label}</p>
+      <p className={styles.statValue}>{value}</p>
+      <div className={styles.statFooter}>
+        <div className={styles.statPercent} style={{ color: percentColor, backgroundColor: percentBg }}>
+          {isPositive ? <FiArrowUp className={styles.percentIcon} /> : <FiArrowDown className={styles.percentIcon} />}
+          <span className={styles.percentValue}>{Math.abs(percent)}%</span>
+        </div>
+        <p className={styles.statPeriod}>{period}</p>
       </div>
     </div>
   )
@@ -601,6 +612,8 @@ function SellerEarningsPanel({ transactions, settings }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
+const ROWS_PER_PAGE = 10
+
 export default function AdminPayoutsPage() {
   const [transactions, setTransactions] = useState(INITIAL_TRANSACTIONS)
   const [commissionSettings, setCommissionSettings] = useState(INITIAL_COMMISSION_SETTINGS)
@@ -616,6 +629,10 @@ export default function AdminPayoutsPage() {
   const [filterDateTo, setFilterDateTo] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [expandedRow, setExpandedRow] = useState(null)
+  const [selectedRows, setSelectedRows] = useState(new Set())
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1)
 
   // Summary
   const summary = useMemo(() => {
@@ -654,6 +671,12 @@ export default function AdminPayoutsPage() {
     })
   }, [transactions, search, filterSeller, filterPayment, filterPayout, filterDateFrom, filterDateTo])
 
+  // Reset to page 1 whenever filters change
+  React.useEffect(() => { setCurrentPage(1) }, [search, filterSeller, filterPayment, filterPayout, filterDateFrom, filterDateTo])
+
+  const totalPages = Math.ceil(filtered.length / ROWS_PER_PAGE)
+  const paginatedRows = filtered.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE)
+
   const updatePayout = useCallback((id, newStatus, ref, date) => {
     setTransactions(prev => prev.map(t =>
       t.id === id ? { ...t, payoutStatus: newStatus, payoutReference: ref, payoutDate: date } : t
@@ -672,11 +695,10 @@ export default function AdminPayoutsPage() {
     <div className={`${styles.page} ${poppins.className}`}>
       {/* Financial Overview */}
       <section className={styles.statsGrid}>
-        <StatCard icon={<Icon.Revenue />} label="Platform Revenue" value={formatPHP(summary.platformRevenue)} sub="Total commissions earned" accent />
-        <StatCard icon={<Icon.Earnings />} label="Total Seller Earnings" value={formatPHP(summary.sellerTotal)} sub="Net after commission" />
-        <StatCard icon={<Icon.Pending />} label="Pending Payouts" value={formatPHP(summary.pendingAmt)} sub="Awaiting disbursement" />
-        <StatCard icon={<Icon.Completed />} label="Completed Payouts" value={formatPHP(summary.completedAmt)} sub="Successfully transferred" />
-        <StatCard icon={<Icon.Txns />} label="Total Transactions" value={summary.total} sub="All time" />
+        <StatCard label="Platform Revenue" value={formatPHP(summary.platformRevenue)} percent={14} period="in the last month" />
+        <StatCard label="Total Order" value={summary.total} percent={-17} period="in the last month" />
+        <StatCard label="Pending Payouts" value={formatPHP(summary.pendingAmt)} percent={8} period="in the last month" />
+        <StatCard label="Completed Payouts" value={formatPHP(summary.completedAmt)} percent={23} period="in the last month" />
       </section>
 
       {/* Tab Navigation */}
@@ -721,7 +743,6 @@ export default function AdminPayoutsPage() {
                 <button className={styles.clearFiltersBtn} onClick={clearFilters}>Clear all</button>
               )}
             </div>
-            <p className={styles.resultCount}><strong>{filtered.length}</strong> of <strong>{transactions.length}</strong></p>
           </div>
 
           {/* Filter Dropdowns */}
@@ -764,43 +785,73 @@ export default function AdminPayoutsPage() {
             <table className={styles.table}>
               <thead>
                 <tr>
+                  <th className={styles.checkboxCell}>
+                    <input
+                      type="checkbox"
+                      className={styles.rowCheckbox}
+                      checked={paginatedRows.length > 0 && paginatedRows.every(t => selectedRows.has(t.id))}
+                      onChange={e => {
+                        setSelectedRows(prev => {
+                          const next = new Set(prev)
+                          if (e.target.checked) paginatedRows.forEach(t => next.add(t.id))
+                          else paginatedRows.forEach(t => next.delete(t.id))
+                          return next
+                        })
+                      }}
+                    />
+                  </th>
                   <th>Order</th>
-                  <th>Buyer</th>
                   <th>Service</th>
-                  <th>Total Amount</th>
+                  <th>Buyer</th>
                   <th>Payment</th>
                   <th>Payout</th>
+                  <th className={styles.thSortable}>Date</th>
+                  <th>Amount</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(t => {
+                {paginatedRows.map(t => {
                   const rate = getCommissionRate(t.sellerId, commissionSettings)
                   const { commission, sellerEarnings } = calcAmounts(t.amount, rate)
                   const isExpanded = expandedRow === t.id
                   return (
                     <React.Fragment key={t.id}>
-                      {/* ── Buyer-facing primary row ── */}
+                      {/* ── Primary row ── */}
                       <tr
                         key={t.id}
                         className={`${styles.primaryRow} ${isExpanded ? styles.primaryRowOpen : ''}`}
                       >
+                        <td className={styles.checkboxCell}>
+                          <input
+                            type="checkbox"
+                            className={styles.rowCheckbox}
+                            checked={selectedRows.has(t.id)}
+                            onChange={e => {
+                              setSelectedRows(prev => {
+                                const next = new Set(prev)
+                                if (e.target.checked) next.add(t.id)
+                                else next.delete(t.id)
+                                return next
+                              })
+                            }}
+                          />
+                        </td>
                         <td>
                           <p className={styles.orderId}>{t.orderId}</p>
                           <p className={styles.txnId}>{t.id}</p>
-                          <p className={styles.dateCell}>{t.date}</p>
                         </td>
+                        <td className={styles.serviceCell}>{t.service}</td>
                         <td>
                           <p className={styles.personName}>{t.buyerName}</p>
                           <p className={styles.personEmail}>{t.buyerEmail}</p>
                         </td>
-                        <td className={styles.serviceCell}>{t.service}</td>
-                        <td>
-                          <p className={styles.amountCell}>{formatPHP(t.amount)}</p>
-                          <p className={styles.payMethodTag}>{t.paymentMethod}</p>
-                        </td>
                         <td><Badge type="payment" value={t.paymentStatus}/></td>
                         <td><Badge type="payout" value={t.payoutStatus}/></td>
+                        <td className={styles.dateCell}>{t.date}</td>
+                        <td>
+                          <p className={styles.amountCell}>{formatPHP(t.amount)}</p>
+                        </td>
                         <td>
                           <div className={styles.rowActions}>
                             <button
@@ -825,7 +876,7 @@ export default function AdminPayoutsPage() {
                       {/* ── Seller breakdown collapsed panel ── */}
                       {isExpanded && (
                         <tr key={`${t.id}-detail`} className={styles.expandedRow}>
-                          <td colSpan={7} className={styles.expandedTd}>
+                          <td colSpan={9} className={styles.expandedTd}>
                             <div className={styles.expandedPanel}>
 
                               {/* Seller info */}
@@ -904,6 +955,48 @@ export default function AdminPayoutsPage() {
               </div>
             )}
           </div>
+
+          {/* Pagination */}
+          {filtered.length > 0 && (
+            <div className={styles.pagination}>
+              <div className={styles.paginationControls}>
+                <button
+                  className={`${styles.pageBtn} ${currentPage === 1 ? styles.pageBtnDisabled : ''}`}
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  ‹ Previous
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                  .reduce((acc, p, idx, arr) => {
+                    if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...')
+                    acc.push(p)
+                    return acc
+                  }, [])
+                  .map((p, idx) =>
+                    p === '...'
+                      ? <span key={`ellipsis-${idx}`} className={styles.pageEllipsis}>…</span>
+                      : <button
+                          key={p}
+                          className={`${styles.pageBtn} ${currentPage === p ? styles.pageBtnActive : ''}`}
+                          onClick={() => setCurrentPage(p)}
+                        >{p}</button>
+                  )
+                }
+                <button
+                  className={`${styles.pageBtn} ${currentPage === totalPages ? styles.pageBtnDisabled : ''}`}
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next ›
+                </button>
+              </div>
+              <p className={styles.paginationInfo}>
+                Showing <strong>{(currentPage - 1) * ROWS_PER_PAGE + 1}–{Math.min(currentPage * ROWS_PER_PAGE, filtered.length)}</strong> of <strong>{filtered.length}</strong> entries
+              </p>
+            </div>
+          )}
         </div>
       )}
 
