@@ -51,27 +51,49 @@
 /* Summary statistic strip */
 .summaryStrip {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.3rem;
-  margin-bottom: 1.25rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.1rem;
+  margin-bottom: 1.4rem;
 }
 
 .summaryCard {
-  border-radius: 14px;
-  padding: 1rem 1.1rem;
-  background: #f8faf9;
+  border-radius: 16px;
+  padding: 0.95rem 1.05rem;
+  background: #f9fafb;
   border: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03);
+  gap: 0.4rem;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.03);
+  min-height: 120px;
+}
+
+/* Optional soft color accents for summary cards (used on seller analytics) */
+.summaryCardSoftBlue {
+  background: #edf4ff;
+  border-color: #d2e0ff;
+}
+
+.summaryCardSoftAmber {
+  background: #fef7ea;
+  border-color: #f3ddba;
+}
+
+.summaryCardSoftIndigo {
+  background: #f1f0ff;
+  border-color: #dad6ff;
+}
+
+.summaryCardSoftGreen {
+  background: #eef8f3;
+  border-color: #cfe6d8;
 }
 
 .summaryLabel {
-  font-size: 0.76rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.11em;
-  color: #4b5563;
+  color: #6b7280;
 }
 
 .summaryValueRow {
@@ -84,7 +106,7 @@
 .summaryValue {
   font-size: 1.4rem;
   font-weight: 700;
-  color: #111827;
+  color: #102820;
 }
 
 .summaryDelta {
@@ -93,7 +115,7 @@
 }
 
 .summaryDeltaPositive {
-  color: #15803d;
+  color: #0f766e;
 }
 
 .summaryDeltaNeutral {
@@ -105,7 +127,7 @@
 }
 
 .summaryHint {
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   color: #9ca3af;
 }
 
@@ -236,14 +258,18 @@
 }
 
 .chartBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  padding: 0.2rem 0.55rem;
+  padding: 0.2rem 0.9rem;
   border-radius: 999px;
   border: 1px solid #cbd5e1;
-  background: rgba(241, 245, 249, 0.75);
+  background: rgba(241, 245, 249, 0.85);
   color: #4b5563;
+  white-space: nowrap;
 }
 
 .chartBody {
@@ -410,6 +436,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column-reverse;
+  height: 120px;
 }
 
 .barInnerPrimary {
@@ -489,7 +516,7 @@
 
 @media (max-width: 1024px) {
   .summaryStrip {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .navGrid {
@@ -511,7 +538,8 @@
 
 @media (max-width: 640px) {
   .summaryStrip {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
   }
 
   .navGrid {

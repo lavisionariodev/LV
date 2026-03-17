@@ -1,17 +1,52 @@
 'use client'
 
 import { TbChartLine } from 'react-icons/tb'
+import {
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts'
 import styles from '../analytics.module.css'
 
+const SELLER_BAR_COLORS = ['#1F312B', '#2D4A38', '#3D683A', '#4A7C47']
+const SELLER_CHART_ACCENT = '#1F312B'
+
+function formatShortDate(dateStr) {
+  const d = new Date(dateStr)
+  return `${d.getMonth() + 1}/${d.getDate()}`
+}
+
 export default function SellerAnalyticsSalesOverviewPage() {
-  const dailyLabels = ['2/18', '2/19', '2/20', '2/21', '2/22', '2/23', '2/24']
+  const revenueByDay = [
+    { date: '2026-02-18', total: 42000 },
+    { date: '2026-02-19', total: 46000 },
+    { date: '2026-02-20', total: 38000 },
+    { date: '2026-02-21', total: 52000 },
+    { date: '2026-02-22', total: 61000 },
+    { date: '2026-02-23', total: 58000 },
+    { date: '2026-02-24', total: 64000 },
+  ]
+
+  const revenueByCategory = [
+    { name: 'Memorial Packages', value: 160000 },
+    { name: 'Flowers & Add-ons', value: 58000 },
+    { name: 'Transport & Logistics', value: 32000 },
+    { name: 'Documentation', value: 18000 },
+  ]
   const monthlyRevenue = [
-    { label: 'Oct', value: '68%', tooltip: '₱118k in October' },
-    { label: 'Nov', value: '74%', tooltip: '₱126k in November' },
-    { label: 'Dec', value: '82%', tooltip: '₱138k in December' },
-    { label: 'Jan', value: '100%', tooltip: '₱168k in January' },
-    { label: 'Feb', value: '76%', tooltip: '₱128k in February' },
-    { label: 'Mar', value: '84%', tooltip: '₱142k in March' },
+    { label: 'Oct', value: '68%', amount: 118000 },
+    { label: 'Nov', value: '74%', amount: 126000 },
+    { label: 'Dec', value: '82%', amount: 138000 },
+    { label: 'Jan', value: '100%', amount: 168000 },
+    { label: 'Feb', value: '76%', amount: 128000 },
+    { label: 'Mar', value: '84%', amount: 142000 },
   ]
 
   const packageBookings = [
@@ -24,42 +59,39 @@ export default function SellerAnalyticsSalesOverviewPage() {
   return (
     <div className={styles.pageWrap}>
       <section aria-label="Sales summary" className={styles.summaryStrip}>
-        <article className={styles.summaryCard}>
+        <article className={`${styles.summaryCard} ${styles.summaryCardSoftGreen}`}>
           <p className={styles.summaryLabel}>Revenue (7 days)</p>
           <div className={styles.summaryValueRow}>
             <p className={styles.summaryValue}>₱320k</p>
             <span className={`${styles.summaryDelta} ${styles.summaryDeltaPositive}`}>
-              +12% vs prior
+              +12%
             </span>
           </div>
-          <p className={styles.summaryHint}>Estimated confirmed revenue</p>
+          <p className={styles.summaryHint}>Confirmed revenue</p>
         </article>
 
-        <article className={styles.summaryCard}>
-          <p className={styles.summaryLabel}>Transactions</p>
-          <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>32</p>
-            <span className={`${styles.summaryDelta} ${styles.summaryDeltaNeutral}`}>
-              Avg. 4–5 per day
-            </span>
-          </div>
-          <p className={styles.summaryHint}>Completed bookings during this period</p>
-        </article>
-
-        <article className={styles.summaryCard}>
+        <article className={`${styles.summaryCard} ${styles.summaryCardSoftBlue}`}>
           <p className={styles.summaryLabel}>Average booking value</p>
           <div className={styles.summaryValueRow}>
             <p className={styles.summaryValue}>₱26,800</p>
           </div>
-          <p className={styles.summaryHint}>Typical revenue per confirmed service</p>
+          <p className={styles.summaryHint}>Per service</p>
         </article>
 
-        <article className={styles.summaryCard}>
+        <article className={`${styles.summaryCard} ${styles.summaryCardSoftIndigo}`}>
+          <p className={styles.summaryLabel}>Transactions</p>
+          <div className={styles.summaryValueRow}>
+            <p className={styles.summaryValue}>32</p>
+          </div>
+          <p className={styles.summaryHint}>Last 7 days</p>
+        </article>
+
+        <article className={`${styles.summaryCard} ${styles.summaryCardSoftAmber}`}>
           <p className={styles.summaryLabel}>Top package</p>
           <div className={styles.summaryValueRow}>
             <p className={styles.summaryValue}>Traditional Full Service</p>
           </div>
-          <p className={styles.summaryHint}>Most booked over the last 30 days</p>
+          <p className={styles.summaryHint}>Most booked (30 days)</p>
         </article>
       </section>
 
@@ -67,73 +99,52 @@ export default function SellerAnalyticsSalesOverviewPage() {
         <article className={styles.chartCard}>
           <div className={styles.chartHeader}>
             <div className={styles.chartTitleGroup}>
-              <h2 className={styles.chartTitle}>Revenue trend</h2>
+              <h2 className={styles.chartTitle}>Revenue overview (sample data)</h2>
               <p className={styles.chartSubtitle}>Last 7 days</p>
             </div>
             <span className={styles.chartBadge}>
               <TbChartLine size={13} style={{ marginRight: 4 }} aria-hidden />
-              7‑day view
+              Last 7 days
             </span>
           </div>
 
           <div className={styles.chartBody}>
-            <div className={styles.chartGridLines} aria-hidden />
-            <svg
-              className={styles.lineChartSvg}
-              viewBox="0 0 100 60"
-              role="img"
-              aria-label="Revenue trend for the last 7 days"
-            >
-              <defs>
-                <linearGradient id="salesFill" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#e5efe9" stopOpacity="0.9" />
-                  <stop offset="100%" stopColor="#e5efe9" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-
-              <line x1="0" y1="6" x2="0" y2="56" stroke="#d1d5db" strokeWidth="0.6" />
-              <line x1="0" y1="56" x2="100" y2="56" stroke="#d1d5db" strokeWidth="0.6" />
-
-              <path
-                d="M0,56 L0,44 
-                   C 8,40 12,38 16,38 
-                   C 22,37 28,36 33,40 
-                   C 38,44 44,50 50,46 
-                   C 58,40 62,34 66,32 
-                   C 74,29 80,30 83,32 
-                   C 90,36 95,40 100,38 
-                   L100,56 Z"
-                fill="url(#salesFill)"
-                stroke="none"
-              />
-
-              <path
-                d="M0,44 
-                   C 8,40 12,38 16,38 
-                   C 22,37 28,36 33,40 
-                   C 38,44 44,50 50,46 
-                   C 58,40 62,34 66,32 
-                   C 74,29 80,30 83,32 
-                   C 90,36 95,40 100,38"
-                fill="none"
-                stroke="#204f38"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-              />
-
-              <circle className={styles.lineDots} cx="0" cy="44" r="1.3" />
-              <circle className={styles.lineDots} cx="16" cy="38" r="1.3" />
-              <circle className={styles.lineDots} cx="33" cy="40" r="1.3" />
-              <circle className={styles.lineDots} cx="50" cy="46" r="1.3" />
-              <circle className={styles.lineDots} cx="66" cy="32" r="1.3" />
-              <circle className={styles.lineDots} cx="83" cy="32" r="1.3" />
-              <circle className={styles.lineDots} cx="100" cy="38" r="1.3" />
-            </svg>
-          </div>
-          <div className={styles.chartAxisLabels} aria-hidden>
-            {dailyLabels.map((label) => (
-              <span key={label}>{label}</span>
-            ))}
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart
+                data={revenueByDay}
+                margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id="revenueGradientSeller" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={SELLER_CHART_ACCENT} stopOpacity={0.35} />
+                    <stop offset="100%" stopColor={SELLER_CHART_ACCENT} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={formatShortDate}
+                  tick={{ fontSize: 11, fill: '#64748b' }}
+                />
+                <YAxis
+                  tickFormatter={(v) => `₱${(v / 1000).toFixed(0)}k`}
+                  tick={{ fontSize: 11, fill: '#64748b' }}
+                  width={44}
+                />
+                <Tooltip
+                  formatter={(value) => [`₱ ${Number(value).toLocaleString()}`, 'Revenue']}
+                  labelFormatter={(label) => `Date: ${label}`}
+                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="total"
+                  stroke={SELLER_CHART_ACCENT}
+                  strokeWidth={2}
+                  fill="url(#revenueGradientSeller)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </article>
 
@@ -146,59 +157,44 @@ export default function SellerAnalyticsSalesOverviewPage() {
           </div>
 
           <div className={styles.chartBody}>
-            <div className={styles.hBarList}>
-              <div className={styles.hBarRow}>
-                <div className={styles.hBarLabelRow}>
-                  <span>Memorial packages</span>
-                  <span>₱160k</span>
-                </div>
-                <div className={styles.hBarTrack}>
-                  <div
-                    className={styles.hBarFill}
-                    style={{ width: '96%' }}
-                  />
-                </div>
-              </div>
-
-              <div className={styles.hBarRow}>
-                <div className={styles.hBarLabelRow}>
-                  <span>Flowers &amp; add‑ons</span>
-                  <span>₱58k</span>
-                </div>
-                <div className={styles.hBarTrack}>
-                  <div
-                    className={styles.hBarFill}
-                    style={{ width: '54%' }}
-                  />
-                </div>
-              </div>
-
-              <div className={styles.hBarRow}>
-                <div className={styles.hBarLabelRow}>
-                  <span>Transport &amp; logistics</span>
-                  <span>₱32k</span>
-                </div>
-                <div className={styles.hBarTrack}>
-                  <div
-                    className={styles.hBarFill}
-                    style={{ width: '32%' }}
-                  />
-                </div>
-              </div>
-
-              <div className={styles.hBarRow}>
-                <div className={styles.hBarLabelRow}>
-                  <span>Documentation</span>
-                  <span>₱18k</span>
-                </div>
-                <div className={styles.hBarTrack}>
-                  <div
-                    className={styles.hBarFill}
-                    style={{ width: '22%' }}
-                  />
-                </div>
-              </div>
-            </div>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart
+                data={revenueByCategory}
+                layout="vertical"
+                margin={{ top: 4, right: 8, left: 0, bottom: 4 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
+                <XAxis
+                  type="number"
+                  tickFormatter={(v) => `₱${(v / 1000).toFixed(0)}k`}
+                  tick={{ fontSize: 10, fill: '#64748b' }}
+                  width={40}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  tick={{ fontSize: 11, fill: '#374151' }}
+                  width={120}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <Tooltip
+                  formatter={(value) => [`₱ ${Number(value).toLocaleString()}`, 'Revenue']}
+                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                />
+                <Bar
+                  dataKey="value"
+                  radius={[0, 4, 4, 0]}
+                  maxBarSize={24}
+                  label={false}
+                >
+                  {revenueByCategory.map((_, index) => (
+                    // eslint-disable-next-line react/no-array-index-key
+                    <Cell key={index} fill={SELLER_BAR_COLORS[index % SELLER_BAR_COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </article>
       </section>
@@ -213,18 +209,32 @@ export default function SellerAnalyticsSalesOverviewPage() {
           </div>
 
           <div className={styles.chartBody}>
-            <div className={styles.barChartRow} aria-hidden>
-              {monthlyRevenue.map((month) => (
-                <div key={month.label} className={styles.barGroup}>
-                  <div className={styles.barOuter} title={month.tooltip}>
-                    <div
-                      className={styles.barInnerPrimary}
-                      style={{ height: month.value }}
-                    />
-                  </div>
-                  <span className={styles.barValue}>{month.label}</span>
+            <div className={styles.chartWithYAxis}>
+              <div className={styles.chartYAxisLabels} aria-hidden>
+                <span>₱180k</span>
+                <span>₱150k</span>
+                <span>₱120k</span>
+                <span>₱90k</span>
+                <span>₱60k</span>
+                <span>₱30k</span>
+                <span>₱0</span>
+              </div>
+
+              <div>
+                <div className={styles.barChartRow} aria-hidden>
+                  {monthlyRevenue.map((month) => (
+                    <div key={month.label} className={styles.barGroup}>
+                      <div className={styles.barOuter}>
+                        <div
+                          className={styles.barInnerPrimary}
+                          style={{ height: month.value }}
+                        />
+                      </div>
+                      <span className={styles.barLabel}>{month.label}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
           </div>
         </article>
@@ -238,19 +248,31 @@ export default function SellerAnalyticsSalesOverviewPage() {
           </div>
 
           <div className={styles.chartBody}>
-            <div className={styles.barChartRow} aria-hidden>
-              {packageBookings.map((pkg) => (
-                <div key={pkg.label} className={styles.barGroup}>
-                  <div className={styles.barOuter} title={`${pkg.count} bookings – ${pkg.label}`}>
-                    <div
-                      className={styles.barInnerPrimary}
-                      style={{ height: pkg.value }}
-                    />
-                  </div>
-                  <span className={styles.barValue}>{pkg.count}</span>
-                  <span className={styles.barLabel}>{pkg.label}</span>
+            <div className={styles.chartWithYAxis}>
+              <div className={styles.chartYAxisLabels} aria-hidden>
+                <span>30</span>
+                <span>24</span>
+                <span>18</span>
+                <span>12</span>
+                <span>6</span>
+                <span>0</span>
+              </div>
+
+              <div>
+                <div className={styles.barChartRow} aria-hidden>
+                  {packageBookings.map((pkg) => (
+                    <div key={pkg.label} className={styles.barGroup}>
+                      <div className={styles.barOuter} title={`${pkg.count} bookings – ${pkg.label}`}>
+                        <div
+                          className={styles.barInnerPrimary}
+                          style={{ height: pkg.value }}
+                        />
+                      </div>
+                      <span className={styles.barLabel}>{pkg.label}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
           </div>
         </article>
