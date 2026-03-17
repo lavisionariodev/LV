@@ -4,16 +4,20 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import styles from './PublicFooter.module.css'
+import { useSiteContent } from '@/lib/siteContent/client'
 
 export default function PublicFooter() {
   const pathname = usePathname()
   const isSeller = pathname?.startsWith('/seller')
+  const { data: siteContent } = useSiteContent()
+  const footer = siteContent?.footer
+  const systemName = siteContent?.systemName || 'LaVisionario'
 
   if (isSeller) {
     return (
       <footer className={styles.footer}>
         <div className={styles.bottom}>
-          <span>© 2026 LaVisionario. All rights reserved.</span>
+          <span>© 2026 {systemName}. All rights reserved.</span>
           <div className={styles.bottomLinks}>
             <Link href="/help" className={styles.bottomLink}>
               Help Center
@@ -32,11 +36,11 @@ export default function PublicFooter() {
             <span className={styles.logoIcon}>
               <span className={styles.logoLetter}>L</span>
             </span>
-            <span className={styles.logoText}>Lavisionario</span>
+            <span className={styles.logoText}>{systemName}</span>
           </div>
           <p className={styles.desc}>
-            A trusted funeral services marketplace connecting families with compassionate providers
-            during life's most difficult moments.
+            {footer?.tagline ||
+              "A trusted funeral services marketplace connecting families with compassionate providers during life's most difficult moments."}
           </p>
         </div>
 
@@ -96,13 +100,23 @@ export default function PublicFooter() {
             <h4 className={styles.title}>Contact</h4>
             <div className={styles.contactItem}>
               <span className={styles.contactLabel}>24/7 Support</span>
-              <a href="tel:+1234567890" className={styles.link}>
-                +1 (234) 567-890
+              <a
+                href={footer?.supportPhone ? `tel:${footer.supportPhone}` : 'tel:+1234567890'}
+                className={styles.link}
+              >
+                {footer?.supportPhone || '+1 (234) 567-890'}
               </a>
             </div>
             <div className={styles.contactItem}>
-              <a href="mailto:support@lavisionario.com" className={styles.link}>
-                support@lavisionario.com
+              <a
+                href={
+                  footer?.supportEmail
+                    ? `mailto:${footer.supportEmail}`
+                    : 'mailto:support@lavisionario.com'
+                }
+                className={styles.link}
+              >
+                {footer?.supportEmail || 'support@lavisionario.com'}
               </a>
             </div>
           </div>
@@ -110,7 +124,9 @@ export default function PublicFooter() {
       </div>
 
       <div className={styles.bottom}>
-        <span>© {new Date().getFullYear()} LaVisionario. All rights reserved.</span>
+        <span>
+          © {new Date().getFullYear()} {systemName}. All rights reserved.
+        </span>
         <div className={styles.bottomLinks}>
           <Link href="/sitemap" className={styles.bottomLink}>
             Sitemap
