@@ -19,7 +19,7 @@ function BuyerLoginPageInner() {
   const router = useRouter();
   const { currentRole, switchRole } = useRole();
   const toast = useToast();
-  const redirect = searchParams.get('redirect') || '/main';
+  const redirect = searchParams.get('redirect') || '/';
 
   const [signInData, setSignInData] = useState({
     email: '',
