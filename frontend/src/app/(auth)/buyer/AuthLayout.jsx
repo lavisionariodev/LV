@@ -57,7 +57,7 @@ export default function AuthLayout({
                 <Link
                   href={type === 'signin' ? '/buyer/signup' : '/buyer/login'}
                   className={styles.panelButton}
-                  onClick={() => setBuyerAuthSwitch()}
+                  onClick={setBuyerAuthSwitch}
                 >
                   {type === 'signin' ? 'Sign Up' : 'Log In'}
                 </Link>

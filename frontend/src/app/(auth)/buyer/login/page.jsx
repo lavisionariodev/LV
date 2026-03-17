@@ -8,18 +8,17 @@ import styles from './login.module.css';
 import { loginWithEmailPassword, signInWithOAuth, getOAuthRedirectUrl } from '@/lib/auth/client';
 import { getUser } from "@/lib/auth/session";
 import ForgotPasswordModal from '@/components/ui/Modal/ForgotPasswordModal';
-import { useRole } from '@/contexts/RoleContext';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase/client';
 import { isAdmin } from '@/lib/auth/admin';
-import { getUserRoles, hasRole, ROLE_BUYER } from '@/lib/auth/roles';
+import { getUserRole, ROLE_BUYER } from '@/lib/auth/roles';
+import { getSafeRedirect } from '@/utils/safeRedirect';
 
 function BuyerLoginPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { currentRole, switchRole } = useRole();
+  const redirect = getSafeRedirect(searchParams.get("redirect"));
   const toast = useToast();
-  const redirect = searchParams.get('redirect') || '/';
 
   const [signInData, setSignInData] = useState({
     email: '',
@@ -53,7 +52,7 @@ function BuyerLoginPageInner() {
       hasShownErrorRef.current = true;
       toast.error(decodeURIComponent(errorParam));
     }
-  }, [searchParams]);
+  }, [searchParams, toast]);
 
   useEffect(() => {
     let mounted = true;
@@ -61,8 +60,8 @@ function BuyerLoginPageInner() {
       if (!mounted) return;
       if (!currentUser) return;
       if (showForgotPasswordModalRef.current) return;
-      const roles = await getUserRoles(currentUser.id);
-      if (hasRole(roles, ROLE_BUYER) && currentRole === ROLE_BUYER) {
+      const role = await getUserRole(currentUser.id);
+      if (role === ROLE_BUYER) {
         router.replace(redirect);
       }
     });
@@ -106,21 +105,20 @@ function BuyerLoginPageInner() {
         return;
       }
 
-      const roles = await getUserRoles(user.id);
-      if (!roles || roles.length === 0) {
+      const role = await getUserRole(user.id);
+      if (!role) {
         toast.error('Your account is not configured for this portal.');
         await supabase.auth.signOut();
         return;
       }
 
-      if (!hasRole(roles, ROLE_BUYER)) {
+      if (role !== ROLE_BUYER) {
         toast.error('Please use the correct portal for your account.');
         await supabase.auth.signOut();
         return;
       }
 
       toast.success('Login successful!');
-      switchRole(ROLE_BUYER);
       router.replace(redirect);
     } catch (error) {
       console.error('Login error:', error);
@@ -230,7 +228,7 @@ function BuyerLoginPageInner() {
         <button onClick={handleSignIn}>Log In</button>
 
         <div className={styles.authFooter}>
-          Don't have an account? <Link href="/buyer/signup" onClick={() => setBuyerAuthSwitch()}>Sign Up</Link>
+          Don't have an account? <Link href="/buyer/signup" onClick={setBuyerAuthSwitch}>Sign Up</Link>
         </div>
       </AuthLayout>
 
