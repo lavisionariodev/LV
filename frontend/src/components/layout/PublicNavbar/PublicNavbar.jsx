@@ -8,6 +8,7 @@ import { signOut } from '@/lib/auth/session'
 import LogoutModal from '@/components/ui/Modal/Logout'
 import styles from './PublicNavbar.module.css'
 import { useAuth } from '@/contexts/AuthContext'
+import { useSiteContent } from '@/lib/siteContent/client'
 
 export default function PublicNavbar() {
   const { cartCount } = useCart()
@@ -24,6 +25,7 @@ export default function PublicNavbar() {
   const mobileSearchInputRef = useRef(null)
   const desktopSearchRef = useRef(null)
   const desktopSearchInputRef = useRef(null)
+  const { data: siteContent } = useSiteContent()
 
   const howItWorksItems = [
     { label: 'Step-by-Step Process', sectionId: 'step-by-step-process' },
@@ -233,9 +235,9 @@ export default function PublicNavbar() {
       {/* Main Navigation */}
       <div className={styles.mainNav}>
         <div className={styles.mainNavInner}>
-          <Link href="/" className={styles.logo} aria-label="La Visionario home">
+          <Link href="/" className={styles.logo} aria-label={(siteContent?.systemName || 'La Visionario') + ' home'}>
             <span className={styles.logoIcon}><span className={styles.logoLetter}>L</span></span>
-            <span className={styles.logoText}>Lavisionario</span>
+            <span className={styles.logoText}>{siteContent?.systemName || 'Lavisionario'}</span>
           </Link>
 
           <nav className={styles.navMenu}>

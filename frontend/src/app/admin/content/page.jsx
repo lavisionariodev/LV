@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import layoutStyles from '../admin.module.css'
 import styles from './content.module.css'
 import { siteContent as initialSiteContent } from '@/data/adminSampleData'
+import { useSiteContent, upsertSiteContent } from '@/lib/siteContent/client'
 
 const SECTIONS = [
   { id: 'system', label: 'System name' },
@@ -16,6 +17,14 @@ const SECTIONS = [
 export default function AdminContentPage() {
   const [activeSection, setActiveSection] = useState('system')
   const [draft, setDraft] = useState(initialSiteContent)
+  const [isSaving, setIsSaving] = useState(false)
+  const { data: loadedContent, isLoading, error } = useSiteContent()
+
+  useEffect(() => {
+    if (loadedContent) {
+      setDraft(loadedContent)
+    }
+  }, [loadedContent])
 
   const handleChange = (section, field, value) => {
     setDraft((prev) => ({
@@ -203,12 +212,38 @@ export default function AdminContentPage() {
           </div>
 
           <div className={styles.formArea}>
+            {isLoading ? (
+              <p className={styles.hint}>Loading site content…</p>
+            ) : error ? (
+              <p className={styles.hint}>
+                There was a problem loading content from Supabase. Showing local defaults for now.
+              </p>
+            ) : null}
+
             {renderForm()}
 
+            <button
+              type="button"
+              className={layoutStyles.primaryBtn}
+              onClick={async () => {
+                try {
+                  setIsSaving(true)
+                  const next = await upsertSiteContent(draft)
+                  setDraft(next)
+                } catch (e) {
+                  console.error('Failed to save site content:', e?.message ?? e)
+                } finally {
+                  setIsSaving(false)
+                }
+              }}
+              disabled={isSaving}
+            >
+              {isSaving ? 'Saving…' : 'Save changes'}
+            </button>
+
             <p className={styles.footerNote}>
-              These values are stored in frontend state only for now. When you add a
-              backend or CMS, this page can call an API instead of reading from the
-              local sample data file.
+              Changes are saved to your Supabase <code>site_content</code> table and used across the
+              public site.
             </p>
           </div>
         </div>

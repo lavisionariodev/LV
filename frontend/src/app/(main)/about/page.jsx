@@ -1,5 +1,6 @@
 import Head from "next/head";
 import styles from "./about.module.css";
+import { getSiteContent } from "@/lib/siteContent/server";
 
 /* ── static data ──────────────────────────────────────────────────────────── */
 
@@ -55,14 +56,21 @@ const TESTIMONIALS = [
 
 /* ── component ────────────────────────────────────────────────────────────── */
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const siteContent = await getSiteContent();
+  const about = siteContent?.about || {};
+  const systemName = siteContent?.systemName || "La Visionario";
+
   return (
     <>
       <Head>
-        <title>About – La Visionario</title>
+        <title>About – {systemName}</title>
         <meta
           name="description"
-          content="La Visionario helps Filipino families plan funeral services in a simple, respectful, and transparent way."
+          content={
+            about.ourStory ||
+            "La Visionario helps Filipino families plan funeral services in a simple, respectful, and transparent way."
+          }
         />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -129,11 +137,11 @@ export default function AboutPage() {
 
           <div className={styles.heroHeading}>
             <p className={styles.heroEyebrow}>Welcome To</p>
-            <h1 className={styles.heroTitle}>La Visionario</h1>
+            <h1 className={styles.heroTitle}>{systemName}</h1>
           </div>
           <p className={styles.heroSub}>
-            Helping Filipino families plan funeral services in a simple, respectful,
-            and transparent way — because saying goodbye should never be stressful.
+            {about.ourStory ||
+              "La Visionario was created to help families plan funeral services in a simple, respectful, and transparent way. We believe that saying goodbye should not be stressful or confusing."}
           </p>
 
           <div className={styles.heroDivider}>
@@ -153,37 +161,34 @@ export default function AboutPage() {
           id="mission-vision"
           className={`${styles.sectionAnchorOffset} ${styles.tornSectionWrap} ${styles.tornTop1}`}
         >
-        <div className={styles.missionWrap}>
-          <div className={styles.missionInner}>
-
-            <div className={styles.missionLeft}>
-              <div className={styles.missionCard}>
-                <div className={styles.missionCardImageWrap}>
-                  <img
-                    src="/sample/about-us/mission-compassion-card.png"
-                    alt="Dove symbol representing compassion"
-                    className={styles.missionCardImage}
-                  />
-                </div>
-                <div className={styles.missionBadge}>
-                  <i className="fa-solid fa-dove" />
+          <div className={styles.missionWrap}>
+            <div className={styles.missionInner}>
+              <div className={styles.missionLeft}>
+                <div className={styles.missionCard}>
+                  <div className={styles.missionCardImageWrap}>
+                    <img
+                      src="/sample/about-us/mission-compassion-card.png"
+                      alt="Dove symbol representing compassion"
+                      className={styles.missionCardImage}
+                    />
+                  </div>
+                  <div className={styles.missionBadge}>
+                    <i className="fa-solid fa-dove" />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className={styles.missionRight}>
-              <p className={styles.eyebrow}>Mission &amp; Vision</p>
-              <h2 className={styles.sectionTitle}>Planning &amp; Support</h2>
-              <span className={styles.sectionAccent}>Dignified Farewell Services</span>
-              <p className={styles.sectionBody}>
-                Our mission is to make funeral planning dignified, transparent, and accessible
-                for every Filipino family. We envision a future where saying farewell is
-                supported by clarity, care, and trusted partners.
-              </p>
+              <div className={styles.missionRight}>
+                <p className={styles.eyebrow}>Mission &amp; Vision</p>
+                <h2 className={styles.sectionTitle}>Planning &amp; Support</h2>
+                <span className={styles.sectionAccent}>Dignified Farewell Services</span>
+                <p className={styles.sectionBody}>
+                  {about.missionVision ||
+                    "Our mission is to make funeral planning dignified, transparent, and accessible for every Filipino family. We envision a future where saying farewell is supported by clarity, care, and trusted partners."}
+                </p>
+              </div>
             </div>
-
           </div>
-        </div>
         </div>
 
         {/* ══════════════════════════════════════
@@ -202,18 +207,16 @@ export default function AboutPage() {
                 <span className={styles.aboutTitleLight}>Us</span>
               </h2>
               <p className={styles.aboutPara}>
-                La Visionario was created to help families plan funeral services in a simple,
-                respectful, and transparent way. We believe that saying goodbye should not be
-                stressful or confusing.
+                {about.ourStory ||
+                  "La Visionario was created to help families plan funeral services in a simple, respectful, and transparent way. We believe that saying goodbye should not be stressful or confusing."}
               </p>
               <p className={styles.aboutPara}>
                 Our goal is to combine tradition and technology—offering clear packages, trusted
                 services, and peace of mind during difficult moments.
               </p>
               <p className={styles.aboutPara}>
-                We offer verified providers, clear pricing, and compassionate support so you can
-                focus on honoring your loved one. From packages to documentation, we guide you
-                through each step with respect and transparency.
+                {about.whyLaVisionario ||
+                  "We offer verified providers, clear pricing, and compassionate support so you can focus on honoring your loved one. From packages to documentation, we guide you through each step with respect and transparency."}
               </p>
             </div>
 
@@ -222,7 +225,7 @@ export default function AboutPage() {
                 <div className={styles.blobImageWrap}>
                   <img
                     src="/sample/about-us/about-us-blob.png"
-                    alt="La Visionario — dignified farewell care"
+                    alt={`${systemName} — dignified farewell care`}
                     className={styles.blobImage}
                   />
                 </div>
@@ -258,16 +261,29 @@ export default function AboutPage() {
               </h2>
             </div>
 
-            <div className={styles.grid3}>
-              {WHY_CARDS.map((c) => (
-                <div key={c.title} className={styles.card}>
+                <div className={styles.grid3}>
+              {WHY_CARDS.map((c) => {
+                let body = c.body;
+                if (c.title === "Why La Visionario") {
+                  body =
+                    about.whyLaVisionario ||
+                    "We offer verified providers, clear pricing, and compassionate support so you can focus on honoring your loved one. From packages to documentation, we guide you every step of the way.";
+                } else if (c.title === "Our Partners") {
+                  body =
+                    about.partners ||
+                    "We work with trusted funeral homes and service providers across the Philippines. Our partners share our commitment to dignity, quality, and fair dealing with families.";
+                }
+
+                return (
+                  <div key={c.title} className={styles.card}>
                   <div className={styles.cardIconRing}>
                     <i className={`fa-solid ${c.icon}`} />
                   </div>
                   <p className={styles.cardTitle}>{c.title}</p>
-                  <p className={styles.cardBody}>{c.body}</p>
+                  <p className={styles.cardBody}>{body}</p>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
           </div>
@@ -317,12 +333,11 @@ export default function AboutPage() {
               <div className={styles.testimonialFeaturedIcon}>
                 <i className="fa-solid fa-heart" />
               </div>
-              <div className={styles.testimonialFeaturedBody}>
-                <p>
-                  Families who have used La Visionario appreciate the ease of comparison,
-                  transparent pricing, and the support they received during a difficult time.
-                  We are honored to help every family navigate this journey with dignity and care.
-                </p>
+            <div className={styles.testimonialFeaturedBody}>
+              <p>
+                {about.testimonials ||
+                  "Families who have used La Visionario appreciate the ease of comparison, transparent pricing, and the support they received during a difficult time. We are honored to help every family navigate this journey with dignity and care."}
+              </p>
                 <div className={styles.testimonialStars}>
                   {[1,2,3,4,5].map((s) => (
                     <i key={s} className="fa-solid fa-star" />

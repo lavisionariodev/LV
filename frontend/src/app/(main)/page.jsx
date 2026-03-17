@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import styles from './homepage.module.css'
+import { useSiteContent } from '@/lib/siteContent/client'
 
 export default function LandingPage() {
   useEffect(() => {
@@ -42,6 +43,9 @@ export default function LandingPage() {
 
 /* ---------------- HERO ---------------- */
 function HeroSection() {
+  const { data: siteContent } = useSiteContent()
+  const hero = siteContent?.hero
+
   return (
     <section className={styles.hero}>
       <div className={styles.heroOverlay}></div>
@@ -49,16 +53,23 @@ function HeroSection() {
       <div className={styles.inner}>
         <div className={styles.content}>
           <h1 className={styles.title}>
-            Dignified Farewells,<br />Made Simple
+            {hero?.title || (
+              <>
+                Dignified Farewells,<br />
+                Made Simple
+              </>
+            )}
           </h1>
 
           <p className={styles.subheading}>
-            Everything you need to honor your loved one, transparent pricing,
-            verified providers, and compassionate support
+            {hero?.subheading ||
+              'Everything you need to honor your loved one, transparent pricing, verified providers, and compassionate support'}
           </p>
 
           <div className={styles.ctaGroup}>
-            <Link href="/shop" className={styles.ctaPrimary}>Browse Services</Link>
+            <Link href="/shop" className={styles.ctaPrimary}>
+              {hero?.primaryCta || 'Browse Services'}
+            </Link>
           </div>
         </div>
       </div>
