@@ -48,6 +48,54 @@
   color: #6b7280;
 }
 
+.downloadButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid #1f312b;
+  background: #1f312b;
+  color: #f9fafb;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.downloadButton:hover {
+  background: #264135;
+  border-color: #264135;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+.downloadRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.85rem;
+}
+
+@media (max-width: 640px) {
+  .downloadButton {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 999px;
+    margin-left: auto;
+    margin-top: 0.5rem;
+  }
+
+  .downloadButton span {
+    display: none;
+  }
+}
+
 /* Summary statistic strip */
 .summaryStrip {
   display: grid;
@@ -104,7 +152,7 @@
 }
 
 .summaryValue {
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   font-weight: 700;
   color: #102820;
 }
@@ -237,6 +285,8 @@
   justify-content: space-between;
   gap: 0.6rem;
 }
+
+/* chartHeaderActions no longer used */
 
 .chartTitleGroup {
   display: flex;
@@ -400,7 +450,7 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: #204f38;
+  background: linear-gradient(90deg, #1f312b, #2f4a3b);
 }
 
 .categoryAxis {
@@ -441,17 +491,17 @@
 
 .barInnerPrimary {
   width: 100%;
-  background: linear-gradient(180deg, #204f38, #356a4a);
+  background: linear-gradient(180deg, #1f312b, #355846);
 }
 
 .barInnerSecondary {
   width: 100%;
-  background: linear-gradient(180deg, #bfdbfe, #1d4ed8);
+  background: linear-gradient(180deg, #8fb9a3, #5b8c71);
 }
 
 .barInnerMuted {
   width: 100%;
-  background: linear-gradient(180deg, #f97316, #ea580c);
+  background: linear-gradient(180deg, #cbd5cf, #94a89b);
 }
 
 .barLabel {
@@ -540,6 +590,27 @@
   .summaryStrip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.75rem;
+  }
+
+  .downloadRow {
+    position: fixed;
+    right: 1.1rem;
+    bottom: 4.25rem; /* sits just above bottom nav */
+    margin-bottom: 0;
+    padding: 0;
+    z-index: 40;
+  }
+
+  .downloadButton {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 999px;
+  }
+
+  .downloadButton span {
+    display: none;
   }
 
   .navGrid {
