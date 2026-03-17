@@ -10,8 +10,9 @@ import { supabase } from '@/lib/supabase/client';
 import ForgotPasswordModal from '@/components/ui/Modal/ForgotPasswordModal';
 import { isAdmin } from '@/lib/auth/admin';
 import { getUser } from '@/lib/auth/session';
-import { getUserRole, ROLE_SELLER } from '@/lib/auth/roles';
+import { getUserRoles, hasRole, ROLE_SELLER } from '@/lib/auth/roles';
 import { useToast } from '@/contexts/ToastContext';
+import { useRole } from '@/contexts/RoleContext';
 
 function SellerLoginPageInner() {
   const [loginMode, setLoginMode] = useState('password'); // 'password' or 'qr'
@@ -30,6 +31,7 @@ function SellerLoginPageInner() {
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/seller';
   const toast = useToast();
+  const { switchRole } = useRole();
 
   useLayoutEffect(() => {
     if (typeof window === 'undefined') return;
@@ -52,8 +54,8 @@ function SellerLoginPageInner() {
     getUser().then(async (currentUser) => {
       if (!mounted || !currentUser) return;
       if (showForgotPasswordModalRef.current) return;
-      const role = await getUserRole(currentUser.id);
-      if (role === ROLE_SELLER) {
+      const roles = await getUserRoles(currentUser.id);
+      if (hasRole(roles, ROLE_SELLER) && currentRole === ROLE_SELLER) {
         const target = !redirect || redirect === '/' ? '/seller' : redirect;
         router.replace(target);
       }
@@ -61,7 +63,7 @@ function SellerLoginPageInner() {
     return () => {
       mounted = false;
     };
-  }, [redirect, router]);
+  }, [redirect, router, currentRole]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -91,20 +93,21 @@ function SellerLoginPageInner() {
         return;
       }
 
-      const role = await getUserRole(user.id);
-      if (!role) {
+      const roles = await getUserRoles(user.id);
+      if (!roles || roles.length === 0) {
         toast.error('Your account is not configured for this portal.');
         await supabase.auth.signOut();
         return;
       }
 
-      if (role !== ROLE_SELLER) {
+      if (!hasRole(roles, ROLE_SELLER)) {
         toast.error('Please use the correct portal for your account.');
         await supabase.auth.signOut();
         return;
       }
 
       toast.success('Welcome back to Seller Centre!');
+      switchRole(ROLE_SELLER);
       const target = !redirect || redirect === '/' ? '/seller' : redirect;
       router.replace(target);
     } catch (err) {
