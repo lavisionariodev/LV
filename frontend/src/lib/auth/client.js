@@ -25,9 +25,9 @@ export async function loginWithEmailPassword({ email, password }) {
 /**
  * Sign up with email/password (buyer or seller).
  * Users and profiles rows are created by DB trigger on auth.users insert.
- * @param {{ name: string, email: string, password: string, role?: 'buyer' | 'seller' }}
+ * @param {{ name: string, email: string, password: string, roles?: string[] }}
  */
-export async function signUpWithEmailPassword({ name, email, password, role = "buyer" }) {
+export async function signUpWithEmailPassword({ name, email, password, roles = ["buyer"] }) {
   const validation = validateSignUpPayload({ name, email, password });
   if (!validation.valid) {
     return { data: null, error: validation.message };
@@ -39,7 +39,7 @@ export async function signUpWithEmailPassword({ name, email, password, role = "b
     options: {
       data: {
         full_name: name.trim(),
-        role: role === "seller" ? "seller" : "buyer",
+        roles: roles,
       },
     },
   });

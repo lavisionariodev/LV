@@ -59,36 +59,39 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  width: 100%;
 }
 
-/* Match buyer login social button style (white button, icon + label) */
-button.socialButton {
+/* Override layout’s green .authForm button so social buttons stay white with visible icons */
+.socialButtons .socialButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   background-color: #ffffff !important;
   color: #333 !important;
   border: 1px solid #e0e0e0;
   padding: 10px;
   font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
   text-transform: none;
-}
-
-.socialButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s;
+  margin: 0;
 }
 
 /* Keep Facebook/Google logo colors visible */
-.socialButton svg {
+.socialButtons .socialButton svg {
   flex-shrink: 0;
   width: 18px;
   height: 18px;
 }
 
-button.socialButton:hover {
+.socialButtons .socialButton:hover {
+  background-color: #f8f8f8 !important;
+  border-color: var(--color-main-accent);
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(32, 79, 56, 0.3);
 }
