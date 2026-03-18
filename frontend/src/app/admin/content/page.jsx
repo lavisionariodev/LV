@@ -187,7 +187,7 @@ export default function AdminContentPage() {
 
   const renderAbout = () => (
     <div className={styles.sectionGrid}>
-      {['ourStory', 'missionVision', 'whyUs', 'partners', 'commitment', 'testimonials'].map(
+      {['ourStory', 'missionVision', 'whyUs', 'partners', 'commitment'].map(
         (key) => (
           <label key={key} className={styles.label}>
             <span className={styles.labelSpan}>{key}</span>
@@ -195,7 +195,9 @@ export default function AdminContentPage() {
               value={draft.about?.[key] ?? ''}
               onChange={(e) => handleChange('about', key, e.target.value)}
               rows={3}
-              className={styles.textarea}              disabled={!isEditing}            />
+              className={styles.textarea}
+              disabled={!isEditing}
+            />
           </label>
         ),
       )}
@@ -241,8 +243,35 @@ export default function AdminContentPage() {
   return (
     <div className={layoutStyles.dashWrap}>
       <section className={layoutStyles.panel}>
-        <div className={layoutStyles.panelHead}>
+        <div className={`${layoutStyles.panelHead} ${styles.panelHeadRow}`}>
           <p className={layoutStyles.panelTitle}>Content management</p>
+
+          <div className={styles.panelActions}>
+            {!isEditing ? (
+              <button type="button" className={`${styles.primaryBtn}`} onClick={handleEdit}>
+                Edit
+              </button>
+            ) : (
+              <div className={styles.actionRow}>
+                <button
+                  type="button"
+                  className={`${styles.primaryBtn}`}
+                  onClick={handleSave}
+                  disabled={isSaving}
+                >
+                  {isSaving ? 'Saving…' : 'Save changes'}
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.secondaryBtn}`}
+                  onClick={handleCancel}
+                  disabled={isSaving}
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className={styles.layout}>
@@ -269,35 +298,6 @@ export default function AdminContentPage() {
             ) : null}
 
             {renderForm()}
-
-            {!isEditing ? (
-              <button
-                type="button"
-                className={`${styles.primaryBtn}`}
-                onClick={handleEdit}
-              >
-                Edit
-              </button>
-            ) : (
-              <div className={styles.actionRow}>
-                <button
-                  type="button"
-                  className={`${styles.primaryBtn}`}
-                  onClick={handleSave}
-                  disabled={isSaving}
-                >
-                  {isSaving ? 'Saving…' : 'Save changes'}
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.secondaryBtn}`}
-                  onClick={handleCancel}
-                  disabled={isSaving}
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
 
             <p className={styles.footerNote}>
               Changes are saved to your Supabase <code>site_content</code> table and used across the

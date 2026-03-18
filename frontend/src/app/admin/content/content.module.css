@@ -42,7 +42,7 @@
 
 .input {
   border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 8px 10px;
   background: #fff;
   font-size: 13px;
@@ -50,7 +50,7 @@
 
 .textarea {
   border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 8px 10px;
   font-size: 13px;
   resize: vertical;
@@ -85,12 +85,27 @@
   margin: 0;
 }
 
+.panelHeadRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.panelActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .actionRow {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
   align-items: center;
 }
+
 
 .primaryBtn,
 .secondaryBtn {
