@@ -68,6 +68,11 @@
   flex-wrap: wrap;
 }
 
+.ctaRow .label {
+  flex: 1;
+  min-width: 220px;
+}
+
 .sectionBtn {
   justify-content: flex-start;
   width: 100%;

@@ -217,18 +217,16 @@ export default async function AboutPage() {
                   {about.description}
                 </p>
               )}
-              <p className={styles.aboutPara}>
-                {about.ourStory ||
-                  `${systemName} was created to help families plan funeral services in a simple, respectful, and transparent way. We believe that saying goodbye should not be stressful or confusing.`}
-              </p>
-              <p className={styles.aboutPara}>
-                Our goal is to combine tradition and technology—offering clear packages, trusted
-                services, and peace of mind during difficult moments.
-              </p>
-              <p className={styles.aboutPara}>
-                {about.whyUs ||
-                  "We offer verified providers, clear pricing, and compassionate support so you can focus on honoring your loved one. From packages to documentation, we guide you through each step with respect and transparency."}
-              </p>
+              {about.ourStory && (
+                <p className={styles.aboutPara}>
+                  {about.ourStory}
+                </p>
+              )}
+              {about.whyUs && (
+                <p className={styles.aboutPara}>
+                  {about.whyUs}
+                </p>
+              )}
             </div>
 
             <div className={styles.blobWrap}>

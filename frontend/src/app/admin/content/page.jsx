@@ -186,24 +186,35 @@ export default function AdminContentPage() {
     </div>
   )
 
-  const renderAbout = () => (
-    <div className={styles.sectionGrid}>
-      {['description', 'ourStory', 'missionVision', 'whyUs', 'partners', 'commitment'].map(
-        (key) => (
-          <label key={key} className={styles.label}>
-            <span className={styles.labelSpan}>{key}</span>
-            <textarea
-              value={draft.about?.[key] ?? ''}
-              onChange={(e) => handleChange('about', key, e.target.value)}
-              rows={3}
-              className={styles.textarea}
-              disabled={!isEditing}
-            />
-          </label>
-        ),
-      )}
-    </div>
-  )
+  const renderAbout = () => {
+    const aboutLabels = {
+      ourStory: 'Our Story',
+      missionVision: 'Mission & Vision',
+      description: 'About Us',
+      whyUs: 'Why Us',
+      partners: 'Our Partners',
+      commitment: 'Our Commitment',
+    }
+
+    return (
+      <div className={styles.sectionGrid}>
+        {['ourStory', 'missionVision', 'description', 'whyUs', 'partners', 'commitment'].map(
+          (key) => (
+            <label key={key} className={styles.label}>
+              <span className={styles.labelSpan}>{aboutLabels[key]}</span>
+              <textarea
+                value={draft.about?.[key] ?? ''}
+                onChange={(e) => handleChange('about', key, e.target.value)}
+                rows={3}
+                className={styles.textarea}
+                disabled={!isEditing}
+              />
+            </label>
+          ),
+        )}
+      </div>
+    )
+  }
 
   const renderHowItWorks = () => (
     <div className={styles.sectionGrid}>
