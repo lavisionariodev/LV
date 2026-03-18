@@ -15,8 +15,9 @@ const DEFAULT_SITE_CONTENT = {
   about: {
     ourStory: '',
     missionVision: '',
-    whyLaVisionario: '',
+    whyUs: '',
     partners: '',
+    commitment: '',
     testimonials: '',
   },
   howItWorks: {
@@ -52,10 +53,14 @@ export function rowToSiteContent(row) {
       ourStory: row.about_our_story ?? DEFAULT_SITE_CONTENT.about.ourStory,
       missionVision:
         row.about_mission_vision ?? DEFAULT_SITE_CONTENT.about.missionVision,
-      whyLaVisionario:
+      whyUs:
+        row.about_why_us ??
         row.about_why_la_visionario ??
-        DEFAULT_SITE_CONTENT.about.whyLaVisionario,
+        DEFAULT_SITE_CONTENT.about.whyUs,
       partners: row.about_partners ?? DEFAULT_SITE_CONTENT.about.partners,
+      commitment:
+        row.about_commitment ??
+        DEFAULT_SITE_CONTENT.about.commitment,
       testimonials:
         row.about_testimonials ?? DEFAULT_SITE_CONTENT.about.testimonials,
     },
@@ -92,7 +97,8 @@ export function siteContentToRow(content) {
 
     about_our_story: src.about?.ourStory ?? null,
     about_mission_vision: src.about?.missionVision ?? null,
-    about_why_la_visionario: src.about?.whyLaVisionario ?? null,
+    about_why_us: src.about?.whyUs ?? null,
+    about_commitment: src.about?.commitment ?? null,
     about_partners: src.about?.partners ?? null,
     about_testimonials: src.about?.testimonials ?? null,
 

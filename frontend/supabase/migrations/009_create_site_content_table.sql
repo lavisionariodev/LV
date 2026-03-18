@@ -16,8 +16,9 @@ CREATE TABLE IF NOT EXISTS public.site_content (
 
   about_our_story text,
   about_mission_vision text,
-  about_why_la_visionario text,
+  about_why_us text,
   about_partners text,
+  about_commitment text,
   about_testimonials text,
 
   how_step_by_step text,
@@ -68,3 +69,9 @@ CREATE TRIGGER site_content_updated_at_trigger
   BEFORE UPDATE ON public.site_content
   FOR EACH ROW
   EXECUTE FUNCTION public.site_content_updated_at();
+
+-- Ensure new columns are available, and keep safe for fresh install
+ALTER TABLE public.site_content
+  ADD COLUMN IF NOT EXISTS about_why_us text;
+ALTER TABLE public.site_content
+  ADD COLUMN IF NOT EXISTS about_commitment text;
