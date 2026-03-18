@@ -19,7 +19,6 @@ const EMPTY_SITE_CONTENT = {
     title: '',
     subheading: '',
     primaryCta: '',
-    secondaryCta: '',
   },
   footer: {
     tagline: '',

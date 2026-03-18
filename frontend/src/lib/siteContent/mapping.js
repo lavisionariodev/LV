@@ -5,7 +5,6 @@ const DEFAULT_SITE_CONTENT = {
     title: '',
     subheading: '',
     primaryCta: '',
-    secondaryCta: '',
   },
   footer: {
     tagline: '',
@@ -39,8 +38,6 @@ export function rowToSiteContent(row) {
       title: row.hero_title ?? DEFAULT_SITE_CONTENT.hero.title,
       subheading: row.hero_subheading ?? DEFAULT_SITE_CONTENT.hero.subheading,
       primaryCta: row.hero_primary_cta ?? DEFAULT_SITE_CONTENT.hero.primaryCta,
-      secondaryCta:
-        row.hero_secondary_cta ?? DEFAULT_SITE_CONTENT.hero.secondaryCta,
     },
     footer: {
       tagline: row.footer_tagline ?? DEFAULT_SITE_CONTENT.footer.tagline,
@@ -87,7 +84,6 @@ export function siteContentToRow(content) {
     hero_title: src.hero?.title ?? null,
     hero_subheading: src.hero?.subheading ?? null,
     hero_primary_cta: src.hero?.primaryCta ?? null,
-    hero_secondary_cta: src.hero?.secondaryCta ?? null,
 
     footer_tagline: src.footer?.tagline ?? null,
     footer_support_phone: src.footer?.supportPhone ?? null,
