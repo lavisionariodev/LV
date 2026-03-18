@@ -50,11 +50,16 @@ export default function SellerAnalyticsSalesOverviewPage() {
   ]
 
   const packageBookings = [
-    { label: 'Traditional full', value: '82%', count: 24 },
-    { label: 'Cremation', value: '64%', count: 18 },
-    { label: 'Simple wake', value: '52%', count: 15 },
-    { label: 'Memorial only', value: '28%', count: 8 },
+    { label: 'Traditional full', confirmed: 18, pending: 6 },
+    { label: 'Cremation', confirmed: 12, pending: 6 },
+    { label: 'Simple wake', confirmed: 10, pending: 5 },
+    { label: 'Memorial only', confirmed: 5, pending: 3 },
+    { label: 'Transport add-on', confirmed: 7, pending: 2 },
+    { label: 'Documentation', confirmed: 6, pending: 1 },
   ]
+
+  const packageTotals = packageBookings.map((pkg) => pkg.confirmed + pkg.pending)
+  const packageMaxTotal = Math.max(...packageTotals, 1)
 
   return (
     <div className={styles.pageWrap}>
@@ -243,8 +248,14 @@ export default function SellerAnalyticsSalesOverviewPage() {
           <div className={styles.chartHeader}>
             <div className={styles.chartTitleGroup}>
               <h2 className={styles.chartTitle}>Bookings by package</h2>
-              <p className={styles.chartSubtitle}>Last 30 days</p>
+              <p className={styles.chartSubtitle}>Last 6 months – confirmed and pending bookings</p>
             </div>
+            <button type="button" className={styles.chartActionButton}>
+              <span className={styles.chartActionButtonIcon} aria-hidden>
+                <TbChartLine size={14} />
+              </span>
+              6-MONTH VIEW
+            </button>
           </div>
 
           <div className={styles.chartBody}>
@@ -259,18 +270,51 @@ export default function SellerAnalyticsSalesOverviewPage() {
               </div>
 
               <div>
-                <div className={styles.barChartRow} aria-hidden>
-                  {packageBookings.map((pkg) => (
-                    <div key={pkg.label} className={styles.barGroup}>
-                      <div className={styles.barOuter} title={`${pkg.count} bookings – ${pkg.label}`}>
-                        <div
-                          className={styles.barInnerPrimary}
-                          style={{ height: pkg.value }}
-                        />
-                      </div>
-                      <span className={styles.barLabel}>{pkg.label}</span>
-                    </div>
-                  ))}
+                <div className={styles.chartScrollX}>
+                  <div className={styles.barChartRow} aria-hidden>
+                    {packageBookings.map((pkg) => {
+                      const total = pkg.confirmed + pkg.pending
+                      const totalPct = (total / packageMaxTotal) * 100
+                      const confirmedPct = (pkg.confirmed / packageMaxTotal) * 100
+                      const pendingPct = (pkg.pending / packageMaxTotal) * 100
+
+                      return (
+                        <div key={pkg.label} className={styles.barGroup}>
+                          <div
+                            className={styles.pillStackOuter}
+                            title={`${total} bookings – ${pkg.label}`}
+                          >
+                            <div
+                              className={styles.pillStackSegmentPrimary}
+                              style={{ height: `${confirmedPct}%` }}
+                            />
+                            <div
+                              className={styles.pillStackSegmentSecondary}
+                              style={{ height: `${pendingPct}%` }}
+                            />
+                            <div style={{ height: `${Math.max(0, 100 - totalPct)}%` }} />
+                          </div>
+                          <div
+                            className={styles.barLabel}
+                            style={{ textAlign: 'center', maxWidth: 96 }}
+                          >
+                            {pkg.label}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  <div className={styles.pillLegendRow} aria-hidden>
+                    <span className={styles.legendItem}>
+                      <span className={styles.pillLegendDot} style={{ background: '#1f312b' }} />
+                      <span className={styles.pillLegendLabel}>Confirmed</span>
+                    </span>
+                    <span className={styles.legendItem}>
+                      <span className={styles.pillLegendDot} style={{ background: '#8fb9a3' }} />
+                      <span className={styles.pillLegendLabel}>Pending</span>
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
