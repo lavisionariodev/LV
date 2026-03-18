@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import layoutStyles from '../admin.module.css'
 import styles from './content.module.css'
-import { siteContent as initialSiteContent } from '@/data/adminSampleData'
 import { useSiteContent, upsertSiteContent } from '@/lib/siteContent/client'
 
 const SECTIONS = [
@@ -14,9 +13,38 @@ const SECTIONS = [
   { id: 'howItWorks', label: 'How it works copy' },
 ]
 
+const EMPTY_SITE_CONTENT = {
+  systemName: '',
+  hero: {
+    title: '',
+    subheading: '',
+    primaryCta: '',
+    secondaryCta: '',
+  },
+  footer: {
+    tagline: '',
+    supportPhone: '',
+    supportEmail: '',
+    copyrightText: '',
+  },
+  about: {
+    ourStory: '',
+    missionVision: '',
+    whyLaVisionario: '',
+    partners: '',
+    testimonials: '',
+  },
+  howItWorks: {
+    stepByStep: '',
+    comparePackages: '',
+    bookAService: '',
+    paymentSupport: '',
+  },
+}
+
 export default function AdminContentPage() {
   const [activeSection, setActiveSection] = useState('system')
-  const [draft, setDraft] = useState(initialSiteContent)
+  const [draft, setDraft] = useState(EMPTY_SITE_CONTENT)
   const [isSaving, setIsSaving] = useState(false)
   const { data: loadedContent, isLoading, error } = useSiteContent()
 
@@ -42,7 +70,7 @@ export default function AdminContentPage() {
         <span className={styles.labelSpan}>System name / brand</span>
         <input
           type="text"
-          value={draft.systemName}
+          value={draft.systemName ?? ''}
           onChange={(e) =>
             setDraft((prev) => ({ ...prev, systemName: e.target.value }))
           }
@@ -61,7 +89,7 @@ export default function AdminContentPage() {
         <span className={styles.labelSpan}>Homepage title</span>
         <input
           type="text"
-          value={draft.hero.title}
+          value={draft.hero?.title ?? ''}
           onChange={(e) => handleChange('hero', 'title', e.target.value)}
           className={styles.input}
         />
@@ -70,34 +98,22 @@ export default function AdminContentPage() {
       <label className={styles.label}>
         <span className={styles.labelSpan}>Subheading</span>
         <textarea
-          value={draft.hero.subheading}
+          value={draft.hero?.subheading ?? ''}
           onChange={(e) => handleChange('hero', 'subheading', e.target.value)}
           rows={3}
           className={styles.textarea}
         />
       </label>
 
-      <div className={styles.ctaRow}>
-        <label className={styles.label}>
-          <span className={styles.labelSpan}>Primary CTA label</span>
-          <input
-            type="text"
-            value={draft.hero.primaryCta}
-            onChange={(e) => handleChange('hero', 'primaryCta', e.target.value)}
-            className={styles.input}
-          />
-        </label>
-
-        <label className={styles.label}>
-          <span className={styles.labelSpan}>Secondary CTA label</span>
-          <input
-            type="text"
-            value={draft.hero.secondaryCta}
-            onChange={(e) => handleChange('hero', 'secondaryCta', e.target.value)}
-            className={styles.input}
-          />
-        </label>
-      </div>
+      <label className={styles.label}>
+        <span className={styles.labelSpan}>CTA button label</span>
+        <input
+          type="text"
+          value={draft.hero?.primaryCta ?? ''}
+          onChange={(e) => handleChange('hero', 'primaryCta', e.target.value)}
+          className={styles.input}
+        />
+      </label>
     </div>
   )
 
@@ -106,7 +122,7 @@ export default function AdminContentPage() {
       <label className={styles.label}>
         <span className={styles.labelSpan}>Tagline</span>
         <textarea
-          value={draft.footer.tagline}
+          value={draft.footer?.tagline ?? ''}
           onChange={(e) => handleChange('footer', 'tagline', e.target.value)}
           rows={3}
           className={styles.textarea}
@@ -118,7 +134,7 @@ export default function AdminContentPage() {
           <span className={styles.labelSpan}>Support phone</span>
           <input
             type="tel"
-            value={draft.footer.supportPhone}
+            value={draft.footer?.supportPhone ?? ''}
             onChange={(e) => handleChange('footer', 'supportPhone', e.target.value)}
             className={styles.input}
           />
@@ -128,7 +144,7 @@ export default function AdminContentPage() {
           <span className={styles.labelSpan}>Support email</span>
           <input
             type="email"
-            value={draft.footer.supportEmail}
+            value={draft.footer?.supportEmail ?? ''}
             onChange={(e) => handleChange('footer', 'supportEmail', e.target.value)}
             className={styles.input}
           />
@@ -144,7 +160,7 @@ export default function AdminContentPage() {
           <label key={key} className={styles.label}>
             <span className={styles.labelSpan}>{key}</span>
             <textarea
-              value={draft.about[key]}
+              value={draft.about?.[key] ?? ''}
               onChange={(e) => handleChange('about', key, e.target.value)}
               rows={3}
               className={styles.textarea}
@@ -162,7 +178,7 @@ export default function AdminContentPage() {
           <label key={key} className={styles.label}>
             <span className={styles.labelSpan}>{key}</span>
             <textarea
-              value={draft.howItWorks[key]}
+              value={draft.howItWorks?.[key] ?? ''}
               onChange={(e) => handleChange('howItWorks', key, e.target.value)}
               rows={3}
               className={styles.textarea}

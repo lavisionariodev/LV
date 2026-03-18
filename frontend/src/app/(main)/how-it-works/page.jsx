@@ -2,14 +2,19 @@ import Link from 'next/link'
 import { getSiteContent } from '@/lib/siteContent/server'
 import styles from './how-it-works.module.css'
 
-export const metadata = {
-  title: 'How It Works – La Visionario',
-  description:
-    'Learn how La Visionario helps you browse, compare, book, and get support for funeral services with trusted partners.',
+export async function generateMetadata() {
+  const siteContent = await getSiteContent()
+  const systemName = siteContent?.systemName || 'La Visionario'
+
+  return {
+    title: `How It Works – ${systemName}`,
+    description: `Learn how ${systemName} helps you browse, compare, book, and get support for funeral services with trusted partners.`,
+  }
 }
 
 export default async function HowItWorksPage() {
   const siteContent = await getSiteContent()
+  const systemName = siteContent?.systemName || 'La Visionario'
 
   const SECTIONS = [
     {
@@ -17,7 +22,7 @@ export default async function HowItWorksPage() {
       title: 'Step-by-Step Process',
       body:
         siteContent?.howItWorks?.stepByStep ??
-        'Browse, compare, book, and receive support from La Visionario and its partner providers.',
+        `Browse, compare, book, and receive support from ${systemName} and its partner providers.`,
       steps: [
         'Browse our verified partner listings and service packages.',
         'Compare options and view clear inclusions and pricing.',
@@ -46,7 +51,7 @@ export default async function HowItWorksPage() {
       steps: [
         'Select your preferred package and complete the booking form.',
         'Share any special requests or details with the provider.',
-        'Receive confirmation and next steps from La Visionario and the partner.',
+        `Receive confirmation and next steps from ${systemName} and the partner.`,
       ],
     },
     {

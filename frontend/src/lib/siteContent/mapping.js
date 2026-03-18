@@ -1,57 +1,85 @@
-import { siteContent as defaultSiteContent } from '@/data/adminSampleData'
+// Minimal default shape when DB has no row or null columns. All content comes from `site_content` table.
+const DEFAULT_SITE_CONTENT = {
+  systemName: '',
+  hero: {
+    title: '',
+    subheading: '',
+    primaryCta: '',
+    secondaryCta: '',
+  },
+  footer: {
+    tagline: '',
+    supportPhone: '',
+    supportEmail: '',
+    copyrightText: '',
+  },
+  about: {
+    ourStory: '',
+    missionVision: '',
+    whyLaVisionario: '',
+    partners: '',
+    testimonials: '',
+  },
+  howItWorks: {
+    stepByStep: '',
+    comparePackages: '',
+    bookAService: '',
+    paymentSupport: '',
+  },
+}
 
 // Map a Supabase row from `site_content` into the nested `siteContent` shape
 // used throughout the frontend (and by the admin content page).
 export function rowToSiteContent(row) {
-  if (!row) return defaultSiteContent
+  if (!row) return DEFAULT_SITE_CONTENT
 
   return {
-    systemName: row.system_name ?? defaultSiteContent.systemName,
+    systemName: row.system_name ?? DEFAULT_SITE_CONTENT.systemName,
     hero: {
-      title: row.hero_title ?? defaultSiteContent.hero.title,
-      subheading: row.hero_subheading ?? defaultSiteContent.hero.subheading,
-      primaryCta: row.hero_primary_cta ?? defaultSiteContent.hero.primaryCta,
+      title: row.hero_title ?? DEFAULT_SITE_CONTENT.hero.title,
+      subheading: row.hero_subheading ?? DEFAULT_SITE_CONTENT.hero.subheading,
+      primaryCta: row.hero_primary_cta ?? DEFAULT_SITE_CONTENT.hero.primaryCta,
       secondaryCta:
-        row.hero_secondary_cta ?? defaultSiteContent.hero.secondaryCta,
+        row.hero_secondary_cta ?? DEFAULT_SITE_CONTENT.hero.secondaryCta,
     },
     footer: {
-      tagline: row.footer_tagline ?? defaultSiteContent.footer.tagline,
+      tagline: row.footer_tagline ?? DEFAULT_SITE_CONTENT.footer.tagline,
       supportPhone:
-        row.footer_support_phone ?? defaultSiteContent.footer.supportPhone,
+        row.footer_support_phone ?? DEFAULT_SITE_CONTENT.footer.supportPhone,
       supportEmail:
-        row.footer_support_email ?? defaultSiteContent.footer.supportEmail,
+        row.footer_support_email ?? DEFAULT_SITE_CONTENT.footer.supportEmail,
       copyrightText:
-        row.footer_copyright_text ?? defaultSiteContent.footer.copyrightText,
+        row.footer_copyright_text ?? DEFAULT_SITE_CONTENT.footer.copyrightText,
     },
     about: {
-      ourStory: row.about_our_story ?? defaultSiteContent.about.ourStory,
+      ourStory: row.about_our_story ?? DEFAULT_SITE_CONTENT.about.ourStory,
       missionVision:
-        row.about_mission_vision ?? defaultSiteContent.about.missionVision,
+        row.about_mission_vision ?? DEFAULT_SITE_CONTENT.about.missionVision,
       whyLaVisionario:
         row.about_why_la_visionario ??
-        defaultSiteContent.about.whyLaVisionario,
-      partners: row.about_partners ?? defaultSiteContent.about.partners,
+        DEFAULT_SITE_CONTENT.about.whyLaVisionario,
+      partners: row.about_partners ?? DEFAULT_SITE_CONTENT.about.partners,
       testimonials:
-        row.about_testimonials ?? defaultSiteContent.about.testimonials,
+        row.about_testimonials ?? DEFAULT_SITE_CONTENT.about.testimonials,
     },
     howItWorks: {
       stepByStep:
-        row.how_step_by_step ?? defaultSiteContent.howItWorks.stepByStep,
+        row.how_step_by_step ?? DEFAULT_SITE_CONTENT.howItWorks.stepByStep,
       comparePackages:
         row.how_compare_packages ??
-        defaultSiteContent.howItWorks.comparePackages,
+        DEFAULT_SITE_CONTENT.howItWorks.comparePackages,
       bookAService:
-        row.how_book_service ?? defaultSiteContent.howItWorks.bookAService,
+        row.how_book_service ?? DEFAULT_SITE_CONTENT.howItWorks.bookAService,
       paymentSupport:
         row.how_payment_support ??
-        defaultSiteContent.howItWorks.paymentSupport,
+        DEFAULT_SITE_CONTENT.howItWorks.paymentSupport,
     },
   }
 }
 
 // Map the nested `siteContent` shape back into a flat row for `site_content`.
 export function siteContentToRow(content) {
-  const src = content ?? defaultSiteContent
+  const src = content ?? DEFAULT_SITE_CONTENT
 
   return {
     system_name: src.systemName,

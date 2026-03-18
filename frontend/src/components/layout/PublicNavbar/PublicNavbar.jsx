@@ -235,9 +235,15 @@ export default function PublicNavbar() {
       {/* Main Navigation */}
       <div className={styles.mainNav}>
         <div className={styles.mainNavInner}>
-          <Link href="/" className={styles.logo} aria-label={(siteContent?.systemName || 'La Visionario') + ' home'}>
-            <span className={styles.logoIcon}><span className={styles.logoLetter}>L</span></span>
-            <span className={styles.logoText}>{siteContent?.systemName || 'Lavisionario'}</span>
+          <Link
+            href="/"
+            className={styles.logo}
+            aria-label={`${siteContent?.systemName || 'La Visionario'} home`}
+          >
+            <span className={styles.logoIcon}>
+              <span className={styles.logoLetter}>L</span>
+            </span>
+            <span className={styles.logoText}>{siteContent?.systemName || 'La Visionario'}</span>
           </Link>
 
           <nav className={styles.navMenu}>
