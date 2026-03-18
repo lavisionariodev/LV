@@ -322,6 +322,52 @@
   white-space: nowrap;
 }
 
+.chartActionButton {
+  appearance: none;
+  border: 1px solid #e5e7eb;
+  background: rgba(249, 250, 251, 0.9);
+  color: #4b5563;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  cursor: pointer;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.16s ease;
+  white-space: nowrap;
+}
+
+.chartActionButton:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+.chartActionButton:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 12px rgba(15, 23, 42, 0.06);
+}
+
+.chartActionButtonIcon {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: rgba(224, 240, 230, 0.85);
+  color: #204f38;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
 .chartBody {
   position: relative;
   min-height: 180px;
@@ -387,6 +433,26 @@
   grid-template-columns: auto minmax(0, 1fr);
   gap: 0.6rem;
   align-items: stretch;
+}
+
+.chartScrollX {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.25rem;
+}
+
+.chartScrollX::-webkit-scrollbar {
+  height: 10px;
+}
+
+.chartScrollX::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 999px;
+}
+
+.chartScrollX::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .chartYAxisLabels {
@@ -489,6 +555,49 @@
   height: 120px;
 }
 
+.pillStackOuter {
+  width: 100%;
+  max-width: 40px;
+  height: 128px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+.pillStackSegmentPrimary {
+  width: 100%;
+  background: linear-gradient(180deg, #1f312b, #355846);
+}
+
+.pillStackSegmentSecondary {
+  width: 100%;
+  background: linear-gradient(180deg, #8fb9a3, #5b8c71);
+}
+
+.pillLegendRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(229, 231, 235, 0.9);
+  margin-top: 0.6rem;
+}
+
+.pillLegendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.pillLegendLabel {
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
 .barInnerPrimary {
   width: 100%;
   background: linear-gradient(180deg, #1f312b, #355846);
@@ -518,14 +627,15 @@
 /* Dual column stacked bars (new vs returning) */
 .dualBarOuter {
   width: 100%;
-  max-width: 32px;
-  border-radius: 11px;
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
-  padding: 2px;
+  max-width: 44px;
+  border-radius: 14px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  padding: 3px;
   display: flex;
   flex-direction: column-reverse;
   gap: 2px;
+  height: 100%;
 }
 
 .dualBarSegmentPrimary {
@@ -537,7 +647,15 @@
 .dualBarSegmentSecondary {
   width: 100%;
   border-radius: 7px;
-  background: linear-gradient(180deg, #e5e7eb, #cbd5e1);
+  background: linear-gradient(180deg, #e5e7eb, #9ca3af);
+}
+
+.dualBarRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.7rem;
+  height: 170px;
 }
 
 /* Empty / helper text */
@@ -619,5 +737,51 @@
 
   .chartCard {
     padding: 0.9rem 0.9rem 0.9rem;
+  }
+
+  .chartHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .chartBadge {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+    font-size: 0.7rem;
+    letter-spacing: 0.16em;
+    margin-top: 0.25rem;
+  }
+
+  .chartActionButton {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .chartWithYAxis {
+    gap: 0.45rem;
+  }
+
+  .chartYAxisLabels {
+    font-size: 0.72rem;
+  }
+
+  .barChartRow {
+    gap: 0.4rem;
+    height: 140px;
+    min-width: 560px; /* enables horizontal scroll for many packages */
+  }
+
+  .pillStackOuter {
+    max-width: 34px;
+    height: 118px;
+  }
+
+  .barLabel {
+    font-size: 0.72rem;
+  }
+
+  .pillLegendRow {
+    min-width: 560px; /* keeps legend aligned with scrollable bars */
   }
 }
