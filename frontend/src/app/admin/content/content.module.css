@@ -85,6 +85,38 @@
   margin: 0;
 }
 
+.saveButton {
+  margin-top: 4px;
+  padding-inline: 18px;
+  padding-block: 9px;
+  border-radius: 999px;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #102820;
+  background: #102820;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+}
+
+.saveButton:hover:enabled {
+  background: #163628;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+}
+
+.saveButton:active:enabled {
+  transform: translateY(1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+}
+
+.saveButton:disabled {
+  opacity: 0.7;
+  cursor: default;
+  box-shadow: none;
+}
+
 @media (max-width: 700px) {
   .layout {
     grid-template-columns: 1fr;
