@@ -34,7 +34,6 @@ const EMPTY_SITE_CONTENT = {
     whyUs: '',
     partners: '',
     commitment: '',
-    testimonials: '',
   },
   howItWorks: {
     stepByStep: '',

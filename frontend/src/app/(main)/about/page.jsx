@@ -217,16 +217,6 @@ export default async function AboutPage() {
                   {about.description}
                 </p>
               )}
-              {about.ourStory && (
-                <p className={styles.aboutPara}>
-                  {about.ourStory}
-                </p>
-              )}
-              {about.whyUs && (
-                <p className={styles.aboutPara}>
-                  {about.whyUs}
-                </p>
-              )}
             </div>
 
             <div className={styles.blobWrap}>
@@ -337,8 +327,7 @@ export default async function AboutPage() {
               </div>
             <div className={styles.testimonialFeaturedBody}>
               <p>
-                {about.testimonials ||
-                  `Families who have used ${systemName} appreciate the ease of comparison, transparent pricing, and the support they received during a difficult time. We are honored to help every family navigate this journey with dignity and care.`}
+                {`Families who have used ${systemName} appreciate the ease of comparison, transparent pricing, and the support they received during a difficult time. We are honored to help every family navigate this journey with dignity and care.`}
               </p>
                 <div className={styles.testimonialStars}>
                   {[1,2,3,4,5].map((s) => (
