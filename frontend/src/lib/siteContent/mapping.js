@@ -13,6 +13,7 @@ const DEFAULT_SITE_CONTENT = {
     copyrightText: '',
   },
   about: {
+    description: '',
     ourStory: '',
     missionVision: '',
     whyUs: '',
@@ -50,6 +51,7 @@ export function rowToSiteContent(row) {
         row.footer_copyright_text ?? DEFAULT_SITE_CONTENT.footer.copyrightText,
     },
     about: {
+      description: row.about_description ?? DEFAULT_SITE_CONTENT.about.description,
       ourStory: row.about_our_story ?? DEFAULT_SITE_CONTENT.about.ourStory,
       missionVision:
         row.about_mission_vision ?? DEFAULT_SITE_CONTENT.about.missionVision,
@@ -95,6 +97,7 @@ export function siteContentToRow(content) {
     footer_support_email: src.footer?.supportEmail ?? null,
     footer_copyright_text: src.footer?.copyrightText ?? null,
 
+    about_description: src.about?.description ?? null,
     about_our_story: src.about?.ourStory ?? null,
     about_mission_vision: src.about?.missionVision ?? null,
     about_why_us: src.about?.whyUs ?? null,

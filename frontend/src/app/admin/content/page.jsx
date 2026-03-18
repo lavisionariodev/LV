@@ -28,6 +28,7 @@ const EMPTY_SITE_CONTENT = {
     copyrightText: '',
   },
   about: {
+    description: '',
     ourStory: '',
     missionVision: '',
     whyUs: '',
@@ -187,7 +188,7 @@ export default function AdminContentPage() {
 
   const renderAbout = () => (
     <div className={styles.sectionGrid}>
-      {['ourStory', 'missionVision', 'whyUs', 'partners', 'commitment'].map(
+      {['description', 'ourStory', 'missionVision', 'whyUs', 'partners', 'commitment'].map(
         (key) => (
           <label key={key} className={styles.label}>
             <span className={styles.labelSpan}>{key}</span>
