@@ -1,13 +1,7 @@
 'use client'
 
-import styles from '../marketing.module.css'
+import MarketingHub from '../MarketingHub'
 
 export default function SellerMarketingDiscountPage() {
-  return (
-    <div className={styles.pageWrap}>
-      <p className={styles.pageSubtitle}>
-        Create and manage discounts for your services.
-      </p>
-    </div>
-  )
+  return <MarketingHub initialTab="discounts" />
 }

@@ -1,13 +1,7 @@
 'use client'
 
-import styles from '../marketing.module.css'
+import MarketingHub from '../MarketingHub'
 
 export default function SellerMarketingCampaignPage() {
-  return (
-    <div className={styles.pageWrap}>
-      <p className={styles.pageSubtitle}>
-        Create and run marketing campaigns.
-      </p>
-    </div>
-  )
+  return <MarketingHub initialTab="campaigns" />
 }
