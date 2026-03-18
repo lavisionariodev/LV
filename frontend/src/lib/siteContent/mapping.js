@@ -19,7 +19,6 @@ const DEFAULT_SITE_CONTENT = {
     whyUs: '',
     partners: '',
     commitment: '',
-    testimonials: '',
   },
   howItWorks: {
     stepByStep: '',
@@ -63,8 +62,6 @@ export function rowToSiteContent(row) {
       commitment:
         row.about_commitment ??
         DEFAULT_SITE_CONTENT.about.commitment,
-      testimonials:
-        row.about_testimonials ?? DEFAULT_SITE_CONTENT.about.testimonials,
     },
     howItWorks: {
       stepByStep:
@@ -103,7 +100,7 @@ export function siteContentToRow(content) {
     about_why_us: src.about?.whyUs ?? null,
     about_commitment: src.about?.commitment ?? null,
     about_partners: src.about?.partners ?? null,
-    about_testimonials: src.about?.testimonials ?? null,
+
 
     how_step_by_step: src.howItWorks?.stepByStep ?? null,
     how_compare_packages: src.howItWorks?.comparePackages ?? null,

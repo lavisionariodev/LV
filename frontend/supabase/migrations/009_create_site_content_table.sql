@@ -19,7 +19,6 @@ CREATE TABLE IF NOT EXISTS public.site_content (
   about_why_us text,
   about_partners text,
   about_commitment text,
-  about_testimonials text,
 
   how_step_by_step text,
   how_compare_packages text,
