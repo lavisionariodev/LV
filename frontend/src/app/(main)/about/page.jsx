@@ -212,6 +212,11 @@ export default async function AboutPage() {
                 <span className={styles.aboutTitleBold}>About </span>
                 <span className={styles.aboutTitleLight}>Us</span>
               </h2>
+              {about.description && (
+                <p className={styles.aboutPara}>
+                  {about.description}
+                </p>
+              )}
               <p className={styles.aboutPara}>
                 {about.ourStory ||
                   `${systemName} was created to help families plan funeral services in a simple, respectful, and transparent way. We believe that saying goodbye should not be stressful or confusing.`}
