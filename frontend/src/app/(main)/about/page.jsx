@@ -22,17 +22,23 @@ const WHY_CARDS = [
   {
     icon:  "fa-shield-halved",
     title: "Why La Visionario",
-    body:  "We offer verified providers, clear pricing, and compassionate support so you can focus on honoring your loved one. From packages to documentation, we guide you every step of the way.",
+    key: "whyUs",
+    fallback:
+      "We offer verified providers, clear pricing, and compassionate support so you can focus on honoring your loved one. From packages to documentation, we guide you every step of the way.",
   },
   {
     icon:  "fa-handshake",
     title: "Our Partners",
-    body:  "We work with trusted funeral homes and service providers across the Philippines. Our partners share our commitment to dignity, quality, and fair dealing with families.",
+    key: "partners",
+    fallback:
+      "We work with trusted funeral homes and service providers across the Philippines. Our partners share our commitment to dignity, quality, and fair dealing with families.",
   },
   {
     icon:  "fa-heart",
     title: "Our Commitment",
-    body:  "We are committed to treating every family with respect and empathy. From your first inquiry to the final arrangements, we prioritize clarity, fairness, and support so you can focus on what matters most.",
+    key: "commitment",
+    fallback:
+      "We are committed to treating every family with respect and empathy. From your first inquiry to the final arrangements, we prioritize clarity, fairness, and support so you can focus on what matters most.",
   },
 ];
 
@@ -215,7 +221,7 @@ export default async function AboutPage() {
                 services, and peace of mind during difficult moments.
               </p>
               <p className={styles.aboutPara}>
-                {about.whyLaVisionario ||
+                {about.whyUs ||
                   "We offer verified providers, clear pricing, and compassionate support so you can focus on honoring your loved one. From packages to documentation, we guide you through each step with respect and transparency."}
               </p>
             </div>
@@ -263,25 +269,18 @@ export default async function AboutPage() {
 
                 <div className={styles.grid3}>
               {WHY_CARDS.map((c) => {
-                let body = c.body;
-                if (c.title === "Why La Visionario") {
-                  body =
-                    about.whyLaVisionario ||
-                    "We offer verified providers, clear pricing, and compassionate support so you can focus on honoring your loved one. From packages to documentation, we guide you every step of the way.";
-                } else if (c.title === "Our Partners") {
-                  body =
-                    about.partners ||
-                    "We work with trusted funeral homes and service providers across the Philippines. Our partners share our commitment to dignity, quality, and fair dealing with families.";
-                }
+                const body =
+                  about[c.key] ||
+                  c.fallback;
 
                 return (
                   <div key={c.title} className={styles.card}>
-                  <div className={styles.cardIconRing}>
-                    <i className={`fa-solid ${c.icon}`} />
+                    <div className={styles.cardIconRing}>
+                      <i className={`fa-solid ${c.icon}`} />
+                    </div>
+                    <p className={styles.cardTitle}>{c.title}</p>
+                    <p className={styles.cardBody}>{body}</p>
                   </div>
-                  <p className={styles.cardTitle}>{c.title}</p>
-                  <p className={styles.cardBody}>{body}</p>
-                </div>
                 );
               })}
             </div>

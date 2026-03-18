@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import layoutStyles from '../admin.module.css'
 import styles from './content.module.css'
 import { useSiteContent, upsertSiteContent } from '@/lib/siteContent/client'
+import { useToast } from '@/contexts/ToastContext'
 
 const SECTIONS = [
   { id: 'system', label: 'System name' },
@@ -29,8 +30,9 @@ const EMPTY_SITE_CONTENT = {
   about: {
     ourStory: '',
     missionVision: '',
-    whyLaVisionario: '',
+    whyUs: '',
     partners: '',
+    commitment: '',
     testimonials: '',
   },
   howItWorks: {
@@ -44,14 +46,16 @@ const EMPTY_SITE_CONTENT = {
 export default function AdminContentPage() {
   const [activeSection, setActiveSection] = useState('system')
   const [draft, setDraft] = useState(EMPTY_SITE_CONTENT)
+  const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const { data: loadedContent, isLoading, error } = useSiteContent()
+  const toast = useToast()
 
   useEffect(() => {
-    if (loadedContent) {
+    if (loadedContent && !isEditing) {
       setDraft(loadedContent)
     }
-  }, [loadedContent])
+  }, [loadedContent, isEditing])
 
   const handleChange = (section, field, value) => {
     setDraft((prev) => ({
@@ -61,6 +65,30 @@ export default function AdminContentPage() {
         [field]: value,
       },
     }))
+  }
+
+  const handleEdit = () => {
+    setIsEditing(true)
+  }
+
+  const handleCancel = () => {
+    setDraft(loadedContent || EMPTY_SITE_CONTENT)
+    setIsEditing(false)
+  }
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true)
+      const next = await upsertSiteContent(draft)
+      setDraft(next)
+      setIsEditing(false)
+      toast.success('Site content saved successfully')
+    } catch (e) {
+      console.error('Failed to save site content:', e?.message ?? e)
+      toast.error(e?.message || 'Failed to save site content. Please try again.')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const renderSystem = () => (
@@ -73,8 +101,7 @@ export default function AdminContentPage() {
           onChange={(e) =>
             setDraft((prev) => ({ ...prev, systemName: e.target.value }))
           }
-          className={styles.input}
-        />
+          className={styles.input}          disabled={!isEditing}        />
       </label>
       <p className={styles.hint}>
         Used in the public navbar, footer, About hero, and copyright.
@@ -91,6 +118,7 @@ export default function AdminContentPage() {
           value={draft.hero?.title ?? ''}
           onChange={(e) => handleChange('hero', 'title', e.target.value)}
           className={styles.input}
+          disabled={!isEditing}
         />
       </label>
 
@@ -101,6 +129,7 @@ export default function AdminContentPage() {
           onChange={(e) => handleChange('hero', 'subheading', e.target.value)}
           rows={3}
           className={styles.textarea}
+          disabled={!isEditing}
         />
       </label>
 
@@ -111,6 +140,7 @@ export default function AdminContentPage() {
           value={draft.hero?.primaryCta ?? ''}
           onChange={(e) => handleChange('hero', 'primaryCta', e.target.value)}
           className={styles.input}
+          disabled={!isEditing}
         />
       </label>
     </div>
@@ -125,6 +155,7 @@ export default function AdminContentPage() {
           onChange={(e) => handleChange('footer', 'tagline', e.target.value)}
           rows={3}
           className={styles.textarea}
+          disabled={!isEditing}
         />
       </label>
 
@@ -136,6 +167,7 @@ export default function AdminContentPage() {
             value={draft.footer?.supportPhone ?? ''}
             onChange={(e) => handleChange('footer', 'supportPhone', e.target.value)}
             className={styles.input}
+            disabled={!isEditing}
           />
         </label>
 
@@ -146,6 +178,7 @@ export default function AdminContentPage() {
             value={draft.footer?.supportEmail ?? ''}
             onChange={(e) => handleChange('footer', 'supportEmail', e.target.value)}
             className={styles.input}
+            disabled={!isEditing}
           />
         </label>
       </div>
@@ -154,7 +187,7 @@ export default function AdminContentPage() {
 
   const renderAbout = () => (
     <div className={styles.sectionGrid}>
-      {['ourStory', 'missionVision', 'whyLaVisionario', 'partners', 'testimonials'].map(
+      {['ourStory', 'missionVision', 'whyUs', 'partners', 'commitment', 'testimonials'].map(
         (key) => (
           <label key={key} className={styles.label}>
             <span className={styles.labelSpan}>{key}</span>
@@ -162,8 +195,7 @@ export default function AdminContentPage() {
               value={draft.about?.[key] ?? ''}
               onChange={(e) => handleChange('about', key, e.target.value)}
               rows={3}
-              className={styles.textarea}
-            />
+              className={styles.textarea}              disabled={!isEditing}            />
           </label>
         ),
       )}
@@ -181,6 +213,7 @@ export default function AdminContentPage() {
               onChange={(e) => handleChange('howItWorks', key, e.target.value)}
               rows={3}
               className={styles.textarea}
+              disabled={!isEditing}
             />
           </label>
         ),
@@ -237,24 +270,34 @@ export default function AdminContentPage() {
 
             {renderForm()}
 
-            <button
-              type="button"
-              className={`${layoutStyles.primaryBtn} ${styles.saveButton}`}
-              onClick={async () => {
-                try {
-                  setIsSaving(true)
-                  const next = await upsertSiteContent(draft)
-                  setDraft(next)
-                } catch (e) {
-                  console.error('Failed to save site content:', e?.message ?? e)
-                } finally {
-                  setIsSaving(false)
-                }
-              }}
-              disabled={isSaving}
-            >
-              {isSaving ? 'Saving…' : 'Save changes'}
-            </button>
+            {!isEditing ? (
+              <button
+                type="button"
+                className={`${styles.primaryBtn}`}
+                onClick={handleEdit}
+              >
+                Edit
+              </button>
+            ) : (
+              <div className={styles.actionRow}>
+                <button
+                  type="button"
+                  className={`${styles.primaryBtn}`}
+                  onClick={handleSave}
+                  disabled={isSaving}
+                >
+                  {isSaving ? 'Saving…' : 'Save changes'}
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.secondaryBtn}`}
+                  onClick={handleCancel}
+                  disabled={isSaving}
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
 
             <p className={styles.footerNote}>
               Changes are saved to your Supabase <code>site_content</code> table and used across the

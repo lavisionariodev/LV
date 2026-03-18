@@ -85,6 +85,50 @@
   margin: 0;
 }
 
+.actionRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.primaryBtn,
+.secondaryBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid #eef0f6;
+  background: #ffffff;
+  color: #000;
+  white-space: nowrap;
+  outline: none;
+}
+
+.primaryBtn {
+  border-color: #102820;
+  background: #102820;
+  color: #fff;
+}
+
+.primaryBtn:hover:enabled {
+  background: #163628;
+}
+
+.secondaryBtn:hover:enabled {
+  background: #f8fafc;
+}
+
+.primaryBtn:disabled,
+.secondaryBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .saveButton {
   margin-top: 4px;
   padding-inline: 18px;
