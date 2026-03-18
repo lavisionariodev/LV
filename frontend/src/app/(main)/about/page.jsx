@@ -36,30 +36,30 @@ const WHY_CARDS = [
   },
 ];
 
-const TESTIMONIALS = [
-  {
-    text:   "La Visionario made an incredibly difficult time much easier to bear. The transparent pricing meant we could focus on our loved one instead of worrying about costs.",
-    name:   "Maria Santos",
-    label:  "Quezon City",
-  },
-  {
-    text:   "The ease of comparing packages and the support we received was exceptional. We felt guided and respected throughout the entire process.",
-    name:   "Jose Reyes",
-    label:  "Cebu City",
-  },
-  {
-    text:   "Finding a trusted provider felt impossible until we found La Visionario. Their verified partners gave us complete peace of mind during our grief.",
-    name:   "Ana Dela Cruz",
-    label:  "Davao City",
-  },
-];
-
 /* ── component ────────────────────────────────────────────────────────────── */
 
 export default async function AboutPage() {
   const siteContent = await getSiteContent();
   const about = siteContent?.about || {};
   const systemName = siteContent?.systemName || "La Visionario";
+
+  const testimonials = [
+    {
+      text:   `${systemName} made an incredibly difficult time much easier to bear. The transparent pricing meant we could focus on our loved one instead of worrying about costs.`,
+      name:   "Maria Santos",
+      label:  "Quezon City",
+    },
+    {
+      text:   "The ease of comparing packages and the support we received was exceptional. We felt guided and respected throughout the entire process.",
+      name:   "Jose Reyes",
+      label:  "Cebu City",
+    },
+    {
+      text:   `Finding a trusted provider felt impossible until we found ${systemName}. Their verified partners gave us complete peace of mind during our grief.`,
+      name:   "Ana Dela Cruz",
+      label:  "Davao City",
+    },
+  ];
 
   return (
     <>
@@ -69,7 +69,7 @@ export default async function AboutPage() {
           name="description"
           content={
             about.ourStory ||
-            "La Visionario helps Filipino families plan funeral services in a simple, respectful, and transparent way."
+            `${systemName} helps Filipino families plan funeral services in a simple, respectful, and transparent way.`
           }
         />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -139,10 +139,10 @@ export default async function AboutPage() {
             <p className={styles.heroEyebrow}>Welcome To</p>
             <h1 className={styles.heroTitle}>{systemName}</h1>
           </div>
-          <p className={styles.heroSub}>
-            {about.ourStory ||
-              "La Visionario was created to help families plan funeral services in a simple, respectful, and transparent way. We believe that saying goodbye should not be stressful or confusing."}
-          </p>
+            <p className={styles.heroSub}>
+              {about.ourStory ||
+                `${systemName} was created to help families plan funeral services in a simple, respectful, and transparent way. We believe that saying goodbye should not be stressful or confusing.`}
+            </p>
 
           <div className={styles.heroDivider}>
             <span className={styles.heroDividerLine} />
@@ -208,7 +208,7 @@ export default async function AboutPage() {
               </h2>
               <p className={styles.aboutPara}>
                 {about.ourStory ||
-                  "La Visionario was created to help families plan funeral services in a simple, respectful, and transparent way. We believe that saying goodbye should not be stressful or confusing."}
+                  `${systemName} was created to help families plan funeral services in a simple, respectful, and transparent way. We believe that saying goodbye should not be stressful or confusing.`}
               </p>
               <p className={styles.aboutPara}>
                 Our goal is to combine tradition and technology—offering clear packages, trusted
@@ -311,7 +311,7 @@ export default async function AboutPage() {
 
             {/* 3 quote cards */}
             <div className={styles.testimonialsGrid}>
-              {TESTIMONIALS.map((t) => (
+              {testimonials.map((t) => (
                 <div key={t.name} className={styles.testimonialCard}>
                   <i className={`fa-solid fa-quote-left ${styles.testimonialQuoteIcon}`} />
                   <p className={styles.testimonialText}>{t.text}</p>
@@ -336,7 +336,7 @@ export default async function AboutPage() {
             <div className={styles.testimonialFeaturedBody}>
               <p>
                 {about.testimonials ||
-                  "Families who have used La Visionario appreciate the ease of comparison, transparent pricing, and the support they received during a difficult time. We are honored to help every family navigate this journey with dignity and care."}
+                  `Families who have used ${systemName} appreciate the ease of comparison, transparent pricing, and the support they received during a difficult time. We are honored to help every family navigate this journey with dignity and care.`}
               </p>
                 <div className={styles.testimonialStars}>
                   {[1,2,3,4,5].map((s) => (

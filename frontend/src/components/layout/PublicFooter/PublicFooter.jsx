@@ -11,7 +11,7 @@ export default function PublicFooter() {
   const isSeller = pathname?.startsWith('/seller')
   const { data: siteContent } = useSiteContent()
   const footer = siteContent?.footer
-  const systemName = siteContent?.systemName || 'LaVisionario'
+  const systemName = siteContent?.systemName || 'La Visionario'
 
   if (isSeller) {
     return (
