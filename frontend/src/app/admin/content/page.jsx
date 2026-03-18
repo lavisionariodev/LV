@@ -240,7 +240,7 @@ export default function AdminContentPage() {
 
             <button
               type="button"
-              className={layoutStyles.primaryBtn}
+              className={`${layoutStyles.primaryBtn} ${styles.saveButton}`}
               onClick={async () => {
                 try {
                   setIsSaving(true)
