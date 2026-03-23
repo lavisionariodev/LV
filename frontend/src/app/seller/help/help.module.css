@@ -1,29 +1,363 @@
-/* Help section layout (from seller layout) */
-
 .pageWrap {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
   width: 100%;
 }
 
 .pageHeader {
-  margin-bottom: 0.25rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #e9efec;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
 }
 
 .pageTitle {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #102820;
-  margin: 0 0 0.35rem;
+  margin: 0;
+  font-size: 1.28rem;
+  font-weight: 850;
+  color: var(--color-main-accent);
 }
 
 .pageSubtitle {
-  font-size: 0.95rem;
-  color: #4d2d18;
-  max-width: 560px;
+  margin: 6px 0 0;
+  max-width: 640px;
+  font-size: 0.84rem;
+  color: var(--color-text-secondary);
   line-height: 1.5;
+}
+
+.searchCard,
+.sectionCard {
+  background: #fff;
+  border: 1px solid var(--color-light-gray);
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.searchWrap {
+  position: relative;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-secondary);
+  font-size: 16px;
+}
+
+.searchInput {
+  width: 100%;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid #b8c5d4;
+  background: #fff;
+  padding: 0 12px 0 36px;
+  font-size: 0.9rem;
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+.searchInput:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(32, 79, 56, 0.12);
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.sectionTitle {
   margin: 0;
+  font-size: 0.98rem;
+  color: var(--color-main-accent);
+  font-weight: 850;
+}
+
+.categoryBlock {
+  border-top: 1px solid var(--color-light-gray);
+  padding-top: 10px;
+  margin-top: 10px;
+}
+
+.categoryTitle {
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-weight: 800;
+}
+
+.accordionList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.accordionItem {
+  border: 1px solid var(--color-light-gray);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.accordionOpen {
+  border-color: rgba(32, 79, 56, 0.26);
+}
+
+.accordionBtn {
+  width: 100%;
+  border: 0;
+  background: #fff;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+  color: var(--color-text-primary);
+  font-size: 0.86rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.chev {
+  transition: transform 0.15s ease;
+  color: var(--color-text-secondary);
+}
+
+.chevOpen {
+  transform: rotate(180deg);
+}
+
+.accordionContent {
+  border-top: 1px solid var(--color-light-gray);
+  padding: 10px 12px 12px;
+}
+
+.accordionContent p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.feedbackRow {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.feedbackLabel {
+  font-size: 0.74rem;
+  color: var(--color-text-secondary);
+  font-weight: 700;
+}
+
+.feedbackBtn {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--color-light-gray);
+  background: #fff;
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.feedbackBtnActive {
+  border-color: var(--color-primary);
+  background: rgba(32, 79, 56, 0.1);
+  color: var(--color-main-accent);
+}
+
+.guidesGrid,
+.issuesList {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.guideCard,
+.issueCard {
+  border: 1px solid var(--color-light-gray);
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff;
+}
+
+.guideTitle,
+.issueTitle {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--color-main-accent);
+  font-weight: 850;
+}
+
+.guideDesc,
+.issueDesc {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.stepList {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 0.78rem;
+  color: var(--color-text-primary);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.issueTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.issueTitleWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.issueIcon {
+  color: var(--color-secondary-accent);
+}
+
+.issueMeta {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--color-text-secondary);
+}
+
+.supportGrid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 10px;
+}
+
+.contactCards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.contactCard,
+.ticketCard {
+  border: 1px solid var(--color-light-gray);
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff;
+}
+
+.contactLabel {
+  font-size: 0.74rem;
+  color: var(--color-text-secondary);
+  font-weight: 700;
+}
+
+.contactValue {
+  margin-top: 5px;
+  font-size: 0.85rem;
+  color: var(--color-main-accent);
+  font-weight: 800;
+}
+
+.ticketTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-main-accent);
+  font-weight: 850;
+  font-size: 0.88rem;
+  margin-bottom: 8px;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  border: 1px solid #b8c5d4;
+  background: #fff;
+  color: var(--color-text-primary);
+  border-radius: 10px;
+  padding: 10px 11px;
+  font-size: 0.84rem;
+  outline: none;
+}
+
+.input:focus,
+.textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(32, 79, 56, 0.12);
+}
+
+.textarea {
+  resize: vertical;
+  margin-top: 8px;
+}
+
+.primaryBtn {
+  margin-top: 8px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.primaryBtn:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.ticketNote {
+  margin: 8px 0 0;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.emptyText {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 980px) {
+  .guidesGrid,
+  .issuesList,
+  .supportGrid,
+  .contactCards {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .searchCard,
+  .sectionCard {
+    padding: 12px;
+  }
+
+  .pageTitle {
+    font-size: 1.14rem;
+  }
 }
