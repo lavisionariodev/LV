@@ -1,7 +1,16 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { TbAlertTriangle, TbBell, TbCheck, TbCircleCheck, TbSpeakerphone } from 'react-icons/tb'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import {
+  TbAlertTriangle,
+  TbBell,
+  TbCircleCheck,
+  TbExternalLink,
+  TbSpeakerphone,
+  TbX,
+} from 'react-icons/tb'
+import { supabase } from '@/lib/supabase/client'
 import styles from './notifications.module.css'
 
 const INITIAL_NOTIFICATIONS = [
@@ -81,12 +90,300 @@ const TABS = [
   { key: 'marketing', label: 'Marketing' },
 ]
 
+const SORT_OPTIONS = [
+  { id: 'newest', label: 'Newest first' },
+  { id: 'oldest', label: 'Oldest first' },
+  { id: 'priority', label: 'Priority' },
+]
+
+const STATUS_OPTIONS = [
+  { id: 'all', label: 'All' },
+  { id: 'unread', label: 'Unread' },
+  { id: 'read', label: 'Read' },
+]
+
+const TYPE_OPTIONS = [
+  { id: 'all', label: 'All types' },
+  { id: 'alerts', label: 'Alerts' },
+  { id: 'system', label: 'System' },
+  { id: 'marketing', label: 'Marketing' },
+]
+
+function parsePayload(payload) {
+  if (!payload) return {}
+  if (typeof payload === 'object') return payload
+  try {
+    return JSON.parse(payload)
+  } catch {
+    return {}
+  }
+}
+
+function normalizeNotificationRow(row) {
+  const payload = parsePayload(row.payload)
+  const type = row.type || payload.type || 'system'
+  const priority = row.priority || payload.priority || 'low'
+  const title = row.title || payload.title || 'Notification'
+  const body = row.body || row.message || payload.body || payload.message || 'No details available.'
+  const createdAt = row.created_at || payload.createdAt || new Date().toISOString()
+  return {
+    id: String(row.id),
+    title,
+    body,
+    type,
+    priority,
+    timestampLabel: row.timestamp_label || payload.timestampLabel || relativeTime(createdAt),
+    createdAt,
+    read: Boolean(row.read ?? payload.read ?? false),
+    resolved: Boolean(row.resolved ?? payload.resolved ?? false),
+    payload,
+  }
+}
+
+function relativeTime(value) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Just now'
+  const diffMs = Date.now() - date.getTime()
+  const min = Math.floor(diffMs / 60000)
+  if (min < 1) return 'Just now'
+  if (min < 60) return `${min} min ago`
+  const hr = Math.floor(min / 60)
+  if (hr < 24) return `${hr} hour${hr > 1 ? 's' : ''} ago`
+  const day = Math.floor(hr / 24)
+  return `${day} day${day > 1 ? 's' : ''} ago`
+}
+
+function buildInsight(type, payload) {
+  if (type === 'marketing') {
+    const convDrop = payload.conversionDropPct
+    if (convDrop) return `Conversion rate is down by ${convDrop}% against target, which triggered this alert.`
+    return 'Marketing performance moved outside its expected threshold and triggered an automated alert.'
+  }
+  if (type === 'alerts') {
+    if (payload.conflictField) return `A conflict was detected in ${payload.conflictField}, requiring manual review.`
+    return 'System validation detected a critical mismatch that needs action.'
+  }
+  if (type === 'system') {
+    if (payload.payoutStatus) return `Payout status changed to ${payload.payoutStatus}, so this system update was generated.`
+    return 'A platform-level system event triggered this notification.'
+  }
+  return 'An automated rule detected a condition that requires your attention.'
+}
+
+function getContextActions(notification) {
+  const payload = notification?.payload || {}
+  if (notification?.type === 'marketing') {
+    return [
+      { id: 'adjust-budget', label: 'Adjust Budget', href: '/seller/marketing/centre?tab=campaigns' },
+      { id: 'pause-campaign', label: 'Pause Campaign', href: '/seller/marketing/centre?tab=campaigns' },
+      payload.voucherId
+        ? { id: 'edit-voucher', label: 'Edit Voucher', href: '/seller/marketing/centre?tab=vouchers' }
+        : null,
+    ].filter(Boolean)
+  }
+
+  if (notification?.type === 'alerts') {
+    return [{ id: 'fix-conflict', label: 'Fix Conflict', href: '/seller/marketing/centre?tab=discounts' }]
+  }
+
+  return [{ id: 'view-module', label: 'Open Relevant Module', href: '/seller/marketing/centre' }]
+}
+
+function TabsDropdown({ value, onChange }) {
+  const [open, setOpen] = useState(false)
+  const dropdownRef = useRef(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpen(false)
+      }
+    }
+
+    if (open) {
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
+    }
+  }, [open])
+
+  const selectedLabel = TABS.find((t) => t.key === value)?.label || 'All'
+
+  return (
+    <div
+      className={`${styles.tabDropdownWrap} ${open ? styles.tabDropdownOpen : ''}`}
+      ref={dropdownRef}
+    >
+      <button
+        type="button"
+        className={styles.tabDropdownTrigger}
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span className={styles.tabDropdownLabel}>{selectedLabel}</span>
+        <span className={styles.tabDropdownChevron} aria-hidden>
+          ▾
+        </span>
+      </button>
+      {open && (
+        <div className={styles.tabDropdownPanel} role="listbox" aria-label="Notification category">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              role="option"
+              aria-selected={value === t.key}
+              className={`${styles.tabDropdownOption} ${value === t.key ? styles.tabDropdownOptionSelected : ''}`}
+              onClick={() => {
+                onChange(t.key)
+                setOpen(false)
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function FilterDropdown({ value, onChange, options, label }) {
+  const [open, setOpen] = useState(false)
+  const dropdownRef = useRef(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpen(false)
+      }
+    }
+
+    if (open) {
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
+    }
+  }, [open])
+
+  const selectedLabel = options.find((opt) => opt.id === value)?.label || label || ''
+
+  return (
+    <div
+      className={`${styles.tabDropdownWrap} ${open ? styles.tabDropdownOpen : ''}`}
+      ref={dropdownRef}
+    >
+      <button
+        type="button"
+        className={styles.tabDropdownTrigger}
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={label ? `${label} filter` : 'Filter'}
+      >
+        <span className={styles.tabDropdownLabel}>{selectedLabel}</span>
+        <span className={styles.tabDropdownChevron} aria-hidden>
+          ▾
+        </span>
+      </button>
+      {open && (
+        <div className={styles.tabDropdownPanel} role="listbox" aria-label={`${label ?? 'Filter'} options`}>
+          {options.map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              role="option"
+              aria-selected={value === opt.id}
+              className={`${styles.tabDropdownOption} ${value === opt.id ? styles.tabDropdownOptionSelected : ''}`}
+              onClick={() => {
+                onChange(opt.id)
+                setOpen(false)
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function BulkActionsDropdown({ onMarkAllRead, onClearResolved }) {
+  const [open, setOpen] = useState(false)
+  const dropdownRef = useRef(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpen(false)
+      }
+    }
+
+    if (open) {
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
+    }
+  }, [open])
+
+  return (
+    <div
+      className={`${styles.bulkDropdownWrap} ${open ? styles.bulkDropdownOpen : ''}`}
+      ref={dropdownRef}
+    >
+      <button
+        type="button"
+        className={styles.bulkDropdownTrigger}
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
+        <span className={styles.bulkDropdownLabel}>Bulk Actions</span>
+        <span className={styles.bulkDropdownChevron} aria-hidden>
+          ▾
+        </span>
+      </button>
+      {open && (
+        <div className={styles.bulkDropdownPanel} role="menu" aria-label="Bulk actions">
+          <button
+            type="button"
+            role="menuitem"
+            className={styles.bulkDropdownOption}
+            onClick={() => {
+              onMarkAllRead()
+              setOpen(false)
+            }}
+          >
+            Mark All as Read
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className={styles.bulkDropdownOption}
+            onClick={() => {
+              onClearResolved()
+              setOpen(false)
+            }}
+          >
+            Clear Resolved
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function SellerNotificationsPage() {
+  const router = useRouter()
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS)
   const [activeTab, setActiveTab] = useState('all')
   const [sortBy, setSortBy] = useState('newest')
   const [statusFilter, setStatusFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
+  const [liveEnabled, setLiveEnabled] = useState(false)
+  const [selectedId, setSelectedId] = useState(null)
+  const [detailsLoading, setDetailsLoading] = useState(false)
+  const [detailsError, setDetailsError] = useState('')
+  const [detailsData, setDetailsData] = useState(null)
 
   const overview = useMemo(() => {
     const total = notifications.length
@@ -120,112 +417,191 @@ export default function SellerNotificationsPage() {
     return data
   }, [notifications, activeTab, sortBy, statusFilter, typeFilter])
 
-  const markAllAsRead = () => {
+  useEffect(() => {
+    let cancelled = false
+    async function loadNotifications() {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100)
+
+      if (cancelled) return
+      if (error) {
+        setLiveEnabled(false)
+        return
+      }
+
+      setLiveEnabled(true)
+      setNotifications((data || []).map(normalizeNotificationRow))
+    }
+
+    loadNotifications()
+
+    const channel = supabase
+      .channel('seller-notifications-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, (payload) => {
+        setLiveEnabled(true)
+        if (payload.eventType === 'INSERT' && payload.new) {
+          const next = normalizeNotificationRow(payload.new)
+          setNotifications((prev) => [next, ...prev.filter((n) => n.id !== next.id)])
+        }
+        if (payload.eventType === 'UPDATE' && payload.new) {
+          const next = normalizeNotificationRow(payload.new)
+          setNotifications((prev) => prev.map((n) => (n.id === next.id ? next : n)))
+        }
+        if (payload.eventType === 'DELETE' && payload.old?.id != null) {
+          const removedId = String(payload.old.id)
+          setNotifications((prev) => prev.filter((n) => n.id !== removedId))
+        }
+      })
+      .subscribe()
+
+    return () => {
+      cancelled = true
+      supabase.removeChannel(channel)
+    }
+  }, [supabase])
+
+  const selectedNotification = useMemo(
+    () => notifications.find((n) => String(n.id) === String(selectedId)) || null,
+    [notifications, selectedId],
+  )
+
+  const fetchNotificationDetails = async (id) => {
+    setDetailsLoading(true)
+    setDetailsError('')
+    const { data, error } = await supabase.from('notifications').select('*').eq('id', id).single()
+    if (error) {
+      setDetailsError('Live details unavailable. Showing latest cached notification data.')
+      setDetailsLoading(false)
+      const fallback = notifications.find((n) => String(n.id) === String(id)) || null
+      setDetailsData(fallback)
+      return
+    }
+    setDetailsData(normalizeNotificationRow(data))
+    setDetailsLoading(false)
+  }
+
+  const openDetails = (id) => {
+    setSelectedId(String(id))
+    fetchNotificationDetails(id)
+  }
+
+  const closeDetails = () => {
+    setSelectedId(null)
+    setDetailsData(null)
+    setDetailsError('')
+  }
+
+  const markAllAsRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+    if (liveEnabled) {
+      await supabase.from('notifications').update({ read: true }).neq('id', '')
+    }
   }
 
-  const clearResolved = () => {
+  const clearResolved = async () => {
     setNotifications((prev) => prev.filter((n) => !n.resolved))
+    if (liveEnabled) {
+      await supabase.from('notifications').delete().eq('resolved', true)
+    }
   }
 
-  const markAsRead = (id) => {
+  const markAsRead = async (id) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
+    if (liveEnabled) {
+      await supabase.from('notifications').update({ read: true }).eq('id', id)
+    }
   }
 
-  const resolveItem = (id) => {
+  const resolveItem = async (id) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, resolved: true, read: true } : n)))
+    if (liveEnabled) {
+      await supabase.from('notifications').update({ resolved: true, read: true }).eq('id', id)
+    }
   }
 
-  const dismissItem = (id) => {
+  const dismissItem = async (id) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id))
+    if (liveEnabled) {
+      await supabase.from('notifications').delete().eq('id', id)
+    }
+    if (selectedId && String(selectedId) === String(id)) closeDetails()
   }
 
   return (
     <div className={styles.pageWrap}>
-      <header className={styles.pageHeader}>
-        <div className={styles.bulkActions}>
-          <button type="button" className={styles.secondaryBtn} onClick={markAllAsRead}>
-            Mark All as Read
-          </button>
-          <button type="button" className={styles.ghostBtn} onClick={clearResolved}>
-            Clear Resolved
-          </button>
-        </div>
-      </header>
+      <section className={styles.overviewSection}>
+        <div className={styles.overviewTopRow}>
+          <div className={styles.filtersBar}>
+            <div className={styles.panelTopRow}>
+              <div className={styles.filtersRight}>
+                <label className={styles.controlGroup}>
+                  <span className={styles.controlLabel}>Actions</span>
+                  <BulkActionsDropdown onMarkAllRead={markAllAsRead} onClearResolved={clearResolved} />
+                </label>
+                <label className={styles.controlGroup}>
+                  <span className={styles.controlLabel}>Category</span>
+                  <TabsDropdown value={activeTab} onChange={setActiveTab} />
+                </label>
 
-      <section className={styles.overviewGrid}>
-        <div className={`${styles.overviewCard} ${styles.totalCard}`}>
-          <div className={styles.overviewLabel}>Total Notifications</div>
-          <div className={styles.overviewValue}>{overview.total}</div>
-          <div className={styles.overviewMeta}>Across all categories</div>
+                <div className={styles.controlRow}>
+                  <label className={styles.controlGroup}>
+                    <span className={styles.controlLabel}>Sort by</span>
+                    <FilterDropdown
+                      value={sortBy}
+                      onChange={setSortBy}
+                      label="Sort by"
+                      options={SORT_OPTIONS}
+                    />
+                  </label>
+
+                  <label className={styles.controlGroup}>
+                    <span className={styles.controlLabel}>Status</span>
+                    <FilterDropdown
+                      value={statusFilter}
+                      onChange={setStatusFilter}
+                      label="Status"
+                      options={STATUS_OPTIONS}
+                    />
+                  </label>
+
+                  <label className={styles.controlGroup}>
+                    <span className={styles.controlLabel}>Type</span>
+                    <FilterDropdown
+                      value={typeFilter}
+                      onChange={setTypeFilter}
+                      label="Type"
+                      options={TYPE_OPTIONS}
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className={`${styles.overviewCard} ${styles.unreadCard}`}>
-          <div className={styles.overviewLabel}>Unread</div>
-          <div className={styles.overviewValue}>{overview.unread}</div>
-          <div className={styles.overviewMeta}>Needs your review</div>
-        </div>
-        <div className={`${styles.overviewCard} ${styles.alertCard}`}>
-          <div className={styles.overviewLabel}>High Priority Alerts</div>
-          <div className={styles.overviewValue}>{overview.highPriority}</div>
-          <div className={styles.overviewMeta}>Immediate attention</div>
+
+        <div className={styles.overviewGrid}>
+          <div className={`${styles.overviewCard} ${styles.totalCard}`}>
+            <div className={styles.overviewLabel}>Total Notifications</div>
+            <div className={styles.overviewValue}>{overview.total}</div>
+            <div className={styles.overviewMeta}>Across all categories</div>
+          </div>
+          <div className={`${styles.overviewCard} ${styles.unreadCard}`}>
+            <div className={styles.overviewLabel}>Unread</div>
+            <div className={styles.overviewValue}>{overview.unread}</div>
+            <div className={styles.overviewMeta}>Needs your review</div>
+          </div>
+          <div className={`${styles.overviewCard} ${styles.alertCard}`}>
+            <div className={styles.overviewLabel}>High Priority Alerts</div>
+            <div className={styles.overviewValue}>{overview.highPriority}</div>
+            <div className={styles.overviewMeta}>Immediate attention</div>
+          </div>
         </div>
       </section>
 
       <section className={styles.panel}>
-        <div className={styles.panelFilterHeader}>
-          <div className={styles.tabRow}>
-            {TABS.map((tab) => (
-              <button
-                key={tab.key}
-                type="button"
-                className={`${styles.tabBtn} ${activeTab === tab.key ? styles.tabActive : ''}`}
-                onClick={() => setActiveTab(tab.key)}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          <div className={styles.controlRow}>
-            <label className={styles.controlGroup}>
-              <span className={styles.controlLabel}>Sort by</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className={styles.select}
-              >
-                <option value="newest">Newest first</option>
-                <option value="oldest">Oldest first</option>
-                <option value="priority">Priority</option>
-              </select>
-            </label>
-            <label className={styles.controlGroup}>
-              <span className={styles.controlLabel}>Status</span>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className={styles.select}
-              >
-                <option value="all">All</option>
-                <option value="unread">Unread</option>
-                <option value="read">Read</option>
-              </select>
-            </label>
-            <label className={styles.controlGroup}>
-              <span className={styles.controlLabel}>Type</span>
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className={styles.select}
-              >
-                <option value="all">All types</option>
-                <option value="alerts">Alerts</option>
-                <option value="system">System</option>
-                <option value="marketing">Marketing</option>
-              </select>
-            </label>
-          </div>
-        </div>
 
         <div className={styles.listWrap}>
           {visibleNotifications.length === 0 ? (
@@ -263,20 +639,36 @@ export default function SellerNotificationsPage() {
                     </div>
                     <p className={styles.rowBody}>{item.body}</p>
                     <div className={styles.quickActions}>
-                      <button type="button" className={styles.linkBtn}>
+                      <button
+                        type="button"
+                        className={`${styles.actionBtn} ${styles.actionBtnDetails}`}
+                        onClick={() => openDetails(item.id)}
+                      >
                         View Details
                       </button>
                       {!item.resolved && (
-                        <button type="button" className={styles.linkBtn} onClick={() => resolveItem(item.id)}>
+                        <button
+                          type="button"
+                          className={`${styles.actionBtn} ${styles.actionBtnResolve}`}
+                          onClick={() => resolveItem(item.id)}
+                        >
                           Resolve
                         </button>
                       )}
                       {!item.read && (
-                        <button type="button" className={styles.linkBtn} onClick={() => markAsRead(item.id)}>
+                        <button
+                          type="button"
+                          className={`${styles.actionBtn} ${styles.actionBtnRead}`}
+                          onClick={() => markAsRead(item.id)}
+                        >
                           Mark as Read
                         </button>
                       )}
-                      <button type="button" className={styles.linkBtnDanger} onClick={() => dismissItem(item.id)}>
+                      <button
+                        type="button"
+                        className={`${styles.actionBtn} ${styles.actionBtnDismiss}`}
+                        onClick={() => dismissItem(item.id)}
+                      >
                         Dismiss
                       </button>
                     </div>
@@ -287,6 +679,123 @@ export default function SellerNotificationsPage() {
           )}
         </div>
       </section>
+
+      {selectedId && (
+        <div className={styles.detailsOverlay} role="dialog" aria-modal="true" onClick={closeDetails}>
+          <aside className={styles.detailsDrawer} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.detailsHeader}>
+              <div>
+                <div className={styles.detailsTitleRow}>
+                  <h3 className={styles.detailsTitle}>
+                    {detailsData?.title || selectedNotification?.title || 'Notification details'}
+                  </h3>
+                  <span className={styles.detailsPriorityBadge}>
+                    {(detailsData?.priority || selectedNotification?.priority || 'low').toUpperCase()}
+                  </span>
+                </div>
+              </div>
+              <button type="button" className={styles.detailsClose} onClick={closeDetails} aria-label="Close">
+                <TbX size={18} />
+              </button>
+            </div>
+
+            <div className={styles.detailsBody}>
+              {detailsLoading && <p className={styles.detailsLoading}>Loading live details...</p>}
+              {detailsError && <p className={styles.detailsError}>{detailsError}</p>}
+
+              <div className={styles.detailsSection}>
+                <div className={styles.detailsSectionTitle}>Expanded explanation</div>
+                <p className={styles.detailsText}>
+                  {detailsData?.body || selectedNotification?.body || 'No expanded details available.'}
+                </p>
+              </div>
+
+              <div className={styles.detailsSection}>
+                <div className={styles.detailsSectionTitle}>System-generated insight</div>
+                <p className={styles.detailsText}>
+                  {buildInsight(
+                    detailsData?.type || selectedNotification?.type,
+                    detailsData?.payload || selectedNotification?.payload || {},
+                  )}
+                </p>
+              </div>
+
+              <div className={styles.detailsSection}>
+                <div className={styles.detailsSectionTitle}>Key details</div>
+                <div className={styles.detailsGrid}>
+                  {Object.entries(detailsData?.payload || selectedNotification?.payload || {})
+                    .slice(0, 8)
+                    .map(([key, value]) => (
+                      <div key={key} className={styles.detailsItem}>
+                        <span className={styles.detailsKey}>{key}</span>
+                        <span className={styles.detailsVal}>{String(value)}</span>
+                      </div>
+                    ))}
+                  {Object.keys(detailsData?.payload || selectedNotification?.payload || {}).length === 0 && (
+                    <div className={styles.detailsEmpty}>No additional payload details found.</div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.detailsSection}>
+                <div className={styles.detailsSectionTitle}>Metadata</div>
+                <div className={styles.metaRow}>
+                  <span className={`${styles.metaChip} ${styles.metaChipTime}`}>
+                    Time: {detailsData?.timestampLabel || selectedNotification?.timestampLabel || '—'}
+                  </span>
+                  <span className={`${styles.metaChip} ${styles.metaChipPriority}`}>
+                    Priority: {detailsData?.priority || selectedNotification?.priority || 'low'}
+                  </span>
+                  <span className={`${styles.metaChip} ${styles.metaChipStatus}`}>
+                    Status: {(detailsData?.read ?? selectedNotification?.read) ? 'Read' : 'Unread'}
+                  </span>
+                </div>
+              </div>
+
+              <div className={styles.detailsSection}>
+                <div className={styles.detailsSectionTitle}>Context actions</div>
+                <div className={styles.contextActions}>
+                  {getContextActions(detailsData || selectedNotification || {}).map((action) => (
+                    <button
+                      key={action.id}
+                      type="button"
+                      className={`${styles.actionBtn} ${styles.actionBtnDetails}`}
+                      onClick={() => router.push(action.href)}
+                    >
+                      {action.label}
+                      <TbExternalLink size={14} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.detailsFooter}>
+              <button
+                type="button"
+                className={`${styles.actionBtn} ${styles.actionBtnResolve}`}
+                onClick={() => resolveItem(String(selectedId))}
+              >
+                Resolve
+              </button>
+              <button
+                type="button"
+                className={`${styles.actionBtn} ${styles.actionBtnRead}`}
+                onClick={() => markAsRead(String(selectedId))}
+              >
+                Mark as Read
+              </button>
+              <button
+                type="button"
+                className={`${styles.actionBtn} ${styles.actionBtnDismiss}`}
+                onClick={() => dismissItem(String(selectedId))}
+              >
+                Dismiss
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
     </div>
   )
 }
