@@ -1,7 +1,5 @@
-'use client'
-
-import MarketingHub from '../MarketingHub'
+import { redirect } from 'next/navigation'
 
 export default function SellerMarketingDiscountPage() {
-  return <MarketingHub initialTab="discounts" />
+  redirect('/seller/marketing/centre?tab=discounts')
 }

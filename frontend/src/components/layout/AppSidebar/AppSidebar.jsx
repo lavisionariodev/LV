@@ -82,17 +82,7 @@ const SIDEBAR_CONFIG = {
           { href: '/seller/analytics/customer-insights', label: 'Customer Insights' },
         ],
       },
-      {
-        label: 'Marketing',
-        icon: TbSpeakerphone,
-        defaultHref: '/seller/marketing',
-        children: [
-          { href: '/seller/marketing/centre', label: 'Marketing Centre' },
-          { href: '/seller/marketing/discount', label: 'Discount' },
-          { href: '/seller/marketing/vouchers', label: 'Vouchers' },
-          { href: '/seller/marketing/campaign', label: 'Campaign' },
-        ],
-      },
+      { href: '/seller/marketing/centre', label: 'Marketing Centre', icon: TbSpeakerphone },
     ],
   },
 }

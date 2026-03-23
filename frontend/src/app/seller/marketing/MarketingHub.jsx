@@ -1,7 +1,17 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { TbEdit, TbPlayerPause, TbPlayerPlay, TbTrash } from 'react-icons/tb'
+import {
+  AreaChart,
+  Area,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 import styles from './marketing.module.css'
 import { Toast } from '@/components/ui'
 
@@ -21,44 +31,75 @@ function StatusPill({ status }) {
 }
 
 function TrendChart() {
-  // Minimal inline sparkline (no chart libs).
-  const points = useMemo(() => [10, 14, 12, 18, 16, 22, 20, 26], [])
-  const w = 260
-  const h = 70
-  const pad = 6
-  const min = Math.min(...points)
-  const max = Math.max(...points)
-
-  const mapX = (i) => pad + (i * (w - pad * 2)) / (points.length - 1)
-  const mapY = (v) => {
-    const t = max === min ? 0 : (v - min) / (max - min)
-    return h - pad - t * (h - pad * 2)
-  }
-
-  const d = points
-    .map((v, i) => {
-      const x = mapX(i)
-      const y = mapY(v)
-      return `${i === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`
-    })
-    .join(' ')
-
-  const fillD = `${d} L ${mapX(points.length - 1).toFixed(2)} ${(h - pad).toFixed(2)} L ${mapX(0).toFixed(
-    2,
-  )} ${(h - pad).toFixed(2)} Z`
+  const data = useMemo(
+    () => [
+      { label: 'W1', total: 4200 },
+      { label: 'W2', total: 5100 },
+      { label: 'W3', total: 4600 },
+      { label: 'W4', total: 6200 },
+      { label: 'W5', total: 5800 },
+      { label: 'W6', total: 6900 },
+      { label: 'W7', total: 7400 },
+    ],
+    [],
+  )
 
   return (
     <div className={styles.trendChart}>
-      <svg width="100%" viewBox={`0 0 ${w} ${h}`} aria-hidden>
-        <defs>
-          <linearGradient id="marketingTrendFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgba(45, 74, 56, 0.22)" />
-            <stop offset="100%" stopColor="rgba(45, 74, 56, 0.02)" />
-          </linearGradient>
-        </defs>
-        <path d={fillD} fill="url(#marketingTrendFill)" />
-        <path d={d} fill="none" stroke="var(--color-green-700)" strokeWidth="2.2" strokeLinecap="round" />
-      </svg>
+      <ResponsiveContainer width="100%" height={220}>
+        <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id="marketingRevenueLikeGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#1F312B" stopOpacity={0.35} />
+              <stop offset="100%" stopColor="#1F312B" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+          <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#64748b' }} />
+          <YAxis
+            tickFormatter={(v) => `${Math.round(v / 1000)}k`}
+            tick={{ fontSize: 11, fill: '#64748b' }}
+            width={36}
+          />
+          <Tooltip
+            formatter={(value) => [Number(value).toLocaleString(), 'Performance']}
+            labelFormatter={(label) => `Week: ${label}`}
+            contentStyle={{ fontSize: 12, borderRadius: 8 }}
+          />
+          <Area
+            type="monotone"
+            dataKey="total"
+            stroke="#1F312B"
+            strokeWidth={2}
+            fill="url(#marketingRevenueLikeGradient)"
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+function ConversionBars() {
+  const data = [
+    { label: 'Views', value: 100 },
+    { label: 'Clicks', value: 61 },
+    { label: 'Leads', value: 32 },
+    { label: 'Orders', value: 14 },
+  ]
+
+  return (
+    <div className={styles.barChart}>
+      {data.map((item) => (
+        <div key={item.label} className={styles.barRow}>
+          <div className={styles.barMeta}>
+            <span>{item.label}</span>
+            <strong>{item.value}%</strong>
+          </div>
+          <div className={styles.barTrack} aria-hidden>
+            <div className={styles.barFill} style={{ width: `${item.value}%` }} />
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
@@ -90,115 +131,237 @@ function Field({ label, children }) {
   )
 }
 
+function StatusDropdown({ value, onChange }) {
+  const [open, setOpen] = useState(false)
+  const dropdownRef = useRef(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpen(false)
+      }
+    }
+
+    if (open) {
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
+    }
+  }, [open])
+
+  const options = ['Draft', 'Active', 'Paused', 'Completed']
+
+  return (
+    <div className={`${styles.statusDropdownWrap} ${open ? styles.statusDropdownOpen : ''}`} ref={dropdownRef}>
+      <button
+        type="button"
+        className={styles.statusDropdownTrigger}
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span className={styles.statusDropdownLabel}>{value || 'Draft'}</span>
+        <span className={styles.statusDropdownChevron} aria-hidden>
+          ▾
+        </span>
+      </button>
+      {open && (
+        <div className={styles.statusDropdownPanel} role="listbox" aria-label="Status options">
+          {options.map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              role="option"
+              aria-selected={value === opt}
+              className={`${styles.statusDropdownOption} ${value === opt ? styles.statusDropdownOptionSelected : ''}`}
+              onClick={() => {
+                onChange(opt)
+                setOpen(false)
+              }}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ModeDropdown({ value, onChange }) {
+  const [open, setOpen] = useState(false)
+  const dropdownRef = useRef(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpen(false)
+      }
+    }
+
+    if (open) {
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
+    }
+  }, [open])
+
+  const options = [
+    { value: 'single', label: 'Single code' },
+    { value: 'bulk', label: 'Bulk codes' },
+  ]
+  const selectedLabel = options.find((opt) => opt.value === value)?.label || 'Single code'
+
+  return (
+    <div className={`${styles.statusDropdownWrap} ${open ? styles.statusDropdownOpen : ''}`} ref={dropdownRef}>
+      <button
+        type="button"
+        className={styles.statusDropdownTrigger}
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span className={styles.statusDropdownLabel}>{selectedLabel}</span>
+        <span className={styles.statusDropdownChevron} aria-hidden>
+          ▾
+        </span>
+      </button>
+      {open && (
+        <div className={styles.statusDropdownPanel} role="listbox" aria-label="Mode options">
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              role="option"
+              aria-selected={value === opt.value}
+              className={`${styles.statusDropdownOption} ${value === opt.value ? styles.statusDropdownOptionSelected : ''}`}
+              onClick={() => {
+                onChange(opt.value)
+                setOpen(false)
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function MarketingHub({ initialTab = 'centre' }) {
   const router = useRouter()
   const pathname = usePathname()
-
+  const searchParams = useSearchParams()
+  const tabParam = searchParams.get('tab')
   const [toast, setToast] = useState(null)
 
-  const [drawer, setDrawer] = useState({
-    open: false,
-    type: null,
-  })
+  const [drawer, setDrawer] = useState({ open: false, type: null })
 
   const [discountDraft, setDiscountDraft] = useState({
     name: '',
     discountType: 'percentage',
-    value: 10,
+    value: '',
     start: '',
     end: '',
-    scopeType: 'service',
-    scopeId: 'srv_1',
+    scopeId: '',
+    status: 'Draft',
+    id: null,
   })
 
   const [campaignDraft, setCampaignDraft] = useState({
     name: '',
+    status: 'Draft',
     startDate: '',
     durationDays: 14,
-    scopeType: 'service',
-    scopeId: 'srv_1',
-    attachDiscountId: 'disc_1',
-    attachVoucherId: 'vch_1',
+    scopeId: '',
+    attachDiscountId: '',
+    attachVoucherId: '',
   })
 
   const [voucherDraft, setVoucherDraft] = useState({
     mode: 'single',
     prefix: 'LV',
     amount: 25,
+    id: null,
+    code: '',
     expiration: '',
     usageLimit: 1,
-    scopeType: 'service',
-    scopeId: 'srv_1',
+    scopeId: '',
+    status: 'Draft',
   })
 
-  const tabs = useMemo(
-    () => [
-      { key: 'centre', label: 'Marketing Centre' },
-      { key: 'discounts', label: 'Discounts' },
-      { key: 'vouchers', label: 'Vouchers' },
-      { key: 'campaigns', label: 'Campaigns' },
-    ],
-    [],
-  )
-
   const activeTabKey = useMemo(() => {
+    if (tabParam === 'centre' || tabParam === 'discounts' || tabParam === 'vouchers' || tabParam === 'campaigns') {
+      return tabParam
+    }
     if (!pathname) return initialTab
     if (pathname === '/seller/marketing' || pathname.startsWith('/seller/marketing/centre')) return 'centre'
     if (pathname.startsWith('/seller/marketing/discount')) return 'discounts'
     if (pathname.startsWith('/seller/marketing/vouchers')) return 'vouchers'
     if (pathname.startsWith('/seller/marketing/campaign')) return 'campaigns'
     return initialTab
-  }, [pathname, initialTab])
+  }, [pathname, initialTab, tabParam])
 
-  const tabToRoute = (key) => {
-    switch (key) {
-      case 'centre':
-        return '/seller/marketing/centre'
-      case 'discounts':
-        return '/seller/marketing/discount'
-      case 'vouchers':
-        return '/seller/marketing/vouchers'
-      case 'campaigns':
-        return '/seller/marketing/campaign'
-      default:
-        return '/seller/marketing/centre'
-    }
-  }
+  const isCentreRoute = pathname === '/seller/marketing' || pathname?.startsWith('/seller/marketing/centre')
 
-  // Placeholder data for the minimal UI.
   const centreData = useMemo(
     () => ({
       metrics: [
-        { value: '$3.8k', label: 'Campaign revenue' },
-        { value: '1.2k', label: 'Clicks' },
-        { value: '4.3%', label: 'Conversions' },
+        { value: '$18.4k', label: 'Campaign revenue', delta: '+14.2%', toneClass: styles.statCardTotal },
+        { value: '6.7k', label: 'Ad clicks', delta: '+8.4%', toneClass: styles.statCardPending },
+        { value: '4.9%', label: 'Conversion rate', delta: '+1.1%', toneClass: styles.statCardInProgress },
+        { value: '12', label: 'Active promotions', delta: '+3', toneClass: styles.statCardCompleted },
       ],
       promotions: [
-        { name: 'Spring Promo', status: 'Active' },
-        { name: 'Weekend Discount', status: 'Paused' },
-        { name: 'Early Bird', status: 'Active' },
+        { name: 'Spring Promo', status: 'Active', channel: 'Social', spend: '$720', roi: '2.8x' },
+        { name: 'Weekend Discount', status: 'Paused', channel: 'Email', spend: '$210', roi: '1.6x' },
+        { name: 'Early Bird', status: 'Active', channel: 'Search', spend: '$540', roi: '2.1x' },
+        { name: 'Bundle Boost', status: 'Active', channel: 'In-app', spend: '$310', roi: '3.0x' },
       ],
     }),
     [],
   )
 
-  const discountsData = useMemo(
-    () => [
-      { id: 'disc_1', name: '10% Summer Boost', type: 'percentage', status: 'Active', usage: 42 },
-      { id: 'disc_2', name: '$15 Off Premium', type: 'fixed', status: 'Scheduled', usage: 7 },
-      { id: 'disc_3', name: 'VIP Flat $25', type: 'fixed', status: 'Active', usage: 19 },
-    ],
-    [],
-  )
+  const [discountsData, setDiscountsData] = useState([
+    {
+      id: 'disc_1',
+      name: '10% Summer Boost',
+      type: 'percentage',
+      status: 'Active',
+      usage: 42,
+      value: 10,
+      start: '2026-03-01',
+      end: '2026-04-01',
+      scopeId: 'Service: Standard',
+    },
+    {
+      id: 'disc_2',
+      name: '$15 Off Premium',
+      type: 'fixed',
+      status: 'Draft',
+      usage: 7,
+      value: 15,
+      start: '2026-03-15',
+      end: '2026-04-15',
+      scopeId: 'Service: Standard',
+    },
+    {
+      id: 'disc_3',
+      name: 'VIP Flat $25',
+      type: 'fixed',
+      status: 'Active',
+      usage: 19,
+      value: 25,
+      start: '2026-02-20',
+      end: '2026-04-20',
+      scopeId: 'Service: Standard',
+    },
+  ])
 
-  const vouchersData = useMemo(
-    () => [
-      { id: 'vch_1', code: 'LVSPRING10', status: 'Active', redemptions: 12 },
-      { id: 'vch_2', code: 'LVVIP25', status: 'Active', redemptions: 5 },
-      { id: 'vch_3', code: 'LVWEEKEND', status: 'Expired', redemptions: 0 },
-    ],
-    [],
-  )
+  const [vouchersData, setVouchersData] = useState([
+    { id: 'vch_1', code: 'LVSPRING10', status: 'Active', redemptions: 12, expiration: '2026-04-30', usageLimit: 1 },
+    { id: 'vch_2', code: 'LVVIP25', status: 'Active', redemptions: 5, expiration: '2026-04-15', usageLimit: 1 },
+    { id: 'vch_3', code: 'LVWEEKEND', status: 'Completed', redemptions: 0, expiration: '2026-04-06', usageLimit: 1 },
+  ])
 
   const campaignsData = useMemo(
     () => [
@@ -208,12 +371,103 @@ export default function MarketingHub({ initialTab = 'centre' }) {
     ],
     [],
   )
+  const [managementCampaigns, setManagementCampaigns] = useState([
+    {
+      id: 'mcmp_1',
+      name: 'Spring Beauty Push',
+      type: 'Discount',
+      status: 'Active',
+      duration: 'Mar 12 - Apr 12',
+      performance: 'CTR 5.2% | CVR 3.9%',
+    },
+    {
+      id: 'mcmp_2',
+      name: 'Weekend Voucher Blast',
+      type: 'Voucher',
+      status: 'Paused',
+      duration: 'Mar 01 - Mar 28',
+      performance: 'CTR 3.7% | CVR 2.8%',
+    },
+    {
+      id: 'mcmp_3',
+      name: 'VIP Retention Offer',
+      type: 'Promotion',
+      status: 'Draft',
+      duration: 'Apr 04 - Apr 25',
+      performance: 'CTR — | CVR —',
+    },
+  ])
+  const offersData = useMemo(
+    () => [
+      { id: 'offer_1', title: 'Bundle Saver 15%', usage: '120 / 300', expires: 'Apr 30', status: 'Active' },
+      { id: 'offer_2', title: 'New User Welcome', usage: '88 / 200', expires: 'Apr 15', status: 'Active' },
+      { id: 'offer_3', title: 'Weekend Flash', usage: '45 / 150', expires: 'Apr 06', status: 'Draft' },
+    ],
+    [],
+  )
+  const audienceSegments = useMemo(
+    () => [
+      { id: 'seg_1', name: 'Returning Buyers', size: '2,460 users', lift: '+18% CVR' },
+      { id: 'seg_2', name: 'High AOV Clients', size: '740 users', lift: '+11% revenue' },
+      { id: 'seg_3', name: 'Inactive 30+ Days', size: '1,180 users', lift: '+7% reactivation' },
+    ],
+    [],
+  )
+  const alerts = useMemo(
+    () => [
+      { id: 'al_1', title: 'Weekend Voucher Blast is underperforming', level: 'warning' },
+      { id: 'al_2', title: 'Bundle Saver 15% expires in 4 days', level: 'info' },
+      { id: 'al_3', title: 'Spring Beauty Push reached 80% budget', level: 'warning' },
+    ],
+    [],
+  )
 
-  const openDrawer = (type) => setDrawer({ open: true, type })
+  const openDrawer = (type) => {
+    if (type === 'createDiscount') {
+      setDiscountDraft({
+        id: null,
+        name: '',
+        discountType: 'percentage',
+        value: '',
+        start: '',
+        end: '',
+        scopeId: '',
+        status: 'Draft',
+      })
+    }
+
+    if (type === 'createVoucher') {
+      setVoucherDraft({
+        mode: 'single',
+        prefix: 'LV',
+        amount: 25,
+        id: null,
+        code: '',
+        expiration: '',
+        usageLimit: 1,
+        scopeId: '',
+        status: 'Draft',
+      })
+    }
+
+    setDrawer({ open: true, type })
+  }
   const closeDrawer = () => setDrawer({ open: false, type: null })
-
-  const pushToast = (message, variant = 'info') => {
-    setToast({ message, variant })
+  const pushToast = (message, variant = 'info') => setToast({ message, variant })
+  const onToggleCampaignPause = (campaignId) => {
+    setManagementCampaigns((prev) =>
+      prev.map((campaign) => {
+        if (campaign.id !== campaignId) return campaign
+        const isPaused = campaign.status === 'Paused'
+        return { ...campaign, status: isPaused ? 'Active' : 'Paused' }
+      }),
+    )
+  }
+  const onDeleteCampaign = (campaignId) => {
+    setManagementCampaigns((prev) => prev.filter((campaign) => campaign.id !== campaignId))
+  }
+  const onDeleteDiscount = (discountId) => {
+    setDiscountsData((prev) => prev.filter((discount) => discount.id !== discountId))
   }
 
   const onCopy = async (text) => {
@@ -233,73 +487,266 @@ export default function MarketingHub({ initialTab = 'centre' }) {
         return
       }
     } catch {
-      // fall back to copy
+      // fallback to copy
     }
     await onCopy(text)
   }
 
   return (
     <div className={styles.marketingPage}>
-      <div className={styles.marketingHeader}>
-        <div>
-          <h1 className={styles.marketingTitle}>Marketing</h1>
-          <p className={styles.marketingSubtitle}>Create, schedule, and measure promotions across your services.</p>
-        </div>
-      </div>
-
       <div className={styles.marketingLayout}>
-        <aside className={styles.tabSidebar} aria-label="Marketing sections">
-          <div className={styles.tabSidebarInner}>
-            {tabs.map((t) => {
-              const isActive = t.key === activeTabKey
-              return (
-                <button
-                  key={t.key}
-                  type="button"
-                  className={`${styles.tabBtn} ${isActive ? styles.tabBtnActive : ''}`}
-                  onClick={() => router.push(tabToRoute(t.key))}
-                >
-                  <span className={styles.tabDot} aria-hidden />
-                  <span className={styles.tabLabel}>{t.label}</span>
-                </button>
-              )
-            })}
-          </div>
-        </aside>
-
         <section className={styles.tabContent} aria-live="polite">
-          {activeTabKey === 'centre' && (
+          {isCentreRoute && (
             <>
-              <div className={styles.grid3}>
+              <div className={styles.statsStrip}>
                 {centreData.metrics.map((m) => (
-                  <div key={m.label} className={styles.metricCard}>
-                    <div className={styles.metricValue}>{m.value}</div>
-                    <div className={styles.metricLabel}>{m.label}</div>
+                  <div key={m.label} className={`${styles.statCard} ${m.toneClass}`}>
+                    <div className={styles.statCardValue}>{m.value}</div>
+                    <div className={styles.statCardTitle}>{m.label}</div>
+                    <div className={styles.statCardDesc}>{m.delta} vs last month</div>
                   </div>
                 ))}
+              </div>
+
+              <div className={`${styles.card} ${styles.campaignCard}`}>
+                <div className={styles.cardHeaderRow}>
+                  <div className={styles.cardTitle}>Campaign Management</div>
+                  <button type="button" className={styles.primaryBtn} onClick={() => openDrawer('createCampaign')}>
+                    Create Campaign
+                  </button>
+                </div>
+                <div className={styles.dividerThin} />
+                <div className={styles.tableWrap}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>Campaign</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Duration</th>
+                        <th>Performance</th>
+                        <th />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {managementCampaigns.map((campaign) => (
+                        <tr key={campaign.id}>
+                          <td className={styles.tdMain}>{campaign.name}</td>
+                          <td>{campaign.type}</td>
+                          <td>
+                            <StatusPill status={campaign.status} />
+                          </td>
+                          <td>{campaign.duration}</td>
+                          <td>{campaign.performance}</td>
+                          <td className={styles.tdRight}>
+                            <div className={styles.inlineActions}>
+                              <button
+                                type="button"
+                                className={`${styles.iconActionBtn} ${styles.iconEditBtn}`}
+                                onClick={() => {
+                                  setCampaignDraft((prev) => ({
+                                    ...prev,
+                                    name: campaign.name,
+                                    status: campaign.status,
+                                  }))
+                                  openDrawer('editCampaign')
+                                }}
+                                aria-label="Edit campaign"
+                                title="Edit"
+                              >
+                                <TbEdit size={16} />
+                              </button>
+                              <button
+                                type="button"
+                                className={`${styles.iconActionBtn} ${styles.iconPauseBtn}`}
+                                onClick={() => {
+                                  const isPaused = campaign.status === 'Paused'
+                                  onToggleCampaignPause(campaign.id)
+                                  pushToast(isPaused ? 'Campaign unpaused' : 'Campaign paused', 'success')
+                                }}
+                                aria-label={campaign.status === 'Paused' ? 'Unpause campaign' : 'Pause campaign'}
+                                title={campaign.status === 'Paused' ? 'Unpause' : 'Pause'}
+                              >
+                                {campaign.status === 'Paused' ? <TbPlayerPlay size={16} /> : <TbPlayerPause size={16} />}
+                              </button>
+                              <button
+                                type="button"
+                                className={`${styles.iconActionBtn} ${styles.iconDeleteBtn}`}
+                                onClick={() => {
+                                  onDeleteCampaign(campaign.id)
+                                  pushToast('Campaign deleted', 'success')
+                                }}
+                                aria-label="Delete campaign"
+                                title="Delete"
+                              >
+                                <TbTrash size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               <div className={styles.rowGap}>
                 <div className={styles.card}>
                   <div className={styles.cardHeaderRow}>
-                    <div className={styles.cardTitle}>Active promotions</div>
-                    <div className={styles.cardMuted}>Status snapshot</div>
+                    <div className={styles.cardTitle}>Discounts</div>
+                    <button type="button" className={styles.primaryBtn} onClick={() => openDrawer('createDiscount')}>
+                      New Discount
+                    </button>
                   </div>
                   <div className={styles.dividerThin} />
-                  <div className={styles.list}>
-                    {centreData.promotions.map((p) => (
-                      <div key={p.name} className={styles.listItem}>
-                        <div className={styles.listItemName}>{p.name}</div>
-                        <StatusPill status={p.status} />
-                      </div>
-                    ))}
+                  <div className={styles.tableWrap}>
+                    <table className={styles.table}>
+                      <thead>
+                        <tr>
+                          <th>Discount</th>
+                          <th>Type</th>
+                          <th>Status</th>
+                          <th>Usage</th>
+                          <th />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {discountsData.map((d) => (
+                          <tr key={d.id}>
+                            <td className={styles.tdMain}>{d.name}</td>
+                            <td>{d.type === 'percentage' ? 'Percentage' : 'Fixed'}</td>
+                            <td>
+                              <StatusPill status={d.status} />
+                            </td>
+                            <td>{d.usage}</td>
+                            <td className={styles.tdRight}>
+                              <div className={styles.inlineActions}>
+                                <button
+                                  type="button"
+                                  className={`${styles.iconActionBtn} ${styles.iconEditBtn}`}
+                                  onClick={() => {
+                                    setDiscountDraft((prev) => ({
+                                      ...prev,
+                                      id: d.id,
+                                      name: d.name,
+                                      discountType: d.type,
+                                      value: d.value != null ? String(d.value) : '',
+                                      start: d.start ?? '',
+                                      end: d.end ?? '',
+                                      scopeId: d.scopeId ?? '',
+                                      status: d.status,
+                                    }))
+                                    openDrawer('editDiscount')
+                                  }}
+                                  aria-label="Edit discount"
+                                  title="Edit"
+                                >
+                                  <TbEdit size={16} />
+                                </button>
+                                <button
+                                  type="button"
+                                  className={`${styles.iconActionBtn} ${styles.iconDeleteBtn}`}
+                                  onClick={() => {
+                                    onDeleteDiscount(d.id)
+                                    pushToast('Discount deleted', 'success')
+                                  }}
+                                  aria-label="Delete discount"
+                                  title="Delete"
+                                >
+                                  <TbTrash size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
 
                 <div className={styles.card}>
                   <div className={styles.cardHeaderRow}>
-                    <div className={styles.cardTitle}>Trend</div>
-                    <div className={styles.cardMuted}>Clicks & conversions</div>
+                    <div className={styles.cardTitle}>Vouchers</div>
+                    <button type="button" className={styles.primaryBtn} onClick={() => openDrawer('createVoucher')}>
+                      Generate Codes
+                    </button>
+                  </div>
+                  <div className={styles.dividerThin} />
+                  <div className={styles.tableWrap}>
+                    <table className={styles.table}>
+                      <thead>
+                        <tr>
+                          <th>Code</th>
+                          <th>Status</th>
+                          <th>Redemptions</th>
+                          <th />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {vouchersData.map((v) => (
+                          <tr key={v.id}>
+                            <td className={styles.tdMain}>
+                              <code className={styles.code}>{v.code}</code>
+                            </td>
+                            <td>
+                              <StatusPill status={v.status} />
+                            </td>
+                            <td>{v.redemptions}</td>
+                            <td className={styles.tdRight}>
+                              <div className={styles.inlineActions}>
+                                <button
+                                  type="button"
+                                  className={`${styles.iconActionBtn} ${styles.iconEditBtn}`}
+                                  title="Edit"
+                                  aria-label="Edit voucher"
+                                  onClick={() => {
+                                    setVoucherDraft({
+                                      mode: 'single',
+                                      prefix: v.code.startsWith('LV') ? 'LV' : v.code.slice(0, 2),
+                                      amount: 1,
+                                      id: v.id,
+                                      code: v.code,
+                                      expiration: v.expiration || '',
+                                      usageLimit: v.usageLimit ?? 1,
+                                      scopeId: v.scopeId || '',
+                                      status: v.status,
+                                    })
+                                    openDrawer('editVoucher')
+                                  }}
+                                >
+                                  <TbEdit size={16} />
+                                </button>
+                                <button
+                                  type="button"
+                                  className={`${styles.iconActionBtn} ${styles.iconDeleteBtn}`}
+                                  title="Delete"
+                                  aria-label="Delete voucher"
+                                  onClick={() => {
+                                    setVouchersData((prev) => prev.filter((x) => x.id !== v.id))
+                                    pushToast('Voucher deleted', 'success')
+                                  }}
+                                >
+                                  <TbTrash size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.sectionHeader}>
+                <h3 className={styles.sectionTitle}>Analytics & Insights</h3>
+              </div>
+
+              <div className={styles.rowGap}>
+                <div className={styles.card}>
+                  <div className={styles.cardHeaderRow}>
+                    <div className={styles.cardTitle}>Campaign performance over time</div>
+                    <div className={styles.cardMuted}>Last 8 weeks</div>
                   </div>
                   <div className={styles.dividerThin} />
                   <div className={styles.cardBodyTight}>
@@ -316,190 +763,276 @@ export default function MarketingHub({ initialTab = 'centre' }) {
                     </div>
                   </div>
                 </div>
+
+                <div className={styles.card}>
+                  <div className={styles.cardHeaderRow}>
+                    <div className={styles.cardTitle}>Conversion funnel</div>
+                    <div className={styles.cardMuted}>Awareness to purchase</div>
+                  </div>
+                  <div className={styles.dividerThin} />
+                  <ConversionBars />
+                </div>
               </div>
 
-              <div className={styles.actionsRow}>
-                <button
-                  type="button"
-                  className={`${styles.primaryBtn}`}
-                  onClick={() => openDrawer('createCampaign')}
-                >
-                  Create Campaign
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.secondaryBtn}`}
-                  onClick={() => openDrawer('createDiscount')}
-                >
-                  Create Discount
-                </button>
+              <div className={styles.rowGap}>
+                <div className={styles.card}>
+                  <div className={styles.cardHeaderRow}>
+                    <div className={styles.cardTitle}>Audience targeting</div>
+                    <div className={styles.cardMuted}>Suggested high-value segments</div>
+                  </div>
+                  <div className={styles.dividerThin} />
+                  <div className={styles.list}>
+                    {audienceSegments.map((segment) => (
+                      <div key={segment.id} className={styles.segmentRow}>
+                        <div>
+                          <div className={styles.listItemName}>{segment.name}</div>
+                          <div className={styles.listItemMeta}>{segment.size}</div>
+                        </div>
+                        <span className={styles.segmentLift}>{segment.lift}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className={styles.card}>
+                  <div className={styles.cardHeaderRow}>
+                    <div className={styles.cardTitle}>Notifications & alerts</div>
+                    <div className={styles.cardMuted}>
+                      Needs attention
+                      <span className={styles.attentionCount} aria-label={`${alerts.length} items`}>
+                        {alerts.length}
+                      </span>
+                    </div>
+                  </div>
+                  <div className={styles.dividerThin} />
+                  <div className={styles.list}>
+                    {alerts.map((alert) => (
+                      <div key={alert.id} className={styles.alertRow}>
+                        <div className={styles.alertLeft}>
+                          <span
+                            className={`${styles.alertIcon} ${
+                              alert.level === 'warning' ? styles.alertWarningIcon : styles.alertInfoIcon
+                            }`}
+                            aria-hidden
+                          >
+                            {alert.level === 'warning' ? '!' : 'i'}
+                          </span>
+                          <span className={styles.alertText}>{alert.title}</span>
+                        </div>
+                        <span
+                          className={`${styles.alertLabel} ${
+                            alert.level === 'warning' ? styles.alertWarningLabel : styles.alertInfoLabel
+                          }`}
+                        >
+                          {alert.level === 'warning' ? 'Warning' : 'Info'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </>
           )}
 
-          {activeTabKey === 'discounts' && (
+          {activeTabKey === 'discounts' && !isCentreRoute && (
             <>
-              <div className={styles.card}>
-                <div className={styles.cardHeaderRow}>
-                  <div className={styles.cardTitle}>Discounts</div>
-                  <div className={styles.cardMuted}>Create and manage price reductions</div>
-                </div>
-                <div className={styles.dividerThin} />
-                <div className={styles.actionsRowTight}>
-                  <button
-                    type="button"
-                    className={styles.primaryBtn}
-                    onClick={() => openDrawer('createDiscount')}
-                  >
-                    New Discount
-                  </button>
-                </div>
-                <div className={styles.tableWrap}>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr>
-                        <th>Discount</th>
-                        <th>Type</th>
-                        <th>Status</th>
-                        <th>Usage</th>
-                        <th />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {discountsData.map((d) => (
-                        <tr key={d.id}>
-                          <td className={styles.tdMain}>{d.name}</td>
-                          <td>{d.type === 'percentage' ? 'Percentage' : 'Fixed'}</td>
-                          <td>
-                            <StatusPill status={d.status === 'Scheduled' ? 'Draft' : d.status} />
-                          </td>
-                          <td>{d.usage}</td>
-                          <td className={styles.tdRight}>
+              <div className={styles.cardToolbarRight}>
+                <button type="button" className={styles.primaryBtn} onClick={() => openDrawer('createDiscount')}>
+                  New Discount
+                </button>
+              </div>
+              <div>
+              <div className={styles.tableWrap}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Discount</th>
+                      <th>Type</th>
+                      <th>Status</th>
+                      <th>Usage</th>
+                      <th />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {discountsData.map((d) => (
+                      <tr key={d.id}>
+                        <td className={styles.tdMain}>{d.name}</td>
+                        <td>{d.type === 'percentage' ? 'Percentage' : 'Fixed'}</td>
+                        <td>
+                          <StatusPill status={d.status} />
+                        </td>
+                        <td>{d.usage}</td>
+                        <td className={styles.tdRight}>
+                          <div className={styles.inlineActions}>
                             <button
                               type="button"
-                              className={styles.rowActionBtn}
+                              className={`${styles.iconActionBtn} ${styles.iconEditBtn}`}
                               onClick={() => {
-                                setDiscountDraft((prev) => ({
-                                  ...prev,
-                                  name: d.name,
-                                  discountType: d.type,
-                                }))
+                                  setDiscountDraft((prev) => ({
+                                    ...prev,
+                                    id: d.id,
+                                    name: d.name,
+                                    discountType: d.type,
+                                    value: d.value ?? prev.value,
+                                    start: d.start ?? '',
+                                    end: d.end ?? '',
+                                    scopeId: d.scopeId ?? '',
+                                    status: d.status,
+                                  }))
                                 openDrawer('editDiscount')
                               }}
+                              aria-label="Edit discount"
+                              title="Edit"
                             >
-                              Edit
+                              <TbEdit size={16} />
                             </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </>
-          )}
-
-          {activeTabKey === 'vouchers' && (
-            <>
-              <div className={styles.card}>
-                <div className={styles.cardHeaderRow}>
-                  <div className={styles.cardTitle}>Vouchers</div>
-                  <div className={styles.cardMuted}>Generate codes and track redemptions</div>
-                </div>
-                <div className={styles.dividerThin} />
-                <div className={styles.actionsRowTight}>
-                  <button type="button" className={styles.primaryBtn} onClick={() => openDrawer('createVoucher')}>
-                    Generate Codes
-                  </button>
-                </div>
-                <div className={styles.tableWrap}>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr>
-                        <th>Code</th>
-                        <th>Status</th>
-                        <th>Redemptions</th>
-                        <th />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {vouchersData.map((v) => (
-                        <tr key={v.id}>
-                          <td className={styles.tdMain}>
-                            <code className={styles.code}>{v.code}</code>
-                          </td>
-                          <td>
-                            <StatusPill status={v.status === 'Expired' ? 'Completed' : v.status} />
-                          </td>
-                          <td>{v.redemptions}</td>
-                          <td className={styles.tdRight}>
                             <button
                               type="button"
-                              className={styles.rowActionBtn}
-                              onClick={() => onCopyOrShare(v.code)}
+                              className={`${styles.iconActionBtn} ${styles.iconDeleteBtn}`}
+                              onClick={() => {
+                                onDeleteDiscount(d.id)
+                                pushToast('Discount deleted', 'success')
+                              }}
+                              aria-label="Delete discount"
+                              title="Delete"
                             >
-                              Copy/Share
+                              <TbTrash size={16} />
                             </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className={styles.footerHint}>
-                  Tip: Use copy to share a single voucher code quickly.
-                </div>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
               </div>
             </>
           )}
 
-          {activeTabKey === 'campaigns' && (
-            <>
-              <div className={styles.card}>
-                <div className={styles.cardHeaderRow}>
-                  <div className={styles.cardTitle}>Campaigns</div>
-                  <div className={styles.cardMuted}>Create and schedule promotional campaigns</div>
-                </div>
-                <div className={styles.dividerThin} />
-                <div className={styles.actionsRowTight}>
-                  <button type="button" className={styles.primaryBtn} onClick={() => openDrawer('createCampaign')}>
-                    New Campaign
-                  </button>
-                </div>
-                <div className={styles.tableWrap}>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr>
-                        <th>Campaign</th>
-                        <th>Status</th>
-                        <th>Clicks</th>
-                        <th>Conversions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {campaignsData.map((c) => (
-                        <tr key={c.id}>
-                          <td className={styles.tdMain}>{c.name}</td>
-                          <td>
-                            <StatusPill status={c.status} />
-                          </td>
-                          <td>{c.clicks}</td>
-                          <td>{c.conversions}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+          {activeTabKey === 'vouchers' && !isCentreRoute && (
+            <div className={styles.card}>
+              <div className={styles.cardHeaderRow}>
+                <div className={styles.cardTitle}>Vouchers</div>
+                <div className={styles.cardMuted}>Generate codes and track redemptions</div>
               </div>
-            </>
+              <div className={styles.dividerThin} />
+              <div className={styles.actionsRowTight}>
+                <button type="button" className={styles.primaryBtn} onClick={() => openDrawer('createVoucher')}>
+                  Generate Codes
+                </button>
+              </div>
+              <div className={styles.tableWrap}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Code</th>
+                      <th>Status</th>
+                      <th>Redemptions</th>
+                      <th />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {vouchersData.map((v) => (
+                      <tr key={v.id}>
+                        <td className={styles.tdMain}>
+                          <code className={styles.code}>{v.code}</code>
+                        </td>
+                        <td>
+                          <StatusPill status={v.status} />
+                        </td>
+                        <td>{v.redemptions}</td>
+                        <td className={styles.tdRight}>
+                          <div className={styles.inlineActions}>
+                            <button
+                              type="button"
+                              className={`${styles.iconActionBtn} ${styles.iconEditBtn}`}
+                              title="Edit"
+                              aria-label="Edit voucher"
+                              onClick={() => {
+                                setVoucherDraft({
+                                  mode: 'single',
+                                  prefix: v.code.startsWith('LV') ? 'LV' : v.code.slice(0, 2),
+                                  amount: 1,
+                                  id: v.id,
+                                  code: v.code,
+                                  expiration: v.expiration || '',
+                                  usageLimit: v.usageLimit ?? 1,
+                                  scopeId: v.scopeId || '',
+                                  status: v.status,
+                                })
+                                openDrawer('editVoucher')
+                              }}
+                            >
+                              <TbEdit size={16} />
+                            </button>
+                            <button
+                              type="button"
+                              className={`${styles.iconActionBtn} ${styles.iconDeleteBtn}`}
+                              title="Delete"
+                              aria-label="Delete voucher"
+                              onClick={() => {
+                                setVouchersData((prev) => prev.filter((x) => x.id !== v.id))
+                                pushToast('Voucher deleted', 'success')
+                              }}
+                            >
+                              <TbTrash size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className={styles.footerHint}>Tip: Use copy to share a single voucher code quickly.</div>
+            </div>
+          )}
+
+          {activeTabKey === 'campaigns' && !isCentreRoute && (
+            <div className={styles.card}>
+              <div className={styles.cardHeaderRow}>
+                <div className={styles.cardTitle}>Campaigns</div>
+                <div className={styles.cardMuted}>Create and schedule promotional campaigns</div>
+              </div>
+              <div className={styles.dividerThin} />
+              <div className={styles.actionsRowTight}>
+                <button type="button" className={styles.primaryBtn} onClick={() => openDrawer('createCampaign')}>
+                  New Campaign
+                </button>
+              </div>
+              <div className={styles.tableWrap}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Campaign</th>
+                      <th>Status</th>
+                      <th>Clicks</th>
+                      <th>Conversions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {campaignsData.map((c) => (
+                      <tr key={c.id}>
+                        <td className={styles.tdMain}>{c.name}</td>
+                        <td>
+                          <StatusPill status={c.status} />
+                        </td>
+                        <td>{c.clicks}</td>
+                        <td>{c.conversions}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
         </section>
       </div>
 
       <Drawer
-        open={drawer.open && drawer.type === 'createCampaign'}
-        title="Create Campaign"
+        open={drawer.open && (drawer.type === 'createCampaign' || drawer.type === 'editCampaign')}
+        title={drawer.type === 'editCampaign' ? 'Edit Campaign' : 'Create Campaign'}
         onClose={closeDrawer}
       >
         <div className={styles.drawerFormGrid}>
@@ -509,6 +1042,12 @@ export default function MarketingHub({ initialTab = 'centre' }) {
               value={campaignDraft.name}
               onChange={(e) => setCampaignDraft((d) => ({ ...d, name: e.target.value }))}
               placeholder="e.g. Black Friday"
+            />
+          </Field>
+          <Field label="Status">
+            <StatusDropdown
+              value={campaignDraft.status}
+              onChange={(nextStatus) => setCampaignDraft((d) => ({ ...d, status: nextStatus }))}
             />
           </Field>
           <Field label="Start date">
@@ -528,36 +1067,28 @@ export default function MarketingHub({ initialTab = 'centre' }) {
             />
           </Field>
           <Field label="Target service/package">
-            <select
-              className={styles.select}
+            <input
+              className={styles.input}
               value={campaignDraft.scopeId}
               onChange={(e) => setCampaignDraft((d) => ({ ...d, scopeId: e.target.value }))}
-            >
-              <option value="srv_1">Service: Standard</option>
-              <option value="srv_2">Package: Starter</option>
-              <option value="srv_3">Package: Pro</option>
-            </select>
+              placeholder="e.g. Service: Standard"
+            />
           </Field>
           <Field label="Attach discount (optional)">
-            <select
-              className={styles.select}
+            <input
+              className={styles.input}
               value={campaignDraft.attachDiscountId}
               onChange={(e) => setCampaignDraft((d) => ({ ...d, attachDiscountId: e.target.value }))}
-            >
-              <option value="disc_1">10% Summer Boost</option>
-              <option value="disc_2">$15 Off Premium</option>
-              <option value="disc_3">VIP Flat $25</option>
-            </select>
+              placeholder="e.g. Summer Boost 10"
+            />
           </Field>
           <Field label="Attach voucher (optional)">
-            <select
-              className={styles.select}
+            <input
+              className={styles.input}
               value={campaignDraft.attachVoucherId}
               onChange={(e) => setCampaignDraft((d) => ({ ...d, attachVoucherId: e.target.value }))}
-            >
-              <option value="vch_1">LVSPRING10</option>
-              <option value="vch_2">LVVIP25</option>
-            </select>
+              placeholder="e.g. LVSPRING10"
+            />
           </Field>
         </div>
 
@@ -570,11 +1101,11 @@ export default function MarketingHub({ initialTab = 'centre' }) {
             className={styles.primaryBtn}
             onClick={() => {
               closeDrawer()
-              pushToast('Campaign draft created', 'success')
+              pushToast(drawer.type === 'editCampaign' ? 'Campaign updated' : 'Campaign draft created', 'success')
               router.push('/seller/marketing/campaign')
             }}
           >
-            Save Draft
+            {drawer.type === 'editCampaign' ? 'Save Changes' : 'Save Draft'}
           </button>
         </div>
       </Drawer>
@@ -594,23 +1125,26 @@ export default function MarketingHub({ initialTab = 'centre' }) {
             />
           </Field>
 
-          <Field label="Discount type">
-            <select
-              className={styles.select}
-              value={discountDraft.discountType}
-              onChange={(e) => setDiscountDraft((d) => ({ ...d, discountType: e.target.value }))}
-            >
-              <option value="percentage">Percentage</option>
-              <option value="fixed">Fixed amount</option>
-            </select>
-          </Field>
-
-          <Field label="Value">
+          <Field label={discountDraft.discountType === 'percentage' ? 'Percentage' : 'Fixed amount'}>
             <input
               className={styles.input}
-              type="number"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={discountDraft.value}
-              onChange={(e) => setDiscountDraft((d) => ({ ...d, value: Number(e.target.value || 0) }))}
+              onChange={(e) => {
+                const digitsOnly = e.target.value.replace(/\D/g, '')
+                const normalized = digitsOnly.replace(/^0+(?=\d)/, '')
+                setDiscountDraft((d) => ({ ...d, value: normalized }))
+              }}
+              placeholder={discountDraft.discountType === 'percentage' ? 'e.g. 10' : 'e.g. 15'}
+            />
+          </Field>
+
+          <Field label="Status">
+            <StatusDropdown
+              value={discountDraft.status}
+              onChange={(nextStatus) => setDiscountDraft((d) => ({ ...d, status: nextStatus }))}
             />
           </Field>
 
@@ -634,15 +1168,12 @@ export default function MarketingHub({ initialTab = 'centre' }) {
           </div>
 
           <Field label="Applies to">
-            <select
-              className={styles.select}
+            <input
+              className={styles.input}
               value={discountDraft.scopeId}
               onChange={(e) => setDiscountDraft((d) => ({ ...d, scopeId: e.target.value }))}
-            >
-              <option value="srv_1">Service: Standard</option>
-              <option value="srv_2">Package: Starter</option>
-              <option value="srv_3">Package: Pro</option>
-            </select>
+              placeholder="e.g. Service: Standard"
+            />
           </Field>
         </div>
 
@@ -654,9 +1185,45 @@ export default function MarketingHub({ initialTab = 'centre' }) {
             type="button"
             className={styles.primaryBtn}
             onClick={() => {
+              const drawerType = drawer.type
+              const nextId = discountDraft.id ?? `disc_new_${Date.now()}`
               closeDrawer()
-              pushToast('Discount saved', 'success')
-              router.push('/seller/marketing/discount')
+
+              if (drawerType === 'editDiscount') {
+                setDiscountsData((prev) =>
+                  prev.map((d) =>
+                    d.id === discountDraft.id
+                      ? {
+                          ...d,
+                          name: discountDraft.name,
+                          type: discountDraft.discountType,
+                          value: Number(discountDraft.value || 0),
+                          start: discountDraft.start,
+                          end: discountDraft.end,
+                          scopeId: discountDraft.scopeId,
+                          status: discountDraft.status,
+                        }
+                      : d
+                  )
+                )
+                pushToast('Discount updated', 'success')
+              } else {
+                setDiscountsData((prev) => [
+                  {
+                    id: nextId,
+                    name: discountDraft.name || 'New Discount',
+                    type: discountDraft.discountType,
+                    status: discountDraft.status,
+                    usage: 0,
+                    value: Number(discountDraft.value || 0),
+                    start: discountDraft.start,
+                    end: discountDraft.end,
+                    scopeId: discountDraft.scopeId,
+                  },
+                  ...prev,
+                ])
+                pushToast('Discount created', 'success')
+              }
             }}
           >
             Save Discount
@@ -664,26 +1231,26 @@ export default function MarketingHub({ initialTab = 'centre' }) {
         </div>
       </Drawer>
 
-      <Drawer open={drawer.open && drawer.type === 'createVoucher'} title="Generate Vouchers" onClose={closeDrawer}>
+      <Drawer
+        open={drawer.open && (drawer.type === 'createVoucher' || drawer.type === 'editVoucher')}
+        title={drawer.type === 'editVoucher' ? 'Edit Voucher' : 'Generate Vouchers'}
+        onClose={closeDrawer}
+      >
         <div className={styles.drawerFormGrid}>
           <Field label="Mode">
-            <select
-              className={styles.select}
+            <ModeDropdown
               value={voucherDraft.mode}
-              onChange={(e) => setVoucherDraft((d) => ({ ...d, mode: e.target.value }))}
-            >
-              <option value="single">Single code</option>
-              <option value="bulk">Bulk codes</option>
-            </select>
+              onChange={(nextMode) => setVoucherDraft((d) => ({ ...d, mode: nextMode }))}
+            />
           </Field>
 
           <div className={styles.twoCols}>
-            <Field label="Prefix">
+            <Field label="Code">
               <input
                 className={styles.input}
-                value={voucherDraft.prefix}
-                onChange={(e) => setVoucherDraft((d) => ({ ...d, prefix: e.target.value }))}
-                placeholder="LV"
+                value={voucherDraft.code}
+                onChange={(e) => setVoucherDraft((d) => ({ ...d, code: e.target.value }))}
+                placeholder="e.g. LVSPRING10"
               />
             </Field>
             <Field label="Quantity (bulk)">
@@ -716,16 +1283,20 @@ export default function MarketingHub({ initialTab = 'centre' }) {
             </Field>
           </div>
 
+          <Field label="Status">
+            <StatusDropdown
+              value={voucherDraft.status}
+              onChange={(nextStatus) => setVoucherDraft((d) => ({ ...d, status: nextStatus }))}
+            />
+          </Field>
+
           <Field label="Assign to">
-            <select
-              className={styles.select}
+            <input
+              className={styles.input}
               value={voucherDraft.scopeId}
               onChange={(e) => setVoucherDraft((d) => ({ ...d, scopeId: e.target.value }))}
-            >
-              <option value="srv_1">Service: Standard</option>
-              <option value="srv_2">Package: Starter</option>
-              <option value="srv_3">Package: Pro</option>
-            </select>
+              placeholder="e.g. Service: Standard"
+            />
           </Field>
         </div>
 
@@ -737,12 +1308,55 @@ export default function MarketingHub({ initialTab = 'centre' }) {
             type="button"
             className={styles.primaryBtn}
             onClick={() => {
+              const drawerType = drawer.type
               closeDrawer()
+
+              if (drawerType === 'editVoucher') {
+                setVouchersData((prev) =>
+                  prev.map((v) =>
+                    v.id === voucherDraft.id
+                      ? {
+                          ...v,
+                          code: voucherDraft.code.trim() || v.code,
+                          status: voucherDraft.status,
+                          expiration: voucherDraft.expiration,
+                          usageLimit: voucherDraft.usageLimit,
+                          scopeId: voucherDraft.scopeId,
+                        }
+                      : v
+                  )
+                )
+                pushToast('Voucher updated', 'success')
+                return
+              }
+
+              const qty = voucherDraft.mode === 'bulk' ? Math.max(1, Number(voucherDraft.amount || 1)) : 1
+              const baseSuffix = Math.floor(Math.random() * 9000) + 1000
+
+              const typedCode = voucherDraft.code.trim()
+              const basePrefix = typedCode || voucherDraft.prefix || 'LV'
+              const codes =
+                voucherDraft.mode === 'single'
+                  ? [typedCode || `${basePrefix}${baseSuffix}`]
+                  : Array.from({ length: qty }, (_, i) => `${basePrefix}${baseSuffix + i}`)
+
+              setVouchersData((prev) => [
+                ...codes.map((code, i) => ({
+                  id: `vch_new_${Date.now()}_${i}`,
+                  code,
+                  status: voucherDraft.status,
+                  redemptions: 0,
+                  expiration: voucherDraft.expiration,
+                  usageLimit: voucherDraft.usageLimit,
+                  scopeId: voucherDraft.scopeId,
+                })),
+                ...prev,
+              ])
+
               pushToast('Voucher codes generated', 'success')
-              router.push('/seller/marketing/vouchers')
             }}
           >
-            Generate
+            {drawer.type === 'editVoucher' ? 'Save Changes' : 'Generate'}
           </button>
         </div>
       </Drawer>
@@ -758,4 +1372,3 @@ export default function MarketingHub({ initialTab = 'centre' }) {
     </div>
   )
 }
-
