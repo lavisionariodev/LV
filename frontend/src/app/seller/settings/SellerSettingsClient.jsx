@@ -5,8 +5,8 @@ import Image from 'next/image'
 import { supabase } from '@/lib/supabase/client'
 import styles from './settings.module.css'
 import { FaUser, FaUpload } from 'react-icons/fa6'
-import { TbTrash } from 'react-icons/tb'
-import { FiEdit } from 'react-icons/fi'
+import { TbCamera, TbTrash } from 'react-icons/tb'
+import { FiEdit, FiSave } from 'react-icons/fi'
 import { MdCheckCircle, MdErrorOutline } from 'react-icons/md'
 import { validateNewPassword } from '@/lib/validators/authSchemas'
 import { fetchCurrentSellerProfile } from '@/features/seller/settings/getSellerProfile'
@@ -34,6 +34,8 @@ export default function SellerSettingsClient() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passStatus, setPassStatus] = useState('')
   const [passError, setPassError] = useState('')
+  const [toast, setToast] = useState(null)
+  const [avatarModalOpen, setAvatarModalOpen] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -59,6 +61,32 @@ export default function SellerSettingsClient() {
       if (avatarPreviewRef.current) URL.revokeObjectURL(avatarPreviewRef.current)
     }
   }, [])
+
+  useEffect(() => {
+    if (!personalError) return
+    setToast({ id: Date.now(), type: 'error', message: personalError })
+  }, [personalError])
+
+  useEffect(() => {
+    if (!personalStatus) return
+    setToast({ id: Date.now(), type: 'success', message: personalStatus })
+  }, [personalStatus])
+
+  useEffect(() => {
+    if (!passError) return
+    setToast({ id: Date.now(), type: 'error', message: passError })
+  }, [passError])
+
+  useEffect(() => {
+    if (!passStatus) return
+    setToast({ id: Date.now(), type: 'success', message: passStatus })
+  }, [passStatus])
+
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(() => setToast(null), 4200)
+    return () => clearTimeout(t)
+  }, [toast])
 
   const validateImage = (file) => {
     if (!file) return 'No file selected.'
@@ -220,6 +248,7 @@ export default function SellerSettingsClient() {
     setAvatarPreview('')
     if (fileRef.current) fileRef.current.value = ''
     setIsEditingPersonal(false)
+    setAvatarModalOpen(false)
   }
 
   const handlePasswordSubmit = async (e) => {
@@ -271,7 +300,11 @@ export default function SellerSettingsClient() {
     <div className={styles.page}>
       <div className={styles.grid}>
         <section className={`${styles.card} ${styles.full}`}>
-          <div className={styles.cardHeadRow}>
+          <div
+            className={`${styles.cardHeadRow} ${styles.personalHeadRow} ${
+              isEditingPersonal ? styles.personalHeadRowEditing : ''
+            }`}
+          >
             <p className={styles.cardTitle}>Personal Information</p>
             <div className={styles.headActions}>
               {isEditingPersonal && (
@@ -284,52 +317,90 @@ export default function SellerSettingsClient() {
                 onClick={onClickEditSavePersonal}
                 disabled={avatarLoading}
               >
-                {isEditingPersonal ? 'Save Changes' : <><FiEdit /> Edit</>}
+                {isEditingPersonal ? (
+                  <>
+                    <FiSave /> Save Changes
+                  </>
+                ) : (
+                  <>
+                    <FiEdit /> Edit
+                  </>
+                )}
               </button>
             </div>
           </div>
 
           <div className={styles.piAvatarRow}>
             <div className={styles.piAvatarLeft}>
-              <div className={styles.avatar}>
-                {shownAvatar ? (
-                  <Image
-                    src={shownAvatar}
-                    alt="Profile avatar"
-                    width={54}
-                    height={54}
-                    className={styles.avatarImg}
-                    unoptimized
-                  />
-                ) : (
-                  <div className={styles.avatarFallback}><FaUser /></div>
+              <button
+                type="button"
+                className={styles.avatarButton}
+                onClick={() => isEditingPersonal && setAvatarModalOpen(true)}
+                disabled={!isEditingPersonal || avatarLoading}
+                aria-label="Open photo options"
+              >
+                <div className={styles.avatar}>
+                  {shownAvatar ? (
+                    <Image
+                      src={shownAvatar}
+                      alt="Profile avatar"
+                      width={54}
+                      height={54}
+                      className={styles.avatarImg}
+                      unoptimized
+                    />
+                  ) : (
+                    <div className={styles.avatarFallback}><FaUser /></div>
+                  )}
+                </div>
+                {isEditingPersonal && (
+                  <span className={styles.avatarEditIcon}>
+                    <TbCamera />
+                  </span>
                 )}
-              </div>
+              </button>
               {isEditingPersonal && (
-                <div className={styles.piAvatarActionsRow}>
-                  <button
-                    type="button"
-                    className={styles.secondaryBtn}
-                    onClick={() => fileRef.current?.click()}
-                    disabled={avatarLoading}
-                  >
-                    <FaUpload /> {avatarLoading ? 'Uploading…' : 'Change'}
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.dangerBtn}
-                    onClick={onRemoveAvatar}
-                    disabled={avatarLoading || !shownAvatar}
-                  >
-                    <TbTrash /> Remove
-                  </button>
+                <>
                   <span className={styles.profileHintInline}>
                     PNG, JPG, or WEBP · Max {MAX_MB}MB
                   </span>
-                </div>
+                </>
               )}
             </div>
           </div>
+
+          {avatarModalOpen && isEditingPersonal && (
+            <div className={styles.avatarModalOverlay} onClick={() => setAvatarModalOpen(false)}>
+              <div className={styles.avatarModalCard} onClick={(e) => e.stopPropagation()}>
+                <h3 className={styles.avatarModalTitle}>Profile Photo</h3>
+                <p className={styles.avatarModalText}>Choose an action for your profile photo.</p>
+                <div className={styles.avatarModalActions}>
+                  <button
+                    type="button"
+                    className={`${styles.primaryBtn} ${styles.avatarModalBtn}`}
+                    onClick={() => {
+                      setAvatarModalOpen(false)
+                      fileRef.current?.click()
+                    }}
+                    disabled={avatarLoading}
+                  >
+                    <FaUpload /> {avatarLoading ? 'Uploading…' : 'Change Photo'}
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.dangerBtn} ${styles.avatarModalBtn}`}
+                    onClick={async () => {
+                      setAvatarModalOpen(false)
+                      await onRemoveAvatar()
+                    }}
+                    disabled={avatarLoading || !shownAvatar}
+                  >
+                    <TbTrash /> Remove Photo
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <input
             ref={fileRef}
@@ -362,20 +433,14 @@ export default function SellerSettingsClient() {
                 />
               </div>
             </div>
-            {personalError && (
-              <div className={styles.msgError}><MdErrorOutline /> {personalError}</div>
-            )}
-            {personalStatus && (
-              <div className={styles.msgOk}><MdCheckCircle /> {personalStatus}</div>
-            )}
           </div>
         </section>
 
         <section className={styles.card}>
-          <div className={styles.cardHeadRow}>
+          <div className={`${styles.cardHeadRow} ${styles.passwordHeadRow}`}>
             <p className={styles.cardTitle}>Change Password</p>
             <button form={formId} type="submit" className={styles.primaryBtn}>
-              Save Changes
+              <FiSave /> Save Changes
             </button>
           </div>
           <form id={formId} onSubmit={handlePasswordSubmit} className={styles.form}>
@@ -429,15 +494,29 @@ export default function SellerSettingsClient() {
                 <li>One number</li>
               </ul>
             </div>
-            {passError && (
-              <div className={styles.msgError}><MdErrorOutline /> {passError}</div>
-            )}
-            {passStatus && (
-              <div className={styles.msgOk}><MdCheckCircle /> {passStatus}</div>
-            )}
           </form>
         </section>
       </div>
+      {toast && (
+        <div
+          className={`${styles.toast} ${
+            toast.type === 'error' ? styles.toastError : styles.toastSuccess
+          }`}
+          role="status"
+          aria-live="polite"
+        >
+          {toast.type === 'error' ? <MdErrorOutline /> : <MdCheckCircle />}
+          <span>{toast.message}</span>
+          <button
+            type="button"
+            className={styles.toastClose}
+            onClick={() => setToast(null)}
+            aria-label="Close notification"
+          >
+            ×
+          </button>
+        </div>
+      )}
     </div>
   )
 }
