@@ -179,7 +179,7 @@ function formatDate(s) {
   return new Date(s + 'T00:00:00').toLocaleDateString('en-PH', { dateStyle: 'medium' })
 }
 
-export default function OrdersContent({ initialTab }) {
+export default function OrdersContent({ initialTab, initialOrderId, initialAction }) {
   const [activeTab, setActiveTab] = useState(initialTab || 'all')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedOrder, setSelectedOrder] = useState(null)
@@ -195,6 +195,18 @@ export default function OrdersContent({ initialTab }) {
       setActiveTab(initialTab)
     }
   }, [initialTab])
+
+  useEffect(() => {
+    if (!initialOrderId) return
+    const matchedOrder = orders.find((order) => order.id === initialOrderId)
+    if (!matchedOrder) return
+
+    setSelectedOrder(matchedOrder)
+    if (initialAction === 'process') {
+      setOrderForUpdateStatus(matchedOrder)
+      setShowUpdateStatus(true)
+    }
+  }, [initialOrderId, initialAction, orders])
 
   useEffect(() => {
     const handleClickOutside = (e) => {
