@@ -13,15 +13,6 @@ export default function SellerAnalyticsPage() {
 
   return (
     <div className={styles.pageWrap}>
-      <header className={styles.pageHeader}>
-        <p className={styles.pageKicker}>Analytics</p>
-        <h1 className={styles.pageTitle}>Seller performance overview</h1>
-        <p className={styles.pageSubtitle}>
-          A calm snapshot of how your Lavisionario services are performing, so you can make gentle,
-          well‑informed decisions for the families you support.
-        </p>
-      </header>
-
       <section aria-label="Analytics areas" className={styles.navGrid}>
         <Link href="/seller/analytics/sales-overview" className={styles.navCard}>
           <div className={styles.navCardHeader}>

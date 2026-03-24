@@ -1,0 +1,114 @@
+.pageWrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cardsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.moreCard {
+  border: 1px solid color-mix(in srgb, var(--color-border) 72%, #ffffff 28%);
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(16, 40, 32, 0.07);
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-height: 11.4rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.moreCard:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border) 58%);
+  box-shadow: 0 12px 24px rgba(16, 40, 32, 0.11);
+}
+
+.cardBadge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-gold-base) 48%, #ffffff 52%);
+  background: color-mix(in srgb, var(--color-gold-base) 12%, #ffffff 88%);
+  color: var(--color-secondary-accent);
+  font-size: 0.72rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  padding: 0.24rem 0.62rem;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-main-accent);
+}
+
+.cardBody {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  max-width: 34ch;
+}
+
+.cardLink {
+  margin-top: auto;
+  color: var(--color-primary);
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+
+@media (max-width: 980px) {
+  .cardsGrid {
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
+  }
+
+  .moreCard {
+    min-height: 0;
+  }
+
+  .cardTitle {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .cardsGrid {
+    gap: 0.85rem;
+  }
+
+  .moreCard {
+    padding: 1rem;
+    border-radius: 1rem;
+    box-shadow: 0 6px 14px rgba(16, 40, 32, 0.07);
+  }
+
+  .cardBadge {
+    font-size: 0.68rem;
+    padding: 0.22rem 0.58rem;
+  }
+
+  .cardTitle {
+    font-size: 1.38rem;
+    line-height: 1.22;
+  }
+
+  .cardBody {
+    font-size: 0.82rem;
+    line-height: 1.4;
+  }
+
+  .cardLink {
+    font-size: 0.78rem;
+  }
+}
