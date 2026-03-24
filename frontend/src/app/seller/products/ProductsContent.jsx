@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { TbSearch } from 'react-icons/tb'
+import { TbPhoto, TbSearch } from 'react-icons/tb'
 import styles from './products.module.css'
 import { LISTINGS, SERVICES, PROVIDERS } from '../../(main)/shop/data'
 
@@ -19,6 +19,18 @@ const TYPE_FILTERS = [
   { id: 'all', label: 'All types' },
   { id: 'service', label: 'Services' },
   { id: 'package', label: 'Packages' },
+]
+
+const CATEGORY_OPTIONS = [
+  { id: 'cremation', label: 'Cremation' },
+  { id: 'traditional-burial', label: 'Traditional burial' },
+  { id: 'memorial-planning', label: 'Memorial planning' },
+  { id: 'other', label: 'Other' },
+]
+
+const STATUS_OPTIONS = [
+  { id: 'active', label: 'Active' },
+  { id: 'inactive', label: 'Inactive' },
 ]
 
 function buildProductsFromBuyerData() {
@@ -72,19 +84,44 @@ export default function ProductsContent({ initialKind = 'all' }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState(initialKind || 'all')
   const [selectedProduct, setSelectedProduct] = useState(null)
-  const [modalMode, setModalMode] = useState(null) // 'view' | 'edit'
+  const [modalMode, setModalMode] = useState(null) // 'view' | 'edit' | 'create'
   const [editGallery, setEditGallery] = useState([])
   const [products, setProducts] = useState(() => buildProductsFromBuyerData())
   const [productPendingRemoval, setProductPendingRemoval] = useState(null)
   const fileInputRef = useRef(null)
   const [categorySelect, setCategorySelect] = useState('cremation')
   const [categoryOther, setCategoryOther] = useState('')
+  const [openModalDropdown, setOpenModalDropdown] = useState(null)
+  const categoryDropdownRef = useRef(null)
+  const statusDropdownRef = useRef(null)
+  const [formName, setFormName] = useState('')
+  const [formPrice, setFormPrice] = useState('')
+  const [formCity, setFormCity] = useState('')
+  const [formAvailability, setFormAvailability] = useState('Available')
+  const [formStatus, setFormStatus] = useState('active')
+  const [formDescription, setFormDescription] = useState('')
 
   useEffect(() => {
     if (initialKind && TYPE_FILTERS.some((t) => t.id === initialKind)) {
       setTypeFilter(initialKind)
     }
   }, [initialKind])
+
+  useEffect(() => {
+    if (!openModalDropdown) return
+    const handleClickOutside = (event) => {
+      const target = event.target
+      if (
+        categoryDropdownRef.current?.contains(target) ||
+        statusDropdownRef.current?.contains(target)
+      ) {
+        return
+      }
+      setOpenModalDropdown(null)
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [openModalDropdown])
 
   const filteredProducts = useMemo(() => {
     let list = [...products]
@@ -119,6 +156,12 @@ export default function ProductsContent({ initialKind = 'all' }) {
     setSelectedProduct(product)
     setModalMode('edit')
     setEditGallery(product.gallery ?? [product.image])
+    setFormName(product.name || '')
+    setFormPrice(String(product.startingPrice ?? ''))
+    setFormCity(product.city || '')
+    setFormAvailability(product.availability || 'Available')
+    setFormStatus(product.status || 'active')
+    setFormDescription(product.longDescription || product.description || '')
 
     const rawCategory = (product.category || '').toLowerCase()
     if (rawCategory === 'cremation') {
@@ -136,10 +179,49 @@ export default function ProductsContent({ initialKind = 'all' }) {
     }
   }
 
+  const handleOpenCreate = () => {
+    setSelectedProduct({
+      id: '',
+      name: '',
+      kind: typeFilter === 'all' ? 'service' : typeFilter,
+      category: 'Cremation',
+      startingPrice: 0,
+      city: '',
+      status: 'active',
+      availability: 'Available',
+      inclusions: [],
+      image: '/sample/about-us/hero-welcome-flowers.png',
+      description: '',
+      longDescription: '',
+      type: 'Funeral Service',
+      detailCategory: 'Memorial Service',
+      duration: '3–5 Days',
+      coverage: 'Metro Manila',
+      gallery: ['/sample/about-us/hero-welcome-flowers.png'],
+    })
+    setModalMode('create')
+    setEditGallery([])
+    setCategorySelect('cremation')
+    setCategoryOther('')
+    setFormName('')
+    setFormPrice('')
+    setFormCity('')
+    setFormAvailability('Available')
+    setFormStatus('active')
+    setFormDescription('')
+  }
+
   const handleCloseModal = () => {
     setSelectedProduct(null)
     setModalMode(null)
     setEditGallery([])
+    setOpenModalDropdown(null)
+    setFormName('')
+    setFormPrice('')
+    setFormCity('')
+    setFormAvailability('Available')
+    setFormStatus('active')
+    setFormDescription('')
   }
 
   const handleUploadClick = () => {
@@ -179,6 +261,43 @@ export default function ProductsContent({ initialKind = 'all' }) {
     setProductPendingRemoval(null)
   }
 
+  const resolveCategoryLabel = () => {
+    if (categorySelect === 'cremation') return 'Cremation'
+    if (categorySelect === 'traditional-burial') return 'Traditional burial'
+    if (categorySelect === 'memorial-planning') return 'Memorial planning'
+    return categoryOther.trim() || 'Other'
+  }
+
+  const handleSaveProduct = () => {
+    if (!selectedProduct) return
+
+    const safeName = formName.trim() || 'Untitled listing'
+    const nextProduct = {
+      ...selectedProduct,
+      name: safeName,
+      category: resolveCategoryLabel(),
+      startingPrice: Number(formPrice) || 0,
+      city: formCity.trim() || 'N/A',
+      availability: formAvailability.trim() || 'Available',
+      status: formStatus || 'active',
+      description: formDescription.trim(),
+      longDescription: formDescription.trim(),
+      image: editGallery[0] || selectedProduct.image || '/sample/about-us/hero-welcome-flowers.png',
+      gallery: editGallery.length
+        ? editGallery
+        : [selectedProduct.image || '/sample/about-us/hero-welcome-flowers.png'],
+    }
+
+    if (modalMode === 'create') {
+      const id = `SELLER-${Date.now()}`
+      setProducts((prev) => [{ ...nextProduct, id }, ...prev])
+    } else {
+      setProducts((prev) => prev.map((p) => (p.id === selectedProduct.id ? nextProduct : p)))
+    }
+
+    handleCloseModal()
+  }
+
   return (
     <div className={styles.pageWrap}>
       <section className={styles.filtersRow} aria-label="Search products">
@@ -193,6 +312,9 @@ export default function ProductsContent({ initialKind = 'all' }) {
             aria-label="Search products"
           />
         </div>
+        <button type="button" className={styles.addProductBtn} onClick={handleOpenCreate}>
+          Add Product
+        </button>
       </section>
 
       <section className={styles.statsStrip} aria-label="Listing overview">
@@ -308,11 +430,19 @@ export default function ProductsContent({ initialKind = 'all' }) {
             <div className={styles.productModalHeader}>
               <div>
                 <p className={styles.productModalKicker}>
-                  {modalMode === 'view' ? 'Listing details' : 'Edit listing'}
+                  {modalMode === 'view'
+                    ? 'Listing details'
+                    : modalMode === 'create'
+                      ? 'Add listing'
+                      : 'Edit listing'}
                 </p>
-                <h2 className={styles.productModalTitle}>{selectedProduct.name}</h2>
+                <h2 className={styles.productModalTitle}>
+                  {modalMode === 'create' ? 'New listing' : selectedProduct.name}
+                </h2>
                 <p className={styles.productModalSubtitle}>
-                  {selectedProduct.category} · {selectedProduct.city}
+                  {modalMode === 'create'
+                    ? 'Fill in the listing details below'
+                    : `${selectedProduct.category} · ${selectedProduct.city}`}
                 </p>
               </div>
               <button
@@ -420,21 +550,57 @@ export default function ProductsContent({ initialKind = 'all' }) {
                       <input
                         type="text"
                         className={styles.productModalInput}
-                        defaultValue={selectedProduct.name}
+                        value={formName}
+                        onChange={(e) => setFormName(e.target.value)}
                       />
                     </label>
                     <label className={styles.productModalField}>
                       <span className={styles.productModalLabel}>Category</span>
-                      <select
-                        className={styles.productModalSelect}
-                        value={categorySelect}
-                        onChange={(e) => setCategorySelect(e.target.value)}
+                      <div
+                        className={`${styles.filterDropdownWrap} ${styles.modalDropdownWrap} ${
+                          openModalDropdown === 'category' ? styles.filterDropdownOpen : ''
+                        }`}
+                        ref={categoryDropdownRef}
                       >
-                        <option value="cremation">Cremation</option>
-                        <option value="traditional-burial">Traditional burial</option>
-                        <option value="memorial-planning">Memorial planning</option>
-                        <option value="other">Other</option>
-                      </select>
+                        <button
+                          type="button"
+                          className={styles.filterDropdownTrigger}
+                          onClick={() =>
+                            setOpenModalDropdown((prev) =>
+                              prev === 'category' ? null : 'category',
+                            )
+                          }
+                          aria-haspopup="listbox"
+                          aria-expanded={openModalDropdown === 'category'}
+                        >
+                          <span className={styles.filterDropdownLabel}>
+                            {CATEGORY_OPTIONS.find((opt) => opt.id === categorySelect)?.label ||
+                              'Cremation'}
+                          </span>
+                          <span className={styles.filterDropdownChevron}>▾</span>
+                        </button>
+                        {openModalDropdown === 'category' && (
+                          <div className={styles.filterDropdownPanel} role="listbox" aria-label="Category">
+                            {CATEGORY_OPTIONS.map((option) => (
+                              <button
+                                key={option.id}
+                                type="button"
+                                role="option"
+                                aria-selected={categorySelect === option.id}
+                                className={`${styles.filterDropdownOption} ${
+                                  categorySelect === option.id ? styles.filterDropdownOptionSelected : ''
+                                }`}
+                                onClick={() => {
+                                  setCategorySelect(option.id)
+                                  setOpenModalDropdown(null)
+                                }}
+                              >
+                                {option.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </label>
                     {categorySelect === 'other' && (
                       <label className={styles.productModalField}>
@@ -453,7 +619,8 @@ export default function ProductsContent({ initialKind = 'all' }) {
                       <input
                         type="number"
                         className={styles.productModalInput}
-                        defaultValue={selectedProduct.startingPrice}
+                        value={formPrice}
+                        onChange={(e) => setFormPrice(e.target.value)}
                       />
                     </label>
                     <label className={styles.productModalField}>
@@ -461,7 +628,8 @@ export default function ProductsContent({ initialKind = 'all' }) {
                       <input
                         type="text"
                         className={styles.productModalInput}
-                        defaultValue={selectedProduct.city}
+                        value={formCity}
+                        onChange={(e) => setFormCity(e.target.value)}
                       />
                     </label>
                     <label className={styles.productModalField}>
@@ -469,18 +637,54 @@ export default function ProductsContent({ initialKind = 'all' }) {
                       <input
                         type="text"
                         className={styles.productModalInput}
-                        defaultValue={selectedProduct.availability}
+                        value={formAvailability}
+                        onChange={(e) => setFormAvailability(e.target.value)}
                       />
                     </label>
                     <label className={styles.productModalField}>
                       <span className={styles.productModalLabel}>Status</span>
-                      <select
-                        className={styles.productModalSelect}
-                        defaultValue={selectedProduct.status}
+                      <div
+                        className={`${styles.filterDropdownWrap} ${styles.modalDropdownWrap} ${
+                          openModalDropdown === 'status' ? styles.filterDropdownOpen : ''
+                        }`}
+                        ref={statusDropdownRef}
                       >
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                      </select>
+                        <button
+                          type="button"
+                          className={styles.filterDropdownTrigger}
+                          onClick={() =>
+                            setOpenModalDropdown((prev) => (prev === 'status' ? null : 'status'))
+                          }
+                          aria-haspopup="listbox"
+                          aria-expanded={openModalDropdown === 'status'}
+                        >
+                          <span className={styles.filterDropdownLabel}>
+                            {STATUS_OPTIONS.find((opt) => opt.id === formStatus)?.label || 'Active'}
+                          </span>
+                          <span className={styles.filterDropdownChevron}>▾</span>
+                        </button>
+                        {openModalDropdown === 'status' && (
+                          <div className={styles.filterDropdownPanel} role="listbox" aria-label="Status">
+                            {STATUS_OPTIONS.map((option) => (
+                              <button
+                                key={option.id}
+                                type="button"
+                                role="option"
+                                aria-selected={formStatus === option.id}
+                                className={`${styles.filterDropdownOption} ${
+                                  formStatus === option.id ? styles.filterDropdownOptionSelected : ''
+                                }`}
+                                onClick={() => {
+                                  setFormStatus(option.id)
+                                  setOpenModalDropdown(null)
+                                }}
+                              >
+                                {option.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </label>
                     <label className={styles.productModalField}>
                       <span className={styles.productModalLabel}>Images</span>
@@ -488,7 +692,7 @@ export default function ProductsContent({ initialKind = 'all' }) {
                         <div className={styles.productModalUploadList}>
                           {editGallery.map((src, idx) => (
                             <div key={idx} className={styles.productModalUploadPreview}>
-                              <img src={src} alt={`${selectedProduct.name} ${idx + 1}`} />
+                              <img src={src} alt={`${formName || 'Listing'} ${idx + 1}`} />
                               <button
                                 type="button"
                                 className={styles.productModalUploadRemove}
@@ -504,8 +708,10 @@ export default function ProductsContent({ initialKind = 'all' }) {
                           type="button"
                           className={styles.productModalUploadBtn}
                           onClick={handleUploadClick}
+                          aria-label="Upload images"
+                          title="Upload images"
                         >
-                          Upload images
+                          <TbPhoto size={18} />
                         </button>
                       </div>
                     </label>
@@ -513,7 +719,8 @@ export default function ProductsContent({ initialKind = 'all' }) {
                       <span className={styles.productModalLabel}>Description</span>
                       <textarea
                         className={styles.productModalTextarea}
-                        defaultValue={selectedProduct.longDescription || selectedProduct.description}
+                        value={formDescription}
+                        onChange={(e) => setFormDescription(e.target.value)}
                       />
                     </label>
                   </div>
@@ -521,7 +728,7 @@ export default function ProductsContent({ initialKind = 'all' }) {
               )}
             </div>
 
-            {modalMode === 'edit' && (
+            {(modalMode === 'edit' || modalMode === 'create') && (
               <input
                 ref={fileInputRef}
                 type="file"
@@ -540,13 +747,13 @@ export default function ProductsContent({ initialKind = 'all' }) {
               >
                 Close
               </button>
-              {modalMode === 'edit' && (
+              {(modalMode === 'edit' || modalMode === 'create') && (
                 <button
                   type="button"
                   className={styles.productModalPrimary}
-                  onClick={handleCloseModal}
+                  onClick={handleSaveProduct}
                 >
-                  Save changes
+                  {modalMode === 'create' ? 'Add product' : 'Save changes'}
                 </button>
               )}
             </div>
