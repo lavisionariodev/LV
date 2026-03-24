@@ -567,7 +567,7 @@ export default function SellerNotificationsPage() {
                     />
                   </label>
 
-                  <label className={styles.controlGroup}>
+                  <label className={`${styles.controlGroup} ${styles.controlGroupFull}`}>
                     <span className={styles.controlLabel}>Type</span>
                     <FilterDropdown
                       value={typeFilter}
@@ -655,22 +655,6 @@ export default function SellerNotificationsPage() {
                           Resolve
                         </button>
                       )}
-                      {!item.read && (
-                        <button
-                          type="button"
-                          className={`${styles.actionBtn} ${styles.actionBtnRead}`}
-                          onClick={() => markAsRead(item.id)}
-                        >
-                          Mark as Read
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        className={`${styles.actionBtn} ${styles.actionBtnDismiss}`}
-                        onClick={() => dismissItem(item.id)}
-                      >
-                        Dismiss
-                      </button>
                     </div>
                   </div>
                 </article>
