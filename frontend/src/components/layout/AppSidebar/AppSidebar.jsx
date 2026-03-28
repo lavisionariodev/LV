@@ -16,6 +16,7 @@ import {
   TbChevronDown,
   TbChevronRight,
   TbMenu2,
+  TbClipboardList,
 } from 'react-icons/tb'
 import { LuUserCheck } from 'react-icons/lu'
 import { HiOutlineNewspaper } from 'react-icons/hi'
@@ -49,8 +50,9 @@ const SIDEBAR_CONFIG = {
       { href: '/admin', label: 'Dashboard', icon: TbLayoutDashboardFilled },
       { href: '/admin/payouts', label: 'Payouts', icon: TbReportSearch },
       { href: '/admin/disputes', label: 'Dispute', icon: TbReportSearch },
-      { href: '/admin/users', label: 'Users', icon: TbUsers },
       { href: '/admin/sellers', label: 'Sellers', icon: LuUserCheck },
+      { href: '/admin/users', label: 'Users', icon: TbUsers },
+      { href: '/admin/seller-template', label: 'Template', icon: TbClipboardList },
       { href: '/admin/content', label: 'Content', icon: HiOutlineNewspaper },
     ],
   },

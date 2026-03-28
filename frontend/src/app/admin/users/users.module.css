@@ -1,20 +1,19 @@
 /* =========================
    USERS PAGE
-   Matches admin.module.css design system exactly
    ========================= */
 
 .pageRoot {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
 }
 
-/* ── Table Panel ─────────────────────────────────────────────────────────── */
+/* ── Table panel ────────────────────────────────────────────────────────── */
 
 .tablePanel {
   background: #ffffff;
-  border: 1px solid #e9e9ef;
-  border-radius: 16px;
+  border: 1px solid #e9efec;
+  border-radius: 14px;
   padding: 16px;
 }
 
@@ -27,26 +26,14 @@
   flex-wrap: wrap;
 }
 
-.tablePanelTitle {
-  margin: 0;
-  font-weight: 800;
-  color: #000;
-}
+/* ── Filter pills ───────────────────────────────────────────────────────── */
 
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-/* Filter pills */
 .filterGroup {
   display: flex;
-  gap: 4px;
+  gap: 3px;
   background: #f8fafc;
-  border: 1px solid #e9e9ef;
-  border-radius: 12px;
+  border: 1px solid #e9efec;
+  border-radius: 10px;
   padding: 3px;
 }
 
@@ -59,19 +46,23 @@
   color: #64748b;
   background: transparent;
   border: none;
-  border-radius: 9px;
+  border-radius: 7px;
   padding: 5px 11px;
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
   white-space: nowrap;
 }
-.filterBtn:hover { color: #000; background: #eef0f6; }
+
+.filterBtn:hover {
+  color: #1e293b;
+  background: #eef1f6;
+}
 
 .filterBtnActive {
   background: #ffffff;
-  color: #000;
+  color: #1e293b;
   font-weight: 700;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07);
 }
 
 .filterCount {
@@ -81,22 +72,28 @@
   min-width: 16px;
   height: 16px;
   border-radius: 99px;
-  background: #eef0f6;
+  background: #e9efec;
   font-size: 10px;
   font-weight: 700;
   color: #64748b;
-  padding: 0 3px;
+  padding: 0 4px;
 }
 
-/* Search */
+/* ── Search ─────────────────────────────────────────────────────────────── */
+
 .searchWrap {
   display: flex;
   align-items: center;
-  gap: 8px;
-  border: 1px solid #e6e7ee;
+  gap: 7px;
+  border: 1px solid #e2e8f0;
   background: #ffffff;
-  border-radius: 12px;
-  padding: 8px 12px;
+  border-radius: 9px;
+  padding: 7px 11px;
+  transition: border-color 0.15s;
+}
+
+.searchWrap:focus-within {
+  border-color: #94a3b8;
 }
 
 .searchIcon {
@@ -112,13 +109,33 @@
   font-size: 13px;
   width: 200px;
   background: transparent;
-  color: #000;
+  color: #1e293b;
 }
-.searchInput::placeholder { color: #94a3b8; }
 
-/* ── Table ───────────────────────────────────────────────────────────────── */
+.searchInput::placeholder {
+  color: #94a3b8;
+}
 
-.tableWrap { overflow-x: auto; }
+.searchClear {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  transition: color 0.12s;
+}
+
+.searchClear:hover {
+  color: #475569;
+}
+
+/* ── Table ──────────────────────────────────────────────────────────────── */
+
+.tableWrap {
+  overflow-x: auto;
+}
 
 .table {
   width: 100%;
@@ -126,30 +143,38 @@
 }
 
 .th {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: #64748b;
-  padding: 10px 12px;
+  color: #94a3b8;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 9px 12px;
   text-align: left;
-  border-bottom: 1px solid #eef0f6;
+  border-bottom: 1px solid #e9efec;
   white-space: nowrap;
 }
 
 .tr {
-  border-bottom: 1px solid #eef0f6;
+  border-bottom: 1px solid #f1f5f9;
   transition: background 0.1s;
 }
-.tr:hover { background: #f8fafc; }
-.tr:last-child { border-bottom: none; }
+
+.tr:hover {
+  background: #f8fafc;
+}
+
+.tr:last-child {
+  border-bottom: none;
+}
 
 .td {
-  padding: 12px 12px;
+  padding: 11px 12px;
   font-size: 13px;
-  color: #000;
+  color: #1e293b;
   vertical-align: middle;
 }
 
-/* ── Avatar & User Cell ──────────────────────────────────────────────────── */
+/* ── Avatar & user cell ─────────────────────────────────────────────────── */
 
 .userCell {
   display: flex;
@@ -158,14 +183,14 @@
 }
 
 .avatar {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 700;
   flex-shrink: 0;
   letter-spacing: 0.3px;
   object-fit: cover;
@@ -178,113 +203,151 @@
 }
 
 .avatarIcon {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 .userName {
   margin: 0;
   font-size: 13px;
-  font-weight: 700;
-  color: #000;
+  font-weight: 600;
+  color: #1e293b;
 }
 
 .userId {
   margin: 2px 0 0;
   font-size: 11px;
   color: #94a3b8;
+  font-family: monospace;
 }
 
-/* ── Other cells ─────────────────────────────────────────────────────────── */
+/* ── Other cells ────────────────────────────────────────────────────────── */
 
 .email {
   font-size: 13px;
-  color: #334155;
+  color: #475569;
 }
 
 .meta {
   font-size: 12px;
-  color: #64748b;
+  color: #94a3b8;
 }
 
-/* ── Badges ──────────────────────────────────────────────────────────────── */
+/* ── Role badge ─────────────────────────────────────────────────────────── */
 
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 5px 10px;
+  padding: 3px 9px;
   border-radius: 999px;
-  border: 1px solid #e6e7ee;
+  border: 1px solid #e2e8f0;
   background: #f8fafc;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: #334155;
+  color: #475569;
   white-space: nowrap;
   text-transform: capitalize;
 }
 
-.status_active    { background: #dcfce7; border-color: #bbf7d0; color: #15803d; }
-.status_pending   { background: #fef9c3; border-color: #fef08a; color: #854d0e; }
-.status_suspended { background: #fee2e2; border-color: #fecaca; color: #b91c1c; }
+/* ── Status badge with dot ──────────────────────────────────────────────── */
 
-/* ── Empty State ─────────────────────────────────────────────────────────── */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-transform: capitalize;
+  border: 1px solid transparent;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: currentColor;
+  opacity: 0.6;
+}
+
+.status_active    { border-color: #bbf7d0; color: #15803d; }
+.status_pending   { border-color: #fef08a; color: #854d0e; }
+.status_suspended { border-color: #fecaca; color: #b91c1c; }
+
+/* ── Empty state ────────────────────────────────────────────────────────── */
 
 .emptyState {
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 48px 24px;
-  gap: 8px;
+  gap: 6px;
+  text-align: center;
 }
 
 .emptyIcon {
-  width: 40px;
-  height: 40px;
-  color: #cbd5e1;
+  width: 38px;
+  height: 38px;
+  margin-bottom: 6px;
+}
+
+.emptyTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  margin: 0;
 }
 
 .emptyText {
-  font-size: 13px;
-  color: #64748b;
+  font-size: 12px;
+  color: #94a3b8;
   margin: 0;
 }
 
 .clearBtn {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  padding: 8px 12px;
-  border-radius: 12px;
-  border: 1px solid #e6e7ee;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
   background: #fff;
   cursor: pointer;
-  color: #000;
-  margin-top: 4px;
+  color: #475569;
+  margin-top: 6px;
+  transition: background 0.12s, border-color 0.12s;
 }
-.clearBtn:hover { background: #f8fafc; }
 
-/* ── Footer ──────────────────────────────────────────────────────────────── */
+.clearBtn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+/* ── Footer ─────────────────────────────────────────────────────────────── */
 
 .tableFooter {
   padding: 10px 12px 0;
   font-size: 12px;
-  color: #64748b;
-  border-top: 1px solid #eef0f6;
-  margin-top: 8px;
+  color: #94a3b8;
+  border-top: 1px solid #f1f5f9;
+  margin-top: 6px;
 }
 
-/* ── Responsive ──────────────────────────────────────────────────────────── */
+.tableFooter strong {
+  color: #475569;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
 
 @media (max-width: 1100px) {
   .searchInput { width: 160px; }
 }
 
 @media (max-width: 860px) {
-  .toolbar { flex-direction: column; align-items: stretch; }
+  .tablePanelHead { flex-direction: column; align-items: stretch; }
   .filterGroup { overflow-x: auto; }
   .searchWrap { width: 100%; }
   .searchInput { width: 100%; }
-}
-
-@media (max-width: 600px) {
-  .pageHeader { flex-direction: column; }
 }

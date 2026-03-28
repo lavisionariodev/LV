@@ -1,74 +1,85 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import layoutStyles from '../admin.module.css'
 import styles from './content.module.css'
 import { useSiteContent, upsertSiteContent } from '@/lib/siteContent/client'
 import { useToast } from '@/contexts/ToastContext'
 
 const SECTIONS = [
-  { id: 'system', label: 'System name' },
-  { id: 'hero', label: 'Homepage hero' },
-  { id: 'footer', label: 'Footer contact' },
-  { id: 'about', label: 'About page copy' },
-  { id: 'howItWorks', label: 'How it works copy' },
+  { id: 'system',     label: 'System name',   icon: '⊛' },
+  { id: 'hero',       label: 'Homepage hero', icon: '◈' },
+  { id: 'footer',     label: 'Footer contact',icon: '◉' },
+  { id: 'about',      label: 'About page',    icon: '◎' },
+  { id: 'howItWorks', label: 'How it works',  icon: '◷' },
 ]
+
+const HOW_IT_WORKS_LABELS = {
+  stepByStep:      'Step-by-step guide',
+  comparePackages: 'Compare packages',
+  bookAService:    'Book a service',
+  paymentSupport:  'Payment & support',
+}
+
+const ABOUT_LABELS = {
+  ourStory:      'Our story',
+  missionVision: 'Mission & vision',
+  description:   'About us',
+  whyUs:         'Why us',
+  partners:      'Our partners',
+  commitment:    'Our commitment',
+}
 
 const EMPTY_SITE_CONTENT = {
   systemName: '',
-  hero: {
-    title: '',
-    subheading: '',
-    primaryCta: '',
-  },
-  footer: {
-    tagline: '',
-    supportPhone: '',
-    supportEmail: '',
-    copyrightText: '',
-  },
-  about: {
-    description: '',
-    ourStory: '',
-    missionVision: '',
-    whyUs: '',
-    partners: '',
-    commitment: '',
-  },
-  howItWorks: {
-    stepByStep: '',
-    comparePackages: '',
-    bookAService: '',
-    paymentSupport: '',
-  },
+  hero:       { title: '', subheading: '', primaryCta: '' },
+  footer:     { tagline: '', supportPhone: '', supportEmail: '', copyrightText: '' },
+  about:      { description: '', ourStory: '', missionVision: '', whyUs: '', partners: '', commitment: '' },
+  howItWorks: { stepByStep: '', comparePackages: '', bookAService: '', paymentSupport: '' },
 }
 
 export default function AdminContentPage() {
   const [activeSection, setActiveSection] = useState('system')
-  const [draft, setDraft] = useState(EMPTY_SITE_CONTENT)
-  const [isEditing, setIsEditing] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
+  const [draft, setDraft]                 = useState(EMPTY_SITE_CONTENT)
+  const [isEditing, setIsEditing]         = useState(false)
+  const [isSaving, setIsSaving]           = useState(false)
   const { data: loadedContent, isLoading, error } = useSiteContent()
   const toast = useToast()
 
   useEffect(() => {
-    if (loadedContent && !isEditing) {
-      setDraft(loadedContent)
-    }
+    if (loadedContent && !isEditing) setDraft(loadedContent)
   }, [loadedContent, isEditing])
+
+  useEffect(() => {
+    // Ensure textareas match their content length on first load / draft updates
+    adjustAllTextareas()
+  }, [draft, isEditing])
+
+  const contentRefs = useRef(null)
+
+  const adjustTextareaSize = (textarea) => {
+    if (!textarea) return
+    textarea.style.height = 'auto'
+    textarea.style.height = `${textarea.scrollHeight}px`
+  }
+
+  const adjustAllTextareas = () => {
+    if (!contentRefs.current) return
+    const textareas = contentRefs.current.querySelectorAll('textarea')
+    textareas.forEach((el) => adjustTextareaSize(el))
+  }
 
   const handleChange = (section, field, value) => {
     setDraft((prev) => ({
       ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: value,
-      },
+      [section]: { ...prev[section], [field]: value },
     }))
   }
 
-  const handleEdit = () => {
-    setIsEditing(true)
+  const handleTextareaChange = (section, field) => (event) => {
+    const textarea = event.target
+    handleChange(section, field, textarea.value)
+    adjustTextareaSize(textarea)
   }
 
   const handleCancel = () => {
@@ -91,6 +102,8 @@ export default function AdminContentPage() {
     }
   }
 
+  /* ── Section renderers ── */
+
   const renderSystem = () => (
     <div className={styles.sectionGrid}>
       <label className={styles.label}>
@@ -98,14 +111,12 @@ export default function AdminContentPage() {
         <input
           type="text"
           value={draft.systemName ?? ''}
-          onChange={(e) =>
-            setDraft((prev) => ({ ...prev, systemName: e.target.value }))
-          }
-          className={styles.input}          disabled={!isEditing}        />
+          onChange={(e) => setDraft((prev) => ({ ...prev, systemName: e.target.value }))}
+          className={styles.input}
+          disabled={!isEditing}
+          placeholder="e.g. Servify"
+        />
       </label>
-      <p className={styles.hint}>
-        Used in the public navbar, footer, About hero, and copyright.
-      </p>
     </div>
   )
 
@@ -119,20 +130,20 @@ export default function AdminContentPage() {
           onChange={(e) => handleChange('hero', 'title', e.target.value)}
           className={styles.input}
           disabled={!isEditing}
+          placeholder="Your bold headline"
         />
       </label>
-
       <label className={styles.label}>
         <span className={styles.labelSpan}>Subheading</span>
         <textarea
           value={draft.hero?.subheading ?? ''}
-          onChange={(e) => handleChange('hero', 'subheading', e.target.value)}
+          onChange={handleTextareaChange('hero', 'subheading')}
           rows={3}
           className={styles.textarea}
           disabled={!isEditing}
+          placeholder="Supporting text beneath the title"
         />
       </label>
-
       <label className={styles.label}>
         <span className={styles.labelSpan}>CTA button label</span>
         <input
@@ -141,6 +152,7 @@ export default function AdminContentPage() {
           onChange={(e) => handleChange('hero', 'primaryCta', e.target.value)}
           className={styles.input}
           disabled={!isEditing}
+          placeholder="e.g. Get started"
         />
       </label>
     </div>
@@ -152,14 +164,14 @@ export default function AdminContentPage() {
         <span className={styles.labelSpan}>Tagline</span>
         <textarea
           value={draft.footer?.tagline ?? ''}
-          onChange={(e) => handleChange('footer', 'tagline', e.target.value)}
+          onChange={handleTextareaChange('footer', 'tagline')}
           rows={3}
           className={styles.textarea}
           disabled={!isEditing}
+          placeholder="Short brand tagline shown in the footer"
         />
       </label>
-
-      <div className={styles.ctaRow}>
+      <div className={styles.twoCol}>
         <label className={styles.label}>
           <span className={styles.labelSpan}>Support phone</span>
           <input
@@ -168,9 +180,9 @@ export default function AdminContentPage() {
             onChange={(e) => handleChange('footer', 'supportPhone', e.target.value)}
             className={styles.input}
             disabled={!isEditing}
+            placeholder="+1 800 000 0000"
           />
         </label>
-
         <label className={styles.label}>
           <span className={styles.labelSpan}>Support email</span>
           <input
@@ -179,94 +191,79 @@ export default function AdminContentPage() {
             onChange={(e) => handleChange('footer', 'supportEmail', e.target.value)}
             className={styles.input}
             disabled={!isEditing}
+            placeholder="support@example.com"
           />
         </label>
       </div>
     </div>
   )
 
-  const renderAbout = () => {
-    const aboutLabels = {
-      ourStory: 'Our Story',
-      missionVision: 'Mission & Vision',
-      description: 'About Us',
-      whyUs: 'Why Us',
-      partners: 'Our Partners',
-      commitment: 'Our Commitment',
-    }
-
-    return (
-      <div className={styles.sectionGrid}>
-        {['ourStory', 'missionVision', 'description', 'whyUs', 'partners', 'commitment'].map(
-          (key) => (
-            <label key={key} className={styles.label}>
-              <span className={styles.labelSpan}>{aboutLabels[key]}</span>
-              <textarea
-                value={draft.about?.[key] ?? ''}
-                onChange={(e) => handleChange('about', key, e.target.value)}
-                rows={3}
-                className={styles.textarea}
-                disabled={!isEditing}
-              />
-            </label>
-          ),
-        )}
-      </div>
-    )
-  }
+  const renderAbout = () => (
+    <div className={styles.sectionGrid}>
+      {['ourStory', 'missionVision', 'description', 'whyUs', 'partners', 'commitment'].map((key) => (
+        <label key={key} className={styles.label}>
+          <span className={styles.labelSpan}>{ABOUT_LABELS[key]}</span>
+          <textarea
+            value={draft.about?.[key] ?? ''}
+            onChange={handleTextareaChange('about', key)}
+            rows={3}
+            className={styles.textarea}
+            disabled={!isEditing}
+            placeholder={`Write your ${ABOUT_LABELS[key].toLowerCase()} copy here`}
+          />
+        </label>
+      ))}
+    </div>
+  )
 
   const renderHowItWorks = () => (
     <div className={styles.sectionGrid}>
-      {['stepByStep', 'comparePackages', 'bookAService', 'paymentSupport'].map(
-        (key) => (
-          <label key={key} className={styles.label}>
-            <span className={styles.labelSpan}>{key}</span>
-            <textarea
-              value={draft.howItWorks?.[key] ?? ''}
-              onChange={(e) => handleChange('howItWorks', key, e.target.value)}
-              rows={3}
-              className={styles.textarea}
-              disabled={!isEditing}
-            />
-          </label>
-        ),
-      )}
+      {['stepByStep', 'comparePackages', 'bookAService', 'paymentSupport'].map((key) => (
+        <label key={key} className={styles.label}>
+          <span className={styles.labelSpan}>{HOW_IT_WORKS_LABELS[key]}</span>
+          <textarea
+            value={draft.howItWorks?.[key] ?? ''}
+            onChange={handleTextareaChange('howItWorks', key)}
+            rows={3}
+            className={styles.textarea}
+            disabled={!isEditing}
+            placeholder={`Describe the "${HOW_IT_WORKS_LABELS[key]}" section`}
+          />
+        </label>
+      ))}
     </div>
   )
 
   const renderForm = () => {
     switch (activeSection) {
-      case 'system':
-        return renderSystem()
-      case 'hero':
-        return renderHero()
-      case 'footer':
-        return renderFooter()
-      case 'about':
-        return renderAbout()
-      case 'howItWorks':
-        return renderHowItWorks()
-      default:
-        return null
+      case 'system':     return renderSystem()
+      case 'hero':       return renderHero()
+      case 'footer':     return renderFooter()
+      case 'about':      return renderAbout()
+      case 'howItWorks': return renderHowItWorks()
+      default:           return null
     }
   }
+
+  const activeMeta = SECTIONS.find((s) => s.id === activeSection)
 
   return (
     <div className={layoutStyles.dashWrap}>
       <section className={layoutStyles.panel}>
+
+        {/* ── Panel header ── */}
         <div className={`${layoutStyles.panelHead} ${styles.panelHeadRow}`}>
           <p className={layoutStyles.panelTitle}>Content management</p>
-
           <div className={styles.panelActions}>
             {!isEditing ? (
-              <button type="button" className={`${styles.primaryBtn}`} onClick={handleEdit}>
-                Edit
+              <button type="button" className={styles.btnPrimary} onClick={() => setIsEditing(true)}>
+                Edit content
               </button>
             ) : (
               <div className={styles.actionRow}>
                 <button
                   type="button"
-                  className={`${styles.primaryBtn}`}
+                  className={styles.btnPrimary}
                   onClick={handleSave}
                   disabled={isSaving}
                 >
@@ -274,7 +271,7 @@ export default function AdminContentPage() {
                 </button>
                 <button
                   type="button"
-                  className={`${styles.secondaryBtn}`}
+                  className={styles.btnGhost}
                   onClick={handleCancel}
                   disabled={isSaving}
                 >
@@ -285,39 +282,51 @@ export default function AdminContentPage() {
           </div>
         </div>
 
+        {/* ── Editing banner ── */}
+        {isEditing && (
+          <div className={styles.editingBanner}>
+            <span className={styles.editingDot} />
+            Editing mode — unsaved changes won&apos;t apply until you save.
+          </div>
+        )}
+
         <div className={styles.layout}>
-          <div className={styles.sidebar}>
+
+          {/* ── Sidebar nav ── */}
+          <nav className={styles.sidebar}>
             {SECTIONS.map((section) => (
               <button
                 key={section.id}
                 type="button"
                 onClick={() => setActiveSection(section.id)}
-                className={`${layoutStyles.smallBtn} ${styles.sectionBtn} ${activeSection === section.id ? styles.sectionBtnActive : ''}`}
+                className={`${styles.navBtn} ${activeSection === section.id ? styles.navBtnActive : ''}`}
               >
+                <span className={styles.navIcon}>{section.icon}</span>
                 {section.label}
               </button>
             ))}
-          </div>
+          </nav>
 
-          <div className={styles.formArea}>
-            {isLoading ? (
-              <p className={styles.hint}>Loading site content…</p>
-            ) : error ? (
-              <p className={styles.hint}>
-                There was a problem loading content from Supabase. Showing local defaults for now.
+          {/* ── Form area ── */}
+          <div className={styles.formArea} ref={contentRefs}>
+            {isLoading && <p className={styles.hint}>Loading site content…</p>}
+            {error && !isLoading && (
+              <p className={styles.hintError}>
+                Could not load content from the server. Showing local defaults.
               </p>
-            ) : null}
+            )}
+
+            {/* Section label row */}
+            <div className={styles.sectionHeader}>
+              <span className={styles.sectionIcon}>{activeMeta?.icon}</span>
+              <span className={styles.sectionLabel}>{activeMeta?.label}</span>
+              {!isEditing && <span className={styles.readOnlyPill}>Read only</span>}
+            </div>
 
             {renderForm()}
-
-            <p className={styles.footerNote}>
-              Changes are saved to your Supabase <code>site_content</code> table and used across the
-              public site.
-            </p>
           </div>
         </div>
       </section>
     </div>
   )
 }
-
