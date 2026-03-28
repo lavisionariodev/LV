@@ -36,11 +36,47 @@ function formatShortDate(dateStr) {
   return `${d.getMonth() + 1}/${d.getDate()}`
 }
 
+function getStatusDotColor(status) {
+  const s = String(status).toLowerCase()
+  if (s.includes('pending')) return '#f59e0b'
+  if (s.includes('open')) return '#0284c7'
+  if (s.includes('resolved') || s.includes('completed')) return '#15803d'
+  return '#94a3b8'
+}
+
 export default function AdminDashboardPage() {
   const [activeQuickLink, setActiveQuickLink] = useState('disputes')
 
   return (
     <div className={styles.dashWrap}>
+      {/* ── Welcome banner ── */}
+      <section className={styles.welcomeBanner}>
+        <div className={styles.welcomeLeft}>
+          <div className={styles.welcomeIcon}>
+            {/* swap for your logo mark if you like */}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"
+                strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+          </div>
+          <div>
+            <p className={styles.welcomeGreeting}>Welcome, Admin!</p>
+            <p className={styles.welcomeSub}>
+              Here's what's happening on your marketplace today — stay on top of
+              pending actions and keep things running smoothly.
+            </p>
+          </div>
+        </div>
+
+        <div className={styles.welcomeRight}>
+          <div className={styles.welcomePill}>
+            <span className={styles.welcomePillDot} />
+            All systems operational
+          </div>
+        </div>
+      </section>
+
       {/* Desktop-only summary cards (analytics move to /admin/analytics on mobile) */}
       <section className={`${styles.statsGrid} ${styles.homeDesktopOnly}`}>
         <div className={styles.statCard}>
@@ -324,7 +360,13 @@ export default function AdminDashboardPage() {
               <div className={styles.row} key={item.id}>
                 <span>{item.date}</span>
                 <span>{item.type}</span>
-                <span className={styles.badge}>{item.status}</span>
+                <span className={styles.statusLabel}>
+                  <span
+                    className={styles.statusDot}
+                    style={{ backgroundColor: getStatusDotColor(item.status) }}
+                  />
+                  {item.status}
+                </span>
               </div>
             ))}
           </div>
@@ -370,7 +412,13 @@ export default function AdminDashboardPage() {
               <div className={styles.row} key={item.id}>
                 <span>{item.date}</span>
                 <span>{item.type}</span>
-                <span className={styles.badge}>{item.status}</span>
+                <span className={styles.statusLabel}>
+                  <span
+                    className={styles.statusDot}
+                    style={{ backgroundColor: getStatusDotColor(item.status) }}
+                  />
+                  {item.status}
+                </span>
               </div>
             ))}
           </div>
