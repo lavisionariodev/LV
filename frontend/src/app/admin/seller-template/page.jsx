@@ -14,6 +14,15 @@ const FIELD_TYPES = [
   { value: 'select', label: 'Dropdown (select)' },
 ]
 
+const TYPE_ICONS = {
+  text: 'T',
+  number: '#',
+  textarea: '¶',
+  email: '@',
+  url: '⌘',
+  select: '▾',
+}
+
 function newField(overrides = {}) {
   return {
     id: `f-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -22,7 +31,7 @@ function newField(overrides = {}) {
     type: 'text',
     required: false,
     placeholder: '',
-    options: '', // comma-separated for select, e.g. "Option A, Option B"
+    options: '',
     ...overrides,
   }
 }
@@ -34,6 +43,7 @@ export default function AdminSellerTemplatePage() {
   const [editingId, setEditingId] = useState(null)
   const [isAdding, setIsAdding] = useState(false)
   const [form, setForm] = useState(() => newField())
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null)
 
   const fieldList = useMemo(
     () => [...fields].sort((a, b) => a.order - b.order),
@@ -66,12 +76,12 @@ export default function AdminSellerTemplatePage() {
   }
 
   const handleDelete = (id) => {
-    const index = fields.findIndex((f) => f.id === id)
     setFields((prev) => {
       const next = prev.filter((f) => f.id !== id)
       return next.map((f, i) => ({ ...f, order: i }))
     })
     if (editingId === id || (isAdding && form.id === id)) resetForm()
+    setDeleteConfirmId(null)
   }
 
   const moveField = (id, direction) => {
@@ -98,9 +108,10 @@ export default function AdminSellerTemplatePage() {
       ...form,
       label,
       order: typeof form.order === 'number' ? form.order : fields.length,
-      options: form.type === 'select' && form.options
-        ? form.options.split(',').map((s) => s.trim()).filter(Boolean)
-        : undefined,
+      options:
+        form.type === 'select' && form.options
+          ? form.options.split(',').map((s) => s.trim()).filter(Boolean)
+          : undefined,
     }
 
     if (editingId) {
@@ -113,6 +124,8 @@ export default function AdminSellerTemplatePage() {
     resetForm()
   }
 
+  const isEditorOpen = editingId || isAdding
+
   return (
     <div className={layoutStyles.dashWrap}>
       <section className={layoutStyles.panel}>
@@ -121,66 +134,75 @@ export default function AdminSellerTemplatePage() {
         </div>
 
         <p className={styles.intro}>
-          Configure the form that <strong>sellers</strong> see when they add their
-          own service. Add, edit, remove, or reorder fields below. This template
-          drives the &quot;Add service&quot; form in the seller portal.
+          Configure the form that <strong>sellers</strong> see when adding a service.
+          Add, edit, reorder, or remove fields — changes reflect instantly in the preview.
         </p>
 
         <div className={styles.layout}>
+          {/* ── Builder ── */}
           <div className={styles.builder}>
-            <div className={styles.formCard}>
-              <h3 className={styles.formTitle}>
-                {editingId ? 'Edit field' : isAdding ? 'Add new field' : 'Template fields'}
-              </h3>
+            <div className={`${styles.formCard} ${isEditorOpen ? styles.formCardActive : ''}`}>
 
-              {(editingId || isAdding) ? (
+              {isEditorOpen ? (
                 <form onSubmit={handleSubmit} className={styles.fieldForm}>
+                  <div className={styles.formCardHeader}>
+                    <span className={styles.formCardBadge}>
+                      {editingId ? 'Editing field' : 'New field'}
+                    </span>
+                  </div>
+
                   <label className={styles.label}>
-                    <span className={styles.labelSpan}>Label (sellers will see this)</span>
+                    <span className={styles.labelSpan}>Label</span>
                     <input
                       type="text"
                       value={form.label}
                       onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
                       placeholder="e.g. Service name"
                       className={styles.input}
+                      autoFocus
                     />
                   </label>
 
-                  <label className={styles.label}>
-                    <span className={styles.labelSpan}>Field type</span>
-                    <select
-                      value={form.type}
-                      onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
-                      className={layoutStyles.smallBtn}
-                    >
-                      {FIELD_TYPES.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <div className={styles.row}>
+                    <label className={`${styles.label} ${styles.rowFlex}`}>
+                      <span className={styles.labelSpan}>Field type</span>
+                      <select
+                        value={form.type}
+                        onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
+                        className={styles.select}
+                      >
+                        {FIELD_TYPES.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
 
-                  <label className={styles.label}>
-                    <span className={styles.labelSpan}>Placeholder (optional)</span>
-                    <input
-                      type="text"
-                      value={form.placeholder || ''}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, placeholder: e.target.value }))
-                      }
-                      className={styles.input}
-                    />
-                  </label>
+                    <label className={`${styles.label} ${styles.rowFlex}`}>
+                      <span className={styles.labelSpan}>Placeholder</span>
+                      <input
+                        type="text"
+                        value={form.placeholder || ''}
+                        onChange={(e) =>
+                          setForm((f) => ({ ...f, placeholder: e.target.value }))
+                        }
+                        placeholder="Optional hint text"
+                        className={styles.input}
+                      />
+                    </label>
+                  </div>
 
                   {form.type === 'select' && (
                     <label className={styles.label}>
-                      <span className={styles.labelSpan}>
-                        Options (comma-separated)
-                      </span>
+                      <span className={styles.labelSpan}>Options <span className={styles.labelHint}>(comma-separated)</span></span>
                       <input
                         type="text"
-                        value={typeof form.options === 'string' ? form.options : (form.options || []).join(', ')}
+                        value={
+                          typeof form.options === 'string'
+                            ? form.options
+                            : (form.options || []).join(', ')
+                        }
                         onChange={(e) =>
                           setForm((f) => ({ ...f, options: e.target.value }))
                         }
@@ -198,16 +220,16 @@ export default function AdminSellerTemplatePage() {
                         setForm((f) => ({ ...f, required: e.target.checked }))
                       }
                     />
-                    <span>Required field</span>
+                    <span>Mark as required</span>
                   </label>
 
                   <div className={styles.formActions}>
-                    <button type="submit" className={layoutStyles.smallBtn}>
-                      {editingId ? 'Save field' : 'Add field'}
+                    <button type="submit" className={styles.btnPrimary}>
+                      {editingId ? 'Save changes' : 'Add field'}
                     </button>
                     <button
                       type="button"
-                      className={layoutStyles.smallBtn}
+                      className={styles.btnGhost}
                       onClick={resetForm}
                     >
                       Cancel
@@ -216,123 +238,174 @@ export default function AdminSellerTemplatePage() {
                 </form>
               ) : (
                 <>
-                  <button
-                    type="button"
-                    className={`${layoutStyles.smallBtn} ${styles.addBtn}`}
-                    onClick={startAdd}
-                  >
-                    + Add field
-                  </button>
+                  <div className={styles.listHeader}>
+                    <span className={styles.fieldCount}>
+                      {fieldList.length} {fieldList.length === 1 ? 'field' : 'fields'}
+                    </span>
+                    <button
+                      type="button"
+                      className={styles.btnPrimary}
+                      onClick={startAdd}
+                    >
+                      + Add field
+                    </button>
+                  </div>
 
-                  <ul className={styles.fieldList}>
-                    {fieldList.map((field) => (
-                      <li key={field.id} className={styles.fieldItem}>
-                        <span className={styles.fieldLabel}>{field.label}</span>
-                        <span className={styles.fieldMeta}>
-                          {field.type}
-                          {field.required && ' · Required'}
-                        </span>
-                        <div className={styles.fieldActions}>
-                          <button
-                            type="button"
-                            className={layoutStyles.smallBtn}
-                            onClick={() => moveField(field.id, 'up')}
-                            disabled={fieldList.indexOf(field) === 0}
-                            title="Move up"
-                          >
-                            ↑
-                          </button>
-                          <button
-                            type="button"
-                            className={layoutStyles.smallBtn}
-                            onClick={() => moveField(field.id, 'down')}
-                            disabled={fieldList.indexOf(field) === fieldList.length - 1}
-                            title="Move down"
-                          >
-                            ↓
-                          </button>
-                          <button
-                            type="button"
-                            className={layoutStyles.smallBtn}
-                            onClick={() => handleEdit(field.id)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            className={layoutStyles.smallBtn}
-                            onClick={() => handleDelete(field.id)}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                  {fieldList.length === 0 ? (
+                    <div className={styles.emptyState}>
+                      <span className={styles.emptyIcon}>⊞</span>
+                      <p className={styles.emptyTitle}>No fields yet</p>
+                      <p className={styles.emptyHint}>
+                        Click &quot;Add field&quot; to start building the seller form.
+                      </p>
+                    </div>
+                  ) : (
+                    <ul className={styles.fieldList}>
+                      {fieldList.map((field, idx) => (
+                        <li
+                          key={field.id}
+                          className={`${styles.fieldItem} ${editingId === field.id ? styles.fieldItemActive : ''}`}
+                        >
+                          <span className={styles.typeIcon}>
+                            {TYPE_ICONS[field.type] || 'T'}
+                          </span>
 
-                  {fieldList.length === 0 && (
-                    <p className={styles.emptyHint}>
-                      No fields yet. Click &quot;Add field&quot; to define the form
-                      sellers will fill when adding a service.
-                    </p>
+                          <div className={styles.fieldInfo}>
+                            <span className={styles.fieldLabel}>{field.label}</span>
+                            <span className={styles.fieldMeta}>
+                              {FIELD_TYPES.find((t) => t.value === field.type)?.label}
+                              {field.required && <span className={styles.requiredDot}>Required</span>}
+                            </span>
+                          </div>
+
+                          <div className={styles.fieldActions}>
+                            <div className={styles.moveGroup}>
+                              <button
+                                type="button"
+                                className={styles.iconBtn}
+                                onClick={() => moveField(field.id, 'up')}
+                                disabled={idx === 0}
+                                title="Move up"
+                              >
+                                ↑
+                              </button>
+                              <button
+                                type="button"
+                                className={styles.iconBtn}
+                                onClick={() => moveField(field.id, 'down')}
+                                disabled={idx === fieldList.length - 1}
+                                title="Move down"
+                              >
+                                ↓
+                              </button>
+                            </div>
+
+                            <button
+                              type="button"
+                              className={styles.iconBtnEdit}
+                              onClick={() => handleEdit(field.id)}
+                              title="Edit field"
+                            >
+                              Edit
+                            </button>
+
+                            {deleteConfirmId === field.id ? (
+                              <span className={styles.deleteConfirm}>
+                                <button
+                                  type="button"
+                                  className={styles.iconBtnDanger}
+                                  onClick={() => handleDelete(field.id)}
+                                >
+                                  Confirm
+                                </button>
+                                <button
+                                  type="button"
+                                  className={styles.iconBtn}
+                                  onClick={() => setDeleteConfirmId(null)}
+                                >
+                                  ✕
+                                </button>
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                className={styles.iconBtnDanger}
+                                onClick={() => setDeleteConfirmId(field.id)}
+                                title="Delete field"
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
                   )}
                 </>
               )}
             </div>
           </div>
 
+          {/* ── Preview ── */}
           <div className={styles.preview}>
-            <h3 className={styles.previewTitle}>Preview (seller view)</h3>
+            <div className={styles.previewHeader}>
+              <span className={styles.previewBadge}>Live preview</span>
+            </div>
             <p className={styles.previewDesc}>
-              This is how the form will look when a seller adds their service.
+              Seller-facing view — updates as you edit.
             </p>
+
             <div className={styles.previewForm}>
-              {fieldList.map((field) => (
-                <label key={field.id} className={styles.previewLabel}>
-                  <span className={styles.previewLabelText}>
-                    {field.label}
-                    {field.required && ' *'}
-                  </span>
-                  {field.type === 'textarea' && (
-                    <textarea
-                      readOnly
-                      placeholder={field.placeholder || ''}
-                      rows={2}
-                      className={styles.previewInput}
-                    />
-                  )}
-                  {field.type === 'select' && (
-                    <select
-                      readOnly
-                      className={styles.previewInput}
-                      defaultValue=""
-                    >
-                      <option value="">
-                        {field.placeholder || 'Select…'}
-                      </option>
-                      {(Array.isArray(field.options) ? field.options : []).map(
-                        (opt, i) => (
-                          <option key={i} value={opt}>
-                            {opt}
-                          </option>
-                        )
+              {fieldList.length === 0 ? (
+                <p className={styles.previewEmpty}>
+                  Fields you add will appear here.
+                </p>
+              ) : (
+                <>
+                  {fieldList.map((field) => (
+                    <label key={field.id} className={styles.previewLabel}>
+                      <span className={styles.previewLabelText}>
+                        {field.label}
+                        {field.required && <span className={styles.previewRequired}> *</span>}
+                      </span>
+                      {field.type === 'textarea' && (
+                        <textarea
+                          readOnly
+                          placeholder={field.placeholder || ''}
+                          rows={3}
+                          className={styles.previewInput}
+                        />
                       )}
-                    </select>
-                  )}
-                  {field.type !== 'textarea' && field.type !== 'select' && (
-                    <input
-                      type={field.type}
-                      readOnly
-                      placeholder={field.placeholder || ''}
-                      className={styles.previewInput}
-                    />
-                  )}
-                </label>
-              ))}
-              {fieldList.length > 0 && (
-                <button type="button" className={styles.previewSubmit} disabled>
-                  Submit (seller will see this)
-                </button>
+                      {field.type === 'select' && (
+                        <select
+                          readOnly
+                          className={styles.previewInput}
+                          defaultValue=""
+                        >
+                          <option value="">{field.placeholder || 'Select…'}</option>
+                          {(Array.isArray(field.options) ? field.options : []).map(
+                            (opt, i) => (
+                              <option key={i} value={opt}>
+                                {opt}
+                              </option>
+                            )
+                          )}
+                        </select>
+                      )}
+                      {field.type !== 'textarea' && field.type !== 'select' && (
+                        <input
+                          type={field.type}
+                          readOnly
+                          placeholder={field.placeholder || ''}
+                          className={styles.previewInput}
+                        />
+                      )}
+                    </label>
+                  ))}
+                  <button type="button" className={styles.previewSubmit} disabled>
+                    Submit
+                  </button>
+                </>
               )}
             </div>
           </div>

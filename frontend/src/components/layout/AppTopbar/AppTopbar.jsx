@@ -44,6 +44,7 @@ const PAGE_TITLES = {
     '/admin/users': 'Users',
     '/admin/sellers': 'Sellers',
     '/admin/content': 'Content',
+    '/admin/seller-template': 'Template',
     '/admin/settings': 'Settings',
     '/admin/help': 'Help Center',
     '/admin/notifications': 'Notifications',

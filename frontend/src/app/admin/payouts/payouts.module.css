@@ -709,13 +709,12 @@
   white-space: nowrap;
 }
 
-.badge_green  { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
-.badge_amber  { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
-.badge_red    { background: #fff5f5; color: #b91c1c; border: 1px solid #fecaca; }
-.badge_blue   { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
-.badge_slate  { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
+.badge_green  { color: #15803d; border: 1px solid #bbf7d0; }
+.badge_amber  { color: #b45309; border: 1px solid #fde68a; }
+.badge_red    { color: #b91c1c; border: 1px solid #fecaca; }
+.badge_blue   { color: #1d4ed8; border: 1px solid #bfdbfe; }
+.badge_slate  { color: #475569; border: 1px solid #e2e8f0; }
 
-/* Payout badge — no bg, no border, dot + colored text only */
 .badgePayout {
   display: inline-flex;
   align-items: center;
