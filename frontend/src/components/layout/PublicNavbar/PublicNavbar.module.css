@@ -303,10 +303,10 @@ a.userLink {
 .searchFavoritesGroup {
   display: flex;
   align-items: center;
-  gap: 2px;
-  margin-right: 2px;
-  width: 248px;
-  min-width: 248px;
+  gap: 4px;
+  margin-right: 4px;
+  width: 200px;
+  min-width: 200px;
   flex-shrink: 0;
   justify-content: flex-end;
 }
@@ -356,8 +356,8 @@ a.userLink {
 }
 
 .desktopSearchFormOpen {
-  max-width: 208px;
-  width: 208px;
+  max-width: 200px;
+  width: 200px;
   opacity: 1;
 }
 
@@ -549,6 +549,7 @@ a.userLink {
 .navActionsMobile {
   display: none;
   align-items: center;
+  gap: 4px;
   flex: 1;
   justify-content: space-between;
   min-width: 0;
@@ -559,38 +560,40 @@ a.userLink {
   align-items: center;
   min-width: 0;
   flex: 1;
-  justify-content: flex-start;
 }
 
-.navbarSearchIconBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  color: #4D2D18;
-  cursor: pointer;
-  transition: color 0.2s ease;
-  flex-shrink: 0;
-}
-
-.navbarSearchIconBtn:hover {
-  color: var(--color-gold-base);
-}
-
+/* Always-visible mobile search form */
 .navbarSearchForm {
   display: flex;
   align-items: center;
   width: 100%;
-  max-width: 230px;
-  padding: 1px 8px;
-  border-radius: 6px;
-  border: 1px solid rgba(77, 45, 24, 0.35);
-  background: #ffffff;
-  margin: 0;
+  min-width: 0;
+  background: #f7f4ef;
+  border: 1px solid rgba(77, 45, 24, 0.18);
+  border-radius: 20px;
+  padding: 0 10px 0 10px;
+  gap: 6px;
+  height: 36px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.navbarSearchForm:focus-within {
+  border-color: var(--color-gold-base);
+  box-shadow: 0 0 0 2px rgba(168, 137, 74, 0.12);
+}
+
+/* Inline search icon inside the pill */
+.navbarSearchIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: rgba(77, 45, 24, 0.5);
+  pointer-events: none;
+}
+
+.navbarSearchForm:focus-within .navbarSearchIcon {
+  color: var(--color-gold-base);
 }
 
 .navbarSearchInput {
@@ -598,48 +601,24 @@ a.userLink {
   min-width: 0;
   width: 100%;
   padding: 0;
-  font-size: 13px;
+  font-size: 14px;
   color: #4D2D18;
   background: transparent;
   border: none;
   border-radius: 0;
   outline: none;
-  transition: border-color 0.2s ease;
+  line-height: 1;
 }
 
 .navbarSearchInput::placeholder {
-  color: rgba(77, 45, 24, 0.5);
+  color: rgba(77, 45, 24, 0.45);
 }
 
-.navbarSearchInput:focus {
-  border-bottom-color: var(--color-gold-base);
-}
-
-/* Hide browser default search clear (x) — we use custom X icon */
+/* Hide browser default search clear (x) */
 .navbarSearchInput::-webkit-search-cancel-button,
 .navbarSearchInput::-webkit-search-decoration {
   -webkit-appearance: none;
   appearance: none;
-}
-
-.navbarSearchCloseBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  margin-left: 6px;
-  background: transparent;
-  border: none;
-  color: #4D2D18;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.navbarSearchCloseBtn:hover {
-  color: var(--color-gold-base);
 }
 
 /* ===== RESPONSIVE ===== */
@@ -648,8 +627,8 @@ a.userLink {
     display: none;
   }
 
-  /* On mobile: show only logo icon (placeholder), hide logo name */
-  .logoText {
+  /* On mobile: hide the entire logo (icon + text) to free up space for the search bar */
+  .logo {
     display: none;
   }
 
@@ -658,8 +637,17 @@ a.userLink {
     display: none;
   }
 
+  /* With logo hidden, collapse space-between so search+cart fills the full row */
+  .mainNavInner {
+    justify-content: flex-end;
+  }
+
+  /* Search + Cart stretches to fill all available horizontal space */
   .navActionsMobile {
     display: flex;
+    flex: 1;
+    width: 100%;
+    max-width: 100%;
   }
 
   /* Extra space between mobile search bar and favorites icon, while keeping
@@ -713,18 +701,17 @@ a.userLink {
   }
 
   .cartBtn {
-    min-width: 44px;
+    min-width: 36px;
     min-height: 44px;
-    padding: 10px;
+    padding: 8px 6px;
   }
 
-  .navbarSearchFormOpen {
-    max-width: 100%;
+  .navbarSearchForm {
+    height: 38px;
   }
 
   .navbarSearchInput {
-    padding: 8px 6px;
-    font-size: 15px; /* keeps good tap size without making field too tall */
+    font-size: 16px; /* avoids zoom on focus on iOS */
   }
 }
 

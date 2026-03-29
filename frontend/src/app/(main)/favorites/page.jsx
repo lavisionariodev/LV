@@ -1,55 +1,322 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import styles from './favorites.module.css'
-import { useAuth } from '@/contexts/AuthContext'
+
+// ─── Sample Data ──────────────────────────────────────────────────────────────
+
+const SAMPLE_FAVORITES = [
+  {
+    id: 'fav-1',
+    name: 'Full-Service Funeral Package — Traditional Wake & Burial',
+    serviceId: 'funeral-packages',
+    serviceLabel: 'Funeral Packages',
+    provider: { name: 'Sanctum Memorial Chapel', location: 'Quezon City, Metro Manila', rating: 4.9, reviews: 182, badge: 'Top Rated', initial: 'S' },
+    price: 85000,
+    popular: true,
+    savedAt: '2025-06-12',
+    image: '/sample/services/1.jpg',
+  },
+  {
+    id: 'fav-2',
+    name: 'Cremation with Viewing — Standard Urn & Certificate',
+    serviceId: 'cremation',
+    serviceLabel: 'Cremation',
+    provider: { name: 'Serene Passage Services', location: 'BGC, Taguig', rating: 4.8, reviews: 140, badge: 'Featured', initial: 'S' },
+    price: 32000,
+    popular: true,
+    savedAt: '2025-06-10',
+    image: '/sample/services/2.jpg',
+  },
+  {
+    id: 'fav-3',
+    name: 'Floral Arrangements — Sympathy Wreaths & Casket Sprays',
+    serviceId: 'florals',
+    serviceLabel: 'Florals',
+    provider: { name: 'White Lily Florals', location: 'Mandaluyong', rating: 4.7, reviews: 88, badge: null, initial: 'W' },
+    price: 12000,
+    popular: false,
+    savedAt: '2025-06-08',
+    image: '/sample/services/3.jpg',
+  },
+  {
+    id: 'fav-4',
+    name: 'Catering — Reception Meal for 100 Guests',
+    serviceId: 'catering',
+    serviceLabel: 'Catering',
+    provider: { name: 'Comfort Table Catering', location: 'Pasig City', rating: 4.6, reviews: 117, badge: null, initial: 'C' },
+    price: 55000,
+    popular: false,
+    savedAt: '2025-06-05',
+    image: '/sample/services/4.jpg',
+  },
+  {
+    id: 'fav-5',
+    name: 'Memorial Venue Styling & Décor',
+    serviceId: 'styling',
+    serviceLabel: 'Memorial Styling',
+    provider: { name: 'Eternal Grace Events', location: 'Alabang, Muntinlupa', rating: 4.9, reviews: 64, badge: 'Top Rated', initial: 'E' },
+    price: 28000,
+    popular: true,
+    savedAt: '2025-06-01',
+    image: '/sample/services/5.jpg',
+  },
+  {
+    id: 'fav-6',
+    name: 'Live Choir & Musical Tribute — 4-Voice Ensemble',
+    serviceId: 'entertainment',
+    serviceLabel: 'Music & Tribute',
+    provider: { name: 'Requiem Voices', location: 'Marikina City', rating: 4.8, reviews: 53, badge: 'Featured', initial: 'R' },
+    price: 18000,
+    popular: false,
+    savedAt: '2025-05-28',
+    image: '/sample/services/6.jpg',
+  },
+]
+
+const SORT_OPTIONS = [
+  { value: 'newest',    label: 'Recently Saved' },
+  { value: 'price-asc',  label: 'Price: Low–High' },
+  { value: 'price-desc', label: 'Price: High–Low' },
+  { value: 'rating',     label: 'Highest Rated' },
+]
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function FavoritesPage() {
-  const router = useRouter()
-  const { user, isBuyer, authLoading } = useAuth()
+  const [favorites, setFavorites] = useState(SAMPLE_FAVORITES)
+  const [sortBy, setSortBy] = useState('newest')
+  const [removingId, setRemovingId] = useState(null)
+  const [undoItem, setUndoItem] = useState(null)
 
-  useEffect(() => {
-    if (authLoading) return
-    if (!user) {
-      router.replace(`/buyer/login?redirect=${encodeURIComponent('/favorites')}`)
-      return
-    }
-    if (!isBuyer) {
-      router.replace('/buyer/login?redirect=/favorites')
-    }
-  }, [authLoading, user, isBuyer, router])
+  const sorted = [...favorites].sort((a, b) => {
+    if (sortBy === 'price-asc')  return a.price - b.price
+    if (sortBy === 'price-desc') return b.price - a.price
+    if (sortBy === 'rating')     return b.provider.rating - a.provider.rating
+    return new Date(b.savedAt) - new Date(a.savedAt)
+  })
 
-  if (authLoading || !user || !isBuyer) {
-    return null
+  function handleRemove(id) {
+    const item = favorites.find((f) => f.id === id)
+    setRemovingId(id)
+    setTimeout(() => {
+      setFavorites((prev) => prev.filter((f) => f.id !== id))
+      setRemovingId(null)
+      setUndoItem(item)
+      setTimeout(() => setUndoItem(null), 5000)
+    }, 320)
   }
+
+  function handleUndo() {
+    if (!undoItem) return
+    setFavorites((prev) => {
+      const exists = prev.find((f) => f.id === undoItem.id)
+      if (exists) return prev
+      return [undoItem, ...prev]
+    })
+    setUndoItem(null)
+  }
+
+  const isEmpty = favorites.length === 0
 
   return (
     <section className={styles.page}>
-      <header className={styles.hero}>
-        <div className={styles.heroInner}>
-          <h1 className={styles.heroTitle}>Your Favorites</h1>
-          <p className={styles.breadcrumb}>
-            <Link href="/" className={styles.crumb}>Home</Link>
-            <span className={styles.slash}>/</span>
-            <span className={styles.crumbActive}>Favorites</span>
-          </p>
-        </div>
-      </header>
 
+      {/* ── Content ── */}
       <div className={styles.content}>
-        <div className={styles.emptySection}>
-          <div className={styles.emptyIcon} aria-hidden>
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+
+        {isEmpty ? (
+          /* ── Empty State ── */
+          <div className={styles.emptySection}>
+            <div className={styles.emptyIconWrap} aria-hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+            </div>
+            <h2 className={styles.emptyTitle}>No favorites yet</h2>
+            <p className={styles.emptySub}>Save services you love to find them here later.</p>
+            <Link href="/shop" className={styles.emptyLink}>
+              Browse services
+              <svg viewBox="0 0 10 10" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 6 }}>
+                <path d="M2 5h6M6 2l3 3-3 3" />
+              </svg>
+            </Link>
+          </div>
+        ) : (
+          <>
+            {/* ── Toolbar ── */}
+            <div className={styles.toolbar}>
+              <div className={styles.resultsIndicator}>
+                <span className={styles.resultsIndicatorText}>Showing </span>
+                <span className={styles.resultsIndicatorNum}>{favorites.length}</span>
+                <span className={styles.resultsIndicatorText}> saved item{favorites.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div className={styles.sortWrap}>
+                <span className={styles.sortLabel}>Sort by</span>
+                <div className={styles.sortSelectWrap}>
+                  <select
+                    className={styles.sortSelect}
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                  >
+                    {SORT_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Grid ── */}
+            <div className={styles.grid}>
+              {sorted.map((item) => (
+                <FavoriteCard
+                  key={item.id}
+                  item={item}
+                  isRemoving={removingId === item.id}
+                  onRemove={handleRemove}
+                  styles={styles}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ── Undo Toast ── */}
+      {undoItem && (
+        <div className={styles.undoToast} role="status">
+          <span className={styles.undoToastText}>
+            <svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ marginRight: 6, flexShrink: 0, opacity: 0.6 }}>
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0" />
+            </svg>
+            <strong>{undoItem.name}</strong> removed from favorites
+          </span>
+          <button className={styles.undoBtn} onClick={handleUndo}>Undo</button>
+        </div>
+      )}
+    </section>
+  )
+}
+
+// ─── FavoriteCard ─────────────────────────────────────────────────────────────
+
+function FavoriteCard({ item, isRemoving, onRemove, styles }) {
+  const { provider } = item
+
+  function formatDate(str) {
+    const d = new Date(str)
+    return d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+
+  return (
+    <div className={`${styles.card}${isRemoving ? ` ${styles.cardRemoving}` : ''}`}>
+      <Link href={`/shop/${item.serviceId}`} className={styles.cardLink}>
+
+        {/* ── Image ── */}
+        <div className={styles.cardImageWrap}>
+          <Image
+            src={item.image}
+            alt={item.name}
+            width={400}
+            height={250}
+            className={styles.cardImage}
+          />
+          {item.popular && <span className={styles.popularBadge}>Most Popular</span>}
+          {provider.badge && (
+            <span className={`${styles.providerBadge} ${styles[`badge${provider.badge.replace(' ', '')}`]}`}>
+              {provider.badge}
+            </span>
+          )}
+          {/* Saved indicator */}
+          <div className={styles.savedIndicator} aria-label="Saved">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" stroke="none">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
           </div>
-          <h2 className={styles.emptyTitle}>No favorites yet</h2>
-          <p className={styles.emptySub}>Save packages or services you like to find them here later.</p>
-          <Link href="/shop" className={styles.emptyLink}>Browse services</Link>
+        </div>
+
+        {/* ── Body ── */}
+        <div className={styles.cardBody}>
+
+          {/* Provider row */}
+          <div className={styles.providerRow}>
+            <div className={styles.providerAvatar}>{provider.initial}</div>
+            <div className={styles.providerInfo}>
+              <p className={styles.providerName}>{provider.name}</p>
+              <p className={styles.providerLocation}>
+                <svg viewBox="0 0 12 14" width="9" height="9" fill="var(--color-gold-base, #B8962E)" style={{ marginRight: 3, flexShrink: 0, display: 'inline-block', verticalAlign: 'middle' }}>
+                  <path d="M6 0a5 5 0 0 1 5 5c0 4.5-5 9-5 9S1 9.5 1 5a5 5 0 0 1 5-5z" />
+                  <circle cx="6" cy="5" r="1.8" fill="white" />
+                </svg>
+                {provider.location}
+              </p>
+            </div>
+            <div className={styles.ratingGroup}>
+              <span className={styles.ratingStars}>
+                {[1,2,3,4,5].map((s) => (
+                  <svg key={s} width="11" height="11" viewBox="0 0 12 12"
+                    fill={s <= Math.round(provider.rating) ? 'var(--color-gold-base, #B8962E)' : '#D5CCBC'}>
+                    <path d="M6 1l1.35 2.73L10.5 4.2l-2.25 2.19.53 3.1L6 7.9l-2.78 1.6.53-3.1L1.5 4.2l3.15-.47z" />
+                  </svg>
+                ))}
+              </span>
+              <span className={styles.ratingNum}>{provider.rating}</span>
+              <span className={styles.ratingReviews}>({provider.reviews})</span>
+            </div>
+          </div>
+
+          <div className={styles.listingDivider} />
+
+          {/* Title + Price */}
+          <div className={styles.listingTitleRow}>
+            <div className={styles.titleAndMeta}>
+              <span className={styles.serviceTag}>{item.serviceLabel}</span>
+              <h3 className={styles.cardTitle}>{item.name}</h3>
+            </div>
+            <div className={styles.priceBlock}>
+              <span className={styles.priceLabel}>Starting at</span>
+              <span className={styles.price}>₱{item.price.toLocaleString('en-PH')}</span>
+            </div>
+          </div>
+
+        </div>
+      </Link>
+
+      {/* ── Card Actions ── */}
+      <div className={styles.cardActions}>
+        <span className={styles.savedAt}>
+          <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4, opacity: 0.5 }}>
+            <circle cx="6" cy="6" r="5" /><path d="M6 3.5v2.7l1.8 1.8" />
+          </svg>
+          Saved {formatDate(item.savedAt)}
+        </span>
+        <div className={styles.actionBtns}>
+          <Link href={`/shop/${item.serviceId}`} className={styles.viewBtn}>
+            View Details
+          </Link>
+          <button
+            className={styles.removeBtn}
+            onClick={() => onRemove(item.id)}
+            title="Remove from favorites"
+            aria-label={`Remove ${item.name} from favorites`}
+          >
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+            Remove
+          </button>
         </div>
       </div>
-    </section>
+    </div>
   )
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatDate(str) {
+  const d = new Date(str)
+  return d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
 }

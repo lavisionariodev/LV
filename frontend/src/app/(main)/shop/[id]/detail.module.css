@@ -440,6 +440,7 @@
 }
 
 .btnSave {
+  display: none; /* hidden on desktop, shown on mobile only */
   flex: 0 0 auto;
   padding: 12px 14px;
   background: transparent;
@@ -653,9 +654,25 @@
     flex-direction: column;
   }
 
-  .btnBookNow,
-  .btnAddToCart {
+  .btnBookNow {
     width: 100%;
+  }
+
+  /* Add to Cart + Save sit on the same row */
+  .cartSaveRow {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .btnAddToCart {
+    flex: 1;
+  }
+
+  .btnSave {
+    display: flex; /* visible on mobile */
+    align-items: center;
+    justify-content: center;
   }
 
   .tabBtn {
@@ -715,4 +732,3 @@
 .notFoundLink:hover {
   text-decoration: underline;
 }
-

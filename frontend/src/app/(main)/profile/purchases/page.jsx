@@ -9,14 +9,15 @@ import purchaseStyles from './purchases.module.css';
 
 // ── Status config ─────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
-  Pending:     { color: '#A8894A', bg: 'rgba(168,137,74,0.10)' },
-  Confirmed:   { color: '#204F38', bg: 'rgba(32,79,56,0.10)'  },
-  'In Progress': { color: '#2563EB', bg: 'rgba(37,99,235,0.09)' },
-  Completed:   { color: '#16a34a', bg: 'rgba(22,163,74,0.10)' },
-  Cancelled:   { color: '#dc2626', bg: 'rgba(220,38,38,0.09)' },
+  Pending:       { color: '#A8894A', bg: 'rgba(168,137,74,0.10)' },
+  Confirmed:     { color: '#204F38', bg: 'rgba(32,79,56,0.10)'   },
+  'In Progress': { color: '#2563EB', bg: 'rgba(37,99,235,0.09)'  },
+  Completed:     { color: '#16a34a', bg: 'rgba(22,163,74,0.10)'  },
+  Cancelled:     { color: '#dc2626', bg: 'rgba(220,38,38,0.09)'  },
 };
 
 const ALL_STATUSES = ['All', ...Object.keys(STATUS_CONFIG)];
+const PAGE_SIZE = 5;
 
 // ── Mock data (replace with real fetch) ──────────────────────────────────────
 const MOCK_PURCHASES = [
@@ -167,11 +168,64 @@ function PurchaseCard({ purchase }) {
         )}
 
         {(purchase.status === 'Pending' || purchase.status === 'Confirmed') && (
-          <button type="button" className={`${purchaseStyles.actionLink} ${purchaseStyles.actionDanger}`}>
+          <button
+            type="button"
+            className={`${purchaseStyles.actionLink} ${purchaseStyles.actionDanger}`}
+          >
             Cancel booking
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+// ── Pagination ────────────────────────────────────────────────────────────────
+function Pagination({ currentPage, totalPages, onPageChange }) {
+  if (totalPages <= 1) return null;
+
+  const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+
+  return (
+    <div className={purchaseStyles.pagination}>
+      <button
+        type="button"
+        className={purchaseStyles.pageBtn}
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        aria-label="Previous page"
+      >
+        <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
+          <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {pages.map((page) => (
+        <button
+          key={page}
+          type="button"
+          className={`${purchaseStyles.pageBtn} ${
+            page === currentPage ? purchaseStyles.pageBtnActive : ''
+          }`}
+          onClick={() => onPageChange(page)}
+          aria-label={`Page ${page}`}
+          aria-current={page === currentPage ? 'page' : undefined}
+        >
+          {page}
+        </button>
+      ))}
+
+      <button
+        type="button"
+        className={purchaseStyles.pageBtn}
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        aria-label="Next page"
+      >
+        <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
+          <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
     </div>
   );
 }
@@ -183,6 +237,7 @@ export default function PurchasesPage() {
   const [isSeller, setIsSeller] = useState(false);
   const [activeFilter, setActiveFilter] = useState('All');
   const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     let cancelled = false;
@@ -193,19 +248,29 @@ export default function PurchasesPage() {
       if (role === ROLE_SELLER) setIsSeller(true);
     }
     check();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
+
+  // Reset to page 1 whenever filter or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeFilter, search]);
 
   if (isSeller) {
     return (
       <div className={styles.profileCard}>
+        <div className={styles.profileAccentBar} />
         <header className={styles.profileHeader}>
-          <h1 className={styles.profileTitle}>Purchases</h1>
-          <p className={styles.profileSubtitle}>
-            You are signed in as a seller. Sellers cannot view buyer purchase history.
-          </p>
+          <div className={styles.profileHeaderLeft}>
+            <p className={styles.profileEyebrow}>Purchases</p>
+            <p className={styles.profileSignedIn}>
+              You are signed in as a seller. Sellers cannot view buyer purchase history.
+            </p>
+          </div>
         </header>
-        <div className={styles.tabBody}>
+        <div className={purchaseStyles.purchasesBody} style={{ padding: '32px 28px' }}>
           <button
             className={styles.primaryButton}
             type="button"
@@ -229,18 +294,30 @@ export default function PurchasesPage() {
     return matchStatus && matchSearch;
   });
 
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
+  );
+
   return (
     <div className={styles.profileCard}>
+      <div className={styles.profileAccentBar} />
+
+      {/* ── Header ── */}
       <header className={styles.profileHeader}>
-        <h1 className={styles.profileTitle}>Purchases</h1>
-        <p className={styles.profileSubtitle}>
-          Review your previous and upcoming service bookings.
-        </p>
+        <div className={styles.profileHeaderLeft}>
+          <p className={styles.profileEyebrow}>My Purchases</p>
+          <p className={styles.profileSignedIn}>
+            Review your previous and upcoming service bookings.
+          </p>
+        </div>
         <p className={styles.profileSignedIn}>
           Signed in as <strong>{user.email}</strong>
         </p>
       </header>
 
+      {/* ── Body ── */}
       <div className={purchaseStyles.purchasesBody}>
         {/* Toolbar */}
         <div className={purchaseStyles.toolbar}>
@@ -248,7 +325,12 @@ export default function PurchasesPage() {
           <div className={purchaseStyles.searchWrapper}>
             <svg className={purchaseStyles.searchIcon} viewBox="0 0 20 20" fill="none">
               <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.6" />
-              <path d="M14 14l3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              <path
+                d="M14 14l3 3"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              />
             </svg>
             <input
               type="text"
@@ -286,11 +368,25 @@ export default function PurchasesPage() {
             </p>
           </div>
         ) : (
-          <div className={purchaseStyles.cardList}>
-            {filtered.map((p) => (
-              <PurchaseCard key={p.id} purchase={p} />
-            ))}
-          </div>
+          <>
+            <div className={purchaseStyles.paginationMeta}>
+              Showing {(currentPage - 1) * PAGE_SIZE + 1}–
+              {Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length}{' '}
+              {filtered.length === 1 ? 'order' : 'orders'}
+            </div>
+
+            <div className={purchaseStyles.cardList}>
+              {paginated.map((p) => (
+                <PurchaseCard key={p.id} purchase={p} />
+              ))}
+            </div>
+
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          </>
         )}
       </div>
     </div>
