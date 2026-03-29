@@ -1,117 +1,136 @@
 @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600&family=Lato:wght@300;400;700&display=swap');
 
+/* ─── CSS Variables (mirrors Shop page design tokens) ─────────────────────── */
+:root {
+  --color-green:        #102820;
+  --color-gold-base:    #B8962E;
+  --color-gold-light:   rgba(184, 150, 46, 0.12);
+  --color-gold-border:  rgba(184, 150, 46, 0.22);
+  --color-cream:        #F7F4EF;
+  --color-light-gray:   #EDE8E0;
+  --color-border:       rgba(16, 40, 32, 0.10);
+  --color-border-soft:  rgba(16, 40, 32, 0.07);
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #777;
+  --navbar-height:      64px;
+}
+
+/* ─── Base Page ─────────────────────────────────────────────────────────────── */
+
 .cartPage {
   width: 100%;
   min-height: 100vh;
   padding-bottom: 6rem;
-  background: #FFFFFF;
+  background: var(--color-light-gray, #EDE8E0);
   font-family: "Lato", sans-serif;
+  box-sizing: border-box;
 }
 
-/* =========================
-   HEADER (compact, left-aligned, light gray)
-========================= */
+/* ─── Hero Header ───────────────────────────────────────────────────────────── */
+/* Mirrors Shop page's content header — warm cream background, compact, centered */
+
 .hero {
   width: 100%;
-  padding: 52px 0 52px;
-  background: #f5f5f5;
-  display: flex;
-  align-items: center;
+  padding: 40px 0 36px;
+  background: #FFFFFF;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .heroInner {
-  max-width: 1400px;
+  max-width: 1280px;
   margin: 0 auto;
   width: 100%;
-  padding: 0 24px;
+  padding: 0 28px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
+  gap: 10px;
 }
 
+/* ── Breadcrumb ── */
+
 .breadcrumb {
-  margin: 0;
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 12px;
   font-family: "Lato", sans-serif;
-  color: #8a8a8a;
+  color: #999;
+  margin: 0;
+  list-style: none;
+  padding: 0;
 }
 
 .crumb {
-  color: #777777;
+  color: #888;
   text-decoration: none;
   font-weight: 500;
-  transition: color 0.2s ease;
+  transition: color 0.18s ease;
 }
 
 .crumb:hover {
-  color: #5a5a5a;
+  color: var(--color-green);
 }
 
 .slash {
-  color: #b0b0b0;
+  color: #ccc;
   user-select: none;
 }
 
 .crumbActive {
-  color: #333333;
+  color: var(--color-green);
   font-weight: 600;
 }
+
+/* ── Hero Title — uses Cormorant Garamond like Shop card titles ── */
 
 .heroTitle {
-  margin: 0 0 12px;
-  font-size: clamp(20px, 3vw, 26px);
-  font-weight: 600;
-  color: #2d2d2d;
-  line-height: 1.25;
-  font-family: "Lato", sans-serif;
+  margin: 0;
+  font-size: clamp(22px, 2.8vw, 30px);
+  font-weight: 500;
+  color: var(--color-green);
+  font-family: "Cormorant Garamond", serif;
   letter-spacing: 0.3px;
+  line-height: 1.2;
 }
 
-/* =========================
-   MAIN CONTENT
-========================= */
+/* ─── Content Wrapper — matches Shop's max-width + padding ─────────────────── */
+
 .content {
-  max-width: 1400px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 40px 24px 60px;
+  padding: 36px 28px 64px;
   display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 40px;
+  grid-template-columns: 1fr 308px;
+  gap: 28px;
   align-items: start;
+  box-sizing: border-box;
 }
 
-@media (max-width: 900px) {
-  .content {
-    grid-template-columns: 1fr;
-  }
-}
+/* ─── Products Section (left panel) ────────────────────────────────────────── */
+/* Uses Shop's card styling: white, border, box-shadow, border-radius: 6px */
 
-/* =========================
-   PRODUCTS TABLE (LEFT)
-========================= */
 .productsSection {
   background: #FFFFFF;
-  border: 1px solid rgba(16, 40, 32, 0.1);
-  box-shadow: 0 4px 20px rgba(16, 40, 32, 0.06);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 2px 12px rgba(16, 40, 32, 0.05);
+  border-radius: 6px;
+  overflow: hidden;
 }
 
-/* 6 columns: checkbox | product | price | qty | subtotal | remove */
+/* ── Table Header — cream background, uppercase labels like Shop toolbar ── */
+
 .tableHeader {
   display: grid;
   grid-template-columns: 40px 2fr 1fr 140px 1fr 44px;
   gap: 16px;
-  padding: 14px 20px;
+  padding: 13px 20px;
   background: var(--color-cream, #F7F4EF);
-  border-bottom: 1px solid rgba(16, 40, 32, 0.1);
-  font-size: 11px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 1.5px;
+  letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--color-green);
+  color: #aaa;
   font-family: "Lato", sans-serif;
   align-items: center;
 }
@@ -122,93 +141,81 @@
   justify-content: center;
 }
 
-@media (max-width: 680px) {
-  .tableHeader {
-    display: none;
-  }
-}
+/* ── Bulk Action Bar ── */
 
-/* ── Bulk action bar ── */
 .bulkBar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 10px 20px;
-  background: rgba(168, 137, 74, 0.08);
-  border-bottom: 1px solid rgba(168, 137, 74, 0.2);
+  background: rgba(184, 150, 46, 0.07);
+  border-bottom: 1px solid rgba(184, 150, 46, 0.18);
   animation: slideDown 0.2s ease;
 }
 
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-6px); }
+  from { opacity: 0; transform: translateY(-5px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
 .bulkCount {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--color-green);
+  font-family: "Lato", sans-serif;
 }
 
 .bulkDeleteBtn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 16px;
-  border: 1px solid #c0392b;
+  padding: 7px 14px;
+  border: 1px solid rgba(192, 57, 43, 0.35);
   border-radius: 4px;
   background: transparent;
   color: #c0392b;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
+  font-family: "Lato", sans-serif;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition: background 0.18s, color 0.18s;
 }
+
 .bulkDeleteBtn:hover {
   background: #c0392b;
   color: #fff;
 }
 
-/* ── Item rows ── */
+/* ── Item Rows — matches Shop card hover/border patterns ── */
+
 .itemRow {
   display: grid;
   grid-template-columns: 40px 2fr 1fr 140px 1fr 44px;
   gap: 16px;
   align-items: center;
   padding: 18px 20px;
-  border-bottom: 1px solid rgba(16, 40, 32, 0.08);
-  transition: background 0.2s;
+  border-bottom: 1px solid var(--color-border-soft);
+  transition: background 0.18s ease;
 }
 
-.itemRowSelected {
-  background: rgba(168, 137, 74, 0.05);
+.itemRow:last-of-type {
+  border-bottom: none;
 }
 
 .itemRow:hover {
   background: var(--color-cream, #F7F4EF);
 }
 
+.itemRowSelected {
+  background: rgba(184, 150, 46, 0.04);
+}
+
 .itemRowSelected:hover {
-  background: rgba(168, 137, 74, 0.09);
+  background: rgba(184, 150, 46, 0.08);
 }
 
-@media (max-width: 680px) {
-  .itemRow {
-    grid-template-columns: 40px 1fr 44px;
-    grid-template-rows: auto auto auto;
-    gap: 8px;
-    padding: 16px;
-  }
+/* ── Checkbox ── */
 
-  .itemCheck  { grid-column: 1; grid-row: 1 / 4; align-self: start; padding-top: 4px; }
-  .itemProduct { grid-column: 2; grid-row: 1; }
-  .itemPrice   { grid-column: 2; grid-row: 2; font-size: 13px; }
-  .itemQty     { grid-column: 2; grid-row: 3; }
-  .itemSubtotal{ display: none; }
-  .itemRemove  { grid-column: 3; grid-row: 1; align-self: start; }
-}
-
-/* checkbox column */
 .itemCheck {
   display: flex;
   align-items: center;
@@ -216,16 +223,17 @@
 }
 
 .checkbox {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--color-gold-base, #a8894a);
+  width: 15px;
+  height: 15px;
+  accent-color: var(--color-gold-base, #B8962E);
   cursor: pointer;
 }
 
-/* product column */
+/* ── Product Column ── */
+
 .itemProduct {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 14px;
   min-width: 0;
 }
@@ -234,104 +242,129 @@
   flex-shrink: 0;
 }
 
+/* Thumbnail — consistent 6px radius like Shop card */
 .thumb {
-  width: 72px;
-  height: 72px;
-  border-radius: 4px;
+  width: 76px;
+  height: 76px;
+  border-radius: 6px;
   object-fit: cover;
-  background: var(--color-cream);
+  background: var(--color-cream, #F7F4EF);
+  display: block;
+  border: 1px solid var(--color-border);
 }
 
 .productInfo {
   min-width: 0;
+  padding-top: 2px;
 }
 
+/* Product name — Cormorant Garamond, mirrors Shop's .cardTitle */
 .productName {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-primary);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-green);
   margin: 0 0 4px;
+  font-family: "Cormorant Garamond", serif;
   line-height: 1.3;
 }
 
+/* Description — mirrors Shop's .cardDesc */
 .productDesc {
   margin: 0;
   font-size: 12px;
   color: var(--color-text-secondary);
-  line-height: 1.45;
-  /* clamp to 2 lines */
+  font-family: "Lato", sans-serif;
+  line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
+/* Price / Subtotal columns */
 .itemPrice,
 .itemSubtotal {
-  font-size: 14px;
-  color: var(--color-text-primary);
-  font-weight: 500;
-}
-
-.contactBadge {
-  font-size: 11px;
+  font-size: 13.5px;
+  color: var(--color-green);
   font-weight: 600;
-  letter-spacing: 0.5px;
-  color: var(--color-gold-base, #a8894a);
-  text-transform: uppercase;
+  font-family: "Lato", sans-serif;
 }
 
-/* qty stepper */
-.itemQty {}
+/* Contact badge — mirrors Shop's providerItemBadge */
+.contactBadge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: var(--color-gold-base, #B8962E);
+  text-transform: uppercase;
+  font-family: "Lato", sans-serif;
+  background: rgba(184, 150, 46, 0.1);
+  border: 1px solid rgba(184, 150, 46, 0.22);
+  border-radius: 100px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+/* ── Quantity Stepper ── */
 
 .qtyControl {
   display: flex;
   align-items: center;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 5px;
   overflow: hidden;
   width: fit-content;
+  background: #fff;
 }
 
 .qtyBtn {
   width: 30px;
-  height: 36px;
+  height: 34px;
   border: none;
   background: var(--color-cream, #F7F4EF);
-  color: var(--color-text-primary);
+  color: var(--color-green);
   font-size: 16px;
   line-height: 1;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
   flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+  font-family: "Lato", sans-serif;
 }
+
 .qtyBtn:hover {
-  background: var(--color-gold-base, #a8894a);
+  background: var(--color-gold-base, #B8962E);
   color: #fff;
 }
 
 .qtyInput {
-  width: 44px;
-  height: 36px;
+  width: 42px;
+  height: 34px;
   padding: 0 4px;
   border: none;
-  border-left: 1px solid var(--color-border);
-  border-right: 1px solid var(--color-border);
-  font-size: 14px;
+  border-left: 1.5px solid var(--color-border);
+  border-right: 1.5px solid var(--color-border);
+  font-size: 13px;
+  font-family: "Lato", sans-serif;
   text-align: center;
+  color: var(--color-green);
+  font-weight: 600;
   -moz-appearance: textfield;
+  background: #fff;
 }
+
 .qtyInput::-webkit-outer-spin-button,
 .qtyInput::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
+
 .qtyInput:focus {
   outline: none;
-  background: rgba(168, 137, 74, 0.06);
+  background: rgba(184, 150, 46, 0.05);
 }
 
-/* remove column */
+/* ── Remove Button ── */
+
 .itemRemove {
   display: flex;
   align-items: center;
@@ -343,156 +376,191 @@
   height: 28px;
   border: none;
   background: transparent;
-  color: rgba(16, 40, 32, 0.35);
+  color: rgba(16, 40, 32, 0.28);
   cursor: pointer;
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 17px;
-  line-height: 1;
-  border-radius: 4px;
-  transition: color 0.2s, background 0.2s;
+  border-radius: 5px;
+  transition: color 0.18s ease, background 0.18s ease;
 }
+
 .removeBtn:hover {
   color: #c0392b;
-  background: rgba(192, 57, 43, 0.08);
+  background: rgba(192, 57, 43, 0.07);
 }
 
-/* =========================
-   UPDATE / COUPON
-========================= */
+/* ─── Update & Coupon Footer ───────────────────────────────────────────────── */
+
 .updateWrap {
-  padding: 16px 20px;
+  padding: 14px 20px;
   display: flex;
   justify-content: flex-end;
-  border-bottom: 1px solid rgba(16, 40, 32, 0.08);
+  border-top: 1px solid var(--color-border-soft);
+  background: var(--color-cream, #F7F4EF);
 }
 
+/* Update button — mirrors Shop's secondary action pattern */
 .updateBtn {
-  padding: 10px 24px;
-  border: 1px solid var(--color-border);
+  padding: 10px 22px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 5px;
   background: #FFFFFF;
-  color: var(--color-text-primary);
-  font-size: 13px;
-  font-weight: 500;
+  color: rgba(16, 40, 32, 0.55);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: "Lato", sans-serif;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  letter-spacing: 0.3px;
 }
+
 .updateBtn:hover {
-  background: var(--color-cream);
+  background: var(--color-cream, #F7F4EF);
   border-color: var(--color-gold-base);
   color: var(--color-green);
 }
 
+/* Coupon row */
 .couponSection {
-  padding: 20px;
+  padding: 16px 20px;
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
   flex-wrap: wrap;
-  border-bottom: 1px solid rgba(16, 40, 32, 0.08);
+  border-top: 1px solid var(--color-border-soft);
 }
 
 .couponInput {
   flex: 1;
   min-width: 160px;
-  padding: 12px 14px;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  font-size: 14px;
+  padding: 11px 14px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 5px;
+  font-size: 13px;
+  font-family: "Lato", sans-serif;
+  color: var(--color-green);
+  background: #FAFAF8;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
+
 .couponInput::placeholder {
-  color: var(--color-text-secondary);
+  color: #b8b0a6;
 }
+
 .couponInput:focus {
   outline: none;
-  border-color: var(--color-gold-base);
+  border-color: rgba(184, 150, 46, 0.5);
+  box-shadow: 0 0 0 3px rgba(184, 150, 46, 0.1);
 }
 
+/* Apply coupon — matches Shop's green primary CTA */
 .applyCouponBtn {
-  padding: 12px 24px;
-  background: var(--color-green);
+  padding: 11px 20px;
+  background: var(--color-green, #102820);
   color: #FFFFFF;
   border: none;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 600;
+  border-radius: 5px;
+  font-size: 12.5px;
+  font-weight: 700;
+  font-family: "Lato", sans-serif;
+  letter-spacing: 0.3px;
   cursor: pointer;
-  transition: background 0.2s;
-}
-.applyCouponBtn:hover {
-  background: var(--color-primary-hover);
+  transition: opacity 0.18s ease;
+  white-space: nowrap;
 }
 
-/* =========================
-   DISCLAIMER
-========================= */
+.applyCouponBtn:hover {
+  opacity: 0.88;
+}
+
+/* ── Disclaimer ── */
+
 .disclaimerSection {
-  padding: 20px;
+  padding: 18px 20px 20px;
+  border-top: 1px solid var(--color-border-soft);
 }
+
 .disclaimerTitle {
-  margin: 0 0 10px;
-  font-size: 14px;
+  margin: 0 0 6px;
+  font-size: 10px;
   font-weight: 700;
-  color: var(--color-text-primary);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #aaa;
+  font-family: "Lato", sans-serif;
 }
+
 .disclaimerText {
   margin: 0;
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--color-text-secondary);
-  line-height: 1.5;
+  line-height: 1.6;
+  font-family: "Lato", sans-serif;
 }
 
-/* =========================
-   CART TOTALS (RIGHT)
-========================= */
+/* ─── Totals Panel (right) ──────────────────────────────────────────────────── */
+/* Mirrors Shop's sideNav: white card, border, box-shadow, border-radius: 8px */
+
 .totalsSection {
   background: #FFFFFF;
-  border: 1px solid rgba(16, 40, 32, 0.1);
-  box-shadow: 0 4px 20px rgba(16, 40, 32, 0.06);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 2px 12px rgba(16, 40, 32, 0.05);
+  border-radius: 6px;
   padding: 24px;
   position: sticky;
-  top: 90px;
+  top: calc(var(--navbar-height, 64px) + 16px);
 }
 
+/* Title — Cormorant Garamond like Shop section headers */
 .totalsTitle {
-  margin: 0 0 6px;
-  font-size: 18px;
-  font-weight: 700;
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 500;
   color: var(--color-green);
-  font-family: "Lato", sans-serif;
-  letter-spacing: 0.5px;
+  font-family: "Cormorant Garamond", serif;
+  letter-spacing: 0.3px;
 }
 
+/* Note — gold, small, like Shop's providerItemBadge text */
 .totalsNote {
   margin: 0 0 16px;
-  font-size: 12px;
-  color: var(--color-gold-base, #a8894a);
-  font-weight: 500;
+  font-size: 11.5px;
+  color: var(--color-gold-base, #B8962E);
+  font-weight: 600;
+  font-family: "Lato", sans-serif;
 }
+
+/* ── Totals Table ── */
 
 .totalsTable {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 24px;
+  margin-bottom: 22px;
 }
+
 .totalsTable th,
 .totalsTable td {
   padding: 12px 0;
   text-align: left;
-  border-bottom: 1px solid rgba(16, 40, 32, 0.08);
-  font-size: 14px;
+  border-bottom: 1px solid var(--color-border-soft);
+  font-size: 13.5px;
+  font-family: "Lato", sans-serif;
 }
+
 .totalsTable th {
-  font-weight: 500;
-  color: var(--color-text-secondary);
+  font-weight: 400;
+  color: #888;
 }
+
 .totalsTable td {
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--color-green);
   text-align: right;
 }
+
+/* Total row — matches Shop's Cormorant num pattern in resultsIndicatorNum */
 .totalsTable tr.totalRow th,
 .totalsTable tr.totalRow td {
   border-bottom: none;
@@ -502,132 +570,204 @@
   color: var(--color-green);
 }
 
+.totalsTable tr.totalRow td {
+  font-size: 20px;
+  font-family: "Cormorant Garamond", serif;
+  letter-spacing: -0.3px;
+}
+
+/* ── Action Buttons ── */
+
 .actions {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
+/* Print — secondary, matches Shop's compareBarClear */
 .printBtn {
-  padding: 14px 20px;
-  background: var(--color-secondary-accent, #8A6240);
-  color: #FFFFFF;
-  border: none;
-  border-radius: 4px;
-  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 5px;
+  background: #FFFFFF;
+  color: rgba(16, 40, 32, 0.55);
+  font-size: 13px;
   font-weight: 600;
+  font-family: "Lato", sans-serif;
   cursor: pointer;
-  transition: background 0.2s;
-}
-.printBtn:hover {
-  background: #7a5536;
+  transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+  letter-spacing: 0.2px;
 }
 
+.printBtn:hover {
+  border-color: var(--color-gold-base);
+  color: var(--color-green);
+  background: var(--color-cream, #F7F4EF);
+}
+
+/* Checkout — gold primary CTA, matches Shop's compareBarCta */
 .checkoutBtn {
   padding: 14px 20px;
-  background: var(--color-primary);
+  background: var(--color-gold-base, #B8962E);
   color: #FFFFFF;
   border: none;
-  border-radius: 4px;
-  font-size: 14px;
-  font-weight: 600;
+  border-radius: 5px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: "Lato", sans-serif;
+  letter-spacing: 0.4px;
   cursor: pointer;
-  transition: background 0.2s, transform 0.15s;
+  transition: opacity 0.18s ease, transform 0.15s ease;
+  text-decoration: none;
 }
+
 .checkoutBtn:hover {
-  background: var(--color-primary-hover);
+  opacity: 0.9;
   transform: translateY(-1px);
 }
+
 .checkoutBtn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
 }
 
-/* when showing "Book Now (N items)" – gold accent */
-.checkoutBtnAll {
-  background: var(--color-primary);
-}
+/* ─── Empty State ───────────────────────────────────────────────────────────── */
+/* Matches Shop's .emptyState pattern */
 
-/* =========================
-   EMPTY CART
-========================= */
 .emptySection {
   grid-column: 1 / -1;
   width: 100%;
-  margin: 40px 0 80px;
-  padding: 28px 24px 32px;
+  margin: 20px 0 60px;
+  padding: 52px 24px 56px;
   background: #FFFFFF;
-  border: 1px solid rgba(16, 40, 32, 0.08);
-  border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(16, 40, 32, 0.03);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  box-shadow: 0 2px 12px rgba(16, 40, 32, 0.04);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
   text-align: center;
 }
 
 .emptyIcon {
-  font-size: 28px;
-  color: rgba(16, 40, 32, 0.28);
+  color: rgba(16, 40, 32, 0.22);
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
 }
 
 .emptyTitle {
   margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-.emptySub {
-  margin: 0 0 8px;
-  font-size: 14px;
-  color: var(--color-text-secondary);
-}
-.emptyLink {
-  display: inline-block;
-  align-self: center;
-  padding: 9px 20px;
-  background: var(--color-primary);
-  color: #FFFFFF;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: background 0.2s;
-}
-.emptyLink:hover {
-  background: var(--color-primary-hover);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--color-green);
+  font-family: "Cormorant Garamond", serif;
 }
 
-/* ===== Mobile small screens ===== */
-@media (max-width: 480px) {
-  .hero {
-    padding: 38px 0 38px;
+.emptySub {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: #999;
+  font-family: "Lato", sans-serif;
+}
+
+/* Empty link — matches Shop's .emptyReset */
+.emptyLink {
+  display: inline-flex;
+  align-items: center;
+  padding: 11px 24px;
+  background: var(--color-green, #102820);
+  color: #FFFFFF;
+  border-radius: 5px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: "Lato", sans-serif;
+  letter-spacing: 0.4px;
+  text-decoration: none;
+  transition: opacity 0.18s ease;
+}
+
+.emptyLink:hover {
+  opacity: 0.88;
+}
+
+/* ─── Responsive ────────────────────────────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .content {
+    grid-template-columns: 1fr 280px;
+    gap: 22px;
+    padding: 28px 20px 56px;
+  }
+}
+
+@media (max-width: 900px) {
+  .content {
+    grid-template-columns: 1fr;
+  }
+
+  .totalsSection {
+    position: static;
+  }
+}
+
+@media (max-width: 680px) {
+  .tableHeader {
+    display: none;
+  }
+
+  .itemRow {
+    grid-template-columns: 36px 1fr 36px;
+    grid-template-rows: auto auto auto;
+    gap: 6px 10px;
+    padding: 16px;
+  }
+
+  .itemCheck    { grid-column: 1; grid-row: 1 / 4; align-self: start; padding-top: 5px; }
+  .itemProduct  { grid-column: 2; grid-row: 1; }
+  .itemPrice    { grid-column: 2; grid-row: 2; font-size: 13px; }
+  .itemQty      { grid-column: 2; grid-row: 3; }
+  .itemSubtotal { display: none; }
+  .itemRemove   { grid-column: 3; grid-row: 1; align-self: start; }
+}
+
+@media (max-width: 640px) {
+  .content {
+    padding: 20px 16px 48px;
   }
 
   .heroInner {
     padding: 0 16px;
   }
 
-  .content {
-    padding: 24px 16px 48px;
+  .heroTitle {
+    font-size: 22px;
   }
+}
 
-  .totalsSection {
-    top: 80px;
+@media (max-width: 480px) {
+  .hero {
+    padding: 28px 0 24px;
   }
 
   .couponSection {
-    padding: 16px;
+    padding: 14px 16px;
   }
 
   .couponInput {
     min-width: 0;
   }
 
+  .totalsSection {
+    padding: 18px 16px;
+  }
+
   .emptySection {
-    width: 100%;
-    margin: 32px 0 56px;
-    padding: 24px 16px 28px;
+    padding: 40px 16px 44px;
   }
 }

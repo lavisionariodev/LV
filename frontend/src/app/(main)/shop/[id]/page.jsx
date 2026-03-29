@@ -237,16 +237,18 @@ export default function ServiceDetailPage({ params }) {
             {/* Action buttons */}
             <div className={styles.actions}>
               <button className={styles.btnBookNow}>Book Now</button>
-              <button
-                className={styles.btnAddToCart}
-                onClick={handleAddToCart}
-                disabled={!selectedListing || authLoading}
-              >
-                {addedMessage ? 'Added to cart' : user && !isBuyer ? 'Log in as buyer to add to cart' : 'Add to Cart'}
-              </button>
-              <button className={styles.btnSave} aria-label="Save">
-                ♡ Save
-              </button>
+              <div className={styles.cartSaveRow}>
+                <button
+                  className={styles.btnAddToCart}
+                  onClick={handleAddToCart}
+                  disabled={!selectedListing || authLoading}
+                >
+                  {addedMessage ? 'Added to cart' : user && !isBuyer ? 'Log in as buyer to add to cart' : 'Add to Cart'}
+                </button>
+                <button className={styles.btnSave} aria-label="Save">
+                  ♡ Save
+                </button>
+              </div>
             </div>
             {addError && (
               <p className={styles.tabText} style={{ color: 'var(--color-error, #b91c1c)', marginTop: '0.5rem' }}>
@@ -386,4 +388,3 @@ function FullDescriptionSection({ service, styles }) {
     </div>
   )
 }
-

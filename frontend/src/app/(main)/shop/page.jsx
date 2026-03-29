@@ -10,16 +10,18 @@ import styles from './shop.module.css'
 export default function ShopPage() {
   const router = useRouter()
   const [activeCategory, setActiveCategory] = useState('all')
-  const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState('popular')
   const [compareIds, setCompareIds] = useState([])
-  const [searchFocused, setSearchFocused] = useState(false)
   const [locationQuery, setLocationQuery] = useState('')
   const [locationFocused, setLocationFocused] = useState(false)
   const [selectedProvider, setSelectedProvider] = useState(null)
   const [showFiltersModal, setShowFiltersModal] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 15 // 3 columns × 5 rows
+
+  // Mobile-specific pagination: 2 columns × 5 rows = 10 items per page
+  const [mobileCurrentPage, setMobileCurrentPage] = useState(1)
+  const MOBILE_ITEMS_PER_PAGE = 10
 
   const filteredListings = useMemo(() => {
     let list = [...LISTINGS]
@@ -30,18 +32,6 @@ export default function ShopPage() {
 
     if (selectedProvider) {
       list = list.filter((l) => l.providerId === selectedProvider)
-    }
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase()
-      list = list.filter((l) => {
-        const provider = PROVIDERS.find((p) => p.id === l.providerId)
-        return (
-          l.name.toLowerCase().includes(q) ||
-          provider?.name.toLowerCase().includes(q) ||
-          l.inclusions.some((i) => i.toLowerCase().includes(q))
-        )
-      })
     }
 
     if (sortBy === 'price-asc') list.sort((a, b) => a.price - b.price)
@@ -59,7 +49,7 @@ export default function ShopPage() {
     }
 
     return list
-  }, [activeCategory, searchQuery, sortBy])
+  }, [activeCategory, sortBy, selectedProvider])
 
   const totalPages = Math.ceil(filteredListings.length / ITEMS_PER_PAGE)
   const paginatedListings = useMemo(() => {
@@ -67,8 +57,32 @@ export default function ShopPage() {
     return filteredListings.slice(start, start + ITEMS_PER_PAGE)
   }, [filteredListings, currentPage])
 
+  // Mobile-specific derived values — independent of desktop pagination
+  const mobileTotalPages = Math.ceil(filteredListings.length / MOBILE_ITEMS_PER_PAGE)
+  const mobilePaginatedListings = useMemo(() => {
+    const start = (mobileCurrentPage - 1) * MOBILE_ITEMS_PER_PAGE
+    return filteredListings.slice(start, start + MOBILE_ITEMS_PER_PAGE)
+  }, [filteredListings, mobileCurrentPage])
+
+  // Measure the real navbar height and expose it as a CSS variable so the
+  // fixed sidebar can sit exactly below it on desktop, regardless of the
+  // navbar's actual rendered height.
+  useEffect(() => {
+    function applyNavbarHeight() {
+      const navbar = document.querySelector('nav, header, [class*="nav"], [class*="header"], [class*="Navbar"], [class*="Header"]')
+      const height = navbar ? navbar.getBoundingClientRect().height : 0
+      document.documentElement.style.setProperty('--navbar-height', `${height}px`)
+    }
+    applyNavbarHeight()
+    window.addEventListener('resize', applyNavbarHeight)
+    return () => window.removeEventListener('resize', applyNavbarHeight)
+  }, [])
+
   // Reset to page 1 whenever filters/search/sort change
-  useEffect(() => { setCurrentPage(1) }, [activeCategory, searchQuery, sortBy, selectedProvider, locationQuery])
+  useEffect(() => {
+    setCurrentPage(1)
+    setMobileCurrentPage(1)
+  }, [activeCategory, sortBy, selectedProvider, locationQuery])
 
   // Derive unique locations from all providers
   const allLocations = useMemo(() => {
@@ -116,45 +130,25 @@ export default function ShopPage() {
     <section className={styles.servicesPage}>
 
       <div className={styles.content}>
-        {/* ── Mobile Filter + Search Row ── */}
-        <div className={styles.mobileFilterBar}>
+        {/* ── Mobile Sort + Filter Row ── */}
+        <div className={styles.mobileSortRow}>
+          {/* Filter button — sits first, visually distinct */}
           <button className={styles.mobileFilterBtn} onClick={() => setShowFiltersModal(true)}>
             <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <path d="M1 3h14M4 8h8M7 13h2" />
             </svg>
-            <span className={styles.mobileFilterBtnLabel}>Filters</span>
+            <span className={styles.mobileFilterBtnLabel}>Filter</span>
             {(activeCategory !== 'all' || locationQuery || selectedProvider) && (
               <span className={styles.mobileFilterBadge}>
                 {[activeCategory !== 'all', !!locationQuery, !!selectedProvider].filter(Boolean).length}
               </span>
             )}
           </button>
-          <div className={`${styles.mobileSearchWrap}${searchFocused ? ` ${styles.mobileSearchWrapFocused}` : ''}`}>
-            <svg className={styles.mobileSearchIcon} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <circle cx="9" cy="9" r="6" />
-              <path d="M15 15l3 3" strokeLinecap="round" />
-            </svg>
-            <input
-              className={styles.mobileSearchInput}
-              type="text"
-              placeholder="Search…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-            />
-            {searchQuery && (
-              <button className={styles.mobileSearchClear} onClick={() => setSearchQuery('')} aria-label="Clear search">
-                <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M2 2l8 8M10 2l-8 8" />
-                </svg>
-              </button>
-            )}
-          </div>
-        </div>
 
-        {/* ── Mobile Sort Row ── */}
-        <div className={styles.mobileSortRow}>
+          {/* Divider */}
+          <span className={styles.mobileSortDivider} aria-hidden="true" />
+
+          {/* Sort pills */}
           {[
             { value: 'popular',    label: 'Most Popular' },
             { value: 'price-asc',  label: 'Price: Low–High' },
@@ -312,10 +306,12 @@ export default function ShopPage() {
         <div className={styles.shopLayout}>
 
           {/* ── Side Navigation ── */}
+          <div className={styles.sideNavCol}>
           <aside className={styles.sideNav}>
             <div className={styles.sideNavHeader}>
               <span className={styles.sideNavTitle}>Categories</span>
             </div>
+            <div className={styles.sideNavScroll}>
             <nav className={styles.sideNavList}>
               {CATEGORIES.map((cat) => (
                 <button
@@ -423,35 +419,21 @@ export default function ShopPage() {
                 </div>
               )}
             </div>
+            </div>
           </aside>
+          </div>
 
           {/* ── Main Content ── */}
           <div className={styles.shopMain}>
 
             {/* ── Search ── */}
             <div className={styles.toolbar}>
-              <div className={`${styles.searchWrap}${searchFocused ? ` ${styles.searchWrapFocused}` : ''}`}>
-                <svg className={styles.searchIcon} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <circle cx="9" cy="9" r="6" />
-                  <path d="M15 15l3 3" strokeLinecap="round" />
-                </svg>
-                <input
-                  className={styles.searchInput}
-                  type="text"
-                  placeholder="Search services, providers, or inclusions…"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => setSearchFocused(true)}
-                  onBlur={() => setSearchFocused(false)}
-                />
-                {searchQuery && (
-                  <button className={styles.searchClear} onClick={() => setSearchQuery('')} aria-label="Clear search">
-                    <svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                      <path d="M2 2l8 8M10 2l-8 8" />
-                    </svg>
-                  </button>
-                )}
-              </div>
+            {/* ── Results Indicator ── */}
+            <div className={styles.resultsIndicator}>
+              <span className={styles.resultsIndicatorText}>Showing </span>
+              <span className={styles.resultsIndicatorNum}>{filteredListings.length}</span>
+              <span className={styles.resultsIndicatorText}> result{filteredListings.length !== 1 ? 's' : ''}</span>
+            </div>
               <div className={styles.sortWrap}>
                 <span className={styles.sortLabel}>Sort by</span>
                 <select className={styles.sortSelect} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
@@ -461,34 +443,6 @@ export default function ShopPage() {
                   <option value="rating">Highest Rated</option>
                   <option value="newest">Newest</option>
                 </select>
-              </div>
-            </div>
-
-            {/* ── Results row: count + sort ── */}
-            <div className={styles.resultsBar}>
-              <p className={styles.resultsCount}>
-                <span className={styles.resultsNum}>{filteredListings.length}</span>{' '}
-                result{filteredListings.length !== 1 ? 's' : ''}
-                {activeCategory !== 'all' && (
-                  <span className={styles.resultsFilter}>
-                    {' '}in <strong>{CATEGORIES.find((c) => c.id === activeCategory)?.label}</strong>
-                  </span>
-                )}
-                {searchQuery && (
-                  <span className={styles.resultsFilter}>
-                    {' '}for <strong>"{searchQuery}"</strong>
-                  </span>
-                )}
-              </p>
-              <div className={styles.resultsBarRight}>
-                {(activeCategory !== 'all' || searchQuery || selectedProvider || locationQuery) && (
-                  <button
-                    className={styles.resultsClearAll}
-                    onClick={() => { setSearchQuery(''); setActiveCategory('all'); setSelectedProvider(null); setLocationQuery('') }}
-                  >
-                    Clear filters
-                  </button>
-                )}
               </div>
             </div>
 
@@ -519,7 +473,7 @@ export default function ShopPage() {
                 </div>
                 <p className={styles.emptyTitle}>No services found</p>
                 <p className={styles.emptyText}>Try adjusting your search or browsing a different category.</p>
-                <button className={styles.emptyReset} onClick={() => { setSearchQuery(''); setActiveCategory('all'); setSelectedProvider(null); setLocationQuery('') }}>
+                <button className={styles.emptyReset} onClick={() => { setActiveCategory('all'); setSelectedProvider(null); setLocationQuery('') }}>
                   Reset all filters
                 </button>
               </div>
@@ -528,6 +482,7 @@ export default function ShopPage() {
             {/* ── Unified Product Grid ── */}
             {filteredListings.length > 0 && (
               <>
+                {/* Desktop grid — hidden on mobile via CSS */}
                 <div className={styles.grid}>
                   {paginatedListings.map((listing) => {
                     const service = SERVICES.find((s) => s.id === listing.serviceId)
@@ -545,8 +500,9 @@ export default function ShopPage() {
                   })}
                 </div>
 
+                {/* Desktop pagination — hidden on mobile via CSS */}
                 {totalPages > 1 && (
-                  <div className={styles.pagination}>
+                  <div className={`${styles.pagination} ${styles.desktopPagination}`}>
                     <button
                       className={`${styles.pageBtn} ${styles.pageBtnPrev}`}
                       onClick={() => { setCurrentPage((p) => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
@@ -558,7 +514,6 @@ export default function ShopPage() {
                       </svg>
                       Prev
                     </button>
-
                     <div className={styles.pageNumbers}>
                       {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
                         const isActive = page === currentPage
@@ -582,7 +537,6 @@ export default function ShopPage() {
                         )
                       })}
                     </div>
-
                     <button
                       className={`${styles.pageBtn} ${styles.pageBtnNext}`}
                       onClick={() => { setCurrentPage((p) => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
@@ -594,6 +548,83 @@ export default function ShopPage() {
                         <path d="M4 2l3 3-3 3" />
                       </svg>
                     </button>
+                  </div>
+                )}
+
+                {/* ── Mobile grid + inline pagination — hidden on tablet/desktop via CSS ── */}
+                <div className={styles.mobileGrid}>
+                  {mobilePaginatedListings.map((listing) => {
+                    const service = SERVICES.find((s) => s.id === listing.serviceId)
+                    return (
+                      <ListingCard
+                        key={listing.id}
+                        listing={listing}
+                        service={service}
+                        styles={styles}
+                        inCompare={compareIds.includes(listing.id)}
+                        onToggleCompare={toggleCompare}
+                        compareDisabled={compareIds.length >= 3 && !compareIds.includes(listing.id)}
+                      />
+                    )
+                  })}
+                </div>
+
+                {/* Mobile pagination — immediately after the grid, hidden on tablet/desktop */}
+                {mobileTotalPages > 1 && (
+                  <div className={styles.mobilePaginationBlock}>
+                    {/* Results summary — space always reserved; visible only on last mobile page */}
+                    <div className={`${styles.mobilePaginationResults}${mobileCurrentPage === mobileTotalPages ? ` ${styles.mobilePaginationResultsVisible}` : ''}`}>
+                      <span className={styles.mobileResultsLabel}>Showing </span>
+                      <span className={styles.mobileResultsNum}>{filteredListings.length}</span>
+                      <span className={styles.mobileResultsLabel}> result{filteredListings.length !== 1 ? 's' : ''}</span>
+                    </div>
+                    <div className={styles.pagination}>
+                      <button
+                        className={`${styles.pageBtn} ${styles.pageBtnPrev}`}
+                        onClick={() => { setMobileCurrentPage((p) => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                        disabled={mobileCurrentPage === 1}
+                        aria-label="Previous page"
+                      >
+                        <svg viewBox="0 0 10 10" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M6 2L3 5l3 3" />
+                        </svg>
+                        Prev
+                      </button>
+                      <div className={styles.pageNumbers}>
+                        {Array.from({ length: mobileTotalPages }, (_, i) => i + 1).map((page) => {
+                          const isActive = page === mobileCurrentPage
+                          const isNear = Math.abs(page - mobileCurrentPage) <= 1
+                          const isEdge = page === 1 || page === mobileTotalPages
+                          if (!isNear && !isEdge) {
+                            if (page === 2 || page === mobileTotalPages - 1) {
+                              return <span key={page} className={styles.pageEllipsis}>…</span>
+                            }
+                            return null
+                          }
+                          return (
+                            <button
+                              key={page}
+                              className={`${styles.pageNumBtn}${isActive ? ` ${styles.pageNumBtnActive}` : ''}`}
+                              onClick={() => { setMobileCurrentPage(page); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                              aria-current={isActive ? 'page' : undefined}
+                            >
+                              {page}
+                            </button>
+                          )
+                        })}
+                      </div>
+                      <button
+                        className={`${styles.pageBtn} ${styles.pageBtnNext}`}
+                        onClick={() => { setMobileCurrentPage((p) => Math.min(mobileTotalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                        disabled={mobileCurrentPage === mobileTotalPages}
+                        aria-label="Next page"
+                      >
+                        Next
+                        <svg viewBox="0 0 10 10" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M4 2l3 3-3 3" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 )}
               </>

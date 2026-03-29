@@ -5,7 +5,9 @@
 .servicesPage {
   width: 100%;
   max-width: 100vw;
-  overflow-x: hidden;
+  /* overflow-x: clip removed — it creates a scroll container in Chrome/Safari
+     that breaks position: sticky on descendant elements. Horizontal overflow
+     is controlled by .content max-width and padding instead. */
   min-height: 100vh;
   padding-bottom: 5rem;
   background: var(--color-light-gray, #EDE8E0);
@@ -21,6 +23,9 @@
   margin: 0 auto;
   padding: 48px 28px 64px;
   box-sizing: border-box;
+  /* Must NOT have overflow set — any overflow value other than visible
+     creates a new scroll container and breaks position: sticky on children */
+  overflow: visible;
 }
 
 /* ─── Shop Layout ───────────────────────────────────────────────────────────── */
@@ -29,20 +34,77 @@
   display: grid;
   grid-template-columns: 220px 1fr;
   gap: 32px;
-  align-items: start;
+  /* align-items: stretch lets .sideNavCol grow to match the main content
+     height. This is required for position:sticky to be bounded correctly —
+     the sticky element travels within its column and stops at the column's
+     bottom edge, so it never overlaps the footer below. */
+  align-items: stretch;
+  position: relative;
 }
 
 /* ─── Side Navigation ───────────────────────────────────────────────────────── */
 
+/* Sidebar column — a grid-flow column that also acts as the sticky
+   bounding context. It stretches to match the main content height
+   (align-self: stretch), so the sticky sidebar travels up to exactly
+   where this column ends and never bleeds into the footer below. */
+.sideNavCol {
+  width: 220px;
+  align-self: stretch; /* let the column grow to match the grid row height */
+  position: relative;  /* establishes a containing block for any children that need it */
+}
+
+/* The sidebar panel uses position: sticky so it:
+   - stays in normal document flow (its column retains actual height)
+   - scrolls with the page until the top threshold is reached, then pins
+   - automatically stops at the bottom edge of its parent (.sideNavCol),
+     which means it can never visually overflow into the footer below.
+   The left offset is no longer needed — sticky is positioned within
+   the grid column, not relative to the viewport. */
 .sideNav {
+  position: sticky;
+  top: calc(var(--navbar-height, 64px) + 16px);
+  width: 220px;
+  max-height: calc(100vh - var(--navbar-height, 64px) - 32px);
   background: #FFFFFF;
   border: 1px solid rgba(16, 40, 32, 0.09);
   border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Inner scroll container — scrolls independently; the "Categories" header
+   stays pinned above it because it lives in sideNavHeader outside this div. */
+.sideNavScroll {
+  flex: 1;
+  min-height: 0;
+  border-radius: 0 0 8px 8px;
   overflow-y: auto;
-  overflow-x: hidden;
-  position: sticky;
-  top: 24px;
-  max-height: calc(100vh - 48px);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(16, 40, 32, 0.15) transparent;
+}
+
+.sideNavScroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sideNavScroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sideNavScroll::-webkit-scrollbar-thumb {
+  background: rgba(16, 40, 32, 0.15);
+  border-radius: 4px;
+}
+
+.sideNavScroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 40, 32, 0.28);
+}
+
+/* Remove the placeholder — no longer needed */
+.sideNavPlaceholder {
+  display: none;
 }
 
 .sideNavHeader {
@@ -336,6 +398,7 @@
 
 .shopMain {
   min-width: 0;
+  align-self: start; /* content starts at the top edge of the grid cell */
 }
 
 /* ─── Grid ──────────────────────────────────────────────────────────────────── */
@@ -378,7 +441,7 @@
 }
 
 .cardBody {
-  padding: clamp(8px, 1.2vw, 14px) clamp(10px, 1.4vw, 16px);
+  padding: clamp(8px, 1.2vw, 14px) clamp(10px, 1.4vw, 16px) clamp(14px, 1.6vw, 20px);
 }
 
 .cardTitle {
@@ -420,80 +483,34 @@
   flex-wrap: wrap;
 }
 
-/* Search */
-.searchWrap {
+/* ─── Results Indicator ─────────────────────────────────────────────────────── */
+
+.resultsIndicator {
   flex: 1;
   min-width: 0;
-  position: relative;
   display: flex;
-  align-items: center;
-  border-radius: 6px;
-  transition: box-shadow 0.2s ease;
+  align-items: baseline;
+  gap: 4px;
+  padding: 11px 4px;
 }
 
-.searchWrapFocused {
-  box-shadow: 0 0 0 3px rgba(184, 150, 46, 0.15);
-}
-
-.searchIcon {
-  position: absolute;
-  left: 14px;
-  width: 15px;
-  height: 15px;
-  color: #b0a99b;
-  pointer-events: none;
-  flex-shrink: 0;
-  transition: color 0.2s ease;
-}
-
-.searchWrapFocused .searchIcon {
-  color: var(--color-gold-base, #B8962E);
-}
-
-.searchInput {
-  width: 100%;
-  padding: 11px 40px 11px 42px;
-  border: 1.5px solid rgba(16, 40, 32, 0.14);
-  border-radius: 6px;
-  font-size: 14px;
-  font-family: "Lato", sans-serif;
-  background: #FFFFFF;
-  color: #222;
-  outline: none;
-  transition: border-color 0.2s ease;
-}
-
-.searchInput::placeholder {
-  color: #b8b0a6;
-}
-
-.searchInput:focus {
-  border-color: rgba(184, 150, 46, 0.5);
-}
-
-.searchClear {
-  position: absolute;
-  right: 13px;
-  background: rgba(16, 40, 32, 0.06);
-  border: none;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  font-size: 16px;
+.resultsIndicatorNum {
+  font-size: 22px;
+  font-weight: 700;
+  font-family: "Cormorant Garamond", serif;
+  color: var(--color-green, #102820);
   line-height: 1;
-  color: #888;
-  cursor: pointer;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s ease, color 0.15s ease;
+  letter-spacing: -0.5px;
 }
 
-.searchClear:hover {
-  background: rgba(16, 40, 32, 0.12);
-  color: #444;
+.resultsIndicatorText {
+  font-size: 13px;
+  font-weight: 400;
+  font-family: "Lato", sans-serif;
+  color: #999;
+  letter-spacing: 0.2px;
 }
+
 
 /* Sort */
 .sortWrap {
@@ -572,27 +589,33 @@
   opacity: 0.9;
 }
 
-/* ─── Compare Bar ─────────────────────────────────────────────────────────────── */
+/* ─── Compare Bar (inline, above grid) ─────────────────────────────────────── */
 
 .compareBar {
-  background: var(--color-green, #102820);
+  background: rgba(247, 244, 239, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-radius: 8px;
   padding: 16px 20px;
   margin-bottom: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: background 0.2s ease;
+  border: 1px solid rgba(184, 150, 46, 0.18);
+  border-top: 1.5px solid rgba(184, 150, 46, 0.32);
+  box-shadow: 0 2px 10px rgba(16, 40, 32, 0.05);
+  transition: box-shadow 0.2s ease;
 }
 
 .compareBarReady {
-  background: #0d2218;
-  box-shadow: 0 4px 20px rgba(16, 40, 32, 0.22);
+  background: rgba(247, 244, 239, 0.92);
+  box-shadow: 0 4px 18px rgba(16, 40, 32, 0.08);
 }
 
 /* ─── Compare Hint Tray (1 item selected) ───────────────────────────────────── */
 
 .compareHintTray {
-  background: rgba(16, 40, 32, 0.06);
-  border: 1px dashed rgba(16, 40, 32, 0.18);
+  background: rgba(247, 244, 239, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px dashed rgba(184, 150, 46, 0.28);
   border-radius: 8px;
   padding: 12px 18px;
   margin-bottom: 28px;
@@ -614,7 +637,7 @@
 .compareHintText {
   flex: 1;
   font-size: 12.5px;
-  color: rgba(16, 40, 32, 0.55);
+  color: rgba(16, 40, 32, 0.5);
   font-family: "Lato", sans-serif;
   font-style: italic;
 }
@@ -629,7 +652,7 @@
   z-index: 999;
   width: min(620px, calc(100vw - 32px));
   max-width: calc(100vw - 24px);
-  animation: comparePopupIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: comparePopupIn 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
   pointer-events: auto;
   box-sizing: border-box;
 }
@@ -637,7 +660,7 @@
 @keyframes comparePopupIn {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(20px) scale(0.97);
+    transform: translateX(-50%) translateY(16px) scale(0.98);
   }
   to {
     opacity: 1;
@@ -646,14 +669,16 @@
 }
 
 .compareFloatInner {
-  background: var(--color-green, #102820);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(250, 248, 244, 0.88);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  border: 1px solid rgba(184, 150, 46, 0.2);
+  border-top: 1.5px solid rgba(184, 150, 46, 0.38);
   border-radius: 14px;
   padding: 18px 22px;
   box-shadow:
-    0 8px 40px rgba(16, 40, 32, 0.35),
-    0 2px 8px rgba(0, 0, 0, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    0 4px 24px rgba(16, 40, 32, 0.08),
+    0 1px 4px rgba(16, 40, 32, 0.05);
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -669,8 +694,8 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(184, 150, 46, 0.08);
+  border: 1px solid rgba(184, 150, 46, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -689,14 +714,14 @@
   font-size: 20px;
   font-weight: 700;
   font-family: "Cormorant Garamond", serif;
-  color: var(--color-gold-base, #B8962E);
+  color: var(--color-green, #102820);
   line-height: 1;
 }
 
 .compareFloatLabel {
   font-size: 13px;
   font-family: "Lato", sans-serif;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(16, 40, 32, 0.55);
   font-weight: 500;
 }
 
@@ -718,7 +743,7 @@
   align-items: center;
   gap: 12px;
   padding-top: 2px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(16, 40, 32, 0.07);
 }
 
 .compareBarInner {
@@ -739,8 +764,8 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(184, 150, 46, 0.08);
+  border: 1px solid rgba(184, 150, 46, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -750,7 +775,7 @@
 
 .compareBarLabel {
   display: block;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(16, 40, 32, 0.7);
   font-size: 13px;
   font-family: "Lato", sans-serif;
   font-weight: 500;
@@ -768,9 +793,9 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: background 0.2s ease;
+  background: rgba(16, 40, 32, 0.1);
+  border: 1px solid rgba(16, 40, 32, 0.14);
+  transition: background 0.22s ease, border-color 0.22s ease;
 }
 
 .compareProgressDotFilled {
@@ -780,7 +805,7 @@
 
 .compareProgressHint {
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.3);
+  color: rgba(16, 40, 32, 0.3);
   font-family: "Lato", sans-serif;
   margin-left: 4px;
   letter-spacing: 0.3px;
@@ -795,9 +820,9 @@
 }
 
 .compareChip {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #FFFFFF;
+  background: rgba(184, 150, 46, 0.07);
+  border: 1px solid rgba(184, 150, 46, 0.22);
+  color: var(--color-green, #102820);
   font-size: 12px;
   font-family: "Lato", sans-serif;
   padding: 5px 10px 5px 12px;
@@ -816,24 +841,24 @@
 }
 
 .compareChipRemove {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(16, 40, 32, 0.07);
   border: none;
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(16, 40, 32, 0.45);
   cursor: pointer;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .compareChipRemove:hover {
-  background: rgba(255, 255, 255, 0.22);
-  color: #fff;
+  background: rgba(16, 40, 32, 0.13);
+  color: var(--color-green, #102820);
 }
 
 .compareBarActions {
@@ -865,20 +890,23 @@
   transform: translateY(-1px);
 }
 
+/* Muted — should not compete with the gold CTA */
 .compareBarClear {
   background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(16, 40, 32, 0.14);
+  border-radius: 5px;
+  color: rgba(16, 40, 32, 0.4);
   font-size: 12px;
   font-family: "Lato", sans-serif;
   cursor: pointer;
   white-space: nowrap;
-  transition: color 0.15s ease;
-  padding: 4px 0;
+  transition: border-color 0.15s ease, color 0.15s ease;
+  padding: 6px 12px;
 }
 
 .compareBarClear:hover {
-  color: rgba(255, 255, 255, 0.6);
+  border-color: rgba(16, 40, 32, 0.26);
+  color: rgba(16, 40, 32, 0.65);
 }
 
 /* ─── Results Bar ────────────────────────────────────────────────────────────── */
@@ -1006,7 +1034,7 @@
 }
 
 .serviceGroup {
-  margin-bottom: 56px;
+  margin-bottom: 72px;
 }
 
 .serviceGroup:last-child {
@@ -1097,11 +1125,14 @@
   display: flex;
   flex-direction: column;
   transition: box-shadow 0.25s ease, transform 0.22s ease, border-color 0.2s ease;
+  margin-bottom: clamp(4px, 0.6vw, 8px);
 }
 
 .listingCardSelected {
   border-color: var(--color-gold-base, #B8962E);
-  box-shadow: 0 0 0 2px rgba(184, 150, 46, 0.2), 0 4px 18px rgba(16, 40, 32, 0.09);
+  border-width: 1.5px;
+  background: #F9F7F4;
+  box-shadow: 0 4px 18px rgba(16, 40, 32, 0.09);
 }
 
 .listingCardLink {
@@ -1171,26 +1202,11 @@
 }
 
 .compareSelectedOverlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(16, 40, 32, 0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
+  display: none;
 }
 
 .compareSelectedCheck {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--color-gold-base, #B8962E);
-  color: #FFFFFF;
-  font-size: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 12px rgba(184, 150, 46, 0.5);
+  display: none;
 }
 
 .listingBody {
@@ -1357,7 +1373,7 @@
   display: flex;
   gap: clamp(5px, 0.7vw, 8px);
   margin-top: auto;
-  padding-top: clamp(2px, 0.4vw, 4px);
+  padding: clamp(6px, 0.7vw, 10px) clamp(10px, 1.4vw, 16px) clamp(12px, 1.4vw, 16px);
 }
 
 .ctaBtn {
@@ -1866,6 +1882,26 @@
   display: none;
 }
 
+/* ─── Mobile Grid (hidden on tablet/desktop) ────────────────────────────────── */
+
+.mobileGrid {
+  display: none; /* shown only inside the mobile breakpoint */
+}
+
+/* ─── Desktop Pagination modifier (hidden on mobile) ───────────────────────── */
+/* .desktopPagination itself has no extra rules here — it inherits .pagination.
+   It is hidden inside the mobile media query below. */
+
+/* ─── Mobile Pagination Results (hidden on desktop, shown on mobile last page) ─ */
+
+.mobilePaginationBlock {
+  display: none; /* hidden on desktop — mobile media query overrides this */
+}
+
+.mobilePaginationResults {
+  display: none; /* hidden on desktop entirely */
+}
+
 /* ─── Mobile Filters Modal ──────────────────────────────────────────────────── */
 
 .filtersModalOverlay {
@@ -1967,18 +2003,41 @@
 
 /* ─── Responsive ────────────────────────────────────────────────────────────── */
 
+/* Desktop — sticky positioning needs no left offset override; it sits
+   naturally inside its .sideNavCol grid column. The JS-measured
+   --navbar-height variable is still used for the top threshold above. */
+@media (min-width: 901px) {
+  /* intentionally left empty — kept for future breakpoint-specific
+     sidebar overrides without changing selector specificity */
+}
+
 @media (max-width: 900px) {
   .shopLayout {
     grid-template-columns: 1fr;
   }
 
-  .grid {
-    grid-template-columns: repeat(2, 1fr);
+  /* Reset desktop sticky behaviour — sidebar is hidden on mobile anyway,
+     but explicitly clearing ensures no leakage if display rules ever change. */
+  .sideNavCol {
+    position: static;
+    align-self: auto;
+    max-height: none;
+    display: block;
   }
 
-  /* Hide desktop sidebar */
+  .sideNavScroll {
+    overflow-y: visible;
+    max-height: none;
+  }
+
+  /* Hide desktop sidebar — also reset the fixed positioning so it doesn't
+     bleed through if display rules ever change on mobile */
   .sideNav {
     display: none;
+    position: static;
+    left: auto;
+    top: auto;
+    max-height: none;
   }
 
   /* Hide desktop toolbar (search + select sort) — replaced by mobile UI below */
@@ -1986,130 +2045,88 @@
     display: none;
   }
 
-  /* ── Mobile Filter + Search Row ── */
+  /* ── Mobile Results Indicator Row — hidden; results now shown near pagination ── */
   .mobileFilterBar {
+    display: none;
+  }
+
+  .mobileResultsIndicator {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 10px;
-    flex-wrap: nowrap;
+    align-items: baseline;
+    gap: 4px;
+    padding: 4px 0;
   }
 
-  .mobileFilterBtn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 9px 14px;
-    background: #FFFFFF;
-    border: 1.5px solid rgba(16, 40, 32, 0.14);
-    border-radius: 100px;
-    font-size: 12.5px;
-    font-weight: 500;
-    font-family: "Lato", sans-serif;
-    color: #666;
-    cursor: pointer;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
-    white-space: nowrap;
-    flex-shrink: 0;
+  /* ── Hide desktop grid and desktop pagination on mobile ── */
+  .grid {
+    display: none;
   }
 
-  .mobileFilterBtn:hover {
-    border-color: rgba(16, 40, 32, 0.3);
-    box-shadow: 0 2px 8px rgba(16, 40, 32, 0.07);
+  .desktopPagination {
+    display: none;
   }
 
-  .mobileFilterBtnLabel {
-    /* visible at all mobile widths */
-  }
-
-  .mobileFilterBadge {
-    background: var(--color-gold-base, #B8962E);
-    color: #FFFFFF;
-    font-size: 10px;
-    font-weight: 700;
-    border-radius: 50%;
-    width: 18px;
-    height: 18px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-family: "Lato", sans-serif;
-    flex-shrink: 0;
-  }
-
-  /* Inline mobile search */
-  .mobileSearchWrap {
-    flex: 1;
-    min-width: 0;
-    position: relative;
-    display: flex;
-    align-items: center;
-    border: 1.5px solid rgba(16, 40, 32, 0.14);
-    border-radius: 100px;
-    background: #FFFFFF;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .mobileSearchWrapFocused {
-    border-color: rgba(184, 150, 46, 0.5);
-    box-shadow: 0 0 0 3px rgba(184, 150, 46, 0.12);
-  }
-
-  .mobileSearchIcon {
-    position: absolute;
-    left: 12px;
-    width: 14px;
-    height: 14px;
-    color: #b0a99b;
-    pointer-events: none;
-    flex-shrink: 0;
-    transition: color 0.2s ease;
-  }
-
-  .mobileSearchWrapFocused .mobileSearchIcon {
-    color: var(--color-gold-base, #B8962E);
-  }
-
-  .mobileSearchInput {
+  /* ── Show mobile grid (2-col, matches existing responsive grid style) ── */
+  .mobileGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: clamp(8px, 1.3vw, 16px);
     width: 100%;
-    padding: 9px 34px 9px 34px;
-    border: none;
-    border-radius: 100px;
-    font-size: 13px;
-    font-family: "Lato", sans-serif;
-    background: transparent;
-    color: #222;
-    outline: none;
+    box-sizing: border-box;
   }
 
-  .mobileSearchInput::placeholder {
-    color: #b8b0a6;
+  /* ── Show mobile pagination block ── */
+  .mobilePaginationBlock {
+    display: block;
   }
 
-  .mobileSearchClear {
-    position: absolute;
-    right: 10px;
-    background: rgba(16, 40, 32, 0.07);
-    border: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    color: #888;
-    cursor: pointer;
-    padding: 0;
+  /* Tighten pagination spacing on mobile — sits directly below the grid */
+  .mobilePaginationBlock .pagination {
+    margin-top: 20px;
+    padding-top: 20px;
+  }
+
+  /* Results summary — always reserves space; invisible until last page */
+  .mobilePaginationResults {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: center;
-    transition: background 0.15s ease, color 0.15s ease;
-    flex-shrink: 0;
+    gap: 4px;
+    min-height: 36px;
+    padding: 8px 0 4px;
+    opacity: 0.45;
+    visibility: hidden;
+    pointer-events: none;
   }
 
-  .mobileSearchClear:hover {
-    background: rgba(16, 40, 32, 0.13);
-    color: #444;
+  .mobilePaginationResultsVisible {
+    visibility: visible;
+    pointer-events: auto;
+    animation: mobilePaginationResultsFadeIn 0.2s ease both;
   }
 
-  /* ── Mobile Sort Row ── */
+  @keyframes mobilePaginationResultsFadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 0.45; transform: translateY(0); }
+  }
+
+  .mobileResultsNum {
+    font-size: 13px;
+    font-weight: 600;
+    font-family: "Lato", sans-serif;
+    color: #8a8a8a;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  .mobileResultsLabel {
+    font-size: 12px;
+    font-weight: 400;
+    font-family: "Lato", sans-serif;
+    color: #8a8a8a;
+  }
+
+  /* ── Combined Filter + Sort Row ── */
   .mobileSortRow {
     display: flex;
     align-items: center;
@@ -2118,7 +2135,6 @@
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     margin-bottom: 14px;
-    /* Bleed-edge scroll while keeping content padded */
     padding-bottom: 2px;
   }
 
@@ -2126,6 +2142,63 @@
     display: none;
   }
 
+  /* Filter button — first item, subtle green tint to distinguish from sort pills */
+  .mobileFilterBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    /* Match sort pill height exactly */
+    padding: 7px 14px;
+    background: rgba(16, 40, 32, 0.05);
+    border: 1.5px solid rgba(16, 40, 32, 0.28);
+    border-radius: 100px;
+    font-size: 12.5px;
+    font-weight: 600;
+    font-family: "Lato", sans-serif;
+    color: var(--color-green, #102820);
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .mobileFilterBtn:hover {
+    background: rgba(16, 40, 32, 0.09);
+    border-color: rgba(16, 40, 32, 0.42);
+    box-shadow: 0 1px 4px rgba(16, 40, 32, 0.08);
+  }
+
+  .mobileFilterBtnLabel {
+    /* always visible */
+  }
+
+  .mobileFilterBadge {
+    background: var(--color-gold-base, #B8962E);
+    color: #FFFFFF;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 50%;
+    width: 17px;
+    height: 17px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Lato", sans-serif;
+    flex-shrink: 0;
+  }
+
+  /* Thin vertical divider between Filter btn and sort pills */
+  .mobileSortDivider {
+    display: inline-block;
+    width: 1px;
+    height: 18px;
+    background: rgba(16, 40, 32, 0.16);
+    border-radius: 1px;
+    flex-shrink: 0;
+    margin: 0 2px;
+  }
+
+  /* Sort pills — mobile only */
   .mobileSortPill {
     display: inline-flex;
     align-items: center;
@@ -2140,6 +2213,8 @@
     cursor: pointer;
     white-space: nowrap;
     flex-shrink: 0;
+    overflow: visible;
+    line-height: 1.4;
     transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
   }
 
@@ -2151,12 +2226,13 @@
   .mobileSortPillActive {
     background: var(--color-green, #102820);
     border-color: var(--color-green, #102820);
-    color: #FFFFFF;
+    color: #FFFFFF !important;
     font-weight: 600;
   }
 
   .mobileSortPillActive:hover {
     opacity: 0.9;
+    color: #FFFFFF !important;
   }
 
   /* ── Active category tag row ── */
@@ -2330,6 +2406,18 @@
     color: #666;
     cursor: pointer;
     transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+    /* Prevent any text clipping */
+    overflow: visible;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Ensure the label span inside the button is always visible */
+  .filtersModalCatBtn > span:first-child {
+    color: inherit;
+    display: inline-block;
+    overflow: visible;
+    white-space: nowrap;
   }
 
   .filtersModalCatBtn:hover {
@@ -2340,7 +2428,12 @@
   .filtersModalCatBtnActive {
     background: var(--color-green, #102820);
     border-color: var(--color-green, #102820);
-    color: #FFFFFF;
+    /* Explicitly force white on the button AND all its children */
+    color: #FFFFFF !important;
+  }
+
+  .filtersModalCatBtnActive > span {
+    color: #FFFFFF !important;
   }
 
   .filtersModalCatBtnActive:hover {
@@ -2348,13 +2441,23 @@
   }
 
   .filtersModalCatCount {
-    background: rgba(255,255,255,0.2);
+    background: rgba(255, 255, 255, 0.2);
     color: #FFFFFF;
     font-size: 10px;
     font-weight: 700;
     border-radius: 100px;
     padding: 1px 6px;
     font-family: "Lato", sans-serif;
+    /* Ensure the badge never clips or disappears */
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    line-height: 1.4;
+  }
+
+  .filtersModalCatBtnActive .filtersModalCatCount {
+    background: rgba(255, 255, 255, 0.22);
+    color: #FFFFFF;
   }
 
   .filtersModalFooter {
@@ -2402,6 +2505,24 @@
   .filtersModalApply:hover {
     opacity: 0.88;
   }
+
+  /* ── Compare panel mobile overrides ── */
+  .compareFloatPopup {
+    bottom: 20px;
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+  }
+
+  .compareFloatInner {
+    padding: 14px 16px;
+    gap: 10px;
+  }
+
+  .compareBarInner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
 }
 
 @media (max-width: 640px) {
@@ -2417,22 +2538,6 @@
   .resultsBarRight {
     width: 100%;
     justify-content: space-between;
-  }
-
-  .compareBarInner {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .compareFloatPopup {
-    bottom: 20px;
-    width: calc(100vw - 24px);
-    max-width: calc(100vw - 24px);
-  }
-
-  .compareFloatInner {
-    padding: 14px 16px;
-    gap: 10px;
   }
 
   .compareHighlights {
@@ -2455,7 +2560,8 @@
     overflow-x: auto;
   }
 
-  .grid {
+  /* .grid is hidden on mobile; .mobileGrid handles the 2-col layout */
+  .mobileGrid {
     grid-template-columns: repeat(2, 1fr);
   }
 
@@ -2472,6 +2578,12 @@
     font-size: 12px;
     padding: 6px 12px;
   }
+
+  /* Keep filter button same height as the scaled-down sort pills */
+  .mobileFilterBtn {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -2480,7 +2592,7 @@
   }
 
   /* Keep 2-col grid but tighten image further to reduce card height */
-  .grid {
+  .mobileGrid {
     grid-template-columns: repeat(2, 1fr);
   }
 
@@ -2526,7 +2638,6 @@
   }
 
   .compareBtnActive::before {
-    content: '✓';
-    font-size: 12px;
+    content: none;
   }
 }

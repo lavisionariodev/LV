@@ -1,69 +1,79 @@
+/* ─── Page Shell ──────────────────────────────────────────── */
 .page {
   min-height: 100vh;
   background: var(--color-light-gray, #F6F3EE);
 }
 
 .content {
-  max-width: 960px;
+  max-width: 1020px;
   margin: 0 auto;
-  padding: 32px 24px 48px;
+  padding: 40px 28px 64px;
 }
 
-/* Empty state (fewer than 2 items) */
+/* ─── Empty State ─────────────────────────────────────────── */
 .empty {
   background: #FFFFFF;
-  border-radius: 10px;
-  padding: 48px 32px;
+  border-radius: 12px;
+  padding: 64px 40px;
   text-align: center;
-  box-shadow: 0 4px 20px rgba(16, 40, 32, 0.06);
+  border: 1px solid rgba(16, 40, 32, 0.07);
 }
 
 .emptyTitle {
   font-family: "Cormorant Garamond", serif;
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 600;
   color: var(--color-green, #102820);
-  margin: 0 0 12px;
+  margin: 0 0 10px;
+  letter-spacing: 0.3px;
 }
 
 .emptyText {
-  font-size: 15px;
-  color: #666;
+  font-size: 14px;
+  color: #888;
   font-family: "Lato", sans-serif;
-  margin: 0 0 24px;
-  line-height: 1.5;
+  margin: 0 0 28px;
+  line-height: 1.6;
+  max-width: 340px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .backBtn {
   display: inline-flex;
   align-items: center;
-  padding: 10px 20px;
+  gap: 6px;
+  padding: 11px 22px;
   background: var(--color-green, #102820);
   color: #FFFFFF;
-  border-radius: 6px;
-  font-size: 14px;
+  border-radius: 7px;
+  font-size: 13px;
   font-weight: 600;
   font-family: "Lato", sans-serif;
+  letter-spacing: 0.3px;
   text-decoration: none;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.18s ease;
 }
 
 .backBtn:hover {
-  opacity: 0.9;
+  opacity: 0.88;
 }
 
-/* Header */
+/* ─── Page Header ─────────────────────────────────────────── */
 .header {
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .backLink {
-  display: inline-block;
-  font-size: 14px;
-  color: #666;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: #999;
   font-family: "Lato", sans-serif;
   text-decoration: none;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
+  letter-spacing: 0.1px;
   transition: color 0.15s ease;
 }
 
@@ -73,28 +83,30 @@
 
 .title {
   font-family: "Cormorant Garamond", serif;
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 600;
   color: var(--color-green, #102820);
-  margin: 0 0 4px;
-  letter-spacing: 0.5px;
+  margin: 0 0 5px;
+  letter-spacing: 0.4px;
+  line-height: 1.15;
 }
 
 .subtitle {
-  font-size: 14px;
-  color: #888;
+  font-size: 13px;
+  color: #aaa;
   font-family: "Lato", sans-serif;
   margin: 0;
+  letter-spacing: 0.2px;
 }
 
-/* Highlights row — reuse shop grid layout on this page */
+/* ─── Highlights Strip ────────────────────────────────────── */
 .compareHighlights {
   display: flex;
   gap: 0;
   border-radius: 10px 10px 0 0;
   overflow: hidden;
   background: #FFFFFF;
-  border: 1px solid rgba(16, 40, 32, 0.08);
+  border: 1px solid rgba(16, 40, 32, 0.07);
   border-bottom: none;
   flex-wrap: wrap;
 }
@@ -104,57 +116,60 @@
   min-width: 140px;
 }
 
-/* Table card wrapper */
+/* ─── Table Card ──────────────────────────────────────────── */
 .tableCard {
   border-radius: 0 0 10px 10px;
-  overflow: hidden;
-  border: 1px solid rgba(16, 40, 32, 0.08);
+  overflow-x: auto;
+  border: 1px solid rgba(16, 40, 32, 0.07);
   border-top: none;
   background: #FFFFFF;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* Footer */
+/* ─── Footer ──────────────────────────────────────────────── */
 .footer {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid rgba(16, 40, 32, 0.08);
+  gap: 10px;
+  margin-top: 28px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(16, 40, 32, 0.07);
 }
 
 .footerBtnSecondary {
-  padding: 10px 22px;
-  border: 1.5px solid rgba(16, 40, 32, 0.15);
-  border-radius: 6px;
+  padding: 10px 20px;
+  border: 1px solid rgba(16, 40, 32, 0.14);
+  border-radius: 7px;
   background: transparent;
-  color: #666;
-  font-size: 14px;
+  color: #888;
+  font-size: 13px;
   font-weight: 600;
   font-family: "Lato", sans-serif;
+  letter-spacing: 0.2px;
   text-decoration: none;
   transition: border-color 0.15s ease, color 0.15s ease;
 }
 
 .footerBtnSecondary:hover {
-  border-color: rgba(16, 40, 32, 0.3);
+  border-color: rgba(16, 40, 32, 0.28);
   color: var(--color-green, #102820);
 }
 
 .footerBtnPrimary {
-  padding: 10px 22px;
+  padding: 10px 20px;
   border: none;
-  border-radius: 6px;
-  background: rgba(16, 40, 32, 0.08);
-  color: var(--color-green, #102820);
-  font-size: 14px;
+  border-radius: 7px;
+  background: var(--color-green, #102820);
+  color: #FFFFFF;
+  font-size: 13px;
   font-weight: 600;
   font-family: "Lato", sans-serif;
+  letter-spacing: 0.2px;
   text-decoration: none;
-  transition: background 0.15s ease;
+  transition: opacity 0.15s ease;
 }
 
 .footerBtnPrimary:hover {
-  background: rgba(16, 40, 32, 0.12);
+  opacity: 0.88;
 }

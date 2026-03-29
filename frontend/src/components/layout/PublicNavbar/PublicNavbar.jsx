@@ -481,27 +481,20 @@ export default function PublicNavbar() {
             )}
             </div>
 
-            {/* Mobile only: Search icon → slide-in input + Cart (top right) */}
+            {/* Mobile only: Always-visible search bar + Cart (top right) */}
             <div className={styles.navActionsMobile}>
               <div className={styles.navbarSearchWrap}>
-                <button
-                  type="button"
-                  className={styles.navbarSearchIconBtn}
-                  onClick={openMobileSearch}
-                  aria-label="Open search"
-                  aria-expanded={mobileSearchOpen}
-                  style={{ display: mobileSearchOpen ? 'none' : 'flex' }}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                  </svg>
-                </button>
                 <form
-                  className={`${styles.navbarSearchForm} ${mobileSearchOpen ? styles.navbarSearchFormOpen : ''}`}
+                  className={styles.navbarSearchForm}
                   onSubmit={handleSearchSubmit}
                   role="search"
                 >
+                  <span className={styles.navbarSearchIcon} aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                  </span>
                   <input
                     ref={mobileSearchInputRef}
                     type="search"
@@ -509,23 +502,8 @@ export default function PublicNavbar() {
                     placeholder="Search..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    onBlur={() => setMobileSearchOpen(false)}
                     aria-label="Search"
                   />
-                  <button
-                    type="button"
-                    className={styles.navbarSearchCloseBtn}
-                    onClick={() => {
-                      setSearchQuery('')
-                      setMobileSearchOpen(false)
-                    }}
-                    aria-label="Close search"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18"></line>
-                      <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                  </button>
                 </form>
               </div>
               <span className={styles.cartBtnWrap}>

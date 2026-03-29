@@ -73,16 +73,21 @@ export default function ComparePage() {
   return (
     <section className={styles.page}>
       <div className={styles.content}>
+
+        {/* ── Header ── */}
         <header className={styles.header}>
           <Link href="/shop" className={styles.backLink}>
             ← Back to Shop
           </Link>
           <div>
             <h1 className={styles.title}>Service Comparison</h1>
-            <p className={styles.subtitle}>Comparing {compareListings.length} services side by side</p>
+            <p className={styles.subtitle}>
+              Comparing {compareListings.length} services side by side
+            </p>
           </div>
         </header>
 
+        {/* ── Highlights strip ── */}
         <div className={styles.compareHighlights}>
           {lowestPriceId && (
             <div className={shopStyles.compareHighlight}>
@@ -118,130 +123,154 @@ export default function ComparePage() {
           )}
         </div>
 
+        {/* ── Comparison table ── */}
         <div className={styles.tableCard}>
           <div className={shopStyles.compareTableWrap}>
-          <table className={shopStyles.compareTable}>
-            <thead>
-              <tr>
-                <th className={shopStyles.compareTableLabel} />
-                {compareListings.map(({ listing, provider }) => (
-                  <th key={listing.id} className={shopStyles.compareTableHead}>
-                    <div className={shopStyles.compareColHeader}>
-                      <div className={shopStyles.compareColAvatar}>{provider?.name.charAt(0)}</div>
-                      <p className={shopStyles.compareColName}>{listing.name}</p>
-                      <p className={shopStyles.compareColProvider}>{provider?.name}</p>
-                      {listing.id === bestValueId && (
-                        <span className={shopStyles.compareColBestBadge}>Best Value</span>
-                      )}
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              <tr className={shopStyles.compareRow}>
-                <td className={shopStyles.compareRowLabel}>Starting Price</td>
-                {compareListings.map(({ listing }) => (
-                  <td
-                    key={listing.id}
-                    className={`${shopStyles.compareRowCell}${listing.id === lowestPriceId ? ` ${shopStyles.compareCellHighlight}` : ''}`}
-                  >
-                    <span className={shopStyles.comparePriceVal}>
-                      ₱{listing.price.toLocaleString('en-PH')}
-                    </span>
-                    {listing.id === lowestPriceId && (
-                      <span className={shopStyles.compareCellTag}>Lowest</span>
-                    )}
-                  </td>
-                ))}
-              </tr>
-              <tr className={shopStyles.compareRow}>
-                <td className={shopStyles.compareRowLabel}>Provider Rating</td>
-                {compareListings.map(({ listing, provider }) => (
-                  <td
-                    key={listing.id}
-                    className={`${shopStyles.compareRowCell}${listing.id === highestRatedId ? ` ${shopStyles.compareCellHighlight}` : ''}`}
-                  >
-                    <div className={shopStyles.compareRating}>
-                      <span className={shopStyles.compareRatingNum}>{provider?.rating}</span>
-                      <span className={shopStyles.compareRatingMax}>/5</span>
-                      <span className={shopStyles.compareRatingCount}>
-                        ({provider?.reviews} reviews)
-                      </span>
-                    </div>
-                    {listing.id === highestRatedId && (
-                      <span className={shopStyles.compareCellTag}>Top Rated</span>
-                    )}
-                  </td>
-                ))}
-              </tr>
-              <tr className={shopStyles.compareRow}>
-                <td className={shopStyles.compareRowLabel}>Location</td>
-                {compareListings.map(({ listing, provider }) => (
-                  <td key={listing.id} className={shopStyles.compareRowCell}>
-                    <span className={shopStyles.compareText}>{provider?.location}</span>
-                  </td>
-                ))}
-              </tr>
-              <tr className={shopStyles.compareRow}>
-                <td className={shopStyles.compareRowLabel}>Inclusions</td>
-                {compareListings.map(({ listing }) => (
-                  <td key={listing.id} className={shopStyles.compareRowCell}>
-                    <ul className={shopStyles.compareInclusionList}>
-                      {listing.inclusions.map((inc, i) => (
-                        <li key={i} className={shopStyles.compareInclusionItem}>
-                          <svg
-                            viewBox="0 0 10 10"
-                            width="9"
-                            height="9"
-                            fill="none"
-                            stroke="var(--color-gold-base, #B8962E)"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            style={{ flexShrink: 0, marginTop: 1 }}
-                          >
-                            <path d="M2 5l2 2 4-4" />
-                          </svg>
-                          {inc}
-                        </li>
-                      ))}
-                    </ul>
-                  </td>
-                ))}
-              </tr>
-              <tr className={shopStyles.compareRow}>
-                <td className={shopStyles.compareRowLabel}>Popularity</td>
-                {compareListings.map(({ listing }) => (
-                  <td
-                    key={listing.id}
-                    className={`${shopStyles.compareRowCell}${listing.id === mostPopularId ? ` ${shopStyles.compareCellHighlight}` : ''}`}
-                  >
-                    {listing.popular ? (
-                      <span className={shopStyles.comparePopularBadge}>Most Popular</span>
-                    ) : (
-                      <span className={shopStyles.compareText}>—</span>
-                    )}
-                  </td>
-                ))}
-              </tr>
-              <tr className={shopStyles.compareRowActions}>
-                <td className={shopStyles.compareRowLabel} />
-                {compareListings.map(({ listing }) => (
-                  <td key={listing.id} className={shopStyles.compareRowCell}>
-                    <Link
-                      href={`/shop/${listing.serviceId}`}
-                      className={shopStyles.compareViewBtn}
+            <table className={shopStyles.compareTable}>
+              <thead>
+                <tr>
+                  {/* Empty label column */}
+                  <th className={shopStyles.compareTableLabel} />
+
+                  {compareListings.map(({ listing, provider }) => (
+                    <th key={listing.id} className={shopStyles.compareTableHead}>
+                      <div className={shopStyles.compareColHeader}>
+                        <div className={shopStyles.compareColAvatar}>
+                          {provider?.name.charAt(0)}
+                        </div>
+                        <p className={shopStyles.compareColName}>{listing.name}</p>
+                        <p className={shopStyles.compareColProvider}>{provider?.name}</p>
+                        {listing.id === bestValueId && (
+                          <span className={shopStyles.compareColBestBadge}>Best Value</span>
+                        )}
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+
+              <tbody>
+                {/* ── Price ── */}
+                <tr className={shopStyles.compareRow}>
+                  <td className={shopStyles.compareRowLabel}>Starting Price</td>
+                  {compareListings.map(({ listing }) => (
+                    <td
+                      key={listing.id}
+                      className={`${shopStyles.compareRowCell}${
+                        listing.id === lowestPriceId ? ` ${shopStyles.compareCellHighlight}` : ''
+                      }`}
                     >
-                      View Details
-                    </Link>
-                  </td>
-                ))}
-              </tr>
-            </tbody>
-          </table>
+                      <span className={shopStyles.comparePriceVal}>
+                        ₱{listing.price.toLocaleString('en-PH')}
+                      </span>
+                      {listing.id === lowestPriceId && (
+                        <span className={shopStyles.compareCellTag}>Lowest</span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+
+                {/* ── Rating ── */}
+                <tr className={shopStyles.compareRow}>
+                  <td className={shopStyles.compareRowLabel}>Provider Rating</td>
+                  {compareListings.map(({ listing, provider }) => (
+                    <td
+                      key={listing.id}
+                      className={`${shopStyles.compareRowCell}${
+                        listing.id === highestRatedId ? ` ${shopStyles.compareCellHighlight}` : ''
+                      }`}
+                    >
+                      <div className={shopStyles.compareRating}>
+                        <span className={shopStyles.compareRatingNum}>{provider?.rating}</span>
+                        <span className={shopStyles.compareRatingMax}>/5</span>
+                        <span className={shopStyles.compareRatingCount}>
+                          ({provider?.reviews} reviews)
+                        </span>
+                      </div>
+                      {listing.id === highestRatedId && (
+                        <span className={shopStyles.compareCellTag}>Top Rated</span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+
+                {/* ── Location ── */}
+                <tr className={shopStyles.compareRow}>
+                  <td className={shopStyles.compareRowLabel}>Location</td>
+                  {compareListings.map(({ listing, provider }) => (
+                    <td key={listing.id} className={shopStyles.compareRowCell}>
+                      <span className={shopStyles.compareText}>{provider?.location}</span>
+                    </td>
+                  ))}
+                </tr>
+
+                {/* ── Inclusions ── */}
+                <tr className={shopStyles.compareRow}>
+                  <td className={shopStyles.compareRowLabel}>Inclusions</td>
+                  {compareListings.map(({ listing }) => (
+                    <td key={listing.id} className={shopStyles.compareRowCell}>
+                      <ul className={shopStyles.compareInclusionList}>
+                        {listing.inclusions.map((inc, i) => (
+                          <li key={i} className={shopStyles.compareInclusionItem}>
+                            <svg
+                              viewBox="0 0 10 10"
+                              width="9"
+                              height="9"
+                              fill="none"
+                              stroke="var(--color-gold-base, #B8962E)"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              style={{ flexShrink: 0, marginTop: 1 }}
+                            >
+                              <path d="M2 5l2 2 4-4" />
+                            </svg>
+                            {inc}
+                          </li>
+                        ))}
+                      </ul>
+                    </td>
+                  ))}
+                </tr>
+
+                {/* ── Popularity ── */}
+                <tr className={shopStyles.compareRow}>
+                  <td className={shopStyles.compareRowLabel}>Popularity</td>
+                  {compareListings.map(({ listing }) => (
+                    <td
+                      key={listing.id}
+                      className={`${shopStyles.compareRowCell}${
+                        listing.id === mostPopularId ? ` ${shopStyles.compareCellHighlight}` : ''
+                      }`}
+                    >
+                      {listing.popular ? (
+                        <span className={shopStyles.comparePopularBadge}>Most Popular</span>
+                      ) : (
+                        <span className={shopStyles.compareText}>—</span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+
+                {/* ── CTA row ── */}
+                <tr className={shopStyles.compareRowActions}>
+                  <td className={shopStyles.compareRowLabel} />
+                  {compareListings.map(({ listing }) => (
+                    <td key={listing.id} className={shopStyles.compareRowCell}>
+                      <Link
+                        href={`/shop/${listing.serviceId}`}
+                        className={shopStyles.compareViewBtn}
+                      >
+                        View Details
+                      </Link>
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
+        {/* ── Footer ── */}
         <footer className={styles.footer}>
           <Link href="/shop" className={styles.footerBtnSecondary}>
             Back to Shop
@@ -250,6 +279,7 @@ export default function ComparePage() {
             Compare different services
           </Link>
         </footer>
+
       </div>
     </section>
   )
