@@ -110,11 +110,35 @@ export async function GET(request) {
         registered_at: new Date().toISOString(),
       };
 
-      const { error: sellerError } = await supabase
-        .from("sellers")
-        .upsert(sellerPayload, { onConflict: "user_id" });
+      // Upsert in a way that avoids ON CONFLICT issues on some DB states
+      let sellerError = null;
+      try {
+        const { data: existingSeller, error: existingError } = await supabase
+          .from("sellers")
+          .select("user_id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (existingError) {
+          sellerError = existingError;
+        } else if (existingSeller) {
+          const { error: updateError } = await supabase
+            .from("sellers")
+            .update(sellerPayload)
+            .eq("user_id", user.id);
+          sellerError = updateError;
+        } else {
+          const { error: insertError } = await supabase
+            .from("sellers")
+            .insert(sellerPayload);
+          sellerError = insertError;
+        }
+      } catch (err) {
+        sellerError = err;
+      }
 
       if (sellerError) {
+        console.error("seller setup error", sellerError);
         await supabase.auth.signOut();
         loginUrl.searchParams.set("error", "We could not complete your seller setup. Please try again.");
         return NextResponse.redirect(loginUrl);
