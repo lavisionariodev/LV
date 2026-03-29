@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import layoutStyles from '../admin.module.css'
 import styles from './seller-template.module.css'
 import { defaultSellerFormTemplate } from '@/data/adminSampleData'
+import { fetchSellerTemplate, saveSellerTemplate } from '@/lib/seller-template/client'
 
 const FIELD_TYPES = [
   { value: 'text', label: 'Short text' },
@@ -44,11 +45,47 @@ export default function AdminSellerTemplatePage() {
   const [isAdding, setIsAdding] = useState(false)
   const [form, setForm] = useState(() => newField())
   const [deleteConfirmId, setDeleteConfirmId] = useState(null)
+  const [loadingTemplate, setLoadingTemplate] = useState(true)
+  const [savingTemplate, setSavingTemplate] = useState(false)
+  const [templateMessage, setTemplateMessage] = useState('')
 
   const fieldList = useMemo(
     () => [...fields].sort((a, b) => a.order - b.order),
     [fields]
   )
+
+  useEffect(() => {
+    let mounted = true
+
+    const loadTemplate = async () => {
+      setLoadingTemplate(true)
+      const { data, error } = await fetchSellerTemplate()
+      if (!mounted) return
+
+      if (error) {
+        setTemplateMessage(error)
+      } else if (data?.fields?.length) {
+        setFields(data.fields.map((f, i) => ({ ...f, order: i })))
+        setTemplateMessage('')
+      } else {
+        setTemplateMessage('No saved template yet. Default fields are shown.')
+      }
+
+      setLoadingTemplate(false)
+    }
+
+    loadTemplate()
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  const persistFields = async (nextFields) => {
+    setSavingTemplate(true)
+    const { error } = await saveSellerTemplate(nextFields)
+    setSavingTemplate(false)
+    setTemplateMessage(error || 'Template saved.')
+  }
 
   const resetForm = () => {
     setEditingId(null)
@@ -78,7 +115,9 @@ export default function AdminSellerTemplatePage() {
   const handleDelete = (id) => {
     setFields((prev) => {
       const next = prev.filter((f) => f.id !== id)
-      return next.map((f, i) => ({ ...f, order: i }))
+      const normalized = next.map((f, i) => ({ ...f, order: i }))
+      persistFields(normalized)
+      return normalized
     })
     if (editingId === id || (isAdding && form.id === id)) resetForm()
     setDeleteConfirmId(null)
@@ -97,6 +136,7 @@ export default function AdminSellerTemplatePage() {
     reordered.sort((a, b) => a.order - b.order)
     reordered.forEach((f, i) => (f.order = i))
     setFields(reordered)
+    persistFields(reordered)
   }
 
   const handleSubmit = (e) => {
@@ -115,11 +155,17 @@ export default function AdminSellerTemplatePage() {
     }
 
     if (editingId) {
-      setFields((prev) =>
-        prev.map((f) => (f.id === editingId ? { ...f, ...payload, id: f.id } : f))
-      )
+      setFields((prev) => {
+        const next = prev.map((f) => (f.id === editingId ? { ...f, ...payload, id: f.id } : f))
+        persistFields(next)
+        return next
+      })
     } else if (isAdding) {
-      setFields((prev) => [...prev, { ...payload, id: form.id }])
+      setFields((prev) => {
+        const next = [...prev, { ...payload, id: form.id }]
+        persistFields(next)
+        return next
+      })
     }
     resetForm()
   }
@@ -136,6 +182,13 @@ export default function AdminSellerTemplatePage() {
         <p className={styles.intro}>
           Configure the form that <strong>sellers</strong> see when adding a service.
           Add, edit, reorder, or remove fields — changes reflect instantly in the preview.
+        </p>
+        <p className={styles.intro}>
+          {loadingTemplate
+            ? 'Loading saved template...'
+            : savingTemplate
+              ? 'Saving template...'
+              : templateMessage}
         </p>
 
         <div className={styles.layout}>

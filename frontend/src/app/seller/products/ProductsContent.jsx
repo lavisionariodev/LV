@@ -4,7 +4,13 @@ import { useState, useMemo, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { TbPhoto, TbSearch } from 'react-icons/tb'
 import styles from './products.module.css'
-import { LISTINGS, SERVICES, PROVIDERS } from '../../(main)/shop/data'
+import { fetchSellerTemplate } from '@/lib/seller-template/client'
+import {
+  listMySellerListings,
+  createSellerListing,
+  updateSellerListing,
+  deleteSellerListing,
+} from '@/lib/seller-listings/client'
 
 function formatPrice(amount) {
   if (typeof amount !== 'number') return '—'
@@ -21,63 +27,65 @@ const TYPE_FILTERS = [
   { id: 'package', label: 'Packages' },
 ]
 
-const CATEGORY_OPTIONS = [
-  { id: 'cremation', label: 'Cremation' },
-  { id: 'traditional-burial', label: 'Traditional burial' },
-  { id: 'memorial-planning', label: 'Memorial planning' },
-  { id: 'other', label: 'Other' },
-]
+const FALLBACK_IMAGE = '/sample/about-us/hero-welcome-flowers.png'
 
-const STATUS_OPTIONS = [
-  { id: 'active', label: 'Active' },
-  { id: 'inactive', label: 'Inactive' },
-]
+function asInputValue(value) {
+  if (value == null) return ''
+  if (typeof value === 'number') return String(value)
+  return String(value)
+}
 
-function buildProductsFromBuyerData() {
-  return LISTINGS.map((listing) => {
-    const service = SERVICES.find((s) => s.id === listing.serviceId)
-    const provider = PROVIDERS.find((p) => p.id === listing.providerId)
-
-    const name = listing.name
-    const category = service?.name ?? 'Service'
-    const startingPrice = listing.price
-    const city = provider?.location ?? 'N/A'
-
-    // Classify as package vs service using listing name heuristics
-    const lowerName = name.toLowerCase()
-    const kind =
-      lowerName.includes('package') || lowerName.includes('service') ? 'package' : 'service'
-
-    // Simple availability/status defaults; could later be tied to real data
-    const status = 'active'
-    const availability = 'Available'
-
-    const gallery =
-      service?.gallery && service.gallery.length
-        ? service.gallery
-        : [service?.image ?? '/sample/about-us/hero-welcome-flowers.png']
-
-    return {
-      id: listing.id,
-      name,
-      kind,
-      category,
-      startingPrice,
-      city,
-      status,
-      availability,
-      inclusions: listing.inclusions ?? [],
-      // Buyer-facing meta
-      image: service?.image ?? '/sample/about-us/hero-welcome-flowers.png',
-      description: service?.description ?? '',
-      longDescription: service?.longDescription ?? '',
-      type: service?.type ?? 'Funeral Package',
-      detailCategory: service?.category ?? 'Memorial Service',
-      duration: service?.duration ?? '3–5 Days',
-      coverage: service?.coverage ?? 'Metro Manila',
-      gallery,
+function getTemplateDefaults(fields) {
+  return (fields || []).reduce((acc, field) => {
+    if (field.type === 'select') {
+      const first = Array.isArray(field.options) ? field.options[0] : ''
+      acc[field.id] = first || ''
+    } else {
+      acc[field.id] = ''
     }
-  })
+    return acc
+  }, {})
+}
+
+function sanitizeImageUrlsForPersistence(urls) {
+  const safe = (Array.isArray(urls) ? urls : []).filter(
+    (url) => typeof url === 'string' && url.trim() && !url.startsWith('blob:'),
+  )
+  return safe.length ? safe : [FALLBACK_IMAGE]
+}
+
+function normalizeListingRowToProduct(row) {
+  const dynamicValues =
+    row?.dynamic_values && typeof row.dynamic_values === 'object' ? row.dynamic_values : {}
+  const imageUrls = Array.isArray(row?.image_urls) ? row.image_urls : []
+
+  const listingName = dynamicValues.listing_name || row.listing_name || 'Untitled listing'
+  const category = dynamicValues.category || row.category || 'Service'
+  const description = dynamicValues.description || ''
+  const location = dynamicValues.location || row.location || 'N/A'
+  const basePriceRaw = dynamicValues.base_price ?? row.base_price ?? 0
+  const basePrice = Number(basePriceRaw) || 0
+  const status = dynamicValues.status || row.status || 'draft'
+  const availability = dynamicValues.availability || 'Available'
+  const kind = dynamicValues.kind || 'service'
+  const primaryImage = imageUrls[0] || FALLBACK_IMAGE
+
+  return {
+    id: row.id,
+    templateId: row.template_id || null,
+    name: listingName,
+    kind,
+    category,
+    startingPrice: basePrice,
+    city: location,
+    status,
+    availability,
+    description,
+    longDescription: description,
+    image: primaryImage,
+    gallery: imageUrls.length ? imageUrls : [FALLBACK_IMAGE],
+    dynamicValues,
+  }
 }
 
 export default function ProductsContent({ initialKind = 'all' }) {
@@ -86,20 +94,14 @@ export default function ProductsContent({ initialKind = 'all' }) {
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [modalMode, setModalMode] = useState(null) // 'view' | 'edit' | 'create'
   const [editGallery, setEditGallery] = useState([])
-  const [products, setProducts] = useState(() => buildProductsFromBuyerData())
+  const [products, setProducts] = useState([])
   const [productPendingRemoval, setProductPendingRemoval] = useState(null)
   const fileInputRef = useRef(null)
-  const [categorySelect, setCategorySelect] = useState('cremation')
-  const [categoryOther, setCategoryOther] = useState('')
-  const [openModalDropdown, setOpenModalDropdown] = useState(null)
-  const categoryDropdownRef = useRef(null)
-  const statusDropdownRef = useRef(null)
-  const [formName, setFormName] = useState('')
-  const [formPrice, setFormPrice] = useState('')
-  const [formCity, setFormCity] = useState('')
-  const [formAvailability, setFormAvailability] = useState('Available')
-  const [formStatus, setFormStatus] = useState('active')
-  const [formDescription, setFormDescription] = useState('')
+  const [template, setTemplate] = useState(null)
+  const [templateFields, setTemplateFields] = useState([])
+  const [formValues, setFormValues] = useState({})
+  const [formError, setFormError] = useState('')
+  const [loadingData, setLoadingData] = useState(true)
 
   useEffect(() => {
     if (initialKind && TYPE_FILTERS.some((t) => t.id === initialKind)) {
@@ -108,20 +110,39 @@ export default function ProductsContent({ initialKind = 'all' }) {
   }, [initialKind])
 
   useEffect(() => {
-    if (!openModalDropdown) return
-    const handleClickOutside = (event) => {
-      const target = event.target
-      if (
-        categoryDropdownRef.current?.contains(target) ||
-        statusDropdownRef.current?.contains(target)
-      ) {
-        return
+    let mounted = true
+
+    const load = async () => {
+      setLoadingData(true)
+
+      const [{ data: templateData }, { data: listingRows, error: listingError }] =
+        await Promise.all([fetchSellerTemplate(), listMySellerListings()])
+
+      if (!mounted) return
+
+      if (templateData) {
+        const sorted = [...(templateData.fields || [])].sort((a, b) => a.order - b.order)
+        setTemplate(templateData)
+        setTemplateFields(sorted)
+      } else {
+        setTemplateFields([])
       }
-      setOpenModalDropdown(null)
+
+      if (listingError) {
+        setProducts([])
+      } else {
+        const mapped = (listingRows || []).map(normalizeListingRowToProduct)
+        setProducts(mapped)
+      }
+
+      setLoadingData(false)
     }
-    document.addEventListener('click', handleClickOutside)
-    return () => document.removeEventListener('click', handleClickOutside)
-  }, [openModalDropdown])
+
+    load()
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   const filteredProducts = useMemo(() => {
     let list = [...products]
@@ -155,28 +176,12 @@ export default function ProductsContent({ initialKind = 'all' }) {
   const handleOpenEdit = (product) => {
     setSelectedProduct(product)
     setModalMode('edit')
-    setEditGallery(product.gallery ?? [product.image])
-    setFormName(product.name || '')
-    setFormPrice(String(product.startingPrice ?? ''))
-    setFormCity(product.city || '')
-    setFormAvailability(product.availability || 'Available')
-    setFormStatus(product.status || 'active')
-    setFormDescription(product.longDescription || product.description || '')
-
-    const rawCategory = (product.category || '').toLowerCase()
-    if (rawCategory === 'cremation') {
-      setCategorySelect('cremation')
-      setCategoryOther('')
-    } else if (rawCategory === 'traditional burial') {
-      setCategorySelect('traditional-burial')
-      setCategoryOther('')
-    } else if (rawCategory === 'memorial planning') {
-      setCategorySelect('memorial-planning')
-      setCategoryOther('')
-    } else {
-      setCategorySelect('other')
-      setCategoryOther(product.category || '')
-    }
+    setEditGallery(product.gallery ?? [product.image].filter(Boolean))
+    setFormError('')
+    setFormValues({
+      ...getTemplateDefaults(templateFields),
+      ...(product.dynamicValues || {}),
+    })
   }
 
   const handleOpenCreate = () => {
@@ -184,44 +189,29 @@ export default function ProductsContent({ initialKind = 'all' }) {
       id: '',
       name: '',
       kind: typeFilter === 'all' ? 'service' : typeFilter,
-      category: 'Cremation',
+      category: '',
       startingPrice: 0,
       city: '',
-      status: 'active',
+      status: 'draft',
       availability: 'Available',
       inclusions: [],
-      image: '/sample/about-us/hero-welcome-flowers.png',
+      image: FALLBACK_IMAGE,
       description: '',
       longDescription: '',
-      type: 'Funeral Service',
-      detailCategory: 'Memorial Service',
-      duration: '3–5 Days',
-      coverage: 'Metro Manila',
-      gallery: ['/sample/about-us/hero-welcome-flowers.png'],
+      gallery: [FALLBACK_IMAGE],
     })
     setModalMode('create')
     setEditGallery([])
-    setCategorySelect('cremation')
-    setCategoryOther('')
-    setFormName('')
-    setFormPrice('')
-    setFormCity('')
-    setFormAvailability('Available')
-    setFormStatus('active')
-    setFormDescription('')
+    setFormError('')
+    setFormValues(getTemplateDefaults(templateFields))
   }
 
   const handleCloseModal = () => {
     setSelectedProduct(null)
     setModalMode(null)
     setEditGallery([])
-    setOpenModalDropdown(null)
-    setFormName('')
-    setFormPrice('')
-    setFormCity('')
-    setFormAvailability('Available')
-    setFormStatus('active')
-    setFormDescription('')
+    setFormValues({})
+    setFormError('')
   }
 
   const handleUploadClick = () => {
@@ -249,8 +239,15 @@ export default function ProductsContent({ initialKind = 'all' }) {
     setProductPendingRemoval(null)
   }
 
-  const handleConfirmRemove = () => {
+  const handleConfirmRemove = async () => {
     if (!productPendingRemoval) return
+
+    const { error } = await deleteSellerListing(productPendingRemoval.id)
+    if (error) {
+      setFormError(error)
+      return
+    }
+
     setProducts((prev) => prev.filter((p) => p.id !== productPendingRemoval.id))
 
     if (selectedProduct?.id === productPendingRemoval.id) {
@@ -261,38 +258,61 @@ export default function ProductsContent({ initialKind = 'all' }) {
     setProductPendingRemoval(null)
   }
 
-  const resolveCategoryLabel = () => {
-    if (categorySelect === 'cremation') return 'Cremation'
-    if (categorySelect === 'traditional-burial') return 'Traditional burial'
-    if (categorySelect === 'memorial-planning') return 'Memorial planning'
-    return categoryOther.trim() || 'Other'
+  const getFieldValue = (fieldId) => formValues?.[fieldId]
+
+  const setFieldValue = (fieldId, value) => {
+    setFormValues((prev) => ({ ...prev, [fieldId]: value }))
   }
 
-  const handleSaveProduct = () => {
+  const handleSaveProduct = async () => {
     if (!selectedProduct) return
 
-    const safeName = formName.trim() || 'Untitled listing'
-    const nextProduct = {
-      ...selectedProduct,
-      name: safeName,
-      category: resolveCategoryLabel(),
-      startingPrice: Number(formPrice) || 0,
-      city: formCity.trim() || 'N/A',
-      availability: formAvailability.trim() || 'Available',
-      status: formStatus || 'active',
-      description: formDescription.trim(),
-      longDescription: formDescription.trim(),
-      image: editGallery[0] || selectedProduct.image || '/sample/about-us/hero-welcome-flowers.png',
-      gallery: editGallery.length
-        ? editGallery
-        : [selectedProduct.image || '/sample/about-us/hero-welcome-flowers.png'],
+    const missingRequired = templateFields.find(
+      (field) => field.required && String(getFieldValue(field.id) ?? '').trim() === '',
+    )
+    if (missingRequired) {
+      setFormError(`${missingRequired.label} is required.`)
+      return
+    }
+
+    const dynamicValues = { ...formValues }
+    const safeName = String(dynamicValues.listing_name || selectedProduct.name || '').trim() || 'Untitled listing'
+    const safeCategory = String(dynamicValues.category || selectedProduct.category || '').trim() || 'Service'
+    const safeLocation = String(dynamicValues.location || selectedProduct.city || '').trim() || 'N/A'
+    const safeStatus = String(dynamicValues.status || selectedProduct.status || 'draft')
+    const safePrice = Number(dynamicValues.base_price ?? selectedProduct.startingPrice ?? 0) || 0
+    const safeDescription = String(dynamicValues.description || '').trim()
+    const safeKind = String(dynamicValues.kind || selectedProduct.kind || 'service')
+    const imageUrls = editGallery.length ? editGallery : selectedProduct.gallery || [FALLBACK_IMAGE]
+    const persistedImageUrls = sanitizeImageUrlsForPersistence(imageUrls)
+
+    const payload = {
+      template_id: template?.id || null,
+      listing_name: safeName,
+      category: safeCategory,
+      base_price: safePrice,
+      location: safeLocation,
+      status: safeStatus,
+      dynamic_values: dynamicValues,
+      image_urls: persistedImageUrls,
     }
 
     if (modalMode === 'create') {
-      const id = `SELLER-${Date.now()}`
-      setProducts((prev) => [{ ...nextProduct, id }, ...prev])
+      const { data, error } = await createSellerListing(payload)
+      if (error || !data) {
+        setFormError(error || 'Failed to save listing.')
+        return
+      }
+      setProducts((prev) => [normalizeListingRowToProduct(data), ...prev])
     } else {
-      setProducts((prev) => prev.map((p) => (p.id === selectedProduct.id ? nextProduct : p)))
+      const { data, error } = await updateSellerListing(selectedProduct.id, payload)
+      if (error || !data) {
+        setFormError(error || 'Failed to save listing.')
+        return
+      }
+      setProducts((prev) =>
+        prev.map((p) => (p.id === selectedProduct.id ? normalizeListingRowToProduct(data) : p)),
+      )
     }
 
     handleCloseModal()
@@ -336,7 +356,11 @@ export default function ProductsContent({ initialKind = 'all' }) {
       </section>
 
       <section className={styles.productsSection} aria-label="Products list">
-        {filteredProducts.length === 0 ? (
+        {loadingData ? (
+          <div className={styles.emptyState}>
+            <p className={styles.emptyTitle}>Loading listings...</p>
+          </div>
+        ) : filteredProducts.length === 0 ? (
           <div className={styles.emptyState}>
             <p className={styles.emptyTitle}>No listings match your filters</p>
             <p className={styles.emptyText}>
@@ -544,155 +568,64 @@ export default function ProductsContent({ initialKind = 'all' }) {
                 </div>
               ) : (
                 <div className={styles.productModalForm}>
+                  {formError ? (
+                    <p className={styles.productModalSubtitle}>{formError}</p>
+                  ) : null}
+                  {!templateFields.length ? (
+                    <p className={styles.productModalSubtitle}>
+                      Admin has not configured the seller template yet.
+                    </p>
+                  ) : null}
                   <div className={styles.productModalFormGrid}>
-                    <label className={styles.productModalField}>
-                      <span className={styles.productModalLabel}>Listing name</span>
-                      <input
-                        type="text"
-                        className={styles.productModalInput}
-                        value={formName}
-                        onChange={(e) => setFormName(e.target.value)}
-                      />
-                    </label>
-                    <label className={styles.productModalField}>
-                      <span className={styles.productModalLabel}>Category</span>
-                      <div
-                        className={`${styles.filterDropdownWrap} ${styles.modalDropdownWrap} ${
-                          openModalDropdown === 'category' ? styles.filterDropdownOpen : ''
-                        }`}
-                        ref={categoryDropdownRef}
-                      >
-                        <button
-                          type="button"
-                          className={styles.filterDropdownTrigger}
-                          onClick={() =>
-                            setOpenModalDropdown((prev) =>
-                              prev === 'category' ? null : 'category',
-                            )
-                          }
-                          aria-haspopup="listbox"
-                          aria-expanded={openModalDropdown === 'category'}
-                        >
-                          <span className={styles.filterDropdownLabel}>
-                            {CATEGORY_OPTIONS.find((opt) => opt.id === categorySelect)?.label ||
-                              'Cremation'}
-                          </span>
-                          <span className={styles.filterDropdownChevron}>▾</span>
-                        </button>
-                        {openModalDropdown === 'category' && (
-                          <div className={styles.filterDropdownPanel} role="listbox" aria-label="Category">
-                            {CATEGORY_OPTIONS.map((option) => (
-                              <button
-                                key={option.id}
-                                type="button"
-                                role="option"
-                                aria-selected={categorySelect === option.id}
-                                className={`${styles.filterDropdownOption} ${
-                                  categorySelect === option.id ? styles.filterDropdownOptionSelected : ''
-                                }`}
-                                onClick={() => {
-                                  setCategorySelect(option.id)
-                                  setOpenModalDropdown(null)
-                                }}
-                              >
-                                {option.label}
-                              </button>
+                    {templateFields.map((field) => (
+                      <label key={field.id} className={styles.productModalField}>
+                        <span className={styles.productModalLabel}>
+                          {field.label}
+                          {field.required ? ' *' : ''}
+                        </span>
+                        {field.type === 'textarea' ? (
+                          <textarea
+                            className={styles.productModalTextarea}
+                            value={asInputValue(getFieldValue(field.id))}
+                            placeholder={field.placeholder || ''}
+                            onChange={(e) => setFieldValue(field.id, e.target.value)}
+                          />
+                        ) : field.type === 'select' ? (
+                          <select
+                            className={styles.productModalInput}
+                            value={asInputValue(getFieldValue(field.id))}
+                            onChange={(e) => setFieldValue(field.id, e.target.value)}
+                          >
+                            <option value="">
+                              {field.placeholder || `Select ${field.label.toLowerCase()}`}
+                            </option>
+                            {(Array.isArray(field.options) ? field.options : []).map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
                             ))}
-                          </div>
+                          </select>
+                        ) : (
+                          <input
+                            type={field.type || 'text'}
+                            className={styles.productModalInput}
+                            value={asInputValue(getFieldValue(field.id))}
+                            placeholder={field.placeholder || ''}
+                            onChange={(e) => setFieldValue(field.id, e.target.value)}
+                          />
                         )}
-                      </div>
-                    </label>
-                    {categorySelect === 'other' && (
-                      <label className={styles.productModalField}>
-                        <span className={styles.productModalLabel}>Specify category</span>
-                        <input
-                          type="text"
-                          className={styles.productModalInput}
-                          value={categoryOther}
-                          onChange={(e) => setCategoryOther(e.target.value)}
-                          placeholder="Type category (e.g. Pet services)"
-                        />
                       </label>
-                    )}
-                    <label className={styles.productModalField}>
-                      <span className={styles.productModalLabel}>Starting price (PHP)</span>
-                      <input
-                        type="number"
-                        className={styles.productModalInput}
-                        value={formPrice}
-                        onChange={(e) => setFormPrice(e.target.value)}
-                      />
-                    </label>
-                    <label className={styles.productModalField}>
-                      <span className={styles.productModalLabel}>Location</span>
-                      <input
-                        type="text"
-                        className={styles.productModalInput}
-                        value={formCity}
-                        onChange={(e) => setFormCity(e.target.value)}
-                      />
-                    </label>
-                    <label className={styles.productModalField}>
-                      <span className={styles.productModalLabel}>Availability</span>
-                      <input
-                        type="text"
-                        className={styles.productModalInput}
-                        value={formAvailability}
-                        onChange={(e) => setFormAvailability(e.target.value)}
-                      />
-                    </label>
-                    <label className={styles.productModalField}>
-                      <span className={styles.productModalLabel}>Status</span>
-                      <div
-                        className={`${styles.filterDropdownWrap} ${styles.modalDropdownWrap} ${
-                          openModalDropdown === 'status' ? styles.filterDropdownOpen : ''
-                        }`}
-                        ref={statusDropdownRef}
-                      >
-                        <button
-                          type="button"
-                          className={styles.filterDropdownTrigger}
-                          onClick={() =>
-                            setOpenModalDropdown((prev) => (prev === 'status' ? null : 'status'))
-                          }
-                          aria-haspopup="listbox"
-                          aria-expanded={openModalDropdown === 'status'}
-                        >
-                          <span className={styles.filterDropdownLabel}>
-                            {STATUS_OPTIONS.find((opt) => opt.id === formStatus)?.label || 'Active'}
-                          </span>
-                          <span className={styles.filterDropdownChevron}>▾</span>
-                        </button>
-                        {openModalDropdown === 'status' && (
-                          <div className={styles.filterDropdownPanel} role="listbox" aria-label="Status">
-                            {STATUS_OPTIONS.map((option) => (
-                              <button
-                                key={option.id}
-                                type="button"
-                                role="option"
-                                aria-selected={formStatus === option.id}
-                                className={`${styles.filterDropdownOption} ${
-                                  formStatus === option.id ? styles.filterDropdownOptionSelected : ''
-                                }`}
-                                onClick={() => {
-                                  setFormStatus(option.id)
-                                  setOpenModalDropdown(null)
-                                }}
-                              >
-                                {option.label}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </label>
+                    ))}
                     <label className={styles.productModalField}>
                       <span className={styles.productModalLabel}>Images</span>
                       <div className={styles.productModalUploadRow}>
                         <div className={styles.productModalUploadList}>
                           {editGallery.map((src, idx) => (
                             <div key={idx} className={styles.productModalUploadPreview}>
-                              <img src={src} alt={`${formName || 'Listing'} ${idx + 1}`} />
+                              <img
+                                src={src}
+                                alt={`${asInputValue(getFieldValue('listing_name')) || 'Listing'} ${idx + 1}`}
+                              />
                               <button
                                 type="button"
                                 className={styles.productModalUploadRemove}
@@ -714,14 +647,6 @@ export default function ProductsContent({ initialKind = 'all' }) {
                           <TbPhoto size={18} />
                         </button>
                       </div>
-                    </label>
-                    <label className={styles.productModalField}>
-                      <span className={styles.productModalLabel}>Description</span>
-                      <textarea
-                        className={styles.productModalTextarea}
-                        value={formDescription}
-                        onChange={(e) => setFormDescription(e.target.value)}
-                      />
                     </label>
                   </div>
                 </div>
@@ -752,6 +677,7 @@ export default function ProductsContent({ initialKind = 'all' }) {
                   type="button"
                   className={styles.productModalPrimary}
                   onClick={handleSaveProduct}
+                  disabled={!templateFields.length}
                 >
                   {modalMode === 'create' ? 'Add product' : 'Save changes'}
                 </button>
