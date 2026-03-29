@@ -10,6 +10,7 @@ import {
   createSellerListing,
   updateSellerListing,
   deleteSellerListing,
+  uploadListingImages,
 } from '@/lib/seller-listings/client'
 
 function formatPrice(amount) {
@@ -27,7 +28,18 @@ const TYPE_FILTERS = [
   { id: 'package', label: 'Packages' },
 ]
 
-const FALLBACK_IMAGE = '/sample/about-us/hero-welcome-flowers.png'
+const FALLBACK_IMAGE =
+  'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 640 420%22%3E%3Crect width=%22640%22 height=%22420%22 fill=%22%23d1d5db%22/%3E%3Cpath d=%22M230 160h180a22 22 0 0 1 22 22v56a22 22 0 0 1-22 22H230a22 22 0 0 1-22-22v-56a22 22 0 0 1 22-22Zm18 28a16 16 0 1 0 0.1 0Zm-8 56 38-34 35 30 44-40 55 44H240Z%22 fill=%22%239ca3af%22/%3E%3C/svg%3E'
+
+const STATUS_FIELD_DEFAULT = {
+  id: 'status',
+  label: 'Status',
+  type: 'select',
+  required: true,
+  placeholder: 'Select status',
+  options: ['active', 'inactive'],
+  order: 999,
+}
 
 function asInputValue(value) {
   if (value == null) return ''
@@ -47,11 +59,30 @@ function getTemplateDefaults(fields) {
   }, {})
 }
 
-function sanitizeImageUrlsForPersistence(urls) {
-  const safe = (Array.isArray(urls) ? urls : []).filter(
+function filterPersistableImageUrls(urls) {
+  return (Array.isArray(urls) ? urls : []).filter(
     (url) => typeof url === 'string' && url.trim() && !url.startsWith('blob:'),
   )
+}
+
+function sanitizeImageUrlsForPersistence(urls) {
+  const safe = filterPersistableImageUrls(urls)
   return safe.length ? safe : [FALLBACK_IMAGE]
+}
+
+function ensureStatusField(fields) {
+  const list = Array.isArray(fields) ? [...fields] : []
+  const hasStatus = list.some((field) => field?.id === 'status')
+  if (hasStatus) return list
+  return [...list, { ...STATUS_FIELD_DEFAULT, order: list.length }]
+}
+
+function revokeLocalPreviewUrls(entries) {
+  ;(Array.isArray(entries) ? entries : []).forEach((entry) => {
+    if (entry?.url?.startsWith('blob:')) {
+      URL.revokeObjectURL(entry.url)
+    }
+  })
 }
 
 function normalizeListingRowToProduct(row) {
@@ -94,6 +125,7 @@ export default function ProductsContent({ initialKind = 'all' }) {
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [modalMode, setModalMode] = useState(null) // 'view' | 'edit' | 'create'
   const [editGallery, setEditGallery] = useState([])
+  const [pendingImageFiles, setPendingImageFiles] = useState([])
   const [products, setProducts] = useState([])
   const [productPendingRemoval, setProductPendingRemoval] = useState(null)
   const fileInputRef = useRef(null)
@@ -121,11 +153,13 @@ export default function ProductsContent({ initialKind = 'all' }) {
       if (!mounted) return
 
       if (templateData) {
-        const sorted = [...(templateData.fields || [])].sort((a, b) => a.order - b.order)
+        const sorted = ensureStatusField(
+          [...(templateData.fields || [])].sort((a, b) => a.order - b.order),
+        )
         setTemplate(templateData)
         setTemplateFields(sorted)
       } else {
-        setTemplateFields([])
+        setTemplateFields(ensureStatusField([]))
       }
 
       if (listingError) {
@@ -176,7 +210,8 @@ export default function ProductsContent({ initialKind = 'all' }) {
   const handleOpenEdit = (product) => {
     setSelectedProduct(product)
     setModalMode('edit')
-    setEditGallery(product.gallery ?? [product.image].filter(Boolean))
+    setEditGallery((product.gallery ?? [product.image].filter(Boolean)).map((url) => ({ url, file: null })))
+    setPendingImageFiles([])
     setFormError('')
     setFormValues({
       ...getTemplateDefaults(templateFields),
@@ -202,17 +237,27 @@ export default function ProductsContent({ initialKind = 'all' }) {
     })
     setModalMode('create')
     setEditGallery([])
+    setPendingImageFiles([])
     setFormError('')
     setFormValues(getTemplateDefaults(templateFields))
   }
 
   const handleCloseModal = () => {
+    revokeLocalPreviewUrls(editGallery)
     setSelectedProduct(null)
     setModalMode(null)
     setEditGallery([])
+    setPendingImageFiles([])
     setFormValues({})
     setFormError('')
   }
+
+  useEffect(
+    () => () => {
+      revokeLocalPreviewUrls(editGallery)
+    },
+    [editGallery],
+  )
 
   const handleUploadClick = () => {
     if (fileInputRef.current) {
@@ -223,12 +268,20 @@ export default function ProductsContent({ initialKind = 'all' }) {
   const handleFilesSelected = (event) => {
     const files = Array.from(event.target.files || [])
     if (!files.length) return
-    const newUrls = files.map((file) => URL.createObjectURL(file))
-    setEditGallery((prev) => [...prev, ...newUrls])
+    const entries = files.map((file) => ({ url: URL.createObjectURL(file), file }))
+    setPendingImageFiles((prev) => [...prev, ...files])
+    setEditGallery((prev) => [...prev, ...entries])
   }
 
   const handleRemoveImage = (index) => {
-    setEditGallery((prev) => prev.filter((_, i) => i !== index))
+    setEditGallery((prev) => {
+      const target = prev[index]
+      if (target?.url?.startsWith('blob:')) {
+        URL.revokeObjectURL(target.url)
+        setPendingImageFiles((files) => files.filter((file) => file !== target.file))
+      }
+      return prev.filter((_, i) => i !== index)
+    })
   }
 
   const handleRequestRemove = (product) => {
@@ -283,8 +336,21 @@ export default function ProductsContent({ initialKind = 'all' }) {
     const safePrice = Number(dynamicValues.base_price ?? selectedProduct.startingPrice ?? 0) || 0
     const safeDescription = String(dynamicValues.description || '').trim()
     const safeKind = String(dynamicValues.kind || selectedProduct.kind || 'service')
-    const imageUrls = editGallery.length ? editGallery : selectedProduct.gallery || [FALLBACK_IMAGE]
-    const persistedImageUrls = sanitizeImageUrlsForPersistence(imageUrls)
+    let persistedImageUrls = sanitizeImageUrlsForPersistence(
+      editGallery.map((entry) => entry.url),
+    )
+    if (pendingImageFiles.length) {
+      const { data: uploadedUrls, error: uploadError } = await uploadListingImages(pendingImageFiles)
+      if (uploadError) {
+        setFormError(uploadError)
+        return
+      }
+      const existingRemote = filterPersistableImageUrls(
+        editGallery.filter((entry) => !entry.url.startsWith('blob:')).map((entry) => entry.url),
+      )
+      persistedImageUrls = [...existingRemote, ...(uploadedUrls || [])]
+      if (!persistedImageUrls.length) persistedImageUrls = [FALLBACK_IMAGE]
+    }
 
     const payload = {
       template_id: template?.id || null,
@@ -620,10 +686,10 @@ export default function ProductsContent({ initialKind = 'all' }) {
                       <span className={styles.productModalLabel}>Images</span>
                       <div className={styles.productModalUploadRow}>
                         <div className={styles.productModalUploadList}>
-                          {editGallery.map((src, idx) => (
+                          {editGallery.map((entry, idx) => (
                             <div key={idx} className={styles.productModalUploadPreview}>
                               <img
-                                src={src}
+                                src={entry.url}
                                 alt={`${asInputValue(getFieldValue('listing_name')) || 'Listing'} ${idx + 1}`}
                               />
                               <button

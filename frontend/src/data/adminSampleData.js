@@ -268,10 +268,12 @@ export const dashboard = {
 // Admin configures the form fields that sellers see when adding their own service.
 // The seller portal renders a form from this template.
 export const defaultSellerFormTemplate = [
-  { id: 'f1', order: 0, label: 'Service name', type: 'text', required: true, placeholder: 'e.g. Memorial Floral Package' },
-  { id: 'f2', order: 1, label: 'Category', type: 'text', required: true, placeholder: 'e.g. Flowers, Memorial Packages' },
-  { id: 'f3', order: 2, label: 'Price (₱)', type: 'number', required: true, placeholder: '0' },
-  { id: 'f4', order: 3, label: 'Description', type: 'textarea', required: false, placeholder: 'Describe your service...' },
+  { id: 'listing_name', order: 0, label: 'Listing name', type: 'text', required: true, placeholder: 'e.g. Memorial Floral Package' },
+  { id: 'category', order: 1, label: 'Category', type: 'text', required: true, placeholder: 'e.g. Flowers, Memorial Packages' },
+  { id: 'base_price', order: 2, label: 'Price (PHP)', type: 'number', required: true, placeholder: '0' },
+  { id: 'location', order: 3, label: 'Location', type: 'text', required: false, placeholder: 'e.g. Quezon City' },
+  { id: 'status', order: 4, label: 'Status', type: 'select', required: true, placeholder: 'Select status', options: ['active', 'inactive'] },
+  { id: 'description', order: 5, label: 'Description', type: 'textarea', required: false, placeholder: 'Describe your service...' },
 ]
 
 // --- Seller products (template for seller CRUD) ---
