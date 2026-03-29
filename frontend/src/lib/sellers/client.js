@@ -91,18 +91,20 @@ export async function listSellersForAdmin() {
   return data;
 }
 
-/**
- * Admin helper: update a seller's status by seller id.
- */
 export async function updateSellerStatus(sellerId, status) {
   if (!sellerId) {
     return { data: null, error: 'Missing seller id' };
   }
 
+  const updateData = { status };
+  if (status === 'active') {
+    updateData.approved_at = new Date().toISOString();
+  }
+
   const { data, error } = await supabase
     .from('sellers')
-    .update({ status })
-    .eq('id', sellerId)
+    .update(updateData)
+    .eq('user_id', sellerId)
     .select()
     .maybeSingle();
 
