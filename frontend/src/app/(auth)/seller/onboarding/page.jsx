@@ -167,7 +167,7 @@ export default function SellerOnboardingPage() {
         <div className={styles.topBarInner}>
           <div className={styles.logoMark}>
             <div className={styles.logoIcon}>S</div>
-            <span className={styles.logoName}>Seller Portal</span>
+            <span className={styles.logoName}>Seller Centre</span>
           </div>
           <span className={styles.topBarMeta}>Seller Onboarding</span>
         </div>

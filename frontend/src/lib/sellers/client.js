@@ -45,7 +45,8 @@ export async function upsertSellerForUser(user, payload) {
     registered_at: payload.registeredAt || new Date().toISOString(),
     business_info: payload.businessInfo || null,
     address: payload.address || null,
-    documents: payload.documents || null,
+    // documents field is not yet in schema (future update)
+    // documents: payload.documents || null,
   };
 
   // First try to check if seller exists
