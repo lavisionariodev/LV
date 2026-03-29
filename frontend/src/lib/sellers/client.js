@@ -94,7 +94,7 @@ export async function listSellersForAdmin() {
     return [];
   }
 
-  return data;
+  return data.filter(Boolean);
 }
 
 export async function updateSellerStatus(sellerId, status) {
