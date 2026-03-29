@@ -38,7 +38,12 @@ export default function SellerLayout({ children }) {
       }
 
       setSellerStatus(status || null)
-      setAuthStatus(status === 'pending' ? 'pending' : 'allowed')
+      if (status === 'pending') {
+        router.replace('/seller/onboarding')
+        setAuthStatus('pending')
+        return
+      }
+      setAuthStatus('allowed')
     }
 
     check()
@@ -53,7 +58,7 @@ export default function SellerLayout({ children }) {
     router.push('/seller/login')
   }
 
-  if (authStatus === 'loading' || authStatus === 'denied') {
+  if (authStatus === 'loading' || authStatus === 'denied' || authStatus === 'pending') {
     return (
       <div className={`${styles.authLoading} ${poppins.className}`}>
         Loading seller portal…
@@ -84,12 +89,6 @@ export default function SellerLayout({ children }) {
             onMenuClick={() => setMobileMenuOpen((prev) => !prev)}
             sidebarCollapsed={collapsed}
           />
-          {sellerStatus === 'pending' && (
-            <div className={styles.pendingBanner}>
-              Your seller account is currently <strong>pending review</strong>. You can review your
-              details, but some actions may be limited until an administrator approves your shop.
-            </div>
-          )}
           <div className={styles.mainScroll}>
             <div className={styles.content}>{children}</div>
           </div>

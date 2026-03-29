@@ -190,6 +190,7 @@ export default function AdminSellersPage() {
                 <tr>
                   <th className={styles.th}>Seller</th>
                   <th className={styles.th}>Contact</th>
+                  <th className={styles.th}>Business Details</th>
                   <th className={styles.th}>Listings</th>
                   <th className={styles.th}>Commission</th>
                   <th className={styles.th}>Status</th>
@@ -228,6 +229,29 @@ export default function AdminSellersPage() {
                         {seller.phone && (
                           <p className={styles.meta}>{seller.phone}</p>
                         )}
+                      </td>
+
+                      {/* Business Details */}
+                      <td className={styles.td}>
+                        <div className={styles.businessDetails}>
+                          {seller.business_info && (
+                            <p className={styles.businessInfo}>
+                              <strong>Info:</strong> {seller.business_info.length > 100 
+                                ? `${seller.business_info.substring(0, 100)}...` 
+                                : seller.business_info}
+                            </p>
+                          )}
+                          {seller.address && (
+                            <p className={styles.businessAddress}>
+                              <strong>Address:</strong> {seller.address.length > 80 
+                                ? `${seller.address.substring(0, 80)}...` 
+                                : seller.address}
+                            </p>
+                          )}
+                          {!seller.business_info && !seller.address && (
+                            <p className={styles.meta}>No details provided</p>
+                          )}
+                        </div>
                       </td>
 
                       {/* Listings */}

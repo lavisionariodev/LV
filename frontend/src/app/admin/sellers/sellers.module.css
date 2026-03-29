@@ -238,6 +238,26 @@
   line-height: 1.4;
 }
 
+/* ── Business details cell ──────────────────────────────────────────────── */
+
+.businessDetails {
+  max-width: 280px;
+}
+
+.businessInfo {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.businessAddress {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
 /* ── Listings cell ──────────────────────────────────────────────────────── */
 
 .listingCount {

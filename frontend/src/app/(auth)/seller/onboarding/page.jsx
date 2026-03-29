@@ -36,6 +36,11 @@ export default function SellerOnboardingPage() {
         const existing = await getSellerByUserId(user.id)
         if (cancelled) return
 
+        if (existing?.status === 'active') {
+          router.replace('/seller')
+          return
+        }
+
         setForm((prev) => ({
           businessName: existing?.business_name || prev.businessName || '',
           contactName: existing?.contact_name || prev.contactName || (user.user_metadata?.full_name || ''),
