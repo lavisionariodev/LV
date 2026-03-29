@@ -99,8 +99,13 @@
 .subtitle {
   font-size: 0.875rem;
   color: #666;
-  max-width: 460px;
+  max-width: 100%;
   line-height: 1.6;
+}
+
+/* ensure heading section width matches form container */
+.header {
+  max-width: 100%;
 }
 
 /* ── White card wrapper ── */
