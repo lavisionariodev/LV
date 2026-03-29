@@ -16,9 +16,12 @@ CREATE TABLE IF NOT EXISTS public.sellers (
 -- Enable RLS
 ALTER TABLE public.sellers ENABLE ROW LEVEL SECURITY;
 
--- Policies: Sellers can read/update their own data; Admins can read/update all
+-- Policies: Sellers can read/update/insert their own data; Admins can read/update all
 CREATE POLICY "Sellers can read own seller data" ON public.sellers
   FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Sellers can insert own seller data" ON public.sellers
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Sellers can update own seller data" ON public.sellers
   FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
