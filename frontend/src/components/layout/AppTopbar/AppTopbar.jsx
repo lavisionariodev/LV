@@ -28,7 +28,6 @@ const TOPBAR_CONFIG = {
     defaultDisplayName: 'Seller',
     avatarAlt: 'Seller avatar',
     profileMenuItems: [
-      { href: '/seller/onboarding', label: 'Onboarding', icon: TbClipboardList },
       { href: '/seller/settings', label: 'Settings', icon: TbSettings },
       { href: '/seller/help', label: 'Help Center', icon: TbMessage2Question },
     ],
