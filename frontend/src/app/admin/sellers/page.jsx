@@ -101,16 +101,19 @@ export default function AdminSellersPage() {
   }, [toast]);
 
   const filtered = useMemo(() => {
-    return sellers.filter((seller) => {
-      if (statusFilter !== 'all' && seller.status !== statusFilter) return false;
-      if (!search.trim()) return true;
-      const q = search.trim().toLowerCase();
-      return (
-        (seller.business_name || '').toLowerCase().includes(q) ||
-        (seller.contact_name || '').toLowerCase().includes(q) ||
-        (seller.email || '').toLowerCase().includes(q)
-      );
-    });
+    return sellers
+      .filter(Boolean)
+      .filter((seller) => {
+        if (!seller || !seller.status) return false;
+        if (statusFilter !== 'all' && seller.status !== statusFilter) return false;
+        if (!search.trim()) return true;
+        const q = search.trim().toLowerCase();
+        return (
+          (seller.business_name || '').toLowerCase().includes(q) ||
+          (seller.contact_name || '').toLowerCase().includes(q) ||
+          (seller.email || '').toLowerCase().includes(q)
+        );
+      });
   }, [sellers, statusFilter, search]);
 
   const handleStatusChange = async (sellerId, nextStatus) => {
@@ -118,8 +121,12 @@ export default function AdminSellersPage() {
     try {
       const { data, error } = await updateSellerStatus(sellerId, nextStatus);
       if (error) { toast.error(error); return; }
+      if (!data || !data.user_id) {
+        toast.error('Updated seller record is invalid.');
+        return;
+      }
       setSellers((prev) =>
-        prev.map((s) => (s.id === sellerId ? { ...s, status: data.status } : s))
+        prev.map((s) => (s && s.user_id === sellerId ? { ...s, status: data.status } : s))
       );
       toast.success(`Seller status updated to ${nextStatus}.`);
     } catch (err) {
