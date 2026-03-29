@@ -126,7 +126,10 @@ export default function AdminSellersPage() {
         return;
       }
       setSellers((prev) =>
-        prev.map((s) => (s && s.user_id === sellerId ? { ...s, status: data.status } : s))
+        prev.map((s) => {
+          const currentId = s?.user_id || s?.id
+          return currentId === sellerId ? { ...s, status: data.status } : s
+        })
       );
       toast.success(`Seller status updated to ${nextStatus}.`);
     } catch (err) {
@@ -206,12 +209,13 @@ export default function AdminSellersPage() {
               </thead>
               <tbody>
                 {filtered.map((seller) => {
-                  const commissionInfo = getEffectiveCommissionForSeller(seller.id);
+                  const sellerId = seller.user_id || seller.id
+                  const commissionInfo = getEffectiveCommissionForSeller(sellerId);
                   const isOverride = commissionInfo.source === 'override';
-                  const isUpdating = updatingId === seller.id;
+                  const isUpdating = updatingId === sellerId;
 
                   return (
-                    <tr key={seller.id} className={styles.tr}>
+                    <tr key={sellerId} className={styles.tr}>
 
                       {/* Seller */}
                       <td className={styles.td}>
@@ -291,7 +295,7 @@ export default function AdminSellersPage() {
                             <button
                               type="button"
                               className={`${styles.actionBtn} ${styles.actionApprove}`}
-                              onClick={() => handleStatusChange(seller.id, 'active')}
+                              onClick={() => handleStatusChange(seller.user_id || seller.id, 'active')}
                               disabled={isUpdating}
                             >
                               {isUpdating ? (
@@ -310,7 +314,7 @@ export default function AdminSellersPage() {
                             <button
                               type="button"
                               className={`${styles.actionBtn} ${styles.actionSuspend}`}
-                              onClick={() => handleStatusChange(seller.id, 'suspended')}
+                              onClick={() => handleStatusChange(seller.user_id || seller.id, 'suspended')}
                               disabled={isUpdating}
                             >
                               {isUpdating ? (
@@ -330,7 +334,7 @@ export default function AdminSellersPage() {
                             <button
                               type="button"
                               className={`${styles.actionBtn} ${styles.actionReactivate}`}
-                              onClick={() => handleStatusChange(seller.id, 'active')}
+                              onClick={() => handleStatusChange(seller.user_id || seller.id, 'active')}
                               disabled={isUpdating}
                             >
                               {isUpdating ? (
