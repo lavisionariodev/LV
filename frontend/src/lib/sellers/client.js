@@ -103,9 +103,10 @@ export async function updateSellerStatus(sellerId, status) {
   }
 
   const updateData = { status };
-  if (status === 'active') {
-    updateData.approved_at = new Date().toISOString();
-  }
+  // Note: approved_at column may not exist yet - will be added when migration is properly applied
+  // if (status === 'active') {
+  //   updateData.approved_at = new Date().toISOString();
+  // }
 
   const { data, error } = await supabase
     .from('sellers')
