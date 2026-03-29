@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import styles from './AppTopbar.module.css'
-import { IoSearch } from 'react-icons/io5'
 import { TbBell, TbMenu2 } from 'react-icons/tb'
 import { FaUser } from 'react-icons/fa6'
 import { LuLogOut, LuChevronDown } from 'react-icons/lu'
@@ -16,8 +15,6 @@ import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProf
 
 const TOPBAR_CONFIG = {
   admin: {
-    searchPlaceholder: 'Search…',
-    searchAriaLabel: 'Search admin panel',
     notificationsHref: '/admin/notifications',
     defaultDisplayName: 'Admin',
     avatarAlt: 'Admin avatar',
@@ -27,13 +24,10 @@ const TOPBAR_CONFIG = {
     ],
   },
   seller: {
-    searchPlaceholder: 'Search…',
-    searchAriaLabel: 'Search seller centre',
     notificationsHref: '/seller/notifications',
     defaultDisplayName: 'Seller',
     avatarAlt: 'Seller avatar',
     profileMenuItems: [
-      { href: '/seller/onboarding', label: 'Onboarding', icon: TbClipboardList },
       { href: '/seller/settings', label: 'Settings', icon: TbSettings },
       { href: '/seller/help', label: 'Help Center', icon: TbMessage2Question },
     ],
@@ -43,11 +37,13 @@ const TOPBAR_CONFIG = {
 const PAGE_TITLES = {
   admin: {
     '/admin': 'Dashboard',
-    '/admin/payments': 'Payments',
+    '/admin/payouts': 'Payouts',
+    '/admin/analytics': 'Analytics',
     '/admin/disputes': 'Disputes',
     '/admin/users': 'Users',
     '/admin/sellers': 'Sellers',
     '/admin/content': 'Content',
+    '/admin/seller-template': 'Template',
     '/admin/settings': 'Settings',
     '/admin/help': 'Help Center',
     '/admin/notifications': 'Notifications',
@@ -76,6 +72,7 @@ const PAGE_TITLES = {
     '/seller/settings': 'Settings',
     '/seller/help': 'Help Center',
     '/seller/notifications': 'Notifications',
+    '/seller/more': 'More',
   },
 }
 
@@ -121,6 +118,21 @@ export default function AppTopbar({ variant, onLogout, isMobile, onMenuClick, si
 
   const isAdmin = variant === 'admin'
   const pageTitle = getPageTitle(variant, pathname)
+  const isAdminHome =
+    isAdmin && pathname && pathname.split(/[?#]/)[0] === '/admin'
+  const heading = isAdminHome && isMobile ? 'Hello, Admin!' : pageTitle
+
+  const cleanPathname = pathname?.split(/[?#]/)[0] || ''
+  const isSettingsPage = isMobile && (
+    cleanPathname === '/admin/settings' || cleanPathname === '/seller/settings'
+  )
+
+  const isNotificationsPage = isMobile && (
+    cleanPathname === '/admin/notifications' || cleanPathname === '/seller/notifications'
+  )
+
+  const isCenteredPage = isSettingsPage || isNotificationsPage
+  const centeredTitle = isSettingsPage ? 'Profile' : isNotificationsPage ? 'Notifications' : ''
 
   useEffect(() => {
     if (!isAdmin) return
@@ -157,35 +169,16 @@ export default function AppTopbar({ variant, onLogout, isMobile, onMenuClick, si
   return (
     <>
       <header
-        className={`${styles.topbar} ${!isMobile && sidebarCollapsed ? styles.sidebarCollapsed : ''}`}
+        className={`${styles.topbar} ${!isMobile && sidebarCollapsed ? styles.sidebarCollapsed : ''} ${isCenteredPage ? styles.topbarCentered : ''}`}
       >
+        {isCenteredPage ? (
+          <h1 className={styles.pageTitleCentered}>{centeredTitle}</h1>
+        ) : (<>
         <div className={styles.left}>
-          {isMobile && (
-            <button
-              type="button"
-              className={styles.menuBtn}
-              onClick={onMenuClick}
-              aria-label="Toggle menu"
-            >
-              <TbMenu2 />
-            </button>
-          )}
-          {pageTitle && <h1 className={styles.pageTitle}>{pageTitle}</h1>}
+          {heading && <h1 className={styles.pageTitle}>{heading}</h1>}
         </div>
 
         <div className={styles.right}>
-          <div className={styles.searchWrap}>
-            <span className={styles.searchIcon}>
-              <IoSearch />
-            </span>
-            <input
-              type="text"
-              className={styles.search}
-              placeholder={config.searchPlaceholder}
-              aria-label={config.searchAriaLabel}
-            />
-          </div>
-
           <Link
             href={config.notificationsHref}
             className={styles.iconBtn}
@@ -283,6 +276,7 @@ export default function AppTopbar({ variant, onLogout, isMobile, onMenuClick, si
             </div>
           </div>
         </div>
+        </>)}
       </header>
 
       <Logout open={showLogout} onCancel={onCancelLogout} onConfirm={onConfirmLogout} />

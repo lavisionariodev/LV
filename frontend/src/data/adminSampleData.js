@@ -212,47 +212,8 @@ export const disputes = [
   },
 ]
 
-// --- Site content (admin-editable) ---
-
-export const siteContent = {
-  systemName: 'La Visionario',
-  hero: {
-    title: 'Dignified Farewells, Made Simple',
-    subheading:
-      'Everything you need to honor your loved one, with transparent pricing and verified providers.',
-    primaryCta: 'Browse Services',
-    secondaryCta: 'Get Guidance',
-  },
-  footer: {
-    tagline:
-      'A trusted funeral services marketplace connecting families with compassionate providers during life\'s most difficult moments.',
-    supportPhone: '+63 912 345 6789',
-    supportEmail: 'support@lavisionario.com',
-    copyrightText: '© 2025 La Visionario. All rights reserved.',
-  },
-  about: {
-    ourStory:
-      'La Visionario was created to help families plan funeral services in a simple, respectful, and transparent way.',
-    missionVision:
-      'Our mission is to make funeral planning dignified, transparent, and accessible for every Filipino family.',
-    whyLaVisionario:
-      'We offer verified providers, clear pricing, and compassionate support so you can focus on honoring your loved one.',
-    partners:
-      'We work with trusted funeral homes and service providers across the Philippines who share our commitment to dignity and fairness.',
-    testimonials:
-      'Families appreciate the ease of comparison, transparent pricing, and support they receive during a difficult time.',
-  },
-  howItWorks: {
-    stepByStep:
-      'Browse, compare, book, and receive support from La Visionario and its partner providers.',
-    comparePackages:
-      'View different funeral homes, listings, and packages in one place with clear inclusions.',
-    bookAService:
-      'Book the service online, share details, and coordinate directly with our trusted partners.',
-    paymentSupport:
-      'Confirm payment through secure channels and receive ongoing support from our team.',
-  },
-}
+// Site content is stored in DB table `site_content` and edited in admin Content page.
+// Default shape when DB is empty is defined in @/lib/siteContent/mapping.js.
 
 // --- Dashboard aggregates ---
 

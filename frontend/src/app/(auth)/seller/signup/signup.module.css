@@ -72,6 +72,21 @@
   opacity: 0.8;
 }
 
+/* Need Help text/icon structure */
+.needHelpText {
+  display: inline;
+}
+
+.needHelpIcon {
+  display: none;
+}
+
+.needHelpIcon svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
 /* Step Indicator */
 .stepIndicator {
   max-width: 100%;
@@ -139,7 +154,7 @@
 .heroSection {
   background: 
     linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.7)),
-    url('/backgrounds/new-skyline-bg.png') center/cover;
+    url('/backgrounds/green-skyline-ng.png') center/cover;
   padding: 80px 24px;
   min-height: calc(100vh - 80px);
   display: flex;
@@ -1341,9 +1356,9 @@
 
 @media (max-width: 480px) {
   .headerContent {
-    padding: 0.625rem 1rem;
-    padding-left: max(1rem, env(safe-area-inset-left));
-    padding-right: max(1rem, env(safe-area-inset-right));
+    padding: 12px 16px;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
   }
 
   .logoWrapper {
@@ -1351,12 +1366,12 @@
   }
 
   .shopeeIcon {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
   }
 
   .logoPlaceholder {
-    font-size: 1.125rem;
+    font-size: 1.25rem;
   }
 
   .shopeeName {
@@ -1365,6 +1380,23 @@
 
   .needHelp {
     font-size: 0.8125rem;
+  }
+
+  .needHelpText {
+    display: none;
+  }
+
+  .needHelpIcon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: 6px;
+  }
+
+  .needHelpIcon svg {
+    width: 20px;
+    height: 20px;
   }
 
   .heroSection {

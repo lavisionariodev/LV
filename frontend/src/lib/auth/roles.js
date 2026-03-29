@@ -28,4 +28,3 @@ export function isBuyerRole(role) {
 export function isSellerRole(role) {
   return role === ROLE_SELLER;
 }
-

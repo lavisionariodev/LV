@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import {
   TbSearch,
   TbX,
@@ -8,12 +8,18 @@ import {
   TbCheck,
   TbCircleX,
   TbEdit,
-  TbMessage,
-  TbUpload,
-  TbDownload,
+  TbChevronDown,
   TbReceipt,
-  TbFileDescription,
+  TbPackage,
+  TbTools,
+  TbTruck,
+  TbCircleCheck,
+  TbUser,
+  TbPhone,
+  TbMail,
   TbFileText,
+  TbCurrencyDollar,
+  TbPhoto,
 } from 'react-icons/tb'
 import styles from './orders.module.css'
 
@@ -28,11 +34,11 @@ const ORDER_STATUSES = [
 ]
 
 const TIMELINE_STEPS = [
-  { id: 'received', label: 'Order Received' },
-  { id: 'confirmed', label: 'Confirmed' },
-  { id: 'preparation', label: 'Preparation' },
-  { id: 'ongoing', label: 'Service Ongoing' },
-  { id: 'completed', label: 'Completed' },
+  { id: 'received', label: 'Order Received', icon: TbPackage, description: 'Order was placed and is awaiting confirmation.' },
+  { id: 'confirmed', label: 'Confirmed', icon: TbCheck, description: 'Order has been accepted. Preparation will begin soon.' },
+  { id: 'preparation', label: 'Preparation', icon: TbTools, description: 'Service is being prepared according to your request.' },
+  { id: 'ongoing', label: 'Service Ongoing', icon: TbTruck, description: 'Service is in progress.' },
+  { id: 'completed', label: 'Completed', icon: TbCircleCheck, description: 'Service has been completed.' },
 ]
 
 const MOCK_ORDERS = [
@@ -56,6 +62,36 @@ const MOCK_ORDERS = [
     wakeDuration: '3 days',
     burialLocation: 'Manila Memorial Park',
     paymentMethod: 'Bank Transfer',
+    refundRequested: true,
+    refundReason: 'Family requested a full refund due to scheduling conflict.',
+    refundAttachments: [
+      { type: 'receipt', label: 'Official receipt #A-1023 (PDF)' },
+      { type: 'photo', label: 'Payment screenshot.png' },
+    ],
+  },
+  {
+    id: 'LV-2024-0843',
+    customerName: 'Luis Ramirez',
+    servicePackage: 'Cremation Package',
+    dateOfService: '2025-02-28',
+    location: 'San Juan Crematorium',
+    totalPrice: 88000,
+    paymentStatus: 'paid',
+    orderStatus: 'refunded',
+    isUrgent: false,
+    customerPhone: '+63 917 555 8899',
+    customerEmail: 'luis.ramirez@email.com',
+    deceasedName: 'Andrea Ramirez',
+    dateOfDeath: '2025-02-26',
+    religion: 'Catholic',
+    specialRequests: 'Small, private ceremony only.',
+    addOns: ['Urn (premium)', 'Memorial service'],
+    wakeDuration: '1 day',
+    burialLocation: 'N/A – Cremation',
+    paymentMethod: 'Credit Card',
+    refundRequested: false,
+    refundReason: 'Approved refund after customer requested schedule change.',
+    refundAttachments: [{ type: 'receipt', label: 'Original receipt (PDF)' }],
   },
   {
     id: 'LV-2024-0846',
@@ -124,7 +160,7 @@ const MOCK_ORDERS = [
 
 function getStatusBadgeClass(status) {
   const map = {
-    pending: styles.badgeStatus,
+    pending: styles.badgePending,
     confirmed: styles.badgeConfirmed,
     in_progress: styles.badgeInProgress,
     completed: styles.badgeCompleted,
@@ -143,22 +179,46 @@ function formatDate(s) {
   return new Date(s + 'T00:00:00').toLocaleDateString('en-PH', { dateStyle: 'medium' })
 }
 
-export default function OrdersContent({ initialTab }) {
+export default function OrdersContent({ initialTab, initialOrderId, initialAction }) {
   const [activeTab, setActiveTab] = useState(initialTab || 'all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [filterStatus, setFilterStatus] = useState('')
-  const [filterDateFrom, setFilterDateFrom] = useState('')
-  const [filterDateTo, setFilterDateTo] = useState('')
-  const [filterServiceType, setFilterServiceType] = useState('')
   const [selectedOrder, setSelectedOrder] = useState(null)
+  const [orderForUpdateStatus, setOrderForUpdateStatus] = useState(null)
   const [showUpdateStatus, setShowUpdateStatus] = useState(false)
   const [orders, setOrders] = useState(MOCK_ORDERS)
+  const [filterDropdownOpen, setFilterDropdownOpen] = useState(false)
+  const [previewAttachment, setPreviewAttachment] = useState(null)
+  const filterDropdownRef = useRef(null)
 
   useEffect(() => {
     if (initialTab && ORDER_STATUSES.some((t) => t.id === initialTab)) {
       setActiveTab(initialTab)
     }
   }, [initialTab])
+
+  useEffect(() => {
+    if (!initialOrderId) return
+    const matchedOrder = orders.find((order) => order.id === initialOrderId)
+    if (!matchedOrder) return
+
+    setSelectedOrder(matchedOrder)
+    if (initialAction === 'process') {
+      setOrderForUpdateStatus(matchedOrder)
+      setShowUpdateStatus(true)
+    }
+  }, [initialOrderId, initialAction, orders])
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (filterDropdownRef.current && !filterDropdownRef.current.contains(e.target)) {
+        setFilterDropdownOpen(false)
+      }
+    }
+    if (filterDropdownOpen) {
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
+    }
+  }, [filterDropdownOpen])
 
   const filteredOrders = useMemo(() => {
     let list = [...orders]
@@ -169,20 +229,13 @@ export default function OrdersContent({ initialTab }) {
       const q = searchQuery.toLowerCase()
       list = list.filter((o) => o.customerName.toLowerCase().includes(q) || o.id.toLowerCase().includes(q))
     }
-    if (filterStatus) {
-      list = list.filter((o) => o.orderStatus === filterStatus)
-    }
-    if (filterDateFrom) {
-      list = list.filter((o) => o.dateOfService >= filterDateFrom)
-    }
-    if (filterDateTo) {
-      list = list.filter((o) => o.dateOfService <= filterDateTo)
-    }
-    if (filterServiceType) {
-      list = list.filter((o) => o.servicePackage.toLowerCase().includes(filterServiceType.toLowerCase()))
-    }
     return list
-  }, [orders, activeTab, searchQuery, filterStatus, filterDateFrom, filterDateTo, filterServiceType])
+  }, [orders, activeTab, searchQuery])
+
+  const refundRequests = useMemo(
+    () => orders.filter((o) => o.refundRequested),
+    [orders]
+  )
 
   const handleAcceptOrder = (order) => {
     setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, orderStatus: 'confirmed' } : o)))
@@ -198,10 +251,33 @@ export default function OrdersContent({ initialTab }) {
     setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, orderStatus: newStatus } : o)))
     setSelectedOrder((prev) => (prev?.id === order.id ? { ...prev, orderStatus: newStatus } : prev))
     setShowUpdateStatus(false)
+    setOrderForUpdateStatus(null)
   }
 
   const handleMarkCompleted = (order) => {
     handleUpdateStatus(order, 'completed')
+  }
+
+  const handleApproveRefund = (order) => {
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === order.id ? { ...o, orderStatus: 'refunded', refundRequested: false } : o
+      )
+    )
+    setSelectedOrder((prev) =>
+      prev?.id === order.id ? { ...prev, orderStatus: 'refunded', refundRequested: false } : prev
+    )
+  }
+
+  const handleDeclineRefund = (order) => {
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === order.id ? { ...o, refundRequested: false } : o
+      )
+    )
+    setSelectedOrder((prev) =>
+      prev?.id === order.id ? { ...prev, refundRequested: false } : prev
+    )
   }
 
   const getTimelineProgress = (order) => {
@@ -217,32 +293,87 @@ export default function OrdersContent({ initialTab }) {
     }
   }
 
+  const STEP_TIMES = ['10:11 PM', '10:30 PM', '10:45 PM', '11:00 AM', '11:30 AM']
+  const getStepTime = (stepIndex) => STEP_TIMES[stepIndex] ?? '—'
+
   const timelineProgress = selectedOrder ? getTimelineProgress(selectedOrder) : {}
 
   return (
     <div className={styles.pageWrap}>
-      {/* Metric cards (alert strip) */}
+      <div className={styles.filtersRow}>
+        <div className={styles.searchWrap}>
+          <TbSearch className={styles.searchIcon} size={18} />
+          <input
+            type="search"
+            className={styles.searchBox}
+            placeholder="Search by name or order ID"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            aria-label="Search orders"
+          />
+        </div>
+        <div className={`${styles.filterDropdownWrap} ${filterDropdownOpen ? styles.filterDropdownOpen : ''}`} ref={filterDropdownRef}>
+          <button
+            type="button"
+            className={styles.filterDropdownTrigger}
+            onClick={() => setFilterDropdownOpen((o) => !o)}
+            aria-haspopup="listbox"
+            aria-expanded={filterDropdownOpen}
+            aria-label="Filter by status"
+          >
+            <span className={styles.filterDropdownLabel}>
+              {ORDER_STATUSES.find((t) => t.id === activeTab)?.label ?? 'All Orders'}
+            </span>
+            <TbChevronDown className={styles.filterDropdownChevron} size={18} aria-hidden />
+          </button>
+          {filterDropdownOpen && (
+            <div
+              className={styles.filterDropdownPanel}
+              role="listbox"
+              aria-label="Order status options"
+            >
+              {ORDER_STATUSES.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="option"
+                  aria-selected={activeTab === tab.id}
+                  className={`${styles.filterDropdownOption} ${activeTab === tab.id ? styles.filterDropdownOptionSelected : ''}`}
+                  onClick={() => {
+                    setActiveTab(tab.id)
+                    setFilterDropdownOpen(false)
+                  }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Metric cards (stats strip) */}
       <div className={styles.statsStrip}>
-        <div className={styles.statCard}>
+        <div className={`${styles.statCard} ${styles.statCardTotal}`}>
           <div className={styles.statCardTitle}>Total orders</div>
           <div className={styles.statCardValue}>{orders.length}</div>
           <div className={styles.statCardDesc}>All time (sample data)</div>
         </div>
-        <div className={styles.statCard}>
+        <div className={`${styles.statCard} ${styles.statCardPending}`}>
           <div className={styles.statCardTitle}>Pending approvals</div>
           <div className={styles.statCardValue}>
             {orders.filter((o) => o.orderStatus === 'pending').length}
           </div>
           <div className={styles.statCardDesc}>Waiting for your confirmation</div>
         </div>
-        <div className={styles.statCard}>
+        <div className={`${styles.statCard} ${styles.statCardInProgress}`}>
           <div className={styles.statCardTitle}>In progress</div>
           <div className={styles.statCardValue}>
             {orders.filter((o) => o.orderStatus === 'in_progress' || o.orderStatus === 'confirmed').length}
           </div>
           <div className={styles.statCardDesc}>Preparation or service ongoing</div>
         </div>
-        <div className={styles.statCard}>
+        <div className={`${styles.statCard} ${styles.statCardCompleted}`}>
           <div className={styles.statCardTitle}>Completed (P)</div>
           <div className={styles.statCardValue}>
             {formatPrice(
@@ -255,72 +386,96 @@ export default function OrdersContent({ initialTab }) {
         </div>
       </div>
 
-      <div className={styles.tabsWrap}>
-        {ORDER_STATUSES.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            className={`${styles.tab} ${activeTab === tab.id ? styles.tabActive : ''}`}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      <div className={styles.filtersRow}>
-        <div className={styles.searchWrap}>
-          <TbSearch className={styles.searchIcon} size={18} />
-          <input
-            type="search"
-            className={styles.searchBox}
-            placeholder="Search by customer name or order ID..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            aria-label="Search orders"
-          />
-        </div>
-        <select
-          className={styles.filterSelect}
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          aria-label="Filter by status"
-        >
-          <option value="">All statuses</option>
-          {ORDER_STATUSES.filter((t) => t.id !== 'all').map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.label}
-            </option>
-          ))}
-        </select>
-        <input
-          type="date"
-          className={styles.filterSelect}
-          value={filterDateFrom}
-          onChange={(e) => setFilterDateFrom(e.target.value)}
-          aria-label="Date from"
-          style={{ minWidth: '140px' }}
-        />
-        <input
-          type="date"
-          className={styles.filterSelect}
-          value={filterDateTo}
-          onChange={(e) => setFilterDateTo(e.target.value)}
-          aria-label="Date to"
-          style={{ minWidth: '140px' }}
-        />
-        <select
-          className={styles.filterSelect}
-          value={filterServiceType}
-          onChange={(e) => setFilterServiceType(e.target.value)}
-          aria-label="Filter by service type"
-        >
-          <option value="">All service types</option>
-          <option value="Traditional">Traditional</option>
-          <option value="Cremation">Cremation</option>
-          <option value="Simple">Simple</option>
-        </select>
-      </div>
+      {refundRequests.length > 0 && (
+        <section className={styles.refundListSection}>
+          <div className={styles.refundListHeader}>
+            <h2 className={styles.refundListTitle}>Refund requests</h2>
+            <span className={styles.refundListCount}>{refundRequests.length} pending</span>
+          </div>
+          <div className={styles.refundCards}>
+            {refundRequests.map((order) => (
+              <article key={order.id} className={styles.refundCard}>
+                <header className={styles.refundCardHeader}>
+                  <div>
+                    <div className={styles.refundOrderId}>{order.id}</div>
+                    <div className={styles.refundCustomerName}>{order.customerName}</div>
+                  </div>
+                  <div className={styles.refundMeta}>
+                    <span>{formatDate(order.dateOfService)}</span>
+                    <span>&middot;</span>
+                    <span>{order.location}</span>
+                  </div>
+                </header>
+                <div className={styles.refundBody}>
+                  <div className={styles.refundDetailRow}>
+                    <span className={styles.detailLabel}>Reason</span>
+                    <span className={styles.detailValue}>
+                      {order.refundReason || 'No reason provided.'}
+                    </span>
+                  </div>
+                  <div className={styles.refundDetailRow}>
+                    <span className={styles.detailLabel}>Buyer contact</span>
+                    <span className={styles.detailValue}>
+                      {order.customerName} &mdash; {order.customerPhone} &middot; {order.customerEmail}
+                    </span>
+                  </div>
+                  {order.refundAttachments?.length > 0 && (
+                    <div className={styles.refundAttachmentsRow}>
+                      <span className={styles.detailLabel}>Proof of purchase</span>
+                      <div className={styles.refundAttachments}>
+                        {order.refundAttachments.map((file) => {
+                          const Icon = file.type === 'photo' ? TbPhoto : TbReceipt
+                          return (
+                            <button
+                              key={file.label}
+                              type="button"
+                              className={styles.attachmentChip}
+                                  onClick={() =>
+                                    setPreviewAttachment({
+                                      orderId: order.id,
+                                      ...file,
+                                    })
+                                  }
+                            >
+                              <Icon size={14} />
+                              <span>{file.label}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <footer className={styles.refundFooter}>
+                  <button
+                    type="button"
+                    className={`${styles.btnTextSecondary}`}
+                    onClick={() => setSelectedOrder(order)}
+                  >
+                    Review details
+                  </button>
+                  <div className={styles.refundQuickActions}>
+                    <button
+                      type="button"
+                      className={`${styles.btnText} ${styles.btnAccept}`}
+                      onClick={() => handleApproveRefund(order)}
+                    >
+                      Approve refund
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.btnText} ${styles.btnDecline}`}
+                      onClick={() => handleDeclineRefund(order)}
+                    >
+                      Decline
+                    </button>
+                  </div>
+                </footer>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className={styles.tableWrap}>
         <table className={styles.ordersTable}>
@@ -349,31 +504,31 @@ export default function OrdersContent({ initialTab }) {
               </tr>
             ) : (
               filteredOrders.map((order) => (
-                <tr key={order.id}>
-                  <td>
+                <tr key={order.id} className={styles.orderRow}>
+                  <td className={styles.cellOrderId} data-label="Order ID">
                     <span className={styles.orderId}>{order.id}</span>
-                    {order.isUrgent && <span className={styles.badgeUrgent}>Urgent</span>}
+                    {order.isUrgent && <span className={`${styles.badge} ${styles.badgeUrgent}`}>Urgent</span>}
                   </td>
-                  <td>{order.customerName}</td>
-                  <td>{order.servicePackage}</td>
-                  <td>{formatDate(order.dateOfService)}</td>
-                  <td>{order.location}</td>
-                  <td>{formatPrice(order.totalPrice)}</td>
-                  <td>
-                    <span className={order.paymentStatus === 'paid' ? styles.badgePaid : styles.badgePending}>
+                  <td data-label="Customer">{order.customerName}</td>
+                  <td data-label="Package">{order.servicePackage}</td>
+                  <td data-label="Date">{formatDate(order.dateOfService)}</td>
+                  <td data-label="Location">{order.location}</td>
+                  <td data-label="Total">{formatPrice(order.totalPrice)}</td>
+                  <td data-label="Payment">
+                    <span className={`${styles.badge} ${order.paymentStatus === 'paid' ? styles.badgePaid : styles.badgePending}`}>
                       {order.paymentStatus === 'paid' ? 'Paid' : 'Pending'}
                     </span>
                   </td>
-                  <td>
-                    <span className={getStatusBadgeClass(order.orderStatus)}>
+                  <td data-label="Status">
+                    <span className={`${styles.badge} ${getStatusBadgeClass(order.orderStatus)}`}>
                       {order.orderStatus.replace('_', ' ')}
                     </span>
                   </td>
-                  <td>
+                  <td data-label="Actions">
                     <div className={styles.cellActions}>
                       <button
                         type="button"
-                        className={styles.btnIcon}
+                        className={`${styles.btnIcon} ${styles.btnIconView}`}
                         onClick={() => setSelectedOrder(order)}
                         title="View Details"
                       >
@@ -383,7 +538,7 @@ export default function OrdersContent({ initialTab }) {
                         <>
                           <button
                             type="button"
-                            className={styles.btnIcon}
+                            className={`${styles.btnIcon} ${styles.btnIconAccept} ${styles.hideOnMobile}`}
                             onClick={() => handleAcceptOrder(order)}
                             title="Accept Order"
                           >
@@ -391,7 +546,7 @@ export default function OrdersContent({ initialTab }) {
                           </button>
                           <button
                             type="button"
-                            className={`${styles.btnIcon} ${styles.btnIconDanger}`}
+                            className={`${styles.btnIcon} ${styles.btnIconDecline} ${styles.hideOnMobile}`}
                             onClick={() => handleDeclineOrder(order)}
                             title="Decline Order"
                           >
@@ -401,12 +556,12 @@ export default function OrdersContent({ initialTab }) {
                       )}
                       <button
                         type="button"
-                        className={styles.btnIcon}
+                        className={`${styles.btnIcon} ${styles.btnIconUpdate}`}
                         onClick={() => {
-                          setSelectedOrder(order)
+                          setOrderForUpdateStatus(order)
                           setShowUpdateStatus(true)
                         }}
-                        title="Update Status"
+                        title="Edit"
                       >
                         <TbEdit size={16} />
                       </button>
@@ -431,7 +586,7 @@ export default function OrdersContent({ initialTab }) {
             <div className={styles.modalHeader}>
               <h2 id="order-details-title" className={styles.modalTitle}>
                 Order {selectedOrder.id}
-                {selectedOrder.isUrgent && <span className={styles.badgeUrgent}>Urgent</span>}
+                {selectedOrder.isUrgent && <span className={`${styles.badge} ${styles.badgeUrgent}`}>Urgent</span>}
               </h2>
               <button
                 type="button"
@@ -445,54 +600,83 @@ export default function OrdersContent({ initialTab }) {
 
             <div className={styles.modalBody}>
               <div className={styles.section}>
-                <h3 className={styles.sectionTitle}>Order progress</h3>
+                <h3 className={styles.sectionTitle}>Progress</h3>
                 <div className={styles.timelineWrap}>
                   <div className={styles.timeline}>
-                    {TIMELINE_STEPS.map((step, i) => (
-                      <div key={step.id} className={styles.timelineStep}>
-                        <span
-                          className={
-                            timelineProgress[step.id]
-                              ? step.id === 'completed' && timelineProgress.completed
-                                ? styles.timelineStepDone
-                                : styles.timelineStepActive
-                              : ''
-                          }
-                        >
-                          {step.label}
-                        </span>
-                        {i < TIMELINE_STEPS.length - 1 && (
-                          <span
-                            className={`${styles.timelineConnector} ${timelineProgress[step.id] ? styles.timelineConnectorDone : ''}`}
-                          />
-                        )}
-                      </div>
-                    ))}
+                    {TIMELINE_STEPS.map((step, i) => {
+                      const isDone = timelineProgress[step.id]
+                      const Icon = step.icon
+                      return (
+                        <div key={step.id} className={styles.timelineStep}>
+                          {isDone && (
+                            <span className={styles.timelineStepTime}>{getStepTime(i)}</span>
+                          )}
+                          {!isDone && <span className={styles.timelineStepTimePlaceholder} aria-hidden />}
+                          <div
+                            className={`${styles.timelineStepIcon} ${isDone ? styles.timelineStepIconActive : ''}`}
+                            aria-hidden
+                          >
+                            {isDone ? <TbCheck size={16} /> : <Icon size={16} />}
+                          </div>
+                          <div className={styles.timelineStepContent}>
+                            <span
+                              className={`${styles.timelineStepLabel} ${isDone ? (step.id === 'completed' && timelineProgress.completed ? styles.timelineStepDone : styles.timelineStepActive) : ''}`}
+                            >
+                              {step.label}
+                            </span>
+                            {step.description && (
+                              <span className={styles.timelineStepDesc}>{step.description}</span>
+                            )}
+                          </div>
+                          {i < TIMELINE_STEPS.length - 1 && (
+                            <span
+                              className={`${styles.timelineConnector} ${isDone ? styles.timelineConnectorDone : ''}`}
+                            />
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               </div>
 
               <div className={styles.section}>
-                <h3 className={styles.sectionTitle}>Customer information</h3>
-                <div className={styles.detailGrid}>
-                  <div className={styles.detailItem}>
-                    <span className={styles.detailLabel}>Name</span>
-                    <span className={styles.detailValue}>{selectedOrder.customerName}</span>
+                <h3 className={styles.sectionTitle}>Customer</h3>
+                <div className={`${styles.detailList} ${styles.customerInfoGrid} ${styles.customerInfoCard}`}>
+                  <div className={styles.customerDetailItem}>
+                    <span className={styles.customerDetailIcon}>
+                      <TbUser size={18} />
+                    </span>
+                    <div className={styles.customerDetailContent}>
+                      <span className={styles.detailLabel}>Name</span>
+                      <span className={styles.detailValue}>{selectedOrder.customerName}</span>
+                    </div>
                   </div>
-                  <div className={styles.detailItem}>
-                    <span className={styles.detailLabel}>Contact</span>
-                    <span className={styles.detailValue}>{selectedOrder.customerPhone}</span>
+                  <div className={styles.customerDetailItem}>
+                    <span className={styles.customerDetailIcon}>
+                      <TbPhone size={18} />
+                    </span>
+                    <div className={styles.customerDetailContent}>
+                      <span className={styles.detailLabel}>Phone</span>
+                      <span className={styles.detailValue}>{selectedOrder.customerPhone}</span>
+                    </div>
                   </div>
-                  <div className={styles.detailItem}>
-                    <span className={styles.detailLabel}>Email</span>
-                    <span className={styles.detailValue}>{selectedOrder.customerEmail}</span>
+                  <div className={styles.customerDetailItem}>
+                    <span className={styles.customerDetailIcon}>
+                      <TbMail size={18} />
+                    </span>
+                    <div className={styles.customerDetailContent}>
+                      <span className={styles.detailLabel}>Email</span>
+                      <span className={styles.detailValue}>{selectedOrder.customerEmail}</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
               <div className={styles.section}>
-                <h3 className={styles.sectionTitle}>Deceased information</h3>
-                <div className={styles.detailGrid}>
+                <h3 className={styles.sectionTitle}>Deceased</h3>
+                <div className={styles.sectionBlock}>
+                <div className={styles.detailList}>
                   <div className={styles.detailItem}>
                     <span className={styles.detailLabel}>Name</span>
                     <span className={styles.detailValue}>{selectedOrder.deceasedName}</span>
@@ -507,18 +691,20 @@ export default function OrdersContent({ initialTab }) {
                       <span className={styles.detailValue}>{selectedOrder.religion}</span>
                     </div>
                   )}
-                  {(selectedOrder.specialRequests != null) && (
-                    <div className={styles.detailItem} style={{ gridColumn: '1 / -1' }}>
+                  {(selectedOrder.specialRequests != null && selectedOrder.specialRequests !== '') && (
+                    <div className={styles.detailItem}>
                       <span className={styles.detailLabel}>Special requests</span>
-                      <span className={styles.detailValue}>{selectedOrder.specialRequests || 'None'}</span>
+                      <span className={styles.detailValue}>{selectedOrder.specialRequests}</span>
                     </div>
                   )}
+                </div>
                 </div>
               </div>
 
               <div className={styles.section}>
-                <h3 className={styles.sectionTitle}>Service details</h3>
-                <div className={styles.detailGrid}>
+                <h3 className={styles.sectionTitle}>Service</h3>
+                <div className={styles.sectionBlock}>
+                <div className={styles.detailList}>
                   <div className={styles.detailItem}>
                     <span className={styles.detailLabel}>Package</span>
                     <span className={styles.detailValue}>{selectedOrder.servicePackage}</span>
@@ -527,22 +713,22 @@ export default function OrdersContent({ initialTab }) {
                     <span className={styles.detailLabel}>Wake duration</span>
                     <span className={styles.detailValue}>{selectedOrder.wakeDuration}</span>
                   </div>
-                  <div className={styles.detailItem} style={{ gridColumn: '1 / -1' }}>
-                    <span className={styles.detailLabel}>Burial / cremation location</span>
+                  <div className={styles.detailItem}>
+                    <span className={styles.detailLabel}>Location</span>
                     <span className={styles.detailValue}>{selectedOrder.burialLocation}</span>
                   </div>
-                  <div className={styles.detailItem} style={{ gridColumn: '1 / -1' }}>
+                  <div className={styles.detailItem}>
                     <span className={styles.detailLabel}>Add-ons</span>
-                    <span className={styles.detailValue}>
-                      {selectedOrder.addOns?.length ? selectedOrder.addOns.join(', ') : 'None'}
-                    </span>
+                    <span className={styles.detailValue}>{selectedOrder.addOns?.length ? selectedOrder.addOns.join(', ') : 'None'}</span>
                   </div>
+                </div>
                 </div>
               </div>
 
               <div className={styles.section}>
-                <h3 className={styles.sectionTitle}>Payment information</h3>
-                <div className={styles.detailGrid}>
+                <h3 className={styles.sectionTitle}>Payment</h3>
+                <div className={styles.sectionBlock}>
+                <div className={styles.detailList}>
                   <div className={styles.detailItem}>
                     <span className={styles.detailLabel}>Total</span>
                     <span className={styles.detailValue}>{formatPrice(selectedOrder.totalPrice)}</span>
@@ -553,76 +739,73 @@ export default function OrdersContent({ initialTab }) {
                   </div>
                   <div className={styles.detailItem}>
                     <span className={styles.detailLabel}>Status</span>
-                    <span
-                      className={
-                        selectedOrder.paymentStatus === 'paid' ? styles.badgePaid : styles.badgePending
-                      }
-                    >
-                      {selectedOrder.paymentStatus === 'paid' ? 'Paid' : 'Pending'}
+                    <span className={styles.detailValue}>
+                      <span className={`${styles.badge} ${selectedOrder.paymentStatus === 'paid' ? styles.badgePaid : styles.badgePending}`}>
+                        {selectedOrder.paymentStatus === 'paid' ? 'Paid' : 'Pending'}
+                      </span>
                     </span>
                   </div>
                 </div>
+                </div>
               </div>
 
-              <div className={styles.section}>
-                <h3 className={styles.sectionTitle}>Documents</h3>
-                <div className={styles.downloadRow}>
-                  <a href="#" className={styles.downloadLink} onClick={(e) => e.preventDefault()}>
-                    <TbDownload size={16} /> Invoice
+              {selectedOrder.refundRequested && selectedOrder.orderStatus !== 'refunded' && (
+                <div className={styles.section}>
+                  <h3 className={styles.sectionTitle}>Refund request</h3>
+                  <div className={styles.sectionBlock}>
+                    <div className={styles.detailList}>
+                      <div className={styles.detailItem}>
+                        <span className={styles.detailLabel}>Reason</span>
+                        <span className={styles.detailValue}>
+                          {selectedOrder.refundReason || 'No reason provided.'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className={styles.refundActions}>
+                      <button
+                        type="button"
+                        className={`${styles.btnText} ${styles.btnAccept}`}
+                        onClick={() => handleApproveRefund(selectedOrder)}
+                      >
+                        Approve refund
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.btnText} ${styles.btnDecline}`}
+                        onClick={() => handleDeclineRefund(selectedOrder)}
+                      >
+                        Decline refund
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className={styles.documentsSection}>
+                <h3 className={styles.documentsSectionTitle}>Documents</h3>
+                <div className={styles.documentsList}>
+                  <a href="#" className={styles.documentChip} onClick={(e) => e.preventDefault()}>
+                    <span className={styles.documentChipIcon}><TbFileText size={16} /></span>
+                    <span>Invoice</span>
                   </a>
-                  <a href="#" className={styles.downloadLink} onClick={(e) => e.preventDefault()}>
-                    <TbDownload size={16} /> Receipt
+                  <a href="#" className={styles.documentChip} onClick={(e) => e.preventDefault()}>
+                    <span className={styles.documentChipIcon}><TbReceipt size={16} /></span>
+                    <span>Receipt</span>
                   </a>
-                  <a href="#" className={styles.downloadLink} onClick={(e) => e.preventDefault()}>
-                    <TbFileDescription size={16} /> Order Summary
+                  <a href="#" className={styles.documentChip} onClick={(e) => e.preventDefault()}>
+                    <span className={styles.documentChipIcon}><TbFileText size={16} /></span>
+                    <span>Summary</span>
                   </a>
-                  <a href="#" className={styles.downloadLink} onClick={(e) => e.preventDefault()}>
-                    <TbFileText size={16} /> Service Contract
+                  <a href="#" className={styles.documentChip} onClick={(e) => e.preventDefault()}>
+                    <span className={styles.documentChipIcon}><TbFileText size={16} /></span>
+                    <span>Contract</span>
                   </a>
                 </div>
               </div>
 
               <div className={styles.modalActions}>
-                {selectedOrder.orderStatus === 'pending' && (
-                  <>
-                    <button
-                      type="button"
-                      className={`${styles.btnText} ${styles.btnPrimary}`}
-                      onClick={() => handleAcceptOrder(selectedOrder)}
-                    >
-                      Accept Order
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.btnText}
-                      onClick={() => handleDeclineOrder(selectedOrder)}
-                      style={{ borderColor: '#b43c32', color: '#b43c32' }}
-                    >
-                      Decline Order
-                    </button>
-                  </>
-                )}
-                <button
-                  type="button"
-                  className={styles.btnText}
-                  onClick={() => setShowUpdateStatus(true)}
-                >
-                  Update Status
-                </button>
-                <button type="button" className={styles.btnText} onClick={() => {}}>
-                  <TbMessage size={16} /> Message Customer
-                </button>
-                <button type="button" className={styles.btnText} onClick={() => {}}>
-                  <TbUpload size={16} /> Upload Documents
-                </button>
                 {selectedOrder.orderStatus !== 'completed' && selectedOrder.orderStatus !== 'cancelled' && (
-                  <button
-                    type="button"
-                    className={`${styles.btnText} ${styles.btnPrimary}`}
-                    onClick={() => handleMarkCompleted(selectedOrder)}
-                  >
-                    Mark as Completed
-                  </button>
+                  <button type="button" className={`${styles.btnText} ${styles.btnUpdateStatus}`} onClick={() => { setOrderForUpdateStatus(selectedOrder); setShowUpdateStatus(true) }}>Update status</button>
                 )}
               </div>
             </div>
@@ -630,44 +813,92 @@ export default function OrdersContent({ initialTab }) {
         </div>
       )}
 
-      {showUpdateStatus && selectedOrder && (
+      {showUpdateStatus && orderForUpdateStatus && (
         <div
-          className={styles.modalOverlay}
-          style={{ background: 'rgba(0,0,0,0.5)' }}
-          onClick={() => setShowUpdateStatus(false)}
+          className={styles.updateStatusWrap}
+          onClick={() => { setShowUpdateStatus(false); setOrderForUpdateStatus(null) }}
         >
           <div
-            className={styles.modalCard}
-            style={{ maxWidth: 360 }}
+            className={styles.updateStatusCard}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className={styles.modalHeader}>
-              <h2 className={styles.modalTitle}>Update order status</h2>
+            <div className={styles.updateStatusHeader}>
+              <h2 className={styles.updateStatusTitle}>Update order status</h2>
               <button
                 type="button"
                 className={styles.modalClose}
-                onClick={() => setShowUpdateStatus(false)}
+                onClick={() => { setShowUpdateStatus(false); setOrderForUpdateStatus(null) }}
                 aria-label="Close"
               >
                 <TbX size={22} />
               </button>
             </div>
-            <div className={styles.modalBody}>
-              <p className={styles.pageSubtitle} style={{ marginBottom: '1rem' }}>
-                Choose new status for order {selectedOrder.id}.
+            <div className={styles.updateStatusBody}>
+              <p className={styles.updateStatusPrompt}>
+                Choose new status for order <span className={styles.updateStatusOrderId}>{orderForUpdateStatus.id}</span>.
               </p>
-              <div className={styles.detailGrid} style={{ gridTemplateColumns: '1fr' }}>
-                {['confirmed', 'in_progress', 'completed'].map((status) => (
+              <div className={styles.updateStatusOptions}>
+                {[
+                  { status: 'confirmed', label: 'Confirm', icon: TbCheck, iconClass: styles.updateStatusBtnIconConfirmed, btnClass: styles.updateStatusBtnConfirmed },
+                  { status: 'in_progress', label: 'In progress', icon: TbTools, iconClass: styles.updateStatusBtnIconInProgress, btnClass: styles.updateStatusBtnInProgress },
+                  { status: 'completed', label: 'Completed', icon: TbCircleCheck, iconClass: styles.updateStatusBtnIconCompleted, btnClass: styles.updateStatusBtnCompleted },
+                  { status: 'refunded', label: 'Refunded', icon: TbCurrencyDollar, iconClass: styles.updateStatusBtnIconRefund, btnClass: styles.updateStatusBtnRefund },
+                  { status: 'cancelled', label: 'Decline', icon: TbCircleX, iconClass: styles.updateStatusBtnIconDecline, btnClass: styles.updateStatusBtnDecline },
+                ].map(({ status, label, icon: Icon, iconClass, btnClass }) => (
                   <button
                     key={status}
                     type="button"
-                    className={styles.btnText}
-                    style={{ justifyContent: 'center' }}
-                    onClick={() => handleUpdateStatus(selectedOrder, status)}
+                    className={`${styles.updateStatusBtn} ${btnClass}`}
+                    onClick={() => handleUpdateStatus(orderForUpdateStatus, status)}
                   >
-                    {status.replace('_', ' ')}
+                    <span className={`${styles.updateStatusBtnIcon} ${iconClass}`}>
+                      <Icon size={18} />
+                    </span>
+                    <span className={styles.updateStatusBtnLabel}>{label}</span>
                   </button>
                 ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {previewAttachment && (
+        <div
+          className={styles.modalOverlay}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="attachment-preview-title"
+          onClick={() => setPreviewAttachment(null)}
+        >
+          <div
+            className={styles.attachmentPreviewCard}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.attachmentPreviewHeader}>
+              <h2 id="attachment-preview-title" className={styles.attachmentPreviewTitle}>
+                {previewAttachment.label}
+              </h2>
+              <button
+                type="button"
+                className={styles.modalClose}
+                onClick={() => setPreviewAttachment(null)}
+                aria-label="Close preview"
+              >
+                <TbX size={22} />
+              </button>
+            </div>
+            <div className={styles.attachmentPreviewBody}>
+              <div className={styles.attachmentPreviewMeta}>
+                <span className={styles.detailLabel}>Order</span>
+                <span className={styles.detailValue}>{previewAttachment.orderId}</span>
+              </div>
+              <div className={styles.attachmentPreviewContent}>
+                <p>
+                  This is a mock preview for <strong>{previewAttachment.label}</strong>. In a real
+                  implementation, this area would show the actual image or PDF viewer for the
+                  uploaded file.
+                </p>
               </div>
             </div>
           </div>

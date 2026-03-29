@@ -302,7 +302,7 @@
   padding: 10px 16px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--color-green-700);
+  color: #0f172a;
   text-decoration: none;
   font-family: inherit;
   background: none;
@@ -314,7 +314,7 @@
 
 .profileDropdownItem:hover {
   background: #f8fafc;
-  color: var(--color-green-900);
+  color: #000;
 }
 
 .profileDropdownItemIcon {
@@ -337,7 +337,7 @@
 
   font-size: 12px;
   font-weight: 600;
-  color: var(--color-green-700);
+  color: #0f172a;
   font-family: inherit;
 }
 
@@ -347,7 +347,7 @@
 
 .logoutBtn:hover {
   background: #f8fafc;
-  color: var(--color-green-900);
+  color: #000;
 }
 
 /* Breakpoints: 860px = mobile layout (sidebar overlay), 600px = narrow */
@@ -373,4 +373,17 @@
     padding-left: 14px;
     padding-right: 14px;
   }
+}
+
+.topbarCentered {
+  justify-content: center;
+}
+
+.pageTitleCentered {
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  text-align: center;
+  user-select: none;
 }

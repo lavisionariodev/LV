@@ -129,7 +129,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   padding: 0 14px;
   overflow-y: auto;
 }
@@ -293,5 +293,85 @@
 
   .collapseBtn {
     display: none;
+  }
+}
+
+/* ----- Bottom navigation (mobile only) ----- */
+.bottomNav {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .bottomNav {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: #ffffff;
+    border-top: 1px solid #eef0f4;
+    z-index: 50;
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  .bottomNavLink {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 6px 4px;
+    text-decoration: none;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 500;
+    min-width: 0;
+    transition: color 0.2s, background 0.2s;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .bottomNav a.bottomNavLink {
+    min-width: 0;
+  }
+
+  .bottomNavLink:hover {
+    color: var(--color-main-accent);
+  }
+
+  .bottomNavLinkActive {
+    color: var(--color-green-700, var(--color-primary));
+    font-weight: 600;
+  }
+
+  .bottomNavLinkActive .bottomNavIcon {
+    color: var(--color-green-700, var(--color-primary));
+  }
+
+  .bottomNavIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    flex-shrink: 0;
+  }
+
+  .bottomNavLink:hover .bottomNavIcon {
+    color: var(--color-main-accent);
+  }
+
+  .bottomNavLabel {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    text-align: center;
   }
 }

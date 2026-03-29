@@ -1,13 +1,5 @@
-'use client'
-
-import styles from '../marketing.module.css'
+import { redirect } from 'next/navigation'
 
 export default function SellerMarketingDiscountPage() {
-  return (
-    <div className={styles.pageWrap}>
-      <p className={styles.pageSubtitle}>
-        Create and manage discounts for your services.
-      </p>
-    </div>
-  )
+  redirect('/seller/marketing/centre?tab=discounts')
 }

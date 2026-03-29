@@ -7,6 +7,7 @@ import styles from './signup.module.css';
 import { FaStore, FaGift, FaHandshake, FaBullhorn, FaTruck,
          FaShoppingBasket, FaChartLine, FaWarehouse, FaGraduationCap,
          FaFacebook, FaYoutube, FaViber, FaShoppingBag } from 'react-icons/fa';
+import { TbMessage2Question } from 'react-icons/tb';
 import PublicFooter from '@/components/layout/PublicFooter/PublicFooter';
 import { validateNewPassword } from '@/lib/validators/authSchemas';
 import { sendEmailOtpForSignup, verifyEmailOtpForSignup, signInWithOAuth, getOAuthRedirectUrl } from '@/lib/auth/client';
@@ -705,7 +706,7 @@ const Page = () => {
   };
 
   const heroSectionStyle = {
-    backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3)), url(/backgrounds/new-skyline-bg.png)',
+    backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3)), url(/backgrounds/green-skyline-ng.png)',
     backgroundPosition: 'center',
     backgroundSize: 'cover',
     backgroundRepeat: 'no-repeat'
@@ -723,7 +724,12 @@ const Page = () => {
               <span className={styles.shopeeName}>Lavisionario</span>
             </div>
           </Link>
-          <Link href="/seller/need_help" className={styles.needHelp}>Need help?</Link>
+          <Link href="/seller/need_help" className={styles.needHelp} aria-label="Need help?">
+            <span className={styles.needHelpText}>Need help?</span>
+            <span className={styles.needHelpIcon} aria-hidden="true">
+              <TbMessage2Question />
+            </span>
+          </Link>
         </div>
       </header>
 

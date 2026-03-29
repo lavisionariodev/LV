@@ -1,16 +1,14 @@
 'use client'
 
-import { usePathname, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import OrdersContent from './OrdersContent'
 
 export default function SellerOrdersPage() {
-  const pathname = usePathname()
   const searchParams = useSearchParams()
-  const tabFromRoute =
-    pathname?.endsWith('/pending') ? 'pending'
-    : pathname?.endsWith('/completed') ? 'completed'
-    : null
-  const initialTab = tabFromRoute ?? searchParams?.get('tab') ?? undefined
-
-  return <OrdersContent initialTab={initialTab} />
+  const initialTab = searchParams?.get('tab') ?? undefined
+  const initialOrderId = searchParams?.get('orderId') ?? undefined
+  const initialAction = searchParams?.get('action') ?? undefined
+  return (
+    <OrdersContent initialTab={initialTab} initialOrderId={initialOrderId} initialAction={initialAction} />
+  )
 }

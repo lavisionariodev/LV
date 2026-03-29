@@ -1,13 +1,5 @@
-'use client'
-
-import styles from '../marketing.module.css'
+import { redirect } from 'next/navigation'
 
 export default function SellerMarketingVouchersPage() {
-  return (
-    <div className={styles.pageWrap}>
-      <p className={styles.pageSubtitle}>
-        Manage vouchers and gift codes.
-      </p>
-    </div>
-  )
+  redirect('/seller/marketing/centre?tab=vouchers')
 }

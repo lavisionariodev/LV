@@ -13,8 +13,18 @@ export default function RecoveryRedirect() {
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
-    const hash = window.location.hash || "";
-    if (!hash.includes("type=recovery")) return;
+    const hash = (window.location.hash || "").toLowerCase();
+    const rawSearch = window.location.search || "";
+    const search = rawSearch.toLowerCase();
+
+    // Supabase can signal recovery either via type=recovery in the hash/query
+    // or via a short-lived ?code=... parameter (PKCE flow).
+    const hasRecovery =
+      hash.includes("type=recovery") ||
+      search.includes("type=recovery") ||
+      search.includes("code=");
+
+    if (!hasRecovery) return;
     if (pathname === "/auth/reset-password") return;
 
     // Infer portal from current path so admin/seller/buyer get the right login after reset
@@ -23,7 +33,14 @@ export default function RecoveryRedirect() {
     else if (pathname.startsWith("/seller")) portal = "seller";
     else if (pathname.startsWith("/buyer")) portal = "buyer";
 
-    const path = `/auth/reset-password?portal=${portal}`;
+    // Preserve existing query params (e.g. code=..., type=recovery) and just
+    // ensure portal is set correctly for the reset page.
+    const url = new URL(window.location.href);
+    const params = new URLSearchParams(url.search);
+    params.set("portal", portal);
+    const searchString = params.toString();
+
+    const path = `/auth/reset-password${searchString ? `?${searchString}` : ""}`;
     window.location.replace(`${window.location.origin}${path}${hash}`);
   }, [pathname]);
 

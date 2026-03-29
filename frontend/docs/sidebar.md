@@ -86,14 +86,14 @@ export default function AdminSidebar({ collapsed = false, onToggle }) {
         </Link>
 
         <Link
-          href="/admin/payments"
-          className={`${styles.link} ${isActive('/admin/payments') ? styles.active : ''}`}
-          title={collapsed ? 'Payments' : undefined}
+          href="/admin/payouts"
+          className={`${styles.link} ${isActive('/admin/payouts') ? styles.active : ''}`}
+          title={collapsed ? 'Payouts' : undefined}
         >
           <span className={styles.iconWrap}>
             <TbReportSearch />
           </span>
-          <span className={styles.linkText}>Payments</span>
+          <span className={styles.linkText}>Payouts</span>
         </Link>
 
         <Link

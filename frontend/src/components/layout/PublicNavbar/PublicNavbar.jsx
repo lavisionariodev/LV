@@ -8,6 +8,7 @@ import { signOut } from '@/lib/auth/session'
 import LogoutModal from '@/components/ui/Modal/Logout'
 import styles from './PublicNavbar.module.css'
 import { useAuth } from '@/contexts/AuthContext'
+import { useSiteContent } from '@/lib/siteContent/client'
 
 export default function PublicNavbar() {
   const { cartCount } = useCart()
@@ -17,7 +18,6 @@ export default function PublicNavbar() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const [logoutOpen, setLogoutOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const [desktopSearchOpen, setDesktopSearchOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
@@ -25,6 +25,7 @@ export default function PublicNavbar() {
   const mobileSearchInputRef = useRef(null)
   const desktopSearchRef = useRef(null)
   const desktopSearchInputRef = useRef(null)
+  const { data: siteContent } = useSiteContent()
 
   const howItWorksItems = [
     { label: 'Step-by-Step Process', sectionId: 'step-by-step-process' },
@@ -34,10 +35,9 @@ export default function PublicNavbar() {
   ]
 
   const aboutUsItems = [
-    { label: 'Our Story', sectionId: 'our-story' },
     { label: 'Mission & Vision', sectionId: 'mission-vision' },
-    { label: 'Why La Visionario', sectionId: 'why-la-visionario' },
-    { label: 'Partners', sectionId: 'partners' },
+    { label: 'About Us', sectionId: 'about-us' },
+    { label: 'Why Choose Us', sectionId: 'why-choose-us' },
     { label: 'Testimonials', sectionId: 'testimonials' }
   ]
 
@@ -94,17 +94,10 @@ export default function PublicNavbar() {
     const q = searchQuery?.trim()
     if (q) {
       router.push(`/shop?q=${encodeURIComponent(q)}`)
-      setSearchQuery('')
     } else {
       router.push('/shop')
     }
-    setMobileSearchOpen(false)
     setDesktopSearchOpen(false)
-  }
-
-  const openMobileSearch = () => {
-    setMobileSearchOpen(true)
-    setTimeout(() => mobileSearchInputRef.current?.focus(), 100)
   }
 
   const openDesktopSearch = () => {
@@ -242,9 +235,15 @@ export default function PublicNavbar() {
       {/* Main Navigation */}
       <div className={styles.mainNav}>
         <div className={styles.mainNavInner}>
-          <Link href="/" className={styles.logo} aria-label="La Visionario home">
-            <span className={styles.logoIcon}><span className={styles.logoLetter}>L</span></span>
-            <span className={styles.logoText}>Lavisionario</span>
+          <Link
+            href="/"
+            className={styles.logo}
+            aria-label={`${siteContent?.systemName || 'La Visionario'} home`}
+          >
+            <span className={styles.logoIcon}>
+              <span className={styles.logoLetter}>L</span>
+            </span>
+            <span className={styles.logoText}>{siteContent?.systemName || 'La Visionario'}</span>
           </Link>
 
           <nav className={styles.navMenu}>
@@ -308,14 +307,15 @@ export default function PublicNavbar() {
               onMouseEnter={() => setAboutUsOpen(true)}
               onMouseLeave={() => setAboutUsOpen(false)}
             >
-              <button
+              <Link
+                href="/about"
                 className={`${styles.navLinkDropdown} ${isAboutUsActive ? styles.navLinkActive : ''}`}
               >
                 ABOUT
                 <svg className={styles.dropdownIcon} xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
-              </button>
+              </Link>
               {aboutUsOpen && (
                 <div className={styles.dropdownMenu}>
                   {aboutUsItems.map((item) => (
@@ -506,24 +506,38 @@ export default function PublicNavbar() {
                   />
                 </form>
               </div>
-              <span className={styles.cartBtnWrap}>
-                <button
-                  className={styles.cartBtn}
-                  aria-label="Cart"
-                  onClick={goToCart}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="9" cy="21" r="1"></circle>
-                    <circle cx="20" cy="21" r="1"></circle>
-                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-                  </svg>
-                </button>
-                {cartCount > 0 && (
-                  <span className={styles.cartDot} aria-label={`${cartCount} items in cart`}>
-                    {cartCount > 99 ? '99+' : cartCount}
-                  </span>
+              <div className={styles.navActionsMobileButtons}>
+                {isAuthenticated && (
+                  <button
+                    type="button"
+                    className={styles.favoritesBtn}
+                    aria-label="Favorites"
+                    onClick={() => router.push('/favorites')}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                    </svg>
+                  </button>
                 )}
-              </span>
+                <span className={styles.cartBtnWrap}>
+                  <button
+                    className={styles.cartBtn}
+                    aria-label="Cart"
+                    onClick={goToCart}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="9" cy="21" r="1"></circle>
+                      <circle cx="20" cy="21" r="1"></circle>
+                      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                    </svg>
+                  </button>
+                  {cartCount > 0 && (
+                    <span className={styles.cartDot} aria-label={`${cartCount} items in cart`}>
+                      {cartCount > 99 ? '99+' : cartCount}
+                    </span>
+                  )}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -568,7 +582,7 @@ export default function PublicNavbar() {
             <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
             <line x1="12" y1="17" x2="12.01" y2="17"></line>
           </svg>
-          <span className={styles.bottomNavLabel}>How It Works</span>
+          <span className={styles.bottomNavLabel}>How</span>
         </Link>
 
         <button

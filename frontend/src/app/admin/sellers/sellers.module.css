@@ -1,28 +1,520 @@
-/* Sellers admin page */
+/* =========================
+   SELLERS PAGE
+   Shares design language with users.module.css
+   ========================= */
 
-.page {
-  width: 100%;
-}
-
-.toolbar {
+.pageRoot {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.searchInputWrap {
-  max-width: 260px;
+/* ── Table panel ────────────────────────────────────────────────────────── */
+
+.tablePanel {
+  background: #ffffff;
+  border: 1px solid #e9efec;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.tablePanelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+/* ── Filter pills ───────────────────────────────────────────────────────── */
+
+.filterGroup {
+  display: flex;
+  gap: 3px;
+  background: #f8fafc;
+  border: 1px solid #e9efec;
+  border-radius: 10px;
+  padding: 3px;
+}
+
+.filterBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  padding: 5px 11px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+
+.filterBtn:hover {
+  color: #1e293b;
+  background: #eef1f6;
+}
+
+.filterBtnActive {
+  background: #ffffff;
+  color: #1e293b;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07);
+}
+
+.filterCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 99px;
+  background: #e9efec;
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  padding: 0 4px;
+}
+
+/* ── Search ─────────────────────────────────────────────────────────────── */
+
+.searchWrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  border-radius: 9px;
+  padding: 7px 11px;
+  transition: border-color 0.15s;
+}
+
+.searchWrap:focus-within {
+  border-color: #94a3b8;
+}
+
+.searchIcon {
+  width: 14px;
+  height: 14px;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.searchInput {
+  border: none;
+  outline: none;
+  font-size: 13px;
+  width: 200px;
+  background: transparent;
+  color: #1e293b;
+}
+
+.searchInput::placeholder {
+  color: #94a3b8;
+}
+
+.searchClear {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  transition: color 0.12s;
+}
+
+.searchClear:hover {
+  color: #475569;
+}
+
+/* ── Table ──────────────────────────────────────────────────────────────── */
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.th {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 9px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e9efec;
+  white-space: nowrap;
+}
+
+.tr {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.1s;
+}
+
+.tr:hover {
+  background: #f8fafc;
+}
+
+.tr:last-child {
+  border-bottom: none;
+}
+
+.td {
+  padding: 11px 12px;
+  font-size: 13px;
+  color: #1e293b;
+  vertical-align: middle;
+}
+
+/* ── Avatar & seller cell ───────────────────────────────────────────────── */
+
+.sellerCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px; /* square-ish to differentiate from user circle avatars */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  letter-spacing: 0.3px;
+  object-fit: cover;
+}
+
+.avatarDefault {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #94a3b8;
+}
+
+.avatarIcon {
+  width: 15px;
+  height: 15px;
+}
+
+.sellerName {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.sellerId {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: #94a3b8;
+  font-family: monospace;
+}
+
+/* ── Contact cell ───────────────────────────────────────────────────────── */
+
+.contactName {
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1e293b;
 }
 
 .meta {
-  font-size: 12px;
-  color: #64748b;
+  margin: 1px 0 0;
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.4;
 }
 
-.empty {
-  padding: 16px;
-  font-size: 13px;
+/* ── Business details cell ──────────────────────────────────────────────── */
+
+.businessDetails {
+  max-width: 280px;
+}
+
+.businessInfo {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.businessAddress {
+  margin: 0;
+  font-size: 12px;
   color: #64748b;
-  border-radius: 12px;
-  border: 1px dashed #e5e7eb;
+  line-height: 1.4;
+}
+
+/* ── Listings cell ──────────────────────────────────────────────────────── */
+
+.listingCount {
+  margin: 0 0 1px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1;
+}
+
+/* ── Commission badge ───────────────────────────────────────────────────── */
+
+.commissionBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.commissionLabel {
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0.75;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.commissionDefault {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+.commissionOverride {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.ruleId {
+  margin-top: 4px;
+  font-family: monospace;
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+/* ── Status badge ───────────────────────────────────────────────────────── */
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-transform: capitalize;
+  border: 1px solid transparent;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: currentColor;
+  opacity: 0.6;
+}
+
+.status_active    { border-color: #bbf7d0; color: #15803d; }
+.status_pending   { border-color: #fef08a; color: #854d0e; }
+.status_suspended { border-color: #fecaca; color: #b91c1c; }
+
+/* ── Action buttons ─────────────────────────────────────────────────────── */
+
+.actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, opacity 0.12s;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.actionBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.actionApprove {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #15803d;
+}
+
+.actionApprove:hover:not(:disabled) {
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+.actionSuspend {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #c2410c;
+}
+
+.actionSuspend:hover:not(:disabled) {
+  background: #ffedd5;
+  border-color: #fdba74;
+}
+
+.actionReactivate {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.actionReactivate:hover:not(:disabled) {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+/* ── Spinners ───────────────────────────────────────────────────────────── */
+
+.btnSpinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Loading state ──────────────────────────────────────────────────────── */
+
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 48px 24px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #94a3b8;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+/* ── Empty state ────────────────────────────────────────────────────────── */
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px;
+  gap: 6px;
   text-align: center;
+}
+
+.emptyIcon {
+  width: 38px;
+  height: 38px;
+  margin-bottom: 6px;
+}
+
+.emptyTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  margin: 0;
+}
+
+.emptyText {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.clearBtn {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  cursor: pointer;
+  color: #475569;
+  margin-top: 6px;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.clearBtn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+/* ── Footer ─────────────────────────────────────────────────────────────── */
+
+.tableFooter {
+  padding: 10px 12px 0;
+  font-size: 12px;
+  color: #94a3b8;
+  border-top: 1px solid #f1f5f9;
+  margin-top: 6px;
+}
+
+.tableFooter strong {
+  color: #475569;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 1100px) {
+  .searchInput { width: 160px; }
+}
+
+@media (max-width: 860px) {
+  .tablePanelHead { flex-direction: column; align-items: stretch; }
+  .filterGroup    { overflow-x: auto; }
+  .searchWrap     { width: 100%; }
+  .searchInput    { width: 100%; }
+
+  /* Stack less-critical columns on small screens */
+  .th:nth-child(4),
+  .td:nth-child(4) { display: none; } /* hide Commission on small */
+}
+
+@media (max-width: 600px) {
+  .th:nth-child(3),
+  .td:nth-child(3) { display: none; } /* hide Listings on extra small */
 }

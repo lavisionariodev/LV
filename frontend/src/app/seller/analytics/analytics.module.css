@@ -5,6 +5,9 @@
   flex-direction: column;
   gap: 18px;
   width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0.5rem 0.25rem 1.75rem;
 }
 
 .pageHeader {
@@ -26,4 +29,759 @@
   max-width: 560px;
   line-height: 1.5;
   margin: 0;
+}
+
+/* Top header layout */
+.pageHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e9efec;
+}
+
+.pageKicker {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: #6b7280;
+}
+
+.downloadButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid #1f312b;
+  background: #1f312b;
+  color: #f9fafb;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.downloadButton:hover {
+  background: #264135;
+  border-color: #264135;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+.downloadRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.85rem;
+}
+
+@media (max-width: 640px) {
+  .downloadButton {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 999px;
+    margin-left: auto;
+    margin-top: 0.5rem;
+  }
+
+  .downloadButton span {
+    display: none;
+  }
+}
+
+/* Summary statistic strip */
+.summaryStrip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.1rem;
+  margin-bottom: 1.4rem;
+}
+
+.summaryCard {
+  border-radius: 16px;
+  padding: 0.95rem 1.05rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.03);
+  min-height: 120px;
+}
+
+/* Optional soft color accents for summary cards (used on seller analytics) */
+.summaryCardSoftBlue {
+  background: #edf4ff;
+  border-color: #d2e0ff;
+}
+
+.summaryCardSoftAmber {
+  background: #fef7ea;
+  border-color: #f3ddba;
+}
+
+.summaryCardSoftIndigo {
+  background: #f1f0ff;
+  border-color: #dad6ff;
+}
+
+.summaryCardSoftGreen {
+  background: #eef8f3;
+  border-color: #cfe6d8;
+}
+
+.summaryLabel {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  color: #6b7280;
+}
+
+.summaryValueRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.summaryValue {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #102820;
+}
+
+.summaryDelta {
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.summaryDeltaPositive {
+  color: #0f766e;
+}
+
+.summaryDeltaNeutral {
+  color: #6b7280;
+}
+
+.summaryDeltaNegative {
+  color: #b91c1c;
+}
+
+.summaryHint {
+  font-size: 0.72rem;
+  color: #9ca3af;
+}
+
+/* Navigation cards on main analytics page */
+.navGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.navCard {
+  border-radius: 14px;
+  padding: 0.9rem 0.95rem;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    border-color 0.16s ease,
+    background 0.16s ease;
+}
+
+.navCard:hover {
+  transform: translateY(-2px);
+  border-color: #204f38;
+  box-shadow: 0 14px 26px rgba(15, 23, 42, 0.12);
+}
+
+.navCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.navCardTitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #102820;
+}
+
+.navCardIcon {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e0f0e6;
+  color: #204f38;
+  flex-shrink: 0;
+}
+
+.navCardPill {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #6b7280;
+}
+
+.navCardText {
+  font-size: 0.85rem;
+  color: #4b5563;
+}
+
+/* Charts layout */
+.chartsGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.2fr);
+  gap: 1.25rem;
+  align-items: stretch;
+}
+
+.chartsGridSingle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.chartsGridTwo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.chartCard {
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  background: #fbfdfc;
+  padding: 1rem 1.1rem 1.1rem;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.chartHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+/* chartHeaderActions no longer used */
+
+.chartTitleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.chartTitle {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #102820;
+  margin: 0;
+}
+
+.chartSubtitle {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.chartBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  padding: 0.2rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  background: rgba(241, 245, 249, 0.85);
+  color: #4b5563;
+  white-space: nowrap;
+}
+
+.chartActionButton {
+  appearance: none;
+  border: 1px solid #e5e7eb;
+  background: rgba(249, 250, 251, 0.9);
+  color: #4b5563;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  cursor: pointer;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.16s ease;
+  white-space: nowrap;
+}
+
+.chartActionButton:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+.chartActionButton:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 12px rgba(15, 23, 42, 0.06);
+}
+
+.chartActionButtonIcon {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: rgba(224, 240, 230, 0.85);
+  color: #204f38;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.chartBody {
+  position: relative;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.chartGridLines {
+  position: absolute;
+  inset: 4px 0 18px 0;
+  background-image: linear-gradient(to top, rgba(209, 213, 219, 0.6) 1px, transparent 1px);
+  background-size: 100% 32px;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.chartFooter {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.78rem;
+  color: #6b7280;
+  border-top: 1px dashed #e5e7eb;
+  padding-top: 0.55rem;
+}
+
+.chartLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.7rem;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.legendSwatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.legendLabel {
+  font-size: 0.78rem;
+}
+
+.chartAxisLabels {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: #9ca3af;
+  margin-top: 0.4rem;
+}
+
+/* Chart with Y axis labels */
+.chartWithYAxis {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: stretch;
+}
+
+.chartScrollX {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.25rem;
+}
+
+.chartScrollX::-webkit-scrollbar {
+  height: 10px;
+}
+
+.chartScrollX::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 999px;
+}
+
+.chartScrollX::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chartYAxisLabels {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: #9ca3af;
+  padding: 0.2rem 0;
+}
+
+/* Line chart */
+.lineChartSvg {
+  width: 100%;
+  height: 160px;
+}
+
+.linePathPrimary {
+  fill: url(#salesFill);
+  stroke: #204f38;
+  stroke-width: 2;
+}
+
+.lineDots {
+  fill: #204f38;
+  stroke: #ffffff;
+  stroke-width: 1.4;
+}
+
+/* Horizontal bar chart (by category) */
+.hBarList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.hBarRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.hBarLabelRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #374151;
+}
+
+.hBarTrack {
+  position: relative;
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  overflow: hidden;
+}
+
+.hBarFill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #1f312b, #2f4a3b);
+}
+
+.categoryAxis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.6rem;
+  font-size: 0.78rem;
+  color: #9ca3af;
+}
+
+/* Bar charts */
+.barChartRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+  height: 150px;
+}
+
+.barGroup {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.barOuter {
+  width: 100%;
+  max-width: 32px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column-reverse;
+  height: 120px;
+}
+
+.pillStackOuter {
+  width: 100%;
+  max-width: 40px;
+  height: 128px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+.pillStackSegmentPrimary {
+  width: 100%;
+  background: linear-gradient(180deg, #1f312b, #355846);
+}
+
+.pillStackSegmentSecondary {
+  width: 100%;
+  background: linear-gradient(180deg, #8fb9a3, #5b8c71);
+}
+
+.pillLegendRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(229, 231, 235, 0.9);
+  margin-top: 0.6rem;
+}
+
+.pillLegendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.pillLegendLabel {
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+.barInnerPrimary {
+  width: 100%;
+  background: linear-gradient(180deg, #1f312b, #355846);
+}
+
+.barInnerSecondary {
+  width: 100%;
+  background: linear-gradient(180deg, #8fb9a3, #5b8c71);
+}
+
+.barInnerMuted {
+  width: 100%;
+  background: linear-gradient(180deg, #cbd5cf, #94a89b);
+}
+
+.barLabel {
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+.barValue {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #111827;
+}
+
+/* Dual column stacked bars (new vs returning) */
+.dualBarOuter {
+  width: 100%;
+  max-width: 44px;
+  border-radius: 14px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  padding: 3px;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+  height: 100%;
+}
+
+.dualBarSegmentPrimary {
+  width: 100%;
+  border-radius: 7px;
+  background: linear-gradient(180deg, #204f38, #356a4a);
+}
+
+.dualBarSegmentSecondary {
+  width: 100%;
+  border-radius: 7px;
+  background: linear-gradient(180deg, #e5e7eb, #9ca3af);
+}
+
+.dualBarRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.7rem;
+  height: 170px;
+}
+
+/* Empty / helper text */
+.helperText {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+/* Split chart layout: main chart + side list */
+.chartSplit {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1.1fr);
+  gap: 1.2rem;
+}
+
+.chartSplitMain {
+  min-width: 0;
+}
+
+.chartSplitSide {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+@media (max-width: 1024px) {
+  .summaryStrip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .navGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .chartsGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .chartsGridTwo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .chartSplit {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .summaryStrip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .downloadRow {
+    position: fixed;
+    right: 1.1rem;
+    bottom: 4.25rem; /* sits just above bottom nav */
+    margin-bottom: 0;
+    padding: 0;
+    z-index: 40;
+  }
+
+  .downloadButton {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 999px;
+  }
+
+  .downloadButton span {
+    display: none;
+  }
+
+  .navGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .chartCard {
+    padding: 0.9rem 0.9rem 0.9rem;
+  }
+
+  .chartHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .chartBadge {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+    font-size: 0.7rem;
+    letter-spacing: 0.16em;
+    margin-top: 0.25rem;
+  }
+
+  .chartActionButton {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .chartWithYAxis {
+    gap: 0.45rem;
+  }
+
+  .chartYAxisLabels {
+    font-size: 0.72rem;
+  }
+
+  .barChartRow {
+    gap: 0.4rem;
+    height: 140px;
+    min-width: 560px; /* enables horizontal scroll for many packages */
+  }
+
+  .pillStackOuter {
+    max-width: 34px;
+    height: 118px;
+  }
+
+  .barLabel {
+    font-size: 0.72rem;
+  }
+
+  .pillLegendRow {
+    min-width: 560px; /* keeps legend aligned with scrollable bars */
+  }
 }

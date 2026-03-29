@@ -14,11 +14,20 @@
   text-align: right;
   cursor: pointer;
   margin: 0;
+  padding: 0;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--color-main-accent);
+  font-size: 13px;
+  font-weight: 400;
+  text-transform: none;
+  border-radius: 0;
 }
 
 .forgotPasswordWrap .forgotPasswordLink:hover {
-  color: var(--color-main-accent);
-  text-decoration: none;
+  color: #279354;
+  text-decoration: underline;
   box-shadow: none;
 }
 
@@ -116,7 +125,7 @@
 
 .authFooter {
   margin-top: 20px;
-  font-size: 13px;
+  font-size: 14px;
   color: #666;
   text-align: center;
 }

@@ -4,12 +4,26 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import styles from './homepage.module.css'
+import { useSiteContent } from '@/lib/siteContent/client'
 
 export default function LandingPage() {
-  // Strip OAuth hash fragment (e.g. #_=_ from Facebook) so the URL stays clean after login redirect
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.hash) {
-      window.history.replaceState(null, '', window.location.pathname + window.location.search)
+    if (typeof window === 'undefined') return
+    const hash = window.location.hash || ''
+    if (!hash) return
+
+    const lower = hash.toLowerCase()
+    const isSupabaseAuthHash =
+      lower.includes('type=recovery') ||
+      lower.includes('access_token') ||
+      lower.includes('refresh_token')
+
+    if (!isSupabaseAuthHash) {
+      window.history.replaceState(
+        null,
+        '',
+        window.location.pathname + window.location.search
+      )
     }
   }, [])
 
@@ -29,6 +43,9 @@ export default function LandingPage() {
 
 /* ---------------- HERO ---------------- */
 function HeroSection() {
+  const { data: siteContent } = useSiteContent()
+  const hero = siteContent?.hero
+
   return (
     <section className={styles.hero}>
       <div className={styles.heroOverlay}></div>
@@ -36,16 +53,23 @@ function HeroSection() {
       <div className={styles.inner}>
         <div className={styles.content}>
           <h1 className={styles.title}>
-            Dignified Farewells,<br />Made Simple
+            {hero?.title || (
+              <>
+                Dignified Farewells,<br />
+                Made Simple
+              </>
+            )}
           </h1>
 
           <p className={styles.subheading}>
-            Everything you need to honor your loved one, transparent pricing,
-            verified providers, and compassionate support
+            {hero?.subheading ||
+              'Everything you need to honor your loved one, transparent pricing, verified providers, and compassionate support'}
           </p>
 
           <div className={styles.ctaGroup}>
-            <Link href="/shop" className={styles.ctaPrimary}>Browse Services</Link>
+            <Link href="/shop" className={styles.ctaPrimary}>
+              {hero?.primaryCta || 'Browse Services'}
+            </Link>
           </div>
         </div>
       </div>
@@ -234,8 +258,7 @@ function PartnerHighlightSection() {
 }
 
 /* ---------------- FINAL CTA ---------------- */
-// Placeholder: replace with La Visionario Facebook page URL when ready
-const LA_VISIONARIO_FB_URL = 'https://www.facebook.com/LaVisionario'
+const LA_VISIONARIO_FB_URL = 'https://www.facebook.com/profile.php?id=61556533022289'
 
 function FinalCTASection() {
   return (

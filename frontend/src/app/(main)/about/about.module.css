@@ -54,6 +54,23 @@
   overflow-x: hidden;
 }
 
+/* Ensure anchored sections are fully visible below fixed navbar */
+.sectionAnchorOffset {
+  scroll-margin-top: 120px;
+}
+
+@media (max-width: 1024px) {
+  .sectionAnchorOffset {
+    scroll-margin-top: 104px;
+  }
+}
+
+@media (max-width: 768px) {
+  .sectionAnchorOffset {
+    scroll-margin-top: 88px;
+  }
+}
+
 /* ══════════════════════════════════════════════
    HERO
 ══════════════════════════════════════════════ */
