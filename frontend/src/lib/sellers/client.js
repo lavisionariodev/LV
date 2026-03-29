@@ -30,23 +30,12 @@ export async function getSellerStatusForUser(userId) {
   return seller.status || null;
 }
 
-/**
- * Create or update a seller record for the given auth user with pending status.
- * This assumes a `sellers` table that has at least:
- * - user_id (uuid)
- * - business_name
- * - contact_name
- * - email
- * - phone
- * - status
- * - registered_at
- */
 export async function upsertSellerForUser(user, payload) {
   if (!user) {
     return { data: null, error: 'Missing user' };
   }
 
-  const base = {
+  const sellerData = {
     user_id: user.id,
     email: payload.email || user.email || null,
     business_name: payload.businessName || null,
@@ -59,19 +48,36 @@ export async function upsertSellerForUser(user, payload) {
     documents: payload.documents || null,
   };
 
-  const { data, error } = await supabase
+  // First try to check if seller exists
+  const { data: existing } = await supabase
     .from('sellers')
-    .upsert(base, {
-      onConflict: 'user_id',
-    })
-    .select()
+    .select('user_id')
+    .eq('user_id', user.id)
     .maybeSingle();
 
-  if (error) {
-    return { data: null, error: error.message || 'Failed to save seller record.' };
+  let result;
+  if (existing) {
+    // Update existing record
+    result = await supabase
+      .from('sellers')
+      .update(sellerData)
+      .eq('user_id', user.id)
+      .select()
+      .maybeSingle();
+  } else {
+    // Insert new record
+    result = await supabase
+      .from('sellers')
+      .insert(sellerData)
+      .select()
+      .maybeSingle();
   }
 
-  return { data, error: null };
+  if (result.error) {
+    return { data: null, error: result.error.message || 'Failed to save seller record.' };
+  }
+
+  return { data: result.data, error: null };
 }
 
 /**
