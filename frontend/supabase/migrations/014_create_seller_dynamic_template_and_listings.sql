@@ -72,6 +72,7 @@ values (
     {"id":"category","type":"select","label":"Category","required":true,"options":["service","package","product","other"]},
     {"id":"base_price","type":"number","label":"Starting price","required":true,"min":0,"step":0.01},
     {"id":"location","type":"text","label":"Location","required":false},
+    {"id":"status","type":"select","label":"Status","required":true,"options":["active","inactive"],"placeholder":"Select status"},
     {"id":"description","type":"textarea","label":"Description","required":false,"maxLength":2000}
   ]'::jsonb,
   true

@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabase/client'
 
+const LISTING_IMAGES_BUCKET = 'listing-images'
+
 function normalizeListingRow(row) {
   const imageUrls = Array.isArray(row.image_urls) ? row.image_urls : []
   return {
@@ -33,6 +35,49 @@ export async function listMySellerListings() {
   }
 
   return { data: (data || []).map(normalizeListingRow), error: null }
+}
+
+export async function uploadListingImages(files) {
+  const list = Array.isArray(files) ? files.filter(Boolean) : []
+  if (!list.length) {
+    return { data: [], error: null }
+  }
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    return { data: [], error: 'Not authenticated.' }
+  }
+
+  const uploadedUrls = []
+  for (const file of list) {
+    const ext = (file?.name?.split('.').pop() || 'jpg').toLowerCase()
+    const safeExt = ext.replace(/[^a-z0-9]/g, '') || 'jpg'
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt}`
+    const filePath = `${user.id}/${fileName}`
+
+    const { error: uploadError } = await supabase.storage
+      .from(LISTING_IMAGES_BUCKET)
+      .upload(filePath, file, { upsert: true, cacheControl: '3600' })
+
+    if (uploadError) {
+      return {
+        data: [],
+        error: uploadError.message || 'Failed to upload one or more listing images.',
+      }
+    }
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from(LISTING_IMAGES_BUCKET).getPublicUrl(filePath)
+
+    if (publicUrl) uploadedUrls.push(publicUrl)
+  }
+
+  return { data: uploadedUrls, error: null }
 }
 
 export async function createSellerListing(payload) {
