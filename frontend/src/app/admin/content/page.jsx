@@ -9,17 +9,9 @@ import { useToast } from '@/contexts/ToastContext'
 const SECTIONS = [
   { id: 'system',     label: 'System name',   icon: '⊛' },
   { id: 'hero',       label: 'Homepage hero', icon: '◈' },
-  { id: 'footer',     label: 'Footer contact',icon: '◉' },
   { id: 'about',      label: 'About page',    icon: '◎' },
-  { id: 'howItWorks', label: 'How it works',  icon: '◷' },
+  { id: 'footer',     label: 'Footer contact',icon: '◉' },
 ]
-
-const HOW_IT_WORKS_LABELS = {
-  stepByStep:      'Step-by-step guide',
-  comparePackages: 'Compare packages',
-  bookAService:    'Book a service',
-  paymentSupport:  'Payment & support',
-}
 
 const ABOUT_LABELS = {
   ourStory:      'Our story',
@@ -35,7 +27,6 @@ const EMPTY_SITE_CONTENT = {
   hero:       { title: '', subheading: '', primaryCta: '' },
   footer:     { tagline: '', supportPhone: '', supportEmail: '', copyrightText: '' },
   about:      { description: '', ourStory: '', missionVision: '', whyUs: '', partners: '', commitment: '' },
-  howItWorks: { stepByStep: '', comparePackages: '', bookAService: '', paymentSupport: '' },
 }
 
 export default function AdminContentPage() {
@@ -216,31 +207,12 @@ export default function AdminContentPage() {
     </div>
   )
 
-  const renderHowItWorks = () => (
-    <div className={styles.sectionGrid}>
-      {['stepByStep', 'comparePackages', 'bookAService', 'paymentSupport'].map((key) => (
-        <label key={key} className={styles.label}>
-          <span className={styles.labelSpan}>{HOW_IT_WORKS_LABELS[key]}</span>
-          <textarea
-            value={draft.howItWorks?.[key] ?? ''}
-            onChange={handleTextareaChange('howItWorks', key)}
-            rows={3}
-            className={styles.textarea}
-            disabled={!isEditing}
-            placeholder={`Describe the "${HOW_IT_WORKS_LABELS[key]}" section`}
-          />
-        </label>
-      ))}
-    </div>
-  )
-
   const renderForm = () => {
     switch (activeSection) {
       case 'system':     return renderSystem()
       case 'hero':       return renderHero()
       case 'footer':     return renderFooter()
       case 'about':      return renderAbout()
-      case 'howItWorks': return renderHowItWorks()
       default:           return null
     }
   }

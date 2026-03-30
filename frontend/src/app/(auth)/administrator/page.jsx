@@ -10,8 +10,12 @@ import { isAdmin } from "@/lib/auth/admin";
 import { signOut } from "@/lib/auth/session";
 import ForgotPasswordModal from "@/components/ui/Modal/ForgotPasswordModal";
 import styles from "./administrator.module.css";
+import { useSiteContent } from "@/lib/siteContent/client";
 
 export default function AdminLoginPage() {
+  const { data: siteContent } = useSiteContent();
+  const systemName = siteContent?.systemName || "La Visionario";
+
   const router = useRouter();
   const [signInData, setSignInData] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
@@ -64,11 +68,11 @@ export default function AdminLoginPage() {
     <div className={styles.pageWrapper}>
       <header className={styles.header}>
         <div className={styles.headerContent}>
-          <Link href="/" className={styles.logo} aria-label="Lavisionario home">
+          <Link href="/" className={styles.logo} aria-label={`${systemName} home`}>
             <div className={styles.logoIcon}>
               <span className={styles.logoLetter}>L</span>
             </div>
-            <span className={styles.logoText}>Lavisionario</span>
+            <span className={styles.logoText}>{systemName}</span>
             <span className={styles.badge}>Administrator</span>
           </Link>
           <a href="#" className={styles.needHelp} aria-label="Need help?">
@@ -89,7 +93,7 @@ export default function AdminLoginPage() {
             <h1 className={styles.mainTitle}>Administrator Portal</h1>
             <p className={styles.mainSubtitle}>
               Manage platform settings, content, and users with the<br />
-              Lavisionario Administrator Centre.
+              {systemName} Administrator Centre.
             </p>
             <p className={styles.secureNote}>This is a secure login auth.</p>
           </div>

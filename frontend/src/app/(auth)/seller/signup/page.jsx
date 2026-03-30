@@ -13,6 +13,7 @@ import { validateNewPassword } from '@/lib/validators/authSchemas';
 import { sendEmailOtpForSignup, verifyEmailOtpForSignup, signInWithOAuth, getOAuthRedirectUrl } from '@/lib/auth/client';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/contexts/ToastContext';
+import { useSiteContent } from '@/lib/siteContent/client';
 
 const StepIndicator = ({ currentStep }) => (
   <div className={styles.stepIndicator}>
@@ -35,7 +36,7 @@ const StepIndicator = ({ currentStep }) => (
   </div>
 );
 
-const Step1EmailInput = ({ email, setEmail, onNext, currentStep, onSocialAuth }) => (
+const Step1EmailInput = ({ systemName, email, setEmail, onNext, currentStep, onSocialAuth }) => (
   <div className={styles.signupCard}>
     {currentStep > 1 && <StepIndicator currentStep={currentStep} />}
     <h2 className={styles.signupTitle}>Sign Up</h2>
@@ -87,7 +88,7 @@ const Step1EmailInput = ({ email, setEmail, onNext, currentStep, onSocialAuth })
       </div>
 
       <p className={styles.terms}>
-        By signing up, you agree to Lavisionario&apos;s <a href="#">Terms of Service</a> & <a href="#">Privacy Policy</a>
+        By signing up, you agree to {systemName}&apos;s <a href="#">Terms of Service</a> & <a href="#">Privacy Policy</a>
       </p>
 
       <p className={styles.loginLink}>
@@ -194,7 +195,14 @@ const Step3OTPInput = ({
   );
 };
 
-const StepPhoneReclaim = ({ phoneNumber, existingAccount, onProceed, onBack, currentStep }) => {
+const StepPhoneReclaim = ({
+  systemName,
+  phoneNumber,
+  existingAccount,
+  onProceed,
+  onBack,
+  currentStep,
+}) => {
   const formattedPhone = `(+63) ${phoneNumber.slice(0, 3)} ${phoneNumber.slice(3, 6)} ${phoneNumber.slice(6)}`;
   const [formData, setFormData] = useState({
     fullName: '',
@@ -231,7 +239,7 @@ const StepPhoneReclaim = ({ phoneNumber, existingAccount, onProceed, onBack, cur
         </div>
         
         <p className={styles.reclaimMessage}>
-          The phone number <strong>{formattedPhone}</strong> is already linked to an existing Lavisionario account. Please fill out this form to reclaim your number for Seller Centre.
+          The phone number <strong>{formattedPhone}</strong> is already linked to an existing {systemName} account. Please fill out this form to reclaim your number for Seller Centre.
         </p>
         
         <div className={styles.existingAccountInfo}>
@@ -318,7 +326,9 @@ const StepPhoneReclaim = ({ phoneNumber, existingAccount, onProceed, onBack, cur
           <div className={styles.reclaimNotice}>
             <h4>⚠️ Important Information:</h4>
             <ul>
-              <li>By reclaiming this phone number, it will be <strong>removed from your existing Lavisionario account</strong></li>
+              <li>
+                By reclaiming this phone number, it will be <strong>removed from your existing {systemName} account</strong>
+              </li>
               <li>You will need to <strong>add a new phone number</strong> to your buyer account to continue using it</li>
               <li>This process may take <strong>24-48 hours</strong> to complete</li>
               <li>You will receive email confirmation once the reclaim is processed</li>
@@ -369,7 +379,14 @@ const StepPhoneReclaim = ({ phoneNumber, existingAccount, onProceed, onBack, cur
   );
 };
 
-const Step4AccountCheck = ({ phoneNumber, existingAccount, onLogin, onCreateNew, currentStep }) => {
+const Step4AccountCheck = ({
+  systemName,
+  phoneNumber,
+  existingAccount,
+  onLogin,
+  onCreateNew,
+  currentStep,
+}) => {
   const formattedPhone = `(+63) ${phoneNumber.slice(0, 3)} ${phoneNumber.slice(3, 6)} ${phoneNumber.slice(6)}`;
   
   if (!existingAccount) return null;
@@ -385,7 +402,7 @@ const Step4AccountCheck = ({ phoneNumber, existingAccount, onLogin, onCreateNew,
         <h3 className={styles.accountName}>{existingAccount.name}</h3>
         <p className={styles.accountPhone}>{formattedPhone}</p>
         <p className={styles.accountMessage}>
-          This phone number is already registered with Lavisionario. 
+          This phone number is already registered with {systemName}. 
           Please proceed to login if this account belongs to you.
         </p>
       </div>
@@ -483,6 +500,9 @@ const Step5CreatePassword = ({
 );
 
 const Page = () => {
+  const { data: siteContent } = useSiteContent();
+  const systemName = siteContent?.systemName || 'La Visionario';
+
   const [step, setStep] = useState(1);
   const [signupEmail, setSignupEmail] = useState('');
   const [otpValue, setOtpValue] = useState(['', '', '', '', '', '']);
@@ -716,12 +736,12 @@ const Page = () => {
     <div className={styles.pageWrapper}>
       <header className={styles.header}>
         <div className={styles.headerContent}>
-          <Link href="/" className={styles.logoWrapper} aria-label="Lavisionario home">
+          <Link href="/" className={styles.logoWrapper} aria-label={`${systemName} home`}>
             <div className={styles.shopeeIcon}>
               <span className={styles.logoPlaceholder}>L</span>
             </div>
             <div className={styles.logoText}>
-              <span className={styles.shopeeName}>Lavisionario</span>
+              <span className={styles.shopeeName}>{systemName}</span>
             </div>
           </Link>
           <Link href="/seller/need_help" className={styles.needHelp} aria-label="Need help?">
@@ -736,7 +756,7 @@ const Page = () => {
       <section className={styles.heroSection} style={heroSectionStyle}>
         <div className={styles.heroContainer}>
           <div className={styles.heroLeft}>
-            <p className={styles.marketplaceLabel}>Lavisionario Marketplace</p>
+            <p className={styles.marketplaceLabel}>{systemName} Marketplace</p>
             <h1 className={styles.heroTitle}>Grow your business and Sell more</h1>
             
             <div className={styles.featuresList}>
@@ -758,6 +778,7 @@ const Page = () => {
           <div className={styles.heroRight}>
             {step === 1 && (
               <Step1EmailInput
+                systemName={systemName}
                 email={signupEmail}
                 setEmail={setSignupEmail}
                 onNext={handleEmailNext}
@@ -815,7 +836,7 @@ const Page = () => {
               <span className={styles.percentIcon}>0%</span>
             </div>
             <h3>No registration fees</h3>
-            <p>Start selling on Lavisionario Marketplace easily!</p>
+            <p>Start selling on {systemName} Marketplace easily!</p>
           </div>
 
           <div className={styles.benefitCard}>
@@ -832,7 +853,7 @@ const Page = () => {
               <span className={styles.freeBadge}>Free</span>
             </div>
             <h3>Hassle-free shipping</h3>
-            <p>Arrange, track and deliver your orders easily with Lavisionario Supported Logistics</p>
+            <p>Arrange, track and deliver your orders easily with {systemName} Supported Logistics</p>
           </div>
 
           <div className={styles.benefitCard}>
@@ -841,7 +862,7 @@ const Page = () => {
               <span className={styles.badge99}>9.9</span>
             </div>
             <h3>High-impact campaigns</h3>
-            <p>Be part of Lavisionario&apos;s mega activations through monthly campaigns such as our 9.9 Super Shopping Day and 11.11 Big Sale!</p>
+            <p>Be part of {systemName}&apos;s mega activations through monthly campaigns such as our 9.9 Super Shopping Day and 11.11 Big Sale!</p>
           </div>
 
           <div className={styles.benefitCard}>
@@ -849,7 +870,7 @@ const Page = () => {
               <div className={styles.chartIcon}><FaChartLine /></div>
             </div>
             <h3>Extensive seller support</h3>
-            <p>Access tools from Lavisionario Seller Centre, our one-stop hub that helps you sell effectively, manage customers, and track your shop performance.</p>
+            <p>Access tools from {systemName} Seller Centre, our one-stop hub that helps you sell effectively, manage customers, and track your shop performance.</p>
           </div>
 
           <div className={styles.benefitCard}>
@@ -857,7 +878,7 @@ const Page = () => {
               <div className={styles.storeIcon}><FaWarehouse /></div>
             </div>
             <h3>Robust seller community</h3>
-            <p>Connect and grow together with your fellow Lavisionario sellers. Gain access to webinars, courses, seller tips, campaign updates, and more!</p>
+            <p>Connect and grow together with your fellow {systemName} sellers. Gain access to webinars, courses, seller tips, campaign updates, and more!</p>
           </div>
         </div>
       </section>
@@ -867,8 +888,8 @@ const Page = () => {
         <div className={styles.stepsContainer}>
           <div className={styles.stepCard}>
             <div className={styles.stepNumber}>01</div>
-            <h3>Create a Lavisionario account</h3>
-            <p>Select Sign Up via the Me tab on Lavisionario App. Then, sign up with your email.</p>
+            <h3>Create a {systemName} account</h3>
+            <p>Select Sign Up via the Me tab on {systemName} App. Then, sign up with your email.</p>
           </div>
           <div className={styles.stepCard}>
             <div className={styles.stepNumber}>02</div>
@@ -893,14 +914,14 @@ const Page = () => {
         <div className={styles.programsGrid}>
           <div className={styles.programCard}>
             <div className={`${styles.programHeader} ${styles.premiumHeader}`}>
-              <div className={styles.shopeeMallLogo}>Lavisionario Premium</div>
+              <div className={styles.shopeeMallLogo}>{systemName} Premium</div>
             </div>
             <div className={styles.programContent}>
-              <h3>Lavisionario Premium</h3>
+              <h3>{systemName} Premium</h3>
               <p className={styles.programDesc}>A premium business-to-consumer retail space for selected brand owners and authorised distributors.</p>
               <ul className={styles.programFeatures}>
-                <li>Access to premium Lavisionario Mall promotional tools and customer loyalty program</li>
-                <li>Exclusive Lavisionario Mall campaigns and vouchers to boost sales</li>
+                <li>Access to premium {systemName} Mall promotional tools and customer loyalty program</li>
+                <li>Exclusive {systemName} Mall campaigns and vouchers to boost sales</li>
                 <li>3 - 5 % commission fee applies only on successful orders (excluding GST)</li>
               </ul>
               <p className={styles.feeNote}>* Standard transaction fees and Mall service fees apply.</p>
@@ -915,7 +936,7 @@ const Page = () => {
               </div>
             </div>
             <div className={styles.programContent}>
-              <h3>Lavisionario Marketplace</h3>
+              <h3>{systemName} Marketplace</h3>
               <p className={styles.programDesc}>Open to all sellers who operate in the Philippines, including part-time sellers and resellers.</p>
               <ul className={styles.programFeatures}>
                 <li>No registration fees</li>
@@ -937,31 +958,31 @@ const Page = () => {
               <div className={styles.supportIcon}><FaGraduationCap /></div>
             </div>
             <h3>Seller Education Hub</h3>
-            <p>One-stop portal with self-help guides to help you sell successfully on Lavisionario.</p>
+            <p>One-stop portal with self-help guides to help you sell successfully on {systemName}.</p>
           </div>
 
           <div className={styles.supportCard}>
             <div className={styles.supportIconWrapper}>
               <div className={styles.supportIcon}><FaFacebook /></div>
             </div>
-            <h3>Lavisionario Uni Facebook Group</h3>
-            <p>Get tips and tricks and connect with fellow sellers in the Lavisionario community.</p>
+            <h3>{systemName} Uni Facebook Group</h3>
+            <p>Get tips and tricks and connect with fellow sellers in the {systemName} community.</p>
           </div>
 
           <div className={styles.supportCard}>
             <div className={styles.supportIconWrapper}>
               <div className={styles.supportIcon}><FaYoutube /></div>
             </div>
-            <h3>Lavisionario Uni Youtube</h3>
-            <p>Learn more about Lavisionario&apos;s latest programs, updates, and activities for sellers.</p>
+            <h3>{systemName} Uni Youtube</h3>
+            <p>Learn more about {systemName}&apos;s latest programs, updates, and activities for sellers.</p>
           </div>
 
           <div className={styles.supportCard}>
             <div className={styles.supportIconWrapper}>
               <div className={styles.supportIcon}><FaViber /></div>
             </div>
-            <h3>Lavisionario Uni Viber Group</h3>
-            <p>A seller announcements group with the latest Lavisionario updates to enhance your selling experience.</p>
+            <h3>{systemName} Uni Viber Group</h3>
+            <p>A seller announcements group with the latest {systemName} updates to enhance your selling experience.</p>
           </div>
         </div>
       </section>
