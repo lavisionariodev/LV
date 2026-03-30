@@ -12,6 +12,7 @@ import { isAdmin } from '@/lib/auth/admin';
 import { getUser } from '@/lib/auth/session';
 import { getUserRole, ROLE_SELLER } from '@/lib/auth/roles';
 import { useToast } from '@/contexts/ToastContext';
+import { useSiteContent } from '@/lib/siteContent/client';
 
 function SellerLoginPageInner() {
   const [loginMode, setLoginMode] = useState('password'); // 'password' or 'qr'
@@ -25,6 +26,9 @@ function SellerLoginPageInner() {
   const hasShownErrorRef = useRef(false);
   const showForgotPasswordModalRef = useRef(false);
   showForgotPasswordModalRef.current = showForgotPasswordModal;
+
+  const { data: siteContent } = useSiteContent()
+  const systemName = siteContent?.systemName || 'La Visionario'
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -141,11 +145,11 @@ function SellerLoginPageInner() {
       {/* Header */}
       <header className={styles.header}>
         <div className={styles.headerContent}>
-          <Link href="/" className={styles.logo} aria-label="Lavisionario home">
+          <Link href="/" className={styles.logo} aria-label={`${systemName} home`}>
             <div className={styles.logoIcon}>
               <span className={styles.logoLetter}>L</span>
             </div>
-            <span className={styles.logoText}>Lavisionario</span>
+            <span className={styles.logoText}>{systemName}</span>
             <span className={styles.sellerBadge}>Seller Centre</span>
           </Link>
           <Link href="/seller/need_help" className={styles.needHelp} aria-label="Need help?">
@@ -164,8 +168,8 @@ function SellerLoginPageInner() {
           <div className={styles.leftSection}>
             <h1 className={styles.mainTitle}>Be a Power Seller</h1>
             <p className={styles.mainSubtitle}>
-              Manage your shop efficiently on Lavisionario with our<br />
-              Lavisionario Seller Centre
+              Manage your shop efficiently on {systemName} with our<br />
+              {systemName} Seller Centre
             </p>
             <div className={styles.illustration}>
               <svg viewBox="0 0 500 400" className={styles.illustrationSvg}>
@@ -386,7 +390,7 @@ function SellerLoginPageInner() {
                     </div>
                   </div>
 
-                  <p className={styles.qrText}>Scan QR code with Lavisionario App</p>
+                  <p className={styles.qrText}>Scan QR code with {systemName} App</p>
                   
                   <button 
                     className={styles.howToScanBtn}
@@ -398,7 +402,7 @@ function SellerLoginPageInner() {
               )}
 
               <p className={styles.signupText}>
-                New to Lavisionario? <Link href="/seller/signup">Sign Up</Link>
+                New to {systemName}? <Link href="/seller/signup">Sign Up</Link>
               </p>
             </div>
           </div>
@@ -406,8 +410,8 @@ function SellerLoginPageInner() {
       </div>
 
       {/* Footer */}
-      <footer className={styles.footer}>
-        <p>© 2026 Lavisionario. All Rights Reserved.</p>
+        <footer className={styles.footer}>
+        <p>© 2026 {systemName}. All Rights Reserved.</p>
       </footer>
 
       <ForgotPasswordModal
@@ -434,7 +438,7 @@ function SellerLoginPageInner() {
               <div className={styles.phonePreview}>
                 <div className={styles.phoneScreen}>
                   <div className={styles.appHeader}>
-                    <input placeholder="🔍 Lavisionario" readOnly />
+                    <input placeholder={`🔍 ${systemName}`} readOnly />
                     <div className={styles.appIcons}>🛒 💬</div>
                   </div>
                   <div className={styles.scanIconArea}>
@@ -443,7 +447,7 @@ function SellerLoginPageInner() {
                 </div>
               </div>
               <p className={styles.modalText}>
-                Press the scan icon on the Lavisionario app to open the QR code scanner
+                Press the scan icon on the {systemName} app to open the QR code scanner
               </p>
             </div>
           </div>

@@ -22,6 +22,7 @@ import { LuUserCheck } from 'react-icons/lu'
 import { HiOutlineNewspaper } from 'react-icons/hi'
 import { BsPerson } from 'react-icons/bs'
 import styles from './AppSidebar.module.css'
+import { useSiteContent } from '@/lib/siteContent/client'
 
 function isLinkItem(item) {
   return 'href' in item && !('children' in item)
@@ -102,6 +103,7 @@ export default function AppSidebar({
 }) {
   const pathname = usePathname()
   const [openGroups, setOpenGroups] = useState({})
+  const { data: siteContent } = useSiteContent()
 
   const showCollapsed = !isMobile && collapsed
   const showMobileOpen = Boolean(isMobile && mobileOpen)
@@ -162,7 +164,7 @@ export default function AppSidebar({
             <div className={styles.logoMark}>LV</div>
             {!showCollapsed && (
               <div className={styles.logoText}>
-                <p className={styles.brand}>Lavisionario</p>
+                <p className={styles.brand}>{siteContent?.systemName || 'La Visionario'}</p>
                 <p className={styles.brandSub}>{config.brandSub}</p>
               </div>
             )}

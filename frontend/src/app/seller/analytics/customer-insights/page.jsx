@@ -1,5 +1,6 @@
 'use client'
 
+import { useSiteContent } from '@/lib/siteContent/client'
 import { TbUsers } from 'react-icons/tb'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import styles from '../analytics.module.css'
@@ -19,6 +20,9 @@ const CUSTOMER_DATA = [
 ]
 
 export default function SellerAnalyticsCustomerInsightsPage() {
+  const { data: siteContent } = useSiteContent()
+  const systemName = siteContent?.systemName || 'La Visionario'
+
   return (
     <div className={styles.pageWrap}>
       <section aria-label="Customer summary" className={styles.summaryStrip}>
@@ -54,7 +58,7 @@ export default function SellerAnalyticsCustomerInsightsPage() {
           <div className={styles.summaryValueRow}>
             <p className={styles.summaryValue}>63%</p>
           </div>
-          <p className={styles.summaryHint}>Families who read messages in Lavisionario</p>
+          <p className={styles.summaryHint}>Families who read messages in {systemName}</p>
         </article>
       </section>
 

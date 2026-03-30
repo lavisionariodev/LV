@@ -1,15 +1,8 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import styles from './users.module.css'
-import { users as initialUsers } from '@/data/adminSampleData'
-
-const STATUS_OPTIONS = [
-  { value: 'all',       label: 'All'       },
-  { value: 'active',    label: 'Active'    },
-  { value: 'pending',   label: 'Pending'   },
-  { value: 'suspended', label: 'Suspended' },
-]
+import { supabase } from '@/lib/supabase/client'
 
 function getInitials(name = '') {
   return name
@@ -72,12 +65,72 @@ function Avatar({ name, src }) {
 }
 
 export default function AdminUsersPage() {
-  const [statusFilter, setStatusFilter] = useState('all')
   const [search, setSearch] = useState('')
+  const [users, setUsers] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadBuyers() {
+      setIsLoading(true)
+      setError(null)
+
+      const { data, error: loadError } = await supabase
+        .from('users')
+        .select(`
+          id,
+          email,
+          role,
+          created_at,
+          profiles (
+            full_name,
+            avatar_url
+          )
+        `)
+        .eq('role', 'buyer')
+        .order('created_at', { ascending: false })
+
+      if (!isMounted) return
+
+      if (loadError) {
+        console.error('Failed to load buyers from Supabase:', loadError.message)
+        setError(loadError)
+        setUsers([])
+        setIsLoading(false)
+        return
+      }
+
+      const next = (data || []).map((row) => {
+        const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles
+        const name = profile?.full_name || row.email || '—'
+        const joinedAt = row.created_at ? new Date(row.created_at).toISOString().slice(0, 10) : '—'
+
+        return {
+          id: row.id,
+          name,
+          email: row.email || '—',
+          role: row.role || 'buyer',
+          joinedAt,
+          status: 'active',
+          avatarUrl: profile?.avatar_url || null,
+        }
+      })
+
+      setUsers(next)
+      setIsLoading(false)
+    }
+
+    loadBuyers()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const filtered = useMemo(() => {
-    return initialUsers.filter((user) => {
-      if (statusFilter !== 'all' && user.status !== statusFilter) return false
+    return users.filter((user) => {
       if (!search.trim()) return true
       const q = search.trim().toLowerCase()
       return (
@@ -86,30 +139,12 @@ export default function AdminUsersPage() {
         user.id.toLowerCase().includes(q)
       )
     })
-  }, [statusFilter, search])
+  }, [users, search])
 
   return (
     <div className={styles.pageRoot}>
       <section className={styles.tablePanel}>
         <div className={styles.tablePanelHead}>
-          <div className={styles.filterGroup}>
-            {STATUS_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                className={`${styles.filterBtn} ${statusFilter === opt.value ? styles.filterBtnActive : ''}`}
-                onClick={() => setStatusFilter(opt.value)}
-              >
-                {opt.label}
-                {opt.value !== 'all' && (
-                  <span className={styles.filterCount}>
-                    {initialUsers.filter((u) => u.status === opt.value).length}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-
           <div className={styles.searchWrap}>
             <svg className={styles.searchIcon} viewBox="0 0 20 20" fill="none">
               <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.5" />
@@ -136,6 +171,17 @@ export default function AdminUsersPage() {
         </div>
 
         <div className={styles.tableWrap}>
+          {isLoading && (
+            <p className={styles.meta} style={{ padding: '12px 14px' }}>
+              Loading users…
+            </p>
+          )}
+          {error && !isLoading && (
+            <p className={styles.meta} style={{ padding: '12px 14px' }}>
+              Could not load users from Supabase. Check RLS policies for `users` / `profiles`.
+            </p>
+          )}
+
           <table className={styles.table}>
             <thead>
               <tr>
@@ -182,7 +228,7 @@ export default function AdminUsersPage() {
             </tbody>
           </table>
 
-          {filtered.length === 0 && (
+          {!isLoading && filtered.length === 0 && (
             <div className={styles.emptyState}>
               <svg className={styles.emptyIcon} viewBox="0 0 48 48" fill="none">
                 <circle cx="22" cy="22" r="14" stroke="#cbd5e1" strokeWidth="2" />
@@ -193,7 +239,7 @@ export default function AdminUsersPage() {
               <button
                 type="button"
                 className={styles.clearBtn}
-                onClick={() => { setSearch(''); setStatusFilter('all') }}
+                onClick={() => { setSearch('') }}
               >
                 Clear filters
               </button>
@@ -202,7 +248,7 @@ export default function AdminUsersPage() {
         </div>
 
         <div className={styles.tableFooter}>
-          Showing <strong>{filtered.length}</strong> of <strong>{initialUsers.length}</strong> users
+          Showing <strong>{filtered.length}</strong> of <strong>{users.length}</strong> users
         </div>
       </section>
     </div>

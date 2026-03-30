@@ -20,12 +20,6 @@ const DEFAULT_SITE_CONTENT = {
     partners: '',
     commitment: '',
   },
-  howItWorks: {
-    stepByStep: '',
-    comparePackages: '',
-    bookAService: '',
-    paymentSupport: '',
-  },
 }
 
 // Map a Supabase row from `site_content` into the nested `siteContent` shape
@@ -63,18 +57,6 @@ export function rowToSiteContent(row) {
         row.about_commitment ??
         DEFAULT_SITE_CONTENT.about.commitment,
     },
-    howItWorks: {
-      stepByStep:
-        row.how_step_by_step ?? DEFAULT_SITE_CONTENT.howItWorks.stepByStep,
-      comparePackages:
-        row.how_compare_packages ??
-        DEFAULT_SITE_CONTENT.howItWorks.comparePackages,
-      bookAService:
-        row.how_book_service ?? DEFAULT_SITE_CONTENT.howItWorks.bookAService,
-      paymentSupport:
-        row.how_payment_support ??
-        DEFAULT_SITE_CONTENT.howItWorks.paymentSupport,
-    },
   }
 }
 
@@ -100,12 +82,6 @@ export function siteContentToRow(content) {
     about_why_us: src.about?.whyUs ?? null,
     about_commitment: src.about?.commitment ?? null,
     about_partners: src.about?.partners ?? null,
-
-
-    how_step_by_step: src.howItWorks?.stepByStep ?? null,
-    how_compare_packages: src.howItWorks?.comparePackages ?? null,
-    how_book_service: src.howItWorks?.bookAService ?? null,
-    how_payment_support: src.howItWorks?.paymentSupport ?? null,
   }
 }
 

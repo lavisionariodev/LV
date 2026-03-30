@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   FaCartShopping,
@@ -18,6 +18,7 @@ import {
   FaComments,
 } from 'react-icons/fa6';
 import styles from './need_help.module.css';
+import { useSiteContent } from '@/lib/siteContent/client';
 
 const categoryIcons = {
   shopping: FaCartShopping,
@@ -108,6 +109,12 @@ export default function NeedHelpPage() {
   const [expandedCategoryId, setExpandedCategoryId] = useState(null);
   const [selectedArticle, setSelectedArticle] = useState(null);
 
+  const { data: siteContent } = useSiteContent();
+  const systemName = siteContent?.systemName || 'La Visionario';
+
+  const replaceBrand = (value) =>
+    typeof value === 'string' ? value.replaceAll('Lavisionario', systemName) : value;
+
   const popularQuestions = [
     { question: 'What are the effective supporting documents for refund/return requests?', categoryId: 'returns', subId: 'documents' },
     { question: 'Why is my account being limited?', categoryId: 'general', subId: 'account' },
@@ -118,13 +125,51 @@ export default function NeedHelpPage() {
     { question: 'How do I change or update my phone number?', categoryId: 'general', subId: 'account' },
   ];
 
+  const popularQuestionsBranded = useMemo(
+    () =>
+      popularQuestions.map((q) => ({
+        ...q,
+        question: replaceBrand(q.question),
+      })),
+    [systemName],
+  );
+
+  const categoriesWithArticlesBranded = useMemo(
+    () =>
+      categoriesWithArticles.map((cat) => ({
+        ...cat,
+        title: replaceBrand(cat.title),
+        subCategories: cat.subCategories.map((sub) => ({
+          ...sub,
+          title: replaceBrand(sub.title),
+          article: sub.article
+            ? {
+                ...sub.article,
+                title: replaceBrand(sub.article.title),
+                content: replaceBrand(sub.article.content),
+              }
+            : sub.article,
+        })),
+      })),
+    [systemName],
+  );
+
+  const categoriesBranded = useMemo(
+    () =>
+      categories.map((c) => ({
+        ...c,
+        title: replaceBrand(c.title),
+      })),
+    [systemName],
+  );
+
   const [advisoryDismissed, setAdvisoryDismissed] = useState(false);
 
   const handleSearch = (e) => {
     e.preventDefault();
     const q = searchQuery.trim().toLowerCase();
     if (!q) return;
-    for (const cat of categoriesWithArticles) {
+    for (const cat of categoriesWithArticlesBranded) {
       const sub = cat.subCategories.find(
         (s) =>
           s.article.title.toLowerCase().includes(q) ||
@@ -140,7 +185,7 @@ export default function NeedHelpPage() {
   };
 
   const handleCategoryClick = (categoryId) => {
-    const cat = categoriesWithArticles.find((c) => c.id === categoryId);
+    const cat = categoriesWithArticlesBranded.find((c) => c.id === categoryId);
     if (cat?.subCategories?.length) {
       setExpandedCategoryId(categoryId);
       setSelectedArticle({ categoryId, subId: cat.subCategories[0].id });
@@ -157,7 +202,7 @@ export default function NeedHelpPage() {
   };
 
   const currentArticleData = selectedArticle && (() => {
-    const cat = categoriesWithArticles.find((c) => c.id === selectedArticle.categoryId);
+    const cat = categoriesWithArticlesBranded.find((c) => c.id === selectedArticle.categoryId);
     const sub = cat?.subCategories.find((s) => s.id === selectedArticle.subId);
     return sub?.article ?? null;
   })();
@@ -181,13 +226,13 @@ export default function NeedHelpPage() {
                 onClick={() => setArticleView(false)}
               >
                 <span className={styles.logoIcon} aria-hidden><span className={styles.logoLetter}>L</span></span>
-                <span className={styles.logoText}>Lavisionario</span>
+                <span className={styles.logoText}>{systemName}</span>
                 <span className={styles.helpCenterText}>Help Center</span>
               </button>
             ) : (
               <Link href="/" className={styles.logoGroup}>
                 <span className={styles.logoIcon} aria-hidden><span className={styles.logoLetter}>L</span></span>
-                <span className={styles.logoText}>Lavisionario</span>
+                <span className={styles.logoText}>{systemName}</span>
                 <span className={styles.helpCenterText}>Help Center</span>
               </Link>
             )}
@@ -222,7 +267,7 @@ export default function NeedHelpPage() {
         {!advisoryDismissed && (
           <div className={styles.advisoryBanner}>
             <p className={styles.advisoryText}>
-              Advisory: Make sure your Lavisionario app is always updated to the latest version to enjoy the newest features!
+              Advisory: Make sure your {systemName} app is always updated to the latest version to enjoy the newest features!
             </p>
             <button
               type="button"
@@ -239,7 +284,7 @@ export default function NeedHelpPage() {
           /* Article view: sidebar (dropdown categories) + article content */
           <div className={styles.articleLayout}>
             <aside className={styles.sidebar}>
-              {categoriesWithArticles.map((cat) => {
+              {categoriesWithArticlesBranded.map((cat) => {
                 const isExpanded = expandedCategoryId === cat.id;
                 return (
                   <div key={cat.id} className={styles.sidebarCategory}>
@@ -301,7 +346,7 @@ export default function NeedHelpPage() {
           <section className={styles.categoriesSection}>
             <h2 className={styles.sectionTitle}>Categories</h2>
             <div className={styles.categoriesGrid}>
-              {categories.map((category) => {
+              {categoriesBranded.map((category) => {
                 const IconComponent = categoryIcons[category.id];
                 const iconCircleClass = styles[`categoryIconCircle_${category.iconColor}`];
                 return (
@@ -324,7 +369,7 @@ export default function NeedHelpPage() {
         <section className={styles.popularSection}>
           <h2 className={styles.sectionTitle}>Popular questions</h2>
           <div className={styles.questionsList}>
-            {popularQuestions.map((item, index) => (
+            {popularQuestionsBranded.map((item, index) => (
               <div
                 key={index}
                 className={styles.questionItem}
@@ -369,7 +414,7 @@ export default function NeedHelpPage() {
 
         <footer className={styles.footer}>
           <div className={styles.footerContent}>
-            <p>© 2026 Lavisionario. All rights reserved.</p>
+            <p>© 2026 {systemName}. All rights reserved.</p>
           </div>
         </footer>
       </div>
