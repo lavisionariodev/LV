@@ -26,59 +26,6 @@
   flex-wrap: wrap;
 }
 
-/* ── Filter pills ───────────────────────────────────────────────────────── */
-
-.filterGroup {
-  display: flex;
-  gap: 3px;
-  background: #f8fafc;
-  border: 1px solid #e9efec;
-  border-radius: 10px;
-  padding: 3px;
-}
-
-.filterBtn {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
-  background: transparent;
-  border: none;
-  border-radius: 7px;
-  padding: 5px 11px;
-  cursor: pointer;
-  transition: background 0.12s, color 0.12s;
-  white-space: nowrap;
-}
-
-.filterBtn:hover {
-  color: #1e293b;
-  background: #eef1f6;
-}
-
-.filterBtnActive {
-  background: #ffffff;
-  color: #1e293b;
-  font-weight: 700;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07);
-}
-
-.filterCount {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 16px;
-  height: 16px;
-  border-radius: 99px;
-  background: #e9efec;
-  font-size: 10px;
-  font-weight: 700;
-  color: #64748b;
-  padding: 0 4px;
-}
-
 /* ── Search ─────────────────────────────────────────────────────────────── */
 
 .searchWrap {
@@ -347,7 +294,6 @@
 
 @media (max-width: 860px) {
   .tablePanelHead { flex-direction: column; align-items: stretch; }
-  .filterGroup { overflow-x: auto; }
   .searchWrap { width: 100%; }
   .searchInput { width: 100%; }
 }

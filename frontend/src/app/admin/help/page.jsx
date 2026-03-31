@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import styles from './help.module.css'
 import {
   LuShield,
@@ -15,8 +15,7 @@ import {
 export default function AdminHelpCenterPage() {
   const [openFaq, setOpenFaq] = useState(0)
 
-  const topics = useMemo(
-    () => [
+  const topics = [
       {
         icon: <LuUserCheck />,
         title: 'Seller approvals',
@@ -57,12 +56,9 @@ export default function AdminHelpCenterPage() {
             'Fraud signals and spikes',
         ],
         },
-    ],
-    []
-  )
+    ]
 
-  const faqs = useMemo(
-    () => [
+  const faqs = [
       {
         q: 'Why are changes not showing in the live platform?',
         a: 'Most updates require approval or publishing. Check if there is a pending submission, scheduled publish time, or blocked content due to policy.',
@@ -83,12 +79,9 @@ export default function AdminHelpCenterPage() {
         q: 'What should I do if disputes spike suddenly?',
         a: 'Treat it as a risk event. Review top categories, top sellers involved, and refund rate trend. If fraud is suspected, freeze payouts for impacted sellers and escalate to operations or security.',
       },
-    ],
-    []
-  )
+    ]
 
-  const playbooks = useMemo(
-    () => [
+  const playbooks = [
       {
         title: 'Approve high-risk sellers',
         steps: [
@@ -113,9 +106,7 @@ export default function AdminHelpCenterPage() {
           'Escalate to security and document actions taken.',
         ],
       },
-    ],
-    []
-  )
+    ]
 
   return (
     <div className={styles.wrap}>
@@ -139,12 +130,6 @@ export default function AdminHelpCenterPage() {
           </article>
         ))}
 
-        {topics.length === 0 && (
-          <div className={styles.empty}>
-            <p className={styles.emptyTitle}>No matching topics</p>
-            <p className={styles.emptySub}>Try a different keyword.</p>
-          </div>
-        )}
       </section>
 
       <section className={styles.lower}>
@@ -184,11 +169,6 @@ export default function AdminHelpCenterPage() {
               )
             })}
 
-            {faqs.length === 0 && (
-              <div className={styles.faqEmpty}>
-                No matching FAQs found for this search.
-              </div>
-            )}
           </div>
         </article>
 
