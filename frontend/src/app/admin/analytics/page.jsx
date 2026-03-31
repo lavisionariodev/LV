@@ -143,7 +143,7 @@ export default function AdminAnalyticsPage() {
       </section>
 
       {/* Recent activity — full width, visible on all screen sizes */}
-      <section className={layoutStyles.panel}>
+      <section className={`${layoutStyles.panel} ${layoutStyles.homeDesktopOnly}`}>
         <div className={layoutStyles.panelHead}>
           <p className={layoutStyles.panelTitle}>Recent activity</p>
           <Link href="/admin/disputes" className={layoutStyles.smallBtn}>View all</Link>

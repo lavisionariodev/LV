@@ -30,13 +30,6 @@
   margin-bottom: 10px;
 }
 
-.cardHeadText {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
 .headActions {
   display: inline-flex;
   gap: 10px;
@@ -558,15 +551,6 @@
     background: #f5f6fa;
   }
 
-  /* Centered page title */
-  .mobilePageTitle {
-    text-align: center;
-    font-size: 15px;
-    font-weight: 700;
-    color: #111;
-    padding: 20px 16px 12px;
-  }
-
   /* Profile hero */
   .mobileProfileHero {
     display: flex;
@@ -680,12 +664,6 @@
     font-size: 13px;
     font-weight: 500;
     color: #111;
-  }
-
-  .mobileMenuValue {
-    font-size: 11px;
-    color: #94a3b8;
-    margin-right: 6px;
   }
 
   .mobileMenuArrow {

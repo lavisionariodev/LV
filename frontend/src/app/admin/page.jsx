@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import styles from './admin.module.css'
-import { dashboard } from '@/data/adminSampleData'
+import { dashboard, disputes as disputesData } from '@/data/adminSampleData'
+import { listSellersForAdmin } from '@/lib/sellers/client'
+import { supabase } from '@/lib/supabase/client'
 import {
   AreaChart,
   Area,
@@ -16,10 +18,10 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
-import { TbReportSearch, TbUsers, TbSearch, TbTemplate, TbUserPlus, TbArrowUpRight, TbFlag, TbLayoutList } from 'react-icons/tb'
+import { TbReportSearch, TbUsers, TbSearch, TbTemplate, TbFlag, TbLayoutList } from 'react-icons/tb'
 import { LuUserCheck } from 'react-icons/lu'
 import { HiOutlineNewspaper } from 'react-icons/hi'
-import { MdOutlineImage, MdOutlineQuestionAnswer, MdOutlineCampaign, MdOutlinePages } from 'react-icons/md'
+import { MdOutlineImage } from 'react-icons/md'
 import { RiUserAddLine } from 'react-icons/ri'
 import { LuClipboardList, LuPencilLine, LuPlus, LuCheck } from 'react-icons/lu'
 
@@ -50,6 +52,82 @@ function getStatusDotColor(status) {
 
 export default function AdminDashboardPage() {
   const [activeQuickLink, setActiveQuickLink] = useState('disputes')
+  const [sellerPreview, setSellerPreview] = useState({
+    total: dashboard.stats.totalSellers,
+    active: 0,
+    pending: 0,
+    recent: [],
+  })
+  const [userPreview, setUserPreview] = useState({
+    total: dashboard.stats.totalUsers,
+    recent: [],
+  })
+
+  useEffect(() => {
+    let mounted = true
+
+    const loadPreviewData = async () => {
+      try {
+        const sellers = await listSellersForAdmin()
+        if (mounted && Array.isArray(sellers)) {
+          setSellerPreview({
+            total: sellers.length,
+            active: sellers.filter((s) => s?.status === 'active').length,
+            pending: sellers.filter((s) => s?.status === 'pending').length,
+            recent: sellers.slice(0, 3),
+          })
+        }
+      } catch (error) {
+        console.error('Failed to load seller preview data:', error)
+      }
+
+      try {
+        const [{ count }, { data: recentUsers }] = await Promise.all([
+          supabase
+            .from('users')
+            .select('id', { count: 'exact', head: true })
+            .eq('role', 'buyer'),
+          supabase
+            .from('users')
+            .select(`
+              id,
+              email,
+              created_at,
+              profiles (
+                full_name
+              )
+            `)
+            .eq('role', 'buyer')
+            .order('created_at', { ascending: false })
+            .limit(3),
+        ])
+
+        if (!mounted) return
+
+        const mappedRecent = (recentUsers || []).map((u) => {
+          const profile = Array.isArray(u.profiles) ? u.profiles[0] : u.profiles
+          return {
+            id: u.id,
+            name: profile?.full_name || u.email || 'Unnamed user',
+            email: u.email || 'No email',
+            joinedAt: u.created_at ? new Date(u.created_at).toISOString().slice(0, 10) : 'N/A',
+          }
+        })
+
+        setUserPreview({
+          total: count ?? mappedRecent.length,
+          recent: mappedRecent,
+        })
+      } catch (error) {
+        console.error('Failed to load user preview data:', error)
+      }
+    }
+
+    loadPreviewData()
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   return (
     <div className={styles.dashWrap}>
@@ -163,35 +241,41 @@ export default function AdminDashboardPage() {
               {/* stat chips */}
               <div className={styles.qlChips}>
                 <div className={styles.qlChip}>
-                  <span className={styles.qlChipValue}>{dashboard.stats.openDisputes}</span>
+                  <span className={styles.qlChipValue}>{disputesData.length}</span>
+                  <span className={styles.qlChipLabel}>Total</span>
+                </div>
+                <div className={styles.qlChip}>
+                  <span className={styles.qlChipValue}>
+                    {disputesData.filter((d) => d.status === 'open').length}
+                  </span>
                   <span className={styles.qlChipLabel}>Open</span>
                 </div>
                 <div className={styles.qlChip}>
                   <span className={styles.qlChipValue}>
-                    {dashboard.recentActivity.filter(a => String(a.status).toLowerCase().includes('pending')).length}
+                    {disputesData.filter((d) => d.status === 'under_review').length}
                   </span>
-                  <span className={styles.qlChipLabel}>Pending</span>
+                  <span className={styles.qlChipLabel}>Review</span>
                 </div>
                 <div className={styles.qlChip}>
                   <span className={styles.qlChipValue}>
-                    {dashboard.recentActivity.filter(a => String(a.status).toLowerCase().includes('resolved')).length}
+                    {disputesData.filter((d) => d.status === 'resolved').length}
                   </span>
                   <span className={styles.qlChipLabel}>Resolved</span>
                 </div>
               </div>
               {/* recent rows */}
               <div className={styles.qlRows}>
-                {dashboard.recentActivity.slice(0, 3).map((item) => (
+                {disputesData.slice(0, 3).map((item) => (
                   <div className={styles.qlRow} key={item.id}>
                     <span
                       className={styles.qlDot}
-                      style={{ backgroundColor: getStatusDotColor(item.status) }}
+                      style={{ backgroundColor: getStatusDotColor(item.status.replace('_', ' ')) }}
                     />
                     <div className={styles.qlRowMeta}>
-                      <span className={styles.qlRowType}>{item.type}</span>
-                      <span className={styles.qlRowDate}>{item.date}</span>
+                      <span className={styles.qlRowType}>{item.reason}</span>
+                      <span className={styles.qlRowDate}>{item.openedAt}</span>
                     </div>
-                    <span className={styles.qlBadge}>{item.status}</span>
+                    <span className={styles.qlBadge}>{item.status.replace('_', ' ')}</span>
                   </div>
                 ))}
               </div>
@@ -205,30 +289,39 @@ export default function AdminDashboardPage() {
             <div className={styles.qlPanel}>
               <div className={styles.qlChips}>
                 <div className={styles.qlChip}>
-                  <span className={styles.qlChipValue}>{dashboard.stats.totalSellers}</span>
+                  <span className={styles.qlChipValue}>{sellerPreview.total}</span>
                   <span className={styles.qlChipLabel}>Total</span>
                 </div>
                 <div className={styles.qlChip}>
-                  <span className={styles.qlChipValue} style={{ color: '#15803d' }}>Active</span>
-                  <span className={styles.qlChipLabel}>Status</span>
+                  <span className={styles.qlChipValue}>{sellerPreview.active}</span>
+                  <span className={styles.qlChipLabel}>Active</span>
+                </div>
+                <div className={styles.qlChip}>
+                  <span className={styles.qlChipValue}>{sellerPreview.pending}</span>
+                  <span className={styles.qlChipLabel}>Pending</span>
                 </div>
               </div>
               <div className={styles.qlRows}>
-                <div className={styles.qlActionRow}>
-                  <span className={styles.qlActionIcon}><LuPlus /></span>
-                  <span className={styles.qlActionLabel}>Add new seller</span>
-                  <Link href="/admin/sellers/new" className={styles.qlActionBtn}>Go</Link>
-                </div>
-                <div className={styles.qlActionRow}>
-                  <span className={styles.qlActionIcon}><LuCheck /></span>
-                  <span className={styles.qlActionLabel}>Approve pending</span>
-                  <Link href="/admin/sellers?filter=pending" className={styles.qlActionBtn}>Go</Link>
-                </div>
-                <div className={styles.qlActionRow}>
-                  <span className={styles.qlActionIcon}><TbArrowUpRight /></span>
-                  <span className={styles.qlActionLabel}>Top performers</span>
-                  <Link href="/admin/sellers?sort=top" className={styles.qlActionBtn}>Go</Link>
-                </div>
+                {sellerPreview.recent.length > 0 ? (
+                  sellerPreview.recent.map((seller) => (
+                    <div className={styles.qlRow} key={seller.user_id || seller.id}>
+                      <span
+                        className={styles.qlDot}
+                        style={{ backgroundColor: getStatusDotColor(seller.status) }}
+                      />
+                      <div className={styles.qlRowMeta}>
+                        <span className={styles.qlRowType}>{seller.business_name || 'Unnamed seller'}</span>
+                        <span className={styles.qlRowDate}>{seller.email || 'No email'}</span>
+                      </div>
+                      <span className={styles.qlBadge}>{seller.status || 'unknown'}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className={styles.qlActionRow}>
+                    <span className={styles.qlActionIcon}><TbUsers /></span>
+                    <span className={styles.qlActionLabel}>No sellers available yet</span>
+                  </div>
+                )}
               </div>
               <Link href="/admin/sellers" className={styles.qlCta}>
                 Manage sellers →
@@ -240,30 +333,35 @@ export default function AdminDashboardPage() {
             <div className={styles.qlPanel}>
               <div className={styles.qlChips}>
                 <div className={styles.qlChip}>
-                  <span className={styles.qlChipValue}>{dashboard.stats.totalUsers}</span>
+                  <span className={styles.qlChipValue}>{userPreview.total}</span>
                   <span className={styles.qlChipLabel}>Total</span>
                 </div>
                 <div className={styles.qlChip}>
-                  <span className={styles.qlChipValue}>{dashboard.stats.transactionsLast30Days}</span>
-                  <span className={styles.qlChipLabel}>Txns (30d)</span>
+                  <span className={styles.qlChipValue}>{userPreview.recent.length}</span>
+                  <span className={styles.qlChipLabel}>Latest shown</span>
                 </div>
               </div>
               <div className={styles.qlRows}>
-                <div className={styles.qlActionRow}>
-                  <span className={styles.qlActionIcon}><TbSearch /></span>
-                  <span className={styles.qlActionLabel}>Search users</span>
-                  <Link href="/admin/users" className={styles.qlActionBtn}>Go</Link>
-                </div>
-                <div className={styles.qlActionRow}>
-                  <span className={styles.qlActionIcon}><TbFlag /></span>
-                  <span className={styles.qlActionLabel}>Flagged accounts</span>
-                  <Link href="/admin/users?filter=flagged" className={styles.qlActionBtn}>Go</Link>
-                </div>
-                <div className={styles.qlActionRow}>
-                  <span className={styles.qlActionIcon}><RiUserAddLine /></span>
-                  <span className={styles.qlActionLabel}>New registrations</span>
-                  <Link href="/admin/users?sort=newest" className={styles.qlActionBtn}>Go</Link>
-                </div>
+                {userPreview.recent.length > 0 ? (
+                  userPreview.recent.map((user) => (
+                    <div className={styles.qlRow} key={user.id}>
+                      <span
+                        className={styles.qlDot}
+                        style={{ backgroundColor: getStatusDotColor('active') }}
+                      />
+                      <div className={styles.qlRowMeta}>
+                        <span className={styles.qlRowType}>{user.name}</span>
+                        <span className={styles.qlRowDate}>{user.joinedAt}</span>
+                      </div>
+                      <span className={styles.qlBadge}>buyer</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className={styles.qlActionRow}>
+                    <span className={styles.qlActionIcon}><TbUsers /></span>
+                    <span className={styles.qlActionLabel}>No users available yet</span>
+                  </div>
+                )}
               </div>
               <Link href="/admin/users" className={styles.qlCta}>
                 Manage users →
@@ -275,24 +373,24 @@ export default function AdminDashboardPage() {
             <div className={styles.qlPanel}>
               <div className={styles.qlRows}>
                 <div className={styles.qlActionRow}>
+                  <span className={styles.qlActionIcon}><TbTemplate /></span>
+                  <span className={styles.qlActionLabel}>System name / brand</span>
+                  <Link href="/admin/content" className={styles.qlActionBtn}>Open</Link>
+                </div>
+                <div className={styles.qlActionRow}>
                   <span className={styles.qlActionIcon}><MdOutlineImage /></span>
-                  <span className={styles.qlActionLabel}>Homepage banners</span>
-                  <Link href="/admin/content?section=banners" className={styles.qlActionBtn}>Edit</Link>
+                  <span className={styles.qlActionLabel}>Homepage hero</span>
+                  <Link href="/admin/content" className={styles.qlActionBtn}>Open</Link>
                 </div>
                 <div className={styles.qlActionRow}>
-                  <span className={styles.qlActionIcon}><MdOutlineQuestionAnswer /></span>
-                  <span className={styles.qlActionLabel}>FAQs</span>
-                  <Link href="/admin/content?section=faqs" className={styles.qlActionBtn}>Edit</Link>
+                  <span className={styles.qlActionIcon}><TbLayoutList /></span>
+                  <span className={styles.qlActionLabel}>About page</span>
+                  <Link href="/admin/content" className={styles.qlActionBtn}>Open</Link>
                 </div>
                 <div className={styles.qlActionRow}>
-                  <span className={styles.qlActionIcon}><MdOutlineCampaign /></span>
-                  <span className={styles.qlActionLabel}>Announcements</span>
-                  <Link href="/admin/content?section=announcements" className={styles.qlActionBtn}>Edit</Link>
-                </div>
-                <div className={styles.qlActionRow}>
-                  <span className={styles.qlActionIcon}><MdOutlinePages /></span>
-                  <span className={styles.qlActionLabel}>Static pages</span>
-                  <Link href="/admin/content?section=pages" className={styles.qlActionBtn}>Edit</Link>
+                  <span className={styles.qlActionIcon}><MdOutlineImage /></span>
+                  <span className={styles.qlActionLabel}>Footer contact</span>
+                  <Link href="/admin/content" className={styles.qlActionBtn}>Open</Link>
                 </div>
               </div>
               <Link href="/admin/content" className={styles.qlCta}>
@@ -306,18 +404,18 @@ export default function AdminDashboardPage() {
               <div className={styles.qlRows}>
                 <div className={styles.qlActionRow}>
                   <span className={styles.qlActionIcon}><LuPlus /></span>
-                  <span className={styles.qlActionLabel}>Create template</span>
-                  <Link href="/admin/seller-template/new" className={styles.qlActionBtn}>Go</Link>
+                  <span className={styles.qlActionLabel}>Add field</span>
+                  <Link href="/admin/seller-template" className={styles.qlActionBtn}>Open</Link>
                 </div>
                 <div className={styles.qlActionRow}>
                   <span className={styles.qlActionIcon}><LuPencilLine /></span>
-                  <span className={styles.qlActionLabel}>Edit existing</span>
+                  <span className={styles.qlActionLabel}>Edit field type & placeholder</span>
                   <Link href="/admin/seller-template" className={styles.qlActionBtn}>Go</Link>
                 </div>
                 <div className={styles.qlActionRow}>
                   <span className={styles.qlActionIcon}><LuClipboardList /></span>
-                  <span className={styles.qlActionLabel}>All templates</span>
-                  <Link href="/admin/seller-template?view=all" className={styles.qlActionBtn}>Go</Link>
+                  <span className={styles.qlActionLabel}>Reorder and delete fields</span>
+                  <Link href="/admin/seller-template" className={styles.qlActionBtn}>Go</Link>
                 </div>
               </div>
               <Link href="/admin/seller-template" className={styles.qlCta}>

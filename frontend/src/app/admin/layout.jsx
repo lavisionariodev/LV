@@ -66,7 +66,6 @@ export default function AdminLayout({ children }) {
           variant="admin"
           onLogout={handleLogout}
           isMobile={isMobile}
-          onMenuClick={() => setMobileMenuOpen((prev) => !prev)}
           sidebarCollapsed={collapsed}
         />
         <div className={styles.mainScroll}>

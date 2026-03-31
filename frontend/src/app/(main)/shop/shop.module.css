@@ -2016,8 +2016,17 @@
    naturally inside its .sideNavCol grid column. The JS-measured
    --navbar-height variable is still used for the top threshold above. */
 @media (min-width: 901px) {
-  /* intentionally left empty — kept for future breakpoint-specific
-     sidebar overrides without changing selector specificity */
+  /* Desktop: allow the full filter panel to expand naturally
+     so no internal sidebar scrollbar appears. */
+  .sideNav {
+    max-height: none;
+  }
+
+  .sideNavScroll {
+    flex: none;
+    min-height: auto;
+    overflow-y: visible;
+  }
 }
 
 @media (max-width: 900px) {

@@ -99,7 +99,6 @@ export default function AppSidebar({
   isMobile,
   mobileOpen,
   onMobileClose,
-  onMobileOpen,
 }) {
   const pathname = usePathname()
   const [openGroups, setOpenGroups] = useState({})

@@ -5,10 +5,10 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import styles from './AppTopbar.module.css'
-import { TbBell, TbMenu2 } from 'react-icons/tb'
+import { TbBell } from 'react-icons/tb'
 import { FaUser } from 'react-icons/fa6'
 import { LuLogOut, LuChevronDown } from 'react-icons/lu'
-import { TbSettings, TbMessage2Question, TbClipboardList } from 'react-icons/tb'
+import { TbSettings, TbMessage2Question } from 'react-icons/tb'
 import { Logout } from '@/components/ui'
 import { useAuth } from '@/contexts/AuthContext'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
@@ -125,7 +125,7 @@ const SAMPLE_NOTIFICATIONS = [
   },
 ]
 
-export default function AppTopbar({ variant, onLogout, isMobile, onMenuClick, sidebarCollapsed }) {
+export default function AppTopbar({ variant, onLogout, isMobile, sidebarCollapsed }) {
   const { user, profile } = useAuth()
   const [showLogout, setShowLogout] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)

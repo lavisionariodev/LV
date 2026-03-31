@@ -19,7 +19,6 @@ export default function SellerLayout({ children }) {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [authStatus, setAuthStatus] = useState('loading')
-  const [sellerStatus, setSellerStatus] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -37,7 +36,6 @@ export default function SellerLayout({ children }) {
         return
       }
 
-      setSellerStatus(status || null)
       if (status === 'pending') {
         router.replace('/seller/onboarding')
         setAuthStatus('pending')
@@ -86,7 +84,6 @@ export default function SellerLayout({ children }) {
             variant="seller"
             onLogout={handleLogout}
             isMobile={isMobile}
-            onMenuClick={() => setMobileMenuOpen((prev) => !prev)}
             sidebarCollapsed={collapsed}
           />
           <div className={styles.mainScroll}>
