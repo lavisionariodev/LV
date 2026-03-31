@@ -361,19 +361,124 @@
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 
+/* ≤ 1100px: 2-col stats, shrink search */
 @media (max-width: 1100px) {
   .statsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .searchInput { width: 160px; }
 }
 
+/* ≤ 860px: toolbar goes full-width column, filter + search each take full width */
 @media (max-width: 860px) {
-  .toolbar { flex-direction: column; align-items: stretch; }
-  .filterGroup { overflow-x: auto; }
-  .searchWrap { width: 100%; }
-  .searchInput { width: 100%; }
+  .tablePanelHead {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .toolbar {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+  }
+
+  /* Filter pill row: full width container, pills scroll horizontally */
+  .filterGroup {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    width: 100%;
+    padding: 3px;
+    gap: 3px;
+    border-radius: 12px;
+  }
+  .filterGroup::-webkit-scrollbar { display: none; }
+
+  /* Each pill must not shrink — they scroll instead */
+  .filterBtn { flex: 0 0 auto; }
+
+  /* Search takes full width */
+  .searchWrap { width: 100%; box-sizing: border-box; }
+  .searchInput { width: 100%; min-width: 0; }
 }
 
-@media (max-width: 600px) {
-  .statsGrid { grid-template-columns: 1fr; }
-  .pageHeader { flex-direction: column; }
+/* ≤ 640px: compact stats (2-col), card-style table rows */
+@media (max-width: 640px) {
+  /* Stats */
+  .statsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .statCard { padding: 12px; border-radius: 12px; }
+  .statLabel { font-size: 11px; }
+  .statValue { font-size: 20px; margin-top: 4px; }
+  .statHint { font-size: 11px; margin-top: 4px; }
+
+  /* Table panel */
+  .tablePanel { padding: 12px; border-radius: 12px; }
+  .tablePanelTitle { font-size: 14px; }
+  .filterBtn { font-size: 11px; padding: 5px 9px; }
+
+  /* ── Card-style rows: hide thead, turn each tr into a grid card ── */
+  .tableWrap { overflow-x: visible; }
+  .table thead { display: none; }
+  .table,
+  .table tbody { display: block; width: 100%; }
+
+  .tr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto auto;
+    gap: 6px 10px;
+    background: #fff;
+    border: 1px solid #eef0f6;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 8px;
+    transition: box-shadow 0.12s;
+  }
+  .tr:hover { background: #f8fafc; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .tr:last-child { margin-bottom: 0; border-bottom: 1px solid #eef0f6; }
+
+  .td { display: block; padding: 0; font-size: 12px; }
+
+  /* Left col row 1: Date + dispute ID inline */
+  .td:nth-child(1) {
+    grid-column: 1; grid-row: 1;
+    display: flex; align-items: baseline; gap: 6px;
+  }
+  /* Left col row 2: Order ref + parties */
+  .td:nth-child(2) { grid-column: 1; grid-row: 2; }
+  /* Left col row 3: Reason tag */
+  .td:nth-child(3) { grid-column: 1; grid-row: 3; }
+  /* Description — hide on mobile, not enough room */
+  .td:nth-child(4) { display: none; }
+  /* Right col row 1: Status badge */
+  .td:nth-child(5) {
+    grid-column: 2; grid-row: 1;
+    display: flex; justify-content: flex-end; align-items: flex-start;
+  }
+  /* Right col rows 2-3: View link pinned to bottom-right */
+  .td:nth-child(6) {
+    grid-column: 2; grid-row: 2 / 4;
+    display: flex; justify-content: flex-end; align-items: flex-end;
+  }
+
+  /* Tighten text inside cards */
+  .dateText   { font-size: 12px; }
+  .refText    { font-size: 10px; }
+  .orderRef   { font-size: 11px; margin-bottom: 3px; }
+  .partyName  { font-size: 11px; }
+  .reasonTag  { font-size: 11px; padding: 3px 8px; }
+  .badge      { font-size: 10px; padding: 3px 8px; }
+  .viewLink   { font-size: 11px; padding: 5px 10px; border-radius: 8px; }
+
+  /* Footer & empty state */
+  .tableFooter { font-size: 11px; }
+  .emptyText   { font-size: 12px; }
+  .clearBtn    { font-size: 12px; }
 }

@@ -323,8 +323,8 @@
 }
 
 @media (max-width: 860px) {
-  .welcomeRight { width: 100%; }
-  .welcomeStat  { flex: 1; }
+  .welcomeBanner { display: none; }
+  .welcomeStat   { flex: 1; }
 }
 
 .homeDesktopOnly {
@@ -565,13 +565,19 @@
     display: flex;
     gap: 4px;
     margin-top: 8px;
-    padding-bottom: 4px;
-    justify-content: space-between;
+    padding-bottom: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .quickLinksRow::-webkit-scrollbar {
+    display: none;
   }
 
   .quickLinkCard {
-    flex: 1 1 0;
-    min-width: 80px;
+    flex: 0 0 auto;
+    min-width: 72px;
     padding: 6px 4px;
     border-radius: 12px;
     border: none;
@@ -701,6 +707,176 @@
   .actions {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* =========================
+   QUICK LINK CONTENT PANELS
+   ========================= */
+
+.qlPanel {
+  margin-top: 12px;
+  background: #ffffff;
+  border: 1px solid #e9e9ef;
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* stat chips row */
+.qlChips {
+  display: flex;
+  gap: 10px;
+}
+
+.qlChip {
+  flex: 1;
+  background: #f8fafc;
+  border: 1px solid #eef0f6;
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.qlChipValue {
+  font-size: 20px;
+  font-weight: 800;
+  color: #000;
+  line-height: 1;
+}
+
+.qlChipLabel {
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* rows list */
+.qlRows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* dispute-style row: dot + meta + badge */
+.qlRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #eef0f6;
+  border-radius: 12px;
+}
+
+.qlDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.qlRowMeta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.qlRowType {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qlRowDate {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.qlBadge {
+  font-size: 11px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid #e6e7ee;
+  background: #fff;
+  color: #374151;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* action-style row: icon + label + go button */
+.qlActionRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #eef0f6;
+  border-radius: 12px;
+}
+
+.qlActionIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #e6e7ee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: #102820;
+  flex-shrink: 0;
+}
+
+.qlActionLabel {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.qlActionBtn {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid #102820;
+  background: transparent;
+  color: #102820;
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.qlActionBtn:hover {
+  background: #102820;
+  color: #fff;
+}
+
+/* full-width CTA at bottom of panel */
+.qlCta {
+  display: block;
+  text-align: center;
+  padding: 11px;
+  border-radius: 12px;
+  background: #102820;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.qlCta:hover {
+  opacity: 0.88;
 }
 
 /* =========================

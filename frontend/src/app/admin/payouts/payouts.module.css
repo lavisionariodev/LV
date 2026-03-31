@@ -1744,7 +1744,92 @@
 .seBalPending    { color: #b45309; }
 .seBalWithdrawn  { color: #475569; }
 
-/* ── Responsive ──────────────────────────────────────────────────────────── */
+/* ── Mobile Mode Bar + Content Panes ────────────────────────────────────── */
+
+/* Desktop: mode bar hidden */
+.mobileModeBar {
+  display: none;
+}
+
+/* modalScrollBody: passthrough on desktop */
+.modalScrollBody {
+  display: contents;
+}
+
+/* Details pane: passthrough on desktop (always visible) */
+.modalContentPane {
+  display: contents;
+}
+
+/* Manage Payout pane: HIDDEN on desktop — handled by payoutPanelWrap */
+.modalContentPaneMobile {
+  display: none;
+}
+
+/* ── Mobile: mode switcher + single-container panes ─────────────────────── */
+
+@media (max-width: 640px) {
+
+  .mobileModeBar {
+    display: flex;
+    padding: 10px 16px 0;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .mobileModeBtn {
+    flex: 1;
+    padding: 9px 10px;
+    border-radius: 10px;
+    border: 1.5px solid #e2e8f0;
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .mobileModeBtnActive {
+    background: #0f172a;
+    color: #fff;
+    border-color: #0f172a;
+  }
+
+  .modalScrollBody {
+    display: block;
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+  }
+
+  .modalContentPane {
+    display: block;
+  }
+
+  /* Reveal the mobile-only manage payout pane */
+  .modalContentPaneMobile {
+    display: block;
+  }
+
+  .mobileHidden {
+    display: none !important;
+  }
+
+  .modal {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Hide desktop manage-payout trigger on mobile */
+  .openPayoutBtn {
+    display: none;
+  }
+
+}
+
 
 @media (max-width: 1200px) {
   .statsGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -1759,5 +1844,194 @@
   .statsGrid { grid-template-columns: 1fr; }
   .tabNav { width: 100%; }
   .searchInput { width: 140px; }
+}
 
+/* ── Mobile Card List ─────────────────────────────────────────────────────── */
+
+/* Hidden by default on desktop */
+.mobileCardList { display: none; }
+
+@media (max-width: 640px) {
+
+  /* Show cards, hide table */
+  .mobileCardList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 14px;
+  }
+
+  .tableWrap { display: none; }
+
+  /* Stats: single column, more compact */
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .statValue { font-size: 17px; }
+  .statLabel { font-size: 11px; }
+  .statCard { padding: 14px; }
+  .statPeriodHide { display: none; }
+
+  /* Tabs: scrollable row */
+  .tabNav {
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tabNav::-webkit-scrollbar { display: none; }
+  .tabBtn { padding: 8px 14px; font-size: 12px; white-space: nowrap; }
+
+  /* Toolbar: stack search full-width, filters below */
+  .toolbar { padding: 10px 12px; gap: 8px; }
+  .toolbarLeft { width: 100%; flex-direction: column; align-items: stretch; gap: 8px; }
+  .searchWrap { width: 100%; }
+  .searchInput { width: 100%; flex: 1; }
+  .filterToggle { width: 100%; justify-content: center; }
+
+  /* Filter bar: stack fields */
+  .filterBar { flex-direction: column; gap: 8px; padding: 10px 12px; }
+  .filterField select,
+  .filterField input[type="date"] { width: 100%; min-width: 0; }
+
+  /* Pagination: stack */
+  .pagination {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+  }
+  .paginationControls { flex-wrap: wrap; justify-content: center; }
+  .paginationInfo { text-align: center; }
+
+  /* Commission panel */
+  .commissionGlobalRow { flex-direction: column; align-items: flex-start; }
+  .commissionDisplayRow { margin-top: 4px; }
+  .commissionEditRow { flex-wrap: wrap; }
+
+  /* Seller Earnings grid: 1 col */
+  .seGrid { grid-template-columns: 1fr; padding: 12px 14px; gap: 10px; }
+  .seBalances { grid-template-columns: repeat(3, 1fr); }
+
+  /* Modal: full-width bottom sheet style */
+  .modalOverlay {
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+  }
+  .modal {
+    width: 100%;
+    max-width: 100%;
+    height: 92vh;
+    border-radius: 18px 18px 0 0;
+  }
+
+  /* Expanded row panel: stack sections vertically */
+  .expandedPanel { flex-direction: column; }
+  .expandedDivider { width: 100%; height: 1px; align-self: auto; }
+}
+
+/* Individual mobile transaction card */
+.mobileCard {
+  background: #fff;
+  border: 1px solid #e9e9ef;
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mobileCardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mobileCardAmount {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.mobileCardService {
+  margin: 0;
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.mobileCardMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mobileCardBuyer {
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.mobileCardDate {
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.mobileCardStatuses {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mobileCardBreakdown {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.mobileCardBreakdownItem {
+  font-size: 11px;
+  color: #64748b;
+}
+.mobileCardBreakdownItem strong {
+  font-weight: 700;
+  color: #0f172a;
+}
+.mobileCardEarnings { color: #059669 !important; }
+
+.mobileCardBreakdownDivider {
+  font-size: 11px;
+  color: #cbd5e1;
+}
+
+.mobileCardDetailsBtn {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.mobileCardDetailsBtn:hover {
+  background: #0f172a;
+  color: #fff;
+  border-color: #0f172a;
 }

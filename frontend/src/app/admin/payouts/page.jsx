@@ -177,7 +177,7 @@ function StatCard({ label, value, percent, period }) {
           {isPositive ? <FiArrowUp className={styles.percentIcon} /> : <FiArrowDown className={styles.percentIcon} />}
           <span className={styles.percentValue}>{Math.abs(percent)}%</span>
         </div>
-        <p className={styles.statPeriod}>{period}</p>
+        <p className={`${styles.statPeriod} ${styles.statPeriodHide}`}>{period}</p>
       </div>
     </div>
   )
@@ -185,7 +185,7 @@ function StatCard({ label, value, percent, period }) {
 
 // ─── Payout Panel (slides in to the left of Details modal) ──────────────────
 
-function PayoutPanel({ txn, settings, onClose, onUpdatePayout }) {
+function PayoutPanel({ txn, settings, onClose, onUpdatePayout, mobileInline = false }) {
   const [payoutRef, setPayoutRef] = useState(txn.payoutReference)
   const [payoutDate, setPayoutDate] = useState(txn.payoutDate || new Date().toISOString().split('T')[0])
   const [editingRef, setEditingRef] = useState(false)
@@ -199,17 +199,7 @@ function PayoutPanel({ txn, settings, onClose, onUpdatePayout }) {
     setEditingRef(false)
   }
 
-  return (
-    <div className={styles.payoutPanel}>
-      {/* Panel header */}
-      <div className={styles.payoutPanelHeader}>
-        <div>
-          <p className={styles.payoutPanelTitle}>Payout Management</p>
-          <p className={styles.payoutPanelSub}>{txn.orderId}</p>
-        </div>
-        <button className={styles.modalClose} onClick={onClose}><Icon.Close /></button>
-      </div>
-
+  const bodyContent = (
       <div className={styles.payoutPanelBody}>
 
         {/* Current status badge */}
@@ -283,6 +273,20 @@ function PayoutPanel({ txn, settings, onClose, onUpdatePayout }) {
         </button>
 
       </div>
+  )
+
+  if (mobileInline) return bodyContent
+
+  return (
+    <div className={styles.payoutPanel}>
+      <div className={styles.payoutPanelHeader}>
+        <div>
+          <p className={styles.payoutPanelTitle}>Payout Management</p>
+          <p className={styles.payoutPanelSub}>{txn.orderId}</p>
+        </div>
+        <button className={styles.modalClose} onClick={onClose}><Icon.Close /></button>
+      </div>
+      {bodyContent}
     </div>
   )
 }
@@ -290,10 +294,24 @@ function PayoutPanel({ txn, settings, onClose, onUpdatePayout }) {
 // ─── Transaction Details Modal ────────────────────────────────────────────────
 
 const MODAL_TABS = ['Buyer', 'Seller', 'Service']
+const MOBILE_MODAL_MODES = ['Details', 'Manage Payout']
 
 function TransactionModal({ txn, settings, onClose, onUpdatePayout }) {
   const [showPayoutPanel, setShowPayoutPanel] = useState(false)
   const [activeInfoTab, setActiveInfoTab] = useState('Buyer')
+  // Mobile mode: 'details' | 'payout' — toggled via segmented control at top
+  const [mobileMode, setMobileMode] = useState('details')
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth <= 640 : false
+  )
+
+  React.useEffect(() => {
+    const mq = window.matchMedia('(max-width: 640px)')
+    const handler = (e) => setIsMobile(e.matches)
+    mq.addEventListener('change', handler)
+    setIsMobile(mq.matches)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
 
   const rate = getCommissionRate(txn.sellerId, settings)
   const { commission, sellerEarnings } = calcAmounts(txn.amount, rate)
@@ -301,8 +319,8 @@ function TransactionModal({ txn, settings, onClose, onUpdatePayout }) {
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
 
-      {/* Payout panel — slides in to the left */}
-      {showPayoutPanel && (
+      {/* Payout panel — slides in to the left (desktop only) */}
+      {showPayoutPanel && !isMobile && (
         <div className={styles.payoutPanelWrap} onClick={e => e.stopPropagation()}>
           <PayoutPanel
             txn={txn}
@@ -315,6 +333,8 @@ function TransactionModal({ txn, settings, onClose, onUpdatePayout }) {
 
       {/* Main details modal */}
       <div className={styles.modal} onClick={e => e.stopPropagation()}>
+
+        {/* ── Header ── */}
         <div className={styles.modalHeader}>
           <div>
             <h2 className={styles.modalTitle}>Transaction Details</h2>
@@ -323,98 +343,132 @@ function TransactionModal({ txn, settings, onClose, onUpdatePayout }) {
           <button className={styles.modalClose} onClick={onClose}><Icon.Close /></button>
         </div>
 
-        <div className={styles.modalBody}>
-          {/* Amounts Hero */}
-          <div className={styles.modalAmountHero}>
-            <div className={styles.heroAmount}>
-              <span className={styles.heroAmountLabel}>Total Amount</span>
-              <span className={styles.heroAmountValue}>{formatPHP(txn.amount)}</span>
-            </div>
-            <div className={styles.heroSplit}>
-              <div className={styles.heroSplitItem}>
-                <div className={styles.heroSplitLeft}>
-                  <span className={styles.heroSplitDot} style={{background:'#94a3b8'}}/>
-                  <p className={styles.heroSplitLabel}>Platform Commission ({rate}%)</p>
-                </div>
-                <span className={styles.heroSplitVal}>{formatPHP(commission)}</span>
-              </div>
-              <div className={styles.heroSplitItem}>
-                <div className={styles.heroSplitLeft}>
-                  <span className={styles.heroSplitDot} style={{background:'#10b981'}}/>
-                  <p className={styles.heroSplitLabel}>Seller Earnings</p>
-                </div>
-                <span className={styles.heroSplitVal}>{formatPHP(sellerEarnings)}</span>
-              </div>
-            </div>
-            <div className={styles.heroBar}>
-              <div className={styles.heroBarFill} style={{width:`${rate}%`, background:'#475569'}}/>
-              <div className={styles.heroBarFill} style={{width:`${100-rate}%`, background:'#10b981'}}/>
-            </div>
-          </div>
-
-          {/* Status row — always visible */}
-          <div className={styles.modalStatusRow}>
-            <div className={styles.modalStatusItem}>
-              <span className={styles.modalStatusLabel}>Payment</span>
-              <Badge type="payment" value={txn.paymentStatus}/>
-            </div>
-            <div className={styles.modalStatusDivider}/>
-            <div className={styles.modalStatusItem}>
-              <span className={styles.modalStatusLabel}>Payout</span>
-              <Badge type="payout" value={txn.payoutStatus}/>
-            </div>
-          </div>
-
-          {/* Info tabs */}
-          <div className={styles.modalInfoTabs}>
-            <div className={styles.modalInfoTabNav}>
-              {MODAL_TABS.map(tab => (
-                <button
-                  key={tab}
-                  className={`${styles.modalInfoTabBtn} ${activeInfoTab === tab ? styles.modalInfoTabBtnActive : ''}`}
-                  onClick={() => setActiveInfoTab(tab)}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
-
-            <div className={styles.modalInfoTabPanel}>
-              {activeInfoTab === 'Buyer' && (
-                <div className={styles.modalInfoRows}>
-                  <div className={styles.modalInfoRow}><span>Name</span><strong>{txn.buyerName}</strong></div>
-                  <div className={styles.modalInfoRow}><span>Email</span><strong>{txn.buyerEmail}</strong></div>
-                  <div className={styles.modalInfoRow}><span>Phone</span><strong>{txn.buyerPhone}</strong></div>
-                </div>
-              )}
-              {activeInfoTab === 'Seller' && (
-                <div className={styles.modalInfoRows}>
-                  <div className={styles.modalInfoRow}><span>Business</span><strong>{txn.sellerName}</strong></div>
-                  <div className={styles.modalInfoRow}><span>Email</span><strong>{txn.sellerEmail}</strong></div>
-                  <div className={styles.modalInfoRow}><span>Phone</span><strong>{txn.sellerPhone}</strong></div>
-                </div>
-              )}
-              {activeInfoTab === 'Service' && (
-                <div className={styles.modalInfoRows}>
-                  <div className={styles.modalInfoRow}><span>Package</span><strong>{txn.service}</strong></div>
-                  <div className={styles.modalInfoRow}><span>Payment Method</span><strong>{txn.paymentMethod}</strong></div>
-                  <div className={styles.modalInfoRow}><span>Date</span><strong>{txn.date}</strong></div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Payout management trigger */}
-          <button
-            className={`${styles.openPayoutBtn} ${showPayoutPanel ? styles.openPayoutBtnActive : ''}`}
-            onClick={() => setShowPayoutPanel(prev => !prev)}
-          >
-            <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
-            {showPayoutPanel ? 'Close Payout Panel' : 'Manage Payout'}
-            <svg className={styles.openPayoutChevron} viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </button>
-
+        {/* ── Mobile mode switcher (Details / Manage Payout) ── */}
+        <div className={styles.mobileModeBar}>
+          {MOBILE_MODAL_MODES.map(mode => (
+            <button
+              key={mode}
+              className={`${styles.mobileModeBtn} ${mobileMode === (mode === 'Details' ? 'details' : 'payout') ? styles.mobileModeBtnActive : ''}`}
+              onClick={() => setMobileMode(mode === 'Details' ? 'details' : 'payout')}
+            >
+              {mode}
+            </button>
+          ))}
         </div>
+
+        {/* ── Scrollable body ── */}
+        <div className={styles.modalScrollBody}>
+
+          {/* ── View: Details (always visible on desktop; conditional on mobile) ── */}
+          <div className={`${styles.modalContentPane} ${mobileMode === 'payout' ? styles.mobileHidden : ''}`}>
+            <div className={styles.modalBody}>
+
+              {/* Amounts Hero */}
+              <div className={styles.modalAmountHero}>
+                <div className={styles.heroAmount}>
+                  <span className={styles.heroAmountLabel}>Total Amount</span>
+                  <span className={styles.heroAmountValue}>{formatPHP(txn.amount)}</span>
+                </div>
+                <div className={styles.heroSplit}>
+                  <div className={styles.heroSplitItem}>
+                    <div className={styles.heroSplitLeft}>
+                      <span className={styles.heroSplitDot} style={{background:'#94a3b8'}}/>
+                      <p className={styles.heroSplitLabel}>Platform Commission ({rate}%)</p>
+                    </div>
+                    <span className={styles.heroSplitVal}>{formatPHP(commission)}</span>
+                  </div>
+                  <div className={styles.heroSplitItem}>
+                    <div className={styles.heroSplitLeft}>
+                      <span className={styles.heroSplitDot} style={{background:'#10b981'}}/>
+                      <p className={styles.heroSplitLabel}>Seller Earnings</p>
+                    </div>
+                    <span className={styles.heroSplitVal}>{formatPHP(sellerEarnings)}</span>
+                  </div>
+                </div>
+                <div className={styles.heroBar}>
+                  <div className={styles.heroBarFill} style={{width:`${rate}%`, background:'#475569'}}/>
+                  <div className={styles.heroBarFill} style={{width:`${100-rate}%`, background:'#10b981'}}/>
+                </div>
+              </div>
+
+              {/* Status row */}
+              <div className={styles.modalStatusRow}>
+                <div className={styles.modalStatusItem}>
+                  <span className={styles.modalStatusLabel}>Payment</span>
+                  <Badge type="payment" value={txn.paymentStatus}/>
+                </div>
+                <div className={styles.modalStatusDivider}/>
+                <div className={styles.modalStatusItem}>
+                  <span className={styles.modalStatusLabel}>Payout</span>
+                  <Badge type="payout" value={txn.payoutStatus}/>
+                </div>
+              </div>
+
+              {/* Info tabs */}
+              <div className={styles.modalInfoTabs}>
+                <div className={styles.modalInfoTabNav}>
+                  {MODAL_TABS.map(tab => (
+                    <button
+                      key={tab}
+                      className={`${styles.modalInfoTabBtn} ${activeInfoTab === tab ? styles.modalInfoTabBtnActive : ''}`}
+                      onClick={() => setActiveInfoTab(tab)}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+                <div className={styles.modalInfoTabPanel}>
+                  {activeInfoTab === 'Buyer' && (
+                    <div className={styles.modalInfoRows}>
+                      <div className={styles.modalInfoRow}><span>Name</span><strong>{txn.buyerName}</strong></div>
+                      <div className={styles.modalInfoRow}><span>Email</span><strong>{txn.buyerEmail}</strong></div>
+                      <div className={styles.modalInfoRow}><span>Phone</span><strong>{txn.buyerPhone}</strong></div>
+                    </div>
+                  )}
+                  {activeInfoTab === 'Seller' && (
+                    <div className={styles.modalInfoRows}>
+                      <div className={styles.modalInfoRow}><span>Business</span><strong>{txn.sellerName}</strong></div>
+                      <div className={styles.modalInfoRow}><span>Email</span><strong>{txn.sellerEmail}</strong></div>
+                      <div className={styles.modalInfoRow}><span>Phone</span><strong>{txn.sellerPhone}</strong></div>
+                    </div>
+                  )}
+                  {activeInfoTab === 'Service' && (
+                    <div className={styles.modalInfoRows}>
+                      <div className={styles.modalInfoRow}><span>Package</span><strong>{txn.service}</strong></div>
+                      <div className={styles.modalInfoRow}><span>Payment Method</span><strong>{txn.paymentMethod}</strong></div>
+                      <div className={styles.modalInfoRow}><span>Date</span><strong>{txn.date}</strong></div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Payout management trigger — desktop only */}
+              <button
+                className={`${styles.openPayoutBtn} ${showPayoutPanel ? styles.openPayoutBtnActive : ''}`}
+                onClick={() => setShowPayoutPanel(prev => !prev)}
+              >
+                <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+                {showPayoutPanel ? 'Close Payout Panel' : 'Manage Payout'}
+                <svg className={styles.openPayoutChevron} viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+
+            </div>
+          </div>
+
+          {/* ── View: Manage Payout (mobile only — desktop uses payoutPanelWrap instead) ── */}
+          <div className={`${styles.modalContentPane} ${styles.modalContentPaneMobile} ${mobileMode === 'details' ? styles.mobileHidden : ''}`}>
+            <div className={styles.modalBody}>
+              <PayoutPanel
+                txn={txn}
+                settings={settings}
+                onClose={() => setMobileMode('details')}
+                onUpdatePayout={onUpdatePayout}
+                mobileInline
+              />
+            </div>
+          </div>
+
+        </div>{/* end modalScrollBody */}
       </div>
     </div>
   )
@@ -780,7 +834,47 @@ export default function AdminPayoutsPage() {
             </div>
           )}
 
-          {/* Table */}
+          {/* Mobile Card List — hidden on desktop via CSS */}
+          <div className={styles.mobileCardList}>
+            {paginatedRows.length === 0 ? (
+              <div className={styles.emptyState}>
+                <p className={styles.emptyTitle}>No transactions found</p>
+                <p className={styles.emptyHint}>Try adjusting your filters</p>
+                {hasFilters && <button className={styles.clearFiltersBtn} onClick={clearFilters}>Clear filters</button>}
+              </div>
+            ) : paginatedRows.map(t => {
+              const rate = getCommissionRate(t.sellerId, commissionSettings)
+              const { commission, sellerEarnings } = calcAmounts(t.amount, rate)
+              return (
+                <div key={t.id} className={styles.mobileCard}>
+                  <div className={styles.mobileCardTop}>
+                    <div>
+                      <p className={styles.orderId}>{t.orderId}</p>
+                      <p className={styles.txnId}>{t.id}</p>
+                    </div>
+                    <p className={styles.mobileCardAmount}>{formatPHP(t.amount)}</p>
+                  </div>
+                  <p className={styles.mobileCardService}>{t.service}</p>
+                  <div className={styles.mobileCardMeta}>
+                    <span className={styles.mobileCardBuyer}>{t.buyerName}</span>
+                    <span className={styles.mobileCardDate}>{t.date}</span>
+                  </div>
+                  <div className={styles.mobileCardStatuses}>
+                    <Badge type="payment" value={t.paymentStatus}/>
+                    <Badge type="payout" value={t.payoutStatus}/>
+                  </div>
+                  <div className={styles.mobileCardBreakdown}>
+                    <span className={styles.mobileCardBreakdownItem}>Platform <strong>{formatPHP(commission)}</strong></span>
+                    <span className={styles.mobileCardBreakdownDivider}>·</span>
+                    <span className={styles.mobileCardBreakdownItem}>Seller <strong className={styles.mobileCardEarnings}>{formatPHP(sellerEarnings)}</strong></span>
+                  </div>
+                  <button className={styles.mobileCardDetailsBtn} onClick={() => setSelectedTxn(t)}>View Details</button>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Table — hidden on mobile via CSS */}
           <div className={styles.tableWrap}>
             <table className={styles.table}>
               <thead>
