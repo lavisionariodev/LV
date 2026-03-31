@@ -94,12 +94,45 @@ function getPageTitle(variant, pathname) {
     : ''
 }
 
+const SAMPLE_NOTIFICATIONS = [
+  {
+    id: 1,
+    title: 'New dispute filed',
+    message: 'Order #4821 has a new dispute requiring your review.',
+    time: '2 min ago',
+    unread: true,
+  },
+  {
+    id: 2,
+    title: 'Seller approved',
+    message: 'Seller "Maria Santos" has been successfully verified.',
+    time: '1 hr ago',
+    unread: true,
+  },
+  {
+    id: 3,
+    title: 'Payout processed',
+    message: '₱12,500 payout was sent to 3 sellers.',
+    time: '3 hrs ago',
+    unread: false,
+  },
+  {
+    id: 4,
+    title: 'New user registered',
+    message: 'juan.dela.cruz@email.com just created an account.',
+    time: 'Yesterday',
+    unread: false,
+  },
+]
+
 export default function AppTopbar({ variant, onLogout, isMobile, onMenuClick, sidebarCollapsed }) {
   const { user, profile } = useAuth()
   const [showLogout, setShowLogout] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
   const [adminProfile, setAdminProfile] = useState(null)
   const profileWrapRef = useRef(null)
+  const notifWrapRef = useRef(null)
   const pathname = usePathname()
 
   useEffect(() => {
@@ -112,6 +145,17 @@ export default function AppTopbar({ variant, onLogout, isMobile, onMenuClick, si
     document.addEventListener('click', handleClickOutside)
     return () => document.removeEventListener('click', handleClickOutside)
   }, [dropdownOpen])
+
+  useEffect(() => {
+    if (!notifOpen) return
+    function handleClickOutside(e) {
+      if (notifWrapRef.current && !notifWrapRef.current.contains(e.target)) {
+        setNotifOpen(false)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [notifOpen])
 
   const config = TOPBAR_CONFIG[variant]
   if (!config) return null
@@ -179,14 +223,57 @@ export default function AppTopbar({ variant, onLogout, isMobile, onMenuClick, si
         </div>
 
         <div className={styles.right}>
-          <Link
-            href={config.notificationsHref}
-            className={styles.iconBtn}
-            aria-label="Notifications"
+          <div
+            ref={notifWrapRef}
+            className={`${styles.notifWrap} ${notifOpen ? styles.notifWrapOpen : ''}`}
           >
-            <TbBell />
-          </Link>
+            <button
+              type="button"
+              className={styles.iconBtn}
+              aria-label="Notifications"
+              onClick={() => setNotifOpen((o) => !o)}
+            >
+              <TbBell />
+            </button>
 
+            <div className={styles.notifDropdown}>
+              <div className={styles.notifDropdownHead}>
+                <p className={styles.notifDropdownTitle}>Notifications</p>
+                {SAMPLE_NOTIFICATIONS.some((n) => n.unread) && (
+                  <span className={styles.notifUnreadCount}>
+                    {SAMPLE_NOTIFICATIONS.filter((n) => n.unread).length} new
+                  </span>
+                )}
+
+              </div>
+              <ul className={styles.notifList}>
+                {SAMPLE_NOTIFICATIONS.map((n) => (
+                  <li
+                    key={n.id}
+                    className={`${styles.notifItem} ${n.unread ? styles.notifItemUnread : ''}`}
+                  >
+                    <span className={styles.notifDot} data-unread={n.unread} />
+                    <div className={styles.notifItemBody}>
+                      <p className={styles.notifItemTitle}>{n.title}</p>
+                      <p className={styles.notifItemMsg}>{n.message}</p>
+                      <p className={styles.notifItemTime}>{n.time}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <div className={styles.notifFooter}>
+                <Link
+                  href={config.notificationsHref}
+                  className={styles.notifViewAll}
+                  onClick={() => setNotifOpen(false)}
+                >
+                  See all notifications
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {!isMobile && (
           <div
             ref={profileWrapRef}
             className={`${styles.profileWrap} ${dropdownOpen ? styles.profileWrapOpen : ''}`}
@@ -275,6 +362,7 @@ export default function AppTopbar({ variant, onLogout, isMobile, onMenuClick, si
               </div>
             </div>
           </div>
+          )}
         </div>
         </>)}
       </header>

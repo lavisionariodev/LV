@@ -69,3 +69,46 @@
 .link:hover {
   text-decoration: none;
 }
+
+/* ── Responsive ── */
+
+@media (max-width: 640px) {
+  /* Detail grid: tighter font, more breathing room between rows */
+  .detailGrid {
+    gap: 10px;
+    font-size: 13px;
+  }
+
+  /* Each detail row: label above value on very narrow screens */
+  .detailGrid > div {
+    line-height: 1.6;
+  }
+
+  .descriptionBlock {
+    font-size: 12px;
+    margin-top: 6px;
+    line-height: 1.6;
+  }
+
+  /* Divider */
+  .divider { margin: 12px 0; }
+
+  /* Demo hint */
+  .demoHint { font-size: 12px; }
+
+  /* Status action buttons: 2-column grid, full-width feel */
+  .statusActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  /* "Move to next step" spans full width */
+  .statusActions > button:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  /* Footer note */
+  .footerNote { font-size: 12px; }
+  .footerNote p + p { margin-top: 6px; }
+}

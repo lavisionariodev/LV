@@ -16,9 +16,12 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
-import { TbReportSearch, TbUsers, TbSearch } from 'react-icons/tb'
+import { TbReportSearch, TbUsers, TbSearch, TbTemplate, TbUserPlus, TbArrowUpRight, TbFlag, TbLayoutList } from 'react-icons/tb'
 import { LuUserCheck } from 'react-icons/lu'
 import { HiOutlineNewspaper } from 'react-icons/hi'
+import { MdOutlineImage, MdOutlineQuestionAnswer, MdOutlineCampaign, MdOutlinePages } from 'react-icons/md'
+import { RiUserAddLine } from 'react-icons/ri'
+import { LuClipboardList, LuPencilLine, LuPlus, LuCheck } from 'react-icons/lu'
 
 // Bar chart: green shades only (values match globals.css --color-green-*)
 const BAR_COLORS = ['#1F312B', '#2D4A38', '#3D683A', '#4A7C47']
@@ -29,6 +32,7 @@ const QUICK_LINKS = [
   { id: 'sellers', label: 'Sellers', icon: LuUserCheck },
   { id: 'users', label: 'Users', icon: TbUsers },
   { id: 'content', label: 'Content', icon: HiOutlineNewspaper },
+  { id: 'template', label: 'Template', icon: TbTemplate },
 ]
 
 function formatShortDate(dateStr) {
@@ -155,78 +159,170 @@ export default function AdminDashboardPage() {
 
         <div className={styles.quickLinkContent}>
           {activeQuickLink === 'disputes' && (
-            <div className={styles.panel}>
-              <div className={styles.panelHead}>
-                <p className={styles.panelTitle}>Disputes overview</p>
-                <Link href="/admin/disputes" className={styles.smallBtn}>
-                  View all
-                </Link>
-              </div>
-              <div className={styles.table}>
-                <div className={styles.rowHead}>
-                  <span>Date</span>
-                  <span>Type</span>
-                  <span>Status</span>
+            <div className={styles.qlPanel}>
+              {/* stat chips */}
+              <div className={styles.qlChips}>
+                <div className={styles.qlChip}>
+                  <span className={styles.qlChipValue}>{dashboard.stats.openDisputes}</span>
+                  <span className={styles.qlChipLabel}>Open</span>
                 </div>
+                <div className={styles.qlChip}>
+                  <span className={styles.qlChipValue}>
+                    {dashboard.recentActivity.filter(a => String(a.status).toLowerCase().includes('pending')).length}
+                  </span>
+                  <span className={styles.qlChipLabel}>Pending</span>
+                </div>
+                <div className={styles.qlChip}>
+                  <span className={styles.qlChipValue}>
+                    {dashboard.recentActivity.filter(a => String(a.status).toLowerCase().includes('resolved')).length}
+                  </span>
+                  <span className={styles.qlChipLabel}>Resolved</span>
+                </div>
+              </div>
+              {/* recent rows */}
+              <div className={styles.qlRows}>
                 {dashboard.recentActivity.slice(0, 3).map((item) => (
-                  <div className={styles.row} key={item.id}>
-                    <span>{item.date}</span>
-                    <span>{item.type}</span>
-                    <span className={styles.badge}>{item.status}</span>
+                  <div className={styles.qlRow} key={item.id}>
+                    <span
+                      className={styles.qlDot}
+                      style={{ backgroundColor: getStatusDotColor(item.status) }}
+                    />
+                    <div className={styles.qlRowMeta}>
+                      <span className={styles.qlRowType}>{item.type}</span>
+                      <span className={styles.qlRowDate}>{item.date}</span>
+                    </div>
+                    <span className={styles.qlBadge}>{item.status}</span>
                   </div>
                 ))}
               </div>
+              <Link href="/admin/disputes" className={styles.qlCta}>
+                View all disputes →
+              </Link>
             </div>
           )}
 
           {activeQuickLink === 'sellers' && (
-            <div className={styles.panel}>
-              <div className={styles.panelHead}>
-                <p className={styles.panelTitle}>Sellers</p>
-                <Link href="/admin/sellers" className={styles.smallBtn}>
-                  Manage
-                </Link>
+            <div className={styles.qlPanel}>
+              <div className={styles.qlChips}>
+                <div className={styles.qlChip}>
+                  <span className={styles.qlChipValue}>{dashboard.stats.totalSellers}</span>
+                  <span className={styles.qlChipLabel}>Total</span>
+                </div>
+                <div className={styles.qlChip}>
+                  <span className={styles.qlChipValue} style={{ color: '#15803d' }}>Active</span>
+                  <span className={styles.qlChipLabel}>Status</span>
+                </div>
               </div>
-              <p className={styles.quickLinkBodyText}>
-                Total sellers: <strong>{dashboard.stats.totalSellers}</strong>
-              </p>
-              <p className={styles.quickLinkBodyText}>
-                Keep an eye on new and high-performing sellers to ensure a
-                healthy marketplace.
-              </p>
+              <div className={styles.qlRows}>
+                <div className={styles.qlActionRow}>
+                  <span className={styles.qlActionIcon}><LuPlus /></span>
+                  <span className={styles.qlActionLabel}>Add new seller</span>
+                  <Link href="/admin/sellers/new" className={styles.qlActionBtn}>Go</Link>
+                </div>
+                <div className={styles.qlActionRow}>
+                  <span className={styles.qlActionIcon}><LuCheck /></span>
+                  <span className={styles.qlActionLabel}>Approve pending</span>
+                  <Link href="/admin/sellers?filter=pending" className={styles.qlActionBtn}>Go</Link>
+                </div>
+                <div className={styles.qlActionRow}>
+                  <span className={styles.qlActionIcon}><TbArrowUpRight /></span>
+                  <span className={styles.qlActionLabel}>Top performers</span>
+                  <Link href="/admin/sellers?sort=top" className={styles.qlActionBtn}>Go</Link>
+                </div>
+              </div>
+              <Link href="/admin/sellers" className={styles.qlCta}>
+                Manage sellers →
+              </Link>
             </div>
           )}
 
           {activeQuickLink === 'users' && (
-            <div className={styles.panel}>
-              <div className={styles.panelHead}>
-                <p className={styles.panelTitle}>Users</p>
-                <Link href="/admin/users" className={styles.smallBtn}>
-                  Manage
-                </Link>
+            <div className={styles.qlPanel}>
+              <div className={styles.qlChips}>
+                <div className={styles.qlChip}>
+                  <span className={styles.qlChipValue}>{dashboard.stats.totalUsers}</span>
+                  <span className={styles.qlChipLabel}>Total</span>
+                </div>
+                <div className={styles.qlChip}>
+                  <span className={styles.qlChipValue}>{dashboard.stats.transactionsLast30Days}</span>
+                  <span className={styles.qlChipLabel}>Txns (30d)</span>
+                </div>
               </div>
-              <p className={styles.quickLinkBodyText}>
-                Total users: <strong>{dashboard.stats.totalUsers}</strong>
-              </p>
-              <p className={styles.quickLinkBodyText}>
-                Watch user growth and retention so you understand how the
-                platform is being used.
-              </p>
+              <div className={styles.qlRows}>
+                <div className={styles.qlActionRow}>
+                  <span className={styles.qlActionIcon}><TbSearch /></span>
+                  <span className={styles.qlActionLabel}>Search users</span>
+                  <Link href="/admin/users" className={styles.qlActionBtn}>Go</Link>
+                </div>
+                <div className={styles.qlActionRow}>
+                  <span className={styles.qlActionIcon}><TbFlag /></span>
+                  <span className={styles.qlActionLabel}>Flagged accounts</span>
+                  <Link href="/admin/users?filter=flagged" className={styles.qlActionBtn}>Go</Link>
+                </div>
+                <div className={styles.qlActionRow}>
+                  <span className={styles.qlActionIcon}><RiUserAddLine /></span>
+                  <span className={styles.qlActionLabel}>New registrations</span>
+                  <Link href="/admin/users?sort=newest" className={styles.qlActionBtn}>Go</Link>
+                </div>
+              </div>
+              <Link href="/admin/users" className={styles.qlCta}>
+                Manage users →
+              </Link>
             </div>
           )}
 
           {activeQuickLink === 'content' && (
-            <div className={styles.panel}>
-              <div className={styles.panelHead}>
-                <p className={styles.panelTitle}>Content</p>
-                <Link href="/admin/content" className={styles.smallBtn}>
-                  Manage
-                </Link>
+            <div className={styles.qlPanel}>
+              <div className={styles.qlRows}>
+                <div className={styles.qlActionRow}>
+                  <span className={styles.qlActionIcon}><MdOutlineImage /></span>
+                  <span className={styles.qlActionLabel}>Homepage banners</span>
+                  <Link href="/admin/content?section=banners" className={styles.qlActionBtn}>Edit</Link>
+                </div>
+                <div className={styles.qlActionRow}>
+                  <span className={styles.qlActionIcon}><MdOutlineQuestionAnswer /></span>
+                  <span className={styles.qlActionLabel}>FAQs</span>
+                  <Link href="/admin/content?section=faqs" className={styles.qlActionBtn}>Edit</Link>
+                </div>
+                <div className={styles.qlActionRow}>
+                  <span className={styles.qlActionIcon}><MdOutlineCampaign /></span>
+                  <span className={styles.qlActionLabel}>Announcements</span>
+                  <Link href="/admin/content?section=announcements" className={styles.qlActionBtn}>Edit</Link>
+                </div>
+                <div className={styles.qlActionRow}>
+                  <span className={styles.qlActionIcon}><MdOutlinePages /></span>
+                  <span className={styles.qlActionLabel}>Static pages</span>
+                  <Link href="/admin/content?section=pages" className={styles.qlActionBtn}>Edit</Link>
+                </div>
               </div>
-              <p className={styles.quickLinkBodyText}>
-                Quickly adjust homepage banners, FAQs, and other key content so
-                buyers and sellers always see up-to-date information.
-              </p>
+              <Link href="/admin/content" className={styles.qlCta}>
+                Manage all content →
+              </Link>
+            </div>
+          )}
+
+          {activeQuickLink === 'template' && (
+            <div className={styles.qlPanel}>
+              <div className={styles.qlRows}>
+                <div className={styles.qlActionRow}>
+                  <span className={styles.qlActionIcon}><LuPlus /></span>
+                  <span className={styles.qlActionLabel}>Create template</span>
+                  <Link href="/admin/seller-template/new" className={styles.qlActionBtn}>Go</Link>
+                </div>
+                <div className={styles.qlActionRow}>
+                  <span className={styles.qlActionIcon}><LuPencilLine /></span>
+                  <span className={styles.qlActionLabel}>Edit existing</span>
+                  <Link href="/admin/seller-template" className={styles.qlActionBtn}>Go</Link>
+                </div>
+                <div className={styles.qlActionRow}>
+                  <span className={styles.qlActionIcon}><LuClipboardList /></span>
+                  <span className={styles.qlActionLabel}>All templates</span>
+                  <Link href="/admin/seller-template?view=all" className={styles.qlActionBtn}>Go</Link>
+                </div>
+              </div>
+              <Link href="/admin/seller-template" className={styles.qlCta}>
+                Manage templates →
+              </Link>
             </div>
           )}
         </div>
@@ -426,4 +522,4 @@ export default function AdminDashboardPage() {
       </section>
     </div>
   )
-} 
+}

@@ -283,28 +283,134 @@
 /* ── Responsive ── */
 
 @media (max-width: 700px) {
-  .layout {
-    grid-template-columns: 1fr;
+  /* Panel header — stack title above actions */
+  .panelHeadRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 12px;
   }
 
+  .panelActions {
+    width: 100%;
+  }
+
+  .actionRow {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  /* Editing banner */
+  .editingBanner {
+    font-size: 11px;
+    padding: 7px 10px;
+    margin-bottom: 12px;
+  }
+
+  /* Layout: sidebar on top, form below */
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  /* Sidebar: horizontal scrollable pill tabs */
   .sidebar {
     border-right: none;
     padding-right: 0;
-    border-bottom: 1px solid #e9efec;
-    padding-bottom: 12px;
+    border-bottom: none;
+    padding-bottom: 0;
     flex-direction: row;
-    flex-wrap: wrap;
-    gap: 4px;
+    flex-wrap: nowrap;
+    gap: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 2px 0 6px;
+  }
+
+  .sidebar::-webkit-scrollbar {
+    display: none;
   }
 
   .navBtn {
     width: auto;
-    flex: 1;
+    flex: 0 0 auto;
     justify-content: center;
-    min-width: 100px;
+    white-space: nowrap;
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    gap: 5px;
   }
 
+  .navBtn:hover {
+    background: #f1f5f9;
+  }
+
+  .navBtnActive {
+    background: #1e293b;
+    border-color: #1e293b;
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .navBtnActive .navIcon {
+    color: #94a3b8;
+  }
+
+  /* Section header */
+  .sectionHeader {
+    padding-bottom: 10px;
+    margin-bottom: 2px;
+  }
+
+  .sectionLabel {
+    font-size: 12px;
+  }
+
+  /* Form area */
+  .formArea {
+    gap: 12px;
+  }
+
+  .sectionGrid {
+    gap: 10px;
+  }
+
+  /* Label & input sizing */
+  .labelSpan {
+    font-size: 11px;
+  }
+
+  .input,
+  .textarea {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+
+  /* Two-column collapses to single */
   .twoCol {
     grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  /* Hints */
+  .hint,
+  .hintError {
+    font-size: 11px;
+  }
+
+  /* Buttons — full-width when solo, grid when paired */
+  .btnPrimary,
+  .btnGhost {
+    width: 100%;
+    justify-content: center;
+    font-size: 13px;
+    padding: 9px 14px;
+    text-align: center;
   }
 }

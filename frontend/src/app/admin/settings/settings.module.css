@@ -561,7 +561,7 @@
   /* Centered page title */
   .mobilePageTitle {
     text-align: center;
-    font-size: 17px;
+    font-size: 15px;
     font-weight: 700;
     color: #111;
     padding: 20px 16px 12px;
@@ -596,7 +596,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
+    font-size: 20px;
     color: #fff;
     flex-shrink: 0;
     margin-bottom: 0;
@@ -610,14 +610,14 @@
   }
 
   .mobileName {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 700;
     color: #111;
     margin: 0;
   }
 
   .mobileEmail {
-    font-size: 13px;
+    font-size: 11px;
     color: #64748b;
     margin: 0;
   }
@@ -628,7 +628,7 @@
   }
 
   .mobileSectionLabel {
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 600;
     color: #94a3b8;
     text-transform: uppercase;
@@ -670,26 +670,26 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 17px;
+    font-size: 15px;
     color: #334155;
     flex-shrink: 0;
   }
 
   .mobileMenuLabel {
     flex: 1;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     color: #111;
   }
 
   .mobileMenuValue {
-    font-size: 13px;
+    font-size: 11px;
     color: #94a3b8;
     margin-right: 6px;
   }
 
   .mobileMenuArrow {
-    font-size: 16px;
+    font-size: 14px;
     color: #cbd5e1;
   }
 

@@ -4,7 +4,6 @@ import { useState, useLayoutEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MdOutlineAdminPanelSettings } from "react-icons/md";
-import { TbMessage2Question } from "react-icons/tb";
 import { supabase } from "@/lib/supabase/client";
 import { isAdmin } from "@/lib/auth/admin";
 import { signOut } from "@/lib/auth/session";
@@ -75,12 +74,7 @@ export default function AdminLoginPage() {
             <span className={styles.logoText}>{systemName}</span>
             <span className={styles.badge}>Administrator</span>
           </Link>
-          <a href="#" className={styles.needHelp} aria-label="Need help?">
-            <span className={styles.needHelpText}>Need help?</span>
-            <span className={styles.needHelpIcon} aria-hidden="true">
-              <TbMessage2Question />
-            </span>
-          </a>
+
         </div>
       </header>
 
