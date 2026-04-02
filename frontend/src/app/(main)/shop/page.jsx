@@ -731,11 +731,9 @@ function ListingCard({ listing, service, styles, inCompare, onToggleCompare, com
           </div>
           <div className={styles.ratingGroup}>
             <span className={styles.ratingStars}>
-              {[1, 2, 3, 4, 5].map((s) => (
-                <svg key={s} width="11" height="11" viewBox="0 0 12 12" fill={s <= Math.round(provider?.rating ?? 0) ? 'var(--color-gold-base, #B8962E)' : '#D5CCBC'}>
-                  <path d="M6 1l1.35 2.73L10.5 4.2l-2.25 2.19.53 3.1L6 7.9l-2.78 1.6.53-3.1L1.5 4.2l3.15-.47z" />
-                </svg>
-              ))}
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="var(--color-gold-base, #B8962E)">
+                <path d="M6 1l1.35 2.73L10.5 4.2l-2.25 2.19.53 3.1L6 7.9l-2.78 1.6.53-3.1L1.5 4.2l3.15-.47z" />
+              </svg>
             </span>
             <span className={styles.ratingNum}>{provider?.rating}</span>
             <span className={styles.ratingReviews}>({provider?.reviews})</span>

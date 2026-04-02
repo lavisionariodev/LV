@@ -38,7 +38,6 @@ export default function HowItWorksPage() {
         'View clear service inclusions, pricing, and provider backgrounds.',
         'Read provider profiles and their areas of specialization.',
       ],
-      icon: '✦',
     },
     {
       id: 'compare-packages',
@@ -52,7 +51,6 @@ export default function HowItWorksPage() {
         'Identify which package best fits your budget and cultural or religious preferences.',
         'Save or shortlist options to revisit later.',
       ],
-      icon: '◈',
     },
     {
       id: 'book-a-service',
@@ -66,7 +64,6 @@ export default function HowItWorksPage() {
         'Receive confirmation and a clear timeline of next steps.',
         'Direct coordination between La Visionario and your chosen provider begins immediately.',
       ],
-      icon: '◇',
     },
     {
       id: 'payment-support',
@@ -80,7 +77,6 @@ export default function HowItWorksPage() {
         'Access our support team anytime for questions or follow-up assistance.',
         'Post-service guidance available for additional needs like legal documents or memorial keepsakes.',
       ],
-      icon: '❖',
     },
   ]
 
@@ -90,7 +86,6 @@ export default function HowItWorksPage() {
       {/* HERO */}
       <section className={styles.hero}>
         <div className={styles.heroOverlay} />
-        <div className={styles.heroDivider} />
         <div className={styles.heroInner}>
           <p className={styles.heroEyebrow}>La Visionario</p>
           <h1 className={styles.heroTitle}>How It Works</h1>
@@ -137,7 +132,6 @@ export default function HowItWorksPage() {
               <div key={step.id} className={styles.mobileStepCard}>
                 <div className={styles.mobileStepHeader}>
                   <span className={styles.mobileStepNumber}>{step.number}</span>
-                  <div className={styles.mobileStepIcon}>{step.icon}</div>
                 </div>
                 <h3 className={styles.mobileStepTitle}>{step.title}</h3>
                 <p className={styles.mobileStepLead}>{step.lead}</p>
@@ -188,7 +182,6 @@ export default function HowItWorksPage() {
                   <div className={styles.stepBlockInner}>
                     <div className={styles.stepMeta}>
                       <span className={styles.stepNumber}>{step.number}</span>
-                      <span className={styles.stepIcon}>{step.icon}</span>
                     </div>
                     <h3 className={styles.stepTitle}>{step.title}</h3>
                     <p className={styles.stepLead}>{step.lead}</p>
@@ -215,13 +208,12 @@ export default function HowItWorksPage() {
         <div className={styles.inner}>
           <div className={styles.trustGrid}>
             {[
-              { icon: '✦', label: 'Verified Providers', desc: 'Every partner is reviewed and authenticated before listing.' },
-              { icon: '◈', label: 'Transparent Pricing', desc: 'No hidden fees. All inclusions stated clearly upfront.' },
-              { icon: '◇', label: 'Compassionate Support', desc: 'Our team is reachable before, during, and after your service.' },
-              { icon: '❖', label: 'Secure Transactions', desc: 'All payments processed through verified, documented channels.' },
+              { label: 'Verified Providers', desc: 'Every partner is reviewed and authenticated before listing.' },
+              { label: 'Transparent Pricing', desc: 'No hidden fees. All inclusions stated clearly upfront.' },
+              { label: 'Compassionate Support', desc: 'Our team is reachable before, during, and after your service.' },
+              { label: 'Secure Transactions', desc: 'All payments processed through verified, documented channels.' },
             ].map((item, i) => (
               <div key={i} className={styles.trustItem}>
-                <span className={styles.trustIcon}>{item.icon}</span>
                 <h4 className={styles.trustLabel}>{item.label}</h4>
                 <p className={styles.trustDesc}>{item.desc}</p>
               </div>
