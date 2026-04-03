@@ -258,7 +258,7 @@ export default function ServiceDetailPage({ params }) {
                   onClick={handleAddToCart}
                   disabled={!selectedListing || authLoading}
                 >
-                  {addedMessage ? 'Added to cart' : user && !isBuyer ? 'Log in as buyer to add to cart' : 'Add to Cart'}
+                  {addedMessage ? 'Added to cart' : 'Add to Cart'}
                 </button>
               </div>
             </div>
@@ -468,23 +468,55 @@ function FullDescriptionSection({ service, styles, allServices = [] }) {
 const REVIEWS_PER_PAGE = 5
 
 function ReviewsSection({ reviews = [], styles }) {
-  const [page, setPage] = useState(1)
+  const [page, setPage]             = useState(1)
+  const [starFilter, setStarFilter] = useState('all')   // 'all' | '5'|'4'|'3'|'2'|'1'
+  const [mediaFilter, setMediaFilter] = useState('all') // 'all' | 'image' | 'video' | 'any'
+  const [starOpen, setStarOpen]     = useState(false)
+  const [mediaOpen, setMediaOpen]   = useState(false)
 
   const avgRating = reviews.length
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
     : null
 
-  const totalPages = Math.ceil(reviews.length / REVIEWS_PER_PAGE)
-  const paginated = reviews.slice((page - 1) * REVIEWS_PER_PAGE, page * REVIEWS_PER_PAGE)
+  const imageCount  = reviews.filter((r) => r.images && r.images.length > 0).length
+  const videoCount  = reviews.filter((r) => r.videos && r.videos.length > 0).length
+  const attachCount = reviews.filter((r) =>
+    (r.images && r.images.length > 0) || (r.videos && r.videos.length > 0)
+  ).length
+
+  // Apply filters
+  const filtered = reviews.filter((r) => {
+    if (starFilter !== 'all' && r.rating !== Number(starFilter)) return false
+    if (mediaFilter === 'image') return r.images && r.images.length > 0
+    if (mediaFilter === 'video') return r.videos && r.videos.length > 0
+    if (mediaFilter === 'any')   return (r.images && r.images.length > 0) || (r.videos && r.videos.length > 0)
+    return true
+  })
+
+  const totalPages = Math.ceil(filtered.length / REVIEWS_PER_PAGE)
+  const paginated  = filtered.slice((page - 1) * REVIEWS_PER_PAGE, page * REVIEWS_PER_PAGE)
 
   const handlePage = (p) => {
     setPage(p)
-    // scroll reviews box into view smoothly
     document.getElementById('reviews-box')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
+  const pickStar = (val) => { setStarFilter(val); setStarOpen(false); setPage(1) }
+  const pickMedia = (val) => { setMediaFilter(val); setMediaOpen(false); setPage(1) }
+
+  const hasActiveFilter = starFilter !== 'all' || mediaFilter !== 'all'
+
+  // Dropdown label helpers
+  const starLabel = starFilter === 'all'
+    ? 'All Ratings'
+    : `${'★'.repeat(Number(starFilter))} ${starFilter} Star${starFilter !== '1' ? 's' : ''}`
+  const mediaLabel = {
+    all: 'All Reviews', image: 'With Images', video: 'With Videos', any: 'With Attachments',
+  }[mediaFilter]
+
   return (
     <div className={styles.reviewsBox} id="reviews-box">
+      {/* ── Header ── */}
       <div className={styles.reviewsSectionHeader}>
         <h3 className={styles.reviewsSectionTitle}>
           Customer Reviews
@@ -513,86 +545,252 @@ function ReviewsSection({ reviews = [], styles }) {
         </div>
       ) : (
         <>
-          <div className={styles.reviewsBars}>
-            {[5, 4, 3, 2, 1].map((star) => {
-              const count = reviews.filter((r) => r.rating === star).length
-              const pct = Math.round((count / reviews.length) * 100)
-              return (
-                <div key={star} className={styles.reviewsBarRow}>
-                  <span className={styles.reviewsBarLabel}>{star}</span>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="#E8A020" className={styles.reviewsBarStar}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                  <div className={styles.reviewsBarTrack}>
-                    <div className={styles.reviewsBarFill} style={{ width: `${pct}%` }} />
-                  </div>
-                  <span className={styles.reviewsBarCount}>{count}</span>
-                </div>
-              )
-            })}
-          </div>
-
-          <div className={styles.reviewsList}>
-            {paginated.map((review) => (
-              <div key={review.id} className={styles.reviewCard}>
-                <div className={styles.reviewHeader}>
-                  <div className={styles.reviewAvatar}>{review.author[0].toUpperCase()}</div>
-                  <div className={styles.reviewMeta}>
-                    <span className={styles.reviewAuthor}>{review.author}</span>
-                    <span className={styles.reviewDate}>
-                      {new Date(review.date).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })}
-                    </span>
-                  </div>
-                  <StarRow rating={review.rating} styles={styles} size={13} />
-                </div>
-                {review.title && <p className={styles.reviewTitle}>{review.title}</p>}
-                <p className={styles.reviewBody}>{review.body}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className={styles.pagination}>
-              {/* Prev */}
-              <button
-                className={`${styles.pageBtn} ${styles.pageBtnNav}`}
-                onClick={() => handlePage(page - 1)}
-                disabled={page === 1}
-                aria-label="Previous page"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M15 18l-6-6 6-6"/>
-                </svg>
-              </button>
-
-              {/* Page numbers */}
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  className={`${styles.pageBtn} ${p === page ? styles.pageBtnActive : ''}`}
-                  onClick={() => handlePage(p)}
-                  aria-label={`Page ${p}`}
-                  aria-current={p === page ? 'page' : undefined}
-                >
-                  {p}
-                </button>
-              ))}
-
-              {/* Next */}
-              <button
-                className={`${styles.pageBtn} ${styles.pageBtnNav}`}
-                onClick={() => handlePage(page + 1)}
-                disabled={page === totalPages}
-                aria-label="Next page"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 18l6-6-6-6"/>
-                </svg>
-              </button>
-
-              <span className={styles.pageInfo}>
-                {(page - 1) * REVIEWS_PER_PAGE + 1}–{Math.min(page * REVIEWS_PER_PAGE, reviews.length)} of {reviews.length}
-              </span>
+          {/* ── Rating bars + dropdowns row ── */}
+          <div className={styles.reviewsFilterArea}>
+            {/* Clickable star bars */}
+            <div className={styles.reviewsBars}>
+              {[5, 4, 3, 2, 1].map((star) => {
+                const count = reviews.filter((r) => r.rating === star).length
+                const pct   = Math.round((count / reviews.length) * 100)
+                const isActive = starFilter === String(star)
+                return (
+                  <button
+                    key={star}
+                    className={`${styles.reviewsBarRow} ${styles.reviewsBarRowBtn} ${isActive ? styles.reviewsBarRowActive : ''}`}
+                    onClick={() => pickStar(isActive ? 'all' : String(star))}
+                    aria-pressed={isActive}
+                    aria-label={`Filter by ${star} stars`}
+                  >
+                    <span className={styles.reviewsBarLabel}>{star}</span>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="#E8A020" className={styles.reviewsBarStar}>
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                    <div className={styles.reviewsBarTrack}>
+                      <div className={styles.reviewsBarFill} style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className={styles.reviewsBarCount}>{count}</span>
+                  </button>
+                )
+              })}
             </div>
+
+            {/* Dropdowns column */}
+            <div className={styles.reviewsDropdownsCol}>
+              <span className={styles.reviewsFilterLabel}>Filter by</span>
+
+              {/* ── Star rating dropdown ── */}
+              <div className={styles.reviewsDropdownWrap}>
+                <button
+                  className={`${styles.reviewsDropdownTrigger} ${starFilter !== 'all' ? styles.reviewsDropdownTriggerActive : ''}`}
+                  onClick={() => { setStarOpen((o) => !o); setMediaOpen(false) }}
+                  aria-haspopup="listbox"
+                  aria-expanded={starOpen}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill={starFilter !== 'all' ? '#C6A96C' : 'none'} stroke={starFilter !== 'all' ? '#C6A96C' : 'currentColor'} strokeWidth="1.8">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                  </svg>
+                  <span>{starLabel}</span>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`${styles.reviewsDropdownChevron} ${starOpen ? styles.reviewsDropdownChevronOpen : ''}`}>
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </button>
+                {starOpen && (
+                  <>
+                    <div className={styles.reviewsDropdownBackdrop} onClick={() => setStarOpen(false)} />
+                    <ul className={styles.reviewsDropdownMenu} role="listbox">
+                      {[
+                        { val: 'all', label: 'All Ratings', count: reviews.length },
+                        ...([5,4,3,2,1].map((s) => ({
+                          val: String(s),
+                          label: `${'★'.repeat(s)} ${s} Star${s !== 1 ? 's' : ''}`,
+                          count: reviews.filter((r) => r.rating === s).length,
+                        }))),
+                      ].map(({ val, label, count }) => (
+                        <li
+                          key={val}
+                          role="option"
+                          aria-selected={starFilter === val}
+                          className={`${styles.reviewsDropdownItem} ${starFilter === val ? styles.reviewsDropdownItemActive : ''} ${count === 0 ? styles.reviewsDropdownItemDisabled : ''}`}
+                          onClick={() => count > 0 && pickStar(val)}
+                        >
+                          <span>{label}</span>
+                          <span className={styles.reviewsDropdownCount}>{count}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
+
+              {/* ── Media / attachment dropdown ── */}
+              <div className={styles.reviewsDropdownWrap}>
+                <button
+                  className={`${styles.reviewsDropdownTrigger} ${mediaFilter !== 'all' ? styles.reviewsDropdownTriggerActive : ''}`}
+                  onClick={() => { setMediaOpen((o) => !o); setStarOpen(false) }}
+                  aria-haspopup="listbox"
+                  aria-expanded={mediaOpen}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={mediaFilter !== 'all' ? '#C6A96C' : 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                  </svg>
+                  <span>{mediaLabel}</span>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`${styles.reviewsDropdownChevron} ${mediaOpen ? styles.reviewsDropdownChevronOpen : ''}`}>
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </button>
+                {mediaOpen && (
+                  <>
+                    <div className={styles.reviewsDropdownBackdrop} onClick={() => setMediaOpen(false)} />
+                    <ul className={styles.reviewsDropdownMenu} role="listbox">
+                      {[
+                        { val: 'all',   label: 'All Reviews',       icon: null,      count: reviews.length },
+                        { val: 'any',   label: 'With Attachments',  icon: 'attach',  count: attachCount },
+                        { val: 'image', label: 'With Images',        icon: 'image',   count: imageCount },
+                        { val: 'video', label: 'With Videos',        icon: 'video',   count: videoCount },
+                      ].map(({ val, label, icon, count }) => (
+                        <li
+                          key={val}
+                          role="option"
+                          aria-selected={mediaFilter === val}
+                          className={`${styles.reviewsDropdownItem} ${mediaFilter === val ? styles.reviewsDropdownItemActive : ''} ${count === 0 ? styles.reviewsDropdownItemDisabled : ''}`}
+                          onClick={() => count > 0 && pickMedia(val)}
+                        >
+                          <span className={styles.reviewsDropdownItemInner}>
+                            {icon === 'attach' && (
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                              </svg>
+                            )}
+                            {icon === 'image' && (
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                              </svg>
+                            )}
+                            {icon === 'video' && (
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/>
+                              </svg>
+                            )}
+                            {label}
+                          </span>
+                          <span className={styles.reviewsDropdownCount}>{count}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
+
+              {/* Clear button */}
+              {hasActiveFilter && (
+                <button
+                  className={styles.reviewsClearBtn}
+                  onClick={() => { setStarFilter('all'); setMediaFilter('all'); setPage(1) }}
+                >
+                  ✕ Clear
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* ── Active filter status ── */}
+          {hasActiveFilter && (
+            <p className={styles.reviewsFilterStatus}>
+              Showing <strong>{filtered.length}</strong> of {reviews.length} review{reviews.length !== 1 ? 's' : ''}
+              {starFilter !== 'all' && <> · {starFilter}★</>}
+              {mediaFilter !== 'all' && <> · {mediaLabel.toLowerCase()}</>}
+            </p>
+          )}
+
+          {filtered.length === 0 ? (
+            <div className={styles.reviewsEmpty}>
+              <p className={styles.reviewsEmptyTitle}>No reviews match this filter</p>
+              <button
+                className={styles.reviewsClearBtn}
+                onClick={() => { setStarFilter('all'); setMediaFilter('all'); setPage(1) }}
+              >
+                ✕ Clear filters
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className={styles.reviewsList}>
+                {paginated.map((review) => {
+                  const hasImages = review.images && review.images.length > 0
+                  const hasVideos = review.videos && review.videos.length > 0
+                  return (
+                    <div key={review.id} className={styles.reviewCard}>
+                      <div className={styles.reviewHeader}>
+                        <div className={styles.reviewAvatar}>{review.author[0].toUpperCase()}</div>
+                        <div className={styles.reviewMeta}>
+                          <span className={styles.reviewAuthor}>
+                            {review.author}
+                            {(hasImages || hasVideos) && (
+                              <span className={styles.reviewAttachBadge} title="Includes attachments">
+                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                                </svg>
+                              </span>
+                            )}
+                          </span>
+                          <span className={styles.reviewDate}>
+                            {new Date(review.date).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })}
+                          </span>
+                        </div>
+                        <StarRow rating={review.rating} styles={styles} size={13} />
+                      </div>
+                      {review.title && <p className={styles.reviewTitle}>{review.title}</p>}
+                      <p className={styles.reviewBody}>{review.body}</p>
+
+                      {/* ── Images ── */}
+                      {hasImages && (
+                        <div className={styles.reviewMedia}>
+                          {review.images.map((src, i) => (
+                            <a key={i} href={src} target="_blank" rel="noopener noreferrer" className={styles.reviewMediaThumb}>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={src} alt={`Review image ${i + 1}`} className={styles.reviewMediaImg} />
+                              <span className={styles.reviewMediaBadge}>
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                              </span>
+                            </a>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* ── Videos ── */}
+                      {hasVideos && (
+                        <div className={styles.reviewMedia}>
+                          {review.videos.map((src, i) => (
+                            <div key={i} className={styles.reviewMediaThumb}>
+                              <video src={src} className={styles.reviewMediaImg} muted playsInline preload="metadata" />
+                              <span className={`${styles.reviewMediaBadge} ${styles.reviewMediaBadgeVideo}`}>
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className={styles.pagination}>
+                  <button className={`${styles.pageBtn} ${styles.pageBtnNav}`} onClick={() => handlePage(page - 1)} disabled={page === 1} aria-label="Previous page">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                    <button key={p} className={`${styles.pageBtn} ${p === page ? styles.pageBtnActive : ''}`} onClick={() => handlePage(p)} aria-label={`Page ${p}`} aria-current={p === page ? 'page' : undefined}>{p}</button>
+                  ))}
+                  <button className={`${styles.pageBtn} ${styles.pageBtnNav}`} onClick={() => handlePage(page + 1)} disabled={page === totalPages} aria-label="Next page">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                  </button>
+                  <span className={styles.pageInfo}>{(page - 1) * REVIEWS_PER_PAGE + 1}–{Math.min(page * REVIEWS_PER_PAGE, filtered.length)} of {filtered.length}</span>
+                </div>
+              )}
+            </>
           )}
         </>
       )}
@@ -631,30 +829,39 @@ function ProviderCard({ provider, styles }) {
   const reviewCount = providerReviews.length || provider.reviews || 0
   const serviceCount = providerListings.length || provider.products || 0
 
-  // joined: prefer provider.joinedDate (ISO), fallback to provider.joined (string label)
-  const joinedText = (() => {
+  // ── Time-dependent values: computed client-side only to avoid SSR hydration mismatch ──
+  const [activeStatus, setActiveStatus] = useState(null)
+  const [joinedText, setJoinedText] = useState(provider.joined ?? null)
+  const [yearsInService, setYearsInService] = useState(provider.yearsInService ?? null)
+
+  useEffect(() => {
+    const now = new Date()
+
+    // Active status
+    if (provider.lastActive) {
+      setActiveStatus(timeAgo(provider.lastActive))
+    } else if (provider.activeStatus) {
+      setActiveStatus({ text: provider.activeStatus, isActive: false })
+    }
+
+    // Joined text
     if (provider.joinedDate) {
       const joined = new Date(provider.joinedDate)
-      const now = new Date()
       const diffMs = now - joined
       const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
       const diffMonths = Math.floor(diffDays / 30)
       const diffYears = Math.floor(diffDays / 365)
-      if (diffYears >= 1) return `${diffYears} year${diffYears !== 1 ? 's' : ''} ago`
-      if (diffMonths >= 1) return `${diffMonths} month${diffMonths !== 1 ? 's' : ''} ago`
-      return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`
+      if (diffYears >= 1) setJoinedText(`${diffYears} year${diffYears !== 1 ? 's' : ''} ago`)
+      else if (diffMonths >= 1) setJoinedText(`${diffMonths} month${diffMonths !== 1 ? 's' : ''} ago`)
+      else setJoinedText(`${diffDays} day${diffDays !== 1 ? 's' : ''} ago`)
     }
-    return provider.joined ?? null
-  })()
 
-  const yearsInService = (() => {
+    // Years in service
     if (provider.joinedDate) {
-      const years = Math.floor((new Date() - new Date(provider.joinedDate)) / (1000 * 60 * 60 * 24 * 365))
-      if (years < 1) return '< 1 year'
-      return `${years} year${years !== 1 ? 's' : ''}`
+      const years = Math.floor((now - new Date(provider.joinedDate)) / (1000 * 60 * 60 * 24 * 365))
+      setYearsInService(years < 1 ? '< 1 year' : `${years} year${years !== 1 ? 's' : ''}`)
     }
-    return provider.yearsInService ?? null
-  })()
+  }, [provider.lastActive, provider.activeStatus, provider.joinedDate])
 
   const phoneSvg = (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.35 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.56a16 16 0 0 0 6.29 6.29l1.62-1.62a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
@@ -711,15 +918,12 @@ function ProviderCard({ provider, styles }) {
         </div>
         <div className={styles.providerMeta}>
           <span className={styles.providerName}>{provider.name}</span>
-          {(provider.lastActive || provider.activeStatus) && (() => {
-            const ago = provider.lastActive ? timeAgo(provider.lastActive) : { text: provider.activeStatus, isActive: false }
-            return (
-              <span className={`${styles.providerStatus} ${ago.isActive ? styles.providerStatusActive : styles.providerStatusInactive}`}>
-                <span className={`${styles.providerStatusDot} ${ago.isActive ? styles.providerStatusDotActive : styles.providerStatusDotInactive}`} />
-                {ago.text}
-              </span>
-            )
-          })()}
+          {activeStatus && (
+            <span className={`${styles.providerStatus} ${activeStatus.isActive ? styles.providerStatusActive : styles.providerStatusInactive}`}>
+              <span className={`${styles.providerStatusDot} ${activeStatus.isActive ? styles.providerStatusDotActive : styles.providerStatusDotInactive}`} />
+              {activeStatus.text}
+            </span>
+          )}
         </div>
         <div className={styles.providerActions}>
           {/* Chat Now */}
