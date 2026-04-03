@@ -2585,7 +2585,18 @@
 
   /* Tighten image aspect on 2-col layout so cards aren't too tall */
   .cardImage {
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 16 / 7;
+  }
+
+  /* Constrain the image wrap height — overrides Next.js Image intrinsic sizing */
+  .listingImageWrap {
+    height: 180px;
+  }
+
+  .listingImageWrap img {
+    height: 180px !important;
+    width: 100% !important;
+    object-fit: cover;
   }
 
   .ratingReviews {
@@ -2615,7 +2626,17 @@
   }
 
   .cardImage {
-    aspect-ratio: 16 / 10;
+    aspect-ratio: 16 / 6;
+  }
+
+  .listingImageWrap {
+    height: 155px;
+  }
+
+  .listingImageWrap img {
+    height: 155px !important;
+    width: 100% !important;
+    object-fit: cover;
   }
 
   .listingDivider {
