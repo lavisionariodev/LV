@@ -10,86 +10,6 @@
   font-family: "Lato", sans-serif;
 }
 
-.hero {
-  width: 100%;
-  min-height: 240px;
-  padding: 90px 24px 60px;
-  position: relative;
-  overflow: hidden;
-  background: url('/sample/services/hero-section.png') center / cover no-repeat;
-  display: flex;
-  align-items: center;
-}
-
-.heroOverlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(16, 40, 32, 0.72);
-}
-
-.hero::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--color-gold-base, #C6A96C);
-  opacity: 0.7;
-}
-
-.heroInner {
-  max-width: 1400px;
-  margin: 0 auto;
-  position: relative;
-  z-index: 1;
-  text-align: center;
-  width: 100%;
-}
-
-.heroTitle {
-  margin: 0;
-  font-size: clamp(28px, 5vw, 44px);
-  font-weight: 300;
-  color: #FFFFFF;
-  line-height: 1.1;
-  font-family: "Cormorant Garamond", serif;
-  letter-spacing: 4px;
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.25);
-}
-
-.breadcrumb {
-  margin: 14px auto 0;
-  width: fit-content;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  font-family: "Lato", sans-serif;
-}
-
-.crumb {
-  color: rgba(255, 255, 255, 0.55);
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-
-.crumb:hover {
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.slash {
-  color: var(--color-gold-base, #C6A96C);
-  opacity: 0.7;
-}
-
-.crumbActive {
-  color: rgba(255, 255, 255, 0.9);
-  font-weight: 500;
-}
-
 .content {
   max-width: 1100px;
   margin: 0 auto;
@@ -167,24 +87,6 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-}
-
-.backLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 10px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-gold-base, #C6A96C);
-  text-decoration: none;
-  letter-spacing: 0.5px;
-  transition: opacity 0.2s ease;
-}
-
-.backLink:hover {
-  opacity: 0.7;
-  text-decoration: underline;
 }
 
 .title {
@@ -682,11 +584,6 @@
 }
 
 @media (max-width: 480px) {
-  .hero {
-    padding: 80px 16px 40px;
-    min-height: 200px;
-  }
-
   .content {
     padding: 32px 16px 48px;
   }
@@ -731,4 +628,629 @@
 
 .notFoundLink:hover {
   text-decoration: underline;
+}
+/* ─── Provider card (full-width, between card and tabs) ─── */
+.providerCard {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 24px;
+  margin-top: 16px;
+  background: #FFFFFF;
+  border: 1px solid rgba(16, 40, 32, 0.09);
+  box-shadow: 0 4px 20px rgba(16, 40, 32, 0.05);
+  border-radius: 4px;
+  flex-wrap: wrap;
+}
+
+.providerInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.providerAvatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  position: relative;
+  background: var(--color-green, #102820);
+  border: 2px solid rgba(198, 169, 108, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.providerAvatarFallback {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  font-family: "Cormorant Garamond", serif;
+}
+
+.providerMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.providerName {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-green, #102820);
+  font-family: "Lato", sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.providerStatus {
+  font-size: 13px;
+  font-family: "Lato", sans-serif;
+  letter-spacing: 0.2px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.providerStatusActive {
+  color: #27ae60;
+}
+
+.providerStatusInactive {
+  color: #999;
+}
+
+.providerStatusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.providerStatusDotActive {
+  background: #27ae60;
+}
+
+.providerStatusDotInactive {
+  background: #bbb;
+}
+
+.providerActions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btnVisitShop {
+  padding: 8px 16px;
+  background: transparent;
+  color: var(--color-green, #102820);
+  font-family: "Lato", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  border: 1.5px solid rgba(16, 40, 32, 0.25);
+  border-radius: 2px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: border-color 0.2s ease, background 0.2s ease;
+  white-space: nowrap;
+}
+
+.btnVisitShop:hover {
+  border-color: var(--color-green, #102820);
+  background: rgba(16, 40, 32, 0.04);
+}
+
+/* ─── Chat Now button + dropdown ─── */
+.chatWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.btnChatNow {
+  padding: 8px 16px;
+  background: var(--color-gold-base, #C6A96C);
+  color: #fff;
+  font-family: "Lato", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btnChatNow:hover {
+  background: #b5923a;
+}
+
+.chatBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+}
+
+.chatDropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  background: #fff;
+  border: 1px solid rgba(16, 40, 32, 0.12);
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(16, 40, 32, 0.12);
+  min-width: 185px;
+  z-index: 20;
+  overflow: hidden;
+}
+
+.chatDropdownLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #999;
+  padding: 10px 14px 6px;
+  margin: 0;
+  border-bottom: 1px solid rgba(16, 40, 32, 0.06);
+}
+
+.chatOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+  text-decoration: none;
+  font-family: "Lato", sans-serif;
+  transition: background 0.15s ease;
+}
+
+.chatOption:hover {
+  background: var(--color-cream, #F7F4EF);
+  color: var(--color-green, #102820);
+}
+
+.chatOptionIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  color: #666;
+}
+
+/* Provider stats row */
+.providerDivider {
+  width: 1px;
+  height: 48px;
+  background: rgba(16, 40, 32, 0.1);
+  flex-shrink: 0;
+  margin: 0 4px;
+}
+
+.providerStats {
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.providerStat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.providerStatLabel {
+  font-size: 11px;
+  color: #999;
+  font-family: "Lato", sans-serif;
+  letter-spacing: 0.3px;
+}
+
+.providerStatValue {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-gold-base, #C6A96C);
+  font-family: "Lato", sans-serif;
+}
+
+.providerStatValueNeutral {
+  font-size: 13px;
+  font-weight: 600;
+  color: #444;
+  font-family: "Lato", sans-serif;
+}
+
+@media (max-width: 600px) {
+  .providerCard {
+    gap: 14px;
+    padding: 14px 16px;
+  }
+
+  .providerDivider {
+    display: none;
+  }
+
+  .providerStats {
+    gap: 16px;
+  }
+}
+
+/* ─── Reviews tab ─── */
+.reviewsWrap {
+  padding: 24px 0 8px;
+}
+
+.reviewsEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 24px;
+  text-align: center;
+  gap: 8px;
+}
+
+.reviewsEmptyIcon {
+  color: rgba(16, 40, 32, 0.2);
+  margin-bottom: 4px;
+}
+
+.reviewsEmptyTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #333;
+  font-family: "Lato", sans-serif;
+  margin: 0;
+}
+
+.reviewsEmptyText {
+  font-size: 13px;
+  color: #888;
+  font-family: "Lato", sans-serif;
+  margin: 0;
+}
+
+/* Summary bar */
+.reviewsSummary {
+  display: flex;
+  align-items: flex-start;
+  gap: 32px;
+  padding: 0 0 24px;
+  border-bottom: 1px solid rgba(16, 40, 32, 0.08);
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.reviewsScore {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.reviewsScoreNum {
+  font-size: 44px;
+  font-weight: 300;
+  color: var(--color-green, #102820);
+  font-family: "Cormorant Garamond", serif;
+  line-height: 1;
+}
+
+.reviewsScoreMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.starRow {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.reviewsScoreCount {
+  font-size: 12px;
+  color: #888;
+  font-family: "Lato", sans-serif;
+}
+
+/* Rating breakdown bars */
+.reviewsBars {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  min-width: 160px;
+  max-width: 280px;
+  justify-content: center;
+}
+
+.reviewsBarRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.reviewsBarLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: #555;
+  font-family: "Lato", sans-serif;
+  width: 8px;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.reviewsBarStar {
+  flex-shrink: 0;
+}
+
+.reviewsBarTrack {
+  flex: 1;
+  height: 6px;
+  background: rgba(16, 40, 32, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.reviewsBarFill {
+  height: 100%;
+  background: #E8A020;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.reviewsBarCount {
+  font-size: 11px;
+  color: #888;
+  font-family: "Lato", sans-serif;
+  width: 16px;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+/* Individual review cards */
+.reviewsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.reviewCard {
+  padding: 18px 0;
+  border-bottom: 1px solid rgba(16, 40, 32, 0.07);
+}
+
+.reviewCard:last-child {
+  border-bottom: none;
+}
+
+.reviewHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.reviewAvatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--color-green, #102820);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: "Cormorant Garamond", serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.reviewMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.reviewAuthor {
+  font-size: 13px;
+  font-weight: 700;
+  color: #222;
+  font-family: "Lato", sans-serif;
+}
+
+.reviewDate {
+  font-size: 11px;
+  color: #aaa;
+  font-family: "Lato", sans-serif;
+}
+
+.reviewTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #333;
+  font-family: "Lato", sans-serif;
+  margin: 0 0 4px;
+}
+
+.reviewBody {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #555;
+  font-family: "Lato", sans-serif;
+  margin: 0;
+}
+
+/* ─── Reviews — separate box ─── */
+.reviewsBox {
+  margin-top: 16px;
+  background: #FFFFFF;
+  border: 1px solid rgba(16, 40, 32, 0.09);
+  box-shadow: 0 4px 20px rgba(16, 40, 32, 0.05);
+  border-radius: 4px;
+  overflow: hidden;
+  padding: 24px 28px 28px;
+}
+
+.reviewsSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.reviewsSectionTitle {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--color-green, #102820);
+  font-family: "Lato", sans-serif;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reviewsSectionCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-gold-base, #C6A96C);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  padding: 0 6px;
+  letter-spacing: 0;
+}
+
+/* ─── Similar Services tab ─── */
+.similarWrap {
+  padding-top: 24px;
+}
+
+.similarGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.similarCard {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(16, 40, 32, 0.09);
+  border-radius: 4px;
+  overflow: hidden;
+  text-decoration: none;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  background: #fff;
+}
+
+.similarCard:hover {
+  box-shadow: 0 6px 20px rgba(16, 40, 32, 0.1);
+  transform: translateY(-2px);
+}
+
+.similarImgWrap {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  position: relative;
+  background: var(--color-cream, #F7F4EF);
+  overflow: hidden;
+}
+
+.similarBody {
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.similarName {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-green, #102820);
+  font-family: "Lato", sans-serif;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.similarDesc {
+  font-size: 12px;
+  color: #777;
+  font-family: "Lato", sans-serif;
+  margin: 0;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.similarPrice {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-gold-base, #C6A96C);
+  font-family: "Lato", sans-serif;
+  margin: 4px 0 0;
+}
+
+.similarBrowseBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: var(--color-gold-base, #C6A96C);
+  text-decoration: none;
+  font-family: "Lato", sans-serif;
+  transition: opacity 0.2s ease;
+}
+
+.similarBrowseBtn:hover {
+  opacity: 0.7;
+  text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+  .similarGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 400px) {
+  .similarGrid {
+    grid-template-columns: 1fr;
+  }
 }
