@@ -82,7 +82,42 @@
   object-fit: cover;
 }
 
-/* ── Save + Share row below thumbnails ── */
+/* ── Mobile back button overlaid on image ── */
+.mobileBackBtn {
+  display: none; /* hidden on desktop */
+}
+
+@media (max-width: 860px) {
+  .mobileBackBtn {
+    display: flex;
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 10;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(4px);
+    border: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(16, 40, 32, 0.18);
+    color: var(--color-green, #102820);
+    transition: background 0.2s ease;
+    text-decoration: none;
+  }
+
+  .mobileBackBtn:hover {
+    background: rgba(255, 255, 255, 1);
+  }
+
+  /* mainImageWrap needs relative positioning for the button to anchor */
+  .mainImageWrap {
+    position: relative;
+  }
+}
 .galleryMeta {
   display: flex;
   align-items: center;
@@ -1121,6 +1156,8 @@
 
 @media (max-width: 600px) {
   .providerCard {
+    flex-direction: column;
+    align-items: stretch;
     gap: 12px;
     padding: 14px 16px;
     border-radius: 0;
@@ -1130,46 +1167,99 @@
     border-top: 8px solid var(--color-light-gray, #EDE8E0);
   }
 
+  /* Top row: avatar + meta + actions all on one line */
   .providerInfo {
     gap: 10px;
+    align-items: center;
+    flex-wrap: nowrap;
   }
 
   .providerAvatar {
-    width: 44px;
-    height: 44px;
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
   }
 
   .providerAvatarFallback {
-    font-size: 18px;
+    font-size: 17px;
+  }
+
+  .providerMeta {
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
   }
 
   .providerName {
-    font-size: 14px;
+    font-size: 13px;
+    line-height: 1.25;
+    white-space: normal;
   }
 
+  .providerStatus {
+    font-size: 11px;
+  }
+
+  .providerActions {
+    flex-shrink: 0;
+    gap: 6px;
+  }
+
+  .btnChatNow {
+    padding: 8px 11px;
+    font-size: 10px;
+    letter-spacing: 0.8px;
+    gap: 4px;
+  }
+
+  .btnVisitShop {
+    padding: 8px 11px;
+    font-size: 10px;
+    letter-spacing: 0.8px;
+    gap: 4px;
+  }
+
+  /* Bottom row: stats sit as a single full-width strip */
   .providerDivider {
     display: none;
   }
 
   .providerStats {
-    gap: 12px;
+    display: flex;
+    flex-direction: row;
+    gap: 0;
     width: 100%;
-    padding-top: 2px;
+    border-top: 1px solid rgba(16, 40, 32, 0.07);
+    padding-top: 10px;
+    justify-content: space-between;
+  }
+
+  .providerStat {
+    flex: 1;
+    align-items: center;
+    text-align: center;
+    gap: 3px;
+    padding: 0 4px;
+    border-right: 1px solid rgba(16, 40, 32, 0.08);
+  }
+
+  .providerStat:last-child {
+    border-right: none;
   }
 
   .providerStatLabel {
-    font-size: 10px;
+    font-size: 9px;
+    letter-spacing: 0.2px;
   }
 
   .providerStatValue,
   .providerStatValueNeutral {
-    font-size: 12px;
+    font-size: 11px;
+    font-weight: 700;
   }
 
-  .btnChatNow,
-  .btnVisitShop {
-    padding: 8px 12px;
-    font-size: 10px;
+  .providerStatSub {
+    font-size: 9px;
   }
 }
 
