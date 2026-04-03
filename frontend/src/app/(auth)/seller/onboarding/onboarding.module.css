@@ -344,3 +344,47 @@
     font-size: 1.3rem;
   }
 }
+
+/* ── Pending review state ── */
+.pendingBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  margin: 0 0 22px;
+  border-radius: 8px;
+  background: #fffbeb;
+  border: 1px solid #f59e0b;
+}
+
+.pendingBadge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #92400e;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  padding: 6px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+
+.pendingBannerText {
+  color: #7c2d12;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+/* Read-only styling during review */
+.input:disabled {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.textarea:disabled {
+  resize: none;
+}

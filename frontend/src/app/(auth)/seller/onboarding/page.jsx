@@ -51,6 +51,7 @@ export default function SellerOnboardingPage() {
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [sellerStatus, setSellerStatus] = useState(null)
   const [form, setForm] = useState({
     businessName: '',
     contactName: '',
@@ -86,6 +87,8 @@ export default function SellerOnboardingPage() {
           return
         }
 
+        setSellerStatus(existing?.status || null)
+
         setForm((prev) => ({
           businessName: existing?.business_name || prev.businessName || '',
           contactName: existing?.contact_name || prev.contactName || (user.user_metadata?.full_name || ''),
@@ -111,7 +114,7 @@ export default function SellerOnboardingPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
-    if (!user || saving) return
+    if (!user || saving || sellerStatus === 'pending') return
 
     if (!form.businessName.trim() || !form.contactName.trim() || !form.email.trim()) {
       toast.error('Please fill in at least business name, contact name, and email.')
@@ -136,7 +139,7 @@ export default function SellerOnboardingPage() {
       }
 
       toast.success('Shop information submitted! Your seller account is now pending review.')
-      router.replace('/')
+      setSellerStatus('pending')
     } catch (err) {
       console.error('Failed to save seller onboarding info:', err)
       toast.error('An error occurred while saving your details. Please try again.')
@@ -180,9 +183,20 @@ export default function SellerOnboardingPage() {
           <p className={styles.eyebrow}>Seller Onboarding</p>
           <h1 className={styles.title}>Set up your shop</h1>
           <p className={styles.subtitle}>
-            Fill in your business details so we can verify your account and get your services listed.
+            {sellerStatus === 'pending'
+              ? 'Your business information has been submitted and is being reviewed by our team.'
+              : 'Fill in your business details so we can verify your account and get your services listed.'}
           </p>
         </div>
+
+        {sellerStatus === 'pending' && (
+          <div className={styles.pendingBanner} role="status" aria-live="polite">
+            <span className={styles.pendingBadge}>Pending Review</span>
+            <span className={styles.pendingBannerText}>
+              We’ll review your details and activate your seller account once approved. You can view your submitted information below.
+            </span>
+          </div>
+        )}
 
         {/* Form card */}
         <div className={styles.card}>
@@ -205,6 +219,7 @@ export default function SellerOnboardingPage() {
                     value={form.businessName}
                     onChange={(e) => handleChange('businessName', e.target.value)}
                     placeholder="e.g. Peaceful Rest Funeral Home"
+                    disabled={sellerStatus === 'pending' || saving}
                   />
                 </div>
 
@@ -218,6 +233,7 @@ export default function SellerOnboardingPage() {
                     value={form.contactName}
                     onChange={(e) => handleChange('contactName', e.target.value)}
                     placeholder="Full name of the person we coordinate with"
+                    disabled={sellerStatus === 'pending' || saving}
                   />
                 </div>
               </div>
@@ -240,6 +256,7 @@ export default function SellerOnboardingPage() {
                     value={form.email}
                     onChange={(e) => handleChange('email', e.target.value)}
                     placeholder="you@example.com"
+                    disabled={sellerStatus === 'pending' || saving}
                   />
                 </div>
 
@@ -251,6 +268,7 @@ export default function SellerOnboardingPage() {
                     value={form.phone}
                     onChange={(e) => handleChange('phone', e.target.value)}
                     placeholder="+63 9XX XXX XXXX"
+                    disabled={sellerStatus === 'pending' || saving}
                   />
                 </div>
 
@@ -262,6 +280,7 @@ export default function SellerOnboardingPage() {
                     value={form.address}
                     onChange={(e) => handleChange('address', e.target.value)}
                     placeholder="Street, city, province"
+                    disabled={sellerStatus === 'pending' || saving}
                   />
                 </div>
 
@@ -273,6 +292,7 @@ export default function SellerOnboardingPage() {
                     value={form.businessInfo}
                     onChange={(e) => handleChange('businessInfo', e.target.value)}
                     placeholder="Share the types of funeral or memorial services you offer, coverage areas, and any specializations."
+                    disabled={sellerStatus === 'pending' || saving}
                   />
                 </div>
               </div>
@@ -306,9 +326,13 @@ export default function SellerOnboardingPage() {
               <button
                 type="submit"
                 className={styles.primaryButton}
-                disabled={saving}
+                disabled={saving || sellerStatus === 'pending'}
               >
-                {saving ? 'Submitting…' : 'Submit for review'}
+                {sellerStatus === 'pending'
+                  ? 'Submitted for review'
+                  : saving
+                    ? 'Submitting…'
+                    : 'Submit for review'}
               </button>
             </div>
 
