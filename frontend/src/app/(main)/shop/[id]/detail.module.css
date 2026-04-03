@@ -596,21 +596,89 @@
 @media (max-width: 860px) {
   .card {
     grid-template-columns: 1fr;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    box-shadow: none;
   }
 
   .galleryCol {
     border-right: none;
     border-bottom: 1px solid rgba(16, 40, 32, 0.07);
     position: static;
-    padding: 20px 20px 16px;
+    padding: 0;
   }
 
   .mainImageWrap {
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 1 / 1;
+    border-radius: 0;
+    border: none;
+  }
+
+  .thumbStrip {
+    padding: 10px 16px 0;
+    gap: 6px;
+  }
+
+  .thumb {
+    width: 56px;
+    height: 56px;
+  }
+
+  .galleryMeta {
+    padding: 10px 16px 14px;
+    margin-top: 0;
+    border-top: none;
   }
 
   .body {
-    padding: 24px 20px 28px;
+    padding: 16px 16px 100px; /* bottom padding for sticky bar */
+  }
+
+  .title {
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+
+  .priceRow {
+    margin-bottom: 10px;
+  }
+
+  .price {
+    font-size: 22px;
+  }
+
+  .ratingsRow {
+    margin-bottom: 10px;
+  }
+
+  .shortDesc {
+    font-size: 13px;
+    margin-bottom: 12px;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  .divider {
+    margin: 8px 0 12px;
+  }
+
+  .attributes {
+    margin-bottom: 14px;
+  }
+
+  .attrRow {
+    padding: 5px 0;
+  }
+
+  .selectors {
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  /* Hide desktop action buttons — replaced by sticky bar */
+  .actions {
+    display: none;
   }
 
   .featureGrid {
@@ -618,15 +686,98 @@
   }
 }
 
+/* ── Sticky bottom action bar — mobile only ── */
+@media (max-width: 860px) {
+  .mobileActionBar {
+    display: flex !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: #fff;
+    border-top: 1px solid rgba(16, 40, 32, 0.1);
+    box-shadow: 0 -4px 16px rgba(16, 40, 32, 0.08);
+    padding: 10px 14px;
+    gap: 8px;
+    align-items: center;
+  }
+}
+
+.mobileActionBar {
+  display: none; /* hidden on desktop */
+}
+
+.mobileActionBarChat {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 11px 14px;
+  background: transparent;
+  border: 1.5px solid var(--color-gold-base, #C6A96C);
+  border-radius: 2px;
+  font-family: "Lato", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-green, #102820);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+}
+
+.mobileActionBarChat:hover {
+  background: rgba(198, 169, 108, 0.08);
+}
+
+.mobileActionBarCart {
+  flex: 1;
+  padding: 11px 10px;
+  background: transparent;
+  border: 1.5px solid var(--color-green, #102820);
+  border-radius: 2px;
+  font-family: "Lato", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-green, #102820);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s ease;
+  text-align: center;
+}
+
+.mobileActionBarCart:hover {
+  background: rgba(16, 40, 32, 0.05);
+}
+
+.mobileActionBarBook {
+  flex: 1;
+  padding: 11px 10px;
+  background: var(--color-green, #102820);
+  border: none;
+  border-radius: 2px;
+  font-family: "Lato", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s ease;
+  text-align: center;
+}
+
+.mobileActionBarBook:hover {
+  background: #1a3d2e;
+}
+
 @media (max-width: 500px) {
-  .actions {
-    flex-direction: column;
-  }
-
-  .btnBookNow {
-    width: 100%;
-  }
-
   .cartSaveRow {
     width: 100%;
   }
@@ -637,26 +788,45 @@
   }
 
   .tabBtn {
-    padding: 12px 14px;
+    padding: 10px 12px;
     font-size: 11px;
   }
 }
 
 @media (max-width: 480px) {
   .content {
-    padding: 32px 16px 48px;
-  }
-
-  .galleryCol {
-    padding: 16px 16px 12px;
+    padding: 0 0 48px;
   }
 
   .body {
-    padding: 20px 16px 24px;
+    padding: 14px 14px 100px;
   }
 
   .notFound {
     padding: 40px 16px;
+  }
+
+  .fullDesc {
+    margin-top: 8px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    box-shadow: none;
+    border-top: 8px solid var(--color-light-gray, #EDE8E0);
+  }
+
+  .reviewsBox {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    box-shadow: none;
+    border-top: 8px solid var(--color-light-gray, #EDE8E0);
+    margin-top: 0;
+    padding: 20px 16px 24px;
+  }
+
+  .tabContent {
+    padding: 0 16px 20px;
   }
 }
 
@@ -951,8 +1121,30 @@
 
 @media (max-width: 600px) {
   .providerCard {
-    gap: 14px;
+    gap: 12px;
     padding: 14px 16px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    margin-top: 0;
+    border-top: 8px solid var(--color-light-gray, #EDE8E0);
+  }
+
+  .providerInfo {
+    gap: 10px;
+  }
+
+  .providerAvatar {
+    width: 44px;
+    height: 44px;
+  }
+
+  .providerAvatarFallback {
+    font-size: 18px;
+  }
+
+  .providerName {
+    font-size: 14px;
   }
 
   .providerDivider {
@@ -960,7 +1152,24 @@
   }
 
   .providerStats {
-    gap: 16px;
+    gap: 12px;
+    width: 100%;
+    padding-top: 2px;
+  }
+
+  .providerStatLabel {
+    font-size: 10px;
+  }
+
+  .providerStatValue,
+  .providerStatValueNeutral {
+    font-size: 12px;
+  }
+
+  .btnChatNow,
+  .btnVisitShop {
+    padding: 8px 12px;
+    font-size: 10px;
   }
 }
 
