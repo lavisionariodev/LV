@@ -472,7 +472,7 @@
 }
 
 .aboutTitleBold  { font-weight: 500; }
-.aboutTitleLight { font-weight: 300; color: var(--gold); }
+.aboutTitleLight { font-weight: 300; }
 
 .aboutPara {
   font-family: 'Lato', sans-serif;
@@ -723,13 +723,17 @@
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--highlight), var(--highlight-light));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  color: #fff;
+  overflow: hidden;
   flex-shrink: 0;
+  border: 2px solid var(--highlight);
+  box-shadow: 0 2px 8px rgba(16,40,32,0.18);
+}
+
+.testimonialAvatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .testimonialAuthorName {
@@ -748,54 +752,33 @@
   letter-spacing: 0.5px;
 }
 
-/* featured wide testimonial at the bottom */
+/* featured centered closing */
 .testimonialFeatured {
-  margin-top: 24px;
-  background: #FFFFFF;
-  border: 1px solid #102820;
-  border-radius: 18px;
-  padding: 36px 40px;
+  margin-top: 48px;
   display: flex;
-  gap: 28px;
-  align-items: flex-start;
-  transition: transform 0.2s;
-}
-.testimonialFeatured:hover { transform: translateY(-4px); }
-
-.testimonialFeaturedIcon {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: var(--highlight);
-  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
-  color: #fff;
-  flex-shrink: 0;
+  gap: 14px;
+  text-align: center;
 }
 
-.testimonialFeaturedBody {
-  flex: 1;
-}
-
-.testimonialFeaturedBody p {
-  font-family: 'Lato', sans-serif;
-  font-size: 15px;
-  font-weight: 300;
-  line-height: 1.8;
-  color: var(--muted);
-  font-style: italic;
-  margin-bottom: 16px;
+.testimonialFeaturedIcon {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 48px;
+  color: var(--highlight);
+  opacity: 0.22;
+  line-height: 1;
 }
 
 .testimonialStars {
   display: flex;
-  gap: 4px;
+  gap: 6px;
+  justify-content: center;
 }
 
 .testimonialStars i {
-  font-size: 14px;
+  font-size: 16px;
   color: var(--gold);
 }
 
@@ -921,9 +904,7 @@
   }
 
   .testimonialFeatured {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
+    padding: 0;
   }
 }
 

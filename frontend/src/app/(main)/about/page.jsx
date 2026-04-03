@@ -309,7 +309,11 @@ export default async function AboutPage() {
                   <p className={styles.testimonialText}>{t.text}</p>
                   <div className={styles.testimonialAuthorRow}>
                     <div className={styles.testimonialAvatar}>
-                      <i className="fa-solid fa-user" />
+                      <img
+                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(t.name)}&background=102820&color=fff&size=84&font-size=0.38&bold=true&rounded=true`}
+                        alt={t.name}
+                        className={styles.testimonialAvatarImg}
+                      />
                     </div>
                     <div>
                       <p className={styles.testimonialAuthorName}>{t.name}</p>
@@ -320,20 +324,15 @@ export default async function AboutPage() {
               ))}
             </div>
 
-            {/* featured wide quote */}
+            {/* featured centered closing — stars only */}
             <div className={styles.testimonialFeatured}>
               <div className={styles.testimonialFeaturedIcon}>
-                <i className="fa-solid fa-heart" />
+                <i className="fa-solid fa-dove" />
               </div>
-            <div className={styles.testimonialFeaturedBody}>
-              <p>
-                {`Families who have used ${systemName} appreciate the ease of comparison, transparent pricing, and the support they received during a difficult time. We are honored to help every family navigate this journey with dignity and care.`}
-              </p>
-                <div className={styles.testimonialStars}>
-                  {[1,2,3,4,5].map((s) => (
-                    <i key={s} className="fa-solid fa-star" />
-                  ))}
-                </div>
+              <div className={styles.testimonialStars}>
+                {[1,2,3,4,5].map((s) => (
+                  <i key={s} className="fa-solid fa-star" />
+                ))}
               </div>
             </div>
 
