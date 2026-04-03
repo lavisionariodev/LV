@@ -342,13 +342,15 @@
 }
 
 .btnSave {
-  display: none; /* hidden on desktop, shown on mobile only */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 auto;
-  padding: 12px 14px;
+  padding: 12px 16px;
   background: transparent;
   color: #888;
   font-family: "Lato", sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.5px;
   border: 1.5px solid rgba(16, 40, 32, 0.15);
@@ -361,6 +363,13 @@
 .btnSave:hover {
   color: #c0392b;
   border-color: #c0392b;
+}
+
+.cartSaveRow {
+  display: flex;
+  gap: 10px;
+  flex: 2;
+  min-width: 0;
 }
 
 .fullDesc {
@@ -562,19 +571,11 @@
 
   /* Add to Cart + Save sit on the same row */
   .cartSaveRow {
-    display: flex;
-    gap: 10px;
     width: 100%;
   }
 
   .btnAddToCart {
     flex: 1;
-  }
-
-  .btnSave {
-    display: flex; /* visible on mobile */
-    align-items: center;
-    justify-content: center;
   }
 
   .tabBtn {
@@ -647,12 +648,13 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  flex-shrink: 0;
+  flex: 1;
+  min-width: 0;
 }
 
 .providerAvatar {
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
@@ -665,7 +667,7 @@
 }
 
 .providerAvatarFallback {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   color: #fff;
   font-family: "Cormorant Garamond", serif;
@@ -674,8 +676,9 @@
 .providerMeta {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
+  flex: 1;
 }
 
 .providerName {
@@ -683,9 +686,9 @@
   font-weight: 700;
   color: var(--color-green, #102820);
   font-family: "Lato", sans-serif;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
+  line-height: 1.3;
 }
 
 .providerStatus {
@@ -725,6 +728,7 @@
   display: flex;
   gap: 8px;
   flex-shrink: 0;
+  align-items: center;
 }
 
 .btnVisitShop {
@@ -877,6 +881,13 @@
   font-size: 13px;
   font-weight: 600;
   color: #444;
+  font-family: "Lato", sans-serif;
+}
+
+.providerStatSub {
+  font-size: 11px;
+  font-weight: 400;
+  color: #999;
   font-family: "Lato", sans-serif;
 }
 
