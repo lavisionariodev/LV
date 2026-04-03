@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { use, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getServiceById, LISTINGS, PROVIDERS, SERVICES, getReviewsByServiceId } from '../data'
+import { getServiceById, LISTINGS, PROVIDERS, SERVICES, REVIEWS, getReviewsByServiceId } from '../data'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import styles from './detail.module.css'
@@ -503,6 +503,42 @@ function StarRow({ rating, styles, size = 14 }) {
 function ProviderCard({ provider, styles }) {
   const [chatOpen, setChatOpen] = useState(false)
 
+  // ── Computed stats from real data ──
+  const providerListings = LISTINGS.filter((l) => l.providerId === provider.id)
+  const providerReviews  = REVIEWS.filter((r)  => r.providerId === provider.id)
+
+  const avgRating = providerReviews.length
+    ? (providerReviews.reduce((sum, r) => sum + r.rating, 0) / providerReviews.length).toFixed(1)
+    : provider.rating != null ? provider.rating.toFixed(1) : null
+
+  const reviewCount = providerReviews.length || provider.reviews || 0
+  const serviceCount = providerListings.length || provider.products || 0
+
+  // joined: prefer provider.joinedDate (ISO), fallback to provider.joined (string label)
+  const joinedText = (() => {
+    if (provider.joinedDate) {
+      const joined = new Date(provider.joinedDate)
+      const now = new Date()
+      const diffMs = now - joined
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+      const diffMonths = Math.floor(diffDays / 30)
+      const diffYears = Math.floor(diffDays / 365)
+      if (diffYears >= 1) return `${diffYears} year${diffYears !== 1 ? 's' : ''} ago`
+      if (diffMonths >= 1) return `${diffMonths} month${diffMonths !== 1 ? 's' : ''} ago`
+      return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`
+    }
+    return provider.joined ?? null
+  })()
+
+  const yearsInService = (() => {
+    if (provider.joinedDate) {
+      const years = Math.floor((new Date() - new Date(provider.joinedDate)) / (1000 * 60 * 60 * 24 * 365))
+      if (years < 1) return '< 1 year'
+      return `${years} year${years !== 1 ? 's' : ''}`
+    }
+    return provider.yearsInService ?? null
+  })()
+
   const phoneSvg = (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.35 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.56a16 16 0 0 0 6.29 6.29l1.62-1.62a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
   )
@@ -567,50 +603,50 @@ function ProviderCard({ provider, styles }) {
               </span>
             )
           })()}
-          <div className={styles.providerActions}>
-            {/* Chat Now */}
-            <div className={styles.chatWrap}>
-              <button
-                className={styles.btnChatNow}
-                onClick={() => setChatOpen((o) => !o)}
-                aria-expanded={chatOpen}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                </svg>
-                Chat Now
-              </button>
-              {chatOpen && (
-                <>
-                  <div className={styles.chatBackdrop} onClick={() => setChatOpen(false)} />
-                  <div className={styles.chatDropdown}>
-                    <p className={styles.chatDropdownLabel}>Contact via</p>
-                    {contacts.map((c) => (
-                      <a
-                        key={c.label}
-                        href={c.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={styles.chatOption}
-                        onClick={() => setChatOpen(false)}
-                      >
-                        <span className={styles.chatOptionIcon}>{c.svgIcon}</span>
-                        {c.label}
-                      </a>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-            {/* Visit Shop */}
-            <Link href={`/providers/${provider.id}`} className={styles.btnVisitShop}>
+        </div>
+        <div className={styles.providerActions}>
+          {/* Chat Now */}
+          <div className={styles.chatWrap}>
+            <button
+              className={styles.btnChatNow}
+              onClick={() => setChatOpen((o) => !o)}
+              aria-expanded={chatOpen}
+            >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                <polyline points="9 22 9 12 15 12 15 22"/>
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
               </svg>
-              View Shop
-            </Link>
+              Chat Now
+            </button>
+            {chatOpen && (
+              <>
+                <div className={styles.chatBackdrop} onClick={() => setChatOpen(false)} />
+                <div className={styles.chatDropdown}>
+                  <p className={styles.chatDropdownLabel}>Contact via</p>
+                  {contacts.map((c) => (
+                    <a
+                      key={c.label}
+                      href={c.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.chatOption}
+                      onClick={() => setChatOpen(false)}
+                    >
+                      <span className={styles.chatOptionIcon}>{c.svgIcon}</span>
+                      {c.label}
+                    </a>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
+          {/* Visit Shop */}
+          <Link href={`/providers/${provider.id}`} className={styles.btnVisitShop}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            View Shop
+          </Link>
         </div>
       </div>
 
@@ -619,40 +655,39 @@ function ProviderCard({ provider, styles }) {
 
       {/* Right: stats grid */}
       <div className={styles.providerStats}>
-        {provider.ratings != null && (
+        {avgRating != null && (
           <div className={styles.providerStat}>
-            <span className={styles.providerStatLabel}>Ratings</span>
-            <span className={styles.providerStatValue}>{provider.ratings.toLocaleString()}</span>
+            <span className={styles.providerStatLabel}>Rating</span>
+            <span className={styles.providerStatValue}>
+              ★ {avgRating}
+              {reviewCount > 0 && (
+                <span className={styles.providerStatSub}> ({reviewCount})</span>
+              )}
+            </span>
+          </div>
+        )}
+        {serviceCount > 0 && (
+          <div className={styles.providerStat}>
+            <span className={styles.providerStatLabel}>Services</span>
+            <span className={styles.providerStatValueNeutral}>{serviceCount}</span>
+          </div>
+        )}
+        {joinedText && (
+          <div className={styles.providerStat}>
+            <span className={styles.providerStatLabel}>Joined</span>
+            <span className={styles.providerStatValueNeutral}>{joinedText}</span>
+          </div>
+        )}
+        {yearsInService && (
+          <div className={styles.providerStat}>
+            <span className={styles.providerStatLabel}>In Service</span>
+            <span className={styles.providerStatValueNeutral}>{yearsInService}</span>
           </div>
         )}
         {provider.responseRate != null && (
           <div className={styles.providerStat}>
             <span className={styles.providerStatLabel}>Response Rate</span>
             <span className={styles.providerStatValueNeutral}>{provider.responseRate}</span>
-          </div>
-        )}
-        {provider.joined && (
-          <div className={styles.providerStat}>
-            <span className={styles.providerStatLabel}>Joined</span>
-            <span className={styles.providerStatValue}>{provider.joined}</span>
-          </div>
-        )}
-        {provider.products != null && (
-          <div className={styles.providerStat}>
-            <span className={styles.providerStatLabel}>Products</span>
-            <span className={styles.providerStatValueNeutral}>{provider.products}</span>
-          </div>
-        )}
-        {provider.responseTime && (
-          <div className={styles.providerStat}>
-            <span className={styles.providerStatLabel}>Response Time</span>
-            <span className={styles.providerStatValueNeutral}>{provider.responseTime}</span>
-          </div>
-        )}
-        {provider.followers != null && (
-          <div className={styles.providerStat}>
-            <span className={styles.providerStatLabel}>Followers</span>
-            <span className={styles.providerStatValueNeutral}>{provider.followers.toLocaleString()}</span>
           </div>
         )}
       </div>

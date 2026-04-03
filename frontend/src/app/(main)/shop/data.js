@@ -47,6 +47,7 @@ export const PROVIDERS = [
     reviews: 124,
     badge: 'Top Rated',
     lastActive: new Date(Date.now() - 8 * 60 * 1000).toISOString(),       // 8 mins ago
+    joinedDate: '2019-03-15',
   },
   {
     id: 'eternal-rest',
@@ -56,6 +57,7 @@ export const PROVIDERS = [
     reviews: 89,
     badge: 'Verified',
     lastActive: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),  // 3 hours ago
+    joinedDate: '2021-08-01',
   },
   {
     id: 'golden-lily',
@@ -65,6 +67,7 @@ export const PROVIDERS = [
     reviews: 203,
     badge: 'Premium',
     lastActive: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+    joinedDate: '2018-06-20',
   },
   {
     id: 'compassion-care',
@@ -74,6 +77,7 @@ export const PROVIDERS = [
     reviews: 57,
     badge: null,
     lastActive: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+    joinedDate: '2022-11-10',
   },
   {
     id: 'haven-memorial',
@@ -83,6 +87,7 @@ export const PROVIDERS = [
     reviews: 41,
     badge: 'Verified',
     lastActive: new Date(Date.now() - 2 * 7 * 24 * 60 * 60 * 1000).toISOString(), // 2 weeks ago
+    joinedDate: '2020-01-05',
   },
 ]
 
