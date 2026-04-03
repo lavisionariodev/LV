@@ -827,7 +827,7 @@
 @media (max-width: 992px) {
   .hero {
     padding: 72px 32px 24px;
-    min-height: 440px;
+    min-height: auto;
   }
 
   .missionInner {
@@ -836,8 +836,17 @@
     row-gap: 40px;
   }
 
+  .missionLeft {
+    justify-content: center;
+  }
+
   .missionRight {
     padding-left: 0;
+    text-align: center;
+  }
+
+  .sectionBody {
+    max-width: 100%;
   }
 
   .stripWrap {
@@ -847,6 +856,7 @@
   .stripInner {
     flex-wrap: wrap;
     gap: 20px;
+    justify-content: center;
   }
 
   .aboutWrap {
@@ -879,13 +889,16 @@
   }
 
   .testimonialFeatured {
-    padding: 28px 28px;
+    margin-top: 40px;
+    padding: 40px 32px;
   }
 }
 
 @media (max-width: 768px) {
   .hero {
-    padding: 64px 20px 20px;
+    padding: 64px 20px 32px;
+    min-height: auto;
+    text-align: center;
   }
 
   .heroTitle {
@@ -894,13 +907,11 @@
 
   .heroSub {
     font-size: 14px;
-    max-width: 420px;
+    max-width: 100%;
   }
 
-  .heroVisual {
-    width: 320px;
-    height: 180px;
-    gap: 18px;
+  .heroDividerLine {
+    max-width: 80px;
   }
 
   .missionInner {
@@ -913,16 +924,33 @@
   }
 
   .missionRight {
-    text-align: left;
+    text-align: center;
+  }
+
+  .missionBadge {
+    bottom: -14px;
+    right: -14px;
+    width: 48px;
+    height: 48px;
+    font-size: 18px;
   }
 
   .aboutWrap {
     padding: 64px 20px;
   }
 
+  .aboutTitle {
+    font-size: clamp(30px, 7vw, 40px);
+    text-align: center;
+  }
+
+  .aboutPara {
+    text-align: center;
+  }
+
   .blob {
-    width: 300px;
-    height: 300px;
+    width: 280px;
+    height: 280px;
   }
 
   .whyWrap {
@@ -931,43 +959,57 @@
 
   .grid3 {
     grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .card {
+    padding: 28px 20px;
   }
 
   .testimonialsWrap {
-    padding: 72px 20px;
+    padding: 64px 20px;
   }
 
   .testimonialsGrid {
     grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .testimonialCard {
+    padding: 26px 20px;
+  }
+
+  .testimonialsTitle {
+    font-size: clamp(26px, 6vw, 36px);
   }
 
   .testimonialFeatured {
-    padding: 0;
+    margin-top: 36px;
+    padding: 36px 20px;
+  }
+
+  .testimonialFeaturedText {
+    font-size: clamp(14px, 3.5vw, 17px);
   }
 }
 
 @media (max-width: 480px) {
   .hero {
-    padding: 56px 16px 20px;
+    padding: 56px 16px 28px;
   }
 
   .heroEyebrow {
-    font-size: 14px;
-    letter-spacing: 3px;
+    font-size: 11px;
+    letter-spacing: 2px;
   }
 
   .heroTitle {
-    font-size: clamp(28px, 9vw, 38px);
+    font-size: clamp(28px, 9vw, 36px);
   }
 
   .heroSub {
     font-size: 13px;
-    margin-bottom: 28px;
-  }
-
-  .heroVisual {
-    width: 260px;
-    height: 150px;
+    margin-bottom: 20px;
   }
 
   .missionInner {
@@ -975,8 +1017,8 @@
   }
 
   .missionCard {
-    width: 230px;
-    height: 300px;
+    width: 220px;
+    height: 280px;
   }
 
   .stripWrap {
@@ -986,10 +1028,11 @@
   .stripInner {
     flex-direction: column;
     align-items: center;
+    gap: 24px;
   }
 
   .stripArrow {
-    margin-top: 8px;
+    display: none;
   }
 
   .aboutWrap {
@@ -997,24 +1040,67 @@
   }
 
   .aboutInner {
-    gap: 32px;
+    gap: 28px;
   }
 
   .blob {
-    width: 260px;
-    height: 260px;
+    width: 240px;
+    height: 240px;
+  }
+
+  .blobGrid {
+    gap: 14px;
+    padding: 20px;
+  }
+
+  .blobIcon {
+    font-size: 22px;
   }
 
   .whyWrap {
     padding: 56px 16px;
   }
 
+  .sectionTitle {
+    font-size: clamp(24px, 6vw, 32px);
+  }
+
   .testimonialsWrap {
-    padding: 64px 16px;
+    padding: 56px 16px;
+  }
+
+  .testimonialsHeader {
+    margin-bottom: 36px;
+  }
+
+  .testimonialCard {
+    padding: 22px 18px;
+    border-radius: 14px;
+  }
+
+  .testimonialText {
+    font-size: 14px;
+  }
+
+  .testimonialAuthorName {
+    font-size: 13px;
+  }
+
+  .testimonialAuthorLabel {
+    font-size: 12px;
   }
 
   .testimonialFeatured {
-    padding: 24px 20px;
+    margin-top: 28px;
+    padding: 32px 16px;
+  }
+
+  .testimonialFeaturedText {
+    font-size: 13px;
+  }
+
+  .testimonialStars i {
+    font-size: 12px;
   }
 }
 
