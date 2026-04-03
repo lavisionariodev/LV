@@ -622,7 +622,7 @@
    TESTIMONIALS — distinct dark section
 ══════════════════════════════════════════════ */
 .testimonialsWrap {
-  background: var(--cream-mid);
+  background: var(--cream);
   padding: 90px 60px;
   position: relative;
   overflow: hidden;
@@ -752,23 +752,60 @@
   letter-spacing: 0.5px;
 }
 
-/* featured centered closing */
+/* featured — dignified centered epitaph style */
 .testimonialFeatured {
-  margin-top: 48px;
+  margin-top: 60px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 14px;
   text-align: center;
+  gap: 0;
+  padding: 52px 48px;
+  background: transparent;
+  border-top: 1px solid rgba(16, 40, 32, 0.15);
+  border-bottom: 1px solid rgba(16, 40, 32, 0.15);
+  position: relative;
 }
 
+/* corner ornaments */
+.testimonialFeatured::before,
+.testimonialFeatured::after {
+  content: '✦';
+  position: absolute;
+  font-size: 10px;
+  color: var(--gold);
+  opacity: 0.6;
+}
+.testimonialFeatured::before { top: -7px; left: 50%; transform: translateX(-50%); }
+.testimonialFeatured::after  { bottom: -7px; left: 50%; transform: translateX(-50%); }
+
 .testimonialFeaturedIcon {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 48px;
+  font-size: 28px;
   color: var(--highlight);
-  opacity: 0.22;
+  opacity: 0.35;
   line-height: 1;
+  margin-bottom: 22px;
+}
+
+.testimonialFeaturedBody {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.testimonialFeaturedText {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(14px, 1.4vw, 17px);
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1.85;
+  color: var(--slate);
+  max-width: 660px;
+  letter-spacing: 0.3px;
+  opacity: 0.85;
 }
 
 .testimonialStars {
@@ -778,8 +815,9 @@
 }
 
 .testimonialStars i {
-  font-size: 16px;
+  font-size: 13px;
   color: var(--gold);
+  opacity: 0.75;
 }
 
 /* ══════════════════════════════════════════════

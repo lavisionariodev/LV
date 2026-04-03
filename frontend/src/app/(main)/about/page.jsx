@@ -324,15 +324,20 @@ export default async function AboutPage() {
               ))}
             </div>
 
-            {/* featured centered closing — stars only */}
+            {/* featured centered quote */}
             <div className={styles.testimonialFeatured}>
               <div className={styles.testimonialFeaturedIcon}>
                 <i className="fa-solid fa-dove" />
               </div>
-              <div className={styles.testimonialStars}>
-                {[1,2,3,4,5].map((s) => (
-                  <i key={s} className="fa-solid fa-star" />
-                ))}
+              <div className={styles.testimonialFeaturedBody}>
+                <p className={styles.testimonialFeaturedText}>
+                  {`Families who have used ${systemName} appreciate the ease of comparison, transparent pricing, and the support they received during a difficult time. We are honored to help every family navigate this journey with dignity and care.`}
+                </p>
+                <div className={styles.testimonialStars}>
+                  {[1,2,3,4,5].map((s) => (
+                    <i key={s} className="fa-solid fa-star" />
+                  ))}
+                </div>
               </div>
             </div>
 
