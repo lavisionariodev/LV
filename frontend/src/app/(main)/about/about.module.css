@@ -471,8 +471,8 @@
   margin-bottom: 24px;
 }
 
-.aboutTitleBold  { font-weight: 500; }
-.aboutTitleLight { font-weight: 300; }
+.aboutTitleBold  { font-weight: 400; }
+.aboutTitleLight { font-weight: 400; }
 
 .aboutPara {
   font-family: 'Lato', sans-serif;
@@ -685,7 +685,7 @@
 
 .testimonialCard {
   background: #FFFFFF;
-  border: 1px solid #102820;
+  border: 1px solid rgba(16, 40, 32, 0.15);
   border-radius: 18px;
   padding: 32px 26px;
   position: relative;
