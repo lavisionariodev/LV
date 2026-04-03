@@ -82,6 +82,79 @@
   object-fit: cover;
 }
 
+/* ── Save + Share row below thumbnails ── */
+.galleryMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(16, 40, 32, 0.07);
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.btnSaveGallery {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1.5px solid rgba(16, 40, 32, 0.15);
+  border-radius: 2px;
+  padding: 7px 14px;
+  font-family: "Lato", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: #777;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+  white-space: nowrap;
+}
+
+.btnSaveGallery:hover {
+  color: #c0392b;
+  border-color: #c0392b;
+}
+
+.shareRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.shareLabel {
+  font-family: "Lato", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #999;
+}
+
+.shareIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1.5px solid rgba(16, 40, 32, 0.12);
+  color: #666;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  padding: 0;
+}
+
+.shareIcon:hover {
+  background: var(--color-green, #102820);
+  color: #fff;
+  border-color: var(--color-green, #102820);
+}
+
 .body {
   padding: 28px 36px 36px 32px;
   display: flex;
@@ -342,22 +415,7 @@
 }
 
 .btnSave {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  padding: 12px 16px;
-  background: transparent;
-  color: #888;
-  font-family: "Lato", sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  border: 1.5px solid rgba(16, 40, 32, 0.15);
-  border-radius: 2px;
-  cursor: pointer;
-  transition: color 0.2s ease, border-color 0.2s ease;
-  white-space: nowrap;
+  display: none;
 }
 
 .btnSave:hover {
@@ -569,13 +627,13 @@
     width: 100%;
   }
 
-  /* Add to Cart + Save sit on the same row */
   .cartSaveRow {
     width: 100%;
   }
 
   .btnAddToCart {
     flex: 1;
+    width: 100%;
   }
 
   .tabBtn {
