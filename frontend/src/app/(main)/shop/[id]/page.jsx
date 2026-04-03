@@ -465,13 +465,26 @@ function FullDescriptionSection({ service, styles, allServices = [] }) {
 }
 
 /* ─── Reviews — separate box ─── */
+const REVIEWS_PER_PAGE = 5
+
 function ReviewsSection({ reviews = [], styles }) {
+  const [page, setPage] = useState(1)
+
   const avgRating = reviews.length
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
     : null
 
+  const totalPages = Math.ceil(reviews.length / REVIEWS_PER_PAGE)
+  const paginated = reviews.slice((page - 1) * REVIEWS_PER_PAGE, page * REVIEWS_PER_PAGE)
+
+  const handlePage = (p) => {
+    setPage(p)
+    // scroll reviews box into view smoothly
+    document.getElementById('reviews-box')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   return (
-    <div className={styles.reviewsBox}>
+    <div className={styles.reviewsBox} id="reviews-box">
       <div className={styles.reviewsSectionHeader}>
         <h3 className={styles.reviewsSectionTitle}>
           Customer Reviews
@@ -516,8 +529,9 @@ function ReviewsSection({ reviews = [], styles }) {
               )
             })}
           </div>
+
           <div className={styles.reviewsList}>
-            {reviews.map((review) => (
+            {paginated.map((review) => (
               <div key={review.id} className={styles.reviewCard}>
                 <div className={styles.reviewHeader}>
                   <div className={styles.reviewAvatar}>{review.author[0].toUpperCase()}</div>
@@ -534,6 +548,52 @@ function ReviewsSection({ reviews = [], styles }) {
               </div>
             ))}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className={styles.pagination}>
+              {/* Prev */}
+              <button
+                className={`${styles.pageBtn} ${styles.pageBtnNav}`}
+                onClick={() => handlePage(page - 1)}
+                disabled={page === 1}
+                aria-label="Previous page"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M15 18l-6-6 6-6"/>
+                </svg>
+              </button>
+
+              {/* Page numbers */}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  className={`${styles.pageBtn} ${p === page ? styles.pageBtnActive : ''}`}
+                  onClick={() => handlePage(p)}
+                  aria-label={`Page ${p}`}
+                  aria-current={p === page ? 'page' : undefined}
+                >
+                  {p}
+                </button>
+              ))}
+
+              {/* Next */}
+              <button
+                className={`${styles.pageBtn} ${styles.pageBtnNav}`}
+                onClick={() => handlePage(page + 1)}
+                disabled={page === totalPages}
+                aria-label="Next page"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 18l6-6-6-6"/>
+                </svg>
+              </button>
+
+              <span className={styles.pageInfo}>
+                {(page - 1) * REVIEWS_PER_PAGE + 1}–{Math.min(page * REVIEWS_PER_PAGE, reviews.length)} of {reviews.length}
+              </span>
+            </div>
+          )}
         </>
       )}
     </div>
