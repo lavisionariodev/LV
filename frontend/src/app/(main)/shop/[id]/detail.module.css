@@ -1520,6 +1520,89 @@
   letter-spacing: 0;
 }
 
+/* ─── Pagination ─── */
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(16, 40, 32, 0.07);
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.pageBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 6px;
+  background: transparent;
+  border: 1.5px solid rgba(16, 40, 32, 0.14);
+  border-radius: 2px;
+  font-family: "Lato", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #555;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  line-height: 1;
+}
+
+.pageBtn:hover:not(:disabled) {
+  border-color: var(--color-gold-base, #C6A96C);
+  color: var(--color-green, #102820);
+}
+
+.pageBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.pageBtnActive {
+  background: var(--color-green, #102820);
+  border-color: var(--color-green, #102820);
+  color: #fff !important;
+}
+
+.pageBtnActive:hover {
+  background: #1a3d2e !important;
+  border-color: #1a3d2e !important;
+}
+
+.pageBtnNav {
+  color: #777;
+}
+
+.pageInfo {
+  margin-left: auto;
+  font-family: "Lato", sans-serif;
+  font-size: 11px;
+  color: #999;
+  letter-spacing: 0.3px;
+}
+
+@media (max-width: 480px) {
+  .pagination {
+    gap: 3px;
+    padding-top: 16px;
+  }
+
+  .pageBtn {
+    min-width: 32px;
+    height: 32px;
+    font-size: 11px;
+  }
+
+  .pageInfo {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 6px;
+    text-align: center;
+  }
+}
+
 /* ─── Similar Services tab ─── */
 .similarWrap {
   padding-top: 24px;
