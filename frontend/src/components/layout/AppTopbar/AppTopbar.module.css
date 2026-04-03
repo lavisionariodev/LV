@@ -305,11 +305,11 @@
     display: none;
   }
   .pageTitle {
-    font-size: 15px;
+    font-size: 18px;
     font-weight: 700;
   }
   .pageTitleCentered {
-    font-size: 15px;
+    font-size: 18px;
   }
   .iconBtn {
     height: 36px;
@@ -352,10 +352,10 @@
     gap: 8px;
   }
   .pageTitle {
-    font-size: 14px;
+    font-size: 17px;
   }
   .pageTitleCentered {
-    font-size: 14px;
+    font-size: 17px;
   }
   .iconBtn {
     height: 34px;

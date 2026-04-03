@@ -180,8 +180,13 @@ export default function AdminSellerTemplatePage() {
         </div>
 
         <p className={styles.intro}>
-          Configure the form that <strong>sellers</strong> see when adding a service.
-          Add, edit, reorder, or remove fields — changes reflect instantly in the preview.
+          <span className={styles.introLong}>
+            Configure the form that <strong>sellers</strong> see when adding a service.
+            Add, edit, reorder, or remove fields — changes reflect instantly in the preview.
+          </span>
+          <span className={styles.introShort}>
+            Set up the seller service form. Edit fields and preview live.
+          </span>
         </p>
         <p className={styles.intro}>
           {loadingTemplate
