@@ -177,6 +177,9 @@ export default function FavoritesPage() {
   const [sortBy,     setSortBy]     = useState('newest')
   const [removingId, setRemovingId] = useState(null)
   const [undoItem,   setUndoItem]   = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const ITEMS_PER_PAGE = 15 // 3 columns × 5 rows
 
   const sorted = [...favorites].sort((a, b) => {
     if (sortBy === 'price-asc')  return a.price - b.price
@@ -184,6 +187,14 @@ export default function FavoritesPage() {
     if (sortBy === 'rating')     return b.provider.rating - a.provider.rating
     return new Date(b.savedAt) - new Date(a.savedAt)
   })
+
+  const totalPages = Math.ceil(sorted.length / ITEMS_PER_PAGE)
+  const paginated = sorted.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+
+  function handlePageChange(page) {
+    setCurrentPage(page)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   function handleRemove(id) {
     const item = favorites.find((f) => f.id === id)
@@ -245,7 +256,7 @@ export default function FavoritesPage() {
                   <select
                     className={styles.sortSelect}
                     value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
+                    onChange={(e) => { setSortBy(e.target.value); setCurrentPage(1) }}
                   >
                     {SORT_OPTIONS.map((o) => (
                       <option key={o.value} value={o.value}>{o.label}</option>
@@ -257,7 +268,7 @@ export default function FavoritesPage() {
 
             {/* ── Grid ── */}
             <div className={styles.grid}>
-              {sorted.map((item) => (
+              {paginated.map((item) => (
                 <FavoriteCard
                   key={item.id}
                   item={item}
@@ -267,6 +278,45 @@ export default function FavoritesPage() {
                 />
               ))}
             </div>
+
+            {/* ── Pagination ── */}
+            {totalPages > 1 && (
+              <div className={styles.pagination}>
+                <button
+                  className={styles.pageBtn}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  aria-label="Previous page"
+                >
+                  <svg viewBox="0 0 10 10" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M6.5 1.5L3 5l3.5 3.5" />
+                  </svg>
+                </button>
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    className={`${styles.pageBtn} ${page === currentPage ? styles.pageBtnActive : ''}`}
+                    onClick={() => handlePageChange(page)}
+                    aria-label={`Page ${page}`}
+                    aria-current={page === currentPage ? 'page' : undefined}
+                  >
+                    {page}
+                  </button>
+                ))}
+
+                <button
+                  className={styles.pageBtn}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  aria-label="Next page"
+                >
+                  <svg viewBox="0 0 10 10" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3.5 1.5L7 5l-3.5 3.5" />
+                  </svg>
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>
