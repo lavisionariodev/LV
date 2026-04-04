@@ -1,0 +1,300 @@
+/* ============================================================
+   profile.mobile.module.css
+   Styles for content rendered *inside* the bottom sheet.
+   Only used on mobile (the sheet itself never renders on desktop).
+   ============================================================ */
+
+/* ── Account form shell ── */
+.accountForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-bottom: 32px;
+}
+
+/* ── Avatar section ── */
+.avatarSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid rgba(168, 137, 74, 0.12);
+}
+
+.avatarBtn {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  border: 2px solid rgba(168, 137, 74, 0.30);
+  outline: 4px solid rgba(168, 137, 74, 0.10);
+  outline-offset: 2px;
+  overflow: hidden;
+  background: var(--cream, #F7F4EF);
+  cursor: pointer;
+  padding: 0;
+  display: block;
+  transition: border-color 0.25s ease;
+}
+
+.avatarBtn:hover { border-color: var(--gold, #A8894A); }
+.avatarBtn:disabled { cursor: default; }
+
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.avatarPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(16, 40, 32, 0.07);
+  color: var(--forest, #102820);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.9rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+
+.avatarEditBadge {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--forest, #102820);
+  color: var(--white, #ffffff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--white, #ffffff);
+  pointer-events: none;
+  transition: background 0.22s ease;
+}
+
+.avatarBtn:hover .avatarEditBadge { background: var(--gold, #A8894A); }
+
+.removeBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: 'Lato', sans-serif;
+  font-size: 0.75rem;
+  color: var(--gold, #A8894A);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  letter-spacing: 0.01em;
+  transition: color 0.18s ease;
+}
+.removeBtn:hover { color: var(--forest, #102820); }
+.removeBtn:disabled { opacity: 0.4; cursor: default; }
+
+.avatarHint {
+  font-family: 'Lato', sans-serif;
+  font-size: 0.7rem;
+  color: var(--subtle, #b0a898);
+  margin: 0;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+}
+
+/* ── Field list ── */
+.fields {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 20px 0;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 0 14px;
+  border-bottom: 1px solid rgba(168, 137, 74, 0.08);
+}
+
+.fieldGroup:last-child {
+  border-bottom: none;
+}
+
+.fieldLabel {
+  font-family: 'Lato', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--gold, #A8894A);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+
+.fieldInput {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid rgba(16, 40, 32, 0.18);
+  font-family: 'Lato', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--ink, #1A1A1A);
+  background: var(--white, #ffffff);
+  outline: none;
+  border-radius: 0;
+  box-sizing: border-box;
+  transition: border-color 0.22s ease, box-shadow 0.22s ease;
+  display: block;
+  /* Make it feel like a native input */
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.fieldInput::placeholder {
+  color: var(--subtle, #b0a898);
+  font-weight: 300;
+}
+
+.fieldInput:focus {
+  border-color: var(--gold, #A8894A);
+  box-shadow: 0 0 0 2px rgba(168, 137, 74, 0.13);
+}
+
+.fieldInputSpaced {
+  margin-top: 6px;
+}
+
+.fieldHint {
+  font-family: 'Lato', sans-serif;
+  font-size: 0.7rem;
+  color: var(--subtle, #b0a898);
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+/* ── Gender radio row ── */
+.genderRow {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.radioLabel {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: 'Lato', sans-serif;
+  font-size: 0.84rem;
+  color: var(--ink, #1A1A1A);
+  cursor: pointer;
+  user-select: none;
+}
+
+.radioInput {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.radioCustom {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(168, 137, 74, 0.45);
+  background: var(--white, #ffffff);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  transition: border-color 0.18s ease;
+}
+
+.radioInput:checked + .radioCustom {
+  border-color: var(--gold, #A8894A);
+}
+
+.radioInput:checked + .radioCustom::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--gold, #A8894A);
+}
+
+/* ── Date of Birth selects ── */
+.dobRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.selectWrap {
+  position: relative;
+  flex: 1;
+  min-width: 80px;
+}
+
+.selectInput {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 10px 28px 10px 12px;
+  border: 1px solid rgba(16, 40, 32, 0.18);
+  font-family: 'Lato', sans-serif;
+  font-size: 0.84rem;
+  font-weight: 400;
+  color: var(--ink, #1A1A1A);
+  background: var(--white, #ffffff);
+  outline: none;
+  cursor: pointer;
+  border-radius: 0;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.selectInput:focus {
+  border-color: var(--gold, #A8894A);
+  box-shadow: 0 0 0 2px rgba(168, 137, 74, 0.13);
+}
+
+.chevron {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--muted, #6B6B6B);
+  display: flex;
+  align-items: center;
+}
+
+/* ── Wrapper for Purchases / Notifications inside the sheet ── */
+.sheetPageWrap {
+  /* Remove profileCard outer chrome — the sheet provides it */
+}
+
+/* Strip the outer card styles when rendered inside a sheet */
+.sheetPageWrap > div[class*="profileCard"] {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.sheetPageWrap > div[class*="profileCard"] > div[class*="profileAccentBar"] {
+  display: none;
+}
+
+.sheetPageWrap > div[class*="profileCard"] > header[class*="profileHeader"] {
+  background: transparent;
+  border-bottom: none;
+  padding-top: 12px;
+}
+
+/* Account form wrapper (used for the dynamic import path) */
+.sheetAccountWrap {
+  /* intentionally empty — AccountSheetForm handles its own layout */
+}
