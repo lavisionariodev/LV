@@ -1,0 +1,155 @@
+/* ============================================================
+   bottomSheet.module.css
+   Mobile-only bottom sheet — uses La Visionario design tokens.
+   Desktop styles are intentionally absent; the component
+   renders null above 768 px so none of this affects desktop.
+   ============================================================ */
+
+/* ── Backdrop ── */
+.overlay {
+  display: none; /* hidden on desktop by default */
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(16, 40, 32, 0.45);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  animation: fadeIn 0.22s ease forwards;
+}
+
+/* Only show on mobile */
+@media (max-width: 768px) {
+  .overlay {
+    display: block;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Sheet panel ── */
+.sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--white, #ffffff);
+  border-radius: 18px 18px 0 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 92vh;
+  /* Animate up from bottom */
+  animation: slideUp 0.32s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  will-change: transform;
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  /* Accent bar at the very top of the sheet */
+  overflow: hidden;
+}
+
+/* Forest→gold gradient accent strip (matches .profileAccentBar) */
+.sheet::before {
+  content: '';
+  display: block;
+  height: 3px;
+  flex-shrink: 0;
+  background: linear-gradient(
+    90deg,
+    var(--forest, #102820) 0%,
+    var(--gold, #A8894A) 55%,
+    rgba(168, 137, 74, 0) 100%
+  );
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0);    }
+}
+
+/* ── Drag handle ── */
+.dragHandle {
+  width: 36px;
+  height: 4px;
+  border-radius: 9999px;
+  background: rgba(168, 137, 74, 0.28);
+  margin: 10px auto 0;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+/* ── Top bar ── */
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px 12px;
+  border-bottom: 1px solid rgba(168, 137, 74, 0.18);
+  flex-shrink: 0;
+  background: var(--white, #ffffff);
+}
+
+.cancelBtn {
+  background: none;
+  border: none;
+  font-family: 'Lato', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 400;
+  color: var(--muted, #6B6B6B);
+  cursor: pointer;
+  padding: 4px 0;
+  letter-spacing: 0.01em;
+  transition: color 0.18s ease;
+  flex-shrink: 0;
+  min-width: 52px;
+}
+
+.cancelBtn:hover {
+  color: var(--forest, #102820);
+}
+
+.sheetTitle {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--forest, #102820);
+  letter-spacing: 0.04em;
+  text-align: center;
+  flex: 1;
+  line-height: 1.3;
+}
+
+.saveBtn {
+  background: none;
+  border: none;
+  font-family: 'Lato', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--gold, #A8894A);
+  cursor: pointer;
+  padding: 4px 0;
+  letter-spacing: 0.04em;
+  transition: color 0.18s ease;
+  flex-shrink: 0;
+  min-width: 52px;
+  text-align: right;
+}
+
+.saveBtn:hover:not(:disabled) {
+  color: var(--forest, #102820);
+}
+
+.saveBtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* ── Scrollable body ── */
+.body {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  flex: 1;
+  overscroll-behavior: contain;
+  /* Safe-area padding for devices with a home indicator */
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
