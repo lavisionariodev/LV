@@ -298,3 +298,194 @@
 .sheetAccountWrap {
   /* intentionally empty — AccountSheetForm handles its own layout */
 }
+
+
+/* ============================================================
+   MOBILE MENU — card-style profile home screen
+   (reference: grouped menu with identity header + logout)
+   ============================================================ */
+
+/* ── Outer shell — full width on mobile ── */
+.mobileMenu {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0 0 32px;
+  background: var(--cream, #F7F4EF);
+  font-family: 'Lato', sans-serif;
+}
+
+/* ── Identity card ── */
+.identityCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--white, #ffffff);
+  padding: 18px 18px 16px;
+  border-bottom: 1px solid rgba(168, 137, 74, 0.14);
+  margin-bottom: 20px;
+}
+
+.avatarCircle {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 2px solid rgba(168, 137, 74, 0.35);
+  overflow: hidden;
+  background: rgba(16, 40, 32, 0.07);
+  flex-shrink: 0;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s ease;
+}
+.avatarCircle:hover { border-color: var(--gold, #A8894A); }
+
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.avatarInitials {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--forest, #102820);
+  letter-spacing: 0.04em;
+}
+
+.identityMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.identityName {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--forest, #102820);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.01em;
+}
+
+.editProfileBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Lato', sans-serif;
+  font-size: 0.72rem;
+  color: var(--muted, #6B6B6B);
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  transition: color 0.18s ease;
+}
+.editProfileBtn:hover { color: var(--gold, #A8894A); }
+
+/* ── Section group ── */
+.menuSection {
+  padding: 0 14px;
+  margin-bottom: 14px;
+}
+
+.sectionLabel {
+  font-family: 'Lato', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--subtle, #b0a898);
+  margin: 0 0 7px 4px;
+}
+
+/* ── White card containing rows ── */
+.menuCard {
+  background: var(--white, #ffffff);
+  border: 1px solid rgba(168, 137, 74, 0.15);
+  border-radius: 0;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(16, 40, 32, 0.04);
+}
+
+/* ── Single row ── */
+.menuRow {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+  gap: 10px;
+}
+.menuRow:hover {
+  background: rgba(16, 40, 32, 0.03);
+}
+.menuRow:active {
+  background: rgba(168, 137, 74, 0.08);
+}
+
+.menuRowLeft {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  flex: 1;
+  min-width: 0;
+}
+
+.menuIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(16, 40, 32, 0.06);
+  color: var(--forest-mid, #204F38);
+  flex-shrink: 0;
+}
+
+.menuLabel {
+  font-family: 'Lato', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ink, #1A1A1A);
+  letter-spacing: 0.01em;
+}
+
+.menuChevron {
+  color: var(--subtle, #b0a898);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* ── Thin divider between rows ── */
+.menuDivider {
+  height: 1px;
+  background: rgba(168, 137, 74, 0.1);
+  margin: 0 16px;
+}
+
+/* ── Danger (logout) row ── */
+.menuRowDanger .menuLabel {
+  color: #c0392b;
+}
+
+.menuIconDanger {
+  background: rgba(192, 57, 43, 0.08) !important;
+  color: #c0392b !important;
+}

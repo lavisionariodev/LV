@@ -62,22 +62,174 @@ const SHEET_CONFIG = {
 };
 
 /* ─────────────────────────────────────────
+   Chevron icon (reused in mobile rows)
+───────────────────────────────────────── */
+function Chevron() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      aria-hidden="true">
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  );
+}
+
+/* ─────────────────────────────────────────
    Sidebar
 ───────────────────────────────────────── */
-function ProfileSidebar({ activeTab, onMobileNavClick }) {
+function ProfileSidebar({ activeTab, onMobileNavClick, onLogout }) {
   const { profile, uploading, fileInputRef, initials } = useProfile();
   const isMobile = useIsMobile();
 
-  /* Build a nav-item click handler that either opens a sheet (mobile)
-     or lets the default <Link> navigation proceed (desktop).          */
   const makeClickHandler = (tab) => (e) => {
     if (isMobile) {
       e.preventDefault();
       onMobileNavClick(tab);
     }
-    // on desktop: do nothing special — Link handles navigation
   };
 
+  /* ── MOBILE layout ── */
+  if (isMobile) {
+    return (
+      <aside className={mobileStyles.mobileMenu}>
+
+        {/* ── Identity card ── */}
+        <div className={mobileStyles.identityCard}>
+          <button
+            type="button"
+            className={mobileStyles.avatarCircle}
+            onClick={() => onMobileNavClick('account')}
+            aria-label="Edit profile"
+          >
+            {profile.avatar_url ? (
+              <img src={profile.avatar_url} alt="avatar" className={mobileStyles.avatarImg} />
+            ) : (
+              <span className={mobileStyles.avatarInitials}>{initials || '?'}</span>
+            )}
+          </button>
+          <div className={mobileStyles.identityMeta}>
+            <span className={mobileStyles.identityName}>
+              {profile.username || profile.full_name || 'Your Name'}
+            </span>
+            <button
+              type="button"
+              className={mobileStyles.editProfileBtn}
+              onClick={() => onMobileNavClick('account')}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+              Edit Profile
+            </button>
+          </div>
+        </div>
+
+        {/* ── ACCOUNT section ── */}
+        <div className={mobileStyles.menuSection}>
+          <p className={mobileStyles.sectionLabel}>Account</p>
+          <div className={mobileStyles.menuCard}>
+
+            <button
+              type="button"
+              className={mobileStyles.menuRow}
+              onClick={() => onMobileNavClick('account')}
+            >
+              <span className={mobileStyles.menuRowLeft}>
+                <span className={mobileStyles.menuIcon}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                </span>
+                <span className={mobileStyles.menuLabel}>Manage Profile</span>
+              </span>
+              <span className={mobileStyles.menuChevron}><Chevron /></span>
+            </button>
+
+            <div className={mobileStyles.menuDivider} />
+
+            <button
+              type="button"
+              className={mobileStyles.menuRow}
+              onClick={() => onMobileNavClick('notifications')}
+            >
+              <span className={mobileStyles.menuRowLeft}>
+                <span className={mobileStyles.menuIcon}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                  </svg>
+                </span>
+                <span className={mobileStyles.menuLabel}>Notifications</span>
+              </span>
+              <span className={mobileStyles.menuChevron}><Chevron /></span>
+            </button>
+
+          </div>
+        </div>
+
+        {/* ── ORDERS section ── */}
+        <div className={mobileStyles.menuSection}>
+          <p className={mobileStyles.sectionLabel}>Orders</p>
+          <div className={mobileStyles.menuCard}>
+
+            <button
+              type="button"
+              className={mobileStyles.menuRow}
+              onClick={() => onMobileNavClick('purchases')}
+            >
+              <span className={mobileStyles.menuRowLeft}>
+                <span className={mobileStyles.menuIcon}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                    <line x1="3" y1="6" x2="21" y2="6" />
+                    <path d="M16 10a4 4 0 0 1-8 0" />
+                  </svg>
+                </span>
+                <span className={mobileStyles.menuLabel}>My Purchases</span>
+              </span>
+              <span className={mobileStyles.menuChevron}><Chevron /></span>
+            </button>
+
+          </div>
+        </div>
+
+        {/* ── SUPPORT section ── */}
+        <div className={mobileStyles.menuSection}>
+          <p className={mobileStyles.sectionLabel}>Support</p>
+          <div className={mobileStyles.menuCard}>
+
+            <button
+              type="button"
+              className={`${mobileStyles.menuRow} ${mobileStyles.menuRowDanger}`}
+              onClick={onLogout}
+            >
+              <span className={mobileStyles.menuRowLeft}>
+                <span className={`${mobileStyles.menuIcon} ${mobileStyles.menuIconDanger}`}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                  </svg>
+                </span>
+                <span className={mobileStyles.menuLabel}>Log Out</span>
+              </span>
+            </button>
+
+          </div>
+        </div>
+
+      </aside>
+    );
+  }
+
+  /* ── DESKTOP layout (unchanged) ── */
   return (
     <aside className={styles.profileSidebar}>
 
@@ -86,15 +238,9 @@ function ProfileSidebar({ activeTab, onMobileNavClick }) {
         <button
           type="button"
           className={styles.sidebarAvatarBtn}
-          onClick={() => {
-            if (isMobile) {
-              onMobileNavClick('account');
-            } else {
-              fileInputRef.current?.click();
-            }
-          }}
+          onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          aria-label={isMobile ? 'Edit profile' : 'Change profile photo'}
+          aria-label="Change profile photo"
         >
           {profile.avatar_url ? (
             <img src={profile.avatar_url} alt="avatar" className={styles.sidebarAvatarImg} />
@@ -106,11 +252,7 @@ function ProfileSidebar({ activeTab, onMobileNavClick }) {
           <span className={styles.sidebarUsername}>
             {profile.username || profile.full_name || 'Your Name'}
           </span>
-          <Link
-            href="/profile/account"
-            className={styles.sidebarEditLink}
-            onClick={makeClickHandler('account')}
-          >
+          <Link href="/profile/account" className={styles.sidebarEditLink}>
             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24"
               fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -124,7 +266,6 @@ function ProfileSidebar({ activeTab, onMobileNavClick }) {
       {/* ── Nav ── */}
       <nav className={styles.sidebarNav} aria-label="Account navigation">
 
-        {/* My Account group → Profile child */}
         <div className={styles.sidebarGroup}>
           <div className={styles.sidebarGroupHeader}>
             <span className={styles.sidebarGroupIcon}>
@@ -140,18 +281,15 @@ function ProfileSidebar({ activeTab, onMobileNavClick }) {
             href="/profile/account"
             className={`${styles.sidebarChildItem} ${activeTab === 'account' ? styles.sidebarItemActive : ''}`}
             aria-current={activeTab === 'account' ? 'page' : undefined}
-            onClick={makeClickHandler('account')}
           >
             Profile
           </Link>
         </div>
 
-        {/* My Purchase */}
         <Link
           href="/profile/purchases"
           className={`${styles.sidebarItem} ${activeTab === 'purchases' ? styles.sidebarItemActive : ''}`}
           aria-current={activeTab === 'purchases' ? 'page' : undefined}
-          onClick={makeClickHandler('purchases')}
         >
           <span className={styles.sidebarIcon}>
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
@@ -164,12 +302,10 @@ function ProfileSidebar({ activeTab, onMobileNavClick }) {
           My Purchase
         </Link>
 
-        {/* Notifications */}
         <Link
           href="/profile/notifications"
           className={`${styles.sidebarItem} ${activeTab === 'notifications' ? styles.sidebarItemActive : ''}`}
           aria-current={activeTab === 'notifications' ? 'page' : undefined}
-          onClick={makeClickHandler('notifications')}
         >
           <span className={styles.sidebarIcon}>
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
@@ -193,7 +329,7 @@ export default function ProfileLayout({ children }) {
   const router = useRouter();
   const segment = useSelectedLayoutSegment();
   const activeTab = segment || 'account';
-  const { user, authLoading, isBuyer } = useAuth();
+  const { user, authLoading, isBuyer, signOut } = useAuth();
   const isMobile = useIsMobile();
 
   // Which sheet is open, or null
@@ -212,6 +348,16 @@ export default function ProfileLayout({ children }) {
     setSheetSaving(false);
     saveTriggerRef.current = null;
   }, []);
+
+  // Logout handler
+  const handleLogout = useCallback(async () => {
+    try {
+      if (signOut) await signOut();
+      router.replace('/');
+    } catch (e) {
+      router.replace('/');
+    }
+  }, [signOut, router]);
 
   // Called by the top-bar Save button (account sheet)
   const handleSheetSave = useCallback(() => {
@@ -268,7 +414,7 @@ export default function ProfileLayout({ children }) {
     <ProfileProvider>
       <main className={styles.profilePage}>
         <div className={styles.profileLayout}>
-          <ProfileSidebar activeTab={activeTab} onMobileNavClick={handleMobileNavClick} />
+          <ProfileSidebar activeTab={activeTab} onMobileNavClick={handleMobileNavClick} onLogout={handleLogout} />
 
           {/* Desktop: render children normally. On mobile, hide — content lives in sheets. */}
           <div className={`${styles.profileMain} ${isMobile ? styles.profileMainHidden : ''}`}>
