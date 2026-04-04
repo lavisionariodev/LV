@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter, useSelectedLayoutSegment } from 'next/navigation';
+import { useRouter, useSelectedLayoutSegment, useSearchParams } from 'next/navigation';
 import styles from './profile.module.css';
 import mobileStyles from './profile.mobile.module.css';
 import { ProfileProvider } from '@/contexts/ProfileContext';
@@ -337,8 +337,19 @@ export default function ProfileLayout({ children }) {
   const { user, authLoading, isBuyer, signOut } = useAuth();
   const isMobile = useIsMobile();
 
-  // Which sheet is open, or null
-  const [openSheet, setOpenSheet] = useState(null);
+  // Which sheet is open, or null.
+  // Also auto-open if URL has ?sheet=<tab> (e.g. from bottom nav on mobile).
+  const searchParams = useSearchParams();
+  const [openSheet, setOpenSheet] = useState(() => {
+    if (typeof window === 'undefined') return null;
+    const sheet = new URLSearchParams(window.location.search).get('sheet');
+    const validSheets = ['account', 'purchases', 'notifications'];
+    if (sheet && validSheets.includes(sheet) &&
+        window.matchMedia('(max-width: 768px)').matches) {
+      return sheet;
+    }
+    return null;
+  });
   // Forwarded saving state from child form (account sheet only)
   const [sheetSaving, setSheetSaving] = useState(false);
   // Ref callback so AccountPage can hand us its save trigger
@@ -352,6 +363,12 @@ export default function ProfileLayout({ children }) {
     setOpenSheet(null);
     setSheetSaving(false);
     saveTriggerRef.current = null;
+    // Remove ?sheet= from URL cleanly without adding to history
+    if (typeof window !== 'undefined' && window.location.search.includes('sheet=')) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('sheet');
+      window.history.replaceState({}, '', url.toString());
+    }
   }, []);
 
   // Logout handler
