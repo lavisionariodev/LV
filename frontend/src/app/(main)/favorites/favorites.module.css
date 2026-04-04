@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600&family=Lato:wght@300;400;700&display=swap');
 
-/* ─── CSS Variables (mirrors shop design system) ────────────────────────────── */
+/* ─── CSS Variables ──────────────────────────────────────────────────────────── */
 :root {
   --color-green:      #102820;
   --color-gold-base:  #B8962E;
@@ -27,7 +27,7 @@
   max-width: 1280px;
   width: 100%;
   margin: 0 auto;
-  padding: 40px 28px 64px;
+  padding: 48px 28px 64px;
   box-sizing: border-box;
 }
 
@@ -35,17 +35,19 @@
 
 .toolbar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
   gap: 12px;
-  margin-bottom: 20px;
+  align-items: center;
+  margin-bottom: 14px;
   flex-wrap: wrap;
 }
 
 .resultsIndicator {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: baseline;
   gap: 4px;
+  padding: 11px 4px;
 }
 
 .resultsIndicatorNum {
@@ -85,7 +87,7 @@
 }
 
 .sortSelect {
-  padding: 10px 36px 10px 14px;
+  padding: 11px 32px 11px 14px;
   border: 1.5px solid rgba(16, 40, 32, 0.14);
   border-radius: 6px;
   font-size: 13px;
@@ -103,7 +105,6 @@
 
 .sortSelect:focus {
   border-color: rgba(184, 150, 46, 0.5);
-  box-shadow: 0 0 0 3px rgba(184, 150, 46, 0.1);
 }
 
 /* ─── Grid ──────────────────────────────────────────────────────────────────── */
@@ -111,12 +112,12 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: clamp(10px, 1.4vw, 18px);
+  gap: clamp(8px, 1.3vw, 16px);
   width: 100%;
   box-sizing: border-box;
 }
 
-/* ─── Card ──────────────────────────────────────────────────────────────────── */
+/* ─── Card — identical to shop .card + .listingCard ─────────────────────────── */
 
 .card {
   display: flex;
@@ -143,17 +144,20 @@
 }
 
 .cardLink {
-  text-decoration: none;
-  color: inherit;
   display: block;
+  color: inherit;
+  text-decoration: none;
   flex: 1;
+  min-width: 0;
 }
 
-/* ─── Card Image ─────────────────────────────────────────────────────────────── */
+/* ─── Image — identical to shop .listingImageWrap + .cardImage ───────────────── */
 
-.cardImageWrap {
+.listingImageWrap {
   position: relative;
+  width: 100%;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .cardImage {
@@ -162,62 +166,61 @@
   object-fit: cover;
   background: var(--color-cream, #F7F4EF);
   display: block;
-  transition: transform 0.35s ease;
 }
 
-.card:hover .cardImage {
-  transform: scale(1.03);
-}
-
-/* ─── Badges ─────────────────────────────────────────────────────────────────── */
+/* ─── Badges — identical to shop ────────────────────────────────────────────── */
 
 .popularBadge {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  background: var(--color-green, #102820);
+  top: clamp(6px, 0.9vw, 12px);
+  left: clamp(6px, 0.9vw, 12px);
+  background: var(--color-gold-base, #B8962E);
   color: #FFFFFF;
-  font-size: 9.5px;
+  font-size: clamp(7.5px, 0.75vw, 9.5px);
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
+  padding: clamp(2px, 0.35vw, 4px) clamp(6px, 0.8vw, 10px);
+  border-radius: 100px;
   font-family: "Lato", sans-serif;
-  border-radius: 3px;
-  padding: 3px 8px;
   pointer-events: none;
+  box-shadow: 0 2px 8px rgba(184, 150, 46, 0.35);
 }
 
 .providerBadge {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.8px;
+  top: clamp(6px, 0.9vw, 12px);
+  right: clamp(6px, 0.9vw, 12px);
+  color: #FFFFFF;
+  font-size: clamp(7.5px, 0.75vw, 9.5px);
+  font-weight: 600;
+  letter-spacing: 0.7px;
   text-transform: uppercase;
+  padding: clamp(2px, 0.35vw, 4px) clamp(6px, 0.8vw, 10px);
+  border-radius: 100px;
   font-family: "Lato", sans-serif;
-  border-radius: 3px;
-  padding: 3px 8px;
+  background: rgba(16, 40, 32, 0.78);
   pointer-events: none;
+  backdrop-filter: blur(4px);
+}
+
+.badgePremium {
+  background: var(--color-gold-base, #B8962E);
 }
 
 .badgeTopRated {
-  background: rgba(184, 150, 46, 0.14);
-  color: var(--color-gold-base, #B8962E);
-  border: 1px solid rgba(184, 150, 46, 0.3);
+  background: rgba(16, 40, 32, 0.82);
 }
 
-.badgeFeatured {
-  background: rgba(16, 40, 32, 0.08);
-  color: var(--color-green, #102820);
-  border: 1px solid rgba(16, 40, 32, 0.15);
+.badgeVerified {
+  background: rgba(16, 40, 32, 0.82);
 }
 
-/* Saved heart indicator (bottom-right of image) */
+/* Saved heart indicator — favorites-only, bottom-right of image */
 .savedIndicator {
   position: absolute;
-  bottom: 10px;
-  right: 10px;
+  bottom: clamp(6px, 0.9vw, 10px);
+  right: clamp(6px, 0.9vw, 10px);
   width: 28px;
   height: 28px;
   border-radius: 50%;
@@ -231,142 +234,122 @@
   box-shadow: 0 2px 8px rgba(16, 40, 32, 0.1);
 }
 
-/* ─── Card Body ──────────────────────────────────────────────────────────────── */
+/* ─── Card Body — identical to shop ─────────────────────────────────────────── */
 
 .cardBody {
-  padding: clamp(10px, 1.2vw, 14px) clamp(12px, 1.4vw, 16px) clamp(12px, 1.4vw, 16px);
+  padding: clamp(8px, 1.2vw, 14px) clamp(10px, 1.4vw, 16px) clamp(14px, 1.6vw, 20px);
 }
 
-/* ─── Provider Row ───────────────────────────────────────────────────────────── */
+/* ─── Provider Row — identical to shop ──────────────────────────────────────── */
 
 .providerRow {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 10px;
+  align-items: center;
+  gap: clamp(5px, 0.7vw, 8px);
+  margin-bottom: clamp(6px, 0.9vw, 10px);
 }
 
 .providerAvatar {
-  width: 30px;
-  height: 30px;
+  width: clamp(22px, 2.4vw, 28px);
+  height: clamp(22px, 2.4vw, 28px);
   border-radius: 50%;
   background: var(--color-green, #102820);
   color: #FFFFFF;
-  font-size: 13px;
-  font-weight: 700;
-  font-family: "Cormorant Garamond", serif;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: clamp(9px, 0.9vw, 11px);
+  font-weight: 700;
+  font-family: "Cormorant Garamond", serif;
   flex-shrink: 0;
+  border: 2px solid rgba(16, 40, 32, 0.08);
 }
 
 .providerInfo {
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
 }
 
 .providerName {
-  margin: 0;
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: clamp(9.5px, 1vw, 11.5px);
+  font-weight: 700;
   color: var(--color-green, #102820);
   font-family: "Lato", sans-serif;
+  margin: 0 0 1px;
+  line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .providerLocation {
-  margin: 0;
-  font-size: 11px;
-  color: #999;
+  font-size: clamp(8.5px, 0.85vw, 10px);
+  color: #aaa;
   font-family: "Lato", sans-serif;
+  margin: 0;
   display: flex;
   align-items: center;
+  line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ─── Rating — identical to shop ────────────────────────────────────────────── */
 
 .ratingGroup {
   display: flex;
   align-items: center;
   gap: 3px;
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-left: auto;
 }
 
 .ratingStars {
-  display: flex;
-  align-items: center;
+  display: inline-flex;
   gap: 1px;
 }
 
 .ratingNum {
-  font-size: 12px;
+  font-size: clamp(9.5px, 1vw, 12px);
   font-weight: 700;
   color: var(--color-green, #102820);
   font-family: "Lato", sans-serif;
-  margin-left: 2px;
+  margin-left: 3px;
 }
 
 .ratingReviews {
-  font-size: 11px;
+  font-size: clamp(9px, 0.9vw, 11px);
   color: #bbb;
   font-family: "Lato", sans-serif;
 }
 
-/* ─── Divider ────────────────────────────────────────────────────────────────── */
+/* ─── Divider — identical to shop ───────────────────────────────────────────── */
 
 .listingDivider {
   height: 1px;
   background: rgba(16, 40, 32, 0.07);
-  margin: 0 0 10px;
+  margin-bottom: clamp(6px, 0.9vw, 10px);
 }
 
-/* ─── Title + Price ──────────────────────────────────────────────────────────── */
+/* ─── Title + Price — identical to shop ─────────────────────────────────────── */
 
 .listingTitleRow {
   display: flex;
-  align-items: flex-start;
   justify-content: space-between;
-  gap: 8px;
-}
-
-.titleAndMeta {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.serviceTag {
-  display: inline-block;
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  font-family: "Lato", sans-serif;
-  color: var(--color-gold-base, #B8962E);
-  background: rgba(184, 150, 46, 0.08);
-  border: 1px solid rgba(184, 150, 46, 0.18);
-  border-radius: 100px;
-  padding: 2px 8px;
-  align-self: flex-start;
+  align-items: flex-start;
+  gap: clamp(4px, 0.6vw, 8px);
+  margin-bottom: clamp(6px, 0.9vw, 10px);
 }
 
 .cardTitle {
   margin: 0;
-  font-size: clamp(13px, 1.3vw, 15px);
+  font-size: clamp(11px, 1.15vw, 14px);
   font-weight: 600;
   color: var(--color-green, #102820);
   font-family: "Cormorant Garamond", serif;
-  line-height: 1.35;
+  line-height: 1.3;
+  flex: 1;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -377,99 +360,128 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 1px;
   flex-shrink: 0;
 }
 
 .priceLabel {
-  font-size: 9.5px;
-  color: #aaa;
+  font-size: clamp(7px, 0.65vw, 8px);
+  color: #ccc;
   font-family: "Lato", sans-serif;
-  letter-spacing: 0.3px;
-  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 1px;
 }
 
 .price {
-  font-size: clamp(13px, 1.3vw, 15px);
-  font-weight: 700;
-  color: var(--color-green, #102820);
+  font-size: clamp(12px, 1.3vw, 15px);
+  font-weight: 600;
+  color: var(--color-gold-base, #B8962E);
   font-family: "Cormorant Garamond", serif;
-  letter-spacing: -0.3px;
-  white-space: nowrap;
+  letter-spacing: 0.3px;
+  line-height: 1.1;
 }
 
-/* ─── Card Actions ───────────────────────────────────────────────────────────── */
+/* ─── Inclusions — identical to shop ────────────────────────────────────────── */
+
+.inclusions {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 clamp(10px, 1.4vw, 18px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(3px, 0.5vw, 6px);
+  flex: 1;
+}
+
+.inclusionItem {
+  font-size: clamp(10px, 0.95vw, 12px);
+  color: #666;
+  font-family: "Lato", sans-serif;
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(4px, 0.6vw, 7px);
+  line-height: 1.5;
+}
+
+.inclusionMore {
+  font-size: clamp(10px, 0.9vw, 11.5px);
+  color: #bbb;
+  font-style: italic;
+  font-family: "Lato", sans-serif;
+  padding-left: clamp(12px, 1.5vw, 18px);
+}
+
+/* ─── Card Actions — identical to shop + favorites-only extras ───────────────── */
 
 .cardActions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: clamp(8px, 1vw, 11px) clamp(12px, 1.4vw, 16px) clamp(10px, 1.2vw, 14px);
-  border-top: 1px solid rgba(16, 40, 32, 0.07);
+  gap: clamp(5px, 0.7vw, 8px);
+  margin-top: auto;
+  padding: clamp(6px, 0.7vw, 10px) clamp(10px, 1.4vw, 16px) clamp(12px, 1.4vw, 16px);
 }
 
-.savedAt {
-  display: flex;
-  align-items: center;
-  font-size: 10.5px;
-  color: #b0a99b;
-  font-family: "Lato", sans-serif;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.actionBtns {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-/* View Details button — mirrors shop's ctaBtn */
-.viewBtn {
+/* View Details — identical to shop .ctaBtn */
+.ctaBtn {
   display: inline-flex;
   align-items: center;
-  padding: 8px 14px;
+  justify-content: center;
+  flex: 1;
+  padding: clamp(6px, 0.7vw, 8px) clamp(6px, 0.9vw, 10px);
   background: var(--color-green, #102820);
-  color: #FFFFFF;
+  color: #FFFFFF !important;
+  border: none;
   border-radius: 5px;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: clamp(9.5px, 0.95vw, 11.5px);
+  font-weight: 600;
   font-family: "Lato", sans-serif;
   letter-spacing: 0.4px;
-  text-decoration: none;
+  text-decoration: none !important;
+  transition: opacity 0.2s ease;
   white-space: nowrap;
-  transition: opacity 0.2s ease, transform 0.15s ease;
+  cursor: pointer;
 }
 
-.viewBtn:hover {
-  opacity: 0.88;
-  transform: translateY(-1px);
+.ctaBtn:hover {
+  opacity: 0.85;
 }
 
-/* Remove button */
+/* Remove button — favorites-only, mirrors shop .compareBtn style */
 .removeBtn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
-  padding: 8px 12px;
-  border: 1.5px solid rgba(16, 40, 32, 0.14);
-  border-radius: 5px;
+  padding: clamp(6px, 0.7vw, 10px) clamp(8px, 1.1vw, 14px);
   background: transparent;
-  color: #999;
-  font-size: 12px;
+  color: #888;
+  border: 1.5px solid rgba(16, 40, 32, 0.15);
+  border-radius: 5px;
+  font-size: clamp(10px, 0.95vw, 12px);
+  font-weight: 600;
   font-family: "Lato", sans-serif;
-  font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  flex-shrink: 0;
 }
 
 .removeBtn:hover {
   border-color: rgba(190, 50, 50, 0.35);
   color: #b83232;
   background: rgba(190, 50, 50, 0.04);
+}
+
+/* Saved date — favorites-only */
+.savedAt {
+  display: flex;
+  align-items: center;
+  font-size: clamp(9px, 0.9vw, 10.5px);
+  color: #b0a99b;
+  font-family: "Lato", sans-serif;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 /* ─── Empty State ────────────────────────────────────────────────────────────── */
@@ -609,35 +621,6 @@
   opacity: 0.88;
 }
 
-/* ─── Inclusions List (mirrors Shop card) ────────────────────────────────────── */
-
-.inclusionsList {
-  list-style: none;
-  margin: 8px 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.inclusionsItem {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  font-size: 11.5px;
-  font-family: "Lato", sans-serif;
-  color: #666;
-  line-height: 1.45;
-}
-
-.inclusionsMore {
-  font-size: 11px;
-  font-family: "Lato", sans-serif;
-  color: #aaa;
-  padding-left: 14px;
-  font-style: italic;
-}
-
 /* ─── Responsive ─────────────────────────────────────────────────────────────── */
 
 @media (max-width: 1024px) {
@@ -673,95 +656,40 @@
     gap: 10px;
   }
 
-  /* Tighten image so cards aren't too tall */
   .cardImage {
     aspect-ratio: 16 / 7;
   }
 
-  /* Tighten body padding */
   .cardBody {
     padding: 10px 10px 10px;
   }
 
-  /* Provider row: stack rating below the name/location on mobile */
-  .providerRow {
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 8px;
-  }
-
-  .providerInfo {
-    /* Take as much width as possible, leave rating on its own line */
-    flex: 1 1 0;
-    min-width: 0;
-  }
-
-  /* Rating group wraps to new line underneath avatar+info */
-  .ratingGroup {
-    width: 100%;
-    padding-left: 36px; /* align with providerInfo (avatar 30px + gap 6px) */
-    margin-top: 0;
-  }
-
-  /* Hide review count to save space */
+  /* Hide review count */
   .ratingReviews {
     display: none;
   }
 
-  /* Hide provider badge (Top Rated / Featured) — overlaps on small images */
+  /* Hide provider badge */
   .providerBadge {
     display: none;
   }
 
-  /* Shrink popular badge slightly */
-  .popularBadge {
-    font-size: 8.5px;
-    padding: 2px 6px;
-    top: 7px;
-    left: 7px;
-  }
-
-  /* Saved indicator: smaller on mobile */
-  .savedIndicator {
-    width: 24px;
-    height: 24px;
-    bottom: 7px;
-    right: 7px;
-  }
-
-  /* Title/price: stack vertically */
-  .listingTitleRow {
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .priceBlock {
-    align-items: flex-start;
-  }
-
-  /* Hide saved date to save space */
-  .savedAt {
+  /* Inclusions: show only 2 on tablet */
+  .inclusions li:nth-child(n+3):not(.inclusionMore) {
     display: none;
   }
 
-  /* Hide inclusions on mobile — cards too compact */
-  .inclusionsList {
+  /* Saved date: hide on mobile */
+  .savedAt {
     display: none;
   }
 
   .cardActions {
     padding: 8px 10px 10px;
-    justify-content: flex-end;
-  }
-
-  .actionBtns {
     gap: 5px;
-    width: 100%;
   }
 
-  .viewBtn {
-    flex: 1;
-    justify-content: center;
+  .ctaBtn {
     font-size: 11.5px;
     padding: 8px 10px;
   }
@@ -771,7 +699,6 @@
     font-size: 0;
     padding: 8px 10px;
     min-width: 36px;
-    justify-content: center;
     flex-shrink: 0;
   }
 
@@ -790,53 +717,13 @@
     gap: 8px;
   }
 
-  /* Even shorter image on very small screens */
   .cardImage {
     aspect-ratio: 16 / 6;
   }
 
-  .providerAvatar {
-    width: 26px;
-    height: 26px;
-    font-size: 11px;
-  }
-
-  .providerName {
-    font-size: 11.5px;
-  }
-
-  .providerLocation {
-    font-size: 10px;
-  }
-
-  .ratingGroup {
-    padding-left: 32px;
-  }
-
-  .ratingStars svg {
-    width: 10px;
-    height: 10px;
-  }
-
-  .ratingNum {
-    font-size: 11px;
-  }
-
-  .serviceTag {
-    font-size: 8.5px;
-    padding: 2px 6px;
-  }
-
-  .cardTitle {
-    font-size: 13px;
-  }
-
-  .price {
-    font-size: 13px;
-  }
-
-  .priceLabel {
-    font-size: 9px;
+  /* Hide inclusions entirely on very small screens */
+  .inclusions {
+    display: none;
   }
 
   .emptySection {

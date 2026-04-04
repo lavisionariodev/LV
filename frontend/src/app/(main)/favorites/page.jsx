@@ -211,7 +211,6 @@ export default function FavoritesPage() {
   return (
     <section className={styles.page}>
 
-      {/* ── Content ── */}
       <div className={styles.content}>
 
         {isEmpty ? (
@@ -295,15 +294,17 @@ function FavoriteCard({ item, isRemoving, onRemove, styles }) {
 
   return (
     <div className={`${styles.card}${isRemoving ? ` ${styles.cardRemoving}` : ''}`}>
+
+      {/* ── Clickable area (image + body) — mirrors shop's listingCardLink ── */}
       <Link href={`/shop/${item.serviceId}`} className={styles.cardLink}>
 
         {/* ── Image ── */}
-        <div className={styles.cardImageWrap}>
+        <div className={styles.listingImageWrap}>
           <Image
             src={item.image}
             alt={item.name}
             width={400}
-            height={250}
+            height={220}
             className={styles.cardImage}
           />
           {item.popular && (
@@ -314,7 +315,7 @@ function FavoriteCard({ item, isRemoving, onRemove, styles }) {
               {provider.badge}
             </span>
           )}
-          {/* Saved heart indicator */}
+          {/* Saved heart indicator — favorites-only */}
           <div className={styles.savedIndicator} aria-label="Saved">
             <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" stroke="none">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
@@ -341,7 +342,7 @@ function FavoriteCard({ item, isRemoving, onRemove, styles }) {
             <div className={styles.ratingGroup}>
               <span className={styles.ratingStars}>
                 {[1, 2, 3, 4, 5].map((s) => (
-                  <svg key={s} width="11" height="11" viewBox="0 0 12 12"
+                  <svg key={s} width="10" height="10" viewBox="0 0 12 12"
                     fill={s <= Math.round(provider.rating) ? 'var(--color-gold-base, #B8962E)' : '#D5CCBC'}>
                     <path d="M6 1l1.35 2.73L10.5 4.2l-2.25 2.19.53 3.1L6 7.9l-2.78 1.6.53-3.1L1.5 4.2l3.15-.47z" />
                   </svg>
@@ -356,44 +357,55 @@ function FavoriteCard({ item, isRemoving, onRemove, styles }) {
 
           {/* Title + Price */}
           <div className={styles.listingTitleRow}>
-            <div className={styles.titleAndMeta}>
-              <span className={styles.serviceTag}>{item.serviceLabel}</span>
-              <h3 className={styles.cardTitle}>{item.name}</h3>
-            </div>
+            <h3 className={styles.cardTitle}>{item.name}</h3>
             <div className={styles.priceBlock}>
               <span className={styles.priceLabel}>Starting at</span>
               <span className={styles.price}>₱{item.price.toLocaleString('en-PH')}</span>
             </div>
           </div>
 
+          {/* Inclusions */}
+          <ul className={styles.inclusions}>
+            {item.inclusions.slice(0, 3).map((inc) => (
+              <li key={inc} className={styles.inclusionItem}>
+                <svg viewBox="0 0 10 10" width="8" height="8" fill="none" stroke="var(--color-gold-base, #B8962E)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}>
+                  <path d="M1.5 5l2.5 2.5 4.5-4.5" />
+                </svg>
+                {inc}
+              </li>
+            ))}
+            {item.inclusions.length > 3 && (
+              <li className={styles.inclusionMore}>+{item.inclusions.length - 3} more included</li>
+            )}
+          </ul>
+
         </div>
       </Link>
 
-      {/* ── Card Actions ── */}
+      {/* ── Card Actions — View Details + Remove (favorites-only) ── */}
       <div className={styles.cardActions}>
+        <Link href={`/shop/${item.serviceId}`} className={styles.ctaBtn}>
+          View Details
+        </Link>
+        <button
+          className={styles.removeBtn}
+          onClick={() => onRemove(item.id)}
+          title="Remove from favorites"
+          aria-label={`Remove ${item.name} from favorites`}
+        >
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+          </svg>
+          Remove
+        </button>
         <span className={styles.savedAt}>
-          <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4, opacity: 0.5 }}>
+          <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4, opacity: 0.5, flexShrink: 0 }}>
             <circle cx="6" cy="6" r="5" /><path d="M6 3.5v2.7l1.8 1.8" />
           </svg>
-          Saved {formatDate(item.savedAt)}
+          {formatDate(item.savedAt)}
         </span>
-        <div className={styles.actionBtns}>
-          <Link href={`/shop/${item.serviceId}`} className={styles.viewBtn}>
-            View Details
-          </Link>
-          <button
-            className={styles.removeBtn}
-            onClick={() => onRemove(item.id)}
-            title="Remove from favorites"
-            aria-label={`Remove ${item.name} from favorites`}
-          >
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-            </svg>
-            Remove
-          </button>
-        </div>
       </div>
+
     </div>
   )
 }
