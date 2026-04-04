@@ -5,79 +5,166 @@ import Link from 'next/link'
 import Image from 'next/image'
 import styles from './favorites.module.css'
 
-// ─── Sample Data ──────────────────────────────────────────────────────────────
+// ─── Sample Favorites (hardcoded from data.js) ───────────────────────────────
 
 const SAMPLE_FAVORITES = [
   {
-    id: 'fav-1',
-    name: 'Full-Service Funeral Package — Traditional Wake & Burial',
-    serviceId: 'funeral-packages',
-    serviceLabel: 'Funeral Packages',
-    provider: { name: 'Sanctum Memorial Chapel', location: 'Quezon City, Metro Manila', rating: 4.9, reviews: 182, badge: 'Top Rated', initial: 'S' },
-    price: 85000,
+    id: 'cremation-premium',
+    name: 'Premium Cremation Package',
+    serviceId: 'cremation',
+    serviceLabel: 'Cremation Services',
+    price: 38000,
     popular: true,
-    savedAt: '2025-06-12',
+    inclusions: [
+      'Death certificate processing',
+      'Mahogany urn',
+      '2-day chapel viewing',
+      'Flower arrangement',
+      'Embalming',
+    ],
     image: '/sample/services/1.jpg',
+    savedAt: '2025-06-12',
+    provider: {
+      name: 'Serenity Chapel',
+      location: 'Manila, NCR',
+      rating: 4.9,
+      reviews: 124,
+      badge: 'Top Rated',
+      initial: 'S',
+    },
   },
   {
-    id: 'fav-2',
-    name: 'Cremation with Viewing — Standard Urn & Certificate',
-    serviceId: 'cremation',
-    serviceLabel: 'Cremation',
-    provider: { name: 'Serene Passage Services', location: 'BGC, Taguig', rating: 4.8, reviews: 140, badge: 'Featured', initial: 'S' },
+    id: 'burial-full',
+    name: 'Full Traditional Burial',
+    serviceId: 'traditional-burial',
+    serviceLabel: 'Traditional Burial',
+    price: 95000,
+    popular: true,
+    inclusions: [
+      'Premium casket',
+      '5-day chapel viewing',
+      'Full embalming',
+      'Flower arrangement',
+      'Hearse convoy',
+      'Reception catering (50 pax)',
+    ],
+    image: '/sample/services/2.jpg',
+    savedAt: '2025-06-10',
+    provider: {
+      name: 'Serenity Chapel',
+      location: 'Manila, NCR',
+      rating: 4.9,
+      reviews: 124,
+      badge: 'Top Rated',
+      initial: 'S',
+    },
+  },
+  {
+    id: 'memorial-classic',
+    name: 'Classic Memorial Service',
+    serviceId: 'memorial-planning',
+    serviceLabel: 'Memorial Planning',
     price: 32000,
     popular: true,
-    savedAt: '2025-06-10',
-    image: '/sample/services/2.jpg',
-  },
-  {
-    id: 'fav-3',
-    name: 'Floral Arrangements — Sympathy Wreaths & Casket Sprays',
-    serviceId: 'florals',
-    serviceLabel: 'Florals',
-    provider: { name: 'White Lily Florals', location: 'Mandaluyong', rating: 4.7, reviews: 88, badge: null, initial: 'W' },
-    price: 12000,
-    popular: false,
-    savedAt: '2025-06-08',
+    inclusions: [
+      'Venue (up to 80 guests)',
+      'Custom AV tribute video',
+      'Floral arrangements',
+      'Memorial program',
+      'Live music',
+    ],
     image: '/sample/services/3.jpg',
+    savedAt: '2025-06-08',
+    provider: {
+      name: 'Eternal Rest Services',
+      location: 'Quezon City, NCR',
+      rating: 4.7,
+      reviews: 89,
+      badge: 'Verified',
+      initial: 'E',
+    },
   },
   {
-    id: 'fav-4',
-    name: 'Catering — Reception Meal for 100 Guests',
-    serviceId: 'catering',
-    serviceLabel: 'Catering',
-    provider: { name: 'Comfort Table Catering', location: 'Pasig City', rating: 4.6, reviews: 117, badge: null, initial: 'C' },
-    price: 55000,
+    id: 'cremation-eco',
+    name: 'Eco Cremation',
+    serviceId: 'cremation',
+    serviceLabel: 'Cremation Services',
+    price: 22000,
     popular: false,
+    inclusions: [
+      'Biodegradable urn',
+      'Ash scattering ceremony',
+      'Death certificate',
+      'Memorial card printing',
+    ],
+    image: '/sample/services/1.jpg',
     savedAt: '2025-06-05',
-    image: '/sample/services/4.jpg',
+    provider: {
+      name: 'Compassion Care',
+      location: 'Pasig, NCR',
+      rating: 4.6,
+      reviews: 57,
+      badge: null,
+      initial: 'C',
+    },
   },
   {
-    id: 'fav-5',
-    name: 'Memorial Venue Styling & Décor',
-    serviceId: 'styling',
-    serviceLabel: 'Memorial Styling',
-    provider: { name: 'Eternal Grace Events', location: 'Alabang, Muntinlupa', rating: 4.9, reviews: 64, badge: 'Top Rated', initial: 'E' },
-    price: 28000,
-    popular: true,
-    savedAt: '2025-06-01',
-    image: '/sample/services/5.jpg',
-  },
-  {
-    id: 'fav-6',
-    name: 'Live Choir & Musical Tribute — 4-Voice Ensemble',
-    serviceId: 'entertainment',
-    serviceLabel: 'Music & Tribute',
-    provider: { name: 'Requiem Voices', location: 'Marikina City', rating: 4.8, reviews: 53, badge: 'Featured', initial: 'R' },
-    price: 18000,
+    id: 'burial-deluxe',
+    name: 'Deluxe Burial Service',
+    serviceId: 'traditional-burial',
+    serviceLabel: 'Traditional Burial',
+    price: 120000,
     popular: false,
+    inclusions: [
+      'Mahogany casket',
+      '7-day viewing',
+      'Embalming + cosmetology',
+      'Floral tributes',
+      'Hearse + escort',
+      'Catering (100 pax)',
+      'Video tribute',
+    ],
+    image: '/sample/services/2.jpg',
+    savedAt: '2025-06-01',
+    provider: {
+      name: 'Golden Lily Funerals',
+      location: 'Makati, NCR',
+      rating: 4.8,
+      reviews: 203,
+      badge: 'Premium',
+      initial: 'G',
+    },
+  },
+  {
+    id: 'memorial-intimate',
+    name: 'Intimate Memorial Gathering',
+    serviceId: 'memorial-planning',
+    serviceLabel: 'Memorial Planning',
+    price: 15000,
+    popular: false,
+    inclusions: [
+      'Venue (up to 30 guests)',
+      'Photo display setup',
+      'Memorial program booklets',
+      'Sound system',
+    ],
+    image: '/sample/services/3.jpg',
     savedAt: '2025-05-28',
-    image: '/sample/services/6.jpg',
+    provider: {
+      name: 'Haven Memorial',
+      location: 'Caloocan, NCR',
+      rating: 4.5,
+      reviews: 41,
+      badge: 'Verified',
+      initial: 'H',
+    },
   },
 ]
 
+// ─── Sort options ─────────────────────────────────────────────────────────────
+
 const SORT_OPTIONS = [
-  { value: 'newest',    label: 'Recently Saved' },
+  { value: 'newest',     label: 'Recently Saved' },
   { value: 'price-asc',  label: 'Price: Low–High' },
   { value: 'price-desc', label: 'Price: High–Low' },
   { value: 'rating',     label: 'Highest Rated' },
@@ -86,10 +173,10 @@ const SORT_OPTIONS = [
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function FavoritesPage() {
-  const [favorites, setFavorites] = useState(SAMPLE_FAVORITES)
-  const [sortBy, setSortBy] = useState('newest')
+  const [favorites,  setFavorites]  = useState(SAMPLE_FAVORITES)
+  const [sortBy,     setSortBy]     = useState('newest')
   const [removingId, setRemovingId] = useState(null)
-  const [undoItem, setUndoItem] = useState(null)
+  const [undoItem,   setUndoItem]   = useState(null)
 
   const sorted = [...favorites].sort((a, b) => {
     if (sortBy === 'price-asc')  return a.price - b.price
@@ -189,8 +276,8 @@ export default function FavoritesPage() {
       {undoItem && (
         <div className={styles.undoToast} role="status">
           <span className={styles.undoToastText}>
-            <svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" style={{ marginRight: 6, flexShrink: 0, opacity: 0.6 }}>
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0" />
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" stroke="none" style={{ marginRight: 6, flexShrink: 0, opacity: 0.6 }}>
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
             <strong>{undoItem.name}</strong> removed from favorites
           </span>
@@ -206,11 +293,6 @@ export default function FavoritesPage() {
 function FavoriteCard({ item, isRemoving, onRemove, styles }) {
   const { provider } = item
 
-  function formatDate(str) {
-    const d = new Date(str)
-    return d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
-  }
-
   return (
     <div className={`${styles.card}${isRemoving ? ` ${styles.cardRemoving}` : ''}`}>
       <Link href={`/shop/${item.serviceId}`} className={styles.cardLink}>
@@ -224,13 +306,15 @@ function FavoriteCard({ item, isRemoving, onRemove, styles }) {
             height={250}
             className={styles.cardImage}
           />
-          {item.popular && <span className={styles.popularBadge}>Most Popular</span>}
+          {item.popular && (
+            <span className={styles.popularBadge}>Most Popular</span>
+          )}
           {provider.badge && (
             <span className={`${styles.providerBadge} ${styles[`badge${provider.badge.replace(' ', '')}`]}`}>
               {provider.badge}
             </span>
           )}
-          {/* Saved indicator */}
+          {/* Saved heart indicator */}
           <div className={styles.savedIndicator} aria-label="Saved">
             <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" stroke="none">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
@@ -256,7 +340,7 @@ function FavoriteCard({ item, isRemoving, onRemove, styles }) {
             </div>
             <div className={styles.ratingGroup}>
               <span className={styles.ratingStars}>
-                {[1,2,3,4,5].map((s) => (
+                {[1, 2, 3, 4, 5].map((s) => (
                   <svg key={s} width="11" height="11" viewBox="0 0 12 12"
                     fill={s <= Math.round(provider.rating) ? 'var(--color-gold-base, #B8962E)' : '#D5CCBC'}>
                     <path d="M6 1l1.35 2.73L10.5 4.2l-2.25 2.19.53 3.1L6 7.9l-2.78 1.6.53-3.1L1.5 4.2l3.15-.47z" />
