@@ -77,7 +77,7 @@ function Chevron() {
 /* ─────────────────────────────────────────
    Sidebar
 ───────────────────────────────────────── */
-function ProfileSidebar({ activeTab, onMobileNavClick, onLogout }) {
+function ProfileSidebar({ activeTab, onMobileNavClick, onLogout, userEmail }) {
   const { profile, uploading, fileInputRef, initials } = useProfile();
   const isMobile = useIsMobile();
 
@@ -125,6 +125,9 @@ function ProfileSidebar({ activeTab, onMobileNavClick, onLogout }) {
                 </svg>
               </button>
             </div>
+            {userEmail && (
+              <span className={mobileStyles.identityEmail}>{userEmail}</span>
+            )}
           </div>
         </div>
 
@@ -416,7 +419,7 @@ export default function ProfileLayout({ children }) {
     <ProfileProvider>
       <main className={styles.profilePage}>
         <div className={styles.profileLayout}>
-          <ProfileSidebar activeTab={activeTab} onMobileNavClick={handleMobileNavClick} onLogout={handleLogout} />
+          <ProfileSidebar activeTab={activeTab} onMobileNavClick={handleMobileNavClick} onLogout={handleLogout} userEmail={user?.email} />
 
           {/* Desktop: render children normally. On mobile, hide — content lives in sheets. */}
           <div className={`${styles.profileMain} ${isMobile ? styles.profileMainHidden : ''}`}>

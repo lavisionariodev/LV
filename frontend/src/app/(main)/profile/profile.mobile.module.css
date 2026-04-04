@@ -500,3 +500,12 @@
   background: rgba(192, 57, 43, 0.08) !important;
   color: #c0392b !important;
 }
+
+.identityEmail {
+  font-family: 'Lato', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 300;
+  color: rgba(176, 168, 152, 0.6);
+  letter-spacing: 0.01em;
+  text-align: center;
+}
