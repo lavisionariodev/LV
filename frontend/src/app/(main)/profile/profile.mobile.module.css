@@ -319,17 +319,18 @@
 /* ── Identity card ── */
 .identityCard {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   background: var(--white, #ffffff);
-  padding: 18px 18px 16px;
+  padding: 24px 18px 20px;
   border-bottom: 1px solid rgba(168, 137, 74, 0.14);
   margin-bottom: 20px;
 }
 
 .avatarCircle {
-  width: 52px;
-  height: 52px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
   border: 2px solid rgba(168, 137, 74, 0.35);
   overflow: hidden;
@@ -353,7 +354,7 @@
 
 .avatarInitials {
   font-family: 'Cormorant Garamond', serif;
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   font-weight: 500;
   color: var(--forest, #102820);
   letter-spacing: 0.04em;
@@ -362,12 +363,13 @@
 .identityMeta {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 4px;
   min-width: 0;
 }
 
 .identityName {
-  font-size: 0.92rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--forest, #102820);
   white-space: nowrap;
@@ -376,21 +378,30 @@
   letter-spacing: 0.01em;
 }
 
-.editProfileBtn {
+.identityNameRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.editIconBtn {
   background: none;
   border: none;
-  padding: 0;
+  padding: 3px;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-family: 'Lato', sans-serif;
-  font-size: 0.72rem;
+  justify-content: center;
   color: var(--muted, #6B6B6B);
   cursor: pointer;
-  letter-spacing: 0.01em;
-  transition: color 0.18s ease;
+  border-radius: 4px;
+  transition: color 0.18s ease, background 0.18s ease;
+  flex-shrink: 0;
 }
-.editProfileBtn:hover { color: var(--gold, #A8894A); }
+.editIconBtn:hover {
+  color: var(--gold, #A8894A);
+  background: rgba(168, 137, 74, 0.08);
+}
 
 /* ── Section group ── */
 .menuSection {
@@ -488,4 +499,13 @@
 .menuIconDanger {
   background: rgba(192, 57, 43, 0.08) !important;
   color: #c0392b !important;
+}
+
+.identityEmail {
+  font-family: 'Lato', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 300;
+  color: rgba(176, 168, 152, 0.6);
+  letter-spacing: 0.01em;
+  text-align: center;
 }
