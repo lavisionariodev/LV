@@ -23,7 +23,13 @@ import BottomSheet from './components/BottomSheet';
    Hook — detect mobile viewport
 ───────────────────────────────────────── */
 function useIsMobile(breakpoint = 768) {
-  const [isMobile, setIsMobile] = useState(false);
+  // Initialise synchronously so the very first click already has the correct value.
+  // typeof window guard keeps Next.js SSR happy.
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined'
+      ? window.matchMedia(`(max-width: ${breakpoint}px)`).matches
+      : false
+  );
   useEffect(() => {
     const mq = window.matchMedia(`(max-width: ${breakpoint}px)`);
     setIsMobile(mq.matches);
