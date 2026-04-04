@@ -810,3 +810,10 @@
 
   .primaryButton { width: 100%; justify-content: center; }
 }
+
+/* ── Mobile: hide main content area (sheets handle it instead) ── */
+@media (max-width: 768px) {
+  .profileMainHidden {
+    display: none;
+  }
+}

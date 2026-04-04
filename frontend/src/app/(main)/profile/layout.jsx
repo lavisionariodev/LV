@@ -270,8 +270,10 @@ export default function ProfileLayout({ children }) {
         <div className={styles.profileLayout}>
           <ProfileSidebar activeTab={activeTab} onMobileNavClick={handleMobileNavClick} />
 
-          {/* Desktop: render children normally */}
-          <div className={styles.profileMain}>{children}</div>
+          {/* Desktop: render children normally. On mobile, hide — content lives in sheets. */}
+          <div className={`${styles.profileMain} ${isMobile ? styles.profileMainHidden : ''}`}>
+            {children}
+          </div>
         </div>
       </main>
 
