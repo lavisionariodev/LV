@@ -3,7 +3,8 @@
 import { useProfile } from '@/contexts/ProfileContext';
 import styles from '../profile.module.css';
 import notifStyles from './notifications.module.css';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -90,134 +91,33 @@ const ICON_MAP = {
   ),
 };
 
-// Hardcoded sample notifications — replace with API data
 const SAMPLE_NOTIFICATIONS = [
-  {
-    id: 1,
-    type: 'service',
-    iconKey: 'service_inprogress',
-    variant: 'amber',
-    unread: true,
-    day: 'Today',
-    time: 'Just now',
-    title: 'Preparation in progress',
-    body: 'Body preparation for the Reyes family has begun. Estimated completion by 3:00 PM today.',
-    tag: 'In progress',
-  },
-  {
-    id: 2,
-    type: 'message',
-    iconKey: 'message',
-    variant: 'purple',
-    unread: true,
-    day: 'Today',
-    time: '18 min ago',
-    title: 'New message from your provider',
-    body: 'La Visionario Staff: "The floral arrangement and casket display for the Santos family are ready for your review."',
-    tag: 'Message',
-  },
-  {
-    id: 3,
-    type: 'service',
-    iconKey: 'service_scheduled',
-    variant: 'green',
-    unread: true,
-    day: 'Today',
-    time: '1 hr ago',
-    title: 'Burial service scheduled',
-    body: 'The interment for the Santos family has been confirmed at Loyola Memorial Park — Chapel B, April 2 at 10:00 AM.',
-    tag: 'Confirmed',
-  },
-  {
-    id: 4,
-    type: 'payment',
-    iconKey: 'payment_success',
-    variant: 'blue',
-    unread: true,
-    day: 'Today',
-    time: '5 hrs ago',
-    title: 'Payment received',
-    body: '₱45,000 deposit for the full burial package (Order #LV-20481) has been confirmed. Thank you.',
-    tag: 'Paid',
-  },
-  {
-    id: 5,
-    type: 'service',
-    iconKey: 'service_completed',
-    variant: 'green',
-    unread: false,
-    day: 'Yesterday',
-    time: 'Yesterday, 4:30 PM',
-    title: 'Service completed',
-    body: 'All rites for the Dela Cruz family interment have been concluded. A follow-up summary has been sent to your email.',
-    tag: 'Completed',
-  },
-  {
-    id: 6,
-    type: 'reminder',
-    iconKey: 'reminder',
-    variant: 'amber',
-    unread: false,
-    day: 'Yesterday',
-    time: 'Yesterday, 9:00 AM',
-    title: 'Reminder — Wake viewing tomorrow',
-    body: 'The Reyes family wake viewing begins tomorrow at 3:00 PM in Chapel A. Please arrive 30 minutes early for coordination.',
-    tag: 'Reminder',
-  },
-  {
-    id: 7,
-    type: 'service',
-    iconKey: 'service_alert',
-    variant: 'red',
-    unread: false,
-    day: 'Earlier',
-    time: '2 days ago',
-    title: 'Schedule adjusted — Dela Cruz wake',
-    body: 'The wake has been moved from 2:00 PM to 5:00 PM due to a venue conflict. All registered guests have been notified.',
-    tag: 'Updated',
-  },
-  {
-    id: 8,
-    type: 'payment',
-    iconKey: 'payment_failed',
-    variant: 'red',
-    unread: false,
-    day: 'Earlier',
-    time: '3 days ago',
-    title: 'Payment failed — action needed',
-    body: 'The remaining balance of ₱15,000 for Order #LV-20481 could not be processed. Please update your payment method.',
-    tag: 'Failed',
-  },
-  {
-    id: 9,
-    type: 'message',
-    iconKey: 'message',
-    variant: 'purple',
-    unread: false,
-    day: 'Earlier',
-    time: '4 days ago',
-    title: 'Provider update — hearse confirmed',
-    body: 'La Visionario Staff: "The hearse and funeral cortege for the Santos service have been confirmed for April 2 at 9:00 AM."',
-    tag: 'Message',
-  },
-  {
-    id: 10,
-    type: 'account',
-    iconKey: 'account_security',
-    variant: 'red',
-    unread: false,
-    day: 'Earlier',
-    time: '5 days ago',
-    title: 'New login detected',
-    body: "A new sign-in was detected from Chrome on Windows in Manila, PH. If this wasn't you, secure your account immediately.",
-    tag: 'Security',
-  },
+  { id: 1, type: 'service', iconKey: 'service_inprogress', variant: 'amber', unread: true, day: 'Today', time: 'Just now', title: 'Preparation in progress', body: 'Body preparation for the Reyes family has begun. Estimated completion by 3:00 PM today.', tag: 'In progress' },
+  { id: 2, type: 'message', iconKey: 'message', variant: 'purple', unread: true, day: 'Today', time: '18 min ago', title: 'New message from your provider', body: 'La Visionario Staff: "The floral arrangement and casket display for the Santos family are ready for your review."', tag: 'Message' },
+  { id: 3, type: 'service', iconKey: 'service_scheduled', variant: 'green', unread: true, day: 'Today', time: '1 hr ago', title: 'Burial service scheduled', body: 'The interment for the Santos family has been confirmed at Loyola Memorial Park — Chapel B, April 2 at 10:00 AM.', tag: 'Confirmed' },
+  { id: 4, type: 'payment', iconKey: 'payment_success', variant: 'blue', unread: true, day: 'Today', time: '5 hrs ago', title: 'Payment received', body: '₱45,000 deposit for the full burial package (Order #LV-20481) has been confirmed. Thank you.', tag: 'Paid' },
+  { id: 5, type: 'service', iconKey: 'service_completed', variant: 'green', unread: false, day: 'Yesterday', time: 'Yesterday, 4:30 PM', title: 'Service completed', body: 'All rites for the Dela Cruz family interment have been concluded. A follow-up summary has been sent to your email.', tag: 'Completed' },
+  { id: 6, type: 'reminder', iconKey: 'reminder', variant: 'amber', unread: false, day: 'Yesterday', time: 'Yesterday, 9:00 AM', title: 'Reminder — Wake viewing tomorrow', body: 'The Reyes family wake viewing begins tomorrow at 3:00 PM in Chapel A. Please arrive 30 minutes early for coordination.', tag: 'Reminder' },
+  { id: 7, type: 'service', iconKey: 'service_alert', variant: 'red', unread: false, day: 'Earlier', time: '2 days ago', title: 'Schedule adjusted — Dela Cruz wake', body: 'The wake has been moved from 2:00 PM to 5:00 PM due to a venue conflict. All registered guests have been notified.', tag: 'Updated' },
+  { id: 8, type: 'payment', iconKey: 'payment_failed', variant: 'red', unread: false, day: 'Earlier', time: '3 days ago', title: 'Payment failed — action needed', body: 'The remaining balance of ₱15,000 for Order #LV-20481 could not be processed. Please update your payment method.', tag: 'Failed' },
+  { id: 9, type: 'message', iconKey: 'message', variant: 'purple', unread: false, day: 'Earlier', time: '4 days ago', title: 'Provider update — hearse confirmed', body: 'La Visionario Staff: "The hearse and funeral cortege for the Santos service have been confirmed for April 2 at 9:00 AM."', tag: 'Message' },
+  { id: 10, type: 'account', iconKey: 'account_security', variant: 'red', unread: false, day: 'Earlier', time: '5 days ago', title: 'New login detected', body: "A new sign-in was detected from Chrome on Windows in Manila, PH. If this wasn't you, secure your account immediately.", tag: 'Security' },
 ];
 
 const PAGE_SIZE = 7;
 
 export default function NotificationsPage() {
   const { user } = useProfile();
+  const router = useRouter();
+
+  // On mobile, redirect to /profile?sheet=notifications so the
+  // layout's bottom sheet system handles rendering instead.
+  useEffect(() => {
+    if (window.matchMedia('(max-width: 768px)').matches) {
+      router.replace('/profile?sheet=notifications');
+    }
+  }, [router]);
+
   const [notifications, setNotifications] = useState(SAMPLE_NOTIFICATIONS);
   const [activeFilter, setActiveFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -236,7 +136,6 @@ export default function NotificationsPage() {
     return filtered.slice(start, start + PAGE_SIZE);
   }, [filtered, currentPage]);
 
-  // Group by day label
   const grouped = useMemo(() => {
     const map = [];
     const seen = {};
@@ -251,22 +150,14 @@ export default function NotificationsPage() {
   }, [paginated]);
 
   function markRead(id) {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, unread: false } : n))
-    );
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, unread: false } : n)));
   }
-
   function markAllRead() {
     setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
   }
-
   function handleFilterChange(filterId) {
     setActiveFilter(filterId);
     setCurrentPage(1);
-  }
-
-  function handlePageChange(page) {
-    setCurrentPage(page);
   }
 
   return (
@@ -278,39 +169,18 @@ export default function NotificationsPage() {
           <div className={notifStyles.headerTop}>
             <div>
               <p className={styles.profileEyebrow}>Notifications</p>
-              <p className={styles.profileSignedIn}>
-                Real-time updates on your services and activity.
-              </p>
+              <p className={styles.profileSignedIn}>Real-time updates on your services and activity.</p>
             </div>
             <div className={notifStyles.headerActions}>
-              {unreadCount > 0 && (
-                <span className={notifStyles.unreadBadge}>
-                  {unreadCount} unread
-                </span>
-              )}
-              {unreadCount > 0 && (
-                <button
-                  type="button"
-                  className={notifStyles.markAllBtn}
-                  onClick={markAllRead}
-                >
-                  Mark all as read
-                </button>
-              )}
+              {unreadCount > 0 && <span className={notifStyles.unreadBadge}>{unreadCount} unread</span>}
+              {unreadCount > 0 && <button type="button" className={notifStyles.markAllBtn} onClick={markAllRead}>Mark all as read</button>}
             </div>
           </div>
-
-          {/* Filter tabs — flush to header bottom border */}
           <div className={notifStyles.filterRow}>
             {FILTERS.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                className={`${notifStyles.filterBtn} ${
-                  activeFilter === f.id ? notifStyles.filterBtnActive : ''
-                }`}
-                onClick={() => handleFilterChange(f.id)}
-              >
+              <button key={f.id} type="button"
+                className={`${notifStyles.filterBtn} ${activeFilter === f.id ? notifStyles.filterBtnActive : ''}`}
+                onClick={() => handleFilterChange(f.id)}>
                 {f.label}
               </button>
             ))}
@@ -318,54 +188,26 @@ export default function NotificationsPage() {
         </div>
       </header>
 
-      {/* Notification feed */}
       <div className={notifStyles.feed}>
         {grouped.length === 0 ? (
-          <div className={notifStyles.emptyState}>
-            No notifications in this category.
-          </div>
+          <div className={notifStyles.emptyState}>No notifications in this category.</div>
         ) : (
           grouped.map((group) => (
             <div key={group.day}>
               <div className={notifStyles.dayLabel}>{group.day}</div>
               {group.items.map((notif) => (
-                <div
-                  key={notif.id}
-                  className={`${notifStyles.notifItem} ${
-                    notif.unread ? notifStyles.notifItemUnread : ''
-                  }`}
-                  onClick={() => markRead(notif.id)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => e.key === 'Enter' && markRead(notif.id)}
-                >
-                  {/* Unread pip */}
-                  <span
-                    className={`${notifStyles.unreadPip} ${
-                      notif.unread ? '' : notifStyles.unreadPipHidden
-                    }`}
-                  />
-
-                  {/* Icon */}
-                  <div
-                    className={`${notifStyles.iconWrap} ${
-                      notifStyles[`iconWrap_${notif.variant}`]
-                    }`}
-                  >
+                <div key={notif.id}
+                  className={`${notifStyles.notifItem} ${notif.unread ? notifStyles.notifItemUnread : ''}`}
+                  onClick={() => markRead(notif.id)} role="button" tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && markRead(notif.id)}>
+                  <span className={`${notifStyles.unreadPip} ${notif.unread ? '' : notifStyles.unreadPipHidden}`} />
+                  <div className={`${notifStyles.iconWrap} ${notifStyles[`iconWrap_${notif.variant}`]}`}>
                     {ICON_MAP[notif.iconKey]}
                   </div>
-
-                  {/* Content */}
                   <div className={notifStyles.notifContent}>
                     <div className={notifStyles.notifTitle}>
                       {notif.title}
-                      <span
-                        className={`${notifStyles.tag} ${
-                          notifStyles[`tag_${notif.variant}`]
-                        }`}
-                      >
-                        {notif.tag}
-                      </span>
+                      <span className={`${notifStyles.tag} ${notifStyles[`tag_${notif.variant}`]}`}>{notif.tag}</span>
                     </div>
                     <p className={notifStyles.notifBody}>{notif.body}</p>
                     <span className={notifStyles.notifTime}>{notif.time}</span>
@@ -377,48 +219,22 @@ export default function NotificationsPage() {
         )}
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className={notifStyles.pagination}>
-          <button
-            type="button"
-            className={notifStyles.pageBtn}
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            aria-label="Previous page"
-          >
-            <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" width="14" height="14">
-              <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+          <button type="button" className={notifStyles.pageBtn} onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1} aria-label="Previous page">
+            <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
-
           <div className={notifStyles.pageNumbers}>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                type="button"
-                className={`${notifStyles.pageNumBtn} ${
-                  currentPage === page ? notifStyles.pageNumBtnActive : ''
-                }`}
-                onClick={() => handlePageChange(page)}
-                aria-label={`Page ${page}`}
-                aria-current={currentPage === page ? 'page' : undefined}
-              >
+              <button key={page} type="button"
+                className={`${notifStyles.pageNumBtn} ${currentPage === page ? notifStyles.pageNumBtnActive : ''}`}
+                onClick={() => setCurrentPage(page)} aria-label={`Page ${page}`} aria-current={currentPage === page ? 'page' : undefined}>
                 {page}
               </button>
             ))}
           </div>
-
-          <button
-            type="button"
-            className={notifStyles.pageBtn}
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            aria-label="Next page"
-          >
-            <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" width="14" height="14">
-              <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+          <button type="button" className={notifStyles.pageBtn} onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage === totalPages} aria-label="Next page">
+            <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
         </div>
       )}
