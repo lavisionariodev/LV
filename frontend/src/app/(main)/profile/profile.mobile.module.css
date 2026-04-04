@@ -328,8 +328,8 @@
 }
 
 .avatarCircle {
-  width: 52px;
-  height: 52px;
+  width: 62px;
+  height: 62px;
   border-radius: 50%;
   border: 2px solid rgba(168, 137, 74, 0.35);
   overflow: hidden;
@@ -353,7 +353,7 @@
 
 .avatarInitials {
   font-family: 'Cormorant Garamond', serif;
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   font-weight: 500;
   color: var(--forest, #102820);
   letter-spacing: 0.04em;
@@ -367,7 +367,7 @@
 }
 
 .identityName {
-  font-size: 0.92rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--forest, #102820);
   white-space: nowrap;
@@ -376,21 +376,29 @@
   letter-spacing: 0.01em;
 }
 
-.editProfileBtn {
+.identityNameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editIconBtn {
   background: none;
   border: none;
-  padding: 0;
+  padding: 3px;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-family: 'Lato', sans-serif;
-  font-size: 0.72rem;
+  justify-content: center;
   color: var(--muted, #6B6B6B);
   cursor: pointer;
-  letter-spacing: 0.01em;
-  transition: color 0.18s ease;
+  border-radius: 4px;
+  transition: color 0.18s ease, background 0.18s ease;
+  flex-shrink: 0;
 }
-.editProfileBtn:hover { color: var(--gold, #A8894A); }
+.editIconBtn:hover {
+  color: var(--gold, #A8894A);
+  background: rgba(168, 137, 74, 0.08);
+}
 
 /* ── Section group ── */
 .menuSection {

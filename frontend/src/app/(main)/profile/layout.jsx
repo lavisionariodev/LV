@@ -108,21 +108,23 @@ function ProfileSidebar({ activeTab, onMobileNavClick, onLogout }) {
             )}
           </button>
           <div className={mobileStyles.identityMeta}>
-            <span className={mobileStyles.identityName}>
-              {profile.username || profile.full_name || 'Your Name'}
-            </span>
-            <button
-              type="button"
-              className={mobileStyles.editProfileBtn}
-              onClick={() => onMobileNavClick('account')}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24"
-                fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
-              Edit Profile
-            </button>
+            <div className={mobileStyles.identityNameRow}>
+              <span className={mobileStyles.identityName}>
+                {profile.username || profile.full_name || 'Your Name'}
+              </span>
+              <button
+                type="button"
+                className={mobileStyles.editIconBtn}
+                onClick={() => onMobileNavClick('account')}
+                aria-label="Edit profile"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 
