@@ -393,7 +393,7 @@ export default function ProfileLayout({ children }) {
   if (authLoading && !user) {
     return (
       <main className={styles.profilePage}>
-        <div className={styles.profileLayout}>
+        <div className={styles.profileLayout} data-segment={segment || 'root'}>
           <aside className={styles.profileSidebar}>
             <div className={styles.sidebarIdentity}>
               <div className={styles.sidebarAvatarBtn} style={{ background: 'var(--forest-light)' }} />
@@ -419,12 +419,13 @@ export default function ProfileLayout({ children }) {
   return (
     <ProfileProvider>
       <main className={styles.profilePage}>
-        <div className={styles.profileLayout}>
+        <div className={styles.profileLayout} data-segment={segment || 'root'}>
           <ProfileSidebar activeTab={activeTab} onMobileNavClick={handleMobileNavClick} onLogout={handleLogout} userEmail={user?.email} />
 
-          {/* On mobile root /profile: hide main area (sheet handles account).
-               On sub-pages like /purchases, /notifications: show normally. */}
-          <div className={`${styles.profileMain} ${isMobile && !segment ? styles.profileMainHidden : ''}`}>
+          {/* On mobile sub-pages (/purchases, /notifications): hide sidebar, show full-width content.
+               On mobile root /profile: hide main area, sidebar is the menu.
+               On desktop: always show both sidebar + main normally. */}
+          <div className={`${styles.profileMain} ${isMobile && !segment ? styles.profileMainHidden : ''} ${isMobile && segment ? styles.profileMainFull : ''}`}>
             {children}
           </div>
         </div>
