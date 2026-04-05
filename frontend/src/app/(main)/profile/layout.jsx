@@ -13,8 +13,6 @@ import { useProfile } from '@/contexts/ProfileContext';
 import dynamic from 'next/dynamic';
 
 const AccountPageContent  = dynamic(() => import('./account/page'));
-const PurchasesPageContent = dynamic(() => import('./purchases/page'));
-const NotificationsPageContent = dynamic(() => import('./notifications/page'));
 
 // ── Bottom sheet (renders null on desktop) ────────────────────────────────────
 import BottomSheet from './components/BottomSheet';
@@ -393,7 +391,7 @@ export default function ProfileLayout({ children }) {
   if (authLoading && !user) {
     return (
       <main className={styles.profilePage}>
-        <div className={styles.profileLayout} data-segment={segment || 'root'}>
+        <div className={styles.profileLayout}>
           <aside className={styles.profileSidebar}>
             <div className={styles.sidebarIdentity}>
               <div className={styles.sidebarAvatarBtn} style={{ background: 'var(--forest-light)' }} />
@@ -419,12 +417,11 @@ export default function ProfileLayout({ children }) {
   return (
     <ProfileProvider>
       <main className={styles.profilePage}>
-        <div className={styles.profileLayout} data-segment={segment || 'root'}>
+        <div className={styles.profileLayout}>
           <ProfileSidebar activeTab={activeTab} onMobileNavClick={handleMobileNavClick} onLogout={handleLogout} userEmail={user?.email} />
 
-          {/* On mobile sub-pages (/purchases, /notifications): hide sidebar, show full-width content.
-               On mobile root /profile: hide main area, sidebar is the menu.
-               On desktop: always show both sidebar + main normally. */}
+          {/* Desktop: always show. Mobile root: hide (sidebar is the menu).
+               Mobile sub-pages (notifications/purchases): show full width, hide sidebar. */}
           <div className={`${styles.profileMain} ${isMobile && !segment ? styles.profileMainHidden : ''} ${isMobile && segment ? styles.profileMainFull : ''}`}>
             {children}
           </div>
@@ -447,7 +444,6 @@ export default function ProfileLayout({ children }) {
               onSaveComplete={handleSheetClose}
             />
           )}
-
         </BottomSheet>
       )}
     </ProfileProvider>

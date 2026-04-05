@@ -1,21 +1,819 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Lato:wght@300;400;500;700&display=swap');
+
+/* =========================
+   DESIGN TOKENS
+========================= */
+:root {
+  --forest:       #102820;
+  --forest-mid:   #204F38;
+  --forest-light: rgba(16, 40, 32, 0.07);
+  --gold:         #A8894A;
+  --gold-light:   rgba(168, 137, 74, 0.2);
+  --gold-faint:   rgba(168, 137, 74, 0.08);
+  --cream:        #F7F4EF;
+  --cream-border: rgba(168, 137, 74, 0.18);
+  --ink:          #1A1A1A;
+  --muted:        #6B6B6B;
+  --subtle:       #b0a898;
+  --white:        #ffffff;
+}
+
+/* =========================
+   PAGE WRAPPER
+========================= */
+.profilePage {
+  max-width: 1200px;
+  margin: 48px auto 72px;
+  padding: 0 24px;
+  font-family: 'Lato', sans-serif;
+  color: var(--ink);
+  min-height: 60vh;
+}
+
+.profileLayout {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+/* =========================
+   SIDEBAR
+========================= */
+.profileSidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--white);
+  border: 1px solid var(--cream-border);
+  box-shadow: 0 4px 18px rgba(16, 40, 32, 0.05);
+  padding: 20px 0 16px;
+}
+
+/* ── Identity row (avatar + username) ── */
+.sidebarIdentity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 18px 18px;
+  border-bottom: 1px solid var(--cream-border);
+  margin-bottom: 10px;
+}
+
+.sidebarAvatarBtn {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 2px solid var(--gold-light);
+  overflow: hidden;
+  background: var(--cream);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: border-color 0.3s ease;
+}
+
+.sidebarAvatarBtn:hover { border-color: var(--gold); }
+
+.sidebarAvatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sidebarAvatarPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--forest-light);
+  color: var(--forest);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.sidebarUserMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.sidebarUsername {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--forest);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebarEditLink {
+  background: none;
+  border: none;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Lato', sans-serif;
+  font-size: 0.7rem;
+  color: var(--muted);
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  transition: color 0.2s ease;
+}
+.sidebarEditLink:hover { color: var(--forest); }
+
+/* ── Nav groups ── */
+.sidebarNav {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Group with children (e.g. My Account → Profile) */
+.sidebarGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebarGroupHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--forest);
+  letter-spacing: 0.02em;
+}
+
+.sidebarGroupIcon {
+  display: flex;
+  align-items: center;
+  color: var(--forest-mid);
+}
+
+.sidebarGroupLabel {
+  line-height: 1;
+}
+
+/* Child item (indented) */
+.sidebarChildItem {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 7px 18px 7px 43px;
+  font-size: 0.82rem;
+  font-family: 'Lato', sans-serif;
+  font-weight: 400;
+  color: var(--muted);
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  border-left: 2px solid transparent;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.sidebarChildItem:hover {
+  background: var(--forest-light);
+  color: var(--forest);
+}
+
+/* Top-level nav item (My Purchase, Notifications) */
+.sidebarItem {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 10px 18px;
+  font-size: 0.8rem;
+  font-family: 'Lato', sans-serif;
+  font-weight: 700;
+  color: var(--forest);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: 0.02em;
+  border-left: 2px solid transparent;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.sidebarItem:hover {
+  background: var(--forest-light);
+}
+
+.sidebarIcon {
+  display: flex;
+  align-items: center;
+  color: var(--forest-mid);
+}
+
+/* Active state shared by both child and top-level */
+.sidebarItemActive {
+  background: var(--forest-light) !important;
+  font-weight: 700;
+  color: var(--gold) !important;
+  border-left: 2px solid var(--gold) !important;
+}
+
+/* =========================
+   PROFILE CARD (main area)
+========================= */
+.profileMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.profileCard {
+  background: var(--cream);
+  border: 1px solid var(--cream-border);
+  box-shadow: 0 8px 36px rgba(16, 40, 32, 0.08);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.profileAccentBar {
+  height: 3px;
+  background: linear-gradient(90deg, var(--forest) 0%, var(--gold) 55%, rgba(168,137,74,0) 100%);
+  flex-shrink: 0;
+}
+
+/* =========================
+   CARD HEADER
+========================= */
+.profileHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 28px 16px;
+  background: var(--white);
+  border-bottom: 1px solid var(--cream-border);
+}
+
+.profileHeaderLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.profileEyebrow {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: var(--forest);
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+
+.profileSignedIn {
+  font-size: 0.8rem;
+  color: var(--subtle);
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+.profileSignedIn strong {
+  color: var(--forest-mid);
+  font-weight: 600;
+}
+
+/* =========================
+   CARD BODY — horizontal split
+========================= */
+.profileCardBody {
+  display: flex;
+  align-items: stretch;
+  background: var(--cream);
+}
+
+/* ── LEFT: form section ── */
+.profileFormSection {
+  flex: 1;
+  min-width: 0;
+  padding: 32px 36px 36px;
+}
+
+/* ── RIGHT: avatar panel ── */
+.avatarPanel {
+  width: 240px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: stretch;
+  position: relative;
+}
+
+.avatarDivider {
+  width: 1px;
+  background: var(--cream-border);
+  flex-shrink: 0;
+}
+
+.avatarPanelInner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 36px 24px 32px;
+  gap: 14px;
+  text-align: center;
+}
+
+/* =========================
+   FORM — horizontal rows (label | field)
+========================= */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.formRow {
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(168, 137, 74, 0.08);
+}
+
+.formRow:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.formRowLabel {
+  width: 110px;
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--muted);
+  text-align: right;
+  padding-top: 2px;
+  letter-spacing: 0.01em;
+}
+
+.formRowField {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.fieldHint {
+  font-size: 0.72rem;
+  color: var(--subtle);
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+/* =========================
+   INPUTS
+========================= */
+.input {
+  padding: 9px 12px;
+  border: 1px solid rgba(16, 40, 32, 0.18);
+  font-size: 0.875rem;
+  font-family: 'Lato', sans-serif;
+  font-weight: 400;
+  color: var(--ink);
+  background: var(--white);
+  outline: none;
+  max-width: 340px;
+  transition: border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.input::placeholder { color: var(--subtle); font-weight: 300; }
+.input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(168, 137, 74, 0.13);
+}
+
+/* "Add" link (email / phone not set) */
+.addLink {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: 'Lato', sans-serif;
+  font-size: 0.875rem;
+  color: var(--gold);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.2s ease;
+}
+.addLink:hover { color: var(--forest); }
+
+/* =========================
+   GENDER RADIO
+========================= */
+.genderRow {
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 20px !important;
+  flex-wrap: wrap;
+}
+
+.radioLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.875rem;
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+}
+
+.radioInput {
+  display: none;
+}
+
+.radioCustom {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(16, 40, 32, 0.28);
+  background: var(--white);
+  flex-shrink: 0;
+  position: relative;
+  transition: border-color 0.2s ease;
+}
+
+.radioInput:checked + .radioCustom {
+  border-color: var(--gold);
+  background: var(--white);
+}
+
+.radioInput:checked + .radioCustom::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+
+/* =========================
+   ADDRESS GRID
+========================= */
+.addressGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.addressGrid .input {
+  flex: 1;
+  min-width: 120px;
+  max-width: 100%;
+}
+
+/* =========================
+   DATE OF BIRTH — SELECT DROPDOWNS
+========================= */
+.dobRow {
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex-wrap: wrap;
+}
+
+.selectWrapper {
+  position: relative;
+  flex: 1;
+  min-width: 90px;
+  max-width: 120px;
+}
+
+.selectInput {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 9px 30px 9px 12px;
+  border: 1px solid rgba(16, 40, 32, 0.18);
+  font-size: 0.875rem;
+  font-family: 'Lato', sans-serif;
+  font-weight: 400;
+  color: var(--ink);
+  background: var(--white);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.selectInput:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(168, 137, 74, 0.13);
+}
+
+.selectChevron {
+  position: absolute;
+  right: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+.primaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 32px;
+  border: 2px solid var(--forest);
+  background: var(--forest);
+  color: var(--white);
+  font-family: 'Lato', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease, transform 0.18s ease;
+  white-space: nowrap;
+  align-self: flex-start;
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: var(--gold);
+  border-color: var(--gold);
+  box-shadow: 0 4px 16px rgba(168, 137, 74, 0.32);
+  transform: translateY(-1px);
+}
+
+.primaryButton:disabled { opacity: 0.6; cursor: default; transform: none; }
+
+.secondaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 20px;
+  border: 1.5px solid rgba(16, 40, 32, 0.28);
+  background: transparent;
+  color: var(--forest);
+  font-family: 'Lato', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.22s ease, border-color 0.22s ease;
+  white-space: nowrap;
+}
+.secondaryButton:hover:not(:disabled) {
+  background: var(--forest-light);
+  border-color: var(--forest);
+}
+.secondaryButton:disabled { opacity: 0.5; cursor: default; }
+
+/* =========================
+   AVATAR (right panel)
+========================= */
+.avatarButton {
+  position: relative;
+  width: 108px;
+  height: 108px;
+  border-radius: 50%;
+  border: 2px solid var(--gold-light);
+  outline: 5px solid var(--gold-faint);
+  outline-offset: 2px;
+  overflow: hidden;
+  background: var(--cream);
+  cursor: pointer;
+  padding: 0;
+  display: block;
+  transition: border-color 0.3s ease, outline-color 0.3s ease;
+}
+.avatarButton:hover { border-color: var(--gold); outline-color: rgba(168,137,74,0.18); }
+.avatarButton:disabled { cursor: default; }
+
+.avatarImage {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+
+.avatarPlaceholder {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--forest-light);
+  color: var(--forest);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2.2rem; font-weight: 500; letter-spacing: 0.05em;
+}
+
+.avatarBadge {
+  position: absolute;
+  bottom: 5px; right: 5px;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--forest);
+  color: var(--white);
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--white);
+  pointer-events: none;
+  transition: background 0.25s ease;
+}
+.avatarButton:hover .avatarBadge { background: var(--gold); }
+
+.fileInput { display: none; }
+
+/* "Select Image" button (mirrors Shopee's bordered button) */
+.selectImageBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 20px;
+  border: 1.5px solid rgba(16, 40, 32, 0.28);
+  background: transparent;
+  color: var(--forest);
+  font-family: 'Lato', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.22s ease, border-color 0.22s ease, color 0.22s ease;
+}
+.selectImageBtn:hover:not(:disabled) {
+  background: var(--forest);
+  color: var(--white);
+  border-color: var(--forest);
+}
+.selectImageBtn:disabled { opacity: 0.4; cursor: default; }
+
+/* "Remove photo" subtle link */
+.removeAvatarBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: 'Lato', sans-serif;
+  font-size: 0.7rem;
+  color: var(--subtle);
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.2s ease;
+}
+.removeAvatarBtn:hover:not(:disabled) { color: var(--muted); }
+.removeAvatarBtn:disabled { opacity: 0.4; cursor: default; }
+
+/* File hints */
+.avatarHints {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 4px;
+}
+.avatarHint {
+  font-size: 0.7rem;
+  color: var(--subtle);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* =========================
+   MISC
+========================= */
+.profileInfoValue {
+  font-size: 0.875rem;
+  color: var(--ink);
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+.tabBody   { padding-top: 8px; }
+.mutedText { font-size: 0.875rem; color: var(--muted); font-weight: 300; }
+
+/* =========================
+   RESPONSIVE
+========================= */
+@media (max-width: 1024px) {
+  .profileSidebar  { width: 195px; }
+  .avatarPanel     { width: 200px; }
+  .profileFormSection { padding: 28px 24px; }
+}
+
+@media (max-width: 768px) {
+  .profilePage {
+    margin-top: 28px;
+    margin-bottom: 48px;
+    padding: 0 14px;
+  }
+
+  .profileLayout {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .profileSidebar {
+    width: 100%;
+    padding: 12px 0 8px;
+  }
+
+  .sidebarIdentity {
+    padding: 0 14px 12px;
+  }
+
+  .sidebarNav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 0 10px;
+  }
+
+  .sidebarGroup { width: auto; }
+
+  .sidebarGroupHeader {
+    padding: 6px 10px 4px;
+    font-size: 0.78rem;
+  }
+
+  .sidebarChildItem {
+    padding: 6px 10px;
+    border-left: none;
+    border-bottom: 2px solid transparent;
+  }
+
+  .sidebarChildItem:hover,
+  .sidebarItemActive {
+    border-left: none !important;
+    border-bottom: 2px solid var(--gold) !important;
+    padding-left: 10px;
+  }
+
+  .sidebarItem {
+    border-left: none;
+    border-bottom: 2px solid transparent;
+    padding: 6px 10px;
+    font-size: 0.78rem;
+  }
+
+  .profileHeader { padding: 16px 20px 14px; }
+
+  /* Stack form + avatar vertically */
+  .profileCardBody { flex-direction: column-reverse; }
+
+  .avatarPanel {
+    width: 100%;
+    flex-direction: column;
+    border-top: 1px solid var(--cream-border);
+  }
+  .avatarDivider { display: none; }
+  .avatarPanelInner { flex-direction: row; padding: 20px 24px; gap: 20px; }
+
+  .profileFormSection { padding: 24px 20px; }
+
+  .formRowLabel { width: 90px; }
+}
+
+@media (max-width: 480px) {
+  .profileHeader { padding: 14px 16px 12px; }
+
+  .profileFormSection { padding: 20px 14px; }
+
+  .formRow {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .formRowLabel {
+    width: auto;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--gold);
+  }
+
+  .input { max-width: 100%; }
+
+  .avatarPanelInner {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .genderRow { gap: 12px !important; }
+
+  .dobRow { gap: 6px !important; }
+  .selectWrapper { max-width: none; }
+
+  .primaryButton { width: 100%; justify-content: center; }
+}
+
 /* ── Mobile: hide main content area (sheets handle it instead) ── */
 @media (max-width: 768px) {
   .profileMainHidden {
-    display: none;
-  }
-}
-
-/* ── Mobile sub-pages (/purchases, /notifications): full width, no sidebar ── */
-@media (max-width: 768px) {
-  .profileMainFull {
-    width: 100%;
-    min-width: 0;
-  }
-
-  /* Hide sidebar on mobile when a sub-page segment is active */
-  [data-segment]:not([data-segment="root"]) .profileSidebar,
-  [data-segment="purchases"] .profileSidebar,
-  [data-segment="notifications"] .profileSidebar {
     display: none;
   }
 }
