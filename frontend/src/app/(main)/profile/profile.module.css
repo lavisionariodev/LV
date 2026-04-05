@@ -817,3 +817,19 @@
     display: none;
   }
 }
+/* ── Mobile: hide content on root /profile ── */
+@media (max-width: 768px) {
+  .profileMainHidden {
+    display: none;
+  }
+
+  /* Sub-pages (notifications, purchases): full width, sidebar hidden */
+  .profileMainFull {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .profileLayout:has(.profileMainFull) aside {
+    display: none;
+  }
+}
