@@ -420,9 +420,10 @@ export default function ProfileLayout({ children }) {
         <div className={styles.profileLayout}>
           <ProfileSidebar activeTab={activeTab} onMobileNavClick={handleMobileNavClick} onLogout={handleLogout} userEmail={user?.email} />
 
-          {/* Desktop: always show. Mobile root: hide (sidebar is the menu).
-               Mobile sub-pages (notifications/purchases): show full width, hide sidebar. */}
-          <div className={`${styles.profileMain} ${isMobile && !segment ? styles.profileMainHidden : ''} ${isMobile && segment ? styles.profileMainFull : ''}`}>
+          {/* Desktop: always show sidebar + content normally.
+               Mobile root /profile: hide content div (menu IS the UI).
+               Mobile sub-pages: show content full width. */}
+          <div className={`${styles.profileMain} ${isMobile && !segment ? styles.profileMainHidden : ''} ${isMobile && !!segment ? styles.profileMainFull : ''}`}>
             {children}
           </div>
         </div>
