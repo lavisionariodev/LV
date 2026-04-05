@@ -51,14 +51,6 @@ const SHEET_CONFIG = {
     title: 'Edit Profile',
     hasSave: true,
   },
-  purchases: {
-    title: 'My Purchases',
-    hasSave: false,
-  },
-  notifications: {
-    title: 'Notifications',
-    hasSave: false,
-  },
 };
 
 /* ─────────────────────────────────────────
@@ -156,11 +148,7 @@ function ProfileSidebar({ activeTab, onMobileNavClick, onLogout, userEmail }) {
 
             <div className={mobileStyles.menuDivider} />
 
-            <button
-              type="button"
-              className={mobileStyles.menuRow}
-              onClick={() => onMobileNavClick('notifications')}
-            >
+            <Link href="/profile/notifications" className={mobileStyles.menuRow}>
               <span className={mobileStyles.menuRowLeft}>
                 <span className={mobileStyles.menuIcon}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
@@ -172,7 +160,7 @@ function ProfileSidebar({ activeTab, onMobileNavClick, onLogout, userEmail }) {
                 <span className={mobileStyles.menuLabel}>Notifications</span>
               </span>
               <span className={mobileStyles.menuChevron}><Chevron /></span>
-            </button>
+            </Link>
 
           </div>
         </div>
@@ -182,11 +170,7 @@ function ProfileSidebar({ activeTab, onMobileNavClick, onLogout, userEmail }) {
           <p className={mobileStyles.sectionLabel}>Orders</p>
           <div className={mobileStyles.menuCard}>
 
-            <button
-              type="button"
-              className={mobileStyles.menuRow}
-              onClick={() => onMobileNavClick('purchases')}
-            >
+            <Link href="/profile/purchases" className={mobileStyles.menuRow}>
               <span className={mobileStyles.menuRowLeft}>
                 <span className={mobileStyles.menuIcon}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
@@ -199,7 +183,7 @@ function ProfileSidebar({ activeTab, onMobileNavClick, onLogout, userEmail }) {
                 <span className={mobileStyles.menuLabel}>My Purchases</span>
               </span>
               <span className={mobileStyles.menuChevron}><Chevron /></span>
-            </button>
+            </Link>
 
           </div>
         </div>
@@ -438,8 +422,9 @@ export default function ProfileLayout({ children }) {
         <div className={styles.profileLayout}>
           <ProfileSidebar activeTab={activeTab} onMobileNavClick={handleMobileNavClick} onLogout={handleLogout} userEmail={user?.email} />
 
-          {/* Desktop: render children normally. On mobile, hide — content lives in sheets. */}
-          <div className={`${styles.profileMain} ${isMobile ? styles.profileMainHidden : ''}`}>
+          {/* On mobile root /profile: hide main area (sheet handles account).
+               On sub-pages like /purchases, /notifications: show normally. */}
+          <div className={`${styles.profileMain} ${isMobile && !segment ? styles.profileMainHidden : ''}`}>
             {children}
           </div>
         </div>
@@ -461,8 +446,7 @@ export default function ProfileLayout({ children }) {
               onSaveComplete={handleSheetClose}
             />
           )}
-          {openSheet === 'purchases' && <PurchasesSheetContent />}
-          {openSheet === 'notifications' && <NotificationsSheetContent />}
+
         </BottomSheet>
       )}
     </ProfileProvider>
