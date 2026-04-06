@@ -842,3 +842,9 @@ a.userLink {
     font-size: 1rem;
   }
 }
+/* ── Hide mobile search/cart bar on profile pages ── */
+@media (max-width: 768px) {
+  .navActionsMobileHidden {
+    display: none;
+  }
+}

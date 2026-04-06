@@ -481,8 +481,8 @@ export default function PublicNavbar() {
             )}
             </div>
 
-            {/* Mobile only: Always-visible search bar + Cart (top right) */}
-            <div className={styles.navActionsMobile}>
+            {/* Mobile only: Always-visible search bar + Cart (top right) — hidden on profile pages */}
+            <div className={`${styles.navActionsMobile} ${pathname?.startsWith('/profile') ? styles.navActionsMobileHidden : ''}`}>
               <div className={styles.navbarSearchWrap}>
                 <form
                   className={styles.navbarSearchForm}
@@ -609,7 +609,7 @@ export default function PublicNavbar() {
             type="button"
             className={`${styles.bottomNavItem} ${pathname?.startsWith('/profile') ? styles.bottomNavItemActive : ''}`}
             aria-label="Profile"
-            onClick={() => router.push('/profile/account')}
+            onClick={() => router.push('/profile')}
           >
             {profile?.avatar_url ? (
               <img
