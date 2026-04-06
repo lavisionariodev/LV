@@ -13,8 +13,6 @@ import { useProfile } from '@/contexts/ProfileContext';
 import dynamic from 'next/dynamic';
 
 const AccountPageContent  = dynamic(() => import('./account/page'));
-const PurchasesPageContent = dynamic(() => import('./purchases/page'));
-const NotificationsPageContent = dynamic(() => import('./notifications/page'));
 
 // ── Bottom sheet (renders null on desktop) ────────────────────────────────────
 import BottomSheet from './components/BottomSheet';
@@ -50,14 +48,6 @@ const SHEET_CONFIG = {
   account: {
     title: 'Edit Profile',
     hasSave: true,
-  },
-  purchases: {
-    title: 'My Purchases',
-    hasSave: false,
-  },
-  notifications: {
-    title: 'Notifications',
-    hasSave: false,
   },
 };
 
@@ -156,11 +146,7 @@ function ProfileSidebar({ activeTab, onMobileNavClick, onLogout, userEmail }) {
 
             <div className={mobileStyles.menuDivider} />
 
-            <button
-              type="button"
-              className={mobileStyles.menuRow}
-              onClick={() => onMobileNavClick('notifications')}
-            >
+            <Link href="/profile/notifications" className={mobileStyles.menuRow}>
               <span className={mobileStyles.menuRowLeft}>
                 <span className={mobileStyles.menuIcon}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
@@ -172,7 +158,7 @@ function ProfileSidebar({ activeTab, onMobileNavClick, onLogout, userEmail }) {
                 <span className={mobileStyles.menuLabel}>Notifications</span>
               </span>
               <span className={mobileStyles.menuChevron}><Chevron /></span>
-            </button>
+            </Link>
 
           </div>
         </div>
@@ -182,11 +168,7 @@ function ProfileSidebar({ activeTab, onMobileNavClick, onLogout, userEmail }) {
           <p className={mobileStyles.sectionLabel}>Orders</p>
           <div className={mobileStyles.menuCard}>
 
-            <button
-              type="button"
-              className={mobileStyles.menuRow}
-              onClick={() => onMobileNavClick('purchases')}
-            >
+            <Link href="/profile/purchases" className={mobileStyles.menuRow}>
               <span className={mobileStyles.menuRowLeft}>
                 <span className={mobileStyles.menuIcon}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
@@ -199,7 +181,7 @@ function ProfileSidebar({ activeTab, onMobileNavClick, onLogout, userEmail }) {
                 <span className={mobileStyles.menuLabel}>My Purchases</span>
               </span>
               <span className={mobileStyles.menuChevron}><Chevron /></span>
-            </button>
+            </Link>
 
           </div>
         </div>
@@ -436,12 +418,16 @@ export default function ProfileLayout({ children }) {
     <ProfileProvider>
       <main className={styles.profilePage}>
         <div className={styles.profileLayout}>
-          <ProfileSidebar activeTab={activeTab} onMobileNavClick={handleMobileNavClick} onLogout={handleLogout} userEmail={user?.email} />
+          {(!isMobile || !segment) && <ProfileSidebar activeTab={activeTab} onMobileNavClick={handleMobileNavClick} onLogout={handleLogout} userEmail={user?.email} />}
 
-          {/* Desktop: render children normally. On mobile, hide — content lives in sheets. */}
-          <div className={`${styles.profileMain} ${isMobile ? styles.profileMainHidden : ''}`}>
-            {children}
-          </div>
+          {/* Desktop: always show sidebar + content normally.
+               Mobile root /profile: hide content (menu is the UI).
+               Mobile sub-pages: hide sidebar, show content full width. */}
+          {(!isMobile || !!segment) && (
+            <div className={`${styles.profileMain} ${isMobile && !!segment ? styles.profileMainFull : ''}`}>
+              {children}
+            </div>
+          )}
         </div>
       </main>
 
@@ -461,8 +447,6 @@ export default function ProfileLayout({ children }) {
               onSaveComplete={handleSheetClose}
             />
           )}
-          {openSheet === 'purchases' && <PurchasesSheetContent />}
-          {openSheet === 'notifications' && <NotificationsSheetContent />}
         </BottomSheet>
       )}
     </ProfileProvider>
