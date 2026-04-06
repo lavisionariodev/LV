@@ -418,14 +418,16 @@ export default function ProfileLayout({ children }) {
     <ProfileProvider>
       <main className={styles.profilePage}>
         <div className={styles.profileLayout}>
-          <ProfileSidebar activeTab={activeTab} onMobileNavClick={handleMobileNavClick} onLogout={handleLogout} userEmail={user?.email} />
+          {(!isMobile || !segment) && <ProfileSidebar activeTab={activeTab} onMobileNavClick={handleMobileNavClick} onLogout={handleLogout} userEmail={user?.email} />}
 
           {/* Desktop: always show sidebar + content normally.
-               Mobile root /profile: hide content div (menu IS the UI).
-               Mobile sub-pages: show content full width. */}
-          <div className={`${styles.profileMain} ${isMobile && !segment ? styles.profileMainHidden : ''} ${isMobile && !!segment ? styles.profileMainFull : ''}`}>
-            {children}
-          </div>
+               Mobile root /profile: hide content (menu is the UI).
+               Mobile sub-pages: hide sidebar, show content full width. */}
+          {(!isMobile || !!segment) && (
+            <div className={`${styles.profileMain} ${isMobile && !!segment ? styles.profileMainFull : ''}`}>
+              {children}
+            </div>
+          )}
         </div>
       </main>
 
