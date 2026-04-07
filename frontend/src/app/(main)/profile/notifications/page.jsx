@@ -3,7 +3,7 @@
 import { useProfile } from '@/contexts/ProfileContext';
 import styles from '../profile.module.css';
 import notifStyles from './notifications.module.css';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -106,7 +106,7 @@ const SAMPLE_NOTIFICATIONS = [
 const PAGE_SIZE = 7;
 
 export default function NotificationsPage() {
-  const { user } = useProfile();
+  useProfile();
   const [notifications, setNotifications] = useState(SAMPLE_NOTIFICATIONS);
   const [activeFilter, setActiveFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -156,7 +156,7 @@ export default function NotificationsPage() {
       <header className={styles.profileHeader}>
         <div className={notifStyles.headerWrap}>
           <div className={notifStyles.headerTop}>
-            <div>
+            <div className={notifStyles.headerText}>
               <p className={styles.profileEyebrow}>Notifications</p>
               <p className={styles.profileSignedIn}>Real-time updates on your services and activity.</p>
             </div>
@@ -189,7 +189,7 @@ export default function NotificationsPage() {
                   className={`${notifStyles.notifItem} ${notif.unread ? notifStyles.notifItemUnread : ''}`}
                   onClick={() => markRead(notif.id)} role="button" tabIndex={0}
                   onKeyDown={(e) => e.key === 'Enter' && markRead(notif.id)}>
-                  <span className={`${notifStyles.unreadPip} ${notif.unread ? '' : notifStyles.unreadPipHidden}`} />
+                  {notif.unread && <span className={notifStyles.unreadTopRight} aria-hidden="true" />}
                   <div className={`${notifStyles.iconWrap} ${notifStyles[`iconWrap_${notif.variant}`]}`}>
                     {ICON_MAP[notif.iconKey]}
                   </div>

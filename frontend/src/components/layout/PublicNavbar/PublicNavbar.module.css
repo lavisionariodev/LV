@@ -144,6 +144,22 @@ a.userLink {
   height: 70px;
 }
 
+.mobilePageTitle {
+  display: none;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #4D2D18;
+  text-align: center;
+}
+
+.mobilePageTitleOverlay {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
 .logo {
   text-decoration: none;
   display: flex;
@@ -288,6 +304,13 @@ a.userLink {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+@media (min-width: 1025px) {
+  .navActions {
+    margin-left: auto;
+    justify-content: flex-end;
+  }
 }
 
 .navActionsDesktop {
@@ -562,6 +585,10 @@ a.userLink {
   flex: 1;
 }
 
+.navbarSearchWrapHidden {
+  display: none;
+}
+
 /* Always-visible mobile search form */
 .navbarSearchForm {
   display: flex;
@@ -642,6 +669,18 @@ a.userLink {
     justify-content: flex-end;
   }
 
+  .mainNavInnerCentered {
+    justify-content: center;
+  }
+
+  .mobilePageTitle {
+    display: block;
+  }
+
+  .navActionsCenteredHidden {
+    display: none;
+  }
+
   /* Search + Cart stretches to fill all available horizontal space */
   .navActionsMobile {
     display: flex;
@@ -649,6 +688,10 @@ a.userLink {
     width: 100%;
     max-width: 100%;
   }
+
+.navActionsMobileIconsOnly {
+  justify-content: flex-end;
+}
 
   /* Extra space between mobile search bar and favorites icon, while keeping
      a small gap between favorites and cart */
@@ -685,6 +728,10 @@ a.userLink {
   .mainNavInner {
     padding: 0 16px;
     height: 58px;
+  }
+
+  .mobilePageTitle {
+    font-size: 19px;
   }
 
   .navActions {

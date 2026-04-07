@@ -72,6 +72,27 @@ export default function PublicNavbar() {
   const isPartnersActive = pathname === '/partners'
   const isHowItWorksActive = pathname?.startsWith('/how-it-works')
   const isAboutUsActive = pathname?.startsWith('/about')
+  const cleanPathname = pathname?.split(/[?#]/)[0] || ''
+  const isProfilePage = cleanPathname === '/profile' || cleanPathname === '/profile/account'
+  const isNotificationsPage = cleanPathname === '/profile/notifications'
+  const isPurchasesPage = cleanPathname === '/profile/purchases'
+
+  // Pages that should show a centered title in the navbar on mobile/tablet
+  const isMobileTitlePage = isProfilePage || isNotificationsPage || isPurchasesPage
+  // Pages that keep top-right actions visible need overlay title centering
+  const isMobileOverlayTitlePage = isNotificationsPage || isProfilePage
+  // Pages where we also hide the mobile search/favorites/cart row
+  const isMobileHideActionsPage = isPurchasesPage
+  // Keep icons but hide mobile search bar on profile/notifications
+  const isMobileHideSearchPage = isNotificationsPage || isProfilePage
+
+  const mobileCenteredTitle = isProfilePage
+    ? 'Profile'
+    : isNotificationsPage
+      ? 'Notifications'
+      : isPurchasesPage
+        ? 'My Purchases'
+        : ''
 
   const openLogoutModal = () => {
     setProfileMenuOpen(false)
@@ -234,17 +255,21 @@ export default function PublicNavbar() {
 
       {/* Main Navigation */}
       <div className={styles.mainNav}>
-        <div className={styles.mainNavInner}>
-          <Link
-            href="/"
-            className={styles.logo}
-            aria-label={`${siteContent?.systemName || 'La Visionario'} home`}
-          >
-            <span className={styles.logoIcon}>
-              <span className={styles.logoLetter}>L</span>
-            </span>
-            <span className={styles.logoText}>{siteContent?.systemName || 'La Visionario'}</span>
-          </Link>
+        <div className={`${styles.mainNavInner} ${isMobileTitlePage ? styles.mainNavInnerCentered : ''}`}>
+          {isMobileTitlePage ? (
+            <h1 className={`${styles.mobilePageTitle} ${isMobileOverlayTitlePage ? styles.mobilePageTitleOverlay : ''}`}>{mobileCenteredTitle}</h1>
+          ) : (
+            <Link
+              href="/"
+              className={styles.logo}
+              aria-label={`${siteContent?.systemName || 'La Visionario'} home`}
+            >
+              <span className={styles.logoIcon}>
+                <span className={styles.logoLetter}>L</span>
+              </span>
+              <span className={styles.logoText}>{siteContent?.systemName || 'La Visionario'}</span>
+            </Link>
+          )}
 
           <nav className={styles.navMenu}>
             <div className={styles.navItem}>
@@ -328,7 +353,7 @@ export default function PublicNavbar() {
             </div>
           </nav>
 
-          <div className={styles.navActions}>
+          <div className={`${styles.navActions} ${isMobileHideActionsPage ? styles.navActionsCenteredHidden : ''}`}>
             <div className={styles.navActionsDesktop}>
             {/* Search + Favorites (beside each other) */}
             <div className={styles.searchFavoritesGroup} ref={desktopSearchRef}>
@@ -481,9 +506,9 @@ export default function PublicNavbar() {
             )}
             </div>
 
-            {/* Mobile only: Always-visible search bar + Cart (top right) — hidden on profile pages */}
-            <div className={`${styles.navActionsMobile} ${pathname?.startsWith('/profile') ? styles.navActionsMobileHidden : ''}`}>
-              <div className={styles.navbarSearchWrap}>
+            {/* Mobile only: Always-visible search bar + Cart (top right) — hidden on profile and purchases, visible on notifications */}
+            <div className={`${styles.navActionsMobile} ${isMobileHideActionsPage ? styles.navActionsMobileHidden : ''} ${isMobileHideSearchPage ? styles.navActionsMobileIconsOnly : ''}`}>
+              <div className={`${styles.navbarSearchWrap} ${isMobileHideSearchPage ? styles.navbarSearchWrapHidden : ''}`}>
                 <form
                   className={styles.navbarSearchForm}
                   onSubmit={handleSearchSubmit}
@@ -572,19 +597,6 @@ export default function PublicNavbar() {
           <span className={styles.bottomNavLabel}>Shop</span>
         </Link>
 
-        <Link
-          href="/how-it-works"
-          className={`${styles.bottomNavItem} ${pathname?.startsWith('/how-it-works') ? styles.bottomNavItemActive : ''}`}
-          aria-label="How it works"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-            <line x1="12" y1="17" x2="12.01" y2="17"></line>
-          </svg>
-          <span className={styles.bottomNavLabel}>How</span>
-        </Link>
-
         <button
           type="button"
           className={`${styles.bottomNavItem} ${pathname?.startsWith('/profile/notifications') ? styles.bottomNavItemActive : ''}`}
@@ -607,7 +619,7 @@ export default function PublicNavbar() {
         {isAuthenticated ? (
           <button
             type="button"
-            className={`${styles.bottomNavItem} ${pathname?.startsWith('/profile') ? styles.bottomNavItemActive : ''}`}
+            className={`${styles.bottomNavItem} ${(pathname?.startsWith('/profile') && !pathname?.startsWith('/profile/notifications')) ? styles.bottomNavItemActive : ''}`}
             aria-label="Profile"
             onClick={() => router.push('/profile')}
           >

@@ -2,20 +2,17 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter, useSelectedLayoutSegment, useSearchParams } from 'next/navigation';
+import { useRouter, useSelectedLayoutSegment } from 'next/navigation';
 import styles from './profile.module.css';
 import mobileStyles from './profile.mobile.module.css';
 import { ProfileProvider } from '@/contexts/ProfileContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 
-// ── Lazy-import the page contents so the sheet only loads what it needs ───────
-import dynamic from 'next/dynamic';
-
-const AccountPageContent  = dynamic(() => import('./account/page'));
-
 // ── Bottom sheet (renders null on desktop) ────────────────────────────────────
 import BottomSheet from './components/BottomSheet';
+import { signOut as signOutSession } from '@/lib/auth/session';
+import LogoutModal from '@/components/ui/Modal/Logout';
 
 /* ─────────────────────────────────────────
    Hook — detect mobile viewport
@@ -70,13 +67,6 @@ function Chevron() {
 function ProfileSidebar({ activeTab, onMobileNavClick, onLogout, userEmail }) {
   const { profile, uploading, fileInputRef, initials } = useProfile();
   const isMobile = useIsMobile();
-
-  const makeClickHandler = (tab) => (e) => {
-    if (isMobile) {
-      e.preventDefault();
-      onMobileNavClick(tab);
-    }
-  };
 
   /* ── MOBILE layout ── */
   if (isMobile) {
@@ -253,25 +243,20 @@ function ProfileSidebar({ activeTab, onMobileNavClick, onLogout, userEmail }) {
       {/* ── Nav ── */}
       <nav className={styles.sidebarNav} aria-label="Account navigation">
 
-        <div className={styles.sidebarGroup}>
-          <div className={styles.sidebarGroupHeader}>
-            <span className={styles.sidebarGroupIcon}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
-                fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-            </span>
-            <span className={styles.sidebarGroupLabel}>My Account</span>
-          </div>
-          <Link
-            href="/profile/account"
-            className={`${styles.sidebarChildItem} ${activeTab === 'account' ? styles.sidebarItemActive : ''}`}
-            aria-current={activeTab === 'account' ? 'page' : undefined}
-          >
-            Profile
-          </Link>
-        </div>
+        <Link
+          href="/profile/account"
+          className={`${styles.sidebarItem} ${activeTab === 'account' ? styles.sidebarItemActive : ''}`}
+          aria-current={activeTab === 'account' ? 'page' : undefined}
+        >
+          <span className={styles.sidebarIcon}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </span>
+          My Account
+        </Link>
 
         <Link
           href="/profile/purchases"
@@ -316,16 +301,14 @@ export default function ProfileLayout({ children }) {
   const router = useRouter();
   const segment = useSelectedLayoutSegment();
   const activeTab = segment || 'account';
-  const { user, authLoading, isBuyer, signOut } = useAuth();
+  const { user, authLoading, isBuyer } = useAuth();
   const isMobile = useIsMobile();
 
   // Which sheet is open, or null.
-  // Also auto-open if URL has ?sheet=<tab> (e.g. from bottom nav on mobile).
-  const searchParams = useSearchParams();
   const [openSheet, setOpenSheet] = useState(() => {
     if (typeof window === 'undefined') return null;
     const sheet = new URLSearchParams(window.location.search).get('sheet');
-    const validSheets = ['account', 'purchases', 'notifications'];
+    const validSheets = ['account'];
     if (sheet && validSheets.includes(sheet) &&
         window.matchMedia('(max-width: 768px)').matches) {
       return sheet;
@@ -334,6 +317,7 @@ export default function ProfileLayout({ children }) {
   });
   // Forwarded saving state from child form (account sheet only)
   const [sheetSaving, setSheetSaving] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
   // Ref callback so AccountPage can hand us its save trigger
   const saveTriggerRef = useRef(null);
 
@@ -353,15 +337,24 @@ export default function ProfileLayout({ children }) {
     }
   }, []);
 
-  // Logout handler
-  const handleLogout = useCallback(async () => {
+  const openLogoutModal = useCallback(() => {
+    setLogoutOpen(true);
+  }, []);
+
+  const handleConfirmLogout = useCallback(async () => {
     try {
-      if (signOut) await signOut();
-      router.replace('/');
-    } catch (e) {
-      router.replace('/');
+      await signOutSession();
+      setLogoutOpen(false);
+      router.push('/');
+    } catch {
+      setLogoutOpen(false);
+      router.push('/');
     }
-  }, [signOut, router]);
+  }, [router]);
+
+  const handleCancelLogout = useCallback(() => {
+    setLogoutOpen(false);
+  }, []);
 
   // Called by the top-bar Save button (account sheet)
   const handleSheetSave = useCallback(() => {
@@ -418,7 +411,7 @@ export default function ProfileLayout({ children }) {
     <ProfileProvider>
       <main className={styles.profilePage}>
         <div className={styles.profileLayout}>
-          {(!isMobile || !segment) && <ProfileSidebar activeTab={activeTab} onMobileNavClick={handleMobileNavClick} onLogout={handleLogout} userEmail={user?.email} />}
+          {(!isMobile || !segment) && <ProfileSidebar activeTab={activeTab} onMobileNavClick={handleMobileNavClick} onLogout={openLogoutModal} userEmail={user?.email} />}
 
           {/* Desktop: always show sidebar + content normally.
                Mobile root /profile: hide content (menu is the UI).
@@ -449,6 +442,12 @@ export default function ProfileLayout({ children }) {
           )}
         </BottomSheet>
       )}
+
+      <LogoutModal
+        open={logoutOpen}
+        onConfirm={handleConfirmLogout}
+        onCancel={handleCancelLogout}
+      />
     </ProfileProvider>
   );
 }
@@ -462,7 +461,7 @@ export default function ProfileLayout({ children }) {
 import sheetStyles from './profile.mobile.module.css';
 
 function AccountSheetContent({ onSaveTriggerReady, onSavingChange, onSaveComplete }) {
-  // We render AccountPageContent but strip the outer profileCard chrome
+  // We render AccountSheetForm and strip the outer profileCard chrome
   // (accent bar, header) — the sheet provides those instead.
   // We pass callbacks down via a context-like prop so the Save button
   // in the top bar can trigger the form's handleSave.
@@ -711,22 +710,6 @@ function AccountSheetForm({ onSaveTriggerReady, onSavingChange, onSaveComplete }
         </div>
 
       </div>
-    </div>
-  );
-}
-
-function PurchasesSheetContent() {
-  return (
-    <div className={sheetStyles.sheetPageWrap}>
-      <PurchasesPageContent />
-    </div>
-  );
-}
-
-function NotificationsSheetContent() {
-  return (
-    <div className={sheetStyles.sheetPageWrap}>
-      <NotificationsPageContent />
     </div>
   );
 }

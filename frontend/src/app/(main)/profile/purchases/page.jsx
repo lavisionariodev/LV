@@ -120,7 +120,7 @@ export default function PurchasesPage() {
         <header className={styles.profileHeader}>
           <div className={styles.profileHeaderLeft}>
             <p className={styles.profileEyebrow}>Purchases</p>
-            <p className={styles.profileSignedIn}>You are signed in as a seller. Sellers cannot view buyer purchase history.</p>
+            <p className={styles.profileSignedIn}>Seller accounts cannot view buyer purchase history.</p>
           </div>
         </header>
         <div className={purchaseStyles.purchasesBody} style={{ padding: '32px 28px' }}>
@@ -143,12 +143,11 @@ export default function PurchasesPage() {
   return (
     <div className={styles.profileCard}>
       <div className={styles.profileAccentBar} />
-      <header className={styles.profileHeader}>
+      <header className={`${styles.profileHeader} ${purchaseStyles.desktopOnlyHeader}`}>
         <div className={styles.profileHeaderLeft}>
           <p className={styles.profileEyebrow}>My Purchases</p>
           <p className={styles.profileSignedIn}>Review your previous and upcoming service bookings.</p>
         </div>
-        <p className={styles.profileSignedIn}>Signed in as <strong>{user.email}</strong></p>
       </header>
       <div className={purchaseStyles.purchasesBody}>
         <div className={purchaseStyles.toolbar}>
