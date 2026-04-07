@@ -80,11 +80,9 @@ export default function PublicNavbar() {
   // Pages that should show a centered title in the navbar on mobile/tablet
   const isMobileTitlePage = isProfilePage || isNotificationsPage || isPurchasesPage
   // Pages that keep top-right actions visible need overlay title centering
-  const isMobileOverlayTitlePage = isNotificationsPage || isProfilePage
-  // Pages where we also hide the mobile search/favorites/cart row
-  const isMobileHideActionsPage = isPurchasesPage
-  // Keep icons but hide mobile search bar on profile/notifications
-  const isMobileHideSearchPage = isNotificationsPage || isProfilePage
+  const isMobileOverlayTitlePage = isNotificationsPage || isProfilePage || isPurchasesPage
+  // Keep icons but hide mobile search bar on profile/notifications/purchases
+  const isMobileHideSearchPage = isNotificationsPage || isProfilePage || isPurchasesPage
 
   const mobileCenteredTitle = isProfilePage
     ? 'Profile'
@@ -353,7 +351,7 @@ export default function PublicNavbar() {
             </div>
           </nav>
 
-          <div className={`${styles.navActions} ${isMobileHideActionsPage ? styles.navActionsCenteredHidden : ''}`}>
+          <div className={styles.navActions}>
             <div className={styles.navActionsDesktop}>
             {/* Search + Favorites (beside each other) */}
             <div className={styles.searchFavoritesGroup} ref={desktopSearchRef}>
@@ -506,8 +504,8 @@ export default function PublicNavbar() {
             )}
             </div>
 
-            {/* Mobile only: Always-visible search bar + Cart (top right) — hidden on profile and purchases, visible on notifications */}
-            <div className={`${styles.navActionsMobile} ${isMobileHideActionsPage ? styles.navActionsMobileHidden : ''} ${isMobileHideSearchPage ? styles.navActionsMobileIconsOnly : ''}`}>
+            {/* Mobile only: search bar + actions (search hidden on profile pages, icons remain visible) */}
+            <div className={`${styles.navActionsMobile} ${isMobileHideSearchPage ? styles.navActionsMobileIconsOnly : ''}`}>
               <div className={`${styles.navbarSearchWrap} ${isMobileHideSearchPage ? styles.navbarSearchWrapHidden : ''}`}>
                 <form
                   className={styles.navbarSearchForm}
