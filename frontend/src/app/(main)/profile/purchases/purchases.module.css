@@ -11,6 +11,10 @@
   font-family: 'Lato', sans-serif;
 }
 
+.desktopOnlyHeader {
+  display: flex;
+}
+
 /* ── Toolbar ─────────────────────────────────────────── */
 .toolbar {
   display: flex;
@@ -372,6 +376,10 @@
 
 /* ── Responsive ──────────────────────────────────────── */
 @media (max-width: 768px) {
+  .desktopOnlyHeader {
+    display: none;
+  }
+
   .purchasesBody {
     padding: 20px 20px 28px;
   }
