@@ -4,11 +4,13 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { SERVICES, CATEGORIES, PROVIDERS, LISTINGS } from './data'
+import { SERVICES, CATEGORIES, PROVIDERS, LISTINGS as SAMPLE_LISTINGS } from './data'
+import { fetchActiveShopListings, mergeShopListings } from '@/lib/shop-listings/client'
 import styles from './shop.module.css'
 
 export default function ShopPage() {
   const router = useRouter()
+  const [listings, setListings] = useState(() => mergeShopListings([], SAMPLE_LISTINGS))
   const [activeCategory, setActiveCategory] = useState('all')
   const [sortBy, setSortBy] = useState('popular')
   const [compareIds, setCompareIds] = useState([])
@@ -23,8 +25,32 @@ export default function ShopPage() {
   const [mobileCurrentPage, setMobileCurrentPage] = useState(1)
   const MOBILE_ITEMS_PER_PAGE = 10
 
+  useEffect(() => {
+    let cancelled = false
+    fetchActiveShopListings()
+      .then((rows) => {
+        if (cancelled) return
+        setListings(mergeShopListings(rows, SAMPLE_LISTINGS))
+      })
+      .catch(() => {
+        if (!cancelled) setListings(mergeShopListings([], SAMPLE_LISTINGS))
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const allProviders = useMemo(() => {
+    const byId = new Map()
+    PROVIDERS.forEach((p) => byId.set(String(p.id), p))
+    listings.forEach((l) => {
+      if (l.provider) byId.set(String(l.provider.id), l.provider)
+    })
+    return Array.from(byId.values())
+  }, [listings])
+
   const filteredListings = useMemo(() => {
-    let list = [...LISTINGS]
+    let list = [...listings]
 
     if (activeCategory !== 'all') {
       list = list.filter((l) => l.serviceId === activeCategory)
@@ -38,18 +64,22 @@ export default function ShopPage() {
     else if (sortBy === 'price-desc') list.sort((a, b) => b.price - a.price)
     else if (sortBy === 'rating') {
       list.sort((a, b) => {
-        const pa = PROVIDERS.find((p) => p.id === a.providerId)
-        const pb = PROVIDERS.find((p) => p.id === b.providerId)
+        const pa = a.provider ?? PROVIDERS.find((p) => p.id === a.providerId)
+        const pb = b.provider ?? PROVIDERS.find((p) => p.id === b.providerId)
         return (pb?.rating ?? 0) - (pa?.rating ?? 0)
       })
     } else if (sortBy === 'newest') {
-      list.reverse()
+      list.sort((a, b) => {
+        const ta = new Date(a.createdAt || 0).getTime()
+        const tb = new Date(b.createdAt || 0).getTime()
+        return tb - ta
+      })
     } else {
       list.sort((a, b) => (b.popular ? 1 : 0) - (a.popular ? 1 : 0))
     }
 
     return list
-  }, [activeCategory, sortBy, selectedProvider])
+  }, [listings, activeCategory, sortBy, selectedProvider])
 
   const totalPages = Math.ceil(filteredListings.length / ITEMS_PER_PAGE)
   const paginatedListings = useMemo(() => {
@@ -86,21 +116,21 @@ export default function ShopPage() {
 
   // Derive unique locations from all providers
   const allLocations = useMemo(() => {
-    const locs = PROVIDERS.map((p) => p.location).filter(Boolean)
+    const locs = allProviders.map((p) => p.location).filter(Boolean)
     return [...new Set(locs)].sort()
-  }, [])
+  }, [allProviders])
 
   // Providers filtered by active category and location query
   const filteredProviders = useMemo(() => {
-    let providerIds = new Set()
-    let listings = [...LISTINGS]
+    const providerIds = new Set()
+    let scoped = [...listings]
 
     if (activeCategory !== 'all') {
-      listings = listings.filter((l) => l.serviceId === activeCategory)
+      scoped = scoped.filter((l) => l.serviceId === activeCategory)
     }
-    listings.forEach((l) => providerIds.add(l.providerId))
+    scoped.forEach((l) => providerIds.add(String(l.providerId)))
 
-    let providers = PROVIDERS.filter((p) => providerIds.has(p.id))
+    let providers = allProviders.filter((p) => providerIds.has(String(p.id)))
 
     if (locationQuery.trim()) {
       const q = locationQuery.toLowerCase()
@@ -110,7 +140,7 @@ export default function ShopPage() {
     }
 
     return providers
-  }, [activeCategory, locationQuery])
+  }, [listings, activeCategory, locationQuery, allProviders])
 
   function toggleCompare(id) {
     setCompareIds((prev) => {
@@ -207,7 +237,7 @@ export default function ShopPage() {
                         <span>{cat.label}</span>
                         {activeCategory === cat.id && (
                           <span className={styles.filtersModalCatCount}>
-                            {cat.id === 'all' ? LISTINGS.length : filteredListings.length}
+                            {cat.id === 'all' ? listings.length : filteredListings.length}
                           </span>
                         )}
                       </button>
@@ -264,7 +294,7 @@ export default function ShopPage() {
                           className={`${styles.providerItem}${selectedProvider === provider.id ? ` ${styles.providerItemActive}` : ''}`}
                           onClick={() => setSelectedProvider(selectedProvider === provider.id ? null : provider.id)}
                         >
-                          <div className={styles.providerItemAvatar}>{provider.name.charAt(0)}</div>
+                          <div className={styles.providerItemAvatar}>{(provider.name || '?').charAt(0)}</div>
                           <div className={styles.providerItemInfo}>
                             <span className={styles.providerItemName}>{provider.name}</span>
                             <span className={styles.providerItemLocation}>
@@ -322,7 +352,7 @@ export default function ShopPage() {
                   <span className={styles.sideNavLabel}>{cat.label}</span>
                   {activeCategory === cat.id && (
                     <span className={styles.sideNavCount}>
-                      {cat.id === 'all' ? LISTINGS.length : filteredListings.length}
+                      {cat.id === 'all' ? listings.length : filteredListings.length}
                     </span>
                   )}
                 </button>
@@ -391,7 +421,7 @@ export default function ShopPage() {
                       onClick={() => setSelectedProvider(selectedProvider === provider.id ? null : provider.id)}
                     >
                       <div className={styles.providerItemAvatar}>
-                        {provider.name.charAt(0)}
+                        {(provider.name || '?').charAt(0)}
                       </div>
                       <div className={styles.providerItemInfo}>
                         <span className={styles.providerItemName}>{provider.name}</span>
@@ -657,7 +687,7 @@ export default function ShopPage() {
 
             <div className={styles.compareFloatChips}>
               {compareIds.map((id) => {
-                const listing = LISTINGS.find((l) => l.id === id)
+                const listing = listings.find((l) => l.id === id)
                 return (
                   <span key={id} className={styles.compareChip}>
                     <span className={styles.compareChipName}>{listing?.name}</span>
@@ -690,14 +720,14 @@ export default function ShopPage() {
 // ─── ListingCard ──────────────────────────────────────────────────────────────
 
 function ListingCard({ listing, service, styles, inCompare, onToggleCompare, compareDisabled }) {
-  const provider = PROVIDERS.find((p) => p.id === listing.providerId)
+  const provider = listing.provider ?? PROVIDERS.find((p) => p.id === listing.providerId)
 
   return (
     <div className={`${styles.card} ${styles.listingCard}${inCompare ? ` ${styles.listingCardSelected}` : ''}`}>
       <Link href={`/shop/${listing.serviceId}`} className={styles.listingCardLink}>
         <div className={styles.listingImageWrap}>
           <Image
-            src={service?.image ?? '/sample/services/2.jpg'}
+            src={listing.imageUrl || service?.image || '/sample/services/2.jpg'}
             alt={listing.name}
             width={400}
             height={250}
@@ -718,7 +748,7 @@ function ListingCard({ listing, service, styles, inCompare, onToggleCompare, com
 
         <div className={`${styles.cardBody} ${styles.listingBody}`}>
           <div className={styles.providerRow}>
-            <div className={styles.providerAvatar}>{provider?.name.charAt(0)}</div>
+            <div className={styles.providerAvatar}>{(provider?.name || '?').charAt(0)}</div>
             <div className={styles.providerInfo}>
               <p className={styles.providerName}>{provider?.name}</p>
               <p className={styles.providerLocation}>
