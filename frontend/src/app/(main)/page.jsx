@@ -381,17 +381,32 @@ function PartnershipSlideshow() {
 function AboutSection() {
   const WHY_CARDS = [
     {
-      icon: '🛡',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      ),
       title: 'Why La Visionario',
       body: 'We offer verified providers, clear pricing, and compassionate support so you can focus on honoring your loved one. From packages to documentation, we guide you every step of the way.',
     },
     {
-      icon: '🤝',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      ),
       title: 'Our Partners',
       body: 'We work with trusted funeral homes and service providers across the Philippines. Our partners share our commitment to dignity, quality, and fair dealing with families.',
     },
     {
-      icon: '♡',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
+      ),
       title: 'Our Commitment',
       body: 'We are committed to treating every family with respect and empathy. From your first inquiry to the final arrangements, we prioritize clarity, fairness, and support.',
     },
@@ -434,7 +449,7 @@ function AboutSection() {
         <div className={styles.aboutWhyGrid}>
           {WHY_CARDS.map((card, i) => (
             <div key={i} className={styles.aboutWhyCard}>
-              <span className={styles.aboutWhyIcon}>{card.icon}</span>
+              <div className={styles.aboutWhyIcon}>{card.icon}</div>
               <h3 className={styles.aboutWhyTitle}>{card.title}</h3>
               <p className={styles.aboutWhyBody}>{card.body}</p>
             </div>

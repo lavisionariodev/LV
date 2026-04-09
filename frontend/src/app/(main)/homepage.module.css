@@ -786,10 +786,14 @@ a.ctaPrimary {
 }
 
 .aboutWhyIcon {
-  display: block;
-  font-size: 28px;
-  margin-bottom: 18px;
-  opacity: 0.75;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 20px;
+  border: 1px solid rgba(168, 137, 74, 0.35);
+  color: #A8894A;
 }
 
 .aboutWhyTitle {
