@@ -225,14 +225,13 @@ function HowItWorksSection() {
 
 /* ---------------- PARTNER HIGHLIGHT ---------------- */
 function PartnerHighlightSection() {
-  const [activeIndex, setActiveIndex] = useState(0)
-
   const partners = [
     {
       name: 'Heritage Funeral Services',
       location: 'Quezon City',
       years: '15 years in service',
       rating: '4.9',
+      services: ['Traditional Burial', 'Catholic Rites', 'Embalming'],
       specialty: 'Traditional Catholic ceremonies',
       image: 'https://i.pinimg.com/736x/6e/8b/75/6e8b7560bc2e8538768dcf04b39f76df.jpg',
     },
@@ -241,6 +240,7 @@ function PartnerHighlightSection() {
       location: 'Makati City',
       years: '10 years in service',
       rating: '4.8',
+      services: ['Cremation', 'Memorial Service', 'Urn Selection'],
       specialty: 'Modern cremation services',
       image: 'https://i.pinimg.com/736x/ec/fb/27/ecfb278d5b75bf40ca4e468f309847af.jpg',
     },
@@ -249,6 +249,7 @@ function PartnerHighlightSection() {
       location: 'Cavite',
       years: '20 years in service',
       rating: '5.0',
+      services: ['Memorial Park', 'Garden Burial', 'Wake Services'],
       specialty: 'Memorial park and gardens',
       image: 'https://i.pinimg.com/1200x/84/d5/60/84d56082a8cf35ffd66ed28d57357894.jpg',
     },
@@ -257,46 +258,72 @@ function PartnerHighlightSection() {
   return (
     <section className={styles.partnerSection}>
       <div className={styles.inner}>
-        <div className={styles.header}>
-          <h2 className={styles.sectionTitle}>Our Partner Providers</h2>
+
+        {/* Header */}
+        <div className={styles.partnerHeader}>
+          <span className={styles.partnerEyebrow}>Verified Providers</span>
+          <h2 className={styles.partnerSectionTitle}>Funeral Homes &amp; Partnerships</h2>
+          <p className={styles.partnerSectionSubtitle}>
+            Every provider on our platform is personally vetted for quality, transparency, and compassionate service.
+          </p>
         </div>
 
-        <div className={styles.partnerCarousel}>
-          <div className={styles.partnerCard}>
-            <div className={styles.partnerImageWrapper}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={partners[activeIndex].image}
-                alt={partners[activeIndex].name}
-                className={styles.partnerImage}
-              />
-            </div>
-
-            <div className={styles.partnerContent}>
-              <h3 className={styles.partnerName}>{partners[activeIndex].name}</h3>
-              <p className={styles.partnerLocation}>{partners[activeIndex].location}</p>
-              <p className={styles.partnerYears}>{partners[activeIndex].years}</p>
-              <div className={styles.partnerRating}>
-                ★ {partners[activeIndex].rating} rating
+        {/* Cards grid */}
+        <div className={styles.partnerGrid}>
+          {partners.map((partner, i) => (
+            <div key={i} className={styles.partnerCard}>
+              <div className={styles.partnerImageWrapper}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={partner.image}
+                  alt={partner.name}
+                  className={styles.partnerImage}
+                />
+                <div className={styles.partnerImageOverlay} />
+                <div className={styles.partnerRatingBadge}>
+                  ★ {partner.rating}
+                </div>
               </div>
-              <p className={styles.partnerSpecialty}>
-                Specializes in {partners[activeIndex].specialty}
-              </p>
-              <button className={styles.viewProviderBtn}>View Provider</button>
-            </div>
-          </div>
 
-          <div className={styles.carouselDots}>
-            {partners.map((_, index) => (
-              <button
-                key={index}
-                className={`${styles.dot} ${activeIndex === index ? styles.activeDot : ''}`}
-                onClick={() => setActiveIndex(index)}
-                aria-label={`View partner ${index + 1}`}
-              />
-            ))}
-          </div>
+              <div className={styles.partnerContent}>
+                <div className={styles.partnerMeta}>
+                  <span className={styles.partnerLocation}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    {partner.location}
+                  </span>
+                  <span className={styles.partnerYears}>{partner.years}</span>
+                </div>
+
+                <h3 className={styles.partnerName}>{partner.name}</h3>
+                <p className={styles.partnerSpecialty}>Specializes in {partner.specialty}</p>
+
+                <ul className={styles.partnerServices}>
+                  {partner.services.map((s, j) => (
+                    <li key={j} className={styles.partnerServiceTag}>{s}</li>
+                  ))}
+                </ul>
+
+                <Link href="/partners" className={styles.viewProviderBtn}>
+                  View Profile <span aria-hidden="true">›</span>
+                </Link>
+              </div>
+            </div>
+          ))}
         </div>
+
+        {/* CTA */}
+        <div className={styles.partnerCTA}>
+          <p className={styles.partnerCTAText}>
+            Browse our full network of verified funeral homes across the Philippines.
+          </p>
+          <Link href="/partners" className={styles.partnerCTABtn}>
+            View All Funeral Homes &amp; Partners
+            <span className={styles.partnerCTAArrow}>›</span>
+          </Link>
+        </div>
+
       </div>
     </section>
   )
