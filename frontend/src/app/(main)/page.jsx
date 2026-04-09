@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import styles from './homepage.module.css'
 import { useSiteContent } from '@/lib/siteContent/client'
@@ -35,7 +35,9 @@ export default function LandingPage() {
     <>
       <HeroSection />
       <ShopByCategorySection />
+      <HowItWorksSection />
       <PartnerHighlightSection />
+      <AboutSection />
       <FinalCTASection />
     </>
   )
@@ -77,57 +79,28 @@ function HeroSection() {
   )
 }
 
-/* ---------------- SHOP BY CATEGORY (REFERENCE IMAGE STYLE) ---------------- */
+/* ---------------- SHOP BY CATEGORY ---------------- */
 function ShopByCategorySection() {
   const categories = [
-    {
-      title: 'Funeral Packages',
-      image: '/sample/services/1.jpg',
-      link: '/shop',
-    },
-    {
-      title: 'Cremation Services',
-      image: '/sample/services/2.jpg',
-      link: '/shop',
-    },
-    {
-      title: 'Burial Services',
-      image: '/sample/services/3.jpg',
-      link: '/shop',
-    },
-    {
-      title: 'Memorial & Wake',
-      image: '/sample/services/4.jpg',
-      link: '/shop',
-    },
-    {
-      title: 'Flowers & Items',
-      image: '/sample/services/5.jpg',
-      link: '/shop',
-    },
-    {
-      title: 'Transport & Docs',
-      image: '/sample/services/6.jpg',
-      link: '/shop',
-    },
+    { title: 'Funeral Packages',    image: '/sample/services/1.jpg', link: '/shop' },
+    { title: 'Cremation Services',  image: '/sample/services/2.jpg', link: '/shop' },
+    { title: 'Burial Services',     image: '/sample/services/3.jpg', link: '/shop' },
+    { title: 'Memorial & Wake',     image: '/sample/services/4.jpg', link: '/shop' },
+    { title: 'Flowers & Items',     image: '/sample/services/5.jpg', link: '/shop' },
+    { title: 'Transport & Docs',    image: '/sample/services/6.jpg', link: '/shop' },
   ]
 
-  // Duplicate categories for infinite loop effect
   const loopedCategories = [...categories, ...categories, ...categories]
 
   const handleScroll = (direction) => {
     const container = document.getElementById('categoryCarousel')
     if (!container) return
-
     const scrollAmount = 350
-    const newPosition = direction === 'left' 
-      ? container.scrollLeft - scrollAmount 
-      : container.scrollLeft + scrollAmount
-
-    container.scrollTo({
-      left: newPosition,
-      behavior: 'smooth'
-    })
+    const newPosition =
+      direction === 'left'
+        ? container.scrollLeft - scrollAmount
+        : container.scrollLeft + scrollAmount
+    container.scrollTo({ left: newPosition, behavior: 'smooth' })
   }
 
   return (
@@ -138,7 +111,7 @@ function ShopByCategorySection() {
         </div>
 
         <div className={styles.categoryCarouselContainer}>
-          <button 
+          <button
             className={`${styles.carouselArrow} ${styles.carouselArrowLeft}`}
             onClick={() => handleScroll('left')}
             aria-label="Scroll left"
@@ -165,7 +138,7 @@ function ShopByCategorySection() {
             ))}
           </div>
 
-          <button 
+          <button
             className={`${styles.carouselArrow} ${styles.carouselArrowRight}`}
             onClick={() => handleScroll('right')}
             aria-label="Scroll right"
@@ -173,6 +146,79 @@ function ShopByCategorySection() {
             ›
           </button>
         </div>
+      </div>
+    </section>
+  )
+}
+
+/* ---------------- HOW IT WORKS ---------------- */
+function HowItWorksSection() {
+  const STEPS = [
+    {
+      number: '01',
+      title: 'Browse & Discover',
+      lead: 'Find the right service for your loved one',
+      body: 'Explore our curated directory of verified funeral service providers across the Philippines. Filter by location, service type, or budget to find providers that match your needs.',
+    },
+    {
+      number: '02',
+      title: 'Compare Packages',
+      lead: 'Make informed decisions with full transparency',
+      body: 'Compare funeral homes, cremation services, memorial packages, and more — side by side with full transparency on what\'s included, so there are no surprises.',
+    },
+    {
+      number: '03',
+      title: 'Book a Service',
+      lead: 'Reserve with confidence, fully guided',
+      body: 'Once you\'ve chosen a provider and package, booking is simple and secure. Our team coordinates directly with your chosen partner to ensure a smooth handover.',
+    },
+    {
+      number: '04',
+      title: 'Ongoing Support',
+      lead: 'Secure, transparent, and always available',
+      body: 'All payments go through secure, verified channels. Our support team remains available before, during, and after the service — because our commitment doesn\'t end at booking.',
+    },
+  ]
+
+  return (
+    <section className={styles.howItWorksSection}>
+      <div className={styles.inner}>
+
+        {/* Section header */}
+        <div className={styles.howItWorksHeader}>
+          <span className={styles.howItWorksEyebrow}>Our Process</span>
+          <h2 className={styles.howItWorksTitle}>How It Works</h2>
+          <p className={styles.howItWorksSubtitle}>
+            From your first search to the final service, we simplify every step
+            so you can focus on what matters most.
+          </p>
+        </div>
+
+        {/* Steps grid */}
+        <div className={styles.howItWorksGrid}>
+          {STEPS.map((step, i) => (
+            <div key={step.number} className={styles.howItWorksCard}>
+              <div className={styles.howItWorksCardTop}>
+                <span className={styles.howItWorksNumber}>{step.number}</span>
+                {i < STEPS.length - 1 && (
+                  <span className={styles.howItWorksConnector} aria-hidden="true" />
+                )}
+              </div>
+              <h3 className={styles.howItWorksCardTitle}>{step.title}</h3>
+              <p className={styles.howItWorksCardLead}>{step.lead}</p>
+              <p className={styles.howItWorksCardBody}>{step.body}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA link */}
+        <div className={styles.howItWorksCTA}>
+          <Link href="/how-it-works" className={styles.howItWorksLink}>
+            Learn More About Our Process
+            <span className={styles.howItWorksLinkArrow}>›</span>
+          </Link>
+        </div>
+
       </div>
     </section>
   )
@@ -252,6 +298,87 @@ function PartnerHighlightSection() {
             ))}
           </div>
         </div>
+      </div>
+    </section>
+  )
+}
+
+/* ---------------- ABOUT ---------------- */
+function AboutSection() {
+  const WHY_CARDS = [
+    {
+      icon: '🛡',
+      title: 'Why La Visionario',
+      body: 'We offer verified providers, clear pricing, and compassionate support so you can focus on honoring your loved one. From packages to documentation, we guide you every step of the way.',
+    },
+    {
+      icon: '🤝',
+      title: 'Our Partners',
+      body: 'We work with trusted funeral homes and service providers across the Philippines. Our partners share our commitment to dignity, quality, and fair dealing with families.',
+    },
+    {
+      icon: '♡',
+      title: 'Our Commitment',
+      body: 'We are committed to treating every family with respect and empathy. From your first inquiry to the final arrangements, we prioritize clarity, fairness, and support.',
+    },
+  ]
+
+  return (
+    <section className={styles.aboutSection}>
+      <div className={styles.inner}>
+
+        {/* Top: two-column intro */}
+        <div className={styles.aboutIntroGrid}>
+          <div className={styles.aboutIntroLeft}>
+            <span className={styles.aboutEyebrow}>About Us</span>
+            <h2 className={styles.aboutTitle}>
+              Serving Families<br />
+              <em>with Dignity</em>
+            </h2>
+            <p className={styles.aboutBody}>
+              La Visionario was created to help families plan funeral services in a simple,
+              respectful, and transparent way. We believe that saying goodbye should not be
+              stressful or confusing.
+            </p>
+            <p className={styles.aboutBody}>
+              Our mission is to make funeral planning dignified, transparent, and accessible
+              for every Filipino family — supported by clarity, care, and trusted partners.
+            </p>
+            <Link href="/about" className={styles.aboutLink}>
+              Our Full Story
+              <span className={styles.aboutLinkArrow}>›</span>
+            </Link>
+          </div>
+
+          <div className={styles.aboutIntroRight}>
+            {/* Trust pillars */}
+            <div className={styles.aboutTrustGrid}>
+              {[
+                { label: 'Verified Providers',    desc: 'Every partner is reviewed and authenticated before listing.' },
+                { label: 'Transparent Pricing',   desc: 'No hidden fees. All inclusions stated clearly upfront.' },
+                { label: 'Compassionate Support', desc: 'Our team is reachable before, during, and after your service.' },
+                { label: 'Secure Transactions',   desc: 'All payments processed through verified, documented channels.' },
+              ].map((item, i) => (
+                <div key={i} className={styles.aboutTrustItem}>
+                  <h4 className={styles.aboutTrustLabel}>{item.label}</h4>
+                  <p className={styles.aboutTrustDesc}>{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom: why-choose-us cards */}
+        <div className={styles.aboutWhyGrid}>
+          {WHY_CARDS.map((card, i) => (
+            <div key={i} className={styles.aboutWhyCard}>
+              <span className={styles.aboutWhyIcon}>{card.icon}</span>
+              <h3 className={styles.aboutWhyTitle}>{card.title}</h3>
+              <p className={styles.aboutWhyBody}>{card.body}</p>
+            </div>
+          ))}
+        </div>
+
       </div>
     </section>
   )
