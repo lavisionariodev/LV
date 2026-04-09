@@ -676,10 +676,8 @@ a.ctaPrimary {
 .partnerSlideshow {
   position: relative;
   width: 100%;
-  border: 1px solid rgba(16, 40, 32, 0.12);
-  box-shadow: 0 8px 32px rgba(16, 40, 32, 0.1);
   overflow: hidden;
-  background: #102820;
+  background: transparent;
 }
 
 .slideshowTrack {
@@ -740,8 +738,6 @@ a.ctaPrimary {
   align-items: center;
   gap: 10px;
   padding: 18px 0;
-  background: #FFFFFF;
-  border-top: 1px solid rgba(16, 40, 32, 0.08);
 }
 
 .slideDot {
