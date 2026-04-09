@@ -2,9 +2,10 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { use, useState, useEffect } from 'react'
+import { use, useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { getServiceById, LISTINGS, PROVIDERS, SERVICES, REVIEWS, getReviewsByServiceId } from '../data'
+import { getServiceById, LISTINGS as SAMPLE_LISTINGS, PROVIDERS, SERVICES, REVIEWS, getReviewsByServiceId } from '../data'
+import { fetchActiveShopListings, mergeShopListings } from '@/lib/shop-listings/client'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import styles from './detail.module.css'
@@ -15,18 +16,43 @@ export default function ServiceDetailPage({ params }) {
   const { addItem } = useCart()
   const { user, authLoading, isBuyer } = useAuth()
   const router = useRouter()
-  const listingsForService = service ? LISTINGS.filter((l) => l.serviceId === service.id) : []
-  const [selectedListingId, setSelectedListingId] = useState(listingsForService[0]?.id ?? '')
+  const [fullCatalog, setFullCatalog] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetchActiveShopListings()
+      .then((rows) => {
+        if (cancelled) return
+        setFullCatalog(mergeShopListings(rows, SAMPLE_LISTINGS))
+      })
+      .catch(() => {
+        if (!cancelled) setFullCatalog(mergeShopListings([], SAMPLE_LISTINGS))
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const catalogForChildren = fullCatalog ?? mergeShopListings([], SAMPLE_LISTINGS)
+
+  const listingsForService = useMemo(() => {
+    if (!service) return []
+    return catalogForChildren.filter((l) => l.serviceId === service.id)
+  }, [service, catalogForChildren])
+
+  const [selectedListingId, setSelectedListingId] = useState('')
   const [quantity, setQuantity] = useState(1)
   const [addedMessage, setAddedMessage] = useState(false)
   const [addError, setAddError] = useState(null)
 
   useEffect(() => {
     setSelectedListingId(listingsForService[0]?.id ?? '')
-  }, [id])
+  }, [id, listingsForService])
 
   const selectedListing = listingsForService.find((l) => l.id === selectedListingId)
-  const provider = selectedListing ? PROVIDERS.find((p) => p.id === selectedListing.providerId) : null
+  const provider = selectedListing
+    ? (selectedListing.provider ?? PROVIDERS.find((p) => p.id === selectedListing.providerId))
+    : null
 
   const handleAddToCart = async () => {
     if (!selectedListing || !service) return
@@ -45,7 +71,7 @@ export default function ServiceDetailPage({ params }) {
     const { error } = await addItem({
       id: selectedListing.id,
       name: selectedListing.name,
-      img: service.image,
+      img: selectedListing.imageUrl || service.image,
       price: selectedListing.price,
       description: provider
         ? `${provider.name} · ${selectedListing.inclusions?.[0] ?? ''}`
@@ -271,10 +297,17 @@ export default function ServiceDetailPage({ params }) {
         </article>
 
         {/* ── PROVIDER CARD ── */}
-        {provider && <ProviderCard provider={provider} styles={styles} />}
+        {provider && (
+          <ProviderCard provider={provider} styles={styles} allListings={catalogForChildren} />
+        )}
 
         {/* ── BELOW THE FOLD: Full description (tabbed) ── */}
-        <FullDescriptionSection service={service} styles={styles} allServices={SERVICES} />
+        <FullDescriptionSection
+          service={service}
+          styles={styles}
+          allServices={SERVICES}
+          allListings={catalogForChildren}
+        />
 
         {/* ── REVIEWS: Separate box ── */}
         <ReviewsSection reviews={getReviewsByServiceId(service.id)} styles={styles} />
@@ -324,7 +357,7 @@ function timeAgo(dateStr) {
   return { text: `Active ${diffMonths} month${diffMonths !== 1 ? 's' : ''} ago`, isActive: false }
 }
 
-function FullDescriptionSection({ service, styles, allServices = [] }) {
+function FullDescriptionSection({ service, styles, allServices = [], allListings = [] }) {
   const [activeTab, setActiveTab] = useState('description')
   const [expanded, setExpanded] = useState(false)
 
@@ -425,7 +458,7 @@ function FullDescriptionSection({ service, styles, allServices = [] }) {
               <>
                 <div className={styles.similarGrid}>
                   {similarServices.map((s) => {
-                    const lowestListing = LISTINGS
+                    const lowestListing = allListings
                       .filter((l) => l.serviceId === s.id)
                       .sort((a, b) => a.price - b.price)[0]
                     return (
@@ -815,11 +848,11 @@ function StarRow({ rating, styles, size = 14 }) {
   )
 }
 /* ─── Provider card with chat options ─── */
-function ProviderCard({ provider, styles }) {
+function ProviderCard({ provider, styles, allListings = [] }) {
   const [chatOpen, setChatOpen] = useState(false)
 
   // ── Computed stats from real data ──
-  const providerListings = LISTINGS.filter((l) => l.providerId === provider.id)
+  const providerListings = allListings.filter((l) => String(l.providerId) === String(provider.id))
   const providerReviews  = REVIEWS.filter((r)  => r.providerId === provider.id)
 
   const avgRating = providerReviews.length

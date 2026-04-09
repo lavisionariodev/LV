@@ -2,13 +2,31 @@
 
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { useMemo } from 'react'
-import { LISTINGS, PROVIDERS, SERVICES } from '../data'
+import { useMemo, useState, useEffect } from 'react'
+import { LISTINGS as SAMPLE_LISTINGS, PROVIDERS, SERVICES } from '../data'
+import { fetchActiveShopListings, mergeShopListings } from '@/lib/shop-listings/client'
 import shopStyles from '../shop.module.css'
 import styles from './compare.module.css'
 
 export default function ComparePage() {
   const searchParams = useSearchParams()
+  const [catalog, setCatalog] = useState(() => mergeShopListings([], SAMPLE_LISTINGS))
+
+  useEffect(() => {
+    let cancelled = false
+    fetchActiveShopListings()
+      .then((rows) => {
+        if (cancelled) return
+        setCatalog(mergeShopListings(rows, SAMPLE_LISTINGS))
+      })
+      .catch(() => {
+        if (!cancelled) setCatalog(mergeShopListings([], SAMPLE_LISTINGS))
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const idsParam = searchParams.get('ids') || ''
   const compareIds = useMemo(() => {
     const raw = idsParam.split(',').map((s) => s.trim()).filter(Boolean)
@@ -18,13 +36,15 @@ export default function ComparePage() {
   const compareListings = useMemo(() => {
     return compareIds
       .map((id) => {
-        const listing = LISTINGS.find((l) => l.id === id)
-        const provider = PROVIDERS.find((p) => p.id === listing?.providerId)
+        const listing = catalog.find((l) => String(l.id) === String(id))
+        const provider = listing
+          ? (listing.provider ?? PROVIDERS.find((p) => String(p.id) === String(listing.providerId)))
+          : null
         const service = SERVICES.find((s) => s.id === listing?.serviceId)
         return { listing, provider, service }
       })
       .filter((x) => x.listing)
-  }, [compareIds])
+  }, [compareIds, catalog])
 
   const lowestPriceId = useMemo(() => {
     if (compareListings.length < 2) return null
@@ -136,7 +156,7 @@ export default function ComparePage() {
                     <th key={listing.id} className={shopStyles.compareTableHead}>
                       <div className={shopStyles.compareColHeader}>
                         <div className={shopStyles.compareColAvatar}>
-                          {provider?.name.charAt(0)}
+                          {(provider?.name || '?').charAt(0)}
                         </div>
                         <p className={shopStyles.compareColName}>{listing.name}</p>
                         <p className={shopStyles.compareColProvider}>{provider?.name}</p>
