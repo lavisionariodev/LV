@@ -281,126 +281,155 @@ a.ctaPrimary {
    HOW IT WORKS SECTION
 ========================= */
 .howItWorksSection {
-  padding: 100px var(--page-padding, 24px);
-  background: #F7F4EF;
-  border-top: 1px solid rgba(16, 40, 32, 0.07);
-  border-bottom: 1px solid rgba(16, 40, 32, 0.07);
+  padding: 110px var(--page-padding, 24px);
+  background: linear-gradient(160deg, #0e2318 0%, #102820 55%, #1a3a28 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.howItWorksSection::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(ellipse 60% 50% at 80% 20%, rgba(168, 137, 74, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 60% at 10% 80%, rgba(168, 137, 74, 0.06) 0%, transparent 50%);
+  pointer-events: none;
 }
 
 .howItWorksHeader {
   text-align: center;
   max-width: 640px;
-  margin: 0 auto 72px;
+  margin: 0 auto 80px;
+  position: relative;
 }
 
 .howItWorksEyebrow {
-  display: block;
+  display: inline-block;
   font-family: "Lato", sans-serif;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 400;
-  letter-spacing: 4px;
+  letter-spacing: 5px;
   text-transform: uppercase;
   color: #A8894A;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  padding: 6px 18px;
+  border: 1px solid rgba(168, 137, 74, 0.35);
 }
 
 .howItWorksTitle {
   font-family: "Cormorant Garamond", serif;
-  font-size: clamp(32px, 4vw, 48px);
-  font-weight: 400;
-  color: #102820;
-  letter-spacing: 3px;
+  font-size: clamp(32px, 4vw, 52px);
+  font-weight: 300;
+  color: #F7F4EF;
+  letter-spacing: 4px;
   margin: 0 0 20px;
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 .howItWorksSubtitle {
   font-family: "Lato", sans-serif;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 300;
-  color: #6B6B6B;
-  line-height: 1.8;
+  color: rgba(247, 244, 239, 0.55);
+  line-height: 1.9;
   margin: 0;
+  letter-spacing: 0.3px;
 }
 
 /* Steps 4-column grid */
 .howItWorksGrid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 0;
-  border: 1px solid rgba(16, 40, 32, 0.1);
-  background: #FFFFFF;
+  gap: 1px;
+  background: rgba(168, 137, 74, 0.15);
+  border: 1px solid rgba(168, 137, 74, 0.15);
+  position: relative;
 }
 
 .howItWorksCard {
-  padding: 48px 36px;
-  border-right: 1px solid rgba(16, 40, 32, 0.08);
+  padding: 52px 36px 44px;
+  background: rgba(255, 255, 255, 0.03);
   position: relative;
-  transition: background 0.3s ease;
+  transition: background 0.4s ease;
+  overflow: hidden;
+}
+
+.howItWorksCard::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #A8894A, rgba(168, 137, 74, 0.3));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.howItWorksCard:hover {
+  background: rgba(168, 137, 74, 0.06);
+}
+
+.howItWorksCard:hover::after {
+  transform: scaleX(1);
 }
 
 .howItWorksCard:last-child {
   border-right: none;
 }
 
-.howItWorksCard:hover {
-  background: #FDFCFA;
-}
-
 .howItWorksCardTop {
   display: flex;
   align-items: center;
   gap: 0;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
   position: relative;
 }
 
 .howItWorksNumber {
   font-family: "Cormorant Garamond", serif;
-  font-size: 56px;
+  font-size: 72px;
   font-weight: 300;
-  color: rgba(16, 40, 32, 0.1);
+  color: rgba(168, 137, 74, 0.18);
   line-height: 1;
-  letter-spacing: -1px;
+  letter-spacing: -2px;
   display: block;
   transition: color 0.3s ease;
 }
 
 .howItWorksCard:hover .howItWorksNumber {
-  color: rgba(168, 137, 74, 0.25);
+  color: rgba(168, 137, 74, 0.38);
 }
 
 /* Horizontal connector line between steps — hidden on last card */
 .howItWorksConnector {
-  display: none; /* decorative only; border-right on cards does the work */
+  display: none;
 }
 
 .howItWorksCardTitle {
   font-family: "Cormorant Garamond", serif;
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 500;
-  color: #102820;
+  color: #F7F4EF;
   letter-spacing: 0.5px;
-  margin: 0 0 8px;
+  margin: 0 0 14px;
+  line-height: 1.25;
 }
 
 .howItWorksCardLead {
-  font-family: "Lato", sans-serif;
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: #A8894A;
-  margin: 0 0 16px;
+  display: none;
 }
 
 .howItWorksCardBody {
   font-family: "Lato", sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 300;
-  line-height: 1.8;
-  color: #6B6B6B;
+  line-height: 1.9;
+  color: rgba(247, 244, 239, 0.55);
   margin: 0;
+  letter-spacing: 0.2px;
 }
 
 /* CTA link below grid */
@@ -418,16 +447,16 @@ a.ctaPrimary {
   font-weight: 500;
   letter-spacing: 2.5px;
   text-transform: uppercase;
-  color: #102820;
+  color: #A8894A;
   text-decoration: none;
-  border-bottom: 1px solid rgba(16, 40, 32, 0.3);
+  border-bottom: 1px solid rgba(168, 137, 74, 0.4);
   padding-bottom: 4px;
   transition: all 0.3s ease;
 }
 
 .howItWorksLink:hover {
-  color: #A8894A;
-  border-bottom-color: #A8894A;
+  color: #C9AA6A;
+  border-bottom-color: #C9AA6A;
   gap: 12px;
 }
 

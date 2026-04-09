@@ -157,26 +157,26 @@ function HowItWorksSection() {
     {
       number: '01',
       title: 'Browse & Discover',
-      lead: 'Find the right service for your loved one',
-      body: 'Explore our curated directory of verified funeral service providers across the Philippines. Filter by location, service type, or budget to find providers that match your needs.',
+      icon: '🔍',
+      body: 'Explore verified providers across the Philippines, filtered by location, type, or budget.',
     },
     {
       number: '02',
       title: 'Compare Packages',
-      lead: 'Make informed decisions with full transparency',
-      body: 'Compare funeral homes, cremation services, memorial packages, and more — side by side with full transparency on what\'s included, so there are no surprises.',
+      icon: '⚖️',
+      body: 'View packages side by side — pricing, inclusions, and details, with no hidden surprises.',
     },
     {
       number: '03',
       title: 'Book a Service',
-      lead: 'Reserve with confidence, fully guided',
-      body: 'Once you\'ve chosen a provider and package, booking is simple and secure. Our team coordinates directly with your chosen partner to ensure a smooth handover.',
+      icon: '📋',
+      body: 'Reserve securely online. We coordinate directly with your chosen provider for a smooth handover.',
     },
     {
       number: '04',
       title: 'Ongoing Support',
-      lead: 'Secure, transparent, and always available',
-      body: 'All payments go through secure, verified channels. Our support team remains available before, during, and after the service — because our commitment doesn\'t end at booking.',
+      icon: '🤝',
+      body: 'Our team stays with you before, during, and after — because care doesn\'t end at booking.',
     },
   ]
 
@@ -205,7 +205,6 @@ function HowItWorksSection() {
                 )}
               </div>
               <h3 className={styles.howItWorksCardTitle}>{step.title}</h3>
-              <p className={styles.howItWorksCardLead}>{step.lead}</p>
               <p className={styles.howItWorksCardBody}>{step.body}</p>
             </div>
           ))}
