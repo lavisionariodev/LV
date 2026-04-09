@@ -265,10 +265,10 @@ function PartnerHighlightSection() {
         <div className={styles.partnerCarousel}>
           <div className={styles.partnerCard}>
             <div className={styles.partnerImageWrapper}>
-              <Image
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src={partners[activeIndex].image}
                 alt={partners[activeIndex].name}
-                fill
                 className={styles.partnerImage}
               />
             </div>
@@ -304,6 +304,80 @@ function PartnerHighlightSection() {
 }
 
 /* ---------------- ABOUT ---------------- */
+function PartnershipSlideshow() {
+  const [activeSlide, setActiveSlide] = useState(0)
+  const intervalRef = useRef(null)
+
+  const slides = [
+    {
+      image: 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80',
+      caption: 'Building trusted partnerships with verified funeral service providers',
+    },
+    {
+      image: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&q=80',
+      caption: 'Negotiating fair, transparent pricing for every family we serve',
+    },
+    {
+      image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800&q=80',
+      caption: 'Connecting families with the right providers across the Philippines',
+    },
+    {
+      image: 'https://images.unsplash.com/photo-1573497491765-dccce02b29df?w=800&q=80',
+      caption: 'Our team ensures every partner meets our standards of dignity and care',
+    },
+  ]
+
+  const startAutoplay = () => {
+    intervalRef.current = setInterval(() => {
+      setActiveSlide(prev => (prev + 1) % slides.length)
+    }, 3500)
+  }
+
+  useEffect(() => {
+    startAutoplay()
+    return () => clearInterval(intervalRef.current)
+  }, [])
+
+  const goTo = (index) => {
+    setActiveSlide(index)
+    clearInterval(intervalRef.current)
+    startAutoplay()
+  }
+
+  return (
+    <div className={styles.partnerSlideshow}>
+      <div className={styles.slideshowTrack}>
+        {slides.map((slide, i) => (
+          <div
+            key={i}
+            className={`${styles.slide} ${i === activeSlide ? styles.slideActive : ''}`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={slide.image}
+              alt={slide.caption}
+              className={styles.slideImage}
+            />
+            <div className={styles.slideCaption}>
+              <p>{slide.caption}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className={styles.slideshowDots}>
+        {slides.map((_, i) => (
+          <button
+            key={i}
+            className={`${styles.slideDot} ${i === activeSlide ? styles.slideDotActive : ''}`}
+            onClick={() => goTo(i)}
+            aria-label={`Go to slide ${i + 1}`}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function AboutSection() {
   const WHY_CARDS = [
     {
@@ -351,20 +425,8 @@ function AboutSection() {
           </div>
 
           <div className={styles.aboutIntroRight}>
-            {/* Trust pillars */}
-            <div className={styles.aboutTrustGrid}>
-              {[
-                { label: 'Verified Providers',    desc: 'Every partner is reviewed and authenticated before listing.' },
-                { label: 'Transparent Pricing',   desc: 'No hidden fees. All inclusions stated clearly upfront.' },
-                { label: 'Compassionate Support', desc: 'Our team is reachable before, during, and after your service.' },
-                { label: 'Secure Transactions',   desc: 'All payments processed through verified, documented channels.' },
-              ].map((item, i) => (
-                <div key={i} className={styles.aboutTrustItem}>
-                  <h4 className={styles.aboutTrustLabel}>{item.label}</h4>
-                  <p className={styles.aboutTrustDesc}>{item.desc}</p>
-                </div>
-              ))}
-            </div>
+            {/* Partnership photo slideshow */}
+            <PartnershipSlideshow />
           </div>
         </div>
 
