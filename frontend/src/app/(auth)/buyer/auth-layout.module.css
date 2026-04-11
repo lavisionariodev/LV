@@ -52,26 +52,93 @@
 .formSection {
   flex: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
   min-height: 100vh;
   padding: 40px;
   background-color: #fff;
   position: relative;
 }
 
-/* Panel Section */
-.panelSection {
+/* Home link is position:absolute — this fills the column and centers the card in full height */
+.formMain {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 0;
+  width: 100%;
+}
+
+/* Same destination as .panelHomeLink; shown only when the welcome panel is hidden (narrow screens). */
+.formHomeLinkMobile {
+  display: none;
+}
+
+/* Panel Section */
+.panelSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
   min-height: 100vh;
   position: relative;
   background-color: var(--color-main-accent);
 }
 
+/* Home link is position:absolute — HELLO stays centered in full panel height */
+.panelMain {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  width: 100%;
+}
+
+/* Anchored to .panelContent (position:relative): sits just above HELLO, out of flow so centering unchanged */
+.panelHomeLink {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  text-decoration: none;
+  opacity: 0.92;
+  transition: opacity 0.2s ease, color 0.2s ease;
+  box-sizing: border-box;
+  pointer-events: auto;
+  transform: translateY(10px);
+}
+
+.panelHomeLink:hover {
+  opacity: 1;
+}
+
+.panelHomeLink:hover span {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.panelHomeLink i {
+  font-size: 18px;
+  line-height: 1;
+}
+
 .panelContent {
+  position: relative;
   text-align: center;
   color: #fff;
   padding: 40px;
@@ -91,7 +158,11 @@
 }
 
 .panelButton {
-  display: inline-block;
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
   background-color: transparent;
   color: #fff;
   font-size: 12px;
@@ -104,6 +175,7 @@
   cursor: pointer;
   transition: all 0.3s ease;
   text-decoration: none;
+  box-sizing: border-box;
 }
 
 .panelButton:hover {
@@ -402,14 +474,52 @@
     display: none;
   }
 
+  .formHomeLinkMobile {
+    display: flex;
+    position: absolute;
+    top: max(24px, env(safe-area-inset-top));
+    left: 0;
+    right: 0;
+    z-index: 3;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 0;
+    padding: 0 20px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-main-accent);
+    text-decoration: none;
+    transition: opacity 0.2s ease, color 0.2s ease;
+    box-sizing: border-box;
+    pointer-events: auto;
+  }
+
+  .formHomeLinkMobile:hover {
+    color: var(--color-secondary-accent, #279354);
+  }
+
+  .formHomeLinkMobile:hover span {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .formHomeLinkMobile i {
+    font-size: 18px;
+    line-height: 1;
+  }
+
   .formSection {
     min-height: 100vh;
     min-height: 100dvh;
     padding: 24px 20px;
+    padding-top: max(24px, env(safe-area-inset-top));
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
     width: 100%;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
   }
 
   .authForm {
@@ -452,8 +562,9 @@
     min-height: 100vh;
     min-height: 100dvh;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
     padding-top: max(16px, env(safe-area-inset-top));
     padding-bottom: max(24px, env(safe-area-inset-bottom));
     padding-left: max(16px, env(safe-area-inset-left));

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import styles from './auth-layout.module.css';
+import { useSiteContent } from '@/lib/siteContent/client';
 
 const BUYER_AUTH_SWITCH_KEY = 'buyer-auth-switch';
 
@@ -18,6 +19,8 @@ export default function AuthLayout({
   showPanel = false 
 }) {
   const [isSwitch, setIsSwitch] = useState(false);
+  const { data: siteContent } = useSiteContent();
+  const systemName = (siteContent?.systemName && String(siteContent.systemName).trim()) || 'La Visionario';
 
   useEffect(() => {
     if (!showPanel) return;
@@ -40,27 +43,47 @@ export default function AuthLayout({
           <>
             {/* Left Side - Auth Form */}
             <div className={styles.formSection}>
-              <div className={styles.authForm}>
-                {children}
+              <Link
+                href="/"
+                className={styles.formHomeLinkMobile}
+                aria-label={`Go to ${systemName}`}
+              >
+                <i className="bx bx-home" aria-hidden />
+                <span>{systemName}</span>
+              </Link>
+              <div className={styles.formMain}>
+                <div className={styles.authForm}>
+                  {children}
+                </div>
               </div>
             </div>
 
             {/* Right Side - Welcome Panel */}
             <div className={styles.panelSection}>
-              <div className={styles.panelContent}>
-                <h1>H E L L O !</h1>
-                <p>
-                  {type === 'signin' 
-                    ? 'Sign up now and enjoy our site' 
-                    : 'Already have an account?'}
-                </p>
-                <Link
-                  href={type === 'signin' ? '/buyer/signup' : '/buyer/login'}
-                  className={styles.panelButton}
-                  onClick={setBuyerAuthSwitch}
-                >
-                  {type === 'signin' ? 'Sign Up' : 'Log In'}
-                </Link>
+              <div className={styles.panelMain}>
+                <div className={styles.panelContent}>
+                  <Link
+                    href="/"
+                    className={styles.panelHomeLink}
+                    aria-label={`Go to ${systemName}`}
+                  >
+                    <i className="bx bx-home" aria-hidden />
+                    <span>{systemName}</span>
+                  </Link>
+                  <h1>H E L L O !</h1>
+                  <p>
+                    {type === 'signin' 
+                      ? 'Sign up now and enjoy our site' 
+                      : 'Already have an account?'}
+                  </p>
+                  <Link
+                    href={type === 'signin' ? '/buyer/signup' : '/buyer/login'}
+                    className={styles.panelButton}
+                    onClick={setBuyerAuthSwitch}
+                  >
+                    {type === 'signin' ? 'Sign Up' : 'Log In'}
+                  </Link>
+                </div>
               </div>
             </div>
           </>

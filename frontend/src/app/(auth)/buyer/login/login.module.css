@@ -31,9 +31,9 @@
   box-shadow: none;
 }
 
-/* Tighter gap between email and password fields */
+/* Login-only: space between email and password (signup uses signup.module.css .emailInput) */
 .emailInput {
-  margin-bottom: 5px !important;
+  margin-bottom: 12px !important;
 }
 
 /* Wrapper only for positioning the eye icon; input keeps same height as email/name */
