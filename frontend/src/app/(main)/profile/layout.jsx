@@ -13,6 +13,11 @@ import { useProfile } from '@/contexts/ProfileContext';
 import BottomSheet from './components/BottomSheet';
 import { signOut as signOutSession } from '@/lib/auth/session';
 import LogoutModal from '@/components/ui/Modal/Logout';
+import {
+  PROFILE_DOB_MONTHS,
+  dobPartsFromIso,
+  isoFromDobParts,
+} from '@/utils/profileDob';
 
 /* ─────────────────────────────────────────
    Hook — detect mobile viewport
@@ -320,6 +325,9 @@ export default function ProfileLayout({ children }) {
   const [logoutOpen, setLogoutOpen] = useState(false);
   // Ref callback so AccountPage can hand us its save trigger
   const saveTriggerRef = useRef(null);
+  const setSaveTrigger = useCallback((fn) => {
+    saveTriggerRef.current = fn;
+  }, []);
 
   const handleMobileNavClick = useCallback((tab) => {
     setOpenSheet(tab);
@@ -357,9 +365,10 @@ export default function ProfileLayout({ children }) {
   }, []);
 
   // Called by the top-bar Save button (account sheet)
-  const handleSheetSave = useCallback(() => {
-    if (saveTriggerRef.current) {
-      saveTriggerRef.current();
+  const handleSheetSave = useCallback(async () => {
+    const run = saveTriggerRef.current;
+    if (run) {
+      await run();
     }
   }, []);
 
@@ -435,7 +444,7 @@ export default function ProfileLayout({ children }) {
         >
           {openSheet === 'account' && (
             <AccountSheetContent
-              onSaveTriggerReady={(fn) => { saveTriggerRef.current = fn; }}
+              onSaveTriggerReady={setSaveTrigger}
               onSavingChange={setSheetSaving}
               onSaveComplete={handleSheetClose}
             />
@@ -483,7 +492,8 @@ function AccountSheetContent({ onSaveTriggerReady, onSavingChange, onSaveComplet
  *  - No Save button (sheet top-bar Save drives it)
  *  - Reports saving state upward via onSavingChange
  */
-function AccountSheetForm({ onSaveTriggerReady, onSavingChange, onSaveComplete }) {  const {
+function AccountSheetForm({ onSaveTriggerReady, onSavingChange, onSaveComplete }) {
+  const {
     user,
     profile,
     saving,
@@ -496,36 +506,34 @@ function AccountSheetForm({ onSaveTriggerReady, onSavingChange, onSaveComplete }
     initials,
   } = useProfile();
 
-  const [gender, setGender] = useState('');
   const [dob, setDob] = useState({ day: '', month: '', year: '' });
-  const [address, setAddress] = useState({
-    street:   profile?.address_street   || '',
-    city:     profile?.address_city     || '',
-    province: profile?.address_province || '',
-    zip:      profile?.address_zip      || '',
-  });
+  const dobRef = useRef(dob);
+  const handleSaveRef = useRef(handleSave);
+  dobRef.current = dob;
+  handleSaveRef.current = handleSave;
 
-  // Wire up the save trigger so the sheet's top bar can call it
   useEffect(() => {
-    onSaveTriggerReady(() => {
-      handleSave();
-      if (onSaveComplete) onSaveComplete();
+    setDob(dobPartsFromIso(profile?.date_of_birth));
+  }, [profile?.date_of_birth]);
+
+  // Wire up the save trigger so the sheet's top bar can call it (async save + close on success)
+  useEffect(() => {
+    onSaveTriggerReady(() => async () => {
+      const d = dobRef.current;
+      const iso = isoFromDobParts(d.day, d.month, d.year);
+      const ok = await handleSaveRef.current({ date_of_birth: iso });
+      if (ok && onSaveComplete) onSaveComplete();
     });
-  }, [handleSave]);           // eslint-disable-line react-hooks/exhaustive-deps
+  }, [onSaveTriggerReady, onSaveComplete]);
 
   // Mirror saving state upward
   useEffect(() => {
     onSavingChange(saving);
-  }, [saving]);               // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleAddressChange = (e) =>
-    setAddress((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }, [saving, onSavingChange]);
 
   const GENDER_OPTIONS = ['Male', 'Female', 'Other'];
-  const MONTHS = ['January','February','March','April','May','June',
-                  'July','August','September','October','November','December'];
-  const DAYS   = Array.from({ length: 31 }, (_, i) => i + 1);
-  const YEARS  = Array.from({ length: 80 },  (_, i) => new Date().getFullYear() - i);
+  const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
+  const YEARS = Array.from({ length: 80 }, (_, i) => new Date().getFullYear() - i);
 
   return (
     <div className={sheetStyles.accountForm}>
@@ -585,10 +593,15 @@ function AccountSheetForm({ onSaveTriggerReady, onSavingChange, onSaveComplete }
             name="username"
             value={profile?.username || ''}
             onChange={handleChange}
+            disabled={profile?.username_locked}
             className={sheetStyles.fieldInput}
             placeholder="e.g. jdelacruz"
           />
-          <p className={sheetStyles.fieldHint}>Username can only be changed once.</p>
+          <p className={sheetStyles.fieldHint}>
+            {profile?.username_locked
+              ? 'Username is set and cannot be changed.'
+              : 'Username can only be changed once.'}
+          </p>
         </div>
 
         <div className={sheetStyles.fieldGroup}>
@@ -631,10 +644,10 @@ function AccountSheetForm({ onSaveTriggerReady, onSavingChange, onSaveComplete }
               <label key={g} className={sheetStyles.radioLabel}>
                 <input
                   type="radio"
-                  name="sh_gender"
+                  name="gender"
                   value={g}
-                  checked={gender === g}
-                  onChange={() => setGender(g)}
+                  checked={profile?.gender === g}
+                  onChange={handleChange}
                   className={sheetStyles.radioInput}
                 />
                 <span className={sheetStyles.radioCustom} />
@@ -649,7 +662,7 @@ function AccountSheetForm({ onSaveTriggerReady, onSavingChange, onSaveComplete }
           <div className={sheetStyles.dobRow}>
             {[
               { key: 'day',   opts: DAYS,   ph: 'Day'   },
-              { key: 'month', opts: MONTHS, ph: 'Month' },
+              { key: 'month', opts: PROFILE_DOB_MONTHS, ph: 'Month' },
               { key: 'year',  opts: YEARS,  ph: 'Year'  },
             ].map(({ key, opts, ph }) => (
               <div key={key} className={sheetStyles.selectWrap}>
@@ -659,7 +672,9 @@ function AccountSheetForm({ onSaveTriggerReady, onSavingChange, onSaveComplete }
                   onChange={(e) => setDob((p) => ({ ...p, [key]: e.target.value }))}
                 >
                   <option value="">{ph}</option>
-                  {opts.map((o) => <option key={o} value={o}>{o}</option>)}
+                  {opts.map((o) => (
+                    <option key={o} value={o}>{o}</option>
+                  ))}
                 </select>
                 <span className={sheetStyles.chevron}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24"
@@ -677,33 +692,33 @@ function AccountSheetForm({ onSaveTriggerReady, onSavingChange, onSaveComplete }
           <input
             id="sh_street"
             type="text"
-            name="street"
-            value={address.street}
-            onChange={handleAddressChange}
+            name="address_street"
+            value={profile?.address_street || ''}
+            onChange={handleChange}
             className={sheetStyles.fieldInput}
             placeholder="Street address"
           />
           <input
             type="text"
-            name="city"
-            value={address.city}
-            onChange={handleAddressChange}
+            name="address_city"
+            value={profile?.address_city || ''}
+            onChange={handleChange}
             className={`${sheetStyles.fieldInput} ${sheetStyles.fieldInputSpaced}`}
             placeholder="City"
           />
           <input
             type="text"
-            name="province"
-            value={address.province}
-            onChange={handleAddressChange}
+            name="address_province"
+            value={profile?.address_province || ''}
+            onChange={handleChange}
             className={`${sheetStyles.fieldInput} ${sheetStyles.fieldInputSpaced}`}
             placeholder="Province / State"
           />
           <input
             type="text"
-            name="zip"
-            value={address.zip}
-            onChange={handleAddressChange}
+            name="address_zip"
+            value={profile?.address_zip || ''}
+            onChange={handleChange}
             className={`${sheetStyles.fieldInput} ${sheetStyles.fieldInputSpaced}`}
             placeholder="ZIP code"
           />

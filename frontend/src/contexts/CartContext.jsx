@@ -107,10 +107,6 @@ export function CartProvider({ children }) {
     [userId],
   )
 
-  const setItemsOverride = useCallback((newItems) => {
-    setItems(Array.isArray(newItems) ? newItems : [])
-  }, [])
-
   const cartCount = items.reduce((sum, i) => sum + (i.qty ?? 1), 0)
 
   const value = {
@@ -120,8 +116,6 @@ export function CartProvider({ children }) {
     addItem,
     updateQty,
     removeItem,
-    setItems: setItemsOverride,
-    refreshCart: () => loadCart(cartUser),
   }
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>

@@ -4,7 +4,7 @@
  */
 
 /** Built-in default section ids (used when no template is saved). */
-export const SECTION_IDS = ['basic', 'sales', 'others']
+const SECTION_IDS = ['basic', 'sales', 'others']
 
 const MAX_SECTION_ID_LEN = 64
 
@@ -140,7 +140,7 @@ export function mergeSectionConfig(raw) {
 }
 
 /** Sort index for a section id within an ordered template (unknown ids sort last). */
-export function sectionOrderIndex(sectionId, orderedSectionIds) {
+function sectionOrderIndex(sectionId, orderedSectionIds) {
   const order =
     Array.isArray(orderedSectionIds) && orderedSectionIds.length
       ? orderedSectionIds
@@ -151,7 +151,7 @@ export function sectionOrderIndex(sectionId, orderedSectionIds) {
 }
 
 /** Known field ids → default section (for seeds and migrations). */
-export const DEFAULT_SECTION_BY_FIELD_ID = {
+const DEFAULT_SECTION_BY_FIELD_ID = {
   listing_images: 'basic',
   listing_name: 'basic',
   description: 'basic',
