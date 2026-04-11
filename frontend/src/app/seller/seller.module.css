@@ -75,20 +75,35 @@
     height: 100vh;
   }
 
+  /*
+   * Single bottom inset for the fixed bottom nav (AppSidebar ~56px + safe area).
+   * Do not also pad .main — that stacked with .content and looked like a huge empty band on every page.
+   */
   .main {
-    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+    padding-bottom: 0;
   }
 
   .content {
     padding: 16px;
-    padding-bottom: calc(80px + env(safe-area-inset-bottom) + 40px);
+    padding-bottom: calc(56px + env(safe-area-inset-bottom) + 16px);
+  }
+
+  /*
+   * /seller/products/new-listing — full-page form uses its own fixed footer; trim layout padding.
+   */
+  .content:has([class*='newListingPage']) {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
   }
 }
 
 @media (max-width: 600px) {
   .content {
     padding: 14px;
-    padding-bottom: calc(80px + env(safe-area-inset-bottom) + 40px);
+    padding-bottom: calc(56px + env(safe-area-inset-bottom) + 14px);
+  }
+
+  .content:has([class*='newListingPage']) {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
   }
 }
 

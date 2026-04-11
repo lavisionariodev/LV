@@ -69,7 +69,7 @@ const SIDEBAR_CONFIG = {
           { href: '/seller/products/services', label: 'Services' },
           { href: '/seller/products/packages', label: 'Packages' },
           { href: '/seller/products/catalog', label: 'Catalog' },
-          { href: '/seller/products/new', label: 'Add New Listing' },
+          { href: '/seller/products/new-listing', label: 'Add New Listing' },
         ],
       },
       { href: '/seller/customers', label: 'Customers', icon: TbUsers },

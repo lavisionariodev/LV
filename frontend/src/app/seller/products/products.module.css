@@ -129,6 +129,57 @@
   box-shadow: 0 0 0 3px rgba(32, 79, 56, 0.14);
 }
 
+/* Shown when seller sidebar is hidden (≤860px) — same destination as sidebar “Add New Listing” */
+.addListingMobile {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .addListingMobile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.55rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #ffffff;
+    background: #204f38;
+    border: 1px solid #204f38;
+    border-radius: 14px;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .addListingMobile:hover {
+    background: #163628;
+    border-color: #163628;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(22, 54, 40, 0.25);
+  }
+
+  .addListingMobile:focus-visible {
+    outline: 2px solid #204f38;
+    outline-offset: 2px;
+  }
+
+  .filtersRow {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0.65rem;
+  }
+
+  .searchWrap {
+    flex: 1 1 auto;
+    max-width: none;
+    width: 100%;
+  }
+}
+
 .typeSelect {
   min-width: 160px;
   font-size: 0.9rem;
@@ -1060,6 +1111,150 @@
   box-shadow: 0 0 0 2px rgba(32, 79, 56, 0.1);
 }
 
+/* Mobile-friendly select: native <select> popups are OS-drawn and often wider than the field.
+   ListingFormSelectControl uses a bottom sheet below 640px — trigger matches text field width. */
+.listingFormSelectTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  line-height: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.listingFormSelectTriggerLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.listingFormSelectTriggerCaret {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  color: #64748b;
+  opacity: 0.9;
+}
+
+.listingFormSelectSheetRoot {
+  position: fixed;
+  inset: 0;
+  /* Above seller fixed footers and product edit modal (1100) */
+  z-index: 1200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+}
+
+.listingFormSelectSheetBackdrop {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: rgba(15, 23, 42, 0.45);
+  cursor: pointer;
+}
+
+.listingFormSelectSheet {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  max-height: min(72vh, 440px);
+  background: #ffffff;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -10px 40px rgba(15, 23, 42, 0.18);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  animation: listingSelectSheetIn 0.22s ease;
+}
+
+@keyframes listingSelectSheetIn {
+  from {
+    transform: translateY(100%);
+    opacity: 0.92;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.listingFormSelectSheetHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.listingFormSelectSheetTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.listingFormSelectSheetClose {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.listingFormSelectSheetList {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.35rem 0 0.75rem;
+}
+
+.listingFormSelectSheetRow {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.85rem 1.1rem;
+  border: none;
+  border-bottom: 1px solid #f1f5f9;
+  background: #ffffff;
+  font-size: 1rem;
+  text-align: left;
+  color: #111827;
+  cursor: pointer;
+}
+
+.listingFormSelectSheetRow:last-child {
+  border-bottom: none;
+}
+
+.listingFormSelectSheetRow:active {
+  background: #f8fafc;
+}
+
+.listingFormSelectSheetRowActive {
+  background: #eff6ff;
+  color: #1e40af;
+  font-weight: 600;
+}
+
 .listingFormTextarea {
   min-height: 100px;
   resize: none;
@@ -1442,16 +1637,17 @@
   }
 
   .filtersRow {
-    justify-content: space-between;
-    align-items: center;
-    flex-direction: row;
-    flex-wrap: nowrap;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0.65rem;
   }
 
   .searchWrap {
-    flex: 1;
+    flex: 1 1 auto;
     min-width: 0;
     max-width: none;
+    width: 100%;
   }
 
   .typeSelect {
@@ -1879,4 +2075,339 @@
   font-size: 0.8rem;
   color: #64748b;
   line-height: 1.35;
+}
+
+
+/* ==========================================================
+   NEW LISTING PAGE — MOBILE RESPONSIVE (added)
+   Targets the full-page /seller/products/new-listing route only.
+   All selectors are scoped to new-listing-specific classes
+   so existing modal/product-list styles are not affected.
+   ========================================================== */
+
+/* ── 480 px and below: phones ── */
+@media (max-width: 480px) {
+
+  /* Page container — bottom nav padding comes from seller layout (scoped); avoid double gap */
+  .newListingPage {
+    gap: 0.75rem;
+    padding-bottom: 0;
+  }
+
+  /* Scroll clearance so the last field sits above the fixed Cancel / Save bar */
+  .newListingFormColumn {
+    padding-bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Collapse the two-panel layout to a single column */
+  .newListingLayout {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  /* ── Aside: collapse stepper + tip into a compact horizontal pill row ── */
+  .newListingAside {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    flex-direction: column;   /* overrides 1024 px row; stack vertically on phones */
+    gap: 0.65rem;
+    padding-right: 0;
+  }
+
+  /* Stepper: shrink padding, show steps as a tighter horizontal list */
+  .newListingStepper {
+    flex: none;
+    min-width: 0;
+    width: 100%;
+    padding: 0.55rem 0.65rem;
+    border-radius: 10px;
+  }
+
+  /* Make step list horizontal on mobile so it doesn't eat vertical space */
+  .newListingStepperList {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+    padding: 0;
+    --listing-step-label-pt: 0;
+    --listing-step-label-fs: 0.75rem;
+    --listing-step-label-lh: 1.2;
+  }
+
+  .newListingStepItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    grid-template-columns: unset;
+    gap: 0.25rem 0;
+  }
+
+  /* Rotate the track to horizontal: dot on top, line to the right */
+  .newListingStepTrack {
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .newListingStepDotAlign {
+    padding-top: 0;
+    height: auto;
+    width: auto;
+    flex-shrink: 0;
+  }
+
+  /* Connector line becomes a horizontal spacer between items */
+  .newListingStepLine {
+    flex: 1;
+    width: auto;
+    height: 2px;
+    min-height: unset;
+    margin: 0 0.2rem;
+  }
+
+  /* Labels sit below dots, centered */
+  .newListingStepLabel {
+    text-align: center;
+    padding: 0 0.1rem;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 5rem;
+  }
+
+  /* Tip card: reduce padding, smaller font */
+  .newListingTipCard {
+    flex: none;
+    min-width: 0;
+    width: 100%;
+    border-radius: 10px;
+    border-top-width: 2px;
+  }
+
+  .newListingTipCardHeader {
+    padding: 0.45rem 0.65rem;
+  }
+
+  .newListingTipCardTitle {
+    font-size: 0.75rem;
+  }
+
+  .newListingTipCardBody {
+    padding: 0.5rem 0.65rem 0.6rem;
+    font-size: 0.75rem;
+  }
+
+  /* ── Form card: remove excess padding ── */
+  .newListingCard {
+    padding: 0.9rem 0.85rem 1rem;
+    border-radius: 12px;
+  }
+
+  /* Form gap */
+  .newListingForm {
+    gap: 0.85rem;
+  }
+
+  /* ── Form rows: stack label above control on mobile ── */
+  .listingFormRow {
+    grid-template-columns: 1fr;   /* override the 26% / 1fr split */
+    gap: 0.3rem;
+    padding: 0.6rem 0;
+  }
+
+  /* Label column: remove top padding that was for vertical alignment in 2-col */
+  .listingFormLabelCol {
+    padding-top: 0;
+  }
+
+  .listingFormLabelText {
+    font-size: 0.8125rem;
+    font-weight: 600;   /* bump weight slightly so label reads as a proper caption */
+  }
+
+  .listingFormSublabel {
+    margin-top: 0.1rem;
+  }
+
+  /* Controls take full width (already 100% but reinforce box-sizing) */
+  .listingFormInput,
+  .listingFormSelect,
+  .listingFormTextarea,
+  .listingFormTextareaInShell {
+    font-size: 1rem;           /* prevent iOS zoom on focus (must be ≥ 16px, 1rem = 16px) */
+    padding: 0.55rem 0.65rem;
+    border-radius: 8px;        /* rounder on mobile feels more touch-friendly */
+  }
+
+  .listingFormSelect {
+    /* Native selects need a little extra height for thumb tap */
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+  }
+
+  .listingFormTextarea,
+  .listingFormTextareaInShell {
+    min-height: 90px;
+    font-size: 1rem;
+  }
+
+  /* Textarea shell */
+  .listingFormTextareaShell {
+    border-radius: 8px;
+  }
+
+  .listingFormTextareaToolbar {
+    padding: 0.3rem 0.55rem;
+  }
+
+  .listingFormTextareaToolbarHint,
+  .listingFormTextareaToolbarCount {
+    font-size: 0.7rem;
+  }
+
+  /* Char counter for single-line inputs */
+  .listingFormFieldWithCount .listingFormInput {
+    padding-right: 3.5rem;
+    font-size: 1rem;
+  }
+
+  .listingFormCharCount {
+    font-size: 0.68rem;
+  }
+
+  /* ── Image upload: smaller tiles that wrap cleanly in a 375px viewport ── */
+  .productModalUploadRow {
+    --listing-upload-tile: 88px;
+    gap: 0.55rem;
+  }
+
+  .productModalUploadPreview {
+    border-radius: 10px;
+  }
+
+  .productModalUploadAddTile {
+    border-radius: 10px;
+  }
+
+  .productModalUploadRemove {
+    width: 22px;
+    height: 22px;
+    font-size: 0.8rem;
+    top: 4px;
+    right: 4px;
+  }
+
+  /* ── String list (package options, inclusions) ── */
+  .listingFormStringListRow {
+    gap: 0.35rem;
+  }
+
+  .listingFormStringListRemove {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.78rem;
+    min-width: 3.5rem;        /* ensure touch target */
+    text-align: center;
+  }
+
+  .listingFormStringListAdd {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    width: 100%;              /* full-width on mobile for easy tapping */
+    text-align: center;
+  }
+
+  /* ── Section title ── */
+  .listingFormSectionTitle {
+    font-size: 0.88rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .listingFormSectionCard {
+    padding: 0.5rem 0 0;
+  }
+
+  /* ── Footer actions: full-width stacked buttons ── */
+  .newListingFooter {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background: #ffffff;
+    border-top: 1px solid #e5e7eb;
+    box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.08);
+    /* Base bottom inset + home indicator — keeps actions off the physical edge */
+    padding: 0.75rem 1rem calc(0.65rem + env(safe-area-inset-bottom, 0px));
+    flex-direction: row;
+    justify-content: stretch;
+    gap: 0.6rem;
+    flex-wrap: nowrap;
+  }
+
+  /* Cancel and Save both grow to fill the footer evenly */
+  .newListingFooter .newListingFooterLink,
+  .newListingFooter .productModalPrimary {
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+    padding: 0.7rem 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 12px;
+    min-height: 2.75rem;   /* 44 px touch target */
+  }
+
+  /* Cancel button: outlined style on mobile */
+  .newListingFooter .newListingFooterLink {
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #334155;
+  }
+
+  .newListingFooter .newListingFooterLink:hover {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+    color: #334155;
+    box-shadow: none;
+    transform: none;
+  }
+
+  /* Visibility banner */
+  .shopVisibilityBanner {
+    font-size: 0.82rem;
+    padding: 0.7rem 0.85rem;
+    border-radius: 10px;
+  }
+
+  /* Upload note */
+  .listingFormUploadNote {
+    font-size: 0.75rem;
+  }
+}
+
+/* ── 360 px: very narrow phones (Samsung A-series etc.) ── */
+@media (max-width: 360px) {
+  .newListingCard {
+    padding: 0.75rem 0.7rem 0.85rem;
+  }
+
+  .newListingStepLabel {
+    font-size: 0.65rem;
+    max-width: 4rem;
+  }
+
+  .productModalUploadRow {
+    --listing-upload-tile: 76px;
+  }
+
+  .newListingFooter {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    gap: 0.45rem;
+  }
 }
