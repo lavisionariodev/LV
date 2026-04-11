@@ -3,29 +3,37 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileContext';
+import {
+  PROFILE_DOB_MONTHS,
+  dobPartsFromIso,
+  isoFromDobParts,
+} from '@/utils/profileDob';
 import styles from '../profile.module.css';
 
 const GENDER_OPTIONS = ['Male', 'Female', 'Other'];
-const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-const DAYS  = Array.from({ length: 31 }, (_, i) => i + 1);
-const YEARS = Array.from({ length: 80 },  (_, i) => new Date().getFullYear() - i);
+const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
+const YEARS = Array.from({ length: 80 }, (_, i) => new Date().getFullYear() - i);
 
 export default function AccountPage() {
   const router = useRouter();
   const {
-    user, profile, saving, uploading,
-    handleChange, handleSave, handleAvatarFileChange,
-    handleRemoveAvatar, fileInputRef, initials,
+    user,
+    profile,
+    saving,
+    uploading,
+    handleChange,
+    handleSave,
+    handleAvatarFileChange,
+    handleRemoveAvatar,
+    fileInputRef,
+    initials,
   } = useProfile();
 
-  const [gender, setGender] = useState(profile.gender || '');
   const [dob, setDob] = useState({ day: '', month: '', year: '' });
-  const [address, setAddress] = useState({
-    street:   profile.address_street   || '',
-    city:     profile.address_city     || '',
-    province: profile.address_province || '',
-    zip:      profile.address_zip      || '',
-  });
+
+  useEffect(() => {
+    setDob(dobPartsFromIso(profile.date_of_birth));
+  }, [profile.date_of_birth]);
 
   // On mobile: never render this page directly.
   // The sheet in layout.jsx handles profile editing.
@@ -36,12 +44,10 @@ export default function AccountPage() {
     }
   }, [router]);
 
-  const handleAddressChange = (e) =>
-    setAddress((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-
   const handleFormSave = (e) => {
     e.preventDefault();
-    handleSave();
+    const iso = isoFromDobParts(dob.day, dob.month, dob.year);
+    void handleSave({ date_of_birth: iso });
   };
 
   return (
@@ -60,39 +66,60 @@ export default function AccountPage() {
             <div className={styles.formRow}>
               <label htmlFor="username" className={styles.formRowLabel}>Username</label>
               <div className={styles.formRowField}>
-                <input id="username" type="text" name="username"
-                  value={profile.username || ''} onChange={handleChange}
-                  className={styles.input} placeholder="e.g. jdelacruz" />
-                <p className={styles.fieldHint}>Username can only be changed once.</p>
+                <input
+                  id="username"
+                  type="text"
+                  name="username"
+                  value={profile.username || ''}
+                  onChange={handleChange}
+                  disabled={profile.username_locked}
+                  className={styles.input}
+                  placeholder="e.g. jdelacruz"
+                />
+                <p className={styles.fieldHint}>
+                  {profile.username_locked
+                    ? 'Username is set and cannot be changed.'
+                    : 'Username can only be changed once.'}
+                </p>
               </div>
             </div>
 
             <div className={styles.formRow}>
               <label htmlFor="full_name" className={styles.formRowLabel}>Name</label>
               <div className={styles.formRowField}>
-                <input id="full_name" type="text" name="full_name"
-                  value={profile.full_name || ''} onChange={handleChange}
-                  className={styles.input} placeholder="Enter your full name" />
+                <input
+                  id="full_name"
+                  type="text"
+                  name="full_name"
+                  value={profile.full_name || ''}
+                  onChange={handleChange}
+                  className={styles.input}
+                  placeholder="Enter your full name"
+                />
               </div>
             </div>
 
             <div className={styles.formRow}>
               <span className={styles.formRowLabel}>Email</span>
               <div className={styles.formRowField}>
-                {user.email
+                {user?.email
                   ? <span className={styles.profileInfoValue}>{user.email}</span>
-                  : <button type="button" className={styles.addLink}>Add</button>}
+                  : <span className={styles.profileInfoValue}>—</span>}
               </div>
             </div>
 
             <div className={styles.formRow}>
               <label htmlFor="phone" className={styles.formRowLabel}>Phone Number</label>
               <div className={styles.formRowField}>
-                {profile.phone
-                  ? <input id="phone" type="tel" name="phone"
-                      value={profile.phone || ''} onChange={handleChange}
-                      className={styles.input} placeholder="+63 9XX XXX XXXX" />
-                  : <button type="button" className={styles.addLink}>Add</button>}
+                <input
+                  id="phone"
+                  type="tel"
+                  name="phone"
+                  value={profile.phone || ''}
+                  onChange={handleChange}
+                  className={styles.input}
+                  placeholder="+63 9XX XXX XXXX"
+                />
               </div>
             </div>
 
@@ -101,9 +128,14 @@ export default function AccountPage() {
               <div className={`${styles.formRowField} ${styles.genderRow}`}>
                 {GENDER_OPTIONS.map((g) => (
                   <label key={g} className={styles.radioLabel}>
-                    <input type="radio" name="gender" value={g}
-                      checked={gender === g} onChange={() => setGender(g)}
-                      className={styles.radioInput} />
+                    <input
+                      type="radio"
+                      name="gender"
+                      value={g}
+                      checked={profile.gender === g}
+                      onChange={handleChange}
+                      className={styles.radioInput}
+                    />
                     <span className={styles.radioCustom} />
                     {g}
                   </label>
@@ -116,14 +148,19 @@ export default function AccountPage() {
               <div className={`${styles.formRowField} ${styles.dobRow}`}>
                 {[
                   { key: 'day', opts: DAYS, ph: 'Day' },
-                  { key: 'month', opts: MONTHS, ph: 'Month' },
+                  { key: 'month', opts: PROFILE_DOB_MONTHS, ph: 'Month' },
                   { key: 'year', opts: YEARS, ph: 'Year' },
                 ].map(({ key, opts, ph }) => (
                   <div key={key} className={styles.selectWrapper}>
-                    <select className={styles.selectInput} value={dob[key]}
-                      onChange={(e) => setDob((p) => ({ ...p, [key]: e.target.value }))}>
+                    <select
+                      className={styles.selectInput}
+                      value={dob[key]}
+                      onChange={(e) => setDob((p) => ({ ...p, [key]: e.target.value }))}
+                    >
                       <option value="">{ph}</option>
-                      {opts.map((o) => <option key={o} value={o}>{o}</option>)}
+                      {opts.map((o) => (
+                        <option key={o} value={o}>{o}</option>
+                      ))}
                     </select>
                     <span className={styles.selectChevron}>
                       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
@@ -139,17 +176,41 @@ export default function AccountPage() {
             <div className={styles.formRow}>
               <label htmlFor="address_street" className={styles.formRowLabel}>Address</label>
               <div className={styles.formRowField}>
-                <input id="address_street" type="text" name="street"
-                  value={address.street} onChange={handleAddressChange}
-                  className={styles.input} placeholder="Street address" />
+                <input
+                  id="address_street"
+                  type="text"
+                  name="address_street"
+                  value={profile.address_street || ''}
+                  onChange={handleChange}
+                  className={styles.input}
+                  placeholder="Street address"
+                />
                 <div className={styles.addressGrid}>
-                  <input type="text" name="city" value={address.city}
-                    onChange={handleAddressChange} className={styles.input} placeholder="City" />
-                  <input type="text" name="province" value={address.province}
-                    onChange={handleAddressChange} className={styles.input} placeholder="Province / State" />
-                  <input type="text" name="zip" value={address.zip}
-                    onChange={handleAddressChange} className={styles.input}
-                    placeholder="ZIP code" style={{ maxWidth: '120px' }} />
+                  <input
+                    type="text"
+                    name="address_city"
+                    value={profile.address_city || ''}
+                    onChange={handleChange}
+                    className={styles.input}
+                    placeholder="City"
+                  />
+                  <input
+                    type="text"
+                    name="address_province"
+                    value={profile.address_province || ''}
+                    onChange={handleChange}
+                    className={styles.input}
+                    placeholder="Province / State"
+                  />
+                  <input
+                    type="text"
+                    name="address_zip"
+                    value={profile.address_zip || ''}
+                    onChange={handleChange}
+                    className={styles.input}
+                    placeholder="ZIP code"
+                    style={{ maxWidth: '120px' }}
+                  />
                 </div>
               </div>
             </div>
@@ -169,12 +230,24 @@ export default function AccountPage() {
         <div className={styles.avatarPanel}>
           <div className={styles.avatarDivider} />
           <div className={styles.avatarPanelInner}>
-            <button type="button" className={styles.avatarButton}
+            <button
+              type="button"
+              className={styles.avatarButton}
               onClick={() => fileInputRef.current?.click()}
-              disabled={uploading} aria-label="Change profile photo">
+              disabled={uploading}
+              aria-label="Change profile photo"
+            >
               {profile.avatar_url
-                ? <img src={profile.avatar_url} alt={profile.full_name || 'Profile avatar'} className={styles.avatarImage} />
-                : <div className={styles.avatarPlaceholder}><span>{initials || '?'}</span></div>}
+                ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt={profile.full_name || 'Profile avatar'}
+                    className={styles.avatarImage}
+                  />
+                )
+                : (
+                  <div className={styles.avatarPlaceholder}><span>{initials || '?'}</span></div>
+                )}
               <div className={styles.avatarBadge}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
                   fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -183,15 +256,28 @@ export default function AccountPage() {
                 </svg>
               </div>
             </button>
-            <input ref={fileInputRef} type="file" accept="image/*"
-              className={styles.fileInput} onChange={handleAvatarFileChange} />
-            <button type="button" className={styles.selectImageBtn}
-              onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className={styles.fileInput}
+              onChange={handleAvatarFileChange}
+            />
+            <button
+              type="button"
+              className={styles.selectImageBtn}
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+            >
               Select Image
             </button>
             {profile.avatar_url && (
-              <button type="button" className={styles.removeAvatarBtn}
-                onClick={handleRemoveAvatar} disabled={uploading}>
+              <button
+                type="button"
+                className={styles.removeAvatarBtn}
+                onClick={handleRemoveAvatar}
+                disabled={uploading}
+              >
                 Remove photo
               </button>
             )}

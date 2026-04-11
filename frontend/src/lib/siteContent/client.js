@@ -54,11 +54,7 @@ export function useSiteContent() {
           setData(rowToSiteContent(nextRow))
         },
       )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          // no-op; just confirming subscription
-        }
-      })
+      .subscribe()
 
     return () => {
       isMounted = false

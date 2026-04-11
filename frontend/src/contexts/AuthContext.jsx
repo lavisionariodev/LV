@@ -4,6 +4,10 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { supabase } from '@/lib/supabase/client';
 import { getUser, onAuthStateChange } from '@/lib/auth/session';
 import { getUserRole, isBuyerRole, isSellerRole } from '@/lib/auth/roles';
+import { mapProfileRow } from '@/utils/profileDefaults';
+
+const PROFILE_SELECT =
+  'full_name, avatar_url, username, username_locked, phone, gender, date_of_birth, address_street, address_city, address_province, address_zip';
 
 /**
  * Auth context: current user, profile, and role (from public.users).
@@ -14,29 +18,26 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState({ full_name: '', avatar_url: '' });
+  const [profile, setProfile] = useState(() => mapProfileRow(null));
   const [role, setRole] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
   const loadProfile = useCallback(async (nextUser) => {
     if (!nextUser) {
-      setProfile({ full_name: '', avatar_url: '' });
+      setProfile(mapProfileRow(null));
       return;
     }
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('full_name, avatar_url')
+      .select(PROFILE_SELECT)
       .eq('id', nextUser.id)
       .maybeSingle();
 
     if (!error && data) {
-      setProfile({
-        full_name: data.full_name || '',
-        avatar_url: data.avatar_url || '',
-      });
+      setProfile(mapProfileRow(data));
     } else {
-      setProfile({ full_name: '', avatar_url: '' });
+      setProfile(mapProfileRow(null));
     }
   }, []);
 
@@ -54,11 +55,6 @@ export function AuthProvider({ children }) {
     await loadProfile(user);
   }, [user, loadProfile]);
 
-  const refreshRole = useCallback(async () => {
-    if (!user) return;
-    await loadRole(user);
-  }, [user, loadRole]);
-
   useEffect(() => {
     let mounted = true;
 
@@ -71,7 +67,7 @@ export function AuthProvider({ children }) {
         if (currentUser) {
           await Promise.all([loadProfile(currentUser), loadRole(currentUser)]);
         } else {
-          setProfile({ full_name: '', avatar_url: '' });
+          setProfile(mapProfileRow(null));
           setRole(null);
         }
       } finally {
@@ -90,7 +86,7 @@ export function AuthProvider({ children }) {
         loadProfile(nextUser);
         loadRole(nextUser);
       } else {
-        setProfile({ full_name: '', avatar_url: '' });
+        setProfile(mapProfileRow(null));
         setRole(null);
       }
     });
@@ -110,11 +106,10 @@ export function AuthProvider({ children }) {
       role,
       authLoading,
       refreshProfile,
-      refreshRole,
       isBuyer: isBuyerRole(role),
       isSeller: isSellerRole(role),
     }),
-    [user, profile, role, authLoading, refreshProfile, refreshRole]
+    [user, profile, role, authLoading, refreshProfile]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -127,5 +122,3 @@ export function useAuth() {
   }
   return ctx;
 }
-
-

@@ -3,14 +3,14 @@ import { supabase } from '@/lib/supabase/client'
 const ALLOWED_SERVICE_IDS = new Set(['cremation', 'traditional-burial', 'memorial-planning'])
 
 /** Placeholders until reviews/aggregates exist in the database. */
-export const PLACEHOLDER_PROVIDER_RATING = 4.8
-export const PLACEHOLDER_REVIEW_COUNT = 0
-export const PLACEHOLDER_PROVIDER_BADGE = 'Verified'
+const PLACEHOLDER_PROVIDER_RATING = 4.8
+const PLACEHOLDER_REVIEW_COUNT = 0
+const PLACEHOLDER_PROVIDER_BADGE = 'Verified'
 
 /**
  * Map funeral category from DB (column or dynamic_values.funeral_category) to shop service slugs.
  */
-export function normalizeServiceId(raw) {
+function normalizeServiceId(raw) {
   if (raw == null) return 'memorial-planning'
   const s = String(raw).trim().toLowerCase().replace(/\s+/g, '-')
   if (ALLOWED_SERVICE_IDS.has(s)) return s
@@ -63,7 +63,7 @@ function parseDynamicValues(raw) {
  * RPC `get_active_shop_listings` returns non-empty `dynamic_values.package_options` from the listing
  * when present, otherwise `sellers.package_options` (see migration 036).
  */
-export function parseSellerPackageOptions(raw) {
+function parseSellerPackageOptions(raw) {
   if (raw == null) return []
   let list = []
   if (Array.isArray(raw)) {
@@ -91,7 +91,7 @@ function formatListingKindLabel(kind) {
   return t ? t.charAt(0).toUpperCase() + t.slice(1) : ''
 }
 
-export function mapRpcRowToListing(row) {
+function mapRpcRowToListing(row) {
   if (!row) return null
   const dv = parseDynamicValues(row.dynamic_values)
   const serviceId = normalizeServiceId(row.public_category_slug)
