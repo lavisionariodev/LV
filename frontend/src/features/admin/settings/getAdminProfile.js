@@ -14,7 +14,7 @@ export async function fetchCurrentAdminProfile() {
 
   const { data, error } = await supabase
     .from('admins')
-    .select('id, full_name, email, avatar_url')
+    .select('id, full_name, email, avatar_url, sms_phone')
     .eq('id', user.id)
     .single()
 
@@ -32,6 +32,7 @@ export async function fetchCurrentAdminProfile() {
     id: data.id,
     fullName: data.full_name || '',
     email: data.email || '',
+    smsPhone: data.sms_phone || '',
     avatarPath,
     avatarUrl,
   }

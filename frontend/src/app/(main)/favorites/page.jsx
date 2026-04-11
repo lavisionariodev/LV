@@ -346,7 +346,10 @@ function FavoriteCard({ item, isRemoving, onRemove, styles }) {
     <div className={`${styles.card}${isRemoving ? ` ${styles.cardRemoving}` : ''}`}>
 
       {/* ── Clickable area (image + body) — mirrors shop's listingCardLink ── */}
-      <Link href={`/shop/${item.serviceId}`} className={styles.cardLink}>
+      <Link
+        href={`/shop/${item.serviceId}?listing=${encodeURIComponent(item.id)}`}
+        className={styles.cardLink}
+      >
 
         {/* ── Image ── */}
         <div className={styles.listingImageWrap}>

@@ -1,6 +1,8 @@
+import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import AdminSettingsClient from './AdminSettingsClient'
+import AdminLoadingState from '@/components/ui/Load/AdminLoadingState'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -15,7 +17,7 @@ export default async function SettingsPage() {
 
   const { data: admin, error } = await supabase
     .from('admins')
-    .select('id, role')
+    .select('id')
     .eq('id', user.id)
     .single()
 
@@ -23,5 +25,9 @@ export default async function SettingsPage() {
     redirect('/')
   }
 
-  return <AdminSettingsClient />
+  return (
+    <Suspense fallback={<AdminLoadingState variant="page" label="Loading settings" />}>
+      <AdminSettingsClient />
+    </Suspense>
+  )
 }

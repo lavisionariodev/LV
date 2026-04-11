@@ -3,24 +3,24 @@
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useMemo, useState, useEffect } from 'react'
-import { LISTINGS as SAMPLE_LISTINGS, PROVIDERS, SERVICES } from '../data'
+import { PROVIDERS, SERVICES } from '../data'
 import { fetchActiveShopListings, mergeShopListings } from '@/lib/shop-listings/client'
 import shopStyles from '../shop.module.css'
 import styles from './compare.module.css'
 
 export default function ComparePage() {
   const searchParams = useSearchParams()
-  const [catalog, setCatalog] = useState(() => mergeShopListings([], SAMPLE_LISTINGS))
+  const [catalog, setCatalog] = useState(() => mergeShopListings([]))
 
   useEffect(() => {
     let cancelled = false
-    fetchActiveShopListings()
+    fetchActiveShopListings({ bustCache: true })
       .then((rows) => {
         if (cancelled) return
-        setCatalog(mergeShopListings(rows, SAMPLE_LISTINGS))
+        setCatalog(mergeShopListings(rows))
       })
       .catch(() => {
-        if (!cancelled) setCatalog(mergeShopListings([], SAMPLE_LISTINGS))
+        if (!cancelled) setCatalog(mergeShopListings([]))
       })
     return () => {
       cancelled = true
@@ -277,7 +277,7 @@ export default function ComparePage() {
                   {compareListings.map(({ listing }) => (
                     <td key={listing.id} className={shopStyles.compareRowCell}>
                       <Link
-                        href={`/shop/${listing.serviceId}`}
+                        href={`/shop/${listing.serviceId}?listing=${encodeURIComponent(listing.id)}`}
                         className={shopStyles.compareViewBtn}
                       >
                         View Details

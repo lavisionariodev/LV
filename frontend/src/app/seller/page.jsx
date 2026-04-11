@@ -78,7 +78,7 @@ const initialAlerts = [
 ]
 
 const quickActions = [
-  { label: 'Add Product', href: '/seller/products/catalog', icon: 'add' },
+  { label: 'Add New Listing', href: '/seller/products/new', icon: 'add' },
   { label: 'Manage Orders', href: '/seller/orders', icon: 'orders' },
   { label: 'Create Promotion', href: '/seller/marketing/campaign', icon: 'promo' },
   { label: 'View Messages', href: '/seller/notifications', icon: 'messages' },

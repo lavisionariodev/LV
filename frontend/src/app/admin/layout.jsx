@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { AppSidebar, AppTopbar } from '@/components/layout'
 import { useMediaQuery } from '@/hooks'
 import { requireAdmin } from '@/lib/auth/guards'
 import { signOut } from '@/lib/auth/session'
 import styles from './admin.module.css'
+import AdminLoadingState from '@/components/ui/Load/AdminLoadingState'
 import { Poppins } from 'next/font/google'
 
 const poppins = Poppins({ weight: ['400', '600', '700'], subsets: ['latin'] })
@@ -42,7 +43,7 @@ export default function AdminLayout({ children }) {
   if (authStatus === 'loading' || authStatus === 'denied') {
     return (
       <div className={`${styles.authLoading} ${poppins.className}`}>
-        Loading…
+        <AdminLoadingState variant="gate" label="Loading" />
       </div>
     )
   }
@@ -53,14 +54,16 @@ export default function AdminLayout({ children }) {
         collapsed ? styles.shellCollapsed : ''
       } ${poppins.className}`}
     >
-      <AppSidebar
-        variant="admin"
-        collapsed={collapsed}
-        onToggle={() => setCollapsed((prev) => !prev)}
-        isMobile={isMobile}
-        mobileOpen={mobileMenuOpen}
-        onMobileClose={() => setMobileMenuOpen(false)}
-      />
+      <Suspense fallback={null}>
+        <AppSidebar
+          variant="admin"
+          collapsed={collapsed}
+          onToggle={() => setCollapsed((prev) => !prev)}
+          isMobile={isMobile}
+          mobileOpen={mobileMenuOpen}
+          onMobileClose={() => setMobileMenuOpen(false)}
+        />
+      </Suspense>
       <div className={styles.main}>
         <AppTopbar
           variant="admin"

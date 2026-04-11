@@ -1,13 +1,11 @@
 -- Create site_content table for global site copy management.
 -- Run this in Supabase Dashboard → SQL Editor (or via `supabase db push`).
+--
+-- Current shape: no hero/how CMS columns (those are static in the app); no about_testimonials.
 
 CREATE TABLE IF NOT EXISTS public.site_content (
   id text PRIMARY KEY,
   system_name text,
-
-  hero_title text,
-  hero_subheading text,
-  hero_primary_cta text,
 
   footer_tagline text,
   footer_support_phone text,
@@ -19,11 +17,7 @@ CREATE TABLE IF NOT EXISTS public.site_content (
   about_why_us text,
   about_partners text,
   about_commitment text,
-
-  how_step_by_step text,
-  how_compare_packages text,
-  how_book_service text,
-  how_payment_support text,
+  about_description text,
 
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
@@ -69,7 +63,7 @@ CREATE TRIGGER site_content_updated_at_trigger
   FOR EACH ROW
   EXECUTE FUNCTION public.site_content_updated_at();
 
--- Ensure new columns are available, and keep safe for fresh install
+-- Ensure new columns are available, and keep safe for fresh install / older DBs
 ALTER TABLE public.site_content
   ADD COLUMN IF NOT EXISTS about_why_us text;
 ALTER TABLE public.site_content

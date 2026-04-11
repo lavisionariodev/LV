@@ -1,4 +1,8 @@
 -- Global admin-defined seller form template + seller listing submissions
+--
+-- Template contract (initial seed):
+--   Required fields: listing_name, description (only these are required in the form).
+--   Pre-seeded optional fields (admin can change later): category, base_price, location, status.
 
 create extension if not exists pgcrypto;
 
@@ -68,12 +72,12 @@ values (
   'seller_new_listing',
   'Seller New Listing Form',
   '[
-    {"id":"listing_name","type":"text","label":"Listing name","required":true,"placeholder":"e.g. Wedding Photography"},
-    {"id":"category","type":"select","label":"Category","required":true,"options":["service","package","product","other"]},
-    {"id":"base_price","type":"number","label":"Starting price","required":true,"min":0,"step":0.01},
-    {"id":"location","type":"text","label":"Location","required":false},
-    {"id":"status","type":"select","label":"Status","required":true,"options":["active","inactive"],"placeholder":"Select status"},
-    {"id":"description","type":"textarea","label":"Description","required":false,"maxLength":2000}
+    {"id":"listing_name","order":0,"type":"text","label":"Listing name","required":true,"placeholder":"e.g. Memorial service package"},
+    {"id":"description","order":1,"type":"textarea","label":"Description","required":true,"placeholder":"Describe your listing..."},
+    {"id":"category","order":2,"type":"text","label":"Category","required":false,"placeholder":"e.g. Flowers, memorial packages"},
+    {"id":"base_price","order":3,"type":"number","label":"Starting price","required":false,"placeholder":"0"},
+    {"id":"location","order":4,"type":"text","label":"Location","required":false,"placeholder":"e.g. Quezon City"},
+    {"id":"status","order":5,"type":"select","label":"Status","required":false,"options":["draft","active","inactive","archived"],"placeholder":"Select status"}
   ]'::jsonb,
   true
 )

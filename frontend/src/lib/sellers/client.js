@@ -35,26 +35,51 @@ export async function upsertSellerForUser(user, payload) {
     return { data: null, error: 'Missing user' };
   }
 
+  const { data: existing } = await supabase
+    .from('sellers')
+    .select('*')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  const status =
+    payload.status !== undefined && payload.status !== null
+      ? payload.status
+      : (existing?.status ?? 'pending');
+
+  const registeredAt =
+    payload.registeredAt !== undefined && payload.registeredAt !== null
+      ? payload.registeredAt
+      : (existing?.registered_at ?? new Date().toISOString());
+
+  const businessStartedAt =
+    payload.businessStartedAt !== undefined
+      ? (payload.businessStartedAt && String(payload.businessStartedAt).trim()
+          ? String(payload.businessStartedAt).trim()
+          : null)
+      : (existing?.business_started_at ?? null);
+
+  const packageOptions =
+    payload.packageOptions !== undefined
+      ? payload.packageOptions
+      : (existing?.package_options ?? []);
+
   const sellerData = {
     user_id: user.id,
     email: payload.email || user.email || null,
     business_name: payload.businessName || null,
     contact_name: payload.contactName || null,
     phone: payload.phone || null,
-    status: payload.status || 'pending',
-    registered_at: payload.registeredAt || new Date().toISOString(),
+    status,
+    registered_at: registeredAt,
     business_info: payload.businessInfo || null,
     address: payload.address || null,
+    business_started_at: businessStartedAt,
+    package_options: Array.isArray(packageOptions)
+      ? packageOptions.map((x) => String(x).trim()).filter(Boolean)
+      : [],
     // documents field is not yet in schema (future update)
     // documents: payload.documents || null,
   };
-
-  // First try to check if seller exists
-  const { data: existing } = await supabase
-    .from('sellers')
-    .select('user_id')
-    .eq('user_id', user.id)
-    .maybeSingle();
 
   let result;
   if (existing) {

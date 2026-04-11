@@ -406,7 +406,30 @@
 }
 
 .topbarCentered {
+  position: relative;
   justify-content: center;
+}
+
+.topbarBackBtn {
+  position: absolute;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #1e293b;
+  font-size: 20px;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.topbarBackBtn:hover {
+  color: #334155;
 }
 
 .pageTitleCentered {

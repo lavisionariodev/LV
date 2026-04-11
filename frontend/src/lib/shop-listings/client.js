@@ -1,7 +1,11 @@
 import { supabase } from '@/lib/supabase/client'
-import { LISTINGS as SAMPLE_LISTINGS, PROVIDERS } from '@/app/(main)/shop/data'
 
 const ALLOWED_SERVICE_IDS = new Set(['cremation', 'traditional-burial', 'memorial-planning'])
+
+/** Placeholders until reviews/aggregates exist in the database. */
+export const PLACEHOLDER_PROVIDER_RATING = 4.8
+export const PLACEHOLDER_REVIEW_COUNT = 0
+export const PLACEHOLDER_PROVIDER_BADGE = 'Verified'
 
 /**
  * Map funeral category from DB (column or dynamic_values.funeral_category) to shop service slugs.
@@ -21,6 +25,13 @@ function parseInclusions(description, dynamicValues) {
   if (Array.isArray(dv.inclusions) && dv.inclusions.length) {
     return dv.inclusions.map((x) => String(x).trim()).filter(Boolean).slice(0, 12)
   }
+  if (typeof dv.inclusions === 'string' && dv.inclusions.trim()) {
+    return dv.inclusions
+      .split(/\n|•|;/)
+      .map((x) => x.trim())
+      .filter(Boolean)
+      .slice(0, 12)
+  }
   const text = typeof description === 'string' ? description : typeof dv.description === 'string' ? dv.description : ''
   if (text.trim()) {
     const parts = text
@@ -33,23 +44,91 @@ function parseInclusions(description, dynamicValues) {
   return ['See listing details']
 }
 
-export function enrichStaticListing(listing) {
-  const provider = PROVIDERS.find((p) => p.id === listing.providerId) ?? null
-  return {
-    ...listing,
-    provider,
-    createdAt: listing.createdAt ?? '2019-01-01T00:00:00.000Z',
-    source: 'sample',
+function parseDynamicValues(raw) {
+  if (raw == null) return {}
+  if (typeof raw === 'object' && !Array.isArray(raw)) return raw
+  if (typeof raw === 'string') {
+    try {
+      const o = JSON.parse(raw)
+      return o && typeof o === 'object' && !Array.isArray(o) ? o : {}
+    } catch {
+      return {}
+    }
   }
+  return {}
+}
+
+/**
+ * Labels for the buyer-facing Package dropdown on shop detail/cart.
+ * RPC `get_active_shop_listings` returns non-empty `dynamic_values.package_options` from the listing
+ * when present, otherwise `sellers.package_options` (see migration 036).
+ */
+export function parseSellerPackageOptions(raw) {
+  if (raw == null) return []
+  let list = []
+  if (Array.isArray(raw)) {
+    list = raw.map((x) => String(x).trim()).filter(Boolean)
+  } else if (typeof raw === 'string') {
+    try {
+      const p = JSON.parse(raw)
+      if (Array.isArray(p)) list = p.map((x) => String(x).trim()).filter(Boolean)
+    } catch {
+      list = raw
+        .split(/\n/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+    }
+  }
+  return [...new Set(list)]
+}
+
+function formatListingKindLabel(kind) {
+  if (kind == null || typeof kind !== 'string') return ''
+  const k = kind.trim().toLowerCase()
+  if (k === 'service') return 'Service'
+  if (k === 'package') return 'Package'
+  const t = kind.trim()
+  return t ? t.charAt(0).toUpperCase() + t.slice(1) : ''
 }
 
 export function mapRpcRowToListing(row) {
   if (!row) return null
-  const dv = row.dynamic_values && typeof row.dynamic_values === 'object' ? row.dynamic_values : {}
+  const dv = parseDynamicValues(row.dynamic_values)
   const serviceId = normalizeServiceId(row.public_category_slug)
   const price = row.base_price != null ? Number(row.base_price) : 0
   const sellerId = row.seller_user_id
   const loc = (row.business_location || row.listing_location || '').trim() || 'Philippines'
+
+  const rawUrls = Array.isArray(row.image_urls) ? row.image_urls : []
+  const imageUrls = rawUrls
+    .filter((u) => typeof u === 'string' && u.trim() && !u.startsWith('blob:'))
+    .map((u) => u.trim())
+  const firstImage = imageUrls[0] ?? null
+
+  /** Website signup — `sellers.registered_at` (no listing fallback; see migration 028). */
+  const sellerRegisteredAt =
+    row.seller_registered_at ?? row.sellerRegisteredAt ?? null
+  /** Business operations start — `sellers.business_started_at` (onboarding). */
+  const businessStartedAt =
+    row.seller_business_started_at ?? row.sellerBusinessStartedAt ?? null
+
+  const description = typeof dv.description === 'string' ? dv.description.trim() : ''
+  const whoThisIsFor = typeof dv.who_this_is_for === 'string' ? dv.who_this_is_for.trim() : ''
+  const importantNotes = typeof dv.important_notes === 'string' ? dv.important_notes.trim() : ''
+  const sellerPackageOptions = parseSellerPackageOptions(row.seller_package_options)
+
+  const duration =
+    typeof dv.duration === 'string' ? dv.duration.trim() : ''
+  const categoryLabel =
+    typeof dv.category === 'string' ? dv.category.trim() : ''
+  const listingKindLabel = formatListingKindLabel(
+    typeof dv.kind === 'string' ? dv.kind : '',
+  )
+  const coverage =
+    (typeof dv.coverage === 'string' && dv.coverage.trim()) ||
+    (typeof dv.location === 'string' && dv.location.trim()) ||
+    (typeof row.listing_location === 'string' && row.listing_location.trim()) ||
+    ''
 
   return {
     id: String(row.listing_id),
@@ -59,27 +138,34 @@ export function mapRpcRowToListing(row) {
     price: Number.isFinite(price) ? price : 0,
     popular: Boolean(dv.featured || dv.popular),
     inclusions: parseInclusions(dv.description, dv),
-    imageUrl: Array.isArray(row.image_urls) && row.image_urls[0] ? row.image_urls[0] : undefined,
+    description,
+    whoThisIsFor,
+    importantNotes,
+    duration,
+    categoryLabel,
+    listingKindLabel,
+    coverage,
+    sellerPackageOptions,
+    imageUrls,
+    imageUrl: firstImage,
     provider: {
       id: String(sellerId),
       name: row.business_name || 'Verified seller',
       location: loc,
-      rating: 4.8,
-      reviews: 0,
-      badge: 'Verified',
+      rating: PLACEHOLDER_PROVIDER_RATING,
+      reviews: PLACEHOLDER_REVIEW_COUNT,
+      badge: PLACEHOLDER_PROVIDER_BADGE,
+      joinedDate: sellerRegisteredAt ?? null,
+      businessStartedAt: businessStartedAt ?? null,
     },
     createdAt: row.created_at || new Date().toISOString(),
     source: 'database',
   }
 }
 
-/**
- * Database rows first (newer marketplace items), then sample catalog.
- */
-export function mergeShopListings(dbRows, sampleListings = SAMPLE_LISTINGS) {
-  const dbMapped = (dbRows || []).map(mapRpcRowToListing).filter(Boolean)
-  const sampleMapped = (sampleListings || []).map(enrichStaticListing)
-  return [...dbMapped, ...sampleMapped]
+/** Maps RPC rows from `get_active_shop_listings` to the shop listing shape (database-only). */
+export function mergeShopListings(dbRows) {
+  return (dbRows || []).map(mapRpcRowToListing).filter(Boolean)
 }
 
 let cache = null
@@ -94,9 +180,8 @@ export async function fetchActiveShopListings({ bustCache = false } = {}) {
   const { data, error } = await supabase.rpc('get_active_shop_listings')
 
   if (error) {
-    console.warn('[shop] get_active_shop_listings:', error.message)
-    cache = []
-    cacheAt = Date.now()
+    /* Do not cache failures — previously [] was cached 45s and hid transient RPC/permission issues. */
+    console.warn('[shop] get_active_shop_listings:', error.message, error)
     return []
   }
 

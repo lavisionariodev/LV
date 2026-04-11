@@ -9,6 +9,78 @@
   width: 100%;
 }
 
+.tabBar {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 2px;
+  margin-bottom: 16px;
+  padding: 8px;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tabBar::-webkit-scrollbar {
+  display: none;
+}
+
+.tabItem {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 8px 14px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.tabItem:is(button) {
+  font-family: inherit;
+}
+
+.tabItem:hover:not(.tabItemActive) {
+  color: var(--color-text-primary);
+  background: color-mix(in srgb, var(--color-cream) 40%, #ffffff 60%);
+}
+
+.tabItem:focus-visible {
+  outline: 2px solid var(--color-main-accent);
+  outline-offset: 2px;
+}
+
+.tabItemActive {
+  color: var(--color-primary);
+  font-weight: 700;
+  background: color-mix(in srgb, var(--color-primary) 10%, #ffffff 90%);
+  border-color: color-mix(in srgb, var(--color-primary) 22%, var(--color-border) 78%);
+}
+
+.tabItem:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.profileTabContent {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  align-items: stretch;
+}
+
 .grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -286,6 +358,86 @@
   grid-template-columns: 1fr 1fr;
   gap: 16px;
   padding-top: 4px;
+}
+
+.shopFieldFull {
+  grid-column: 1 / -1;
+}
+
+.textarea {
+  min-height: 100px;
+  height: auto;
+  padding: 10px 12px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.shopHelper {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+}
+
+.shopStatusRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.shopStatusLabel {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: capitalize;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-cream) 40%, #ffffff 60%);
+  color: var(--color-text-primary);
+}
+
+.statusPillActive {
+  background: color-mix(in srgb, var(--color-primary) 14%, #ffffff 86%);
+  border-color: color-mix(in srgb, var(--color-primary) 28%, var(--color-border) 72%);
+  color: var(--color-primary);
+}
+
+.statusPillPending {
+  background: color-mix(in srgb, #b8860b 12%, #ffffff 88%);
+  border-color: color-mix(in srgb, #b8860b 28%, var(--color-border) 72%);
+  color: #7a5f0a;
+}
+
+.statusPillSuspended {
+  background: color-mix(in srgb, var(--color-secondary-accent) 12%, #ffffff 88%);
+  border-color: color-mix(in srgb, var(--color-secondary-accent) 30%, var(--color-border) 70%);
+  color: var(--color-secondary-accent);
+}
+
+.requiredMark {
+  color: var(--color-secondary-accent);
+}
+
+.inlineLink {
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.inlineLink:hover {
+  opacity: 0.9;
 }
 
 .form {

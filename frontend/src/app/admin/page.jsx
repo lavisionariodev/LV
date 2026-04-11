@@ -18,10 +18,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
-import { TbReportSearch, TbUsers, TbSearch, TbTemplate, TbFlag, TbLayoutList } from 'react-icons/tb'
+import { TbReportSearch, TbUsers, TbSearch, TbTemplate, TbFlag } from 'react-icons/tb'
 import { LuUserCheck } from 'react-icons/lu'
-import { HiOutlineNewspaper } from 'react-icons/hi'
-import { MdOutlineImage } from 'react-icons/md'
 import { RiUserAddLine } from 'react-icons/ri'
 import { LuClipboardList, LuPencilLine, LuPlus, LuCheck } from 'react-icons/lu'
 
@@ -33,7 +31,6 @@ const QUICK_LINKS = [
   { id: 'disputes', label: 'Disputes', icon: TbReportSearch },
   { id: 'sellers', label: 'Sellers', icon: LuUserCheck },
   { id: 'users', label: 'Users', icon: TbUsers },
-  { id: 'content', label: 'Content', icon: HiOutlineNewspaper },
   { id: 'template', label: 'Template', icon: TbTemplate },
 ]
 
@@ -369,36 +366,6 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
-          {activeQuickLink === 'content' && (
-            <div className={styles.qlPanel}>
-              <div className={styles.qlRows}>
-                <div className={styles.qlActionRow}>
-                  <span className={styles.qlActionIcon}><TbTemplate /></span>
-                  <span className={styles.qlActionLabel}>System name / brand</span>
-                  <Link href="/admin/content" className={styles.qlActionBtn}>Open</Link>
-                </div>
-                <div className={styles.qlActionRow}>
-                  <span className={styles.qlActionIcon}><MdOutlineImage /></span>
-                  <span className={styles.qlActionLabel}>Homepage hero</span>
-                  <Link href="/admin/content" className={styles.qlActionBtn}>Open</Link>
-                </div>
-                <div className={styles.qlActionRow}>
-                  <span className={styles.qlActionIcon}><TbLayoutList /></span>
-                  <span className={styles.qlActionLabel}>About page</span>
-                  <Link href="/admin/content" className={styles.qlActionBtn}>Open</Link>
-                </div>
-                <div className={styles.qlActionRow}>
-                  <span className={styles.qlActionIcon}><MdOutlineImage /></span>
-                  <span className={styles.qlActionLabel}>Footer contact</span>
-                  <Link href="/admin/content" className={styles.qlActionBtn}>Open</Link>
-                </div>
-              </div>
-              <Link href="/admin/content" className={styles.qlCta}>
-                Manage all content →
-              </Link>
-            </div>
-          )}
-
           {activeQuickLink === 'template' && (
             <div className={styles.qlPanel}>
               <div className={styles.qlRows}>
@@ -575,13 +542,13 @@ export default function AdminDashboardPage() {
             <Link href="/admin/sellers" className={styles.actionBtn}>
               Add Seller
             </Link>
-            <Link href="/admin/content" className={styles.actionBtn}>
-              Manage Content
+            <Link href="/admin/users" className={styles.actionBtn}>
+              View Users
             </Link>
             <Link href="/admin/disputes" className={styles.actionBtn}>
               Review Disputes
             </Link>
-            <Link href="/admin/settings" className={styles.actionBtn}>
+            <Link href="/admin/profile" className={styles.actionBtn}>
               Settings
             </Link>
           </div>
