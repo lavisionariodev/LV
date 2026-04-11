@@ -6,7 +6,7 @@
   display: grid;
   place-items: center;
   min-height: 100vh;
-  background: #F5F6FA;
+  background: #f9fcff;
   font-size: 14px;
   color: #6b7280;
 }
@@ -16,7 +16,7 @@
   grid-template-columns: var(--sidebar-width) 1fr;
   height: 100vh;
   overflow: hidden;
-  background: #F5F6FA;
+  background: #f9fcff;
   transition: grid-template-columns 0.25s ease;
 }
 
@@ -364,8 +364,8 @@
   }
 
   .quickLinkCard {
-    flex: 0 0 auto;
-    min-width: 72px;
+    flex: 1 1 0;
+    min-width: 0;
     padding: 6px 4px;
     border-radius: 12px;
     border: none;

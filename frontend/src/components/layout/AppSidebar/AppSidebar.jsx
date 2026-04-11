@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState, useMemo } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import {
   TbLayoutSidebarLeftCollapse,
   TbLayoutSidebarLeftExpand,
@@ -19,7 +19,6 @@ import {
   TbClipboardList,
 } from 'react-icons/tb'
 import { LuUserCheck } from 'react-icons/lu'
-import { HiOutlineNewspaper } from 'react-icons/hi'
 import { BsPerson } from 'react-icons/bs'
 import styles from './AppSidebar.module.css'
 import { useSiteContent } from '@/lib/siteContent/client'
@@ -54,7 +53,6 @@ const SIDEBAR_CONFIG = {
       { href: '/admin/sellers', label: 'Sellers', icon: LuUserCheck },
       { href: '/admin/users', label: 'Users', icon: TbUsers },
       { href: '/admin/seller-template', label: 'Template', icon: TbClipboardList },
-      { href: '/admin/content', label: 'Content', icon: HiOutlineNewspaper },
     ],
   },
   seller: {
@@ -71,6 +69,7 @@ const SIDEBAR_CONFIG = {
           { href: '/seller/products/services', label: 'Services' },
           { href: '/seller/products/packages', label: 'Packages' },
           { href: '/seller/products/catalog', label: 'Catalog' },
+          { href: '/seller/products/new', label: 'Add New Listing' },
         ],
       },
       { href: '/seller/customers', label: 'Customers', icon: TbUsers },
@@ -101,6 +100,7 @@ export default function AppSidebar({
   onMobileClose,
 }) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [openGroups, setOpenGroups] = useState({})
   const { data: siteContent } = useSiteContent()
 
@@ -113,6 +113,15 @@ export default function AppSidebar({
 
   const isActive = (href) => {
     if (!pathname) return false
+    if (href.includes('?')) {
+      const [path, query] = href.split('?')
+      if (pathname !== path) return false
+      const wanted = new URLSearchParams(query)
+      for (const [key, value] of wanted.entries()) {
+        if (searchParams.get(key) !== value) return false
+      }
+      return true
+    }
     if (href === config.basePath) return pathname === config.basePath
     return pathname === href || pathname.startsWith(`${href}/`)
   }
@@ -139,7 +148,7 @@ export default function AppSidebar({
       }
     })
     return out
-  }, [hasGroups, sellerNavItems, pathname, openGroups])
+  }, [hasGroups, sellerNavItems, pathname, searchParams, openGroups])
 
   const showSidebar = !(isMobile && variant === 'seller')
 
@@ -291,7 +300,7 @@ export default function AppSidebar({
                     icon: TbChartBar,
                   },
                   {
-                    href: '/admin/settings',
+                    href: '/admin/profile',
                     label: 'Profile',
                     icon: BsPerson,
                   },

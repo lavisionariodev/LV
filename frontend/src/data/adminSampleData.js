@@ -1,97 +1,17 @@
 // Centralized admin mock data for the Lavisionario admin portal.
-// Pure data + small helper functions so we can easily swap this
-// file out for real API calls later without changing UI components.
+// Pure data + small helper functions so we can swap this for API-backed data later
+// without changing UI components that still import from here.
 
-// --- Users (buyers) ---
-
-export const users = [
-  {
-    id: 'USR-001',
-    name: 'Juan Dela Cruz',
-    email: 'juan.delacruz@example.com',
-    role: 'buyer',
-    joinedAt: '2024-09-12',
-    status: 'active',
-  },
-  {
-    id: 'USR-002',
-    name: 'Maria Santos',
-    email: 'maria.santos@example.com',
-    role: 'buyer',
-    joinedAt: '2024-11-03',
-    status: 'active',
-  },
-  {
-    id: 'USR-003',
-    name: 'Pedro Reyes',
-    email: 'pedro.reyes@example.com',
-    role: 'buyer',
-    joinedAt: '2025-01-15',
-    status: 'suspended',
-  },
-  {
-    id: 'USR-004',
-    name: 'Ana Garcia',
-    email: 'ana.garcia@example.com',
-    role: 'buyer',
-    joinedAt: '2025-02-01',
-    status: 'pending',
-  },
-]
-
-// --- Sellers (providers) ---
-
-export const sellers = [
-  {
-    id: 'SEL-001',
-    businessName: 'Heavenly Flowers Co.',
-    contactName: 'Ana Garcia',
-    email: 'contact@heavenlyflowers.ph',
-    phone: '+63 912 345 6789',
-    registeredAt: '2024-08-10',
-    status: 'active',
-    listingCount: 12,
-  },
-  {
-    id: 'SEL-002',
-    businessName: 'Memorial Services PH',
-    contactName: 'Carlos Bautista',
-    email: 'hello@memorialservices.ph',
-    phone: '+63 918 765 4321',
-    registeredAt: '2024-10-05',
-    status: 'active',
-    listingCount: 8,
-  },
-  {
-    id: 'SEL-003',
-    businessName: 'Peaceful Rest Funeral Home',
-    contactName: 'Elena Torres',
-    email: 'care@peacefulrest.ph',
-    phone: '+63 927 111 2233',
-    registeredAt: '2025-01-20',
-    status: 'pending',
-    listingCount: 3,
-  },
-  {
-    id: 'SEL-004',
-    businessName: 'Metro Memorial Services',
-    contactName: 'Luis Cruz',
-    email: 'support@metromemorial.ph',
-    phone: '+63 926 555 8899',
-    registeredAt: '2024-07-02',
-    status: 'suspended',
-    listingCount: 5,
-  },
-]
+// Site content lives in `site_content` (see @/lib/siteContent/mapping.js for defaults).
 
 // --- Commission (Kita ni LV) ---
-// One default rule for the whole platform + optional per‑seller overrides.
+// One default rule for the whole platform + optional per-seller overrides.
 
 export const commission = {
   defaultRule: {
     id: 'COM-DEFAULT',
     name: 'Standard platform commission',
-    percentage: 10, // 10% LV share
+    percentage: 10,
     effectiveFrom: '2024-01-01',
     effectiveTo: null,
     isActive: true,
@@ -116,55 +36,6 @@ export const commission = {
   ],
 }
 
-// --- Payments / Transactions ---
-
-export const payments = [
-  {
-    id: 'TXN-001',
-    date: '2025-02-24',
-    buyerId: 'USR-001',
-    buyerName: 'Juan Dela Cruz',
-    sellerId: 'SEL-001',
-    sellerName: 'Heavenly Flowers Co.',
-    amount: 15000,
-    status: 'pending', // pending -> approved -> transferred
-    orderRef: 'ORD-101',
-  },
-  {
-    id: 'TXN-002',
-    date: '2025-02-23',
-    buyerId: 'USR-002',
-    buyerName: 'Maria Santos',
-    sellerId: 'SEL-002',
-    sellerName: 'Memorial Services PH',
-    amount: 85000,
-    status: 'approved',
-    orderRef: 'ORD-099',
-  },
-  {
-    id: 'TXN-003',
-    date: '2025-02-22',
-    buyerId: 'USR-003',
-    buyerName: 'Pedro Reyes',
-    sellerId: 'SEL-003',
-    sellerName: 'Peaceful Rest Funeral Home',
-    amount: 42000,
-    status: 'transferred',
-    orderRef: 'ORD-098',
-  },
-  {
-    id: 'TXN-004',
-    date: '2025-02-20',
-    buyerId: 'USR-001',
-    buyerName: 'Juan Dela Cruz',
-    sellerId: 'SEL-002',
-    sellerName: 'Memorial Services PH',
-    amount: 98000,
-    status: 'failed',
-    orderRef: 'ORD-095',
-  },
-]
-
 // --- Disputes ---
 
 export const disputes = [
@@ -178,7 +49,7 @@ export const disputes = [
     respondentId: 'SEL-001',
     respondentName: 'Heavenly Flowers Co.',
     reason: 'Quality issue',
-    status: 'open', // open | under_review | resolved | closed
+    status: 'open',
     description:
       'Customer reported that the floral arrangements arrived wilted and incomplete compared to the agreed inclusions.',
   },
@@ -212,16 +83,13 @@ export const disputes = [
   },
 ]
 
-// Site content is stored in DB table `site_content` and edited in admin Content page.
-// Default shape when DB is empty is defined in @/lib/siteContent/mapping.js.
-
-// --- Dashboard aggregates ---
+// --- Dashboard aggregates (mock stats + charts; admin dashboard may override with live data) ---
 
 export const dashboard = {
   stats: {
-    totalSellers: sellers.length,
-    totalUsers: users.length,
-    transactionsLast30Days: payments.length,
+    totalSellers: 4,
+    totalUsers: 4,
+    transactionsLast30Days: 4,
     openDisputes: disputes.filter((d) => d.status === 'open').length,
   },
   revenueByDay: [
@@ -264,69 +132,6 @@ export const dashboard = {
   ],
 }
 
-// --- Seller service form template (admin-defined) ---
-// Admin configures the form fields that sellers see when adding their own service.
-// The seller portal renders a form from this template.
-export const defaultSellerFormTemplate = [
-  { id: 'listing_name', order: 0, label: 'Listing name', type: 'text', required: true, placeholder: 'e.g. Memorial Floral Package' },
-  { id: 'category', order: 1, label: 'Category', type: 'text', required: true, placeholder: 'e.g. Flowers, Memorial Packages' },
-  { id: 'base_price', order: 2, label: 'Price (PHP)', type: 'number', required: true, placeholder: '0' },
-  { id: 'location', order: 3, label: 'Location', type: 'text', required: false, placeholder: 'e.g. Quezon City' },
-  { id: 'status', order: 4, label: 'Status', type: 'select', required: true, placeholder: 'Select status', options: ['active', 'inactive'] },
-  { id: 'description', order: 5, label: 'Description', type: 'textarea', required: false, placeholder: 'Describe your service...' },
-]
-
-// --- Seller products (template for seller CRUD) ---
-
-export const sellerProducts = [
-  {
-    id: 'PRD-001',
-    sellerId: 'SEL-001',
-    name: 'Memorial Floral Package A',
-    category: 'Flowers',
-    price: 3500,
-    status: 'active', // draft | active | archived
-    description: 'Standard wake floral arrangement with fresh white lilies and roses.',
-  },
-  {
-    id: 'PRD-002',
-    sellerId: 'SEL-001',
-    name: 'Premium Floral Stand',
-    category: 'Flowers',
-    price: 6500,
-    status: 'draft',
-    description: 'Tall premium stand arrangement for chapel or home wakes.',
-  },
-  {
-    id: 'PRD-003',
-    sellerId: 'SEL-002',
-    name: 'Standard Funeral Package',
-    category: 'Memorial Packages',
-    price: 85000,
-    status: 'active',
-    description: 'Chapel viewing, basic casket, and coordination for 3-day wake.',
-  },
-  {
-    id: 'PRD-004',
-    sellerId: 'SEL-003',
-    name: 'Cremation Service with Urn',
-    category: 'Cremation',
-    price: 45000,
-    status: 'active',
-    description: 'Cremation service, standard urn, and basic documentation support.',
-  },
-]
-
-// --- Helper functions (pure, no side effects) ---
-
-export function getUserById(id) {
-  return users.find((u) => u.id === id) || null
-}
-
-export function getSellerById(id) {
-  return sellers.find((s) => s.id === id) || null
-}
-
 export function getDisputeById(id) {
   return disputes.find((d) => d.id === id) || null
 }
@@ -344,11 +149,3 @@ export function getEffectiveCommissionForSeller(sellerId) {
     ruleId: override ? override.id : commission.defaultRule.id,
   }
 }
-
-export function calculateCommissionSplit(amount, sellerId) {
-  const { percentage } = getEffectiveCommissionForSeller(sellerId)
-  const lvShare = Math.round((amount * percentage) / 100)
-  const sellerShare = amount - lvShare
-  return { lvShare, sellerShare, rate: percentage }
-}
-

@@ -29,7 +29,7 @@ export function getServiceById(id) {
   return SERVICES.find((s) => s.id === id) ?? null
 }
 
-// ─── Extended marketplace data (additive — does not change existing exports) ──
+// ─── Filters, demo providers (fallback UI), and static reviews ─────────────────
 
 export const CATEGORIES = [
   { id: 'all', label: 'All Services' },
@@ -48,6 +48,7 @@ export const PROVIDERS = [
     badge: 'Top Rated',
     lastActive: new Date(Date.now() - 8 * 60 * 1000).toISOString(),       // 8 mins ago
     joinedDate: '2019-03-15',
+    businessStartedAt: '2005-01-10',
   },
   {
     id: 'eternal-rest',
@@ -58,6 +59,7 @@ export const PROVIDERS = [
     badge: 'Verified',
     lastActive: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),  // 3 hours ago
     joinedDate: '2021-08-01',
+    businessStartedAt: '2012-04-20',
   },
   {
     id: 'golden-lily',
@@ -68,6 +70,7 @@ export const PROVIDERS = [
     badge: 'Premium',
     lastActive: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
     joinedDate: '2018-06-20',
+    businessStartedAt: '2000-11-05',
   },
   {
     id: 'compassion-care',
@@ -78,6 +81,7 @@ export const PROVIDERS = [
     badge: null,
     lastActive: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
     joinedDate: '2022-11-10',
+    businessStartedAt: '2016-02-14',
   },
   {
     id: 'haven-memorial',
@@ -88,180 +92,9 @@ export const PROVIDERS = [
     badge: 'Verified',
     lastActive: new Date(Date.now() - 2 * 7 * 24 * 60 * 60 * 1000).toISOString(), // 2 weeks ago
     joinedDate: '2020-01-05',
+    businessStartedAt: '1998-07-01',
   },
 ]
-
-export const LISTINGS = [
-  // ── Cremation
-  {
-    id: 'cremation-basic',
-    serviceId: 'cremation',
-    providerId: 'eternal-rest',
-    name: 'Direct Cremation',
-    price: 18500,
-    popular: false,
-    inclusions: [
-      'Death certificate processing',
-      'Cremation urn (standard)',
-      'Ash release permit',
-      '1 viewing day',
-    ],
-  },
-  {
-    id: 'cremation-premium',
-    serviceId: 'cremation',
-    providerId: 'serenity-chapel',
-    name: 'Premium Cremation Package',
-    price: 38000,
-    popular: true,
-    inclusions: [
-      'Death certificate processing',
-      'Mahogany urn',
-      '2-day chapel viewing',
-      'Flower arrangement',
-      'Embalming',
-    ],
-  },
-  {
-    id: 'cremation-private',
-    serviceId: 'cremation',
-    providerId: 'golden-lily',
-    name: 'Private Cremation',
-    price: 28500,
-    popular: false,
-    inclusions: [
-      'Private cremation chamber',
-      'Personalized urn',
-      '1 viewing day',
-      'Memorial candle set',
-    ],
-  },
-  {
-    id: 'cremation-eco',
-    serviceId: 'cremation',
-    providerId: 'compassion-care',
-    name: 'Eco Cremation',
-    price: 22000,
-    popular: false,
-    inclusions: [
-      'Biodegradable urn',
-      'Ash scattering ceremony',
-      'Death certificate',
-      'Memorial card printing',
-    ],
-  },
-  // ── Traditional Burial
-  {
-    id: 'burial-standard',
-    serviceId: 'traditional-burial',
-    providerId: 'compassion-care',
-    name: 'Standard Burial Package',
-    price: 55000,
-    popular: false,
-    inclusions: [
-      'Casket (wood)',
-      '3-day viewing',
-      'Embalming',
-      'Cemetery coordination',
-      'Hearse service',
-    ],
-  },
-  {
-    id: 'burial-full',
-    serviceId: 'traditional-burial',
-    providerId: 'serenity-chapel',
-    name: 'Full Traditional Burial',
-    price: 95000,
-    popular: true,
-    inclusions: [
-      'Premium casket',
-      '5-day chapel viewing',
-      'Full embalming',
-      'Flower arrangement',
-      'Hearse convoy',
-      'Reception catering (50 pax)',
-    ],
-  },
-  {
-    id: 'burial-deluxe',
-    serviceId: 'traditional-burial',
-    providerId: 'golden-lily',
-    name: 'Deluxe Burial Service',
-    price: 120000,
-    popular: false,
-    inclusions: [
-      'Mahogany casket',
-      '7-day viewing',
-      'Embalming + cosmetology',
-      'Floral tributes',
-      'Hearse + escort',
-      'Catering (100 pax)',
-      'Video tribute',
-    ],
-  },
-  {
-    id: 'burial-haven',
-    serviceId: 'traditional-burial',
-    providerId: 'haven-memorial',
-    name: 'Simple Burial Package',
-    price: 42000,
-    popular: false,
-    inclusions: [
-      'Basic casket',
-      '2-day viewing',
-      'Embalming',
-      'Cemetery coordination',
-    ],
-  },
-  // ── Memorial Planning
-  {
-    id: 'memorial-intimate',
-    serviceId: 'memorial-planning',
-    providerId: 'haven-memorial',
-    name: 'Intimate Memorial Gathering',
-    price: 15000,
-    popular: false,
-    inclusions: [
-      'Venue (up to 30 guests)',
-      'Photo display setup',
-      'Memorial program booklets',
-      'Sound system',
-    ],
-  },
-  {
-    id: 'memorial-classic',
-    serviceId: 'memorial-planning',
-    providerId: 'eternal-rest',
-    name: 'Classic Memorial Service',
-    price: 32000,
-    popular: true,
-    inclusions: [
-      'Venue (up to 80 guests)',
-      'Custom AV tribute video',
-      'Floral arrangements',
-      'Memorial program',
-      'Live music',
-    ],
-  },
-  {
-    id: 'memorial-grand',
-    serviceId: 'memorial-planning',
-    providerId: 'golden-lily',
-    name: 'Grand Memorial Celebration',
-    price: 75000,
-    popular: false,
-    inclusions: [
-      'Large venue (150+ guests)',
-      'Custom video tribute',
-      'Full floral décor',
-      'Catering',
-      'Live musician',
-      'Memory book',
-      'Keepsake gifts',
-    ],
-  },
-]
-
 
 // ─── Reviews ─────────────────────────────────────────────────────────────────
 // Each review is tied to a serviceId and optionally a listingId / providerId.

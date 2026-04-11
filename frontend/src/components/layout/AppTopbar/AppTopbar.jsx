@@ -8,6 +8,7 @@ import styles from './AppTopbar.module.css'
 import { TbBell } from 'react-icons/tb'
 import { FaUser } from 'react-icons/fa6'
 import { LuLogOut, LuChevronDown } from 'react-icons/lu'
+import { IoIosArrowBack } from 'react-icons/io'
 import { TbSettings, TbMessage2Question } from 'react-icons/tb'
 import { Logout } from '@/components/ui'
 import { useAuth } from '@/contexts/AuthContext'
@@ -42,9 +43,12 @@ const PAGE_TITLES = {
     '/admin/disputes': 'Disputes',
     '/admin/users': 'Users',
     '/admin/sellers': 'Sellers',
-    '/admin/content': 'Content',
     '/admin/seller-template': 'Template',
     '/admin/settings': 'Settings',
+    '/admin/profile': 'Profile',
+    '/admin/profile/notifications': 'Notification settings',
+    '/admin/profile/billing': 'Platform billing',
+    '/admin/profile/content': 'Site content',
     '/admin/help': 'Help Center',
     '/admin/notifications': 'Notifications',
   },
@@ -57,6 +61,7 @@ const PAGE_TITLES = {
     '/seller/products/services': 'Services',
     '/seller/products/packages': 'Packages',
     '/seller/products/catalog': 'Catalog',
+    '/seller/products/new': 'Add New Listing',
     '/seller/customers': 'Customers',
     '/seller/analytics': 'Analytics',
     '/seller/analytics/sales-overview': 'Sales Overview',
@@ -168,15 +173,27 @@ export default function AppTopbar({ variant, onLogout, isMobile, sidebarCollapse
 
   const cleanPathname = pathname?.split(/[?#]/)[0] || ''
   const isSettingsPage = isMobile && (
-    cleanPathname === '/admin/settings' || cleanPathname === '/seller/settings'
+    cleanPathname === '/admin/settings' ||
+    cleanPathname === '/admin/profile' ||
+    cleanPathname === '/seller/settings'
   )
 
   const isNotificationsPage = isMobile && (
     cleanPathname === '/admin/notifications' || cleanPathname === '/seller/notifications'
   )
 
-  const isCenteredPage = isSettingsPage || isNotificationsPage
-  const centeredTitle = isSettingsPage ? 'Profile' : isNotificationsPage ? 'Notifications' : ''
+  const isProfileSectionPage = isMobile && (
+    cleanPathname === '/admin/profile/notifications' ||
+    cleanPathname === '/admin/profile/billing' ||
+    cleanPathname === '/admin/profile/content'
+  )
+
+  const isCenteredPage = isSettingsPage || isNotificationsPage || isProfileSectionPage
+  const centeredTitle = isProfileSectionPage
+    ? (PAGE_TITLES.admin[cleanPathname] || pageTitle)
+    : isSettingsPage ? 'Profile'
+    : isNotificationsPage ? 'Notifications'
+    : ''
 
   useEffect(() => {
     if (!isAdmin) return
@@ -216,7 +233,14 @@ export default function AppTopbar({ variant, onLogout, isMobile, sidebarCollapse
         className={`${styles.topbar} ${!isMobile && sidebarCollapsed ? styles.sidebarCollapsed : ''} ${isCenteredPage ? styles.topbarCentered : ''}`}
       >
         {isCenteredPage ? (
-          <h1 className={styles.pageTitleCentered}>{centeredTitle}</h1>
+          <>
+            {isProfileSectionPage && (
+              <Link href="/admin/profile" className={styles.topbarBackBtn} aria-label="Back to profile">
+                <IoIosArrowBack />
+              </Link>
+            )}
+            <h1 className={styles.pageTitleCentered}>{centeredTitle}</h1>
+          </>
         ) : (<>
         <div className={styles.left}>
           {heading && <h1 className={styles.pageTitle}>{heading}</h1>}
@@ -273,7 +297,7 @@ export default function AppTopbar({ variant, onLogout, isMobile, sidebarCollapse
             </div>
           </div>
 
-          {!isMobile && (
+          {(!isMobile || variant === 'seller') && (
           <div
             ref={profileWrapRef}
             className={`${styles.profileWrap} ${dropdownOpen ? styles.profileWrapOpen : ''}`}

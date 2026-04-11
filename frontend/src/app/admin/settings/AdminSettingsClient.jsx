@@ -1,36 +1,972 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
+import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase/client'
-import { signOut } from '@/lib/auth/session'
-import { Logout } from '@/components/ui'
 import styles from './settings.module.css'
 import { FaUser } from 'react-icons/fa6'
-import { LuPencil } from 'react-icons/lu'
-import { LuLogOut } from 'react-icons/lu'
 import { FiEdit, FiUpload } from 'react-icons/fi'
 import { MdCheckCircle, MdErrorOutline } from 'react-icons/md'
-import { TbMessage2Question, TbBell } from 'react-icons/tb'
 import { validateNewPassword } from '@/lib/validators/authSchemas'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
+import { useMediaQuery } from '@/hooks'
+import { commission } from '@/data/adminSampleData'
+import { useSiteContent, upsertSiteContent } from '@/lib/siteContent/client'
+import { useToast } from '@/contexts/ToastContext'
+import AdminLoadingState from '@/components/ui/Load/AdminLoadingState'
+import { normalizeSettingsTab } from './adminSettingsTabs'
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Constants
+   ───────────────────────────────────────────────────────────────────────────── */
 
 const AVATARS_BUCKET = 'avatars'
 const MAX_MB = 2
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp']
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   Billing Settings Panel
+   ───────────────────────────────────────────────────────────────────────────── */
+
+function formatRuleDate(isoDate) {
+  if (!isoDate) return '—'
+  try {
+    return new Date(isoDate + (isoDate.length === 10 ? 'T12:00:00' : '')).toLocaleDateString(
+      undefined,
+      { year: 'numeric', month: 'short', day: 'numeric' },
+    )
+  } catch {
+    return isoDate
+  }
+}
+
+export function AdminBillingSettingsPanel({ variant = 'default' }) {
+  const isSheet = variant === 'sheet'
+  const isProfileDetail = variant === 'profileDetail'
+  const rule = commission.defaultRule
+  const overrideCount = commission.sellerOverrides?.length ?? 0
+
+  const wrapClass = isSheet ? styles.settingsSheetEmbed : `${styles.card} ${styles.full}`
+
+  return (
+    <section className={wrapClass}>
+      {!isSheet && !isProfileDetail && (
+        <div className={styles.tabDetailHead}>
+          <div className={styles.tabDetailHeadRow}>
+            <div className={styles.tabDetailHeadText}>
+              <h2 className={styles.tabDetailTitle}>Platform billing</h2>
+              <p className={styles.tabDetailSubtitle}>
+                Commission and settlement for the marketplace. Day-to-day payouts and orders are
+                managed under Payouts.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      {isSheet && (
+        <p className={styles.settingsSheetLead}>
+          Commission and settlement for the marketplace. Day-to-day payouts and orders are managed
+          under Payouts.
+        </p>
+      )}
+
+      <div className={styles.billingStack}>
+        <div className={styles.billingSection}>
+          <h3 className={styles.billingSectionTitle}>Platform commission</h3>
+          <p className={styles.billingSectionLead}>
+            Default share of each successful order between buyers and sellers that applies before
+            any seller-specific rate.
+          </p>
+          <dl className={styles.billingDl}>
+            <div className={styles.billingDlRow}>
+              <dt>Default rate</dt>
+              <dd>{rule.percentage}%</dd>
+            </div>
+            <div className={styles.billingDlRow}>
+              <dt>Rule</dt>
+              <dd>{rule.name}</dd>
+            </div>
+            <div className={styles.billingDlRow}>
+              <dt>Effective from</dt>
+              <dd>{formatRuleDate(rule.effectiveFrom)}</dd>
+            </div>
+            <div className={styles.billingDlRow}>
+              <dt>Seller overrides</dt>
+              <dd>
+                {overrideCount} active override{overrideCount === 1 ? '' : 's'}
+              </dd>
+            </div>
+          </dl>
+          <Link href="/admin/sellers" className={styles.billingCta}>
+            Manage seller-specific rates →
+          </Link>
+        </div>
+
+        <div className={styles.billingSection}>
+          <h3 className={styles.billingSectionTitle}>Settlement</h3>
+          <p className={styles.billingSectionLead}>
+            Bank or e-wallet details where the platform receives its commission will appear here
+            once treasury setup is connected.
+          </p>
+          <div className={styles.billingPlaceholder} role="status">
+            Not configured yet
+          </div>
+          <Link href="/admin/payouts" className={styles.billingCta}>
+            View payout activity →
+          </Link>
+        </div>
+
+        <div className={styles.billingSection}>
+          <h3 className={styles.billingSectionTitle}>Legal and invoicing</h3>
+          <p className={styles.billingSectionLead}>
+            Registered business name, address, tax ID, and billing contact for official documents.
+          </p>
+          <div className={styles.billingPlaceholder} role="status">
+            Not configured yet — stored data will appear here after setup.
+          </div>
+        </div>
+
+        <div className={styles.billingQuickLinks} aria-label="Related admin pages">
+          <span className={styles.billingQuickLinksLabel}>Quick links</span>
+          <div className={styles.billingQuickLinksRow}>
+            <Link href="/admin/analytics" className={styles.billingQuickLink}>
+              Analytics
+            </Link>
+            <span className={styles.billingQuickLinksSep} aria-hidden />
+            <Link href="/admin/payouts" className={styles.billingQuickLink}>
+              Payouts
+            </Link>
+            <span className={styles.billingQuickLinksSep} aria-hidden />
+            <Link href="/admin/sellers" className={styles.billingQuickLink}>
+              Sellers
+            </Link>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Notification Preferences Panel
+   ───────────────────────────────────────────────────────────────────────────── */
+
+const CATEGORY_KEYS = ['order', 'approval', 'alert', 'announcement']
+
+const CATEGORIES = [
+  {
+    key: 'order',
+    title: 'Orders & bookings',
+    description:
+      'Notifications for new orders, completions, and booking-related activity.',
+  },
+  {
+    key: 'approval',
+    title: 'Sellers & approvals',
+    description:
+      'Seller registrations, approvals, and listing-related review activity.',
+  },
+  {
+    key: 'alert',
+    title: 'Alerts & disputes',
+    description:
+      'Disputes, payout reviews, and other urgent operational alerts.',
+  },
+  {
+    key: 'announcement',
+    title: 'Announcements & updates',
+    description:
+      'Maintenance windows, product updates, and platform messages.',
+  },
+]
+
+const CHANNELS = [
+  { id: 'push', label: 'Push', hint: 'In-app notification' },
+  { id: 'email', label: 'Email', hint: null },
+  {
+    id: 'sms',
+    label: 'SMS',
+    hint: 'Not available yet',
+    disabled: true,
+  },
+]
+
+function defaultPrefs() {
+  const o = {}
+  for (const key of CATEGORY_KEYS) {
+    o[key] = { push: true, email: true, sms: false }
+  }
+  return o
+}
+
+function mergePrefs(raw) {
+  const base = defaultPrefs()
+  if (!raw || typeof raw !== 'object') return base
+  for (const key of CATEGORY_KEYS) {
+    const row = raw[key]
+    if (row && typeof row === 'object') {
+      base[key] = {
+        push: Boolean(row.push),
+        email: Boolean(row.email),
+        sms: false,
+      }
+    }
+  }
+  return base
+}
+
+function PrefSwitch({ checked, onToggle, disabled, labelledBy }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-labelledby={labelledBy}
+      disabled={disabled}
+      className={`${styles.notifPrefSwitch} ${checked ? styles.notifPrefSwitchOn : ''} ${disabled ? styles.notifPrefSwitchDisabled : ''}`}
+      onClick={() => !disabled && onToggle(!checked)}
+    >
+      <span className={styles.notifPrefSwitchThumb} aria-hidden />
+    </button>
+  )
+}
+
+export const AdminNotificationPreferencesPanel = forwardRef(function AdminNotificationPreferencesPanel(
+  { variant = 'default' },
+  ref,
+) {
+  const isSheet = variant === 'sheet'
+  const isProfileDetail = variant === 'profileDetail'
+  const [prefs, setPrefs] = useState(() => defaultPrefs())
+  const prefsRef = useRef(prefs)
+  prefsRef.current = prefs
+  const [loading, setLoading] = useState(true)
+  const [saveError, setSaveError] = useState('')
+  const adminIdRef = useRef(null)
+  const saveTimerRef = useRef(null)
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      async flushPendingSave() {
+        const id = adminIdRef.current
+        if (!id) return
+        if (saveTimerRef.current) {
+          clearTimeout(saveTimerRef.current)
+          saveTimerRef.current = null
+        }
+        setSaveError('')
+        const next = prefsRef.current
+        const { error } = await supabase
+          .from('admins')
+          .update({
+            notification_preferences: next,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', id)
+        if (error) {
+          setSaveError(error.message || 'Could not save preferences.')
+          throw error
+        }
+      },
+    }),
+    [],
+  )
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      setSaveError('')
+      try {
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser()
+        if (userError || !user) throw new Error('Not authenticated.')
+        adminIdRef.current = user.id
+
+        const { data, error } = await supabase
+          .from('admins')
+          .select('notification_preferences')
+          .eq('id', user.id)
+          .single()
+
+        if (error) throw error
+        if (!cancelled) {
+          setPrefs(mergePrefs(data?.notification_preferences))
+        }
+      } catch (e) {
+        if (!cancelled) setSaveError(e.message || 'Failed to load preferences.')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const persist = useCallback((next) => {
+    const id = adminIdRef.current
+    if (!id) return
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(async () => {
+      setSaveError('')
+      const { error } = await supabase
+        .from('admins')
+        .update({
+          notification_preferences: next,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+      if (error) setSaveError(error.message || 'Could not save preferences.')
+    }, 350)
+  }, [])
+
+  useEffect(
+    () => () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    },
+    [],
+  )
+
+  const setChannel = (categoryKey, channelId, value) => {
+    if (channelId === 'sms') return
+    setPrefs((prev) => {
+      const next = {
+        ...prev,
+        [categoryKey]: {
+          ...prev[categoryKey],
+          [channelId]: value,
+        },
+      }
+      persist(next)
+      return next
+    })
+  }
+
+  const wrapClass = isSheet
+    ? styles.settingsSheetEmbed
+    : `${styles.card} ${styles.full}`
+
+  if (loading) {
+    return (
+      <section className={wrapClass}>
+        <AdminLoadingState variant="card" label="Loading notification settings" />
+      </section>
+    )
+  }
+
+  return (
+    <section className={wrapClass}>
+      {!isSheet && !isProfileDetail && (
+        <div className={styles.tabDetailHead}>
+          <div className={styles.tabDetailHeadRow}>
+            <div className={styles.tabDetailHeadText}>
+              <h2 className={styles.tabDetailTitle}>Notification settings</h2>
+              <p className={styles.tabDetailSubtitle}>
+                We may still send important account and security messages outside of
+                these preferences.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      {isSheet && (
+        <p className={styles.settingsSheetLead}>
+          We may still send important account and security messages outside of these preferences.
+        </p>
+      )}
+
+      <div
+        className={`${styles.notifPrefList} ${isSheet || isProfileDetail ? styles.notifPrefListSheet : ''}`}
+      >
+        {CATEGORIES.map((cat, index) => (
+          <div
+            key={cat.key}
+            className={`${styles.notifPrefRow} ${isSheet || isProfileDetail ? styles.notifPrefRowSheet : ''} ${index < CATEGORIES.length - 1 ? styles.notifPrefRowBorder : ''}`}
+          >
+            <div className={styles.notifPrefMeta}>
+              <p className={styles.notifPrefTitle}>{cat.title}</p>
+              <p className={styles.notifPrefDesc}>{cat.description}</p>
+            </div>
+            <div className={styles.notifPrefControls} role="group" aria-label={`${cat.title} channels`}>
+              {CHANNELS.map((ch) => {
+                const switchId = `notif_${cat.key}_${ch.id}`
+                const checked = Boolean(prefs[cat.key]?.[ch.id])
+                return (
+                  <div key={ch.id} className={styles.notifPrefChannel}>
+                    <div className={styles.notifPrefChannelLabel}>
+                      <span id={switchId} className={styles.notifPrefChannelName}>
+                        {ch.label}
+                      </span>
+                      {ch.hint ? (
+                        <span className={styles.notifPrefChannelHint}>{ch.hint}</span>
+                      ) : null}
+                    </div>
+                    <PrefSwitch
+                      labelledBy={switchId}
+                      checked={ch.disabled ? false : checked}
+                      disabled={ch.disabled}
+                      onToggle={(v) => setChannel(cat.key, ch.id, v)}
+                    />
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {saveError ? (
+        <p className={styles.notifPrefError} role="alert">
+          {saveError}
+        </p>
+      ) : null}
+
+      <div className={styles.notifPrefFooter}>
+        <Link href="/admin/notifications" className={styles.notificationsCta}>
+          View all notifications →
+        </Link>
+      </div>
+    </section>
+  )
+})
+
+AdminNotificationPreferencesPanel.displayName = 'AdminNotificationPreferencesPanel'
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Site Content Panel
+   ───────────────────────────────────────────────────────────────────────────── */
+
+const ABOUT_LABELS = {
+  ourStory: 'Our story',
+  missionVision: 'Mission & vision',
+  description: 'About us',
+  whyUs: 'Why us',
+  partners: 'Our partners',
+  commitment: 'Our commitment',
+}
+
+const ABOUT_HELP = {
+  ourStory: 'The founding narrative visitors see on the About page.',
+  missionVision: 'Your mission and vision statements.',
+  description: 'Short summary of your organization.',
+  whyUs: 'Reasons customers choose you.',
+  partners: 'Partner or sponsor callouts.',
+  commitment: 'Values or promises you stand behind.',
+}
+
+const ABOUT_KEYS = Object.keys(ABOUT_LABELS)
+
+const FOOTER_FIELD_META = {
+  tagline: {
+    title: 'Footer tagline',
+    description: 'Short line shown above the footer links and contact details.',
+    placeholder: 'Short brand tagline shown in the footer',
+    multiline: true,
+  },
+  supportPhone: {
+    title: 'Support phone',
+    description: 'Displayed to customers who need phone help.',
+    placeholder: '+1 800 000 0000',
+    inputType: 'tel',
+  },
+  supportEmail: {
+    title: 'Support email',
+    description: 'Displayed to customers who need email help.',
+    placeholder: 'support@example.com',
+    inputType: 'email',
+  },
+}
+
+const EMPTY_SITE_CONTENT = {
+  systemName: '',
+  footer: { tagline: '', supportPhone: '', supportEmail: '', copyrightText: '' },
+  about: { description: '', ourStory: '', missionVision: '', whyUs: '', partners: '', commitment: '' },
+}
+
+function SettingsRow({ title, description, children, titleEnd }) {
+  return (
+    <div className={styles.settingsRow}>
+      <div className={styles.settingsRowMeta}>
+        <div className={styles.settingsRowTitleRow}>
+          <p className={styles.settingsRowTitle}>{title}</p>
+          {titleEnd ? <div className={styles.settingsRowTitleEnd}>{titleEnd}</div> : null}
+        </div>
+        {description ? <p className={styles.settingsRowDesc}>{description}</p> : null}
+      </div>
+      <div className={styles.settingsRowControl}>{children}</div>
+    </div>
+  )
+}
+
+export function AdminSiteContentPanel({
+  embeddedInMobileSettings = false,
+  profileDetailPage = false,
+}) {
+  const isMobile = useMediaQuery('(max-width: 640px)')
+  const hideProgramHead = embeddedInMobileSettings || profileDetailPage
+  const [draft, setDraft] = useState(EMPTY_SITE_CONTENT)
+  const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [modal, setModal] = useState(null)
+  const [modalValue, setModalValue] = useState('')
+  const { data: loadedContent, isLoading, error } = useSiteContent()
+  const toast = useToast()
+  const contentRefs = useRef(null)
+
+  useEffect(() => {
+    if (isMobile) setIsEditing(false)
+  }, [isMobile])
+
+  useEffect(() => {
+    if (loadedContent && !isEditing) setDraft(loadedContent)
+  }, [loadedContent, isEditing])
+
+  const adjustTextareaSize = useCallback((textarea) => {
+    if (!textarea) return
+    textarea.style.height = '0px'
+    textarea.style.overflow = 'hidden'
+    const h = textarea.scrollHeight
+    textarea.style.height = `${h}px`
+    textarea.style.overflow = ''
+  }, [])
+
+  const adjustAllTextareas = useCallback(() => {
+    if (!contentRefs.current) return
+    contentRefs.current.querySelectorAll('textarea').forEach((el) => adjustTextareaSize(el))
+  }, [adjustTextareaSize])
+
+  useLayoutEffect(() => {
+    adjustAllTextareas()
+    const frameId = requestAnimationFrame(() => {
+      adjustAllTextareas()
+    })
+    return () => cancelAnimationFrame(frameId)
+  }, [draft, isEditing, isLoading, adjustAllTextareas, isMobile])
+
+  const closeModal = useCallback(() => {
+    setModal(null)
+    setModalValue('')
+  }, [])
+
+  useEffect(() => {
+    if (!modal) return
+    const onKey = (e) => {
+      if (e.key === 'Escape') closeModal()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [modal, closeModal])
+
+  const openFieldModal = (spec) => {
+    let initial = ''
+    if (spec.kind === 'systemName') initial = draft.systemName ?? ''
+    else if (spec.kind === 'footer') initial = draft.footer?.[spec.field] ?? ''
+    else if (spec.kind === 'about') initial = draft.about?.[spec.key] ?? ''
+    setModal(spec)
+    setModalValue(initial)
+  }
+
+  const handleModalSave = async () => {
+    if (!modal) return
+    let nextDraft = { ...draft }
+    if (modal.kind === 'systemName') {
+      nextDraft = { ...draft, systemName: modalValue }
+    } else if (modal.kind === 'footer') {
+      nextDraft = {
+        ...draft,
+        footer: { ...draft.footer, [modal.field]: modalValue },
+      }
+    } else if (modal.kind === 'about') {
+      nextDraft = {
+        ...draft,
+        about: { ...draft.about, [modal.key]: modalValue },
+      }
+    }
+    try {
+      setIsSaving(true)
+      const saved = await upsertSiteContent(nextDraft)
+      setDraft(saved)
+      toast.success('Saved')
+      closeModal()
+    } catch (e) {
+      console.error('Failed to save site content:', e?.message ?? e)
+      toast.error(e?.message || 'Failed to save. Please try again.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const renderMobilePlaceholder = () => (
+    <span className={styles.settingsMobilePlaceholder}>Tap edit to add</span>
+  )
+
+  const renderMobileValue = (text, multiline) => {
+    const t = (text ?? '').trim()
+    if (!t) return renderMobilePlaceholder()
+    if (multiline) {
+      return <div className={styles.settingsMobileValueMultiline}>{text}</div>
+    }
+    return <span className={styles.settingsMobileValueText}>{text}</span>
+  }
+
+  const mobileEditBtn = (label, spec) => (
+    <button
+      type="button"
+      className={styles.settingsMobileIconEditBtn}
+      onClick={() => openFieldModal(spec)}
+      aria-label={label}
+    >
+      <FiEdit aria-hidden />
+    </button>
+  )
+
+  const handleChange = (section, field, value) => {
+    setDraft((prev) => ({
+      ...prev,
+      [section]: { ...prev[section], [field]: value },
+    }))
+  }
+
+  const handleTextareaChange = (section, field) => (event) => {
+    const textarea = event.target
+    handleChange(section, field, textarea.value)
+    adjustTextareaSize(textarea)
+  }
+
+  const handleCancel = () => {
+    setDraft(loadedContent || EMPTY_SITE_CONTENT)
+    setIsEditing(false)
+  }
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true)
+      const next = await upsertSiteContent(draft)
+      setDraft(next)
+      setIsEditing(false)
+      toast.success('Site content saved successfully')
+    } catch (e) {
+      console.error('Failed to save site content:', e?.message ?? e)
+      toast.error(e?.message || 'Failed to save site content. Please try again.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const disabled = !isEditing
+
+  const renderSystem = () => (
+    <SettingsRow
+      title="System name / brand"
+      description="Appears in places that reference your marketplace name."
+      titleEnd={isMobile ? mobileEditBtn('Edit system name', { kind: 'systemName' }) : null}
+    >
+      {isMobile ? (
+        <div className={styles.settingsMobileValue}>{renderMobileValue(draft.systemName, false)}</div>
+      ) : (
+        <input
+          type="text"
+          value={draft.systemName ?? ''}
+          onChange={(e) => setDraft((prev) => ({ ...prev, systemName: e.target.value }))}
+          className={styles.settingsFieldInput}
+          disabled={disabled}
+          placeholder="e.g. Servify"
+        />
+      )}
+    </SettingsRow>
+  )
+
+  const renderFooter = () =>
+    isMobile ? (
+      <>
+        <SettingsRow
+          title="Footer tagline"
+          description="Short line shown above the footer links and contact details."
+          titleEnd={mobileEditBtn('Edit footer tagline', { kind: 'footer', field: 'tagline' })}
+        >
+          <div className={styles.settingsMobileValue}>{renderMobileValue(draft.footer?.tagline, true)}</div>
+        </SettingsRow>
+        <div className={styles.settingsRow}>
+          <div className={styles.settingsRowMeta}>
+            <div className={styles.settingsRowTitleRow}>
+              <p className={styles.settingsRowTitle}>Support contact</p>
+            </div>
+            <p className={styles.settingsRowDesc}>Displayed to customers who need phone or email help.</p>
+          </div>
+          <div className={styles.settingsRowControl}>
+            <div className={styles.settingsMobileStack}>
+              <div className={styles.settingsMobileLabeledRow}>
+                <div className={styles.settingsMobileLabelRow}>
+                  <span className={styles.settingsMobileFieldLabel}>Phone</span>
+                  {mobileEditBtn('Edit support phone', { kind: 'footer', field: 'supportPhone' })}
+                </div>
+                <div className={styles.settingsMobileValue}>
+                  {renderMobileValue(draft.footer?.supportPhone, false)}
+                </div>
+              </div>
+              <div className={styles.settingsMobileLabeledRow}>
+                <div className={styles.settingsMobileLabelRow}>
+                  <span className={styles.settingsMobileFieldLabel}>Email</span>
+                  {mobileEditBtn('Edit support email', { kind: 'footer', field: 'supportEmail' })}
+                </div>
+                <div className={styles.settingsMobileValue}>
+                  {renderMobileValue(draft.footer?.supportEmail, false)}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    ) : (
+      <>
+        <SettingsRow
+          title="Footer tagline"
+          description="Short line shown above the footer links and contact details."
+        >
+          <textarea
+            value={draft.footer?.tagline ?? ''}
+            onChange={handleTextareaChange('footer', 'tagline')}
+            rows={3}
+            className={styles.settingsFieldTextarea}
+            disabled={disabled}
+            placeholder="Short brand tagline shown in the footer"
+          />
+        </SettingsRow>
+        <div className={styles.settingsRow}>
+          <div className={styles.settingsRowMeta}>
+            <div className={styles.settingsRowTitleRow}>
+              <p className={styles.settingsRowTitle}>Support contact</p>
+            </div>
+            <p className={styles.settingsRowDesc}>Displayed to customers who need phone or email help.</p>
+          </div>
+          <div className={`${styles.settingsRowControl} ${styles.settingsRowControlPair}`}>
+            <input
+              type="tel"
+              value={draft.footer?.supportPhone ?? ''}
+              onChange={(e) => handleChange('footer', 'supportPhone', e.target.value)}
+              className={styles.settingsFieldInput}
+              disabled={disabled}
+              placeholder="+1 800 000 0000"
+              aria-label="Support phone"
+            />
+            <input
+              type="email"
+              value={draft.footer?.supportEmail ?? ''}
+              onChange={(e) => handleChange('footer', 'supportEmail', e.target.value)}
+              className={styles.settingsFieldInput}
+              disabled={disabled}
+              placeholder="support@example.com"
+              aria-label="Support email"
+            />
+          </div>
+        </div>
+      </>
+    )
+
+  const renderAbout = () =>
+    ABOUT_KEYS.map((key) => (
+      <SettingsRow
+        key={key}
+        title={ABOUT_LABELS[key]}
+        description={ABOUT_HELP[key]}
+        titleEnd={isMobile ? mobileEditBtn(`Edit ${ABOUT_LABELS[key]}`, { kind: 'about', key }) : null}
+      >
+        {isMobile ? (
+          <div className={styles.settingsMobileValue}>{renderMobileValue(draft.about?.[key], true)}</div>
+        ) : (
+          <textarea
+            value={draft.about?.[key] ?? ''}
+            onChange={handleTextareaChange('about', key)}
+            rows={1}
+            readOnly={!isEditing}
+            className={`${styles.settingsFieldTextarea} ${styles.settingsFieldTextareaAbout}`}
+            placeholder={`Write your ${ABOUT_LABELS[key].toLowerCase()} copy here`}
+          />
+        )}
+      </SettingsRow>
+    ))
+
+  const modalMeta = (() => {
+    if (!modal) return null
+    if (modal.kind === 'systemName') {
+      return {
+        title: 'System name / brand',
+        description: 'Appears in places that reference your marketplace name.',
+        placeholder: 'e.g. Servify',
+        multiline: false,
+        inputType: 'text',
+      }
+    }
+    if (modal.kind === 'footer') return FOOTER_FIELD_META[modal.field]
+    if (modal.kind === 'about') {
+      return {
+        title: ABOUT_LABELS[modal.key],
+        description: ABOUT_HELP[modal.key],
+        placeholder: `Write your ${ABOUT_LABELS[modal.key].toLowerCase()} copy here`,
+        multiline: true,
+      }
+    }
+    return null
+  })()
+
+  return (
+    <section
+      className={
+        embeddedInMobileSettings
+          ? `${styles.settingsProgram} ${styles.settingsProgramMobileEmbedded}`
+          : styles.settingsProgram
+      }
+    >
+      {!hideProgramHead && (
+        <header className={styles.settingsProgramHead}>
+          <div className={styles.settingsProgramHeadText}>
+            <h1 className={styles.settingsProgramTitle}>Site content</h1>
+            <p className={styles.settingsProgramSubtitle}>View and update copy shown across your public pages.</p>
+          </div>
+          {!isMobile && (
+            <div className={styles.settingsProgramActions}>
+              {!isEditing ? (
+                <button
+                  type="button"
+                  className={styles.primaryBtn}
+                  onClick={() => setIsEditing(true)}
+                  aria-label="Edit site content"
+                >
+                  Edit
+                </button>
+              ) : (
+                <>
+                  <button type="button" className={styles.secondaryBtn} onClick={handleCancel} disabled={isSaving}>
+                    Cancel
+                  </button>
+                  <button type="button" className={styles.primaryBtn} onClick={handleSave} disabled={isSaving}>
+                    {isSaving ? 'Saving…' : 'Save changes'}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </header>
+      )}
+
+      {isEditing && !isMobile && (
+        <div className={styles.settingsEditBanner} role="status">
+          <span className={styles.settingsEditDot} aria-hidden />
+          Editing — save to apply changes to the live site.
+        </div>
+      )}
+
+      <div className={styles.settingsProgramBody} ref={contentRefs}>
+        {isLoading ? (
+          <AdminLoadingState variant="embed" label="Loading site content" />
+        ) : (
+          <>
+            {error && (
+              <p className={styles.settingsHintWarn}>Could not load content from the server. Showing local defaults.</p>
+            )}
+            <div className={styles.settingsRowList}>
+              <section className={styles.settingsContentSection} aria-labelledby="site-content-system-heading">
+                <h2 id="site-content-system-heading" className={styles.settingsContentSectionTitle}>
+                  System name
+                </h2>
+                {renderSystem()}
+              </section>
+              <section className={styles.settingsContentSection} aria-labelledby="site-content-about-heading">
+                <h2 id="site-content-about-heading" className={styles.settingsContentSectionTitle}>
+                  About page
+                </h2>
+                {renderAbout()}
+              </section>
+              <section className={styles.settingsContentSection} aria-labelledby="site-content-footer-heading">
+                <h2 id="site-content-footer-heading" className={styles.settingsContentSectionTitle}>
+                  Footer contact
+                </h2>
+                {renderFooter()}
+              </section>
+            </div>
+          </>
+        )}
+      </div>
+
+      {modal && modalMeta && (
+        <div className={styles.siteContentModalRoot} role="dialog" aria-modal="true" aria-labelledby="site-content-field-modal-title">
+          <button type="button" className={styles.siteContentModalBackdrop} onClick={closeModal} aria-label="Close" />
+          <div className={styles.siteContentModal}>
+            <h2 id="site-content-field-modal-title" className={styles.siteContentModalTitle}>
+              {modalMeta.title}
+            </h2>
+            {modalMeta.multiline ? (
+              <textarea
+                value={modalValue}
+                onChange={(e) => setModalValue(e.target.value)}
+                className={styles.siteContentModalTextarea}
+                rows={8}
+                placeholder={modalMeta.placeholder}
+              />
+            ) : (
+              <input
+                type={modalMeta.inputType || 'text'}
+                value={modalValue}
+                onChange={(e) => setModalValue(e.target.value)}
+                className={styles.siteContentModalInput}
+                placeholder={modalMeta.placeholder}
+              />
+            )}
+            <div className={styles.siteContentModalActions}>
+              <button
+                type="button"
+                className={`${styles.sheetHeaderTextBtn} ${styles.sheetHeaderTextBtnCancel}`}
+                onClick={closeModal}
+                disabled={isSaving}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={`${styles.sheetHeaderTextBtn} ${styles.sheetHeaderTextBtnSave}`}
+                onClick={handleModalSave}
+                disabled={isSaving}
+              >
+                {isSaving ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Admin Settings Client (main)
+   ───────────────────────────────────────────────────────────────────────────── */
+
 export default function AdminSettingsClient() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const fileRef = useRef(null)
   const avatarPreviewRef = useRef('')
 
   const [loading, setLoading] = useState(true)
   const [isEditingPersonal, setIsEditingPersonal] = useState(false)
-  const [isEditingPassword, setIsEditingPassword] = useState(false)
   const [profile, setProfile] = useState(null)
   const [draftName, setDraftName] = useState('')
   const [draftEmail, setDraftEmail] = useState('')
+  const [draftSmsPhone, setDraftSmsPhone] = useState('')
   const [avatarPreview, setAvatarPreview] = useState('')
   const [personalStatus, setPersonalStatus] = useState('')
   const [personalError, setPersonalError] = useState('')
@@ -41,6 +977,14 @@ export default function AdminSettingsClient() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passStatus, setPassStatus] = useState('')
   const [passError, setPassError] = useState('')
+
+  const isMobile = useMediaQuery('(max-width: 640px)')
+
+  useEffect(() => {
+    if (!isMobile) return
+    const q = searchParams.toString()
+    router.replace(q ? `/admin/profile?${q}` : '/admin/profile', { scroll: false })
+  }, [isMobile, router, searchParams])
 
   useEffect(() => {
     let cancelled = false
@@ -54,6 +998,7 @@ export default function AdminSettingsClient() {
         setProfile(data)
         setDraftName(data.fullName || '')
         setDraftEmail(data.email || '')
+        setDraftSmsPhone(data.smsPhone || '')
       } catch (err) {
         if (!cancelled) setPersonalError(err.message || 'Failed to load profile.')
       } finally {
@@ -86,6 +1031,15 @@ export default function AdminSettingsClient() {
     const v = value.trim()
     if (!v) return 'Please enter your name.'
     if (v.length < 2) return 'Name is too short.'
+    return ''
+  }
+
+  const validateSmsPhone = (value) => {
+    const v = value.trim()
+    if (!v) return ''
+    const digits = v.replace(/\D/g, '')
+    if (digits.length < 7) return 'Enter a valid phone number (at least 7 digits).'
+    if (digits.length > 15) return 'Phone number is too long.'
     return ''
   }
 
@@ -171,6 +1125,7 @@ export default function AdminSettingsClient() {
     if (profile) {
       setDraftName(profile.fullName || '')
       setDraftEmail(profile.email || '')
+      setDraftSmsPhone(profile.smsPhone || '')
     }
     setIsEditingPersonal(true)
   }
@@ -188,12 +1143,18 @@ export default function AdminSettingsClient() {
       setPersonalError(emailErr)
       return
     }
+    const phoneErr = validateSmsPhone(draftSmsPhone)
+    if (phoneErr) {
+      setPersonalError(phoneErr)
+      return
+    }
     if (!profile) {
       setPersonalError('Profile is not loaded yet.')
       return
     }
     const trimmedName = draftName.trim()
     const trimmedEmail = draftEmail.trim()
+    const trimmedSms = draftSmsPhone.trim()
     try {
       const { error: authError } = await supabase.auth.updateUser({ email: trimmedEmail })
       if (authError) throw authError
@@ -202,11 +1163,16 @@ export default function AdminSettingsClient() {
         .update({
           full_name: trimmedName,
           email: trimmedEmail,
+          sms_phone: trimmedSms || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', profile.id)
       if (error) throw error
-      setProfile((prev) => (prev ? { ...prev, fullName: trimmedName, email: trimmedEmail } : prev))
+      setProfile((prev) =>
+        prev
+          ? { ...prev, fullName: trimmedName, email: trimmedEmail, smsPhone: trimmedSms }
+          : prev,
+      )
       setIsEditingPersonal(false)
       setPersonalStatus('Profile updated successfully.')
     } catch (err) {
@@ -220,6 +1186,7 @@ export default function AdminSettingsClient() {
     if (profile) {
       setDraftName(profile.fullName || '')
       setDraftEmail(profile.email || '')
+      setDraftSmsPhone(profile.smsPhone || '')
     }
     if (avatarPreviewRef.current) {
       URL.revokeObjectURL(avatarPreviewRef.current)
@@ -236,25 +1203,27 @@ export default function AdminSettingsClient() {
     setPassStatus('')
     if (!currentPassword) {
       setPassError('Please enter your current password.')
-      return
+      return false
     }
     const validation = validateNewPassword(newPassword, confirmPassword)
     if (!validation.valid) {
       setPassError(validation.message)
-      return
+      return false
     }
     try {
       const { error } = await supabase.auth.updateUser({ password: newPassword })
       if (error) {
         setPassError(error.message || 'Failed to update password.')
-        return
+        return false
       }
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
       setPassStatus('Password updated successfully.')
+      return true
     } catch (err) {
       setPassError(err.message || 'Failed to update password.')
+      return false
     }
   }
 
@@ -262,20 +1231,50 @@ export default function AdminSettingsClient() {
   const formId = 'adminPasswordForm'
   const id = (name) => `admin_${name}`
 
-  const [showLogout, setShowLogout] = useState(false)
+  const [activeTab, setActiveTab] = useState(() =>
+    normalizeSettingsTab(searchParams.get('tab') || undefined),
+  )
 
-  const handleLogout = async () => {
-    await signOut()
-    router.push('/administrator')
+  useEffect(() => {
+    const t = searchParams.get('tab')
+    setActiveTab(normalizeSettingsTab(t || undefined))
+  }, [searchParams])
+
+  const goTab = (tabId) => {
+    const next = normalizeSettingsTab(tabId)
+    setActiveTab(next)
+    router.replace(`/admin/settings?tab=${next}`, { scroll: false })
+  }
+
+  if (isMobile) {
+    const profileHref = searchParams.toString()
+      ? `/admin/profile?${searchParams.toString()}`
+      : '/admin/profile'
+    return (
+      <div className={styles.page}>
+        <div className={`${styles.contentArea} ${styles.grid}`}>
+          <section className={`${styles.card} ${styles.full}`}>
+            <h2 className={styles.desktopSettingsNoticeTitle}>Settings are for desktop</h2>
+            <p className={styles.desktopSettingsNoticeBody}>
+              This page is optimized for larger screens. On your phone, use Profile for account
+              options, notifications, billing, and site content.
+            </p>
+            <p className={styles.desktopSettingsNoticeHint}>Redirecting you to Profile…</p>
+            <Link href={profileHref} className={styles.desktopSettingsNoticeLink}>
+              Go to Profile now
+            </Link>
+          </section>
+        </div>
+      </div>
+    )
   }
 
   if (loading) {
     return (
       <div className={styles.page}>
-        <div className={styles.grid}>
+        <div className={`${styles.contentArea} ${styles.grid}`}>
           <section className={`${styles.card} ${styles.full}`}>
-            <p className={styles.cardTitle}>Profile</p>
-            <p className={styles.loadingText}>Loading profile…</p>
+            <AdminLoadingState variant="card" label="Loading your profile" />
           </section>
         </div>
       </div>
@@ -284,176 +1283,143 @@ export default function AdminSettingsClient() {
 
   return (
     <div className={styles.page}>
+      <nav className={styles.tabBar} aria-label="Settings sections">
+        {[
+          { id: 'profile', label: 'Profile' },
+          { id: 'password', label: 'Password' },
+          { id: 'notifications', label: 'Notification' },
+          { id: 'billing', label: 'Billing' },
+          { id: 'content', label: 'Content' },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            className={`${styles.tabItem} ${activeTab === tab.id ? styles.tabItemActive : ''}`}
+            onClick={() => goTab(tab.id)}
+            aria-current={activeTab === tab.id ? 'page' : undefined}
+          >
+            <span className={styles.tabLabel}>{tab.label}</span>
+          </button>
+        ))}
+      </nav>
 
-      {/* ── MOBILE LAYOUT (≤ 640px) ── */}
-      <div className={styles.mobileSettings}>
-        {/* Profile hero */}
-        <div className={styles.mobileProfileHero}>
-          <div className={styles.mobileAvatar}>
-            {shownAvatar ? (
-              <Image
-                src={shownAvatar}
-                alt="Profile avatar"
-                width={72}
-                height={72}
-                className={styles.mobileAvatarImg}
-                unoptimized
-              />
-            ) : (
-              <FaUser />
-            )}
-          </div>
-          <div className={styles.mobileProfileInfo}>
-            <p className={styles.mobileName}>{profile?.fullName || 'Admin'}</p>
-            <p className={styles.mobileEmail}>{profile?.email || ''}</p>
-          </div>
-        </div>
-
-        {/* Account section */}
-        <div className={styles.mobileSection}>
-          <p className={styles.mobileSectionLabel}>Account</p>
-          <div className={styles.mobileMenuGroup}>
-            <button
-              type="button"
-              className={styles.mobileMenuItem}
-              onClick={onStartPersonalEdit}
-            >
-              <span className={styles.mobileMenuIcon}><FaUser /></span>
-              <span className={styles.mobileMenuLabel}>Manage Profile</span>
-              <span className={styles.mobileMenuArrow}>›</span>
-            </button>
-            <button
-              type="button"
-              className={styles.mobileMenuItem}
-              onClick={() => setIsEditingPassword(true)}
-            >
-              <span className={styles.mobileMenuIcon}><LuPencil /></span>
-              <span className={styles.mobileMenuLabel}>Password &amp; Security</span>
-              <span className={styles.mobileMenuArrow}>›</span>
-            </button>
-            <a href="/admin/notifications" className={styles.mobileMenuItem}>
-              <span className={styles.mobileMenuIcon}><TbBell /></span>
-              <span className={styles.mobileMenuLabel}>Notifications</span>
-              <span className={styles.mobileMenuArrow}>›</span>
-            </a>
-          </div>
-        </div>
-
-        {/* Support section */}
-        <div className={styles.mobileSection}>
-          <p className={styles.mobileSectionLabel}>Support</p>
-          <div className={styles.mobileMenuGroup}>
-            <a href="/admin/help" className={styles.mobileMenuItem}>
-              <span className={styles.mobileMenuIcon}><TbMessage2Question /></span>
-              <span className={styles.mobileMenuLabel}>Help Center</span>
-              <span className={styles.mobileMenuArrow}>›</span>
-            </a>
-            <button
-              type="button"
-              className={`${styles.mobileMenuItem} ${styles.mobileMenuItemDanger}`}
-              onClick={() => setShowLogout(true)}
-            >
-              <span className={`${styles.mobileMenuIcon} ${styles.mobileMenuIconDanger}`}><LuLogOut /></span>
-              <span className={`${styles.mobileMenuLabel} ${styles.mobileMenuLabelDanger}`}>Log Out</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* ── DESKTOP LAYOUT (> 640px) ── */}
-      <div className={styles.grid}>
+      <div className={`${styles.contentArea} ${styles.grid}`}>
+        {activeTab === 'profile' && (
         <section className={`${styles.card} ${styles.full}`}>
-          <div className={styles.cardHeadRow}>
-            <p className={styles.cardTitle}>Profile</p>
-            <div className={styles.headActions}>
-              {isEditingPersonal ? (
-                <>
-                  <button
-                    className={styles.secondaryBtn}
-                    onClick={onCancelPersonalEdit}
-                    disabled={avatarLoading}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    className={styles.primaryBtn}
-                    onClick={onSavePersonal}
-                    disabled={avatarLoading}
-                  >
-                    Save Changes
-                  </button>
-                </>
-              ) : (
-                <button
-                  className={styles.primaryBtn}
-                  onClick={onStartPersonalEdit}
-                  disabled={avatarLoading}
-                >
-                  <FiEdit /> Edit
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className={styles.piAvatarRow}>
-            <div className={styles.piAvatarLeft}>
-              <div
-                className={styles.avatar}
-                style={isEditingPersonal ? { cursor: 'pointer' } : {}}
-                onClick={isEditingPersonal ? () => fileRef.current?.click() : undefined}
-                title={isEditingPersonal ? 'Change photo' : undefined}
-              >
-                {shownAvatar ? (
-                  <Image
-                    src={shownAvatar}
-                    alt="Profile avatar"
-                    width={54}
-                    height={54}
-                    className={styles.avatarImg}
-                    unoptimized
-                  />
-                ) : (
-                  <div className={styles.avatarFallback}><FaUser /></div>
-                )}
+          <div className={styles.tabDetailHead}>
+            <div className={styles.tabDetailHeadRow}>
+              <div className={styles.tabDetailHeadText}>
+                <h2 className={styles.tabDetailTitle}>Manage Profile</h2>
+                <p className={styles.tabDetailSubtitle}>
+                  View and update your name, email, and profile photo.
+                </p>
               </div>
-              {isEditingPersonal && (
-                <div className={styles.avatarBtnRow}>
-                  <button
-                    type="button"
-                    className={styles.secondaryBtn}
-                    onClick={() => fileRef.current?.click()}
-                    disabled={avatarLoading}
-                    style={{ fontSize: '11px' }}
-                  >
-                    <FiUpload /> Upload
-                  </button>
-                  {shownAvatar && (
+              <div className={styles.headActions}>
+                {isEditingPersonal ? (
+                  <>
                     <button
                       type="button"
-                      className={styles.dangerBtn}
-                      onClick={onRemoveAvatar}
+                      className={styles.secondaryBtn}
+                      onClick={onCancelPersonalEdit}
                       disabled={avatarLoading}
-                      style={{ fontSize: '11px' }}
                     >
-                      Remove
+                      Cancel
                     </button>
-                  )}
-                </div>
-              )}
-              <input
-                ref={fileRef}
-                type="file"
-                accept={ALLOWED.join(',')}
-                className={styles.fileInput}
-                onChange={onPickAvatar}
-              />
+                    <button
+                      type="button"
+                      className={styles.primaryBtn}
+                      onClick={onSavePersonal}
+                      disabled={avatarLoading}
+                    >
+                      Save Changes
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className={styles.primaryBtn}
+                    onClick={onStartPersonalEdit}
+                    disabled={avatarLoading}
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className={styles.piFieldsRow}>
-            <div className={styles.piGrid}>
-              <div className={styles.field}>
-                <label htmlFor={id('name')} className={styles.label}>Name</label>
+          <div className={styles.profileDetails}>
+            <div className={styles.settingsRow}>
+              <div className={styles.settingsRowMeta}>
+                <div className={styles.settingsRowTitleRow}>
+                  <p className={styles.settingsRowTitle}>Avatar</p>
+                </div>
+                <p className={styles.settingsRowDesc}>Shown across admin-facing experiences.</p>
+              </div>
+              <div className={`${styles.settingsRowControl} ${styles.profileControl}`}>
+                <div className={styles.profilePhotoControl}>
+                  <div
+                    className={styles.avatar}
+                    style={isEditingPersonal ? { cursor: 'pointer' } : {}}
+                    onClick={isEditingPersonal ? () => fileRef.current?.click() : undefined}
+                    title={isEditingPersonal ? 'Change photo' : undefined}
+                  >
+                    {shownAvatar ? (
+                      <Image
+                        src={shownAvatar}
+                        alt="Profile avatar"
+                        width={96}
+                        height={96}
+                        className={styles.avatarImg}
+                        unoptimized
+                      />
+                    ) : (
+                      <div className={styles.avatarFallback}><FaUser /></div>
+                    )}
+                  </div>
+                  {isEditingPersonal && (
+                    <div className={styles.avatarBtnRow}>
+                      <button
+                        type="button"
+                        className={styles.secondaryBtn}
+                        onClick={() => fileRef.current?.click()}
+                        disabled={avatarLoading}
+                        style={{ fontSize: '11px' }}
+                      >
+                        <FiUpload /> Upload
+                      </button>
+                      {shownAvatar && (
+                        <button
+                          type="button"
+                          className={styles.dangerBtn}
+                          onClick={onRemoveAvatar}
+                          disabled={avatarLoading}
+                          style={{ fontSize: '11px' }}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept={ALLOWED.join(',')}
+                    className={styles.fileInput}
+                    onChange={onPickAvatar}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.settingsRow}>
+              <div className={styles.settingsRowMeta}>
+                <div className={styles.settingsRowTitleRow}>
+                  <p className={styles.settingsRowTitle}>Name</p>
+                </div>
+                <p className={styles.settingsRowDesc}>Used for account and audit references.</p>
+              </div>
+              <div className={`${styles.settingsRowControl} ${styles.profileControl}`}>
                 <input
                   id={id('name')}
                   value={draftName}
@@ -462,14 +1428,47 @@ export default function AdminSettingsClient() {
                   disabled={!isEditingPersonal}
                 />
               </div>
-              <div className={styles.field}>
-                <label htmlFor={id('email')} className={styles.label}>Email</label>
+            </div>
+
+            <div className={styles.settingsRow}>
+              <div className={styles.settingsRowMeta}>
+                <div className={styles.settingsRowTitleRow}>
+                  <p className={styles.settingsRowTitle}>Email</p>
+                </div>
+                <p className={styles.settingsRowDesc}>Changes will update your sign-in email.</p>
+              </div>
+              <div className={`${styles.settingsRowControl} ${styles.profileControl}`}>
                 <input
                   id={id('email')}
                   value={draftEmail}
                   onChange={(e) => setDraftEmail(e.target.value)}
                   className={`${styles.input} ${!isEditingPersonal ? styles.inputReadOnly : ''}`}
                   disabled={!isEditingPersonal}
+                />
+              </div>
+            </div>
+
+            <div className={styles.settingsRow}>
+              <div className={styles.settingsRowMeta}>
+                <div className={styles.settingsRowTitleRow}>
+                  <p className={styles.settingsRowTitle}>SMS contact number</p>
+                </div>
+                <p className={styles.settingsRowDesc}>
+                  Optional mobile number for SMS contact.
+                </p>
+              </div>
+              <div className={`${styles.settingsRowControl} ${styles.profileControl}`}>
+                <input
+                  id={id('sms_phone')}
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  placeholder="e.g. +63 900 000 0000"
+                  value={draftSmsPhone}
+                  onChange={(e) => setDraftSmsPhone(e.target.value)}
+                  className={`${styles.input} ${!isEditingPersonal ? styles.inputReadOnly : ''}`}
+                  disabled={!isEditingPersonal}
+                  aria-label="SMS contact number"
                 />
               </div>
             </div>
@@ -482,13 +1481,24 @@ export default function AdminSettingsClient() {
             <div className={styles.msgOk}><MdCheckCircle /> {personalStatus}</div>
           )}
         </section>
+        )}
 
-        <section className={styles.card}>
-          <div className={styles.cardHeadRow}>
-            <p className={styles.cardTitle}>Change Password</p>
-            <button form={formId} type="submit" className={styles.primaryBtn}>
-              Save Changes
-            </button>
+        {activeTab === 'password' && (
+        <section className={`${styles.card} ${styles.full}`}>
+          <div className={styles.tabDetailHead}>
+            <div className={styles.tabDetailHeadRow}>
+              <div className={styles.tabDetailHeadText}>
+                <h2 className={styles.tabDetailTitle}>Change Password</h2>
+                <p className={styles.tabDetailSubtitle}>
+                  Update your password to keep your account secure.
+                </p>
+              </div>
+              <div className={styles.headActions}>
+                <button form={formId} type="submit" className={styles.primaryBtn}>
+                  Save Changes
+                </button>
+              </div>
+            </div>
           </div>
           <form id={formId} onSubmit={handlePasswordSubmit} className={styles.form}>
             <div className={styles.passGrid}>
@@ -549,225 +1559,14 @@ export default function AdminSettingsClient() {
             )}
           </form>
         </section>
+        )}
+
+        {activeTab === 'billing' && <AdminBillingSettingsPanel />}
+
+        {activeTab === 'notifications' && <AdminNotificationPreferencesPanel />}
+
+        {activeTab === 'content' && <AdminSiteContentPanel />}
       </div>
-
-      {isEditingPersonal && (
-        <div className={`${styles.bottomSheetRoot} ${styles.mobileOnly}`}>
-          <div
-            className={styles.bottomSheetBackdrop}
-            onClick={onCancelPersonalEdit}
-          />
-          <div
-            className={styles.bottomSheet}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="adminPersonalSheetTitle"
-          >
-            <div className={styles.bottomSheetHandle} />
-            <div className={styles.bottomSheetHeader}>
-              <button
-                type="button"
-                className={`${styles.sheetHeaderBtn} ${styles.sheetCancelBtn}`}
-                onClick={onCancelPersonalEdit}
-              >
-                Cancel
-              </button>
-              <p id="adminPersonalSheetTitle" className={styles.bottomSheetTitle}>
-                Edit Profile
-              </p>
-              <button
-                type="button"
-                className={`${styles.sheetHeaderBtn} ${styles.sheetSaveBtn}`}
-                onClick={onSavePersonal}
-                disabled={avatarLoading}
-              >
-                Save
-              </button>
-            </div>
-
-            <div className={styles.bottomSheetBody}>
-              <div className={styles.sheetAvatarSection}>
-                <div className={styles.sheetAvatarWrap}>
-                  <div className={`${styles.avatar} ${styles.avatarLarge}`}>
-                    {shownAvatar ? (
-                      <Image
-                        src={shownAvatar}
-                        alt="Profile avatar"
-                        width={72}
-                        height={72}
-                        className={styles.avatarImg}
-                        unoptimized
-                      />
-                    ) : (
-                      <div className={styles.avatarFallback}><FaUser /></div>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    className={styles.avatarEditBtn}
-                    onClick={() => fileRef.current?.click()}
-                    disabled={avatarLoading}
-                    aria-label="Change profile photo"
-                  >
-                    <LuPencil />
-                  </button>
-                </div>
-                {shownAvatar && (
-                  <button
-                    type="button"
-                    className={styles.sheetRemoveBtn}
-                    onClick={onRemoveAvatar}
-                    disabled={avatarLoading}
-                  >
-                    Remove
-                  </button>
-                )}
-                <span className={styles.sheetAvatarHint}>
-                  PNG, JPG, or WEBP · Max {MAX_MB}MB
-                </span>
-              </div>
-
-              <input
-                ref={fileRef}
-                type="file"
-                accept={ALLOWED.join(',')}
-                className={styles.fileInput}
-                onChange={onPickAvatar}
-              />
-
-              <div className={styles.piFieldsRow}>
-                <div className={styles.piGrid}>
-                  <div className={styles.field}>
-                    <label htmlFor={`${id('name')}_sheet`} className={styles.label}>Name</label>
-                    <input
-                      id={`${id('name')}_sheet`}
-                      value={draftName}
-                      onChange={(e) => setDraftName(e.target.value)}
-                      className={styles.input}
-                    />
-                  </div>
-                  <div className={styles.field}>
-                    <label htmlFor={`${id('email')}_sheet`} className={styles.label}>Email</label>
-                    <input
-                      id={`${id('email')}_sheet`}
-                      value={draftEmail}
-                      onChange={(e) => setDraftEmail(e.target.value)}
-                      className={styles.input}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className={styles.bottomSheetFooter}>
-              {personalError && (
-                <div className={styles.msgError}><MdErrorOutline /> {personalError}</div>
-              )}
-              {personalStatus && (
-                <div className={styles.msgOk}><MdCheckCircle /> {personalStatus}</div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isEditingPassword && (
-        <div className={styles.bottomSheetRoot}>
-          <div
-            className={styles.bottomSheetBackdrop}
-            onClick={() => { setIsEditingPassword(false); setPassError(''); setPassStatus('') }}
-          />
-          <div
-            className={styles.bottomSheet}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="adminPasswordSheetTitle"
-          >
-            <div className={styles.bottomSheetHandle} />
-            <div className={styles.bottomSheetHeader}>
-              <button
-                type="button"
-                className={`${styles.sheetHeaderBtn} ${styles.sheetCancelBtn}`}
-                onClick={() => { setIsEditingPassword(false); setPassError(''); setPassStatus('') }}
-              >
-                Cancel
-              </button>
-              <p id="adminPasswordSheetTitle" className={styles.bottomSheetTitle}>
-                Password &amp; Security
-              </p>
-              <button
-                type="button"
-                className={`${styles.sheetHeaderBtn} ${styles.sheetSaveBtn}`}
-                onClick={() => document.getElementById(`${formId}_sheet`).requestSubmit()}
-              >
-                Save
-              </button>
-            </div>
-
-            <div className={styles.bottomSheetBody}>
-              <form id={`${formId}_sheet`} onSubmit={async (e) => { await handlePasswordSubmit(e); if (!passError) setIsEditingPassword(false) }} className={styles.form}>
-                <div className={styles.field}>
-                  <label htmlFor={id('current_password_sheet')} className={styles.label}>Current Password</label>
-                  <input
-                    id={id('current_password_sheet')}
-                    type="password"
-                    placeholder="Enter current password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    className={styles.input}
-                  />
-                </div>
-                <div className={styles.field}>
-                  <label htmlFor={id('new_password_sheet')} className={styles.label}>New Password</label>
-                  <input
-                    id={id('new_password_sheet')}
-                    type="password"
-                    placeholder="Enter new password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className={styles.input}
-                  />
-                </div>
-                <div className={styles.field}>
-                  <label htmlFor={id('confirm_password_sheet')} className={styles.label}>Confirm New Password</label>
-                  <input
-                    id={id('confirm_password_sheet')}
-                    type="password"
-                    placeholder="Re-enter new password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className={styles.input}
-                  />
-                </div>
-                <div className={styles.passwordReqBox}>
-                  <p className={styles.passwordReqTitle}>Password requirements</p>
-                  <ul className={styles.passwordReqList}>
-                    <li>At least 8 characters</li>
-                    <li>One uppercase letter</li>
-                    <li>One lowercase letter</li>
-                    <li>One number</li>
-                  </ul>
-                </div>
-              </form>
-            </div>
-
-            <div className={styles.bottomSheetFooter}>
-              {passError && (
-                <div className={styles.msgError}><MdErrorOutline /> {passError}</div>
-              )}
-              {passStatus && (
-                <div className={styles.msgOk}><MdCheckCircle /> {passStatus}</div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      <Logout
-        open={showLogout}
-        onCancel={() => setShowLogout(false)}
-        onConfirm={handleLogout}
-      />
     </div>
   )
 }

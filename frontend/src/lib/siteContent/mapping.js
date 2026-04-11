@@ -1,11 +1,6 @@
-// Minimal default shape when DB has no row or null columns. All content comes from `site_content` table.
+// Minimal default shape when DB has no row or null columns. Editable site copy comes from `site_content`.
 const DEFAULT_SITE_CONTENT = {
   systemName: '',
-  hero: {
-    title: '',
-    subheading: '',
-    primaryCta: '',
-  },
   footer: {
     tagline: '',
     supportPhone: '',
@@ -29,11 +24,6 @@ export function rowToSiteContent(row) {
 
   return {
     systemName: row.system_name ?? DEFAULT_SITE_CONTENT.systemName,
-    hero: {
-      title: row.hero_title ?? DEFAULT_SITE_CONTENT.hero.title,
-      subheading: row.hero_subheading ?? DEFAULT_SITE_CONTENT.hero.subheading,
-      primaryCta: row.hero_primary_cta ?? DEFAULT_SITE_CONTENT.hero.primaryCta,
-    },
     footer: {
       tagline: row.footer_tagline ?? DEFAULT_SITE_CONTENT.footer.tagline,
       supportPhone:
@@ -66,10 +56,6 @@ export function siteContentToRow(content) {
 
   return {
     system_name: src.systemName,
-
-    hero_title: src.hero?.title ?? null,
-    hero_subheading: src.hero?.subheading ?? null,
-    hero_primary_cta: src.hero?.primaryCta ?? null,
 
     footer_tagline: src.footer?.tagline ?? null,
     footer_support_phone: src.footer?.supportPhone ?? null,

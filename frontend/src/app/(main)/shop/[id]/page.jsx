@@ -3,8 +3,9 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { use, useState, useEffect, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
-import { getServiceById, LISTINGS as SAMPLE_LISTINGS, PROVIDERS, SERVICES, REVIEWS, getReviewsByServiceId } from '../data'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { getServiceById, PROVIDERS, SERVICES, REVIEWS, getReviewsByServiceId, CATEGORIES } from '../data'
+import { getRecommendedSimilarServices } from '../similarServices'
 import { fetchActiveShopListings, mergeShopListings } from '@/lib/shop-listings/client'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -16,24 +17,26 @@ export default function ServiceDetailPage({ params }) {
   const { addItem } = useCart()
   const { user, authLoading, isBuyer } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const listingQuery = searchParams.get('listing')
   const [fullCatalog, setFullCatalog] = useState(null)
 
   useEffect(() => {
     let cancelled = false
-    fetchActiveShopListings()
+    fetchActiveShopListings({ bustCache: true })
       .then((rows) => {
         if (cancelled) return
-        setFullCatalog(mergeShopListings(rows, SAMPLE_LISTINGS))
+        setFullCatalog(mergeShopListings(rows))
       })
       .catch(() => {
-        if (!cancelled) setFullCatalog(mergeShopListings([], SAMPLE_LISTINGS))
+        if (!cancelled) setFullCatalog(mergeShopListings([]))
       })
     return () => {
       cancelled = true
     }
   }, [])
 
-  const catalogForChildren = fullCatalog ?? mergeShopListings([], SAMPLE_LISTINGS)
+  const catalogForChildren = fullCatalog ?? mergeShopListings([])
 
   const listingsForService = useMemo(() => {
     if (!service) return []
@@ -41,15 +44,63 @@ export default function ServiceDetailPage({ params }) {
   }, [service, catalogForChildren])
 
   const [selectedListingId, setSelectedListingId] = useState('')
+  const [buyerPackage, setBuyerPackage] = useState('')
   const [quantity, setQuantity] = useState(1)
   const [addedMessage, setAddedMessage] = useState(false)
   const [addError, setAddError] = useState(null)
 
   useEffect(() => {
+    const ids = new Set(listingsForService.map((l) => String(l.id)))
+    const q = listingQuery ? String(listingQuery) : ''
+    if (q && ids.has(q)) {
+      setSelectedListingId(q)
+      return
+    }
     setSelectedListingId(listingsForService[0]?.id ?? '')
-  }, [id, listingsForService])
+  }, [id, listingsForService, listingQuery])
 
   const selectedListing = listingsForService.find((l) => l.id === selectedListingId)
+
+  /** Uploaded listing images only (no service/sample assets). */
+  const listingGalleryUrls = useMemo(() => {
+    if (!selectedListing) return []
+    const urls = selectedListing.imageUrls
+    if (Array.isArray(urls) && urls.length) {
+      return [...new Set(urls.filter((u) => typeof u === 'string' && u.trim()))]
+    }
+    if (selectedListing.imageUrl) return [selectedListing.imageUrl]
+    return []
+  }, [selectedListing])
+
+  const galleryKey = listingGalleryUrls.join('\0')
+  const [galleryIndex, setGalleryIndex] = useState(0)
+  useEffect(() => {
+    setGalleryIndex(0)
+  }, [selectedListingId, galleryKey])
+
+  const mainGallerySrc =
+    listingGalleryUrls.length > 0
+      ? listingGalleryUrls[Math.min(galleryIndex, listingGalleryUrls.length - 1)]
+      : null
+
+  const shopCategoryLabel = CATEGORIES.find((c) => c.id === service.id)?.label ?? ''
+  const attrType = selectedListing?.listingKindLabel?.trim() || '—'
+  const attrCategory =
+    selectedListing?.categoryLabel?.trim() || shopCategoryLabel || '—'
+  const attrDuration = selectedListing?.duration?.trim() || '—'
+  const attrCoverage = selectedListing?.coverage?.trim() || '—'
+
+  const buyerPackageOptions = selectedListing?.sellerPackageOptions ?? []
+
+  useEffect(() => {
+    const listing = listingsForService.find((l) => l.id === selectedListingId)
+    const opts = listing?.sellerPackageOptions ?? []
+    if (opts.length === 0) {
+      setBuyerPackage('')
+      return
+    }
+    setBuyerPackage((prev) => (prev && opts.includes(prev) ? prev : opts[0]))
+  }, [selectedListingId, listingsForService])
   const provider = selectedListing
     ? (selectedListing.provider ?? PROVIDERS.find((p) => p.id === selectedListing.providerId))
     : null
@@ -58,20 +109,42 @@ export default function ServiceDetailPage({ params }) {
     if (!selectedListing || !service) return
     setAddError(null)
 
+    const pkgOpts = selectedListing.sellerPackageOptions ?? []
+    if (pkgOpts.length > 0 && !String(buyerPackage || '').trim()) {
+      setAddError('Please select a package.')
+      return
+    }
+
+    const cartProductId =
+      pkgOpts.length > 0 && buyerPackage
+        ? `${selectedListing.id}::pkg::${encodeURIComponent(buyerPackage)}`
+        : selectedListing.id
+    const cartName =
+      pkgOpts.length > 0 && buyerPackage
+        ? `${selectedListing.name} — ${buyerPackage}`
+        : selectedListing.name
+
     if (!user) {
-      const target = `/shop/${id}`
+      const target =
+        selectedListingId && selectedListing
+          ? `/shop/${id}?listing=${encodeURIComponent(selectedListingId)}`
+          : `/shop/${id}`
       router.push(`/buyer/login?redirect=${encodeURIComponent(target)}`)
       return
     }
     if (!isBuyer) {
-      router.push(`/buyer/login?redirect=${encodeURIComponent(`/shop/${id}`)}`)
+      const back =
+        selectedListingId && selectedListing
+          ? `/shop/${id}?listing=${encodeURIComponent(selectedListingId)}`
+          : `/shop/${id}`
+      router.push(`/buyer/login?redirect=${encodeURIComponent(back)}`)
       return
     }
 
     const { error } = await addItem({
-      id: selectedListing.id,
-      name: selectedListing.name,
-      img: selectedListing.imageUrl || service.image,
+      id: cartProductId,
+      name: cartName,
+      img: mainGallerySrc || listingGalleryUrls[0] || '',
       price: selectedListing.price,
       description: provider
         ? `${provider.name} · ${selectedListing.inclusions?.[0] ?? ''}`
@@ -104,6 +177,66 @@ export default function ServiceDetailPage({ params }) {
     )
   }
 
+  if (fullCatalog === null) {
+    return (
+      <section className={styles.detailPage}>
+        <div className={styles.content}>
+          <article
+            className={`${styles.card} ${styles.detailSkeletonCard}`}
+            role="status"
+            aria-busy="true"
+            aria-live="polite"
+          >
+            <span className={styles.detailSkeletonSrOnly}>Loading listing</span>
+            <div className={styles.galleryCol}>
+              <div className={styles.mainImageWrap}>
+                <div className={styles.detailSkeletonHero} aria-hidden="true" />
+              </div>
+              <div className={styles.thumbStrip} aria-hidden="true">
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className={styles.detailSkeletonThumb} />
+                ))}
+              </div>
+              <div className={styles.galleryMeta}>
+                <div className={styles.detailSkeletonPill} aria-hidden="true" />
+                <div className={styles.detailSkeletonShareRow} aria-hidden="true">
+                  <div className={styles.detailSkeletonDot} />
+                  <div className={styles.detailSkeletonDot} />
+                  <div className={styles.detailSkeletonDot} />
+                  <div className={styles.detailSkeletonDot} />
+                </div>
+              </div>
+            </div>
+            <div className={styles.body}>
+              <div className={styles.detailSkeletonTitle} aria-hidden="true" />
+              <div className={styles.detailSkeletonRatings} aria-hidden="true" />
+              <div className={styles.detailSkeletonPrice} aria-hidden="true" />
+              <div className={styles.detailSkeletonText} aria-hidden="true" />
+              <div className={styles.detailSkeletonTextShort} aria-hidden="true" />
+              <hr className={styles.divider} />
+              <div className={styles.attributes} aria-hidden="true">
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className={styles.attrRow}>
+                    <div className={styles.detailSkeletonAttrLabel} />
+                    <div className={styles.detailSkeletonAttrValue} />
+                  </div>
+                ))}
+              </div>
+              <div className={styles.selectors} aria-hidden="true">
+                <div className={styles.detailSkeletonSelect} />
+                <div className={styles.detailSkeletonQty} />
+              </div>
+              <div className={styles.actions}>
+                <div className={`${styles.detailSkeletonBtn} ${styles.detailSkeletonBtnPrimary}`} />
+                <div className={`${styles.detailSkeletonBtn} ${styles.detailSkeletonBtnOutline}`} />
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section className={styles.detailPage}>
       {/* Main content area */}
@@ -118,32 +251,43 @@ export default function ServiceDetailPage({ params }) {
                   <path d="M19 12H5M12 5l-7 7 7 7"/>
                 </svg>
               </Link>
-              <Image
-                src={service.image}
-                alt={service.name}
-                fill
-                sizes="(max-width: 800px) 100vw, 480px"
-                priority
-                className={styles.mainImage}
-              />
+              {mainGallerySrc ? (
+                <Image
+                  src={mainGallerySrc}
+                  alt={selectedListing?.name || service.name}
+                  fill
+                  sizes="(max-width: 800px) 100vw, 480px"
+                  priority
+                  className={styles.mainImage}
+                />
+              ) : (
+                <div className={styles.mainImagePlaceholder} aria-hidden />
+              )}
             </div>
-            {/* Thumbnail strip — uses service.gallery if available, else repeats main image */}
             <div className={styles.thumbStrip}>
-              {(service.gallery || [service.image, service.image, service.image, service.image]).map(
-                (src, i) => (
-                  <div
-                    key={i}
-                    className={`${styles.thumb} ${i === 0 ? styles.thumbActive : ''}`}
+              {listingGalleryUrls.length > 0 ? (
+                listingGalleryUrls.map((src, i) => (
+                  <button
+                    key={`${src}-${i}`}
+                    type="button"
+                    className={`${styles.thumb} ${i === galleryIndex ? styles.thumbActive : ''}`}
+                    onClick={() => setGalleryIndex(i)}
+                    aria-label={`Show image ${i + 1}`}
+                    aria-pressed={i === galleryIndex}
                   >
                     <Image
                       src={src}
-                      alt={`${service.name} view ${i + 1}`}
+                      alt={`${selectedListing?.name || service.name} view ${i + 1}`}
                       fill
                       sizes="80px"
                       className={styles.thumbImg}
                     />
-                  </div>
-                ),
+                  </button>
+                ))
+              ) : (
+                <div className={`${styles.thumb} ${styles.thumbActive}`}>
+                  <div className={styles.thumbPlaceholder} aria-hidden />
+                </div>
               )}
             </div>
 
@@ -184,7 +328,7 @@ export default function ServiceDetailPage({ params }) {
           {/* ── RIGHT: Product details ── */}
           <div className={styles.body}>
             {/* Title */}
-            <h2 className={styles.title}>{service.name}</h2>
+            <h2 className={styles.title}>{selectedListing?.name || service.name}</h2>
 
             {/* Ratings row */}
             <div className={styles.ratingsRow}>
@@ -206,7 +350,8 @@ export default function ServiceDetailPage({ params }) {
 
             {/* Short description — 2–3 lines max */}
             <p className={styles.shortDesc}>
-              {service.shortDescription ||
+              {selectedListing?.description?.trim() ||
+                service.shortDescription ||
                 `A thoughtfully curated memorial service that honors your loved one with grace, 
                  dignity, and compassion — guiding your family through every step of the process.`}
             </p>
@@ -218,41 +363,40 @@ export default function ServiceDetailPage({ params }) {
             <dl className={styles.attributes}>
               <div className={styles.attrRow}>
                 <dt className={styles.attrLabel}>Type</dt>
-                <dd className={styles.attrValue}>{service.type || 'Funeral Package'}</dd>
+                <dd className={styles.attrValue}>{attrType}</dd>
               </div>
               <div className={styles.attrRow}>
                 <dt className={styles.attrLabel}>Category</dt>
-                <dd className={styles.attrValue}>{service.category || 'Memorial Service'}</dd>
+                <dd className={styles.attrValue}>{attrCategory}</dd>
               </div>
               <div className={styles.attrRow}>
                 <dt className={styles.attrLabel}>Duration</dt>
-                <dd className={styles.attrValue}>{service.duration || '3–5 Days'}</dd>
+                <dd className={styles.attrValue}>{attrDuration}</dd>
               </div>
               <div className={styles.attrRow}>
                 <dt className={styles.attrLabel}>Coverage</dt>
-                <dd className={styles.attrValue}>{service.coverage || 'Metro Manila'}</dd>
+                <dd className={styles.attrValue}>{attrCoverage}</dd>
               </div>
             </dl>
 
             {/* Size / Quantity selectors */}
             <div className={styles.selectors}>
-              <div className={styles.selectorGroup}>
-                <label className={styles.selectorLabel}>Package</label>
-                <select
-                  className={styles.select}
-                  value={selectedListingId}
-                  onChange={(e) => setSelectedListingId(e.target.value)}
-                >
-                  {listingsForService.map((listing) => (
-                    <option key={listing.id} value={listing.id}>
-                      {listing.name}
-                    </option>
-                  ))}
-                  {listingsForService.length === 0 && (
-                    <option value="">Select package</option>
-                  )}
-                </select>
-              </div>
+              {buyerPackageOptions.length > 0 ? (
+                <div className={styles.selectorGroup}>
+                  <label className={styles.selectorLabel}>Package</label>
+                  <select
+                    className={styles.select}
+                    value={buyerPackage}
+                    onChange={(e) => setBuyerPackage(e.target.value)}
+                  >
+                    {buyerPackageOptions.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
               <div className={styles.selectorGroup}>
                 <label className={styles.selectorLabel}>Quantity</label>
                 <div className={styles.qtyControl}>
@@ -282,7 +426,11 @@ export default function ServiceDetailPage({ params }) {
                 <button
                   className={styles.btnAddToCart}
                   onClick={handleAddToCart}
-                  disabled={!selectedListing || authLoading}
+                  disabled={
+                    !selectedListing ||
+                    authLoading ||
+                    (buyerPackageOptions.length > 0 && !String(buyerPackage || '').trim())
+                  }
                 >
                   {addedMessage ? 'Added to cart' : 'Add to Cart'}
                 </button>
@@ -298,12 +446,18 @@ export default function ServiceDetailPage({ params }) {
 
         {/* ── PROVIDER CARD ── */}
         {provider && (
-          <ProviderCard provider={provider} styles={styles} allListings={catalogForChildren} />
+          <ProviderCard
+            key={String(provider.id)}
+            provider={provider}
+            styles={styles}
+            allListings={catalogForChildren}
+          />
         )}
 
         {/* ── BELOW THE FOLD: Full description (tabbed) ── */}
         <FullDescriptionSection
           service={service}
+          selectedListing={selectedListing}
           styles={styles}
           allServices={SERVICES}
           allListings={catalogForChildren}
@@ -325,7 +479,11 @@ export default function ServiceDetailPage({ params }) {
         <button
           className={styles.mobileActionBarCart}
           onClick={handleAddToCart}
-          disabled={!selectedListing || authLoading}
+          disabled={
+            !selectedListing ||
+            authLoading ||
+            (buyerPackageOptions.length > 0 && !String(buyerPackage || '').trim())
+          }
         >
           {addedMessage ? '✓ Added' : 'Add to Cart'}
         </button>
@@ -357,12 +515,87 @@ function timeAgo(dateStr) {
   return { text: `Active ${diffMonths} month${diffMonths !== 1 ? 's' : ''} ago`, isActive: false }
 }
 
-function FullDescriptionSection({ service, styles, allServices = [], allListings = [] }) {
+/** Whole calendar days from `joinedDate` to `now` (non-negative). */
+function fullDaysSince(joinedDate, now = new Date()) {
+  const start = new Date(joinedDate)
+  if (Number.isNaN(start.getTime())) return 0
+  return Math.max(0, Math.floor((now - start) / (1000 * 60 * 60 * 24)))
+}
+
+/**
+ * "Joined" label: days, weeks, months, or years (not years-only).
+ * Under 7d → days; under 30d → weeks; under 365d → months; else years.
+ */
+function formatJoinedAgo(joinedDate, now = new Date()) {
+  const d = fullDaysSince(joinedDate, now)
+  if (d < 1) return 'Today'
+  if (d < 7) return `${d} day${d !== 1 ? 's' : ''} ago`
+  if (d < 30) {
+    const w = Math.floor(d / 7)
+    return `${w} week${w !== 1 ? 's' : ''} ago`
+  }
+  if (d < 365) {
+    const m = Math.max(1, Math.floor(d / 30))
+    return `${m} month${m !== 1 ? 's' : ''} ago`
+  }
+  const y = Math.floor(d / 365)
+  return `${y} year${y !== 1 ? 's' : ''} ago`
+}
+
+/**
+ * "In service" tenure: same tiers, no "ago" (e.g. "3 weeks", "2 months").
+ */
+function formatTenureLength(joinedDate, now = new Date()) {
+  const d = fullDaysSince(joinedDate, now)
+  if (d < 1) return 'Less than a day'
+  if (d < 7) return `${d} day${d !== 1 ? 's' : ''}`
+  if (d < 30) {
+    const w = Math.floor(d / 7)
+    return `${w} week${w !== 1 ? 's' : ''}`
+  }
+  if (d < 365) {
+    const m = Math.max(1, Math.floor(d / 30))
+    return `${m} month${m !== 1 ? 's' : ''}`
+  }
+  const y = Math.floor(d / 365)
+  return `${y} year${y !== 1 ? 's' : ''}`
+}
+
+const FALLBACK_DESC_LEAD =
+  'This package includes full coordination of the memorial ceremony, a dedicated funeral director to guide your family, preparation and dignified care of the deceased, use of our chapel or designated venue, floral arrangement selections, printed memorial programs, and post-service assistance with documentation.'
+
+const FALLBACK_WHO =
+  'This service is for families who wish to arrange a traditional or contemporary funeral ceremony for a recently departed loved one. Suitable for individuals of any faith or cultural background — our team is experienced in accommodating religious rites, cultural customs, and personal preferences to ensure the service truly honors the individual.'
+
+const FALLBACK_NOTES =
+  'Prices are indicative and may vary depending on specific requests, chosen add-ons, or venue requirements outside our standard facilities. Out-of-town transport, embalming beyond 5 days, and premium casket upgrades are billed separately. All arrangements are subject to availability. A dedicated coordinator will be assigned upon booking.'
+
+const FALLBACK_BULLETS = [
+  'Full ceremony coordination',
+  'Dedicated funeral director',
+  'Chapel / venue use',
+  'Floral arrangements',
+  'Memorial programs printed',
+  'Metro Manila transport',
+  'Administrative assistance',
+  'Post-service documentation',
+]
+
+function FullDescriptionSection({ service, selectedListing, styles, allServices = [], allListings = [] }) {
   const [activeTab, setActiveTab] = useState('description')
   const [expanded, setExpanded] = useState(false)
 
-  // Similar = other services (exclude current)
-  const similarServices = allServices.filter((s) => s.id !== service.id).slice(0, 3)
+  const similarServices = useMemo(
+    () =>
+      getRecommendedSimilarServices({
+        currentServiceId: service.id,
+        selectedListing,
+        allServices,
+        allListings,
+        limit: 3,
+      }),
+    [service.id, selectedListing?.id, selectedListing?.price, allServices, allListings],
+  )
 
   const tabs = [
     { id: 'description', label: "What's Included" },
@@ -396,47 +629,37 @@ function FullDescriptionSection({ service, styles, allServices = [], allListings
               {activeTab === 'description' && (
                 <>
                   <p className={styles.tabText}>
-                    This package includes full coordination of the memorial ceremony, a dedicated funeral
-                    director to guide your family, preparation and dignified care of the deceased, use of our
-                    chapel or designated venue, floral arrangement selections, printed memorial programs, and
-                    post-service assistance with documentation.
+                    {selectedListing?.description?.trim() || service.longDescription || FALLBACK_DESC_LEAD}
                   </p>
                   <ul className={styles.featureGrid}>
-                    <li>Full ceremony coordination</li>
-                    <li>Dedicated funeral director</li>
-                    <li>Chapel / venue use</li>
-                    <li>Floral arrangements</li>
-                    <li>Memorial programs printed</li>
-                    <li>Metro Manila transport</li>
-                    <li>Administrative assistance</li>
-                    <li>Post-service documentation</li>
+                    {(selectedListing?.inclusions?.length ? selectedListing.inclusions : FALLBACK_BULLETS).map(
+                      (item, idx) => (
+                        <li key={idx}>{item}</li>
+                      ),
+                    )}
                   </ul>
-                  <table className={styles.specsTable}>
-                    <tbody>
-                      <tr><td>Display</td><td>Full chapel setup, candle lighting</td></tr>
-                      <tr><td>Transportation</td><td>Within Metro Manila (included)</td></tr>
-                      <tr><td>Embalming</td><td>Up to 5 days standard</td></tr>
-                      <tr><td>Coordinator</td><td>1 dedicated family coordinator</td></tr>
-                      <tr><td>Programs</td><td>50 printed memorial booklets</td></tr>
-                      <tr><td>Venue Capacity</td><td>Up to 120 guests</td></tr>
-                    </tbody>
-                  </table>
+                  {!selectedListing?.inclusions?.length ? (
+                    <table className={styles.specsTable}>
+                      <tbody>
+                        <tr><td>Display</td><td>Full chapel setup, candle lighting</td></tr>
+                        <tr><td>Transportation</td><td>Within Metro Manila (included)</td></tr>
+                        <tr><td>Embalming</td><td>Up to 5 days standard</td></tr>
+                        <tr><td>Coordinator</td><td>1 dedicated family coordinator</td></tr>
+                        <tr><td>Programs</td><td>50 printed memorial booklets</td></tr>
+                        <tr><td>Venue Capacity</td><td>Up to 120 guests</td></tr>
+                      </tbody>
+                    </table>
+                  ) : null}
                 </>
               )}
               {activeTab === 'who' && (
                 <p className={styles.tabText}>
-                  This service is for families who wish to arrange a traditional or contemporary funeral
-                  ceremony for a recently departed loved one. Suitable for individuals of any faith or
-                  cultural background — our team is experienced in accommodating religious rites, cultural
-                  customs, and personal preferences to ensure the service truly honors the individual.
+                  {selectedListing?.whoThisIsFor?.trim() || FALLBACK_WHO}
                 </p>
               )}
               {activeTab === 'notes' && (
                 <p className={styles.tabText}>
-                  Prices are indicative and may vary depending on specific requests, chosen add-ons, or
-                  venue requirements outside our standard facilities. Out-of-town transport, embalming beyond
-                  5 days, and premium casket upgrades are billed separately. All arrangements are subject to
-                  availability. A dedicated coordinator will be assigned upon booking.
+                  {selectedListing?.importantNotes?.trim() || FALLBACK_NOTES}
                 </p>
               )}
               {!expanded && <div className={styles.tabFade} />}
@@ -461,8 +684,12 @@ function FullDescriptionSection({ service, styles, allServices = [], allListings
                     const lowestListing = allListings
                       .filter((l) => l.serviceId === s.id)
                       .sort((a, b) => a.price - b.price)[0]
+                    const similarHref =
+                      lowestListing != null
+                        ? `/shop/${s.id}?listing=${encodeURIComponent(lowestListing.id)}`
+                        : `/shop/${s.id}`
                     return (
-                      <Link key={s.id} href={`/shop/${s.id}`} className={styles.similarCard}>
+                      <Link key={s.id} href={similarHref} className={styles.similarCard}>
                         <div className={styles.similarImgWrap}>
                           <Image
                             src={s.image}
@@ -875,26 +1102,35 @@ function ProviderCard({ provider, styles, allListings = [] }) {
       setActiveStatus(timeAgo(provider.lastActive))
     } else if (provider.activeStatus) {
       setActiveStatus({ text: provider.activeStatus, isActive: false })
+    } else {
+      setActiveStatus(null)
     }
 
-    // Joined text
+    // Joined = website signup (sellers.registered_at); In Service = business start (sellers.business_started_at)
     if (provider.joinedDate) {
       const joined = new Date(provider.joinedDate)
-      const diffMs = now - joined
-      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-      const diffMonths = Math.floor(diffDays / 30)
-      const diffYears = Math.floor(diffDays / 365)
-      if (diffYears >= 1) setJoinedText(`${diffYears} year${diffYears !== 1 ? 's' : ''} ago`)
-      else if (diffMonths >= 1) setJoinedText(`${diffMonths} month${diffMonths !== 1 ? 's' : ''} ago`)
-      else setJoinedText(`${diffDays} day${diffDays !== 1 ? 's' : ''} ago`)
+      setJoinedText(
+        Number.isNaN(joined.getTime()) ? null : formatJoinedAgo(joined, now),
+      )
+    } else {
+      setJoinedText(null)
     }
 
-    // Years in service
-    if (provider.joinedDate) {
-      const years = Math.floor((now - new Date(provider.joinedDate)) / (1000 * 60 * 60 * 24 * 365))
-      setYearsInService(years < 1 ? '< 1 year' : `${years} year${years !== 1 ? 's' : ''}`)
+    if (provider.businessStartedAt) {
+      const ops = new Date(provider.businessStartedAt)
+      setYearsInService(
+        Number.isNaN(ops.getTime()) ? null : formatTenureLength(ops, now),
+      )
+    } else {
+      setYearsInService(null)
     }
-  }, [provider.lastActive, provider.activeStatus, provider.joinedDate])
+  }, [
+    provider.lastActive,
+    provider.activeStatus,
+    provider.joinedDate,
+    provider.businessStartedAt,
+    provider.id,
+  ])
 
   const phoneSvg = (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.35 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.56a16 16 0 0 0 6.29 6.29l1.62-1.62a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>

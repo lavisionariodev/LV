@@ -4,13 +4,13 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { SERVICES, CATEGORIES, PROVIDERS, LISTINGS as SAMPLE_LISTINGS } from './data'
+import { SERVICES, CATEGORIES, PROVIDERS } from './data'
 import { fetchActiveShopListings, mergeShopListings } from '@/lib/shop-listings/client'
 import styles from './shop.module.css'
 
 export default function ShopPage() {
   const router = useRouter()
-  const [listings, setListings] = useState(() => mergeShopListings([], SAMPLE_LISTINGS))
+  const [listings, setListings] = useState(() => mergeShopListings([]))
   const [activeCategory, setActiveCategory] = useState('all')
   const [sortBy, setSortBy] = useState('popular')
   const [compareIds, setCompareIds] = useState([])
@@ -18,6 +18,7 @@ export default function ShopPage() {
   const [locationFocused, setLocationFocused] = useState(false)
   const [selectedProvider, setSelectedProvider] = useState(null)
   const [showFiltersModal, setShowFiltersModal] = useState(false)
+  const [listingsLoading, setListingsLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 15 // 3 columns × 5 rows
 
@@ -27,22 +28,43 @@ export default function ShopPage() {
 
   useEffect(() => {
     let cancelled = false
-    fetchActiveShopListings()
+    fetchActiveShopListings({ bustCache: true })
       .then((rows) => {
         if (cancelled) return
-        setListings(mergeShopListings(rows, SAMPLE_LISTINGS))
+        setListings(mergeShopListings(rows))
       })
       .catch(() => {
-        if (!cancelled) setListings(mergeShopListings([], SAMPLE_LISTINGS))
+        if (!cancelled) setListings(mergeShopListings([]))
+      })
+      .finally(() => {
+        if (!cancelled) setListingsLoading(false)
       })
     return () => {
       cancelled = true
     }
   }, [])
 
+  // After creating a listing in another tab, refetch so the grid is not stuck on a 45s cache.
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState !== 'visible') return
+      fetchActiveShopListings({ bustCache: true })
+        .then((rows) => {
+          setListings(mergeShopListings(rows))
+        })
+        .catch(() => {})
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [])
+
+  const hasLiveListings = useMemo(
+    () => listings.some((l) => l.source === 'database'),
+    [listings],
+  )
+
   const allProviders = useMemo(() => {
     const byId = new Map()
-    PROVIDERS.forEach((p) => byId.set(String(p.id), p))
     listings.forEach((l) => {
       if (l.provider) byId.set(String(l.provider.id), l.provider)
     })
@@ -160,6 +182,18 @@ export default function ShopPage() {
     <section className={styles.servicesPage}>
 
       <div className={styles.content}>
+        {listingsLoading ? (
+          <div
+            className={styles.shopPageLoading}
+            role="status"
+            aria-live="polite"
+            aria-busy="true"
+          >
+            <span className={styles.shopLoadingSpinner} aria-hidden="true" />
+            <span className={styles.shopLoadingSrOnly}>Loading shop listings</span>
+          </div>
+        ) : (
+        <>
         {/* ── Mobile Sort + Filter Row ── */}
         <div className={styles.mobileSortRow}>
           {/* Filter button — sits first, visually distinct */}
@@ -476,6 +510,14 @@ export default function ShopPage() {
               </div>
             </div>
 
+            {!hasLiveListings ? (
+              <p className={styles.liveDataHint} role="status">
+                No active listings returned from the database yet. Ensure migrations are applied, the seller account is
+                active or pending, each listing status is <strong>Active</strong>, and check the browser console for{' '}
+                <code className={styles.liveDataCode}>get_active_shop_listings</code> errors.
+              </p>
+            ) : null}
+
             {/* ── Compare tray (inline, single item hint) ── */}
             {compareIds.length === 1 && (
               <div className={styles.compareHintTray}>
@@ -661,6 +703,8 @@ export default function ShopPage() {
             )}
           </div>
         </div>
+        </>
+        )}
       </div>
 
       {/* ── Floating Compare Popup (appears when 2+ selected) ── */}
@@ -724,15 +768,22 @@ function ListingCard({ listing, service, styles, inCompare, onToggleCompare, com
 
   return (
     <div className={`${styles.card} ${styles.listingCard}${inCompare ? ` ${styles.listingCardSelected}` : ''}`}>
-      <Link href={`/shop/${listing.serviceId}`} className={styles.listingCardLink}>
+      <Link
+        href={`/shop/${listing.serviceId}?listing=${encodeURIComponent(listing.id)}`}
+        className={styles.listingCardLink}
+      >
         <div className={styles.listingImageWrap}>
-          <Image
-            src={listing.imageUrl || service?.image || '/sample/services/2.jpg'}
-            alt={listing.name}
-            width={400}
-            height={250}
-            className={styles.cardImage}
-          />
+          {listing.imageUrl || (listing.imageUrls && listing.imageUrls[0]) ? (
+            <Image
+              src={listing.imageUrl || listing.imageUrls[0]}
+              alt={listing.name}
+              width={400}
+              height={250}
+              className={styles.cardImage}
+            />
+          ) : (
+            <div className={styles.listingImagePlaceholder} aria-hidden />
+          )}
           {listing.popular && <span className={styles.popularBadge}>Most Popular</span>}
           {provider?.badge && (
             <span className={`${styles.providerBadge} ${styles[`badge${provider.badge.replace(' ', '')}`]}`}>

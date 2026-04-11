@@ -2,80 +2,33 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import { TbPhoto, TbSearch } from 'react-icons/tb'
+import Link from 'next/link'
+import { TbSearch } from 'react-icons/tb'
 import styles from './products.module.css'
+import {
+  buildSellerListingPayload,
+  dynamicValuesToFormState,
+  ensureBuiltInSellerTemplateFields,
+  ensureStatusField,
+  FALLBACK_IMAGE,
+  findFirstMissingRequiredField,
+  resolvePersistedImageUrls,
+  SellerListingFileInput,
+  SellerListingFormFields,
+} from './SellerListingForm'
 import { fetchSellerTemplate } from '@/lib/seller-template/client'
+import { getOrderedSectionIds, mergeSectionConfig, sortTemplateFieldsForDisplay } from '@/lib/seller-template/sections'
 import {
   listMySellerListings,
-  createSellerListing,
   updateSellerListing,
   deleteSellerListing,
-  uploadListingImages,
 } from '@/lib/seller-listings/client'
+import { getSellerByUserId } from '@/lib/sellers/client'
+import { supabase } from '@/lib/supabase/client'
 
-function formatPrice(amount) {
-  if (typeof amount !== 'number') return '—'
-  return new Intl.NumberFormat('en-PH', {
-    style: 'currency',
-    currency: 'PHP',
-    maximumFractionDigits: 0,
-  }).format(amount)
-}
-
-const TYPE_FILTERS = [
-  { id: 'all', label: 'All types' },
-  { id: 'service', label: 'Services' },
-  { id: 'package', label: 'Packages' },
-]
-
-const FALLBACK_IMAGE =
-  'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 640 420%22%3E%3Crect width=%22640%22 height=%22420%22 fill=%22%23d1d5db%22/%3E%3Cpath d=%22M230 160h180a22 22 0 0 1 22 22v56a22 22 0 0 1-22 22H230a22 22 0 0 1-22-22v-56a22 22 0 0 1 22-22Zm18 28a16 16 0 1 0 0.1 0Zm-8 56 38-34 35 30 44-40 55 44H240Z%22 fill=%22%239ca3af%22/%3E%3C/svg%3E'
-
-const STATUS_FIELD_DEFAULT = {
-  id: 'status',
-  label: 'Status',
-  type: 'select',
-  required: true,
-  placeholder: 'Select status',
-  options: ['active', 'inactive'],
-  order: 999,
-}
-
-function asInputValue(value) {
-  if (value == null) return ''
-  if (typeof value === 'number') return String(value)
-  return String(value)
-}
-
-function getTemplateDefaults(fields) {
-  return (fields || []).reduce((acc, field) => {
-    if (field.type === 'select') {
-      const first = Array.isArray(field.options) ? field.options[0] : ''
-      acc[field.id] = first || ''
-    } else {
-      acc[field.id] = ''
-    }
-    return acc
-  }, {})
-}
-
-function filterPersistableImageUrls(urls) {
-  return (Array.isArray(urls) ? urls : []).filter(
-    (url) => typeof url === 'string' && url.trim() && !url.startsWith('blob:'),
-  )
-}
-
-function sanitizeImageUrlsForPersistence(urls) {
-  const safe = filterPersistableImageUrls(urls)
-  return safe.length ? safe : [FALLBACK_IMAGE]
-}
-
-function ensureStatusField(fields) {
-  const list = Array.isArray(fields) ? [...fields] : []
-  const hasStatus = list.some((field) => field?.id === 'status')
-  if (hasStatus) return list
-  return [...list, { ...STATUS_FIELD_DEFAULT, order: list.length }]
-}
+// ---------------------------------------------------------------------------
+// Listing form utilities (products list + edit modal)
+// ---------------------------------------------------------------------------
 
 function revokeLocalPreviewUrls(entries) {
   ;(Array.isArray(entries) ? entries : []).forEach((entry) => {
@@ -93,13 +46,29 @@ function normalizeListingRowToProduct(row) {
   const listingName = dynamicValues.listing_name || row.listing_name || 'Untitled listing'
   const category = dynamicValues.category || row.category || 'Service'
   const description = dynamicValues.description || ''
-  const location = dynamicValues.location || row.location || 'N/A'
+  const areaRaw =
+    (typeof dynamicValues.coverage === 'string' && dynamicValues.coverage.trim()) ||
+    (typeof dynamicValues.location === 'string' && dynamicValues.location.trim()) ||
+    (typeof row.location === 'string' && row.location.trim()) ||
+    ''
+  const location = areaRaw || 'N/A'
   const basePriceRaw = dynamicValues.base_price ?? row.base_price ?? 0
   const basePrice = Number(basePriceRaw) || 0
   const status = dynamicValues.status || row.status || 'draft'
   const availability = dynamicValues.availability || 'Available'
   const kind = dynamicValues.kind || 'service'
   const primaryImage = imageUrls[0] || FALLBACK_IMAGE
+
+  const rawInc = dynamicValues.inclusions
+  let inclusions = []
+  if (Array.isArray(rawInc)) {
+    inclusions = rawInc.map((x) => String(x).trim()).filter(Boolean)
+  } else if (typeof rawInc === 'string') {
+    inclusions = rawInc
+      .split(/\n/)
+      .map((x) => x.trim())
+      .filter(Boolean)
+  }
 
   return {
     id: row.id,
@@ -116,14 +85,37 @@ function normalizeListingRowToProduct(row) {
     image: primaryImage,
     gallery: imageUrls.length ? imageUrls : [FALLBACK_IMAGE],
     dynamicValues,
+    inclusions,
+    whoThisIsFor: dynamicValues.who_this_is_for || '',
+    importantNotes: dynamicValues.important_notes || '',
+    funeralCategory: dynamicValues.funeral_category || '',
   }
 }
+
+// ---------------------------------------------------------------------------
+// Products list + view/edit modals
+// ---------------------------------------------------------------------------
+
+function formatPrice(amount) {
+  if (typeof amount !== 'number') return '—'
+  return new Intl.NumberFormat('en-PH', {
+    style: 'currency',
+    currency: 'PHP',
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
+
+const TYPE_FILTERS = [
+  { id: 'all', label: 'All types' },
+  { id: 'service', label: 'Services' },
+  { id: 'package', label: 'Packages' },
+]
 
 export default function ProductsContent({ initialKind = 'all' }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState(initialKind || 'all')
   const [selectedProduct, setSelectedProduct] = useState(null)
-  const [modalMode, setModalMode] = useState(null) // 'view' | 'edit' | 'create'
+  const [modalMode, setModalMode] = useState(null) // 'view' | 'edit'
   const [editGallery, setEditGallery] = useState([])
   const [pendingImageFiles, setPendingImageFiles] = useState([])
   const [products, setProducts] = useState([])
@@ -134,6 +126,8 @@ export default function ProductsContent({ initialKind = 'all' }) {
   const [formValues, setFormValues] = useState({})
   const [formError, setFormError] = useState('')
   const [loadingData, setLoadingData] = useState(true)
+  /** `sellers.status` — shop only shows listings when this is `active`. */
+  const [sellerAccountStatus, setSellerAccountStatus] = useState(null)
 
   useEffect(() => {
     if (initialKind && TYPE_FILTERS.some((t) => t.id === initialKind)) {
@@ -147,19 +141,38 @@ export default function ProductsContent({ initialKind = 'all' }) {
     const load = async () => {
       setLoadingData(true)
 
-      const [{ data: templateData }, { data: listingRows, error: listingError }] =
-        await Promise.all([fetchSellerTemplate(), listMySellerListings()])
+      const [{ data: templateData }, { data: listingRows, error: listingError }, authRes] =
+        await Promise.all([fetchSellerTemplate(), listMySellerListings(), supabase.auth.getUser()])
 
       if (!mounted) return
 
+      const uid = authRes.data?.user?.id
+      if (uid) {
+        const sellerRow = await getSellerByUserId(uid)
+        if (mounted) setSellerAccountStatus(sellerRow?.status ?? null)
+      } else if (mounted) {
+        setSellerAccountStatus(null)
+      }
+
       if (templateData) {
+        const mergedSec =
+          templateData.sectionConfig || mergeSectionConfig(templateData.section_config)
+        const orderIds = getOrderedSectionIds(mergedSec)
+        const withBuiltins = ensureBuiltInSellerTemplateFields(
+          [...(templateData.fields || [])],
+          orderIds,
+        )
         const sorted = ensureStatusField(
-          [...(templateData.fields || [])].sort((a, b) => a.order - b.order),
+          sortTemplateFieldsForDisplay(withBuiltins, orderIds),
         )
         setTemplate(templateData)
         setTemplateFields(sorted)
       } else {
-        setTemplateFields(ensureStatusField([]))
+        const orderIds = getOrderedSectionIds(mergeSectionConfig(null))
+        const withBuiltins = ensureBuiltInSellerTemplateFields([], orderIds)
+        setTemplateFields(
+          ensureStatusField(sortTemplateFieldsForDisplay(withBuiltins, orderIds)),
+        )
       }
 
       if (listingError) {
@@ -177,6 +190,16 @@ export default function ProductsContent({ initialKind = 'all' }) {
       mounted = false
     }
   }, [])
+
+  const templateSectionConfig = useMemo(() => {
+    if (template?.sectionConfig?.length) return template.sectionConfig
+    return mergeSectionConfig(template?.section_config)
+  }, [template])
+
+  const templateSectionIds = useMemo(
+    () => getOrderedSectionIds(templateSectionConfig),
+    [templateSectionConfig],
+  )
 
   const filteredProducts = useMemo(() => {
     let list = [...products]
@@ -213,33 +236,7 @@ export default function ProductsContent({ initialKind = 'all' }) {
     setEditGallery((product.gallery ?? [product.image].filter(Boolean)).map((url) => ({ url, file: null })))
     setPendingImageFiles([])
     setFormError('')
-    setFormValues({
-      ...getTemplateDefaults(templateFields),
-      ...(product.dynamicValues || {}),
-    })
-  }
-
-  const handleOpenCreate = () => {
-    setSelectedProduct({
-      id: '',
-      name: '',
-      kind: typeFilter === 'all' ? 'service' : typeFilter,
-      category: '',
-      startingPrice: 0,
-      city: '',
-      status: 'draft',
-      availability: 'Available',
-      inclusions: [],
-      image: FALLBACK_IMAGE,
-      description: '',
-      longDescription: '',
-      gallery: [FALLBACK_IMAGE],
-    })
-    setModalMode('create')
-    setEditGallery([])
-    setPendingImageFiles([])
-    setFormError('')
-    setFormValues(getTemplateDefaults(templateFields))
+    setFormValues(dynamicValuesToFormState(product.dynamicValues, templateFields))
   }
 
   const handleCloseModal = () => {
@@ -320,87 +317,78 @@ export default function ProductsContent({ initialKind = 'all' }) {
   const handleSaveProduct = async () => {
     if (!selectedProduct) return
 
-    const missingRequired = templateFields.find(
-      (field) => field.required && String(getFieldValue(field.id) ?? '').trim() === '',
+    const missingRequired = findFirstMissingRequiredField(
+      templateFields,
+      getFieldValue,
+      templateSectionIds,
     )
     if (missingRequired) {
       setFormError(`${missingRequired.label} is required.`)
       return
     }
 
-    const dynamicValues = { ...formValues }
-    const safeName = String(dynamicValues.listing_name || selectedProduct.name || '').trim() || 'Untitled listing'
-    const safeCategory = String(dynamicValues.category || selectedProduct.category || '').trim() || 'Service'
-    const safeLocation = String(dynamicValues.location || selectedProduct.city || '').trim() || 'N/A'
-    const safeStatus = String(dynamicValues.status || selectedProduct.status || 'draft')
-    const safePrice = Number(dynamicValues.base_price ?? selectedProduct.startingPrice ?? 0) || 0
-    const safeDescription = String(dynamicValues.description || '').trim()
-    const safeKind = String(dynamicValues.kind || selectedProduct.kind || 'service')
-    let persistedImageUrls = sanitizeImageUrlsForPersistence(
-      editGallery.map((entry) => entry.url),
+    const { error: uploadErr, persistedImageUrls } = await resolvePersistedImageUrls(
+      editGallery,
+      pendingImageFiles,
     )
-    if (pendingImageFiles.length) {
-      const { data: uploadedUrls, error: uploadError } = await uploadListingImages(pendingImageFiles)
-      if (uploadError) {
-        setFormError(uploadError)
-        return
-      }
-      const existingRemote = filterPersistableImageUrls(
-        editGallery.filter((entry) => !entry.url.startsWith('blob:')).map((entry) => entry.url),
-      )
-      persistedImageUrls = [...existingRemote, ...(uploadedUrls || [])]
-      if (!persistedImageUrls.length) persistedImageUrls = [FALLBACK_IMAGE]
+    if (uploadErr) {
+      setFormError(uploadErr)
+      return
     }
 
-    const payload = {
-      template_id: template?.id || null,
-      listing_name: safeName,
-      category: safeCategory,
-      base_price: safePrice,
-      location: safeLocation,
-      status: safeStatus,
-      dynamic_values: dynamicValues,
-      image_urls: persistedImageUrls,
-    }
+    const payload = buildSellerListingPayload({
+      template,
+      formValues,
+      selectedProduct,
+      persistedImageUrls,
+    })
 
-    if (modalMode === 'create') {
-      const { data, error } = await createSellerListing(payload)
-      if (error || !data) {
-        setFormError(error || 'Failed to save listing.')
-        return
-      }
-      setProducts((prev) => [normalizeListingRowToProduct(data), ...prev])
-    } else {
-      const { data, error } = await updateSellerListing(selectedProduct.id, payload)
-      if (error || !data) {
-        setFormError(error || 'Failed to save listing.')
-        return
-      }
-      setProducts((prev) =>
-        prev.map((p) => (p.id === selectedProduct.id ? normalizeListingRowToProduct(data) : p)),
-      )
+    const { data, error } = await updateSellerListing(selectedProduct.id, payload)
+    if (error || !data) {
+      setFormError(error || 'Failed to save listing.')
+      return
     }
+    setProducts((prev) =>
+      prev.map((p) => (p.id === selectedProduct.id ? normalizeListingRowToProduct(data) : p)),
+    )
 
     handleCloseModal()
   }
 
   return (
     <div className={styles.pageWrap}>
+      {sellerAccountStatus && sellerAccountStatus !== 'active' ? (
+        <div
+          className={styles.shopVisibilityBanner}
+          role="status"
+          aria-live="polite"
+        >
+          {sellerAccountStatus === 'pending' ? (
+            <>
+              <strong>Shop visibility:</strong> your seller account is still{' '}
+              <strong>pending approval</strong>. Listings will not appear on the public shop until an
+              administrator sets your account to Active.
+            </>
+          ) : (
+            <>
+              <strong>Shop visibility:</strong> your seller account is <strong>{sellerAccountStatus}</strong>.
+              Listings are hidden from the public shop until your account is Active.
+            </>
+          )}
+        </div>
+      ) : null}
       <section className={styles.filtersRow} aria-label="Search products">
         <div className={styles.searchWrap}>
           <TbSearch className={styles.searchIcon} size={18} aria-hidden />
           <input
             type="search"
             className={styles.searchBox}
-            placeholder="Search by name, category, or location"
+            placeholder="Search by name, category, or area"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             aria-label="Search products"
           />
         </div>
-        <button type="button" className={styles.addProductBtn} onClick={handleOpenCreate}>
-          Add Product
-        </button>
       </section>
 
       <section className={styles.statsStrip} aria-label="Listing overview">
@@ -430,7 +418,11 @@ export default function ProductsContent({ initialKind = 'all' }) {
           <div className={styles.emptyState}>
             <p className={styles.emptyTitle}>No listings match your filters</p>
             <p className={styles.emptyText}>
-              Adjust the search or type filter to see more of your services and packages.
+              Adjust the search or type filter to see more of your services and packages, or{' '}
+              <Link href="/seller/products/new" className={styles.emptyStateLink}>
+                Add New Listing
+              </Link>
+              .
             </p>
           </div>
         ) : (
@@ -520,19 +512,11 @@ export default function ProductsContent({ initialKind = 'all' }) {
             <div className={styles.productModalHeader}>
               <div>
                 <p className={styles.productModalKicker}>
-                  {modalMode === 'view'
-                    ? 'Listing details'
-                    : modalMode === 'create'
-                      ? 'Add listing'
-                      : 'Edit listing'}
+                  {modalMode === 'view' ? 'Listing details' : 'Edit listing'}
                 </p>
-                <h2 className={styles.productModalTitle}>
-                  {modalMode === 'create' ? 'New listing' : selectedProduct.name}
-                </h2>
+                <h2 className={styles.productModalTitle}>{selectedProduct.name}</h2>
                 <p className={styles.productModalSubtitle}>
-                  {modalMode === 'create'
-                    ? 'Fill in the listing details below'
-                    : `${selectedProduct.category} · ${selectedProduct.city}`}
+                  {selectedProduct.category} · {selectedProduct.city}
                 </p>
               </div>
               <button
@@ -630,105 +614,42 @@ export default function ProductsContent({ initialKind = 'all' }) {
                         </ul>
                       </div>
                     ) : null}
+
+                    {selectedProduct.whoThisIsFor?.trim() ? (
+                      <div className={styles.productPreviewInclusions}>
+                        <h3 className={styles.productModalSectionTitle}>Who this is for</h3>
+                        <p className={styles.productModalSubtitle} style={{ whiteSpace: 'pre-wrap' }}>
+                          {selectedProduct.whoThisIsFor}
+                        </p>
+                      </div>
+                    ) : null}
+
+                    {selectedProduct.importantNotes?.trim() ? (
+                      <div className={styles.productPreviewInclusions}>
+                        <h3 className={styles.productModalSectionTitle}>Important notes</h3>
+                        <p className={styles.productModalSubtitle} style={{ whiteSpace: 'pre-wrap' }}>
+                          {selectedProduct.importantNotes}
+                        </p>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               ) : (
-                <div className={styles.productModalForm}>
-                  {formError ? (
-                    <p className={styles.productModalSubtitle}>{formError}</p>
-                  ) : null}
-                  {!templateFields.length ? (
-                    <p className={styles.productModalSubtitle}>
-                      Admin has not configured the seller template yet.
-                    </p>
-                  ) : null}
-                  <div className={styles.productModalFormGrid}>
-                    {templateFields.map((field) => (
-                      <label key={field.id} className={styles.productModalField}>
-                        <span className={styles.productModalLabel}>
-                          {field.label}
-                          {field.required ? ' *' : ''}
-                        </span>
-                        {field.type === 'textarea' ? (
-                          <textarea
-                            className={styles.productModalTextarea}
-                            value={asInputValue(getFieldValue(field.id))}
-                            placeholder={field.placeholder || ''}
-                            onChange={(e) => setFieldValue(field.id, e.target.value)}
-                          />
-                        ) : field.type === 'select' ? (
-                          <select
-                            className={styles.productModalInput}
-                            value={asInputValue(getFieldValue(field.id))}
-                            onChange={(e) => setFieldValue(field.id, e.target.value)}
-                          >
-                            <option value="">
-                              {field.placeholder || `Select ${field.label.toLowerCase()}`}
-                            </option>
-                            {(Array.isArray(field.options) ? field.options : []).map((option) => (
-                              <option key={option} value={option}>
-                                {option}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <input
-                            type={field.type || 'text'}
-                            className={styles.productModalInput}
-                            value={asInputValue(getFieldValue(field.id))}
-                            placeholder={field.placeholder || ''}
-                            onChange={(e) => setFieldValue(field.id, e.target.value)}
-                          />
-                        )}
-                      </label>
-                    ))}
-                    <label className={styles.productModalField}>
-                      <span className={styles.productModalLabel}>Images</span>
-                      <div className={styles.productModalUploadRow}>
-                        <div className={styles.productModalUploadList}>
-                          {editGallery.map((entry, idx) => (
-                            <div key={idx} className={styles.productModalUploadPreview}>
-                              <img
-                                src={entry.url}
-                                alt={`${asInputValue(getFieldValue('listing_name')) || 'Listing'} ${idx + 1}`}
-                              />
-                              <button
-                                type="button"
-                                className={styles.productModalUploadRemove}
-                                onClick={() => handleRemoveImage(idx)}
-                                aria-label="Remove image"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                        <button
-                          type="button"
-                          className={styles.productModalUploadBtn}
-                          onClick={handleUploadClick}
-                          aria-label="Upload images"
-                          title="Upload images"
-                        >
-                          <TbPhoto size={18} />
-                        </button>
-                      </div>
-                    </label>
-                  </div>
-                </div>
+                <>
+                  <SellerListingFormFields
+                    templateFields={templateFields}
+                    sectionConfig={templateSectionConfig}
+                    formError={formError}
+                    getFieldValue={getFieldValue}
+                    setFieldValue={setFieldValue}
+                    editGallery={editGallery}
+                    onUploadClick={handleUploadClick}
+                    onRemoveImage={handleRemoveImage}
+                  />
+                  <SellerListingFileInput fileInputRef={fileInputRef} onFilesSelected={handleFilesSelected} />
+                </>
               )}
             </div>
-
-            {(modalMode === 'edit' || modalMode === 'create') && (
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                style={{ display: 'none' }}
-                onChange={handleFilesSelected}
-              />
-            )}
 
             <div className={styles.productModalFooter}>
               <button
@@ -738,14 +659,13 @@ export default function ProductsContent({ initialKind = 'all' }) {
               >
                 Close
               </button>
-              {(modalMode === 'edit' || modalMode === 'create') && (
+              {modalMode === 'edit' && (
                 <button
                   type="button"
                   className={styles.productModalPrimary}
                   onClick={handleSaveProduct}
-                  disabled={!templateFields.length}
                 >
-                  {modalMode === 'create' ? 'Add product' : 'Save changes'}
+                  Save changes
                 </button>
               )}
             </div>
@@ -791,4 +711,3 @@ export default function ProductsContent({ initialKind = 'all' }) {
     </div>
   )
 }
-

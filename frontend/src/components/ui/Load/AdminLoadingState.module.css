@@ -1,0 +1,54 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-sizing: border-box;
+}
+
+.variantPage {
+  min-height: min(360px, 50vh);
+  width: 100%;
+  padding: 32px 20px;
+}
+
+.variantCard {
+  min-height: 120px;
+  width: 100%;
+  padding: 8px 0 4px;
+}
+
+.variantEmbed {
+  min-height: 200px;
+  width: 100%;
+  padding: 28px 16px 36px;
+}
+
+/* Admin layout auth gate: parent is full-viewport grid; no extra min-height */
+.variantGate {
+  padding: 0;
+}
+
+.spinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid #e2e8f0;
+  border-top-color: var(--color-main-accent, #0ea5e9);
+  border-radius: 50%;
+  animation: adminLoadingStateSpin 0.65s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes adminLoadingStateSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.label {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  letter-spacing: 0.01em;
+}

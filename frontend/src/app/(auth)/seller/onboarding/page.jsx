@@ -59,6 +59,7 @@ export default function SellerOnboardingPage() {
     phone: '',
     businessInfo: '',
     address: '',
+    businessStartedAt: '',
   })
 
   useEffect(() => {
@@ -96,6 +97,9 @@ export default function SellerOnboardingPage() {
           phone: existing?.phone || prev.phone || '',
           businessInfo: existing?.business_info || prev.businessInfo || '',
           address: existing?.address || prev.address || '',
+          businessStartedAt: existing?.business_started_at
+            ? String(existing.business_started_at).slice(0, 10)
+            : prev.businessStartedAt || '',
         }))
       } catch (err) {
         console.error('Failed to load seller info:', err)
@@ -121,6 +125,11 @@ export default function SellerOnboardingPage() {
       return
     }
 
+    if (!form.businessStartedAt?.trim()) {
+      toast.error('Please select when your business began operations (In service since).')
+      return
+    }
+
     setSaving(true)
     try {
       const { error } = await upsertSellerForUser(user, {
@@ -130,6 +139,7 @@ export default function SellerOnboardingPage() {
         phone: form.phone.trim(),
         businessInfo: form.businessInfo.trim(),
         address: form.address.trim(),
+        businessStartedAt: form.businessStartedAt.trim(),
         status: 'pending',
       })
 
@@ -270,6 +280,25 @@ export default function SellerOnboardingPage() {
                     placeholder="+63 9XX XXX XXXX"
                     disabled={sellerStatus === 'pending' || saving}
                   />
+                </div>
+
+                <div className={styles.field}>
+                  <label className={styles.label}>
+                    Business operating since <span className={styles.required}>*</span>
+                  </label>
+                  <input
+                    type="date"
+                    className={styles.input}
+                    value={form.businessStartedAt}
+                    onChange={(e) => handleChange('businessStartedAt', e.target.value)}
+                    max={new Date().toISOString().slice(0, 10)}
+                    disabled={sellerStatus === 'pending' || saving}
+                  />
+                  <p className={styles.helperText} style={{ marginTop: 6 }}>
+                    When your funeral or memorial business first began serving families (shown as &quot;In
+                    service&quot; on your public shop profile). This is separate from when you joined this
+                    website.
+                  </p>
                 </div>
 
                 <div className={`${styles.field} ${styles.fullWidth}`}>

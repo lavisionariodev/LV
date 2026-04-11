@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import styles from './settings.module.css'
 import { FaUser, FaUpload } from 'react-icons/fa6'
@@ -10,6 +11,37 @@ import { FiEdit, FiSave } from 'react-icons/fi'
 import { MdCheckCircle, MdErrorOutline } from 'react-icons/md'
 import { validateNewPassword } from '@/lib/validators/authSchemas'
 import { fetchCurrentSellerProfile } from '@/features/seller/settings/getSellerProfile'
+import { getSellerByUserId, upsertSellerForUser } from '@/lib/sellers/client'
+
+function mapSellerToShopForm(sellerRow, profile, sessionEmail) {
+  return {
+    businessName: sellerRow?.business_name ?? '',
+    contactName: sellerRow?.contact_name ?? profile?.fullName ?? '',
+    email: sellerRow?.email ?? profile?.email ?? sessionEmail ?? '',
+    phone: sellerRow?.phone ?? '',
+    businessInfo: sellerRow?.business_info ?? '',
+    address: sellerRow?.address ?? '',
+    businessStartedAt: sellerRow?.business_started_at
+      ? String(sellerRow.business_started_at).slice(0, 10)
+      : '',
+  }
+}
+
+function validateShopForm(form) {
+  if (!form.businessName.trim()) return 'Please enter your business or shop name.'
+  if (!form.contactName.trim()) return 'Please enter the primary contact person.'
+  if (!form.email.trim()) return 'Please enter a business email.'
+  if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) return 'Please enter a valid email format.'
+  if (!form.businessStartedAt?.trim()) return 'Please select when your business began operations.'
+  return ''
+}
+
+function shopStatusPillClass(status) {
+  if (status === 'active') return styles.statusPillActive
+  if (status === 'pending') return styles.statusPillPending
+  if (status === 'suspended') return styles.statusPillSuspended
+  return ''
+}
 
 const AVATARS_BUCKET = 'avatars'
 const MAX_MB = 2
@@ -37,18 +69,37 @@ export default function SellerSettingsClient() {
   const [toast, setToast] = useState(null)
   const [avatarModalOpen, setAvatarModalOpen] = useState(false)
 
+  const [seller, setSeller] = useState(null)
+  const [sessionEmail, setSessionEmail] = useState('')
+  const [shopForm, setShopForm] = useState(() => mapSellerToShopForm(null, null, ''))
+  const [isEditingShop, setIsEditingShop] = useState(false)
+  const [shopSaving, setShopSaving] = useState(false)
+  const [shopError, setShopError] = useState('')
+  const [settingsTab, setSettingsTab] = useState('profile')
+
   useEffect(() => {
     let cancelled = false
     async function loadProfile() {
       setLoading(true)
       setPersonalError('')
       setPersonalStatus('')
+      setShopError('')
       try {
         const data = await fetchCurrentSellerProfile()
         if (cancelled) return
         setProfile(data)
         setDraftName(data.fullName || '')
         setDraftEmail(data.email || '')
+        const { data: auth } = await supabase.auth.getUser()
+        const user = auth?.user
+        const email = user?.email ?? ''
+        if (cancelled) return
+        setSessionEmail(email)
+        const sellerRow = user?.id ? await getSellerByUserId(user.id) : null
+        if (cancelled) return
+        setSeller(sellerRow)
+        setShopForm(mapSellerToShopForm(sellerRow, data, email))
+        setIsEditingShop(false)
       } catch (err) {
         if (!cancelled) setPersonalError(err.message || 'Failed to load profile.')
       } finally {
@@ -83,6 +134,11 @@ export default function SellerSettingsClient() {
   }, [passStatus])
 
   useEffect(() => {
+    if (!shopError) return
+    setToast({ id: Date.now(), type: 'error', message: shopError })
+  }, [shopError])
+
+  useEffect(() => {
     if (!toast) return
     const t = setTimeout(() => setToast(null), 4200)
     return () => clearTimeout(t)
@@ -108,6 +164,68 @@ export default function SellerSettingsClient() {
     if (!v) return 'Please enter your name.'
     if (v.length < 2) return 'Name is too short.'
     return ''
+  }
+
+  const canEditShop = !seller || seller.status !== 'suspended'
+
+  const onShopFieldChange = (field, value) => {
+    setShopForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const onCancelShopEdit = () => {
+    setShopError('')
+    if (profile) {
+      setShopForm(mapSellerToShopForm(seller, profile, sessionEmail))
+    }
+    setIsEditingShop(false)
+  }
+
+  const onClickEditSaveShop = async () => {
+    setShopError('')
+    if (!canEditShop) return
+    if (!isEditingShop) {
+      setIsEditingShop(true)
+      return
+    }
+    const err = validateShopForm(shopForm)
+    if (err) {
+      setShopError(err)
+      return
+    }
+    try {
+      const { data: auth } = await supabase.auth.getUser()
+      const user = auth?.user
+      if (!user) {
+        setShopError('You must be signed in to save shop information.')
+        return
+      }
+      setShopSaving(true)
+      const { data: saved, error } = await upsertSellerForUser(user, {
+        businessName: shopForm.businessName.trim(),
+        contactName: shopForm.contactName.trim(),
+        email: shopForm.email.trim(),
+        phone: shopForm.phone.trim(),
+        businessInfo: shopForm.businessInfo.trim(),
+        address: shopForm.address.trim(),
+        businessStartedAt: shopForm.businessStartedAt.trim(),
+        status: seller?.status ?? 'pending',
+        registeredAt: seller?.registered_at,
+      })
+      if (error) {
+        setShopError(typeof error === 'string' ? error : error.message || 'Failed to save shop information.')
+        return
+      }
+      if (saved) {
+        setSeller(saved)
+        setShopForm(mapSellerToShopForm(saved, profile, sessionEmail))
+      }
+      setIsEditingShop(false)
+      setToast({ id: Date.now(), type: 'success', message: 'Shop information saved.' })
+    } catch (err) {
+      setShopError(err.message || 'Failed to save shop information.')
+    } finally {
+      setShopSaving(false)
+    }
   }
 
   const onPickAvatar = async (e) => {
@@ -282,14 +400,48 @@ export default function SellerSettingsClient() {
   const shownAvatar = avatarPreview || profile?.avatarUrl || ''
   const formId = 'sellerPasswordForm'
   const id = (name) => `seller_${name}`
+  const shopId = (name) => `seller_shop_${name}`
+
+  const shopTabId = 'seller-settings-tab-shop'
+  const profileTabId = 'seller-settings-tab-profile'
+  const shopPanelId = 'seller-settings-panel-shop'
+  const profilePanelId = 'seller-settings-panel-profile'
 
   if (loading) {
     return (
       <div className={styles.page}>
+        <div className={styles.tabBar} role="tablist" aria-label="Settings sections">
+          <button
+            type="button"
+            id={profileTabId}
+            role="tab"
+            disabled
+            className={`${styles.tabItem} ${settingsTab === 'profile' ? styles.tabItemActive : ''}`}
+            aria-selected={settingsTab === 'profile'}
+            aria-controls={profilePanelId}
+            tabIndex={0}
+          >
+            Profile
+          </button>
+          <button
+            type="button"
+            id={shopTabId}
+            role="tab"
+            disabled
+            className={`${styles.tabItem} ${settingsTab === 'shop' ? styles.tabItemActive : ''}`}
+            aria-selected={settingsTab === 'shop'}
+            aria-controls={shopPanelId}
+            tabIndex={-1}
+          >
+            Shop information
+          </button>
+        </div>
         <div className={styles.grid}>
           <section className={`${styles.card} ${styles.full}`}>
-            <p className={styles.cardTitle}>Personal Information</p>
-            <p className={styles.loadingText}>Loading profile…</p>
+            <p className={styles.cardTitle}>
+              {settingsTab === 'shop' ? 'Shop information' : 'Personal Information'}
+            </p>
+            <p className={styles.loadingText}>Loading settings…</p>
           </section>
         </div>
       </div>
@@ -298,7 +450,209 @@ export default function SellerSettingsClient() {
 
   return (
     <div className={styles.page}>
+      <div className={styles.tabBar} role="tablist" aria-label="Settings sections">
+        <button
+          type="button"
+          id={profileTabId}
+          role="tab"
+          className={`${styles.tabItem} ${settingsTab === 'profile' ? styles.tabItemActive : ''}`}
+          aria-selected={settingsTab === 'profile'}
+          aria-controls={profilePanelId}
+          tabIndex={settingsTab === 'profile' ? 0 : -1}
+          onClick={() => setSettingsTab('profile')}
+        >
+          Profile
+        </button>
+        <button
+          type="button"
+          id={shopTabId}
+          role="tab"
+          className={`${styles.tabItem} ${settingsTab === 'shop' ? styles.tabItemActive : ''}`}
+          aria-selected={settingsTab === 'shop'}
+          aria-controls={shopPanelId}
+          tabIndex={settingsTab === 'shop' ? 0 : -1}
+          onClick={() => setSettingsTab('shop')}
+        >
+          Shop information
+        </button>
+      </div>
+
       <div className={styles.grid}>
+        {settingsTab === 'shop' && (
+          <section
+            id={shopPanelId}
+            role="tabpanel"
+            aria-labelledby={shopTabId}
+            className={`${styles.card} ${styles.full}`}
+          >
+          <div
+            className={`${styles.cardHeadRow} ${styles.personalHeadRow} ${
+              isEditingShop ? styles.personalHeadRowEditing : ''
+            }`}
+          >
+            <p className={styles.cardTitle}>Shop information</p>
+            <div className={styles.headActions}>
+              {isEditingShop && (
+                <button
+                  type="button"
+                  className={styles.secondaryBtn}
+                  onClick={onCancelShopEdit}
+                  disabled={shopSaving}
+                >
+                  Cancel
+                </button>
+              )}
+              <button
+                type="button"
+                className={styles.primaryBtn}
+                onClick={onClickEditSaveShop}
+                disabled={shopSaving || !canEditShop}
+              >
+                {isEditingShop ? (
+                  <>
+                    <FiSave /> {shopSaving ? 'Saving…' : 'Save Changes'}
+                  </>
+                ) : (
+                  <>
+                    <FiEdit /> Edit
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {!seller && (
+            <p className={styles.shopHelper}>
+              You have not saved shop details yet, or they are still loading. You can enter them here, or use the{' '}
+              <Link href="/seller/onboarding" className={styles.inlineLink}>
+                seller onboarding
+              </Link>{' '}
+              flow.
+            </p>
+          )}
+
+          {seller && (
+            <div className={styles.shopStatusRow}>
+              <span className={styles.shopStatusLabel}>Account status</span>
+              <span className={`${styles.statusPill} ${shopStatusPillClass(seller.status)}`}>
+                {seller.status || '—'}
+              </span>
+            </div>
+          )}
+
+          {!canEditShop && (
+            <div className={styles.msgError} role="status">
+              <MdErrorOutline aria-hidden />
+              <span>Your seller account is suspended. Shop details cannot be edited here. Please contact support.</span>
+            </div>
+          )}
+
+          <div className={styles.piFieldsRow}>
+            <div className={styles.piGrid}>
+              <div className={styles.field}>
+                <label htmlFor={shopId('business')} className={styles.label}>
+                  Business / Shop name <span className={styles.requiredMark}>*</span>
+                </label>
+                <input
+                  id={shopId('business')}
+                  value={shopForm.businessName}
+                  onChange={(e) => onShopFieldChange('businessName', e.target.value)}
+                  className={`${styles.input} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
+                  disabled={!isEditingShop || !canEditShop}
+                  placeholder="e.g. Peaceful Rest Funeral Home"
+                />
+              </div>
+              <div className={styles.field}>
+                <label htmlFor={shopId('contact')} className={styles.label}>
+                  Primary contact person <span className={styles.requiredMark}>*</span>
+                </label>
+                <input
+                  id={shopId('contact')}
+                  value={shopForm.contactName}
+                  onChange={(e) => onShopFieldChange('contactName', e.target.value)}
+                  className={`${styles.input} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
+                  disabled={!isEditingShop || !canEditShop}
+                  placeholder="Full name of the person we coordinate with"
+                />
+              </div>
+              <div className={styles.field}>
+                <label htmlFor={shopId('email')} className={styles.label}>
+                  Business email <span className={styles.requiredMark}>*</span>
+                </label>
+                <input
+                  id={shopId('email')}
+                  type="email"
+                  value={shopForm.email}
+                  onChange={(e) => onShopFieldChange('email', e.target.value)}
+                  className={`${styles.input} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
+                  disabled={!isEditingShop || !canEditShop}
+                  placeholder="you@example.com"
+                />
+              </div>
+              <div className={styles.field}>
+                <label htmlFor={shopId('phone')} className={styles.label}>Business phone</label>
+                <input
+                  id={shopId('phone')}
+                  type="tel"
+                  value={shopForm.phone}
+                  onChange={(e) => onShopFieldChange('phone', e.target.value)}
+                  className={`${styles.input} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
+                  disabled={!isEditingShop || !canEditShop}
+                  placeholder="+63 9XX XXX XXXX"
+                />
+              </div>
+              <div className={styles.field}>
+                <label htmlFor={shopId('started')} className={styles.label}>
+                  Business operating since <span className={styles.requiredMark}>*</span>
+                </label>
+                <input
+                  id={shopId('started')}
+                  type="date"
+                  value={shopForm.businessStartedAt}
+                  max={new Date().toISOString().slice(0, 10)}
+                  onChange={(e) => onShopFieldChange('businessStartedAt', e.target.value)}
+                  className={`${styles.input} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
+                  disabled={!isEditingShop || !canEditShop}
+                />
+                <p className={styles.shopHelper}>
+                  When your business first began serving families (&quot;In service&quot; on your public shop). Separate from when you joined this site.
+                </p>
+              </div>
+              <div className={`${styles.field} ${styles.shopFieldFull}`}>
+                <label htmlFor={shopId('address')} className={styles.label}>Business address</label>
+                <input
+                  id={shopId('address')}
+                  value={shopForm.address}
+                  onChange={(e) => onShopFieldChange('address', e.target.value)}
+                  className={`${styles.input} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
+                  disabled={!isEditingShop || !canEditShop}
+                  placeholder="Street, city, province"
+                />
+              </div>
+              <div className={`${styles.field} ${styles.shopFieldFull}`}>
+                <label htmlFor={shopId('info')} className={styles.label}>Business description</label>
+                <textarea
+                  id={shopId('info')}
+                  rows={4}
+                  value={shopForm.businessInfo}
+                  onChange={(e) => onShopFieldChange('businessInfo', e.target.value)}
+                  className={`${styles.input} ${styles.textarea} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
+                  disabled={!isEditingShop || !canEditShop}
+                  placeholder="Services you offer, coverage areas, specializations."
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+        )}
+
+        {settingsTab === 'profile' && (
+          <div
+            id={profilePanelId}
+            role="tabpanel"
+            aria-labelledby={profileTabId}
+            className={styles.profileTabContent}
+          >
         <section className={`${styles.card} ${styles.full}`}>
           <div
             className={`${styles.cardHeadRow} ${styles.personalHeadRow} ${
@@ -496,6 +850,8 @@ export default function SellerSettingsClient() {
             </div>
           </form>
         </section>
+          </div>
+        )}
       </div>
       {toast && (
         <div
