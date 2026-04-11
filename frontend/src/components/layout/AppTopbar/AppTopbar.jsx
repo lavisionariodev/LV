@@ -61,7 +61,7 @@ const PAGE_TITLES = {
     '/seller/products/services': 'Services',
     '/seller/products/packages': 'Packages',
     '/seller/products/catalog': 'Catalog',
-    '/seller/products/new': 'Add New Listing',
+    '/seller/products/new-listing': 'Add New Listing',
     '/seller/customers': 'Customers',
     '/seller/analytics': 'Analytics',
     '/seller/analytics/sales-overview': 'Sales Overview',

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getUser } from "@/lib/auth/session";
+import { getUserRole, ROLE_BUYER } from "@/lib/auth/roles";
 import Link from "next/link";
 import { signUpWithEmailPassword, signInWithOAuth, getOAuthRedirectUrl } from "@/lib/auth/client";
 import AuthLayout, { setBuyerAuthSwitch } from "../AuthLayout";
@@ -22,9 +23,10 @@ export default function SignUpPage() {
 
   useEffect(() => {
     let mounted = true;
-    getUser().then((currentUser) => {
-      if (!mounted) return;
-      if (currentUser) {
+    getUser().then(async (currentUser) => {
+      if (!mounted || !currentUser) return;
+      const role = await getUserRole(currentUser.id);
+      if (role === ROLE_BUYER) {
         router.replace("/");
       }
     });

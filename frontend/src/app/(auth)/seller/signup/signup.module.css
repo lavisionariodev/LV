@@ -839,6 +839,32 @@
   color: #999;
 }
 
+.passwordWrapper {
+  position: relative;
+}
+
+.passwordWrapper .formControl {
+  padding-right: 44px;
+}
+
+.eyeIcon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #999;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.eyeIcon:hover {
+  color: #666;
+}
+
 /* Why Sell Section */
 .whySellSection {
   background: white;

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Check } from 'lucide-react'
@@ -19,6 +20,7 @@ import {
 } from '@/lib/seller-template/sections'
 import styles from './products.module.css'
 import NewListingLoadingState from '@/components/ui/Load/NewListingLoadingState'
+import { useMediaQuery } from '@/hooks'
 
 /** Max images per listing (toolbar + upload strip). */
 export const MAX_LISTING_IMAGES = 10
@@ -358,6 +360,135 @@ export function ListingImageUploadTile({
   )
 }
 
+/**
+ * Native <select> popups are drawn by the OS and often render wider than the field on mobile.
+ * On narrow viewports, use a bottom sheet so options stay full-width and aligned with the form.
+ */
+function ListingFormSelectControl({ field, getFieldValue, setFieldValue }) {
+  const isNarrow = useMediaQuery('(max-width: 640px)')
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const rawValue = asInputValue(getFieldValue(field.id))
+  const placeholderText = field.placeholder || `Select ${String(field.label || '').toLowerCase()}`
+  const opts = Array.isArray(field.options) ? field.options : []
+
+  useEffect(() => {
+    if (!sheetOpen) return
+    const onKey = (e) => {
+      if (e.key === 'Escape') setSheetOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [sheetOpen])
+
+  useEffect(() => {
+    if (!sheetOpen) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [sheetOpen])
+
+  if (!isNarrow) {
+    return (
+      <select
+        className={styles.listingFormSelect}
+        value={rawValue}
+        onChange={(e) => setFieldValue(field.id, e.target.value)}
+        aria-label={field.label}
+      >
+        <option value="">{placeholderText}</option>
+        {opts.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    )
+  }
+
+  const display = rawValue || placeholderText
+  const sheet = sheetOpen ? (
+    <div className={styles.listingFormSelectSheetRoot}>
+      <button
+        type="button"
+        className={styles.listingFormSelectSheetBackdrop}
+        onClick={() => setSheetOpen(false)}
+        tabIndex={-1}
+        aria-label="Dismiss"
+      />
+      <div
+        className={styles.listingFormSelectSheet}
+        role="dialog"
+        aria-modal="true"
+        aria-label={field.label}
+      >
+        <div className={styles.listingFormSelectSheetHeader}>
+          <span className={styles.listingFormSelectSheetTitle}>{field.label}</span>
+          <button
+            type="button"
+            className={styles.listingFormSelectSheetClose}
+            onClick={() => setSheetOpen(false)}
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+        <div className={styles.listingFormSelectSheetList} role="listbox">
+          <button
+            type="button"
+            role="option"
+            className={styles.listingFormSelectSheetRow}
+            aria-selected={rawValue === ''}
+            onClick={() => {
+              setFieldValue(field.id, '')
+              setSheetOpen(false)
+            }}
+          >
+            {placeholderText}
+          </button>
+          {opts.map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              role="option"
+              aria-selected={rawValue === opt}
+              className={`${styles.listingFormSelectSheetRow} ${
+                rawValue === opt ? styles.listingFormSelectSheetRowActive : ''
+              }`}
+              onClick={() => {
+                setFieldValue(field.id, opt)
+                setSheetOpen(false)
+              }}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  ) : null
+
+  return (
+    <>
+      <button
+        type="button"
+        className={`${styles.listingFormSelect} ${styles.listingFormSelectTrigger}`}
+        onClick={() => setSheetOpen(true)}
+        aria-haspopup="listbox"
+        aria-expanded={sheetOpen}
+        aria-label={field.label}
+      >
+        <span className={styles.listingFormSelectTriggerLabel}>{display}</span>
+        <span className={styles.listingFormSelectTriggerCaret} aria-hidden>
+          ▾
+        </span>
+      </button>
+      {typeof document !== 'undefined' && sheet ? createPortal(sheet, document.body) : null}
+    </>
+  )
+}
+
 // --- SellerListingFormFields + file input --------------------------------------------------------
 
 export function SellerListingFormFields({
@@ -553,21 +684,11 @@ export function SellerListingFormFields({
               maxLength={maxLen}
             />
           ) : field.type === 'select' ? (
-            <select
-              className={styles.listingFormSelect}
-              value={asInputValue(getFieldValue(field.id))}
-              onChange={(e) => setFieldValue(field.id, e.target.value)}
-              aria-label={field.label}
-            >
-              <option value="">
-                {field.placeholder || `Select ${field.label.toLowerCase()}`}
-              </option>
-              {(Array.isArray(field.options) ? field.options : []).map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
+            <ListingFormSelectControl
+              field={field}
+              getFieldValue={getFieldValue}
+              setFieldValue={setFieldValue}
+            />
           ) : maxLen ? (
             <div
               className={`${styles.listingFormFieldWithCount} ${styles.listingFormFieldWithCountSingle}`}
@@ -657,7 +778,7 @@ export function SellerListingFileInput({ fileInputRef, onFilesSelected, accept =
   )
 }
 
-// --- New listing page (route /seller/products/new) -----------------------------------------------
+// --- New listing page (route /seller/products/new-listing) -----------------------------------------------
 
 const ALLOWED_IMAGE_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
 

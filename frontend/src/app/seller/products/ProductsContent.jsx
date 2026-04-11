@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { TbSearch } from 'react-icons/tb'
+import { TbPlus, TbSearch } from 'react-icons/tb'
 import styles from './products.module.css'
 import {
   buildSellerListingPayload,
@@ -389,6 +389,10 @@ export default function ProductsContent({ initialKind = 'all' }) {
             aria-label="Search products"
           />
         </div>
+        <Link href="/seller/products/new-listing" className={styles.addListingMobile}>
+          <TbPlus size={18} aria-hidden />
+          Add New Listing
+        </Link>
       </section>
 
       <section className={styles.statsStrip} aria-label="Listing overview">
@@ -419,7 +423,7 @@ export default function ProductsContent({ initialKind = 'all' }) {
             <p className={styles.emptyTitle}>No listings match your filters</p>
             <p className={styles.emptyText}>
               Adjust the search or type filter to see more of your services and packages, or{' '}
-              <Link href="/seller/products/new" className={styles.emptyStateLink}>
+              <Link href="/seller/products/new-listing" className={styles.emptyStateLink}>
                 Add New Listing
               </Link>
               .
