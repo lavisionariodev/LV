@@ -8,10 +8,9 @@ import { requireAdmin } from '@/lib/auth/guards'
 import { signOut } from '@/lib/auth/session'
 import styles from './admin.module.css'
 import AdminLoadingState from '@/components/ui/Load/AdminLoadingState'
-import { Inter } from 'next/font/google'
+import { Poppins } from 'next/font/google'
 
-/** Page content only; sidebar & topbar keep Poppins via their CSS modules */
-const inter = Inter({ subsets: ['latin'], weight: ['400', '500', '600', '700'] })
+const poppins = Poppins({ weight: ['400', '600', '700'], subsets: ['latin'] })
 
 export default function AdminLayout({ children }) {
   const router = useRouter()
@@ -43,7 +42,7 @@ export default function AdminLayout({ children }) {
 
   if (authStatus === 'loading' || authStatus === 'denied') {
     return (
-      <div className={`${styles.authLoading} ${inter.className}`}>
+      <div className={`${styles.authLoading} ${poppins.className}`}>
         <AdminLoadingState variant="gate" label="Loading" />
       </div>
     )
@@ -53,7 +52,7 @@ export default function AdminLayout({ children }) {
     <div
       className={`${styles.shell} ${
         collapsed ? styles.shellCollapsed : ''
-      }`}
+      } ${poppins.className}`}
     >
       <Suspense fallback={null}>
         <AppSidebar
@@ -72,7 +71,7 @@ export default function AdminLayout({ children }) {
           isMobile={isMobile}
           sidebarCollapsed={collapsed}
         />
-        <div className={`${styles.mainScroll} ${inter.className}`}>
+        <div className={styles.mainScroll}>
           <div className={styles.content}>{children}</div>
         </div>
       </div>
