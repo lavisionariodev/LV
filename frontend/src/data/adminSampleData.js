@@ -231,3 +231,210 @@ export const PAYOUTS_PAGE_INITIAL_COMMISSION_SETTINGS = {
     s2: 8,
   },
 }
+
+// --- Help center (/admin/help) — static copy + topic metadata (icons resolved in page) ---
+
+export const helpCenterTopics = [
+  {
+    iconKey: 'LuUserCheck',
+    title: 'Seller approvals',
+    desc: 'Verify sellers, approve or reject, and understand impact.',
+    bullets: [
+      'What to check before approval',
+      'What happens after approval or rejection',
+      'High-risk seller red flags',
+    ],
+  },
+  {
+    iconKey: 'LuScale',
+    title: 'Disputes and refunds',
+    desc: 'Resolve disputes, refunds, and fraud cases safely.',
+    bullets: [
+      'Dispute flow and statuses',
+      'When to freeze funds',
+      'When to escalate or ban',
+    ],
+  },
+  {
+    iconKey: 'LuShield',
+    title: 'Policy enforcement',
+    desc: 'Handle violations and prohibited items consistently.',
+    bullets: [
+      'Violation levels and penalties',
+      'Repeat offender handling',
+      'Content takedown guidelines',
+    ],
+  },
+  {
+    iconKey: 'LuChartBar',
+    title: 'Dashboard metrics',
+    desc: 'Know what to watch and what it means for the business.',
+    bullets: [
+      'GMV, conversion, refund rate',
+      'Seller health and retention',
+      'Fraud signals and spikes',
+    ],
+  },
+]
+
+export const helpCenterFaqs = [
+  {
+    q: 'Why are changes not showing in the live platform?',
+    a: 'Most updates require approval or publishing. Check if there is a pending submission, scheduled publish time, or blocked content due to policy.',
+  },
+  {
+    q: 'When should I reject a seller application?',
+    a: 'Reject when identity or documents fail verification, the business profile is inconsistent, there are repeated compliance issues, or the category is high-risk without strong proof.',
+  },
+  {
+    q: 'When should I freeze funds during disputes?',
+    a: 'Freeze funds when fraud is suspected, there is a high-value claim, or multiple complaints indicate a pattern. Release only after resolution or verified evidence.',
+  },
+  {
+    q: 'When is a permanent ban appropriate?',
+    a: 'Use permanent bans for repeated fraud, prohibited items, chargeback abuse patterns, or serious policy violations that create customer harm.',
+  },
+  {
+    q: 'What should I do if disputes spike suddenly?',
+    a: 'Treat it as a risk event. Review top categories, top sellers involved, and refund rate trend. If fraud is suspected, freeze payouts for impacted sellers and escalate to operations or security.',
+  },
+]
+
+export const helpCenterPlaybooks = [
+  {
+    title: 'Approve high-risk sellers',
+    steps: [
+      'Require stronger documentation and proof of inventory source.',
+      'Limit category access initially, then expand after clean history.',
+      'Monitor refund and dispute rate for the first 14 days.',
+    ],
+  },
+  {
+    title: 'Handle viral complaints',
+    steps: [
+      'Confirm facts first: order IDs, timestamps, and evidence.',
+      'Pause risky actions: freeze payouts if fraud is possible.',
+      'Publish a clear internal resolution note for the support team.',
+    ],
+  },
+  {
+    title: 'Respond to security incidents',
+    steps: [
+      'Lock affected accounts and rotate admin credentials.',
+      'Review audit logs for access anomalies and bulk actions.',
+      'Escalate to security and document actions taken.',
+    ],
+  },
+]
+
+export const helpCenterEscalationContacts = [
+  {
+    title: 'Operations',
+    description: 'Policy cases, seller investigations, dispute escalation.',
+    email: 'ops@yourcompany.com',
+  },
+  {
+    title: 'Security',
+    description: 'Account breach, fraud spikes, suspicious admin actions.',
+    email: 'security@yourcompany.com',
+  },
+  {
+    title: 'Legal',
+    description: 'Chargebacks, regulatory concerns, sensitive takedowns.',
+    email: 'legal@yourcompany.com',
+  },
+]
+
+// --- Notifications (/admin/notifications) — mock rows (icons resolved in page via iconKey) ---
+
+export const notificationsPageSampleRows = [
+  {
+    id: 1,
+    type: 'order',
+    title: 'New order received',
+    message: 'You have a new booking from Maria Santos for Hair & Makeup Package.',
+    time: '2 min ago',
+    read: false,
+    iconKey: 'LuShoppingBag',
+    iconColor: 'blue',
+  },
+  {
+    id: 2,
+    type: 'approval',
+    title: 'Seller account approved',
+    message: 'Bloom Beauty Studio has been approved and is now active on the platform.',
+    time: '1 hr ago',
+    read: false,
+    iconKey: 'LuUserCheck',
+    iconColor: 'green',
+  },
+  {
+    id: 3,
+    type: 'alert',
+    title: 'Dispute opened',
+    message: 'A dispute has been filed for Order #10482. Please review within 48 hours.',
+    time: '3 hr ago',
+    read: false,
+    iconKey: 'TbAlertTriangle',
+    iconColor: 'red',
+  },
+  {
+    id: 4,
+    type: 'announcement',
+    title: 'Platform maintenance scheduled',
+    message: 'Scheduled downtime on March 15, 2:00–4:00 AM for system upgrades.',
+    time: 'Yesterday',
+    read: true,
+    iconKey: 'LuMegaphone',
+    iconColor: 'gold',
+  },
+  {
+    id: 5,
+    type: 'order',
+    title: 'Order completed',
+    message: 'Order #10479 by Juan dela Cruz has been marked as completed.',
+    time: 'Yesterday',
+    read: true,
+    iconKey: 'LuShoppingBag',
+    iconColor: 'blue',
+  },
+  {
+    id: 6,
+    type: 'approval',
+    title: 'New seller registration',
+    message: 'Glow Lab PH has submitted their seller application and is awaiting review.',
+    time: '2 days ago',
+    read: true,
+    iconKey: 'LuUserCheck',
+    iconColor: 'green',
+  },
+  {
+    id: 7,
+    type: 'alert',
+    title: 'Payout flagged',
+    message: 'Payout #PP-2041 has been flagged for manual review due to unusual activity.',
+    time: '3 days ago',
+    read: true,
+    iconKey: 'TbAlertTriangle',
+    iconColor: 'red',
+  },
+  {
+    id: 8,
+    type: 'announcement',
+    title: 'New feature: Vouchers',
+    message: 'Sellers can now create and manage discount vouchers from their dashboard.',
+    time: '5 days ago',
+    read: true,
+    iconKey: 'LuMegaphone',
+    iconColor: 'gold',
+  },
+]
+
+export const notificationsPageFilterTabs = [
+  { id: 'all', label: 'All' },
+  { id: 'unread', label: 'Unread' },
+  { id: 'order', label: 'Orders' },
+  { id: 'approval', label: 'Approvals' },
+  { id: 'alert', label: 'Alerts' },
+  { id: 'announcement', label: 'Announcements' },
+]

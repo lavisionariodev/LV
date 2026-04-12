@@ -4,98 +4,24 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { TbBellOff, TbBellRinging, TbCheck, TbTrash, TbAlertTriangle, TbDots } from 'react-icons/tb'
 import { LuShoppingBag, LuUserCheck, LuMegaphone } from 'react-icons/lu'
 import styles from './notifications.module.css'
+import {
+  notificationsPageSampleRows,
+  notificationsPageFilterTabs,
+} from '@/data/adminSampleData'
 
-const SAMPLE_NOTIFICATIONS = [
-  {
-    id: 1,
-    type: 'order',
-    title: 'New order received',
-    message: 'You have a new booking from Maria Santos for Hair & Makeup Package.',
-    time: '2 min ago',
-    read: false,
-    icon: LuShoppingBag,
-    iconColor: 'blue',
-  },
-  {
-    id: 2,
-    type: 'approval',
-    title: 'Seller account approved',
-    message: 'Bloom Beauty Studio has been approved and is now active on the platform.',
-    time: '1 hr ago',
-    read: false,
-    icon: LuUserCheck,
-    iconColor: 'green',
-  },
-  {
-    id: 3,
-    type: 'alert',
-    title: 'Dispute opened',
-    message: 'A dispute has been filed for Order #10482. Please review within 48 hours.',
-    time: '3 hr ago',
-    read: false,
-    icon: TbAlertTriangle,
-    iconColor: 'red',
-  },
-  {
-    id: 4,
-    type: 'announcement',
-    title: 'Platform maintenance scheduled',
-    message: 'Scheduled downtime on March 15, 2:00–4:00 AM for system upgrades.',
-    time: 'Yesterday',
-    read: true,
-    icon: LuMegaphone,
-    iconColor: 'gold',
-  },
-  {
-    id: 5,
-    type: 'order',
-    title: 'Order completed',
-    message: 'Order #10479 by Juan dela Cruz has been marked as completed.',
-    time: 'Yesterday',
-    read: true,
-    icon: LuShoppingBag,
-    iconColor: 'blue',
-  },
-  {
-    id: 6,
-    type: 'approval',
-    title: 'New seller registration',
-    message: 'Glow Lab PH has submitted their seller application and is awaiting review.',
-    time: '2 days ago',
-    read: true,
-    icon: LuUserCheck,
-    iconColor: 'green',
-  },
-  {
-    id: 7,
-    type: 'alert',
-    title: 'Payout flagged',
-    message: 'Payout #PP-2041 has been flagged for manual review due to unusual activity.',
-    time: '3 days ago',
-    read: true,
-    icon: TbAlertTriangle,
-    iconColor: 'red',
-  },
-  {
-    id: 8,
-    type: 'announcement',
-    title: 'New feature: Vouchers',
-    message: 'Sellers can now create and manage discount vouchers from their dashboard.',
-    time: '5 days ago',
-    read: true,
-    icon: LuMegaphone,
-    iconColor: 'gold',
-  },
-]
+const NOTIFICATION_ICON_BY_KEY = {
+  LuShoppingBag,
+  LuUserCheck,
+  TbAlertTriangle,
+  LuMegaphone,
+}
 
-const FILTER_TABS = [
-  { id: 'all', label: 'All' },
-  { id: 'unread', label: 'Unread' },
-  { id: 'order', label: 'Orders' },
-  { id: 'approval', label: 'Approvals' },
-  { id: 'alert', label: 'Alerts' },
-  { id: 'announcement', label: 'Announcements' },
-]
+function hydrateNotificationSamples(rows) {
+  return rows.map((n) => ({
+    ...n,
+    icon: NOTIFICATION_ICON_BY_KEY[n.iconKey],
+  }))
+}
 
 function useClickOutside(ref, onClose) {
   useEffect(() => {
@@ -196,7 +122,7 @@ function NotifMenu({ notifId, isRead, onMarkRead, onDelete }) {
 }
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState(SAMPLE_NOTIFICATIONS)
+  const [notifications, setNotifications] = useState(() => hydrateNotificationSamples(notificationsPageSampleRows))
   const [activeFilter, setActiveFilter] = useState('all')
 
   const unreadCount = notifications.filter((n) => !n.read).length
@@ -246,7 +172,7 @@ export default function NotificationsPage() {
         </div>
 
         <div className={styles.filterRow}>
-          {FILTER_TABS.map((tab) => (
+          {notificationsPageFilterTabs.map((tab) => (
             <button
               key={tab.id}
               className={`${styles.filterTab} ${activeFilter === tab.id ? styles.filterTabActive : ''}`}
@@ -323,7 +249,7 @@ export default function NotificationsPage() {
         </div>
 
         <div className={styles.mobileFilterScroll}>
-          {FILTER_TABS.map((tab) => (
+          {notificationsPageFilterTabs.map((tab) => (
             <button
               key={tab.id}
               className={`${styles.mobileFilterChip} ${activeFilter === tab.id ? styles.mobileFilterChipActive : ''}`}
