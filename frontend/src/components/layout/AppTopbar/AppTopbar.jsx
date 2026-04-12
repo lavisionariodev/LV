@@ -41,7 +41,7 @@ const PAGE_TITLES = {
     '/admin/payouts': 'Payouts',
     '/admin/analytics': 'Analytics',
     '/admin/disputes': 'Disputes',
-    '/admin/users': 'Users',
+    '/admin/buyers': 'Buyers',
     '/admin/sellers': 'Sellers',
     '/admin/listings': 'Listings',
     '/admin/seller-template': 'Template',

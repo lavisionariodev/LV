@@ -17,6 +17,7 @@ import {
   TbChevronRight,
   TbMenu2,
   TbClipboardList,
+  TbAddressBook,
 } from 'react-icons/tb'
 import { LuUserCheck } from 'react-icons/lu'
 import { BsPerson } from 'react-icons/bs'
@@ -49,9 +50,16 @@ const SIDEBAR_CONFIG = {
     navItems: [
       { href: '/admin', label: 'Dashboard', icon: TbLayoutDashboardFilled },
       { href: '/admin/payouts', label: 'Payouts', icon: TbReportSearch },
-      { href: '/admin/sellers', label: 'Sellers', icon: LuUserCheck },
+      {
+        label: 'Accounts',
+        icon: TbAddressBook,
+        defaultHref: '/admin/sellers',
+        children: [
+          { href: '/admin/sellers', label: 'Sellers', icon: LuUserCheck },
+          { href: '/admin/buyers', label: 'Buyers', icon: TbUsers },
+        ],
+      },
       { href: '/admin/listings', label: 'Listings', icon: TbPackage },
-      { href: '/admin/users', label: 'Users', icon: TbUsers },
       { href: '/admin/disputes', label: 'Dispute', icon: TbReportSearch },
       { href: '/admin/seller-template', label: 'Template', icon: TbClipboardList },
     ],
@@ -136,20 +144,20 @@ export default function AppSidebar({
     setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }))
   }
 
-  const sellerNavItems = config.navItems
-  const hasGroups = variant === 'seller' && sellerNavItems.some((item) => !isLinkItem(item))
+  const sidebarNavItems = config.navItems
+  const hasGroups = sidebarNavItems.some((item) => !isLinkItem(item))
 
   const expandedGroups = useMemo(() => {
     if (!hasGroups) return {}
     const out = {}
-    sellerNavItems.forEach((item) => {
+    sidebarNavItems.forEach((item) => {
       if (!isLinkItem(item) && item.children) {
         const childActive = item.children.some((c) => isActive(c.href))
         out[item.label] = openGroups[item.label] !== undefined ? openGroups[item.label] : childActive
       }
     })
     return out
-  }, [hasGroups, sellerNavItems, pathname, searchParams, openGroups])
+  }, [hasGroups, sidebarNavItems, pathname, searchParams, openGroups])
 
   const showSidebar = !(isMobile && variant === 'seller')
 
@@ -260,16 +268,24 @@ export default function AppSidebar({
               </button>
               {expanded && (
                 <div className={styles.subNav}>
-                  {children.map((sub) => (
-                    <Link
-                      key={sub.href}
-                      href={sub.href}
-                      className={`${styles.subLink} ${isActive(sub.href) ? styles.active : ''}`}
-                      onClick={handleNavClose}
-                    >
-                      {sub.label}
-                    </Link>
-                  ))}
+                  {children.map((sub) => {
+                    const SubIcon = sub.icon
+                    return (
+                      <Link
+                        key={sub.href}
+                        href={sub.href}
+                        className={`${styles.subLink} ${SubIcon ? styles.subLinkWithIcon : ''} ${isActive(sub.href) ? styles.active : ''}`}
+                        onClick={handleNavClose}
+                      >
+                        {SubIcon ? (
+                          <span className={styles.subLinkIconWrap} aria-hidden>
+                            <SubIcon className={styles.subLinkIcon} />
+                          </span>
+                        ) : null}
+                        <span className={styles.subLinkLabel}>{sub.label}</span>
+                      </Link>
+                    )
+                  })}
                 </div>
               )}
             </div>

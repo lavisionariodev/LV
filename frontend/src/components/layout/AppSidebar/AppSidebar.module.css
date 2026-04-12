@@ -214,14 +214,46 @@
   text-decoration: none;
 }
 
+.subLinkWithIcon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.subLinkIconWrap {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.subLinkIcon {
+  font-size: 15px;
+  color: #94a3b8;
+}
+
+.subLinkLabel {
+  min-width: 0;
+}
+
 .subLink:hover {
   background: #f7f9fc;
   color: #0f172a;
 }
 
+.subLink:hover .subLinkIcon {
+  color: #64748b;
+}
+
 .subLink.active {
   color: var(--color-green-700);
   font-weight: 600;
+}
+
+.subLink.active .subLinkIcon {
+  color: var(--color-green-700);
 }
 
 .iconWrap {

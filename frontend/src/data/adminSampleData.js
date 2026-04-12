@@ -88,7 +88,7 @@ export const disputes = [
 export const dashboard = {
   stats: {
     totalSellers: 4,
-    totalUsers: 4,
+    totalBuyers: 4,
     transactionsLast30Days: 4,
     openDisputes: disputes.filter((d) => d.status === 'open').length,
   },

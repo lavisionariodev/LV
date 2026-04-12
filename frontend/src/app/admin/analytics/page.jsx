@@ -36,9 +36,9 @@ export default function AdminAnalyticsPage() {
           <p className={layoutStyles.statHint}>Registered sellers</p>
         </div>
         <div className={layoutStyles.statCard}>
-          <p className={layoutStyles.statLabel}>Total Users</p>
-          <p className={layoutStyles.statValue}>{dashboard.stats.totalUsers}</p>
-          <p className={layoutStyles.statHint}>Registered accounts</p>
+          <p className={layoutStyles.statLabel}>Total Buyers</p>
+          <p className={layoutStyles.statValue}>{dashboard.stats.totalBuyers}</p>
+          <p className={layoutStyles.statHint}>Buyer accounts</p>
         </div>
         <div className={layoutStyles.statCard}>
           <p className={layoutStyles.statLabel}>Transactions</p>

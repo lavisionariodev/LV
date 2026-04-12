@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { FiRotateCcw } from 'react-icons/fi'
-import styles from './users.module.css'
+import styles from './buyers.module.css'
 import { supabase } from '@/lib/supabase/client'
 import { Dropdown } from '@/components/ui'
 
@@ -80,10 +80,10 @@ function Avatar({ name, src }) {
   )
 }
 
-export default function AdminUsersPage() {
+export default function AdminBuyersPage() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
-  const [users, setUsers] = useState([])
+  const [buyers, setBuyers] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedRows, setSelectedRows] = useState(() => new Set())
@@ -115,7 +115,7 @@ export default function AdminUsersPage() {
       if (loadError) {
         console.error('Failed to load buyers from Supabase:', loadError.message)
         setError(loadError)
-        setUsers([])
+        setBuyers([])
         setIsLoading(false)
         return
       }
@@ -136,7 +136,7 @@ export default function AdminUsersPage() {
         }
       })
 
-      setUsers(next)
+      setBuyers(next)
       setIsLoading(false)
     }
 
@@ -148,17 +148,17 @@ export default function AdminUsersPage() {
   }, [])
 
   const filtered = useMemo(() => {
-    return users.filter((user) => {
-      if (statusFilter !== 'all' && user.status !== statusFilter) return false
+    return buyers.filter((buyer) => {
+      if (statusFilter !== 'all' && buyer.status !== statusFilter) return false
       if (!search.trim()) return true
       const q = search.trim().toLowerCase()
       return (
-        user.name.toLowerCase().includes(q) ||
-        user.email.toLowerCase().includes(q) ||
-        user.id.toLowerCase().includes(q)
+        buyer.name.toLowerCase().includes(q) ||
+        buyer.email.toLowerCase().includes(q) ||
+        buyer.id.toLowerCase().includes(q)
       )
     })
-  }, [users, search, statusFilter])
+  }, [buyers, search, statusFilter])
 
   const hasFilters = Boolean(search.trim()) || statusFilter !== 'all'
 
@@ -210,13 +210,13 @@ export default function AdminUsersPage() {
           {isLoading && (
             <div className={styles.loadingState}>
               <div className={styles.spinner} />
-              <p>Loading users…</p>
+              <p>Loading buyers…</p>
             </div>
           )}
 
           {error && !isLoading && (
             <p className={styles.loadError}>
-              Could not load users from Supabase. Check RLS policies for `users` / `profiles`.
+              Could not load buyers from Supabase. Check RLS policies for `users` / `profiles`.
             </p>
           )}
 
@@ -224,7 +224,7 @@ export default function AdminUsersPage() {
             <table className={styles.table}>
               <colgroup>
                 <col className={styles.colCheck} />
-                <col className={styles.colUser} />
+                <col className={styles.colBuyer} />
                 <col className={styles.colEmail} />
                 <col className={styles.colJoined} />
                 <col className={styles.colRole} />
@@ -238,23 +238,23 @@ export default function AdminUsersPage() {
                       className={styles.rowCheckbox}
                       checked={
                         filtered.length > 0 &&
-                        filtered.every((u) => selectedRows.has(u.id))
+                        filtered.every((b) => selectedRows.has(b.id))
                       }
                       onChange={(e) => {
                         setSelectedRows((prev) => {
                           const next = new Set(prev)
                           if (e.target.checked) {
-                            filtered.forEach((u) => next.add(u.id))
+                            filtered.forEach((b) => next.add(b.id))
                           } else {
-                            filtered.forEach((u) => next.delete(u.id))
+                            filtered.forEach((b) => next.delete(b.id))
                           }
                           return next
                         })
                       }}
-                      aria-label="Select all users in view"
+                      aria-label="Select all buyers in view"
                     />
                   </th>
-                  <th>User</th>
+                  <th>Buyer</th>
                   <th>Email</th>
                   <th>Joined</th>
                   <th>Role</th>
@@ -262,52 +262,52 @@ export default function AdminUsersPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((user) => (
-                  <tr key={user.id} className={styles.primaryRow}>
+                {filtered.map((buyer) => (
+                  <tr key={buyer.id} className={styles.primaryRow}>
                     <td className={styles.checkboxCell}>
                       <input
                         type="checkbox"
                         className={styles.rowCheckbox}
-                        checked={selectedRows.has(user.id)}
+                        checked={selectedRows.has(buyer.id)}
                         onChange={(e) => {
                           setSelectedRows((prev) => {
                             const next = new Set(prev)
-                            if (e.target.checked) next.add(user.id)
-                            else next.delete(user.id)
+                            if (e.target.checked) next.add(buyer.id)
+                            else next.delete(buyer.id)
                             return next
                           })
                         }}
-                        aria-label={`Select ${user.name}`}
+                        aria-label={`Select ${buyer.name}`}
                       />
                     </td>
 
                     <td>
-                      <div className={styles.userCell}>
-                        <Avatar name={user.name} src={user.avatarUrl} />
-                        <div className={styles.userText}>
-                          <p className={styles.userName}>{user.name}</p>
+                      <div className={styles.buyerCell}>
+                        <Avatar name={buyer.name} src={buyer.avatarUrl} />
+                        <div className={styles.buyerText}>
+                          <p className={styles.buyerName}>{buyer.name}</p>
                         </div>
                       </div>
                     </td>
 
                     <td>
-                      <span className={styles.email} title={user.email}>
-                        {user.email}
+                      <span className={styles.email} title={buyer.email}>
+                        {buyer.email}
                       </span>
                     </td>
 
                     <td>
-                      <span className={styles.meta}>{user.joinedAt}</span>
+                      <span className={styles.meta}>{buyer.joinedAt}</span>
                     </td>
 
                     <td>
-                      <span className={styles.badge}>{user.role}</span>
+                      <span className={styles.badge}>{buyer.role}</span>
                     </td>
 
                     <td>
-                      <span className={`${styles.statusBadge} ${styles[`status_${user.status}`]}`}>
+                      <span className={`${styles.statusBadge} ${styles[`status_${buyer.status}`]}`}>
                         <span className={styles.statusDot} />
-                        {user.status}
+                        {buyer.status}
                       </span>
                     </td>
                   </tr>
@@ -322,8 +322,8 @@ export default function AdminUsersPage() {
                 <circle cx="22" cy="22" r="14" stroke="#cbd5e1" strokeWidth="2" />
                 <path d="M32 32l8 8" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round" />
               </svg>
-              <p className={styles.emptyTitle}>No users found</p>
-              <p className={styles.emptyText}>No users match your current filters.</p>
+              <p className={styles.emptyTitle}>No buyers found</p>
+              <p className={styles.emptyText}>No buyers match your current filters.</p>
               <button
                 type="button"
                 className={styles.clearBtn}
@@ -337,7 +337,7 @@ export default function AdminUsersPage() {
 
         {!isLoading && !error && (
           <div className={styles.tableFooter}>
-            Showing <strong>{filtered.length}</strong> of <strong>{users.length}</strong> users
+            Showing <strong>{filtered.length}</strong> of <strong>{buyers.length}</strong> buyers
           </div>
         )}
       </section>

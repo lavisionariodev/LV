@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import styles from './Dropdown.module.css'
 
 /**
- * Select-style dropdown for toolbars (admin payouts, sellers, users).
+ * Select-style dropdown for toolbars (admin payouts, sellers, buyers).
  * Styles live in `./Dropdown.module.css`.
  */
 export function Dropdown({ value, onChange, options, placeholder, ariaLabel }) {
