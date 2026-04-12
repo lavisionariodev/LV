@@ -1,54 +1,105 @@
-/* Admin listings — aligned with users/sellers table panels */
+/* Admin listings — card-based layout aligned with reference UI */
 
 .pageRoot {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 0;
   color: #0f172a;
 }
 
-.tablePanel {
-  background: #fff;
-  border: 1px solid #e9e9ef;
-  border-radius: 14px;
-  overflow: hidden;
-}
-
+/* ── Toolbar (no outer panel — sits in admin page content) ── */
 .toolbar {
-  padding: 14px 18px;
+  padding: 0 0 14px 0;
+  margin-bottom: 2px;
   border-bottom: 1px solid #f1f5f9;
-  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.toolbarRow {
+.toolbarTopRow {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.toolbarControls {
+/* ── Tabs (rule only as wide as the tab buttons, not full row) ── */
+.tabs {
+  display: flex;
+  gap: 0;
+  flex-shrink: 0;
+  min-width: 0;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 8px;
+  border-bottom: 1.5px solid #e9e9ef;
+}
+
+.tab {
+  padding: 10px 16px 12px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1.5px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 7px;
+  font-family: inherit;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.tab:hover {
+  color: #334155;
+}
+
+.tab.active {
+  color: #0f172a;
+  border-bottom-color: #0f172a;
+}
+
+.tabCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 4px;
+  background: #f3f4f6;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #4b5563;
+}
+
+/* ── Filter row ── */
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   flex-wrap: wrap;
-  flex: 1;
-  min-width: 0;
 }
 
 .toolbarSearchWrap {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 40px;
-  padding: 0 12px;
+  height: 36px;
+  padding: 0 11px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   background: #fff;
   flex: 1;
-  min-width: 160px;
-  max-width: 280px;
+  min-width: 200px;
+  max-width: 340px;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
@@ -58,8 +109,8 @@
 }
 
 .toolbarSearchWrap svg {
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
   color: #94a3b8;
   flex-shrink: 0;
 }
@@ -79,11 +130,48 @@
   color: #94a3b8;
 }
 
-.toolbarClearAll {
+.filterBtn {
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+  color: #64748b;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 4px 8px 8px;
+  font-family: inherit;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+
+.filterBtn svg {
+  width: 13px;
+  height: 13px;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.filterBtn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.filterBtn.active {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.toolbarClearAll {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+  height: 36px;
   border: none;
   background: none;
   font-size: 13px;
@@ -100,120 +188,86 @@
 }
 
 .toolbarClearAll:disabled {
-  opacity: 0.45;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
 .toolbarClearIcon {
-  width: 16px;
-  height: 16px;
+  width: 13px;
+  height: 13px;
   flex-shrink: 0;
 }
 
-.tableWrap {
-  overflow-x: auto;
-  padding: 0 18px;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  table-layout: fixed;
-}
-
-.colListing {
-  width: 28%;
-}
-.colSeller {
-  width: 20%;
-}
-.colKind {
-  width: 11%;
-}
-.colPrice {
-  width: 10%;
-}
-.colStatus {
-  width: 12%;
-}
-.colUpdated {
-  width: 11%;
-}
-.colActions {
-  width: 8%;
-}
-
-.table thead tr {
-  background: #f8fafc;
-  border-bottom: 1px solid #e9e9ef;
-}
-
-.table th {
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
-  padding: 11px 12px;
-  text-align: left;
-  border-bottom: 1px solid #e9e9ef;
-  white-space: nowrap;
-  letter-spacing: 0.01em;
-}
-
-.table td {
-  padding: 12px 12px;
-  vertical-align: middle;
-  color: #0f172a;
-  font-size: 13px;
-}
-
-.primaryRow {
-  border-bottom: 1px solid #f1f5f9;
-  transition: background 0.1s;
-}
-
-.primaryRow:hover {
-  background: #f8fafc;
-}
-
-.primaryRow:last-child {
-  border-bottom: none;
-}
-
-.listingCell {
+/* ── Card list ── */
+.cardList {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 10px;
-  min-width: 0;
+  padding: 12px 0 0 0;
 }
 
+/* ── Individual card ── */
+.card {
+  background: #fff;
+  border: 1px solid #e9e9ef;
+  border-radius: 12px;
+  padding: 16px 20px;
+  transition: border-color 0.15s;
+}
+
+.card:hover {
+  border-color: #cbd5e1;
+}
+
+.cardMain {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+/* ── Thumbnail ── */
 .thumb {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  object-fit: cover;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
   background: #f1f5f9;
-  flex-shrink: 0;
   border: 1px solid #e2e8f0;
-}
-
-.thumbPlaceholder {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
-  font-weight: 700;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumbIcon {
+  width: 22px;
+  height: 22px;
   color: #94a3b8;
 }
 
-.listingText {
-  min-width: 0;
+/* ── Card body ── */
+.cardBody {
   flex: 1;
+  min-width: 0;
 }
 
-.listingName {
+.cardTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 3px;
+}
+
+.cardTitle {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: #0f172a;
   overflow: hidden;
@@ -221,55 +275,69 @@
   white-space: nowrap;
 }
 
-.listingId {
-  margin: 2px 0 0;
-  font-size: 11px;
-  color: #94a3b8;
-  font-family: ui-monospace, monospace;
+.cardSub {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.sellerName {
-  font-size: 13px;
-  color: #334155;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.cardTags {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
 }
 
-.kindBadge {
+.cardTag {
   display: inline-flex;
   align-items: center;
   padding: 3px 9px;
   border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
   border: 1px solid #e2e8f0;
   background: #f8fafc;
-  font-size: 11px;
-  font-weight: 600;
   color: #475569;
-  white-space: nowrap;
-  text-transform: capitalize;
 }
 
-.price {
-  font-size: 13px;
-  color: #334155;
-  white-space: nowrap;
+/* ── Card right column ── */
+.cardRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
-.meta {
+.cardMetaRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 12px;
-  color: #94a3b8;
-  white-space: nowrap;
+  color: #64748b;
 }
 
+.metaItem svg {
+  width: 13px;
+  height: 13px;
+  opacity: 0.6;
+}
+
+/* ── Status badge ── */
 .statusBadge {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 9px;
+  padding: 4px 10px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
@@ -284,54 +352,118 @@
   border-radius: 50%;
   flex-shrink: 0;
   background: currentColor;
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
 .status_active {
   border-color: #bbf7d0;
   color: #15803d;
+  background: #f0fdf4;
 }
+
 .status_draft {
   border-color: #e2e8f0;
   color: #64748b;
+  background: #f8fafc;
 }
+
 .status_inactive {
   border-color: #e2e8f0;
   color: #64748b;
+  background: #f8fafc;
 }
+
 .status_archived {
   border-color: #fecaca;
   color: #b91c1c;
+  background: #fff5f5;
 }
 
+/* ── View link ── */
 .viewLink {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  font-weight: 600;
-  color: #1e3a2f;
+  font-weight: 500;
+  color: #334155;
   text-decoration: none;
+  padding: 5px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  transition: background 0.12s, border-color 0.12s;
   white-space: nowrap;
 }
 
 .viewLink:hover {
-  text-decoration: underline;
+  background: #fff;
+  border-color: #cbd5e1;
 }
 
 .viewLinkIcon {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   flex-shrink: 0;
-  opacity: 0.85;
+  opacity: 0.8;
 }
 
+/* ── Card divider + stats row ── */
+.cardDivider {
+  height: 1px;
+  background: #f1f5f9;
+  margin: 14px 0 12px;
+}
+
+.statsRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  flex-wrap: wrap;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  padding: 0 20px 0 0;
+  border-right: 1px solid #f1f5f9;
+  margin-right: 0;
+}
+
+.statItem:last-child {
+  border-right: none;
+}
+
+.statItem + .statItem {
+  padding-left: 20px;
+}
+
+.statValue {
+  font-size: 20px;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.1;
+}
+
+.statLabel {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+.statSubLabel {
+  font-size: 10px;
+  color: #b8c4d0;
+}
+
+/* ── Empty & loading states ── */
 .loadingState {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  padding: 48px 18px;
+  padding: 40px 0;
   color: #94a3b8;
   font-size: 13px;
 }
@@ -346,16 +478,14 @@
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
 .loadError {
-  padding: 14px 18px;
+  padding: 0 0 12px 0;
   font-size: 13px;
   color: #64748b;
-  border-bottom: 1px solid #f1f5f9;
+  margin: 0;
 }
 
 .errorDetail {
@@ -369,7 +499,7 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 56px 18px;
+  padding: 48px 0;
   text-align: center;
 }
 
@@ -377,12 +507,13 @@
   width: 38px;
   height: 38px;
   margin-bottom: 6px;
+  opacity: 0.3;
 }
 
 .emptyTitle {
   margin: 0;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
   color: #334155;
 }
 
@@ -410,28 +541,38 @@
   border-color: #cbd5e1;
 }
 
+/* ── Footer ── */
 .tableFooter {
-  padding: 14px 18px;
+  padding: 14px 0 0 0;
   font-size: 12px;
   color: #94a3b8;
-  border-top: 1px solid #f1f5f9;
-  background: #fff;
 }
 
 .tableFooter strong {
   color: #475569;
 }
 
+/* ── Responsive ── */
 @media (max-width: 860px) {
-  .toolbarRow {
+  .toolbarTopRow {
     flex-direction: column;
     align-items: stretch;
   }
-  .toolbarControls {
-    flex-direction: column;
-    align-items: stretch;
+  .filterRow {
+    flex-wrap: wrap;
   }
   .toolbarSearchWrap {
     max-width: none;
+    flex: 1 1 100%;
+  }
+  .statsRow {
+    gap: 12px;
+  }
+  .statItem {
+    border-right: none;
+    padding: 0;
+  }
+  .cardRight {
+    display: none;
   }
 }

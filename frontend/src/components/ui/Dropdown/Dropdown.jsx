@@ -8,7 +8,7 @@ import styles from './Dropdown.module.css'
  * Select-style dropdown for toolbars (admin payouts, sellers, buyers).
  * Styles live in `./Dropdown.module.css`.
  */
-export function Dropdown({ value, onChange, options, placeholder, ariaLabel }) {
+export function Dropdown({ value, onChange, options, placeholder, ariaLabel, leadingIcon }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -26,9 +26,14 @@ export function Dropdown({ value, onChange, options, placeholder, ariaLabel }) {
     <div className={styles.root} ref={ref} aria-label={ariaLabel}>
       <button
         type="button"
-        className={`${styles.trigger} ${open ? styles.triggerOpen : ''}`}
+        className={`${styles.trigger} ${open ? styles.triggerOpen : ''} ${leadingIcon ? styles.triggerWithLeading : ''}`}
         onClick={() => setOpen((o) => !o)}
       >
+        {leadingIcon ? (
+          <span className={styles.leadingIcon} aria-hidden>
+            {leadingIcon}
+          </span>
+        ) : null}
         <span className={styles.label}>{selected ? selected.label : placeholder}</span>
         <svg
           className={`${styles.chevron} ${open ? styles.chevronOpen : ''}`}

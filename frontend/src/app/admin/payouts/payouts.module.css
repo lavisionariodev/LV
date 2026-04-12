@@ -127,37 +127,42 @@
 
 /* ── Tab Navigation ──────────────────────────────────────────────────────── */
 
+/* Tab font matches admin listings (listings.module.css .tabs / .tab) */
 .tabNav {
   display: flex;
   gap: 0;
+  flex-wrap: wrap;
   width: fit-content;
-  border-bottom: 1px solid #e9e9ef;
+  max-width: 100%;
+  margin-bottom: 4px;
+  border-bottom: 1.5px solid #e9e9ef;
 }
 
 .tabBtn {
   font-size: 13px;
   font-weight: 500;
-  padding: 8px 18px;
+  padding: 10px 16px 12px 16px;
   border: none;
   border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
+  margin-bottom: -1.5px;
   background: transparent;
-  color: #94a3b8;
+  color: #64748b;
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
   white-space: nowrap;
+  font-family: inherit;
 }
-.tabBtn:hover { color: #475569; }
+.tabBtn:hover { color: #334155; }
 
 .tabBtnActive {
-  color: #102820;
-  font-weight: 600;
-  border-bottom-color: #102820;
+  color: #0f172a;
+  font-weight: 500;
+  border-bottom-color: #0f172a;
 }
 
 .tabBtnActive:hover {
-  color: #102820;
-  border-bottom-color: #102820;
+  color: #0f172a;
+  border-bottom-color: #0f172a;
 }
 
 /* Stacked sections when "All" tab is active (transactions → commission → seller earnings) */
@@ -2092,7 +2097,7 @@
 
 @media (max-width: 680px) {
   .statsGrid { grid-template-columns: 1fr; }
-  .tabNav { width: 100%; }
+  .tabNav { width: fit-content; max-width: 100%; }
   .toolbarSearchWrap { max-width: none; }
 }
 
@@ -2125,15 +2130,16 @@
   .statLabel { font-size: 11px; }
   .statCard { padding: 10px 12px; gap: 6px; }
 
-  /* Tabs: scrollable row */
+  /* Tabs: scrollable row — line stays tab-width; scroll wrapper is page */
   .tabNav {
-    width: 100%;
+    width: fit-content;
+    max-width: 100%;
     overflow-x: auto;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
   }
   .tabNav::-webkit-scrollbar { display: none; }
-  .tabBtn { padding: 8px 14px; font-size: 12px; white-space: nowrap; }
+  .tabBtn { padding: 10px 16px 15px 16px; font-size: 13px; white-space: nowrap; }
 
   /* Toolbar: stack controls */
   .toolbar { padding: 10px 12px; }
@@ -2682,29 +2688,34 @@
 .commissionSectionTabs {
   display: flex;
   gap: 0;
+  flex-wrap: wrap;
+  width: fit-content;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 14px 20px 0;
-  border-bottom: 1px solid #e9e9ef;
+  margin-bottom: 4px;
+  border-bottom: 1.5px solid #e9e9ef;
 }
 
 .commissionSectionTab {
   font-size: 13px;
   font-weight: 500;
-  padding: 8px 16px;
+  padding: 10px 16px 15px 16px;
   border: none;
   border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
+  margin-bottom: -1.5px;
   background: transparent;
-  color: #94a3b8;
+  color: #64748b;
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
   white-space: nowrap;
   font-family: inherit;
 }
-.commissionSectionTab:hover { color: #475569; }
+.commissionSectionTab:hover { color: #334155; }
 .commissionSectionTabActive {
-  color: #102820;
-  font-weight: 600;
-  border-bottom-color: #102820;
+  color: #0f172a;
+  font-weight: 500;
+  border-bottom-color: #0f172a;
 }
 
 /* ── Commission Body ──────────────────────────────────────────────────────── */

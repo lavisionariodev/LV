@@ -5,6 +5,23 @@
   flex-shrink: 0;
 }
 
+.triggerWithLeading {
+  padding-left: 10px;
+}
+
+.leadingIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #64748b;
+}
+
+.leadingIcon svg {
+  width: 16px;
+  height: 16px;
+}
+
 .trigger {
   display: inline-flex;
   align-items: center;

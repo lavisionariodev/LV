@@ -23,6 +23,7 @@ import { LuUserCheck } from 'react-icons/lu'
 import { BsPerson } from 'react-icons/bs'
 import styles from './AppSidebar.module.css'
 import { useSiteContent } from '@/lib/siteContent/client'
+import { countDisputesNeedingAdminAttention } from '@/data/adminSampleData'
 
 function isLinkItem(item) {
   return 'href' in item && !('children' in item)
@@ -161,6 +162,9 @@ export default function AppSidebar({
 
   const showSidebar = !(isMobile && variant === 'seller')
 
+  const showDisputeNewBadge =
+    variant === 'admin' && countDisputesNeedingAdminAttention() > 0
+
   return (
     <>
       {showSidebar && (
@@ -214,18 +218,39 @@ export default function AppSidebar({
         {config.navItems.map((item) => {
           if (isLinkItem(item)) {
             const { href, label, icon: Icon } = item
+            const disputeBadge =
+              href === '/admin/disputes' && showDisputeNewBadge
             return (
               <Link
                 key={href}
                 href={href}
-                className={`${styles.link} ${isActive(href) ? styles.active : ''}`}
-                title={showCollapsed ? label : undefined}
+                className={`${styles.link} ${isActive(href) ? styles.active : ''} ${disputeBadge ? styles.linkWithBadge : ''}`}
+                title={
+                  showCollapsed
+                    ? disputeBadge
+                      ? `${label} — new disputes to review`
+                      : label
+                    : undefined
+                }
+                aria-label={
+                  disputeBadge ? 'Dispute, new disputes to review' : undefined
+                }
                 onClick={handleNavClose}
               >
                 <span className={styles.iconWrap}>
                   <Icon className={styles.navIcon} />
                 </span>
                 <span className={styles.linkText}>{label}</span>
+                {disputeBadge &&
+                  (showCollapsed ? (
+                    <span
+                      className={styles.navNewBadgeDot}
+                      title="New disputes to review"
+                      aria-hidden
+                    />
+                  ) : (
+                    <span className={styles.navNewBadge}>New</span>
+                  ))}
               </Link>
             )
           }

@@ -83,6 +83,11 @@ export const disputes = [
   },
 ]
 
+/** Disputes that still need admin attention (open or under review). Swap for an API count later. */
+export function countDisputesNeedingAdminAttention() {
+  return disputes.filter((d) => d.status === 'open' || d.status === 'under_review').length
+}
+
 // --- Dashboard aggregates (mock stats + charts; admin dashboard may override with live data) ---
 
 export const dashboard = {
