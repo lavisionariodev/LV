@@ -126,11 +126,32 @@ function stringListHasContent(value) {
   return normalizeStringListValue(value).some((s) => String(s).trim() !== '')
 }
 
+export const FALLBACK_IMAGE =
+  'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 640 420%22%3E%3Crect width=%22640%22 height=%22420%22 fill=%22%23d1d5db%22/%3E%3Cpath d=%22M230 160h180a22 22 0 0 1 22 22v56a22 22 0 0 1-22 22H230a22 22 0 0 1-22-22v-56a22 22 0 0 1 22-22Zm18 28a16 16 0 1 0 0.1 0Zm-8 56 38-34 35 30 44-40 55 44H240Z%22 fill=%22%239ca3af%22/%3E%3C/svg%3E'
+
+/** True when the gallery has at least one real image (local preview or remote URL), not the gray placeholder. */
+export function listingGalleryHasUserImages(gallery) {
+  if (!Array.isArray(gallery) || gallery.length === 0) return false
+  return gallery.some((entry) => {
+    const url = entry?.url
+    if (typeof url !== 'string' || !url.trim()) return false
+    if (url === FALLBACK_IMAGE) return false
+    if (url.startsWith('blob:')) return true
+    if (url.startsWith('http://') || url.startsWith('https://')) return true
+    return false
+  })
+}
+
 /**
  * Step completion for sidebar: each section is complete when all required fields in that section have values.
- * `images` fields do not use `formValues` and are skipped.
+ * Required `images` fields are checked against `listingGallery` (not `formValues`).
  */
-export function computeTemplateSectionCompletion(formValues, templateFields, orderedSectionIds) {
+export function computeTemplateSectionCompletion(
+  formValues,
+  templateFields,
+  orderedSectionIds,
+  listingGallery = [],
+) {
   if (!Array.isArray(orderedSectionIds) || !orderedSectionIds.length) return {}
   const sorted = sortTemplateFieldsForDisplay(templateFields, orderedSectionIds)
   const completed = {}
@@ -139,7 +160,10 @@ export function computeTemplateSectionCompletion(formValues, templateFields, ord
       (f) => normalizeSectionId(f.section, orderedSectionIds) === secId,
     )
     const done = fieldsInSec.every((f) => {
-      if (f.type === 'images') return true
+      if (f.type === 'images') {
+        if (!f.required) return true
+        return listingGalleryHasUserImages(listingGallery)
+      }
       if (!f.required) return true
       const v = formValues[f.id]
       if (isStringListField(f)) return stringListHasContent(v)
@@ -149,9 +173,6 @@ export function computeTemplateSectionCompletion(formValues, templateFields, ord
   }
   return completed
 }
-
-export const FALLBACK_IMAGE =
-  'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 640 420%22%3E%3Crect width=%22640%22 height=%22420%22 fill=%22%23d1d5db%22/%3E%3Cpath d=%22M230 160h180a22 22 0 0 1 22 22v56a22 22 0 0 1-22 22H230a22 22 0 0 1-22-22v-56a22 22 0 0 1 22-22Zm18 28a16 16 0 1 0 0.1 0Zm-8 56 38-34 35 30 44-40 55 44H240Z%22 fill=%22%239ca3af%22/%3E%3C/svg%3E'
 
 export const STATUS_FIELD_DEFAULT = {
   id: 'status',
@@ -280,7 +301,12 @@ export function buildSellerListingPayload({ template, formValues, selectedProduc
   }
 }
 
-export function findFirstMissingRequiredField(templateFields, getFieldValue, orderedSectionIds) {
+export function findFirstMissingRequiredField(
+  templateFields,
+  getFieldValue,
+  orderedSectionIds,
+  listingGallery = [],
+) {
   const order =
     Array.isArray(orderedSectionIds) && orderedSectionIds.length
       ? orderedSectionIds
@@ -290,7 +316,10 @@ export function findFirstMissingRequiredField(templateFields, getFieldValue, ord
     order,
   )
   return sorted.find((field) => {
-    if (field.type === 'images') return false
+    if (field.type === 'images') {
+      if (!field.required) return false
+      return !listingGalleryHasUserImages(listingGallery)
+    }
     if (!field.required) return false
     if (isStringListField(field)) {
       return !stringListHasContent(getFieldValue(field.id))
@@ -888,8 +917,9 @@ export default function NewListingClient() {
   )
 
   const sectionCompletion = useMemo(
-    () => computeTemplateSectionCompletion(formValues, templateFields, orderedSectionIds),
-    [formValues, templateFields, orderedSectionIds],
+    () =>
+      computeTemplateSectionCompletion(formValues, templateFields, orderedSectionIds, editGallery),
+    [formValues, templateFields, orderedSectionIds, editGallery],
   )
 
   const activeTipSectionId = useMemo(
@@ -1065,6 +1095,7 @@ export default function NewListingClient() {
       templateFields,
       getFieldValue,
       orderedSectionIds,
+      editGallery,
     )
     if (missingRequired) {
       setFormError(`${missingRequired.label} is required.`)

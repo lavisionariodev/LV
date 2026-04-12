@@ -27,6 +27,15 @@
   box-sizing: border-box;
 }
 
+/* Flat page root: content sits on the admin canvas without an extra white card shell */
+.pageSurface {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+}
+
 .pageBleed {
   box-sizing: border-box;
 }

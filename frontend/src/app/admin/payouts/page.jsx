@@ -1,158 +1,257 @@
 'use client'
 
-import React, { useState, useMemo, useCallback } from 'react'
-import { Poppins } from 'next/font/google'
-import { FiArrowUp, FiArrowDown } from 'react-icons/fi'
+import React, { useState, useMemo, useRef, useEffect } from 'react'
+import { FiArrowUp, FiArrowDown, FiRotateCcw } from 'react-icons/fi'
+
+import { PAYOUTS_PAGE_SELLERS as SELLERS } from '@/data/adminSampleData'
+import { useAdminPayoutsPage } from '@/hooks'
+import {
+  formatPHP,
+  formatDateRangeLabel,
+  PAYMENT_STATUS_META,
+  PAYOUT_STATUS_META,
+  getCommissionRate,
+  calcAmounts,
+} from '@/utils/adminPayouts'
+
 import styles from './payouts.module.css'
-
-const poppins = Poppins({ weight: ['400', '500', '600', '700', '800'], subsets: ['latin'] })
-
-// ─── Sample Data ────────────────────────────────────────────────────────────
-
-const SELLERS = [
-  { id: 's1', name: 'Heaven Memorial Services', email: 'admin@heavenmemorial.ph', phone: '09171234567' },
-  { id: 's2', name: 'Grace Funeral Services', email: 'accounts@gracefuneral.ph', phone: '09281234567' },
-  { id: 's3', name: 'Eternal Rest Chapel', email: 'billing@eternalrest.ph', phone: '09391234567' },
-  { id: 's4', name: 'Serenity Funeral Home', email: 'finance@serenityfh.ph', phone: '09501234567' },
-]
-
-const BUYERS = [
-  { id: 'b1', name: 'Maria Santos', email: 'maria.santos@gmail.com', phone: '09171112222' },
-  { id: 'b2', name: 'Jose Reyes', email: 'jose.reyes@yahoo.com', phone: '09282223333' },
-  { id: 'b3', name: 'Ana Cruz', email: 'ana.cruz@outlook.com', phone: '09393334444' },
-  { id: 'b4', name: 'Pedro Dela Cruz', email: 'pedro.dc@gmail.com', phone: '09504445555' },
-  { id: 'b5', name: 'Lina Gomez', email: 'lina.gomez@gmail.com', phone: '09165556666' },
-  { id: 'b6', name: 'Ricardo Lim', email: 'r.lim@business.com', phone: '09276667777' },
-]
-
-const SERVICES = [
-  'Complete Funeral Package – Gold',
-  'Basic Cremation Package',
-  'Traditional Burial – Standard',
-  'Memorial Service Package',
-  'Embalming & Viewing Package',
-  'Premium Chapel Service',
-  'Eco-Friendly Green Burial',
-  'Full Service Cremation – Premium',
-]
-
-const PAYMENT_METHODS = ['GCash', 'Maya', 'Bank Transfer', 'Credit Card', 'Cash']
-
-function generateTransactions() {
-  const txns = []
-  const now = new Date()
-  for (let i = 0; i < 32; i++) {
-    const seller = SELLERS[i % SELLERS.length]
-    const buyer = BUYERS[i % BUYERS.length]
-    const amount = [15000, 22500, 35000, 48000, 12000, 28000, 55000, 18500][i % 8]
-    const paymentStatuses = ['paid', 'paid', 'paid', 'pending', 'refunded']
-    const payoutStatuses = ['pending', 'processing', 'paid', 'on_hold', 'refunded']
-    const paymentStatus = paymentStatuses[i % paymentStatuses.length]
-    const payoutStatus = payoutStatuses[i % payoutStatuses.length]
-    const daysAgo = i * 3
-    const date = new Date(now)
-    date.setDate(date.getDate() - daysAgo)
-
-    txns.push({
-      id: `TXN-${String(10000 + i).padStart(5, '0')}`,
-      orderId: `ORD-${String(20000 + i).padStart(5, '0')}`,
-      sellerId: seller.id,
-      sellerName: seller.name,
-      sellerEmail: seller.email,
-      sellerPhone: seller.phone,
-      buyerId: buyer.id,
-      buyerName: buyer.name,
-      buyerEmail: buyer.email,
-      buyerPhone: buyer.phone,
-      service: SERVICES[i % SERVICES.length],
-      amount,
-      paymentMethod: PAYMENT_METHODS[i % PAYMENT_METHODS.length],
-      paymentStatus,
-      payoutStatus,
-      payoutReference: payoutStatus === 'paid' ? `REF-${String(30000 + i).padStart(6, '0')}` : '',
-      payoutDate: payoutStatus === 'paid' ? date.toISOString().split('T')[0] : '',
-      date: date.toISOString().split('T')[0],
-      dateObj: date,
-    })
-  }
-  return txns
-}
-
-const INITIAL_TRANSACTIONS = generateTransactions()
-
-const INITIAL_COMMISSION_SETTINGS = {
-  global: 10,
-  sellers: {
-    s1: 12,
-    s2: 8,
-  },
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const formatPHP = (n) => `₱${Number(n).toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
-
-const PAYMENT_STATUS_META = {
-  paid:     { label: 'Paid',     color: 'green' },
-  pending:  { label: 'Pending',  color: 'amber' },
-  refunded: { label: 'Refunded', color: 'red'   },
-  failed:   { label: 'Failed',   color: 'red'   },
-}
-
-const PAYOUT_STATUS_META = {
-  pending:    { label: 'Pending',    color: 'amber'  },
-  processing: { label: 'Processing', color: 'blue'   },
-  paid:       { label: 'Paid',       color: 'green'  },
-  on_hold:    { label: 'On Hold',    color: 'slate'  },
-  refunded:   { label: 'Refunded',   color: 'red'    },
-}
-
-function getCommissionRate(sellerId, settings) {
-  return settings.sellers[sellerId] !== undefined
-    ? settings.sellers[sellerId]
-    : settings.global
-}
-
-function calcAmounts(amount, rate) {
-  const commission = Math.round(amount * rate / 100)
-  return { commission, sellerEarnings: amount - commission }
-}
-
-function exportToCSV(transactions, settings) {
-  const headers = ['Order ID','Txn ID','Date','Buyer','Buyer Email','Seller','Service','Total Amount','Commission %','Commission','Seller Earnings','Payment Status','Payout Status','Payout Reference','Payout Date']
-  const rows = transactions.map(t => {
-    const rate = getCommissionRate(t.sellerId, settings)
-    const { commission, sellerEarnings } = calcAmounts(t.amount, rate)
-    return [t.orderId, t.id, t.date, t.buyerName, t.buyerEmail, t.sellerName, t.service, t.amount, `${rate}%`, commission, sellerEarnings, t.paymentStatus, t.payoutStatus, t.payoutReference, t.payoutDate]
-  })
-  const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n')
-  const blob = new Blob([csv], { type: 'text/csv' })
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(blob)
-  a.download = `payouts_export_${new Date().toISOString().slice(0,10)}.csv`
-  a.click()
-}
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
 
 const Icon = {
-  Revenue:     () => <svg viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.93V18h-2v-1.07A4.004 4.004 0 018 13h2c0 1.1.9 2 2 2s2-.9 2-2c0-1.1-.9-2-2-2a4 4 0 01-4-4c0-1.86 1.28-3.41 3-3.86V2h2v1.14A4.004 4.004 0 0116 7h-2c0-1.1-.9-2-2-2s-2 .9-2 2 .9 2 2 2a4 4 0 014 4c0 1.86-1.28 3.41-3 3.93z" fill="currentColor"/></svg>,
-  Earnings:    () => <svg viewBox="0 0 24 24" fill="none"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" fill="currentColor"/></svg>,
-  Pending:     () => <svg viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z" fill="currentColor"/></svg>,
-  Completed:   () => <svg viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="currentColor"/></svg>,
-  Txns:        () => <svg viewBox="0 0 24 24" fill="none"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" fill="currentColor"/></svg>,
   Search:      () => <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2"/><path d="M18 18l3.5 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>,
   Filter:      () => <svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>,
-  Export:      () => <svg viewBox="0 0 24 24" fill="none"><path d="M12 16l4-5h-3V4h-2v7H8l4 5zm8 2H4v2h16v-2z" fill="currentColor"/></svg>,
   Close:       () => <svg viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>,
   Edit:        () => <svg viewBox="0 0 24 24" fill="none"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/></svg>,
   Check:       () => <svg viewBox="0 0 24 24" fill="none"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor"/></svg>,
-  ChevronDown: () => <svg viewBox="0 0 24 24" fill="none"><path d="M7 10l5 5 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-  Info:        () => <svg viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" fill="currentColor"/></svg>,
-  Seller:      () => <svg viewBox="0 0 24 24" fill="none"><path d="M20 4H4v2l8 5 8-5V4zM4 8.236V20h16V8.236l-8 5-8-5z" fill="currentColor"/></svg>,
+  Calendar: () => (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
+      <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  ),
 }
 
 // ─── Sub-Components ──────────────────────────────────────────────────────────
+
+// ── Custom Dropdown ──────────────────────────────────────────────────────────
+function CustomDropdown({ value, onChange, options, placeholder, ariaLabel }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  const selected = options.find(o => o.value === value)
+
+  return (
+    <div className={styles.customDropdown} ref={ref} aria-label={ariaLabel}>
+      <button
+        type="button"
+        className={`${styles.customDropdownTrigger} ${open ? styles.customDropdownTriggerOpen : ''}`}
+        onClick={() => setOpen(o => !o)}
+      >
+        <span className={styles.customDropdownLabel}>
+          {selected ? selected.label : placeholder}
+        </span>
+        <svg className={`${styles.customDropdownChevron} ${open ? styles.customDropdownChevronOpen : ''}`} viewBox="0 0 24 24" fill="none">
+          <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+      {open && (
+        <div className={styles.customDropdownMenu}>
+          {options.map(opt => (
+            <button
+              key={opt.value}
+              type="button"
+              className={`${styles.customDropdownItem} ${value === opt.value ? styles.customDropdownItemActive : ''}`}
+              onClick={() => { onChange(opt.value); setOpen(false) }}
+            >
+              {opt.color && (
+                <span className={`${styles.customDropdownDot} ${styles[`dropDot_${opt.color}`]}`} />
+              )}
+              {opt.label}
+              {value === opt.value && (
+                <svg className={styles.customDropdownCheck} viewBox="0 0 24 24" fill="none">
+                  <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Date Range Picker ────────────────────────────────────────────────────────
+function DateRangePicker({ from, to, onChange }) {
+  const [open, setOpen] = useState(false)
+  const [viewDate, setViewDate] = useState(() => {
+    const d = from ? new Date(`${from}T12:00:00`) : new Date()
+    return { year: d.getFullYear(), month: d.getMonth() }
+  })
+  const [hovered, setHovered] = useState(null)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  const label = formatDateRangeLabel(from, to)
+
+  const DAYS = ['Su','Mo','Tu','We','Th','Fr','Sa']
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
+
+  function getDaysInMonth(year, month) {
+    return new Date(year, month + 1, 0).getDate()
+  }
+  function getFirstDayOfWeek(year, month) {
+    return new Date(year, month, 1).getDay()
+  }
+
+  const { year, month } = viewDate
+  const daysInMonth = getDaysInMonth(year, month)
+  const firstDay = getFirstDayOfWeek(year, month)
+  const cells = []
+  for (let i = 0; i < firstDay; i++) cells.push(null)
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d)
+
+  function toStr(y, m, d) {
+    return `${y}-${String(m + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+  }
+
+  function handleDayClick(d) {
+    if (!d) return
+    const dateStr = toStr(year, month, d)
+    if (!from || (from && to)) {
+      // Start fresh selection
+      onChange(dateStr, '')
+    } else {
+      // Second click — assign from/to in order
+      if (dateStr < from) onChange(dateStr, from)
+      else onChange(from, dateStr)
+      setOpen(false)
+    }
+  }
+
+  function dayState(d) {
+    if (!d) return ''
+    const s = toStr(year, month, d)
+    const end = hovered && !to ? hovered : to
+    if (s === from) return 'start'
+    if (s === to) return 'end'
+    if (from && end && s > from && s < end) return 'inRange'
+    return ''
+  }
+
+  function prevMonth() {
+    setViewDate(v => {
+      if (v.month === 0) return { year: v.year - 1, month: 11 }
+      return { year: v.year, month: v.month - 1 }
+    })
+  }
+  function nextMonth() {
+    setViewDate(v => {
+      if (v.month === 11) return { year: v.year + 1, month: 0 }
+      return { year: v.year, month: v.month + 1 }
+    })
+  }
+
+  function clear() { onChange('', ''); setOpen(false) }
+
+  return (
+    <div className={styles.drpWrap} ref={ref}>
+      <button
+        type="button"
+        className={`${styles.drpTrigger} ${open ? styles.drpTriggerOpen : ''} ${(from || to) ? styles.drpTriggerActive : ''}`}
+        onClick={() => setOpen(o => !o)}
+      >
+        <span className={styles.drpCalIcon}><Icon.Calendar /></span>
+        <span className={`${styles.drpLabel} ${!(from || to) ? styles.drpLabelPlaceholder : ''}`}>
+          {label || 'Date range'}
+        </span>
+        {(from || to) && (
+          <span
+            className={styles.drpClear}
+            role="button"
+            tabIndex={0}
+            onClick={e => { e.stopPropagation(); clear() }}
+            onKeyDown={e => e.key === 'Enter' && (e.stopPropagation(), clear())}
+            title="Clear dates"
+          >
+            <svg viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+          </span>
+        )}
+        {!(from || to) && (
+          <svg className={`${styles.drpChevron} ${open ? styles.drpChevronOpen : ''}`} viewBox="0 0 24 24" fill="none">
+            <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        )}
+      </button>
+
+      {open && (
+        <div className={styles.drpCalendar}>
+          <div className={styles.drpCalHeader}>
+            <button type="button" className={styles.drpNavBtn} onClick={prevMonth}>
+              <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+            <span className={styles.drpMonthLabel}>{MONTHS[month]} {year}</span>
+            <button type="button" className={styles.drpNavBtn} onClick={nextMonth}>
+              <svg viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+          </div>
+
+          <div className={styles.drpGrid}>
+            {DAYS.map(d => (
+              <span key={d} className={styles.drpDayName}>{d}</span>
+            ))}
+            {cells.map((d, idx) => {
+              const state = dayState(d)
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  className={[
+                    styles.drpDay,
+                    !d ? styles.drpDayEmpty : '',
+                    state === 'start' ? styles.drpDayStart : '',
+                    state === 'end' ? styles.drpDayEnd : '',
+                    state === 'inRange' ? styles.drpDayInRange : '',
+                  ].filter(Boolean).join(' ')}
+                  onClick={() => handleDayClick(d)}
+                  onMouseEnter={() => d && !to && setHovered(toStr(year, month, d))}
+                  onMouseLeave={() => setHovered(null)}
+                  disabled={!d}
+                >
+                  {d || ''}
+                </button>
+              )
+            })}
+          </div>
+
+          <div className={styles.drpFooter}>
+            <span className={styles.drpFooterHint}>
+              {!from ? 'Select start date' : !to ? 'Select end date' : `${from} → ${to}`}
+            </span>
+            {(from || to) && (
+              <button type="button" className={styles.drpClearBtn} onClick={clear}>Clear</button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 function Badge({ type, value }) {
   const meta = type === 'payment' ? PAYMENT_STATUS_META[value] : PAYOUT_STATUS_META[value]
@@ -163,21 +262,98 @@ function Badge({ type, value }) {
   return <span className={`${styles.badge} ${styles[`badge_${meta.color}`]}`}>{meta.label}</span>
 }
 
-function StatCard({ label, value, percent, period }) {
+
+function StatCard({ label, value, percent }) {
   const isPositive = percent >= 0
-  const percentColor = isPositive ? '#10b981' : '#ef4444'
-  const percentBg = isPositive ? '#ecfdf5' : '#fef5f5'
-  
+
   return (
     <div className={styles.statCard}>
       <p className={styles.statLabel}>{label}</p>
-      <p className={styles.statValue}>{value}</p>
-      <div className={styles.statFooter}>
-        <div className={styles.statPercent} style={{ color: percentColor, backgroundColor: percentBg }}>
-          {isPositive ? <FiArrowUp className={styles.percentIcon} /> : <FiArrowDown className={styles.percentIcon} />}
-          <span className={styles.percentValue}>{Math.abs(percent)}%</span>
+      <div className={styles.statBody}>
+        <div className={styles.statLeft}>
+          <p className={styles.statValue}>{value}</p>
+          <div
+            className={`${styles.statTrend} ${isPositive ? styles.statTrendPositive : styles.statTrendNegative}`}
+          >
+            {isPositive ? (
+              <FiArrowUp className={styles.statTrendArrow} aria-hidden />
+            ) : (
+              <FiArrowDown className={styles.statTrendArrow} aria-hidden />
+            )}
+            <span className={styles.statTrendValue}>{Math.abs(percent)}%</span>
+          </div>
         </div>
-        <p className={`${styles.statPeriod} ${styles.statPeriodHide}`}>{period}</p>
+        <div className={styles.statRight}>
+          <svg
+            className={`${styles.statSparkline} ${isPositive ? styles.statSparklinePositive : styles.statSparklineNegative}`}
+            viewBox="0 0 80 40"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden
+          >
+            <defs>
+              <linearGradient id={`sparkGrad_${isPositive ? 'pos' : 'neg'}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="currentColor" stopOpacity="0.18" />
+                <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            {isPositive ? (
+              <>
+                {/* Downward area shadow fill */}
+                <polygon
+                  points="0,30 14,22 24,28 36,12 50,18 62,8 80,14 80,40 0,40"
+                  fill={`url(#sparkGrad_pos)`}
+                />
+                {/* Glow/blur duplicate line */}
+                <polyline
+                  points="0,30 14,22 24,28 36,12 50,18 62,8 80,14"
+                  stroke="currentColor"
+                  strokeWidth="5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                  opacity="0.12"
+                />
+                {/* Main line */}
+                <polyline
+                  points="0,30 14,22 24,28 36,12 50,18 62,8 80,14"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
+              </>
+            ) : (
+              <>
+                {/* Downward area shadow fill */}
+                <polygon
+                  points="0,10 14,18 24,12 36,28 50,22 62,32 80,26 80,40 0,40"
+                  fill={`url(#sparkGrad_neg)`}
+                />
+                {/* Glow/blur duplicate line */}
+                <polyline
+                  points="0,10 14,18 24,12 36,28 50,22 62,32 80,26"
+                  stroke="currentColor"
+                  strokeWidth="5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                  opacity="0.12"
+                />
+                {/* Main line */}
+                <polyline
+                  points="0,10 14,18 24,12 36,28 50,22 62,32 80,26"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
+              </>
+            )}
+          </svg>
+        </div>
       </div>
     </div>
   )
@@ -476,23 +652,61 @@ function TransactionModal({ txn, settings, onClose, onUpdatePayout }) {
 
 // ─── Commission Settings Panel ────────────────────────────────────────────────
 
-function CommissionPanel({ settings, onUpdateSettings }) {
+function RateGauge({ rate }) {
+  const clamp = Math.min(100, Math.max(0, rate))
+  const r = 38, cx = 48, cy = 48
+  const circumference = Math.PI * r // half-circle
+  const filled = (clamp / 100) * circumference
+  const color = clamp <= 8 ? '#10b981' : clamp <= 15 ? '#4ade80' : '#ef4444'
+  return (
+    <svg width="96" height="56" viewBox="0 0 96 60" className={styles.rateGaugeSvg}>
+      <path
+        d={`M ${cx - r},${cy} A ${r},${r} 0 0,1 ${cx + r},${cy}`}
+        fill="none" stroke="#f1f5f9" strokeWidth="8" strokeLinecap="round"
+      />
+      <path
+        d={`M ${cx - r},${cy} A ${r},${r} 0 0,1 ${cx + r},${cy}`}
+        fill="none" stroke={color} strokeWidth="8" strokeLinecap="round"
+        strokeDasharray={`${filled} ${circumference}`}
+        style={{ transition: 'stroke-dasharray 0.5s ease, stroke 0.3s ease' }}
+      />
+      <text x={cx} y={cy - 4} textAnchor="middle" fontSize="15" fontWeight="800" fill="#0f172a">{clamp}%</text>
+      <text x={cx} y={cy + 10} textAnchor="middle" fontSize="9" fill="#94a3b8" fontWeight="600" letterSpacing="0.5">RATE</text>
+    </svg>
+  )
+}
+
+function CommissionPanel({ settings, onUpdateSettings, transactions = [] }) {
   const [globalInput, setGlobalInput] = useState(String(settings.global))
   const [editingGlobal, setEditingGlobal] = useState(false)
   const [sellerInputs, setSellerInputs] = useState({})
   const [editingSeller, setEditingSeller] = useState(null)
+  const [confirmReset, setConfirmReset] = useState(false)
+  const [changeLog, setChangeLog] = useState([
+    { id: 1, type: 'global', label: 'Global rate', from: 10, to: 10, ts: Date.now() - 3600000 * 24 },
+    { id: 2, type: 'seller', label: 'Heaven Memorial Services', from: 10, to: 12, ts: Date.now() - 3600000 * 12 },
+    { id: 3, type: 'seller', label: 'Grace Funeral Services', from: 10, to: 8, ts: Date.now() - 3600000 * 2 },
+  ])
+  const [showLog, setShowLog] = useState(false)
+  const [activeSection, setActiveSection] = useState('global') // 'global' | 'sellers'
+
+  const customCount = Object.keys(settings.sellers).length
 
   const saveGlobal = () => {
     const v = parseFloat(globalInput)
     if (!isNaN(v) && v >= 0 && v <= 100) {
+      setChangeLog(prev => [{ id: Date.now(), type: 'global', label: 'Global rate', from: settings.global, to: v, ts: Date.now() }, ...prev.slice(0, 9)])
       onUpdateSettings({ ...settings, global: v })
     }
     setEditingGlobal(false)
   }
 
   const saveSeller = (sid) => {
+    const seller = SELLERS.find(s => s.id === sid)
     const v = parseFloat(sellerInputs[sid])
+    const prev = settings.sellers[sid] !== undefined ? settings.sellers[sid] : settings.global
     if (!isNaN(v) && v >= 0 && v <= 100) {
+      setChangeLog(p => [{ id: Date.now(), type: 'seller', label: seller?.name || sid, from: prev, to: v, ts: Date.now() }, ...p.slice(0, 9)])
       onUpdateSettings({ ...settings, sellers: { ...settings.sellers, [sid]: v } })
     } else if (sellerInputs[sid] === '') {
       const next = { ...settings.sellers }
@@ -503,104 +717,305 @@ function CommissionPanel({ settings, onUpdateSettings }) {
   }
 
   const removeOverride = (sid) => {
+    const seller = SELLERS.find(s => s.id === sid)
+    setChangeLog(p => [{ id: Date.now(), type: 'remove', label: seller?.name || sid, from: settings.sellers[sid], to: settings.global, ts: Date.now() }, ...p.slice(0, 9)])
     const next = { ...settings.sellers }
     delete next[sid]
     onUpdateSettings({ ...settings, sellers: next })
   }
 
+  const resetAll = () => {
+    setChangeLog(p => [{ id: Date.now(), type: 'reset', label: 'All overrides cleared', from: null, to: settings.global, ts: Date.now() }, ...p.slice(0, 9)])
+    onUpdateSettings({ ...settings, sellers: {} })
+    setConfirmReset(false)
+  }
+
+  function timeAgo(ts) {
+    const s = Math.floor((Date.now() - ts) / 1000)
+    if (s < 60) return 'just now'
+    if (s < 3600) return `${Math.floor(s/60)}m ago`
+    if (s < 86400) return `${Math.floor(s/3600)}h ago`
+    return `${Math.floor(s/86400)}d ago`
+  }
+
+  // Compute per-seller impact using transactions
+  const sellerStats = useMemo(() => {
+    const map = {}
+    SELLERS.forEach(s => { map[s.id] = { revenue: 0, txnCount: 0 } })
+    if (transactions) {
+      transactions.forEach(t => {
+        if (t.paymentStatus === 'paid' && map[t.sellerId]) {
+          const rate = getCommissionRate(t.sellerId, settings)
+          const { commission } = calcAmounts(t.amount, rate)
+          map[t.sellerId].revenue += commission
+          map[t.sellerId].txnCount++
+        }
+      })
+    }
+    return map
+  }, [transactions, settings])
+
   return (
     <div className={styles.commissionPanel}>
+      {/* ── Header ── */}
       <div className={styles.commissionPanelHeader}>
-        <div>
-          <p className={styles.commissionPanelTitle}>Commission Settings</p>
-          <p className={styles.commissionPanelSub}>Configure global and per-seller commission rates</p>
+        <div className={styles.commissionPanelHeaderLeft}>
+          <div className={styles.commissionPanelTitleWrap}>
+            <p className={styles.commissionPanelTitle}>Commission Settings</p>
+            <p className={styles.commissionPanelSub}>Configure platform fee rates globally or per seller</p>
+          </div>
         </div>
+        <div className={styles.commissionPanelHeaderRight}>
+          {customCount > 0 && (
+            <span className={styles.overrideCountBadge}>{customCount} custom override{customCount > 1 ? 's' : ''}</span>
+          )}
+          <button
+            className={`${styles.logToggleBtn} ${showLog ? styles.logToggleBtnActive : ''}`}
+            onClick={() => setShowLog(v => !v)}
+            title="Change history"
+          >
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+            History
+          </button>
+          {customCount > 0 && (
+            <button
+              className={styles.resetAllBtn}
+              onClick={() => setConfirmReset(true)}
+              title="Reset all overrides to global rate"
+            >
+              <svg viewBox="0 0 24 24" fill="none"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+              Reset All
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Section Tabs ── */}
+      <div className={styles.commissionSectionTabs}>
+        {[{ key: 'global', label: 'Global Rate' }, { key: 'sellers', label: `Per-Seller Rates (${SELLERS.length})` }].map(tab => (
+          <button
+            key={tab.key}
+            className={`${styles.commissionSectionTab} ${activeSection === tab.key ? styles.commissionSectionTabActive : ''}`}
+            onClick={() => setActiveSection(tab.key)}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       <div className={styles.commissionBody}>
-        {/* Global Rate */}
-        <div className={styles.commissionGlobalRow}>
-          <div className={styles.commissionGlobalLeft}>
-            <div className={styles.commissionGlobalIcon}><Icon.Revenue /></div>
-            <div>
-              <p className={styles.commissionGlobalLabel}>Global Commission Rate</p>
-              <p className={styles.commissionGlobalHint}>Default rate applied to all sellers without custom override</p>
-            </div>
-          </div>
-          {editingGlobal ? (
-            <div className={styles.commissionEditRow}>
-              <input
-                className={styles.commissionRateInput}
-                type="number" min="0" max="100" step="0.5"
-                value={globalInput}
-                onChange={e => setGlobalInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && saveGlobal()}
-                autoFocus
-              />
-              <span className={styles.pctSymbol}>%</span>
-              <button className={styles.btnSave} onClick={saveGlobal}>Save</button>
-              <button className={styles.btnCancel} onClick={() => setEditingGlobal(false)}>Cancel</button>
-            </div>
-          ) : (
-            <div className={styles.commissionDisplayRow}>
-              <span className={styles.commissionRateVal}>{settings.global}%</span>
-              <button className={styles.btnEdit} onClick={() => { setGlobalInput(String(settings.global)); setEditingGlobal(true) }}>
-                <Icon.Edit /> Edit
+
+        {/* ── Change Log Drawer ── */}
+        {showLog && (
+          <div className={styles.changeLogDrawer}>
+            <div className={styles.changeLogHeader}>
+              <span className={styles.changeLogTitle}>Change History</span>
+              <button className={styles.changeLogClose} onClick={() => setShowLog(false)}>
+                <svg viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
               </button>
             </div>
-          )}
-        </div>
-
-        {/* Per-Seller Overrides */}
-        <div className={styles.sellerOverrideSection}>
-          <p className={styles.sellerOverrideTitle}>Seller-Specific Overrides</p>
-          <div className={styles.sellerOverrideList}>
-            {SELLERS.map(seller => {
-              const override = settings.sellers[seller.id]
-              const isEditing = editingSeller === seller.id
-              const effective = override !== undefined ? override : settings.global
-              const isCustom = override !== undefined
-
-              return (
-                <div key={seller.id} className={`${styles.sellerOverrideRow} ${isCustom ? styles.sellerOverrideRowActive : ''}`}>
-                  <div className={styles.sellerOverrideInfo}>
-                    <div className={styles.sellerAvatar}>{seller.name[0]}</div>
-                    <div>
-                      <p className={styles.sellerOverrideName}>{seller.name}</p>
-                      <p className={styles.sellerOverrideHint}>{isCustom ? 'Custom rate' : 'Using global rate'}</p>
-                    </div>
+            <div className={styles.changeLogList}>
+              {changeLog.length === 0 && <p className={styles.changeLogEmpty}>No changes recorded yet.</p>}
+              {changeLog.map(entry => (
+                <div key={entry.id} className={styles.changeLogEntry}>
+                  <div className={`${styles.changeLogDot} ${entry.type === 'remove' || entry.type === 'reset' ? styles.changeLogDotRed : styles.changeLogDotGreen}`} />
+                  <div className={styles.changeLogMeta}>
+                    <span className={styles.changeLogEntryLabel}>{entry.label}</span>
+                    <span className={styles.changeLogEntryDetail}>
+                      {entry.type === 'reset' ? 'All overrides cleared' : entry.from !== null ? `${entry.from}% → ${entry.to}%` : `Set to ${entry.to}%`}
+                    </span>
                   </div>
-                  {isEditing ? (
-                    <div className={styles.commissionEditRow}>
+                  <span className={styles.changeLogTime}>{timeAgo(entry.ts)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── SECTION: Global Rate ── */}
+        {activeSection === 'global' && (
+          <div className={styles.commissionGlobalSection}>
+            {/* Gauge card */}
+            <div className={styles.commissionGaugeCard}>
+              <div className={styles.gaugeCardLeft}>
+                <RateGauge rate={settings.global} />
+                <div className={styles.gaugeCardInfo}>
+                  <p className={styles.gaugeCardLabel}>Global Commission Rate</p>
+                  <p className={styles.gaugeCardHint}>Applied to all sellers without a custom override</p>
+                  <div className={styles.gaugeCardMeta}>
+                    <span className={`${styles.gaugeRiskBadge} ${settings.global <= 8 ? styles.gaugeRiskLow : settings.global <= 15 ? styles.gaugeRiskMid : styles.gaugeRiskHigh}`}>
+                      {settings.global <= 8 ? 'Low' : settings.global <= 15 ? 'Standard' : 'High'} rate
+                    </span>
+                    <span className={styles.gaugeAffects}>Affects {SELLERS.length - customCount} seller{SELLERS.length - customCount !== 1 ? 's' : ''}</span>
+                  </div>
+                </div>
+              </div>
+              <div className={styles.gaugeCardRight}>
+                {editingGlobal ? (
+                  <div className={styles.gaugeEditBlock}>
+                    <label className={styles.gaugeEditLabel}>New rate (%)</label>
+                    <div className={styles.gaugeEditRow}>
                       <input
                         className={styles.commissionRateInput}
                         type="number" min="0" max="100" step="0.5"
-                        value={sellerInputs[seller.id] ?? String(effective)}
-                        onChange={e => setSellerInputs(p => ({ ...p, [seller.id]: e.target.value }))}
-                        onKeyDown={e => e.key === 'Enter' && saveSeller(seller.id)}
+                        value={globalInput}
+                        onChange={e => setGlobalInput(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && saveGlobal()}
                         autoFocus
                       />
                       <span className={styles.pctSymbol}>%</span>
-                      <button className={styles.btnSave} onClick={() => saveSeller(seller.id)}>Save</button>
-                      <button className={styles.btnCancel} onClick={() => setEditingSeller(null)}>Cancel</button>
                     </div>
-                  ) : (
-                    <div className={styles.sellerOverrideRight}>
-                      <span className={`${styles.sellerRateVal} ${isCustom ? styles.sellerRateCustom : ''}`}>{effective}%</span>
-                      <button className={styles.btnEdit} onClick={() => { setSellerInputs(p => ({ ...p, [seller.id]: String(effective) })); setEditingSeller(seller.id) }}>
-                        <Icon.Edit /> {isCustom ? 'Edit' : 'Override'}
-                      </button>
-                      {isCustom && (
-                        <button className={styles.btnRemoveOverride} onClick={() => removeOverride(seller.id)}>Remove</button>
-                      )}
+                    <div className={styles.gaugeEditPreview}>
+                      <span>On ₱50,000 order:</span>
+                      <strong>{formatPHP(Math.round(50000 * (parseFloat(globalInput)||0) / 100))} fee</strong>
                     </div>
-                  )}
-                </div>
-              )
-            })}
+                    <div className={styles.gaugeEditActions}>
+                      <button className={styles.btnSave} onClick={saveGlobal}>Save Rate</button>
+                      <button className={styles.btnCancel} onClick={() => { setEditingGlobal(false); setGlobalInput(String(settings.global)) }}>Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={styles.gaugeDisplayBlock}>
+                    <p className={styles.gaugeDisplayRate}>{settings.global}%</p>
+                    <p className={styles.gaugeDisplaySub}>of each transaction</p>
+                    <button className={styles.btnEdit} onClick={() => { setGlobalInput(String(settings.global)); setEditingGlobal(true) }}>
+                      <Icon.Edit /> Edit Rate
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Impact summary cards */}
+            <div className={styles.globalImpactGrid}>
+              {[
+                { label: 'On ₱10,000 sale', amount: 10000 },
+                { label: 'On ₱25,000 sale', amount: 25000 },
+                { label: 'On ₱50,000 sale', amount: 50000 },
+                { label: 'On ₱100,000 sale', amount: 100000 },
+              ].map(({ label, amount }) => {
+                const fee = Math.round(amount * settings.global / 100)
+                return (
+                  <div key={amount} className={styles.impactCard}>
+                    <span className={styles.impactLabel}>{label}</span>
+                    <div className={styles.impactSplit}>
+                      <div className={styles.impactSplitBar}>
+                        <div className={styles.impactSplitPlatform} style={{ width: `${settings.global}%` }} />
+                        <div className={styles.impactSplitSeller} style={{ width: `${100 - settings.global}%` }} />
+                      </div>
+                    </div>
+                    <div className={styles.impactValues}>
+                      <span className={styles.impactFee}>Fee: {formatPHP(fee)}</span>
+                      <span className={styles.impactSeller}>Seller: {formatPHP(amount - fee)}</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── SECTION: Per-Seller ── */}
+        {activeSection === 'sellers' && (
+          <div className={styles.sellerOverrideSection}>
+            <div className={styles.sellerOverrideHeaderRow}>
+              <p className={styles.sellerOverrideTitle}>Seller-Specific Commission Overrides</p>
+              <p className={styles.sellerOverrideDesc}>
+                Set a custom rate per seller. Sellers without an override use the global <strong>{settings.global}%</strong> rate.
+              </p>
+            </div>
+
+            <div className={styles.sellerOverrideList}>
+              {SELLERS.map(seller => {
+                const override = settings.sellers[seller.id]
+                const isEditing = editingSeller === seller.id
+                const effective = override !== undefined ? override : settings.global
+                const isCustom = override !== undefined
+                const stat = sellerStats[seller.id] || { revenue: 0, txnCount: 0 }
+                const diff = isCustom ? effective - settings.global : 0
+
+                return (
+                  <div key={seller.id} className={`${styles.sellerOverrideRow} ${isCustom ? styles.sellerOverrideRowActive : ''}`}>
+                    {/* Left: avatar + info */}
+                    <div className={styles.sellerOverrideInfo}>
+                      <div className={`${styles.sellerAvatar} ${isCustom ? styles.sellerAvatarCustom : ''}`}>{seller.name[0]}</div>
+                      <div className={styles.sellerOverrideTextBlock}>
+                        <div className={styles.sellerOverrideNameRow}>
+                          <p className={styles.sellerOverrideName}>{seller.name}</p>
+                          {isCustom && (
+                            <span className={`${styles.sellerDiffBadge} ${diff > 0 ? styles.sellerDiffUp : styles.sellerDiffDown}`}>
+                              {diff > 0 ? '+' : ''}{diff.toFixed(1)}% vs global
+                            </span>
+                          )}
+                        </div>
+                        <p className={styles.sellerOverrideHint}>
+                          {isCustom ? `Custom rate · ${stat.txnCount} txns · ${formatPHP(stat.revenue)} collected` : `Using global rate · ${stat.txnCount} txns`}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Right: rate display or edit */}
+                    {isEditing ? (
+                      <div className={styles.sellerEditBlock}>
+                        <div className={styles.gaugeEditRow}>
+                          <input
+                            className={styles.commissionRateInput}
+                            type="number" min="0" max="100" step="0.5"
+                            value={sellerInputs[seller.id] ?? String(effective)}
+                            onChange={e => setSellerInputs(p => ({ ...p, [seller.id]: e.target.value }))}
+                            onKeyDown={e => e.key === 'Enter' && saveSeller(seller.id)}
+                            autoFocus
+                          />
+                          <span className={styles.pctSymbol}>%</span>
+                          <button className={styles.btnSave} onClick={() => saveSeller(seller.id)}>Save</button>
+                          <button className={styles.btnCancel} onClick={() => setEditingSeller(null)}>Cancel</button>
+                        </div>
+                        <p className={styles.sellerEditHint}>Leave blank or 0 to remove override</p>
+                      </div>
+                    ) : (
+                      <div className={styles.sellerOverrideRight}>
+                        {/* Mini rate bar */}
+                        <div className={styles.sellerMiniBar}>
+                          <div className={styles.sellerMiniBarFill} style={{ width: `${effective}%`, background: isCustom ? '#102820' : '#334155' }} />
+                        </div>
+                        <span className={`${styles.sellerRateVal} ${isCustom ? styles.sellerRateCustom : ''}`}>{effective}%</span>
+                        <button
+                          className={styles.btnEdit}
+                          onClick={() => { setSellerInputs(p => ({ ...p, [seller.id]: String(effective) })); setEditingSeller(seller.id) }}
+                        >
+                          <Icon.Edit /> {isCustom ? 'Edit' : 'Override'}
+                        </button>
+                        {isCustom && (
+                          <button className={styles.btnRemoveOverride} onClick={() => removeOverride(seller.id)}>Remove</button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Confirm Reset Modal ── */}
+      {confirmReset && (
+        <div className={styles.confirmOverlay} onClick={() => setConfirmReset(false)}>
+          <div className={styles.confirmModal} onClick={e => e.stopPropagation()}>
+            <div className={styles.confirmIcon}>
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="#f59e0b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </div>
+            <p className={styles.confirmTitle}>Reset All Overrides?</p>
+            <p className={styles.confirmDesc}>
+              This will remove all {customCount} custom seller rate{customCount > 1 ? 's' : ''} and revert everyone to the global <strong>{settings.global}%</strong> rate. This cannot be undone.
+            </p>
+            <div className={styles.confirmActions}>
+              <button className={styles.confirmCancelBtn} onClick={() => setConfirmReset(false)}>Cancel</button>
+              <button className={styles.confirmResetBtn} onClick={resetAll}>Yes, Reset All</button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
@@ -666,104 +1081,61 @@ function SellerEarningsPanel({ transactions, settings }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-const ROWS_PER_PAGE = 10
-
 export default function AdminPayoutsPage() {
-  const [transactions, setTransactions] = useState(INITIAL_TRANSACTIONS)
-  const [commissionSettings, setCommissionSettings] = useState(INITIAL_COMMISSION_SETTINGS)
-  const [selectedTxn, setSelectedTxn] = useState(null)
-  const [activeTab, setActiveTab] = useState('transactions') // 'transactions' | 'commissions' | 'sellers'
-
-  // Filters
-  const [search, setSearch] = useState('')
-  const [filterSeller, setFilterSeller] = useState('all')
-  const [filterPayment, setFilterPayment] = useState('all')
-  const [filterPayout, setFilterPayout] = useState('all')
-  const [filterDateFrom, setFilterDateFrom] = useState('')
-  const [filterDateTo, setFilterDateTo] = useState('')
-  const [showFilters, setShowFilters] = useState(false)
-  const [expandedRow, setExpandedRow] = useState(null)
-  const [selectedRows, setSelectedRows] = useState(new Set())
-
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1)
-
-  // Summary
-  const summary = useMemo(() => {
-    let platformRevenue = 0, sellerTotal = 0, pendingAmt = 0, completedAmt = 0
-    transactions.forEach(t => {
-      if (t.paymentStatus !== 'paid') return
-      const rate = getCommissionRate(t.sellerId, commissionSettings)
-      const { commission, sellerEarnings } = calcAmounts(t.amount, rate)
-      platformRevenue += commission
-      sellerTotal += sellerEarnings
-      if (t.payoutStatus === 'paid') completedAmt += sellerEarnings
-      else if (['pending','processing'].includes(t.payoutStatus)) pendingAmt += sellerEarnings
-    })
-    return {
-      platformRevenue,
-      sellerTotal,
-      pendingAmt,
-      completedAmt,
-      total: transactions.length,
-    }
-  }, [transactions, commissionSettings])
-
-  // Filtered transactions
-  const filtered = useMemo(() => {
-    return transactions.filter(t => {
-      if (search) {
-        const q = search.toLowerCase()
-        if (!t.orderId.toLowerCase().includes(q) && !t.id.toLowerCase().includes(q) && !t.buyerName.toLowerCase().includes(q) && !t.sellerName.toLowerCase().includes(q)) return false
-      }
-      if (filterSeller !== 'all' && t.sellerId !== filterSeller) return false
-      if (filterPayment !== 'all' && t.paymentStatus !== filterPayment) return false
-      if (filterPayout !== 'all' && t.payoutStatus !== filterPayout) return false
-      if (filterDateFrom && t.date < filterDateFrom) return false
-      if (filterDateTo && t.date > filterDateTo) return false
-      return true
-    })
-  }, [transactions, search, filterSeller, filterPayment, filterPayout, filterDateFrom, filterDateTo])
-
-  // Reset to page 1 whenever filters change
-  React.useEffect(() => { setCurrentPage(1) }, [search, filterSeller, filterPayment, filterPayout, filterDateFrom, filterDateTo])
-
-  const totalPages = Math.ceil(filtered.length / ROWS_PER_PAGE)
-  const paginatedRows = filtered.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE)
-
-  const updatePayout = useCallback((id, newStatus, ref, date) => {
-    setTransactions(prev => prev.map(t =>
-      t.id === id ? { ...t, payoutStatus: newStatus, payoutReference: ref, payoutDate: date } : t
-    ))
-    setSelectedTxn(prev => prev && prev.id === id ? { ...prev, payoutStatus: newStatus, payoutReference: ref, payoutDate: date } : prev)
-  }, [])
-
-  const clearFilters = () => {
-    setSearch(''); setFilterSeller('all'); setFilterPayment('all')
-    setFilterPayout('all'); setFilterDateFrom(''); setFilterDateTo('')
-  }
-
-  const hasFilters = search || filterSeller !== 'all' || filterPayment !== 'all' || filterPayout !== 'all' || filterDateFrom || filterDateTo
+  const {
+    ROWS_PER_PAGE,
+    transactions,
+    commissionSettings,
+    setCommissionSettings,
+    selectedTxn,
+    setSelectedTxn,
+    activeTab,
+    setActiveTab,
+    search,
+    setSearch,
+    filterSeller,
+    setFilterSeller,
+    filterPayment,
+    setFilterPayment,
+    filterPayout,
+    setFilterPayout,
+    filterDateFrom,
+    setFilterDateFrom,
+    filterDateTo,
+    setFilterDateTo,
+    showFilters,
+    setShowFilters,
+    expandedRow,
+    setExpandedRow,
+    selectedRows,
+    setSelectedRows,
+    currentPage,
+    setCurrentPage,
+    summary,
+    filtered,
+    paginatedRows,
+    totalPages,
+    updatePayout,
+    clearFilters,
+    hasFilters,
+    showTransactions,
+    showCommissions,
+    showSellerEarnings,
+  } = useAdminPayoutsPage()
 
   return (
-    <div className={`${styles.page} ${poppins.className}`}>
-      {/* Financial Overview */}
-      <section className={styles.statsGrid}>
-        <StatCard label="Platform Revenue" value={formatPHP(summary.platformRevenue)} percent={14} period="in the last month" />
-        <StatCard label="Total Order" value={summary.total} percent={-17} period="in the last month" />
-        <StatCard label="Pending Payouts" value={formatPHP(summary.pendingAmt)} percent={8} period="in the last month" />
-        <StatCard label="Completed Payouts" value={formatPHP(summary.completedAmt)} percent={23} period="in the last month" />
-      </section>
-
+    <div className={styles.page}>
       {/* Tab Navigation */}
       <div className={styles.tabNav}>
         {[
+          { key: 'all', label: 'All' },
           { key: 'transactions', label: 'Transactions' },
           { key: 'commissions', label: 'Commission Settings' },
           { key: 'sellers', label: 'Seller Earnings' },
         ].map(tab => (
           <button
             key={tab.key}
+            type="button"
             className={`${styles.tabBtn} ${activeTab === tab.key ? styles.tabBtnActive : ''}`}
             onClick={() => setActiveTab(tab.key)}
           >
@@ -772,67 +1144,108 @@ export default function AdminPayoutsPage() {
         ))}
       </div>
 
-      {/* Tab: Transactions */}
-      {activeTab === 'transactions' && (
-        <div className={styles.tablePanel}>
-          {/* Toolbar */}
-          <div className={styles.toolbar}>
-            <div className={styles.toolbarLeft}>
-              <div className={styles.searchWrap}>
-                <Icon.Search />
-                <input
-                  className={styles.searchInput}
-                  placeholder="Search Order ID, buyer, or seller…"
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                />
-              </div>
-              <button
-                className={`${styles.filterToggle} ${showFilters ? styles.filterToggleActive : ''}`}
-                onClick={() => setShowFilters(!showFilters)}
-              >
-                <Icon.Filter /> Filters {hasFilters && <span className={styles.filterDot}/>}
-              </button>
-              {hasFilters && (
-                <button className={styles.clearFiltersBtn} onClick={clearFilters}>Clear all</button>
-              )}
-            </div>
-          </div>
+      {/* Financial overview — only on "All" tab (not Transactions / Commission / Seller alone) */}
+      {activeTab === 'all' && (
+        <section className={styles.statsGrid}>
+          <StatCard label="Platform Revenue" value={formatPHP(summary.platformRevenue)} percent={14} />
+          <StatCard label="Total Order" value={summary.total} percent={-17} />
+          <StatCard label="Pending Payouts" value={formatPHP(summary.pendingAmt)} percent={8} />
+          <StatCard label="Completed Payouts" value={formatPHP(summary.completedAmt)} percent={23} />
+        </section>
+      )}
 
-          {/* Filter Dropdowns */}
-          {showFilters && (
-            <div className={styles.filterBar}>
-              <div className={styles.filterField}>
-                <label>Seller</label>
-                <select value={filterSeller} onChange={e => setFilterSeller(e.target.value)}>
-                  <option value="all">All Sellers</option>
-                  {SELLERS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
+      {/* Tab panels: All = transactions → commission → seller earnings */}
+      <div
+        className={activeTab === 'all' ? styles.allViewStack : undefined}
+        style={activeTab === 'all' ? undefined : { display: 'contents' }}
+      >
+      {/* Tab: Transactions */}
+      {showTransactions && (
+        <div className={styles.tablePanel}>
+          {/* Toolbar — single row: search, date range, status, seller, filters, clear */}
+          <div className={styles.toolbar}>
+            <div className={styles.toolbarRow}>
+              <div className={styles.toolbarControls}>
+                <div className={styles.toolbarSearchWrap}>
+                  <Icon.Search />
+                  <input
+                    className={styles.toolbarSearchInput}
+                    type="search"
+                    placeholder="Search (Order ID)"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    autoComplete="off"
+                  />
+                </div>
+
+                <DateRangePicker
+                  from={filterDateFrom}
+                  to={filterDateTo}
+                  onChange={(from, to) => { setFilterDateFrom(from); setFilterDateTo(to) }}
+                />
+
+                <CustomDropdown
+                  value={filterPayout}
+                  onChange={setFilterPayout}
+                  ariaLabel="Payout status"
+                  options={[
+                    { value: 'all', label: 'All statuses' },
+                    ...Object.entries(PAYOUT_STATUS_META).map(([k, v]) => ({ value: k, label: v.label, color: v.color }))
+                  ]}
+                  placeholder="All statuses"
+                />
+
+                <CustomDropdown
+                  value={filterSeller}
+                  onChange={setFilterSeller}
+                  ariaLabel="Seller"
+                  options={[
+                    { value: 'all', label: 'All sellers' },
+                    ...SELLERS.map(s => ({ value: s.id, label: s.name }))
+                  ]}
+                  placeholder="All sellers"
+                />
+
+                <button
+                  type="button"
+                  className={`${styles.toolbarFiltersBtn} ${showFilters ? styles.toolbarFiltersBtnActive : ''}`}
+                  onClick={() => setShowFilters(!showFilters)}
+                >
+                  <Icon.Filter />
+                  Filters
+                  {filterPayment !== 'all' && <span className={styles.filterDot} />}
+                </button>
               </div>
-              <div className={styles.filterField}>
-                <label>Payment Status</label>
-                <select value={filterPayment} onChange={e => setFilterPayment(e.target.value)}>
-                  <option value="all">All</option>
-                  {Object.entries(PAYMENT_STATUS_META).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
-                </select>
-              </div>
-              <div className={styles.filterField}>
-                <label>Payout Status</label>
-                <select value={filterPayout} onChange={e => setFilterPayout(e.target.value)}>
-                  <option value="all">All</option>
-                  {Object.entries(PAYOUT_STATUS_META).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
-                </select>
-              </div>
-              <div className={styles.filterField}>
-                <label>Date From</label>
-                <input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} />
-              </div>
-              <div className={styles.filterField}>
-                <label>Date To</label>
-                <input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} />
-              </div>
+
+              <button
+                type="button"
+                className={styles.toolbarClearAll}
+                onClick={clearFilters}
+                disabled={!hasFilters}
+              >
+                <FiRotateCcw className={styles.toolbarClearIcon} aria-hidden />
+                Clear All
+              </button>
             </div>
-          )}
+
+            {showFilters && (
+              <div className={styles.filterBarExtra}>
+                <div className={styles.filterFieldInline}>
+                  <span className={styles.filterFieldInlineLabel}>Payment</span>
+                  <CustomDropdown
+                    value={filterPayment}
+                    onChange={setFilterPayment}
+                    ariaLabel="Payment status"
+                    options={[
+                      { value: 'all', label: 'All' },
+                      ...Object.entries(PAYMENT_STATUS_META).map(([k, v]) => ({ value: k, label: v.label, color: v.color }))
+                    ]}
+                    placeholder="All"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Mobile Card List — hidden on desktop via CSS */}
           <div className={styles.mobileCardList}>
@@ -1095,14 +1508,15 @@ export default function AdminPayoutsPage() {
       )}
 
       {/* Tab: Commission Settings */}
-      {activeTab === 'commissions' && (
-        <CommissionPanel settings={commissionSettings} onUpdateSettings={setCommissionSettings} />
+      {showCommissions && (
+        <CommissionPanel settings={commissionSettings} onUpdateSettings={setCommissionSettings} transactions={transactions} />
       )}
 
       {/* Tab: Seller Earnings */}
-      {activeTab === 'sellers' && (
+      {showSellerEarnings && (
         <SellerEarningsPanel transactions={transactions} settings={commissionSettings} />
       )}
+      </div>
 
       {/* Modal */}
       {selectedTxn && (

@@ -2,15 +2,28 @@ import { supabase } from '@/lib/supabase/client'
 
 const LISTING_IMAGES_BUCKET = 'listing-images'
 
+/** Normalize jsonb / API quirks: plain object, JSON string, or camelCase `dynamicValues` on the row. */
+export function parseListingDynamicValues(raw) {
+  if (raw == null) return {}
+  if (typeof raw === 'object' && !Array.isArray(raw)) return raw
+  if (typeof raw === 'string') {
+    try {
+      const o = JSON.parse(raw)
+      return o && typeof o === 'object' && !Array.isArray(o) ? o : {}
+    } catch {
+      return {}
+    }
+  }
+  return {}
+}
+
 function normalizeListingRow(row) {
   const imageUrls = Array.isArray(row.image_urls) ? row.image_urls : []
+  const dv = parseListingDynamicValues(row?.dynamic_values ?? row?.dynamicValues)
   return {
     ...row,
     image_urls: imageUrls,
-    dynamic_values:
-      row.dynamic_values && typeof row.dynamic_values === 'object'
-        ? row.dynamic_values
-        : {},
+    dynamic_values: dv,
   }
 }
 
