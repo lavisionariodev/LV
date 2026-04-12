@@ -1,58 +1,52 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { BsThreeDots } from 'react-icons/bs';
+import { FiRotateCcw } from 'react-icons/fi';
 import styles from './sellers.module.css';
 import { getEffectiveCommissionForSeller } from '@/data/adminSampleData';
 import { listSellersForAdmin, updateSellerStatus } from '@/lib/sellers/client';
 import { useToast } from '@/contexts/ToastContext';
+import { Dropdown } from '@/components/ui';
 
-const STATUS_OPTIONS = [
-  { value: 'all',       label: 'All'       },
-  { value: 'active',    label: 'Active'    },
-  { value: 'pending',   label: 'Pending'   },
-  { value: 'suspended', label: 'Suspended' },
+const STATUS_FILTER_OPTIONS = [
+  { value: 'all', label: 'All statuses', color: 'slate' },
+  { value: 'active', label: 'Active', color: 'green' },
+  { value: 'pending', label: 'Pending', color: 'amber' },
+  { value: 'suspended', label: 'Suspended', color: 'red' },
 ];
 
-function getInitials(name = '') {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((n) => n[0].toUpperCase())
-    .join('');
-}
+const Icon = {
+  Search: () => (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+      <path d="M18 18l3.5 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  ),
+};
 
-const AVATAR_COLORS = [
-  { bg: '#e0e7ff', text: '#3730a3' },
-  { bg: '#dcfce7', text: '#166534' },
-  { bg: '#fce7f3', text: '#9d174d' },
-  { bg: '#fef9c3', text: '#854d0e' },
-  { bg: '#fee2e2', text: '#991b1b' },
-  { bg: '#f3e8ff', text: '#6b21a8' },
-  { bg: '#ffedd5', text: '#9a3412' },
-  { bg: '#e2e8f0', text: '#334155' },
-];
+function SellerAvatar({ name, src }) {
+  const [imgError, setImgError] = useState(false);
+  const label = name || 'Seller';
+  const showImg = typeof src === 'string' && src.trim().length > 0 && !imgError;
 
-function avatarColor(name = '') {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + hash * 31;
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
+  if (showImg) {
+    return (
+      <img
+        src={src.trim()}
+        alt=""
+        className={styles.avatar}
+        onError={() => setImgError(true)}
+      />
+    );
+  }
 
-function SellerAvatar({ name }) {
-  if (!name) return (
-    <div className={`${styles.avatar} ${styles.avatarDefault}`}>
-      <svg viewBox="0 0 24 24" fill="none" className={styles.avatarIcon}>
-        <rect x="3" y="6" width="18" height="13" rx="2" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M8 6V5a4 4 0 018 0v1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      </svg>
-    </div>
-  );
-  const initials = getInitials(name);
-  const { bg, text } = avatarColor(name);
   return (
-    <div className={styles.avatar} style={{ background: bg, color: text }}>
-      {initials}
+    <div className={`${styles.avatar} ${styles.avatarDefault}`} title={label} aria-hidden>
+      <svg viewBox="0 0 24 24" fill="none" className={styles.avatarIcon}>
+        <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
     </div>
   );
 }
@@ -75,6 +69,210 @@ function CommissionBadge({ percentage, isOverride }) {
   );
 }
 
+function SellerActionsMenu({ seller, sellerId, isUpdating, onViewDetails, onStatusChange }) {
+  const [open, setOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
+  const wrapRef = useRef(null);
+  const triggerRef = useRef(null);
+
+  function placeMenu() {
+    const el = triggerRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    setMenuPos({ top: r.bottom + 6, right: window.innerWidth - r.right });
+  }
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    placeMenu();
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    function handle(e) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handle);
+    window.addEventListener('scroll', placeMenu, true);
+    window.addEventListener('resize', placeMenu);
+    return () => {
+      document.removeEventListener('mousedown', handle);
+      window.removeEventListener('scroll', placeMenu, true);
+      window.removeEventListener('resize', placeMenu);
+    };
+  }, [open]);
+
+  const close = () => setOpen(false);
+
+  return (
+    <div className={styles.actionMenuWrap} ref={wrapRef}>
+      <button
+        ref={triggerRef}
+        type="button"
+        className={styles.actionMenuTrigger}
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-label={`Actions for ${seller.business_name || 'seller'}`}
+      >
+        <BsThreeDots className={styles.actionMenuTriggerIcon} aria-hidden size={16} />
+      </button>
+      {open && (
+        <div
+          className={styles.actionMenu}
+          role="menu"
+          style={{ top: menuPos.top, right: menuPos.right }}
+        >
+          <button
+            type="button"
+            role="menuitem"
+            className={styles.actionMenuItem}
+            onClick={() => {
+              onViewDetails();
+              close();
+            }}
+          >
+            View details
+          </button>
+          {seller.status === 'pending' && (
+            <button
+              type="button"
+              role="menuitem"
+              className={`${styles.actionMenuItem} ${styles.actionMenuItemPrimary}`}
+              disabled={isUpdating}
+              onClick={() => {
+                onStatusChange(sellerId, 'active');
+                close();
+              }}
+            >
+              {isUpdating ? 'Approving…' : 'Approve'}
+            </button>
+          )}
+          {seller.status === 'active' && (
+            <button
+              type="button"
+              role="menuitem"
+              className={`${styles.actionMenuItem} ${styles.actionMenuItemWarn}`}
+              disabled={isUpdating}
+              onClick={() => {
+                onStatusChange(sellerId, 'suspended');
+                close();
+              }}
+            >
+              {isUpdating ? 'Updating…' : 'Suspend'}
+            </button>
+          )}
+          {seller.status === 'suspended' && (
+            <button
+              type="button"
+              role="menuitem"
+              className={`${styles.actionMenuItem} ${styles.actionMenuItemPrimary}`}
+              disabled={isUpdating}
+              onClick={() => {
+                onStatusChange(sellerId, 'active');
+                close();
+              }}
+            >
+              {isUpdating ? 'Updating…' : 'Re-activate'}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function formatDate(raw) {
+  if (!raw) return null;
+  try {
+    return new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(raw));
+  } catch {
+    return raw;
+  }
+}
+
+function DetailRow({ label, value, isLink, href }) {
+  return (
+    <div className={styles.detailRow}>
+      <span className={styles.detailRowLabel}>{label}</span>
+      {isLink
+        ? <a className={`${styles.detailRowValue} ${styles.detailRowLink}`} href={href}>{value}</a>
+        : <span className={styles.detailRowValue}>{value}</span>
+      }
+    </div>
+  );
+}
+
+function SellerDetailModal({ seller, onClose }) {
+  if (!seller) return null;
+
+  const hasContact = seller.contact_name || seller.email || seller.phone;
+  const hasBusiness = seller.address || seller.business_info;
+  const hasAccount = seller.registered_at || seller.listing_count != null;
+
+  return (
+    <div className={styles.detailModalOverlay} role="presentation" onClick={onClose}>
+      <div
+        className={styles.detailModal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="seller-detail-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className={styles.detailModalHeader}>
+          <div className={styles.detailModalHeaderInner}>
+            <SellerAvatar name={seller.business_name} src={seller.avatarUrl} />
+            <div>
+              <h2 id="seller-detail-title" className={styles.detailModalTitle}>
+                {seller.business_name || 'Seller details'}
+              </h2>
+              {seller.status && <StatusBadge status={seller.status} />}
+            </div>
+          </div>
+          <button type="button" className={styles.detailModalClose} onClick={onClose} aria-label="Close">
+            ×
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className={styles.detailModalBody}>
+
+          {hasContact && (
+            <div className={styles.detailGroup}>
+              <p className={styles.detailGroupTitle}>Contact information</p>
+              {seller.contact_name && <DetailRow label="Name" value={seller.contact_name} />}
+              {seller.email && <DetailRow label="Email" value={seller.email} isLink href={`mailto:${seller.email}`} />}
+              {seller.phone && <DetailRow label="Phone" value={seller.phone} isLink href={`tel:${seller.phone}`} />}
+            </div>
+          )}
+
+          {hasBusiness && (
+            <div className={styles.detailGroup}>
+              <p className={styles.detailGroupTitle}>Business Information</p>
+              {seller.address && <DetailRow label="Address" value={seller.address} />}
+              {seller.business_info && <DetailRow label="About" value={seller.business_info} />}
+            </div>
+          )}
+
+          {hasAccount && (
+            <div className={styles.detailGroup}>
+              <p className={styles.detailGroupTitle}>Account</p>
+              {seller.registered_at && <DetailRow label="Registered" value={formatDate(seller.registered_at)} />}
+              {seller.listing_count != null && <DetailRow label="Listings" value={seller.listing_count} />}
+            </div>
+          )}
+
+          {!hasContact && !hasBusiness && !hasAccount && (
+            <p className={styles.detailEmpty}>No details on file for this seller.</p>
+          )}
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminSellersPage() {
   const toast = useToast();
   const [sellers, setSellers] = useState([]);
@@ -82,6 +280,8 @@ export default function AdminSellersPage() {
   const [updatingId, setUpdatingId] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [selectedRows, setSelectedRows] = useState(() => new Set());
+  const [detailSeller, setDetailSeller] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -116,6 +316,13 @@ export default function AdminSellersPage() {
       });
   }, [sellers, statusFilter, search]);
 
+  const hasFilters = Boolean(search.trim()) || statusFilter !== 'all';
+
+  const clearFilters = () => {
+    setSearch('');
+    setStatusFilter('all');
+  };
+
   const handleStatusChange = async (sellerId, nextStatus) => {
     setUpdatingId(sellerId);
     try {
@@ -132,6 +339,11 @@ export default function AdminSellersPage() {
         })
       );
       toast.success(`Seller status updated to ${nextStatus}.`);
+      setDetailSeller((cur) => {
+        if (!cur) return cur;
+        const curId = cur.user_id || cur.id;
+        return curId === sellerId ? { ...cur, status: data.status } : cur;
+      });
     } catch (err) {
       console.error('Failed to update seller status:', err);
       toast.error('Failed to update seller status. Please try again.');
@@ -144,67 +356,89 @@ export default function AdminSellersPage() {
     <div className={styles.pageRoot}>
       <section className={styles.tablePanel}>
 
-        {/* ── Header ── */}
-        <div className={styles.tablePanelHead}>
-          <div className={styles.filterGroup}>
-            {STATUS_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                className={`${styles.filterBtn} ${statusFilter === opt.value ? styles.filterBtnActive : ''}`}
-                onClick={() => setStatusFilter(opt.value)}
-              >
-                {opt.label}
-                {opt.value !== 'all' && (
-                  <span className={styles.filterCount}>
-                    {sellers.filter((s) => s.status === opt.value).length}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
+        <div className={styles.toolbar}>
+          <div className={styles.toolbarRow}>
+            <div className={styles.toolbarControls}>
+              <div className={styles.toolbarSearchWrap}>
+                <Icon.Search />
+                <input
+                  className={styles.toolbarSearchInput}
+                  type="search"
+                  placeholder="Search by name or email…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  autoComplete="off"
+                />
+              </div>
 
-          <div className={styles.searchWrap}>
-            <svg className={styles.searchIcon} viewBox="0 0 20 20" fill="none">
-              <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.5" />
-              <path d="M15 15l-3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-            <input
-              type="search"
-              placeholder="Search by name or email…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className={styles.searchInput}
-            />
-            {search && (
-              <button
-                type="button"
-                className={styles.searchClear}
-                onClick={() => setSearch('')}
-                aria-label="Clear search"
-              >✕</button>
-            )}
+              <Dropdown
+                value={statusFilter}
+                onChange={setStatusFilter}
+                ariaLabel="Seller status"
+                options={STATUS_FILTER_OPTIONS}
+                placeholder="All statuses"
+              />
+            </div>
+
+            <button
+              type="button"
+              className={styles.toolbarClearAll}
+              onClick={clearFilters}
+              disabled={!hasFilters}
+            >
+              <FiRotateCcw className={styles.toolbarClearIcon} aria-hidden />
+              Clear All
+            </button>
           </div>
         </div>
 
-        {/* ── Table ── */}
         <div className={styles.tableWrap}>
           {loading ? (
             <div className={styles.loadingState}>
               <div className={styles.spinner} />
               <p>Loading sellers…</p>
             </div>
-          ) : (
+          ) : filtered.length === 0 ? null : (
             <table className={styles.table}>
+              <colgroup>
+                <col className={styles.colCheck} />
+                <col className={styles.colSeller} />
+                <col className={styles.colContact} />
+                <col className={styles.colListings} />
+                <col className={styles.colCommission} />
+                <col className={styles.colStatus} />
+                <col className={styles.colActions} />
+              </colgroup>
               <thead>
                 <tr>
-                  <th className={styles.th}>Seller</th>
-                  <th className={styles.th}>Contact</th>
-                  <th className={styles.th}>Business Details</th>
-                  <th className={styles.th}>Listings</th>
-                  <th className={styles.th}>Commission</th>
-                  <th className={styles.th}>Status</th>
-                  <th className={styles.th}>Actions</th>
+                  <th className={styles.checkboxCell}>
+                    <input
+                      type="checkbox"
+                      className={styles.rowCheckbox}
+                      checked={
+                        filtered.length > 0 &&
+                        filtered.every((s) => selectedRows.has(s.user_id || s.id))
+                      }
+                      onChange={(e) => {
+                        setSelectedRows((prev) => {
+                          const next = new Set(prev);
+                          if (e.target.checked) {
+                            filtered.forEach((s) => next.add(s.user_id || s.id));
+                          } else {
+                            filtered.forEach((s) => next.delete(s.user_id || s.id));
+                          }
+                          return next;
+                        });
+                      }}
+                      aria-label="Select all sellers in view"
+                    />
+                  </th>
+                  <th>Shop</th>
+                  <th>Contact</th>
+                  <th>Listings</th>
+                  <th>Commission</th>
+                  <th>Status</th>
+                  <th className={styles.actionsTh}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -215,26 +449,34 @@ export default function AdminSellersPage() {
                   const isUpdating = updatingId === sellerId;
 
                   return (
-                    <tr key={sellerId} className={styles.tr}>
+                    <tr key={sellerId} className={styles.primaryRow}>
+                      <td className={styles.checkboxCell}>
+                        <input
+                          type="checkbox"
+                          className={styles.rowCheckbox}
+                          checked={selectedRows.has(sellerId)}
+                          onChange={(e) => {
+                            setSelectedRows((prev) => {
+                              const next = new Set(prev);
+                              if (e.target.checked) next.add(sellerId);
+                              else next.delete(sellerId);
+                              return next;
+                            });
+                          }}
+                          aria-label={`Select ${seller.business_name || 'seller'}`}
+                        />
+                      </td>
 
-                      {/* Seller */}
-                      <td className={styles.td}>
+                      <td>
                         <div className={styles.sellerCell}>
-                          <SellerAvatar name={seller.business_name} />
-                          <div>
+                          <SellerAvatar name={seller.business_name} src={seller.avatarUrl} />
+                          <div className={styles.sellerText}>
                             <p className={styles.sellerName}>{seller.business_name}</p>
-                            <p className={styles.sellerId}>
-                              ID: {seller.id}
-                              {seller.registered_at && (
-                                <> · Since {seller.registered_at}</>
-                              )}
-                            </p>
                           </div>
                         </div>
                       </td>
 
-                      {/* Contact */}
-                      <td className={styles.td}>
+                      <td>
                         <p className={styles.contactName}>{seller.contact_name}</p>
                         <p className={styles.meta}>{seller.email}</p>
                         {seller.phone && (
@@ -242,39 +484,14 @@ export default function AdminSellersPage() {
                         )}
                       </td>
 
-                      {/* Business Details */}
-                      <td className={styles.td}>
-                        <div className={styles.businessDetails}>
-                          {seller.business_info && (
-                            <p className={styles.businessInfo}>
-                              <strong>Info:</strong> {seller.business_info.length > 100 
-                                ? `${seller.business_info.substring(0, 100)}...` 
-                                : seller.business_info}
-                            </p>
-                          )}
-                          {seller.address && (
-                            <p className={styles.businessAddress}>
-                              <strong>Address:</strong> {seller.address.length > 80 
-                                ? `${seller.address.substring(0, 80)}...` 
-                                : seller.address}
-                            </p>
-                          )}
-                          {!seller.business_info && !seller.address && (
-                            <p className={styles.meta}>No details provided</p>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Listings */}
-                      <td className={styles.td}>
+                      <td>
                         <p className={styles.listingCount}>
                           {seller.listing_count ?? '—'}
                         </p>
                         <p className={styles.meta}>listings</p>
                       </td>
 
-                      {/* Commission */}
-                      <td className={styles.td}>
+                      <td>
                         <CommissionBadge percentage={commissionInfo.percentage} isOverride={isOverride} />
                         {isOverride && (
                           <p className={`${styles.meta} ${styles.ruleId}`}>
@@ -283,73 +500,18 @@ export default function AdminSellersPage() {
                         )}
                       </td>
 
-                      {/* Status */}
-                      <td className={styles.td}>
+                      <td>
                         <StatusBadge status={seller.status} />
                       </td>
 
-                      {/* Actions */}
-                      <td className={styles.td}>
-                        <div className={styles.actions}>
-                          {seller.status === 'pending' && (
-                            <button
-                              type="button"
-                              className={`${styles.actionBtn} ${styles.actionApprove}`}
-                              onClick={() => handleStatusChange(seller.user_id || seller.id, 'active')}
-                              disabled={isUpdating}
-                            >
-                              {isUpdating ? (
-                                <><span className={styles.btnSpinner} /> Approving…</>
-                              ) : (
-                                <>
-                                  <svg viewBox="0 0 16 16" fill="none" width="13" height="13">
-                                    <path d="M3 8l3.5 3.5L13 4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                                  </svg>
-                                  Approve
-                                </>
-                              )}
-                            </button>
-                          )}
-                          {seller.status === 'active' && (
-                            <button
-                              type="button"
-                              className={`${styles.actionBtn} ${styles.actionSuspend}`}
-                              onClick={() => handleStatusChange(seller.user_id || seller.id, 'suspended')}
-                              disabled={isUpdating}
-                            >
-                              {isUpdating ? (
-                                <><span className={styles.btnSpinner} /> Updating…</>
-                              ) : (
-                                <>
-                                  <svg viewBox="0 0 16 16" fill="none" width="13" height="13">
-                                    <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" />
-                                    <path d="M6 6v4M10 6v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                                  </svg>
-                                  Suspend
-                                </>
-                              )}
-                            </button>
-                          )}
-                          {seller.status === 'suspended' && (
-                            <button
-                              type="button"
-                              className={`${styles.actionBtn} ${styles.actionReactivate}`}
-                              onClick={() => handleStatusChange(seller.user_id || seller.id, 'active')}
-                              disabled={isUpdating}
-                            >
-                              {isUpdating ? (
-                                <><span className={styles.btnSpinner} /> Updating…</>
-                              ) : (
-                                <>
-                                  <svg viewBox="0 0 16 16" fill="none" width="13" height="13">
-                                    <path d="M3 8a5 5 0 109.9-1M13 4v3h-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                  </svg>
-                                  Re-activate
-                                </>
-                              )}
-                            </button>
-                          )}
-                        </div>
+                      <td className={styles.actionsCell}>
+                        <SellerActionsMenu
+                          seller={seller}
+                          sellerId={sellerId}
+                          isUpdating={isUpdating}
+                          onViewDetails={() => setDetailSeller(seller)}
+                          onStatusChange={handleStatusChange}
+                        />
                       </td>
                     </tr>
                   );
@@ -369,7 +531,7 @@ export default function AdminSellersPage() {
               <button
                 type="button"
                 className={styles.clearBtn}
-                onClick={() => { setSearch(''); setStatusFilter('all'); }}
+                onClick={() => { clearFilters(); }}
               >
                 Clear filters
               </button>
@@ -377,13 +539,16 @@ export default function AdminSellersPage() {
           )}
         </div>
 
-        {/* ── Footer ── */}
         {!loading && (
           <div className={styles.tableFooter}>
             Showing <strong>{filtered.length}</strong> of <strong>{sellers.length}</strong> sellers
           </div>
         )}
       </section>
+
+      {detailSeller && (
+        <SellerDetailModal seller={detailSeller} onClose={() => setDetailSeller(null)} />
+      )}
     </div>
   );
 }

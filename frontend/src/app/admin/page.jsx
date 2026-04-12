@@ -30,7 +30,7 @@ const CHART_ACCENT = '#1F312B'
 const QUICK_LINKS = [
   { id: 'disputes', label: 'Disputes', icon: TbReportSearch },
   { id: 'sellers', label: 'Sellers', icon: LuUserCheck },
-  { id: 'users', label: 'Users', icon: TbUsers },
+  { id: 'buyers', label: 'Buyers', icon: TbUsers },
   { id: 'template', label: 'Template', icon: TbTemplate },
 ]
 
@@ -55,8 +55,8 @@ export default function AdminDashboardPage() {
     pending: 0,
     recent: [],
   })
-  const [userPreview, setUserPreview] = useState({
-    total: dashboard.stats.totalUsers,
+  const [buyerPreview, setBuyerPreview] = useState({
+    total: dashboard.stats.totalBuyers,
     recent: [],
   })
 
@@ -79,7 +79,7 @@ export default function AdminDashboardPage() {
       }
 
       try {
-        const [{ count }, { data: recentUsers }] = await Promise.all([
+        const [{ count }, { data: recentBuyers }] = await Promise.all([
           supabase
             .from('users')
             .select('id', { count: 'exact', head: true })
@@ -101,22 +101,22 @@ export default function AdminDashboardPage() {
 
         if (!mounted) return
 
-        const mappedRecent = (recentUsers || []).map((u) => {
+        const mappedRecent = (recentBuyers || []).map((u) => {
           const profile = Array.isArray(u.profiles) ? u.profiles[0] : u.profiles
           return {
             id: u.id,
-            name: profile?.full_name || u.email || 'Unnamed user',
+            name: profile?.full_name || u.email || 'Unnamed buyer',
             email: u.email || 'No email',
             joinedAt: u.created_at ? new Date(u.created_at).toISOString().slice(0, 10) : 'N/A',
           }
         })
 
-        setUserPreview({
+        setBuyerPreview({
           total: count ?? mappedRecent.length,
           recent: mappedRecent,
         })
       } catch (error) {
-        console.error('Failed to load user preview data:', error)
+        console.error('Failed to load buyer preview data:', error)
       }
     }
 
@@ -165,9 +165,9 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className={styles.statCard}>
-          <p className={styles.statLabel}>Total Users</p>
-          <p className={styles.statValue}>{dashboard.stats.totalUsers}</p>
-          <p className={styles.statHint}>Registered accounts</p>
+          <p className={styles.statLabel}>Total Buyers</p>
+          <p className={styles.statValue}>{dashboard.stats.totalBuyers}</p>
+          <p className={styles.statHint}>Buyer accounts</p>
         </div>
 
         <div className={styles.statCard}>
@@ -193,7 +193,7 @@ export default function AdminDashboardPage() {
           </span>
           <input
             type="search"
-            placeholder="Search users, sellers, or orders"
+            placeholder="Search buyers, sellers, or orders"
             className={styles.homeSearchInput}
           />
         </div>
@@ -326,29 +326,29 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
-          {activeQuickLink === 'users' && (
+          {activeQuickLink === 'buyers' && (
             <div className={styles.qlPanel}>
               <div className={styles.qlChips}>
                 <div className={styles.qlChip}>
-                  <span className={styles.qlChipValue}>{userPreview.total}</span>
+                  <span className={styles.qlChipValue}>{buyerPreview.total}</span>
                   <span className={styles.qlChipLabel}>Total</span>
                 </div>
                 <div className={styles.qlChip}>
-                  <span className={styles.qlChipValue}>{userPreview.recent.length}</span>
+                  <span className={styles.qlChipValue}>{buyerPreview.recent.length}</span>
                   <span className={styles.qlChipLabel}>Latest shown</span>
                 </div>
               </div>
               <div className={styles.qlRows}>
-                {userPreview.recent.length > 0 ? (
-                  userPreview.recent.map((user) => (
-                    <div className={styles.qlRow} key={user.id}>
+                {buyerPreview.recent.length > 0 ? (
+                  buyerPreview.recent.map((buyer) => (
+                    <div className={styles.qlRow} key={buyer.id}>
                       <span
                         className={styles.qlDot}
                         style={{ backgroundColor: getStatusDotColor('active') }}
                       />
                       <div className={styles.qlRowMeta}>
-                        <span className={styles.qlRowType}>{user.name}</span>
-                        <span className={styles.qlRowDate}>{user.joinedAt}</span>
+                        <span className={styles.qlRowType}>{buyer.name}</span>
+                        <span className={styles.qlRowDate}>{buyer.joinedAt}</span>
                       </div>
                       <span className={styles.qlBadge}>buyer</span>
                     </div>
@@ -356,12 +356,12 @@ export default function AdminDashboardPage() {
                 ) : (
                   <div className={styles.qlActionRow}>
                     <span className={styles.qlActionIcon}><TbUsers /></span>
-                    <span className={styles.qlActionLabel}>No users available yet</span>
+                    <span className={styles.qlActionLabel}>No buyers available yet</span>
                   </div>
                 )}
               </div>
-              <Link href="/admin/users" className={styles.qlCta}>
-                Manage users →
+              <Link href="/admin/buyers" className={styles.qlCta}>
+                Manage buyers →
               </Link>
             </div>
           )}
@@ -542,8 +542,11 @@ export default function AdminDashboardPage() {
             <Link href="/admin/sellers" className={styles.actionBtn}>
               Add Seller
             </Link>
-            <Link href="/admin/users" className={styles.actionBtn}>
-              View Users
+            <Link href="/admin/listings" className={styles.actionBtn}>
+              View Listings
+            </Link>
+            <Link href="/admin/buyers" className={styles.actionBtn}>
+              View Buyers
             </Link>
             <Link href="/admin/disputes" className={styles.actionBtn}>
               Review Disputes

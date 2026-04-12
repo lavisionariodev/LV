@@ -1,5 +1,11 @@
 import { supabase } from '@/lib/supabase/client';
 
+function normalizeAvatarUrl(url) {
+  if (url == null || typeof url !== 'string') return null;
+  const t = url.trim();
+  return t.length ? t : null;
+}
+
 /**
  * Fetch the seller record for a given auth user id.
  * Returns the seller row or null if not found or on error.
@@ -120,7 +126,28 @@ export async function listSellersForAdmin() {
     return [];
   }
 
-  return data.filter(Boolean);
+  const rows = data.filter(Boolean);
+  const ids = [...new Set(rows.map((r) => r.user_id).filter(Boolean))];
+  if (ids.length === 0) {
+    return rows.map((r) => ({ ...r, avatarUrl: null }));
+  }
+
+  const { data: profiles, error: profilesError } = await supabase
+    .from('profiles')
+    .select('id, avatar_url')
+    .in('id', ids);
+
+  const avatarByUserId = new Map();
+  if (!profilesError && profiles) {
+    for (const p of profiles) {
+      avatarByUserId.set(p.id, normalizeAvatarUrl(p.avatar_url));
+    }
+  }
+
+  return rows.map((r) => ({
+    ...r,
+    avatarUrl: avatarByUserId.get(r.user_id) ?? null,
+  }));
 }
 
 export async function updateSellerStatus(sellerId, status) {

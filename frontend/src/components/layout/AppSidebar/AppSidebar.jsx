@@ -17,11 +17,13 @@ import {
   TbChevronRight,
   TbMenu2,
   TbClipboardList,
+  TbAddressBook,
 } from 'react-icons/tb'
 import { LuUserCheck } from 'react-icons/lu'
 import { BsPerson } from 'react-icons/bs'
 import styles from './AppSidebar.module.css'
 import { useSiteContent } from '@/lib/siteContent/client'
+import { countDisputesNeedingAdminAttention } from '@/data/adminSampleData'
 
 function isLinkItem(item) {
   return 'href' in item && !('children' in item)
@@ -49,9 +51,17 @@ const SIDEBAR_CONFIG = {
     navItems: [
       { href: '/admin', label: 'Dashboard', icon: TbLayoutDashboardFilled },
       { href: '/admin/payouts', label: 'Payouts', icon: TbReportSearch },
+      {
+        label: 'Accounts',
+        icon: TbAddressBook,
+        defaultHref: '/admin/sellers',
+        children: [
+          { href: '/admin/sellers', label: 'Sellers', icon: LuUserCheck },
+          { href: '/admin/buyers', label: 'Buyers', icon: TbUsers },
+        ],
+      },
+      { href: '/admin/listings', label: 'Listings', icon: TbPackage },
       { href: '/admin/disputes', label: 'Dispute', icon: TbReportSearch },
-      { href: '/admin/sellers', label: 'Sellers', icon: LuUserCheck },
-      { href: '/admin/users', label: 'Users', icon: TbUsers },
       { href: '/admin/seller-template', label: 'Template', icon: TbClipboardList },
     ],
   },
@@ -135,22 +145,25 @@ export default function AppSidebar({
     setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }))
   }
 
-  const sellerNavItems = config.navItems
-  const hasGroups = variant === 'seller' && sellerNavItems.some((item) => !isLinkItem(item))
+  const sidebarNavItems = config.navItems
+  const hasGroups = sidebarNavItems.some((item) => !isLinkItem(item))
 
   const expandedGroups = useMemo(() => {
     if (!hasGroups) return {}
     const out = {}
-    sellerNavItems.forEach((item) => {
+    sidebarNavItems.forEach((item) => {
       if (!isLinkItem(item) && item.children) {
         const childActive = item.children.some((c) => isActive(c.href))
         out[item.label] = openGroups[item.label] !== undefined ? openGroups[item.label] : childActive
       }
     })
     return out
-  }, [hasGroups, sellerNavItems, pathname, searchParams, openGroups])
+  }, [hasGroups, sidebarNavItems, pathname, searchParams, openGroups])
 
   const showSidebar = !(isMobile && variant === 'seller')
+
+  const showDisputeNewBadge =
+    variant === 'admin' && countDisputesNeedingAdminAttention() > 0
 
   return (
     <>
@@ -205,18 +218,39 @@ export default function AppSidebar({
         {config.navItems.map((item) => {
           if (isLinkItem(item)) {
             const { href, label, icon: Icon } = item
+            const disputeBadge =
+              href === '/admin/disputes' && showDisputeNewBadge
             return (
               <Link
                 key={href}
                 href={href}
-                className={`${styles.link} ${isActive(href) ? styles.active : ''}`}
-                title={showCollapsed ? label : undefined}
+                className={`${styles.link} ${isActive(href) ? styles.active : ''} ${disputeBadge ? styles.linkWithBadge : ''}`}
+                title={
+                  showCollapsed
+                    ? disputeBadge
+                      ? `${label} — new disputes to review`
+                      : label
+                    : undefined
+                }
+                aria-label={
+                  disputeBadge ? 'Dispute, new disputes to review' : undefined
+                }
                 onClick={handleNavClose}
               >
                 <span className={styles.iconWrap}>
                   <Icon className={styles.navIcon} />
                 </span>
                 <span className={styles.linkText}>{label}</span>
+                {disputeBadge &&
+                  (showCollapsed ? (
+                    <span
+                      className={styles.navNewBadgeDot}
+                      title="New disputes to review"
+                      aria-hidden
+                    />
+                  ) : (
+                    <span className={styles.navNewBadge}>New</span>
+                  ))}
               </Link>
             )
           }
@@ -259,16 +293,24 @@ export default function AppSidebar({
               </button>
               {expanded && (
                 <div className={styles.subNav}>
-                  {children.map((sub) => (
-                    <Link
-                      key={sub.href}
-                      href={sub.href}
-                      className={`${styles.subLink} ${isActive(sub.href) ? styles.active : ''}`}
-                      onClick={handleNavClose}
-                    >
-                      {sub.label}
-                    </Link>
-                  ))}
+                  {children.map((sub) => {
+                    const SubIcon = sub.icon
+                    return (
+                      <Link
+                        key={sub.href}
+                        href={sub.href}
+                        className={`${styles.subLink} ${SubIcon ? styles.subLinkWithIcon : ''} ${isActive(sub.href) ? styles.active : ''}`}
+                        onClick={handleNavClose}
+                      >
+                        {SubIcon ? (
+                          <span className={styles.subLinkIconWrap} aria-hidden>
+                            <SubIcon className={styles.subLinkIcon} />
+                          </span>
+                        ) : null}
+                        <span className={styles.subLinkLabel}>{sub.label}</span>
+                      </Link>
+                    )
+                  })}
                 </div>
               )}
             </div>

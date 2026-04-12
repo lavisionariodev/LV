@@ -2,21 +2,37 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
+import { FiRotateCcw } from 'react-icons/fi'
 import styles from './disputes.module.css'
 import { disputes as initialDisputes } from '@/data/adminSampleData'
 
 const STATUS_OPTIONS = [
-  { value: 'all',          label: 'All' },
-  { value: 'open',         label: 'Open' },
+  { value: 'all', label: 'All' },
+  { value: 'open', label: 'Open' },
   { value: 'under_review', label: 'Under Review' },
-  { value: 'resolved',     label: 'Resolved' },
-  { value: 'closed',       label: 'Closed' },
+  { value: 'resolved', label: 'Resolved' },
+  { value: 'closed', label: 'Closed' },
 ]
 
-const PRIORITY_LABELS = {
-  high:   { label: 'High',   cls: 'priorityHigh' },
-  medium: { label: 'Medium', cls: 'priorityMed'  },
-  low:    { label: 'Low',    cls: 'priorityLow'  },
+const STATUS_LABEL = Object.fromEntries(STATUS_OPTIONS.map((o) => [o.value, o.label]))
+
+const Icon = {
+  Search: () => (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+      <path d="M18 18l3.5 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  ),
+}
+
+function StatusBadge({ status }) {
+  const label = STATUS_LABEL[status] || status
+  return (
+    <span className={`${styles.statusBadge} ${styles[`status_${status}`] || styles.status_default}`}>
+      <span className={styles.statusDot} />
+      {label}
+    </span>
+  )
 }
 
 export default function AdminDisputesPage() {
@@ -29,6 +45,16 @@ export default function AdminDisputesPage() {
     const resolved = initialDisputes.filter((d) => d.status === 'resolved').length
     const total = initialDisputes.length
     return { total, open, under_review, resolved }
+  }, [])
+
+  const tabCounts = useMemo(() => {
+    const counts = { all: initialDisputes.length }
+    STATUS_OPTIONS.forEach(({ value }) => {
+      if (value !== 'all') {
+        counts[value] = initialDisputes.filter((d) => d.status === value).length
+      }
+    })
+    return counts
   }, [])
 
   const filtered = useMemo(() => {
@@ -46,13 +72,18 @@ export default function AdminDisputesPage() {
     })
   }, [statusFilter, search])
 
-  return (
-    <div className={styles.pageRoot}>
+  const hasFilters = Boolean(search.trim()) || statusFilter !== 'all'
 
-      {/* Summary Cards */}
+  const clearFilters = () => {
+    setSearch('')
+    setStatusFilter('all')
+  }
+
+  return (
+    <div className={styles.page}>
       <section className={styles.statsGrid}>
         <div className={styles.statCard}>
-          <p className={styles.statLabel}>Total Disputes</p>
+          <p className={styles.statLabel}>Total disputes</p>
           <p className={styles.statValue}>{summary.total}</p>
           <p className={styles.statHint}>All time</p>
         </div>
@@ -62,7 +93,7 @@ export default function AdminDisputesPage() {
           <p className={styles.statHint}>Needs attention</p>
         </div>
         <div className={styles.statCard}>
-          <p className={styles.statLabel}>Under Review</p>
+          <p className={styles.statLabel}>Under review</p>
           <p className={styles.statValue}>{summary.under_review}</p>
           <p className={styles.statHint}>Being investigated</p>
         </div>
@@ -73,42 +104,45 @@ export default function AdminDisputesPage() {
         </div>
       </section>
 
-      {/* Table Panel */}
       <section className={styles.tablePanel}>
-        <div className={styles.tablePanelHead}>
-          <p className={styles.tablePanelTitle}>Dispute List</p>
-
-          <div className={styles.toolbar}>
-            <div className={styles.filterGroup}>
+        <div className={styles.toolbar}>
+          <div className={styles.toolbarTopRow}>
+            <div className={styles.tabs}>
               {STATUS_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
-                  className={`${styles.filterBtn} ${statusFilter === opt.value ? styles.filterBtnActive : ''}`}
+                  type="button"
+                  className={`${styles.tab}${statusFilter === opt.value ? ` ${styles.tabActive}` : ''}`}
                   onClick={() => setStatusFilter(opt.value)}
                 >
                   {opt.label}
-                  {opt.value !== 'all' && (
-                    <span className={styles.filterCount}>
-                      {initialDisputes.filter((d) => d.status === opt.value).length}
-                    </span>
-                  )}
+                  <span className={styles.tabCount}>{tabCounts[opt.value] ?? 0}</span>
                 </button>
               ))}
             </div>
+          </div>
 
-            <div className={styles.searchWrap}>
-              <svg className={styles.searchIcon} viewBox="0 0 20 20" fill="none">
-                <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.5"/>
-                <path d="M15 15l-3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
+          <div className={styles.filterRow}>
+            <div className={styles.toolbarSearchWrap}>
+              <Icon.Search />
               <input
                 type="search"
-                placeholder="Search ID, order, or parties…"
+                placeholder="Search ID, order, parties, or reason…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className={styles.searchInput}
+                className={styles.toolbarSearchInput}
+                autoComplete="off"
               />
             </div>
+            <button
+              type="button"
+              className={styles.toolbarClearAll}
+              onClick={clearFilters}
+              disabled={!hasFilters}
+            >
+              <FiRotateCcw className={styles.toolbarClearIcon} aria-hidden />
+              Clear
+            </button>
           </div>
         </div>
 
@@ -116,12 +150,12 @@ export default function AdminDisputesPage() {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th className={styles.th}>Date Filed</th>
-                <th className={styles.th}>Order & Parties</th>
-                <th className={styles.th}>Reason</th>
-                <th className={styles.th}>Description</th>
-                <th className={styles.th}>Status</th>
-                <th className={`${styles.th} ${styles.thRight}`}>View</th>
+                <th>Filed</th>
+                <th>Order & parties</th>
+                <th>Reason</th>
+                <th>Summary</th>
+                <th>Status</th>
+                <th className={styles.thRight} />
               </tr>
             </thead>
             <tbody>
@@ -129,19 +163,28 @@ export default function AdminDisputesPage() {
                 <tr key={d.id} className={styles.tr}>
                   <td className={styles.td}>
                     <span className={styles.dateText}>{d.openedAt}</span>
-                    <br />
                     <span className={styles.refText}>{d.id}</span>
                   </td>
 
                   <td className={styles.td}>
                     <span className={styles.orderRef}>Order {d.orderRef}</span>
                     <div className={styles.parties}>
-                      <span className={styles.complainantBadge}>C</span>
+                      <span className={styles.partyChip} data-role="complainant" title="Complainant">
+                        C
+                      </span>
                       <span className={styles.partyName}>{d.complainantName}</span>
-                      <svg className={styles.arrowIcon} viewBox="0 0 16 16" fill="none">
-                        <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <svg className={styles.arrowIcon} viewBox="0 0 16 16" fill="none" aria-hidden>
+                        <path
+                          d="M3 8h10M9 4l4 4-4 4"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
                       </svg>
-                      <span className={styles.respondentBadge}>R</span>
+                      <span className={styles.partyChip} data-role="respondent" title="Respondent">
+                        R
+                      </span>
                       <span className={styles.partyName}>{d.respondentName}</span>
                     </div>
                   </td>
@@ -152,23 +195,22 @@ export default function AdminDisputesPage() {
 
                   <td className={styles.td}>
                     <span className={styles.descText}>
-                      {d.description.slice(0, 90)}{d.description.length > 90 ? '…' : ''}
+                      {d.description.slice(0, 90)}
+                      {d.description.length > 90 ? '…' : ''}
                     </span>
                   </td>
 
                   <td className={styles.td}>
-                    <span className={`${styles.badge} ${styles[`badge_${d.status}`]}`}>
-                      {STATUS_OPTIONS.find((o) => o.value === d.status)?.label || d.status}
-                    </span>
+                    <StatusBadge status={d.status} />
                   </td>
 
                   <td className={`${styles.td} ${styles.tdRight}`}>
                     <Link
                       href={`/admin/disputes/${d.id}`}
-                      className={styles.viewLink}
+                      className={styles.viewBtn}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      View →
+                      View
                     </Link>
                   </td>
                 </tr>
@@ -178,14 +220,17 @@ export default function AdminDisputesPage() {
 
           {filtered.length === 0 && (
             <div className={styles.emptyState}>
-              <svg className={styles.emptyIcon} viewBox="0 0 48 48" fill="none">
-                <circle cx="22" cy="22" r="14" stroke="#cbd5e1" strokeWidth="2"/>
-                <path d="M32 32l8 8" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round"/>
+              <svg className={styles.emptyIcon} viewBox="0 0 48 48" fill="none" aria-hidden>
+                <circle cx="22" cy="22" r="14" stroke="currentColor" strokeWidth="2" />
+                <path d="M32 32l8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
               </svg>
-              <p className={styles.emptyText}>No disputes match the current filters.</p>
-              <button className={styles.clearBtn} onClick={() => { setSearch(''); setStatusFilter('all') }}>
-                Clear filters
-              </button>
+              <p className={styles.emptyTitle}>No disputes found</p>
+              <p className={styles.emptyText}>Try a different search or status filter.</p>
+              {hasFilters && (
+                <button type="button" className={styles.clearBtn} onClick={clearFilters}>
+                  Clear filters
+                </button>
+              )}
             </div>
           )}
         </div>

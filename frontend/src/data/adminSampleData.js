@@ -83,12 +83,17 @@ export const disputes = [
   },
 ]
 
+/** Disputes that still need admin attention (open or under review). Swap for an API count later. */
+export function countDisputesNeedingAdminAttention() {
+  return disputes.filter((d) => d.status === 'open' || d.status === 'under_review').length
+}
+
 // --- Dashboard aggregates (mock stats + charts; admin dashboard may override with live data) ---
 
 export const dashboard = {
   stats: {
     totalSellers: 4,
-    totalUsers: 4,
+    totalBuyers: 4,
     transactionsLast30Days: 4,
     openDisputes: disputes.filter((d) => d.status === 'open').length,
   },
@@ -243,6 +248,7 @@ export const helpCenterTopics = [
       'What to check before approval',
       'What happens after approval or rejection',
       'High-risk seller red flags',
+      'Submitted listings are listed under Admin → Listings for review',
     ],
   },
   {
@@ -278,6 +284,10 @@ export const helpCenterTopics = [
 ]
 
 export const helpCenterFaqs = [
+  {
+    q: 'Where can I see what sellers have listed on the shop?',
+    a: 'Open Listings in the admin sidebar (or Quick actions → View Listings on the dashboard). Active listings appear on the public shop; drafts do not. Ensure database migration 038 is applied so admins can read seller_listings.',
+  },
   {
     q: 'Why are changes not showing in the live platform?',
     a: 'Most updates require approval or publishing. Check if there is a pending submission, scheduled publish time, or blocked content due to policy.',

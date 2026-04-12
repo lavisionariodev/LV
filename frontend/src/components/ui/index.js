@@ -1,3 +1,4 @@
+export { Dropdown } from './Dropdown/Dropdown'
 export { default as Logout } from './Modal/Logout'
 export { default as ForgotPasswordModal } from './Modal/ForgotPasswordModal'
 export { default as Toast } from './Toast/Toast'
