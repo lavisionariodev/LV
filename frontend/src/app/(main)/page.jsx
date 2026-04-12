@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import styles from './homepage.module.css'
 
@@ -211,13 +211,13 @@ function HowItWorksSection() {
   )
 }
 
-/* ---------------- PARTNER HIGHLIGHT ---------------- */
+/* ---------------- PARTNER HIGHLIGHT — continuous infinite carousel ---------------- */
 function PartnerHighlightSection() {
-  const partners = [
+  const PARTNERS = [
     {
       name: 'Heritage Funeral Services',
       location: 'Quezon City',
-      years: '15 years in service',
+      years: '15 yrs',
       rating: '4.9',
       services: ['Traditional Burial', 'Catholic Rites', 'Embalming'],
       specialty: 'Traditional Catholic ceremonies',
@@ -226,7 +226,7 @@ function PartnerHighlightSection() {
     {
       name: 'Metro Cremation Care',
       location: 'Makati City',
-      years: '10 years in service',
+      years: '10 yrs',
       rating: '4.8',
       services: ['Cremation', 'Memorial Service', 'Urn Selection'],
       specialty: 'Modern cremation services',
@@ -235,13 +235,129 @@ function PartnerHighlightSection() {
     {
       name: 'Eternal Gardens Memorial',
       location: 'Cavite',
-      years: '20 years in service',
+      years: '20 yrs',
       rating: '5.0',
       services: ['Memorial Park', 'Garden Burial', 'Wake Services'],
-      specialty: 'Memorial park and gardens',
+      specialty: 'Memorial park & gardens',
+      image: 'https://i.pinimg.com/1200x/84/d5/60/84d56082a8cf35ffd66ed28d57357894.jpg',
+    },
+    {
+      name: 'Paz Memorial Chapel',
+      location: 'Pasig City',
+      years: '12 yrs',
+      rating: '4.7',
+      services: ['Chapel Wake', 'Final Arrangements', 'Documentation'],
+      specialty: 'Full chapel services',
+      image: 'https://i.pinimg.com/736x/6e/8b/75/6e8b7560bc2e8538768dcf04b39f76df.jpg',
+    },
+    {
+      name: 'Sanctuario Funeral Home',
+      location: 'Cebu City',
+      years: '18 yrs',
+      rating: '4.9',
+      services: ['Burial Services', 'Viewing', 'Grief Support'],
+      specialty: 'Holistic family care',
+      image: 'https://i.pinimg.com/736x/ec/fb/27/ecfb278d5b75bf40ca4e468f309847af.jpg',
+    },
+    {
+      name: 'Serene Passage Services',
+      location: 'Davao City',
+      years: '8 yrs',
+      rating: '4.8',
+      services: ['Cremation', 'Non-religious Rites', 'Urns & Keepsakes'],
+      specialty: 'Contemporary farewell services',
       image: 'https://i.pinimg.com/1200x/84/d5/60/84d56082a8cf35ffd66ed28d57357894.jpg',
     },
   ]
+
+  const N = PARTNERS.length
+  // card width + gap in px — must match CSS
+  const CARD_W = 300
+  const GAP = 20
+
+  // Real index tracking (0..N-1)
+  const [activeReal, setActiveReal] = useState(0)
+
+  // We keep a "virtual" index that can go beyond 0..N-1 for infinite loop
+  const [virtualIdx, setVirtualIdx] = useState(N) // start at clone offset
+  const [isAnimating, setIsAnimating] = useState(false)
+  const [transitionEnabled, setTransitionEnabled] = useState(true)
+  const trackRef = useRef(null)
+  const autoRef = useRef(null)
+
+  // Build the track: [clone of last] + [all items] + [clone of first]
+  // For seamless infinite: prepend last item, append first item
+  const track = [PARTNERS[N - 1], ...PARTNERS, PARTNERS[0]]
+
+  // translate so virtualIdx 0 = cloned-last, virtualIdx 1 = first real, etc.
+  // virtualIdx=N means the first real item is centered (our start)
+  const getTranslate = (idx) => {
+    // center the active card: offset so active card is in viewport center
+    return -(idx * (CARD_W + GAP))
+  }
+
+  const slideTo = useCallback((newVirtual, newReal, withTransition = true) => {
+    if (isAnimating) return
+    setTransitionEnabled(withTransition)
+    setVirtualIdx(newVirtual)
+    setActiveReal(newReal)
+    if (withTransition) setIsAnimating(true)
+  }, [isAnimating])
+
+  const next = useCallback(() => {
+    const newVirtual = virtualIdx + 1
+    const newReal = (activeReal + 1) % N
+    slideTo(newVirtual, newReal)
+  }, [virtualIdx, activeReal, N, slideTo])
+
+  const prev = useCallback(() => {
+    const newVirtual = virtualIdx - 1
+    const newReal = (activeReal - 1 + N) % N
+    slideTo(newVirtual, newReal)
+  }, [virtualIdx, activeReal, N, slideTo])
+
+  // After transition ends, silently jump if we've hit a clone
+  const handleTransitionEnd = useCallback(() => {
+    setIsAnimating(false)
+    // track has N+2 items: index 0 = clone of last, 1..N = real, N+1 = clone of first
+    if (virtualIdx === N + 1) {
+      // jumped to clone-of-first → silently reset to real first (index 1)
+      setTransitionEnabled(false)
+      setVirtualIdx(1)
+    } else if (virtualIdx === 0) {
+      // jumped to clone-of-last → silently reset to real last (index N)
+      setTransitionEnabled(false)
+      setVirtualIdx(N)
+    }
+  }, [virtualIdx, N])
+
+  // Autoplay
+  const startAuto = useCallback(() => {
+    clearInterval(autoRef.current)
+    autoRef.current = setInterval(() => next(), 3200)
+  }, [next])
+
+  useEffect(() => {
+    startAuto()
+    return () => clearInterval(autoRef.current)
+  }, [startAuto])
+
+  const handlePrev = () => { clearInterval(autoRef.current); prev(); startAuto() }
+  const handleNext = () => { clearInterval(autoRef.current); next(); startAuto() }
+
+  const handleDotClick = (realIdx) => {
+    clearInterval(autoRef.current)
+    const delta = realIdx - activeReal
+    slideTo(virtualIdx + delta, realIdx)
+    startAuto()
+  }
+
+  // Dot window: always show 3 dots, slide window so active is visible
+  const DOT_VISIBLE = 3
+  const dotWindowStart = Math.min(
+    Math.max(activeReal - Math.floor(DOT_VISIBLE / 2), 0),
+    N - DOT_VISIBLE
+  )
 
   return (
     <section className={styles.partnerSection}>
@@ -255,59 +371,113 @@ function PartnerHighlightSection() {
           </p>
         </div>
 
-        <div className={styles.partnerGrid}>
-          {partners.map((partner, i) => (
-            <div key={i} className={styles.partnerCard}>
-              <div className={styles.partnerImageWrapper}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={partner.image}
-                  alt={partner.name}
-                  className={styles.partnerImage}
-                />
-                <div className={styles.partnerImageOverlay} />
-                <div className={styles.partnerRatingBadge}>★ {partner.rating}</div>
-              </div>
+        {/* Carousel viewport */}
+        <div className={styles.partnerCarouselOuter}>
+          <button
+            className={`${styles.carouselArrow} ${styles.carouselArrowLeft}`}
+            onClick={handlePrev}
+            aria-label="Previous partner"
+          >‹</button>
 
-              <div className={styles.partnerContent}>
-                <div className={styles.partnerMeta}>
-                  <span className={styles.partnerLocation}>
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                      <circle cx="12" cy="10" r="3" />
-                    </svg>
-                    {partner.location}
-                  </span>
-                  <span className={styles.partnerYears}>{partner.years}</span>
-                </div>
+          <div className={styles.partnerCarouselViewport}>
+            <div
+              ref={trackRef}
+              className={styles.partnerCarouselTrack}
+              style={{
+                transform: `translateX(calc(50% - ${CARD_W / 2}px + ${getTranslate(virtualIdx)}px))`,
+                transition: transitionEnabled ? 'transform 0.55s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+              }}
+              onTransitionEnd={handleTransitionEnd}
+            >
+              {track.map((partner, i) => {
+                // real index of this track slot
+                const realForSlot = i === 0 ? N - 1 : i === track.length - 1 ? 0 : i - 1
+                const isCenter = i === virtualIdx
+                const isAdjacent = Math.abs(i - virtualIdx) === 1
 
-                <h3 className={styles.partnerName}>{partner.name}</h3>
-                <p className={styles.partnerSpecialty}>Specializes in {partner.specialty}</p>
+                return (
+                  <div
+                    key={i}
+                    className={styles.partnerCarouselCard}
+                    style={{
+                      width: `${CARD_W}px`,
+                      transform: isCenter ? 'scale(1)' : isAdjacent ? 'scale(0.86)' : 'scale(0.78)',
+                      opacity: isCenter ? 1 : isAdjacent ? 0.65 : 0.35,
+                      zIndex: isCenter ? 10 : isAdjacent ? 5 : 1,
+                      cursor: isCenter ? 'default' : 'pointer',
+                      transition: 'transform 0.55s cubic-bezier(0.4,0,0.2,1), opacity 0.55s ease',
+                      flexShrink: 0,
+                    }}
+                    onClick={() => {
+                      if (!isCenter) {
+                        if (i < virtualIdx) handlePrev()
+                        else handleNext()
+                      }
+                    }}
+                  >
+                    <div className={styles.partnerImageWrapper}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={partner.image} alt={partner.name} className={styles.partnerImage} />
+                      <div className={styles.partnerImageOverlay} />
+                      <div className={styles.partnerRatingBadge}>★ {partner.rating}</div>
+                      {!isCenter && (
+                        <div className={styles.partnerSideLabel}>{partner.name}</div>
+                      )}
+                    </div>
 
-                <ul className={styles.partnerServices}>
-                  {partner.services.map((s, j) => (
-                    <li key={j} className={styles.partnerServiceTag}>
-                      {s}
-                    </li>
-                  ))}
-                </ul>
-
-                <Link href="/partners" className={styles.viewProviderBtn}>
-                  View Profile <span aria-hidden="true">›</span>
-                </Link>
-              </div>
+                    {isCenter && (
+                      <div className={styles.partnerContent}>
+                        <div className={styles.partnerMeta}>
+                          <span className={styles.partnerLocation}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                              <circle cx="12" cy="10" r="3" />
+                            </svg>
+                            {partner.location}
+                          </span>
+                          <span className={styles.partnerYears}>{partner.years}</span>
+                        </div>
+                        <h3 className={styles.partnerName}>{partner.name}</h3>
+                        <p className={styles.partnerSpecialty}>{partner.specialty}</p>
+                        <ul className={styles.partnerServices}>
+                          {partner.services.map((s, j) => (
+                            <li key={j} className={styles.partnerServiceTag}>{s}</li>
+                          ))}
+                        </ul>
+                        <Link href="/partners" className={styles.viewProviderBtn}>
+                          View Profile <span aria-hidden="true">›</span>
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
-          ))}
+          </div>
+
+          <button
+            className={`${styles.carouselArrow} ${styles.carouselArrowRight}`}
+            onClick={handleNext}
+            aria-label="Next partner"
+          >›</button>
+        </div>
+
+        {/* Dot indicator — sliding window of 3 */}
+        <div className={styles.partnerDotsOuter}>
+          <div
+            className={styles.partnerDotsTrack}
+            style={{ transform: `translateX(${-dotWindowStart * 22}px)` }}
+          >
+            {PARTNERS.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                className={`${styles.partnerDot} ${i === activeReal ? styles.partnerDotActive : ''}`}
+                onClick={() => handleDotClick(i)}
+                aria-label={`Go to ${PARTNERS[i].name}`}
+              />
+            ))}
+          </div>
         </div>
 
         <div className={styles.partnerCTA}>
