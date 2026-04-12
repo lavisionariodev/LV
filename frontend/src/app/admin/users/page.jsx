@@ -286,9 +286,6 @@ export default function AdminUsersPage() {
                         <Avatar name={user.name} src={user.avatarUrl} />
                         <div className={styles.userText}>
                           <p className={styles.userName}>{user.name}</p>
-                          <p className={styles.userId} title={user.id}>
-                            {user.id}
-                          </p>
                         </div>
                       </div>
                     </td>

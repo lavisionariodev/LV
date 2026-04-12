@@ -145,3 +145,40 @@ export async function deleteSellerListing(id) {
 
   return { error: null }
 }
+
+/**
+ * Admin: all listings with seller business name (requires RLS policy for admins).
+ */
+export async function listSellerListingsForAdmin() {
+  const { data, error } = await supabase
+    .from('seller_listings')
+    .select(
+      `
+      *,
+      sellers (
+        business_name,
+        contact_name,
+        email
+      )
+    `,
+    )
+    .order('updated_at', { ascending: false })
+
+  if (error) {
+    return { data: [], error: error.message || 'Failed to load listings.' }
+  }
+
+  const rows = (data || []).map((row) => {
+    const { sellers, ...rest } = row
+    const rel = sellers
+    const seller = Array.isArray(rel) ? rel[0] : rel
+    return normalizeListingRow({
+      ...rest,
+      seller_business_name: seller?.business_name ?? null,
+      seller_contact_name: seller?.contact_name ?? null,
+      seller_email: seller?.email ?? null,
+    })
+  })
+
+  return { data: rows, error: null }
+}

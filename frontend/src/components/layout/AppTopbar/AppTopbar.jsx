@@ -43,6 +43,7 @@ const PAGE_TITLES = {
     '/admin/disputes': 'Disputes',
     '/admin/users': 'Users',
     '/admin/sellers': 'Sellers',
+    '/admin/listings': 'Listings',
     '/admin/seller-template': 'Template',
     '/admin/settings': 'Settings',
     '/admin/profile': 'Profile',

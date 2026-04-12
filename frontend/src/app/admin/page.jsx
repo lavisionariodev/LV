@@ -542,6 +542,9 @@ export default function AdminDashboardPage() {
             <Link href="/admin/sellers" className={styles.actionBtn}>
               Add Seller
             </Link>
+            <Link href="/admin/listings" className={styles.actionBtn}>
+              View Listings
+            </Link>
             <Link href="/admin/users" className={styles.actionBtn}>
               View Users
             </Link>

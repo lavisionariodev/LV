@@ -20,6 +20,18 @@ function normalizeServiceId(raw) {
   return 'memorial-planning'
 }
 
+/**
+ * Shop detail URL for a raw `seller_listings` row (admin deep links).
+ * Uses category / dynamic_values category fields the same way as the shop RPC mapping.
+ */
+export function getShopHrefForSellerListingRow(row) {
+  if (!row?.id) return '/shop'
+  const dv = parseDynamicValues(row.dynamic_values)
+  const raw = row.category ?? dv.funeral_category ?? dv.category ?? ''
+  const serviceId = normalizeServiceId(raw)
+  return `/shop/${serviceId}?listing=${encodeURIComponent(String(row.id))}`
+}
+
 function parseInclusions(description, dynamicValues) {
   const dv = dynamicValues && typeof dynamicValues === 'object' ? dynamicValues : {}
   if (Array.isArray(dv.inclusions) && dv.inclusions.length) {

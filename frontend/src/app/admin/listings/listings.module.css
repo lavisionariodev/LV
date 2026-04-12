@@ -1,7 +1,4 @@
-/* =========================
-   USERS PAGE
-   Table + toolbar aligned with admin payouts transactions panel
-   ========================= */
+/* Admin listings — aligned with users/sellers table panels */
 
 .pageRoot {
   display: flex;
@@ -10,16 +7,12 @@
   color: #0f172a;
 }
 
-/* ── Table panel ─────────────────────────────────────────────────────────── */
-
 .tablePanel {
   background: #fff;
   border: 1px solid #e9e9ef;
   border-radius: 14px;
   overflow: hidden;
 }
-
-/* ── Toolbar ──────────────────────────────────────────────────────────────── */
 
 .toolbar {
   padding: 14px 18px;
@@ -117,8 +110,6 @@
   flex-shrink: 0;
 }
 
-/* ── Table ──────────────────────────────────────────────────────────────── */
-
 .tableWrap {
   overflow-x: auto;
   padding: 0 18px;
@@ -131,24 +122,26 @@
   table-layout: fixed;
 }
 
-/* Column widths — narrow checkbox; remaining columns share rest (see colgroup in page.jsx) */
-.colCheck {
-  width: 4%;
+.colListing {
+  width: 28%;
 }
-.colUser {
-  width: 21%;
+.colSeller {
+  width: 20%;
 }
-.colEmail {
-  width: 25%;
+.colKind {
+  width: 11%;
 }
-.colJoined {
-  width: 15%;
-}
-.colRole {
-  width: 17.5%;
+.colPrice {
+  width: 10%;
 }
 .colStatus {
-  width: 17.5%;
+  width: 12%;
+}
+.colUpdated {
+  width: 11%;
+}
+.colActions {
+  width: 8%;
 }
 
 .table thead tr {
@@ -187,99 +180,38 @@
   border-bottom: none;
 }
 
-.table th.checkboxCell,
-.table td.checkboxCell {
-  text-align: center;
-  vertical-align: middle;
-  padding-left: 12px;
-  padding-right: 2px;
-}
-
-/* Pull User column closer to the checkbox */
-.table th:nth-child(2),
-.table td:nth-child(2) {
-  padding-left: 6px;
-}
-
-.rowCheckbox {
-  position: relative;
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  border: 1.5px solid #cbd5e1;
-  appearance: none;
-  -webkit-appearance: none;
-  cursor: pointer;
-  background: #fff;
-  display: grid;
-  place-items: center;
-  transition: all 0.12s;
-  flex-shrink: 0;
-  vertical-align: middle;
-}
-
-.rowCheckbox:checked {
-  background: #0f172a;
-  border-color: #0f172a;
-}
-
-.rowCheckbox:checked::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 5px;
-  height: 9px;
-  border: solid #fff;
-  border-width: 0 2px 2px 0;
-  transform: translate(-50%, -62%) rotate(45deg);
-  box-sizing: border-box;
-}
-
-.rowCheckbox:hover:not(:checked) {
-  border-color: #94a3b8;
-}
-
-/* ── Avatar & user cell ─────────────────────────────────────────────────── */
-
-.userCell {
+.listingCell {
   display: flex;
   align-items: center;
   gap: 10px;
   min-width: 0;
 }
 
-.userText {
+.thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #f1f5f9;
+  flex-shrink: 0;
+  border: 1px solid #e2e8f0;
+}
+
+.thumbPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.listingText {
   min-width: 0;
   flex: 1;
 }
 
-.avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  flex-shrink: 0;
-  letter-spacing: 0.3px;
-  object-fit: cover;
-}
-
-.avatarDefault {
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  color: #94a3b8;
-}
-
-.avatarIcon {
-  width: 16px;
-  height: 16px;
-}
-
-.userName {
+.listingName {
   margin: 0;
   font-size: 13px;
   font-weight: 600;
@@ -289,30 +221,25 @@
   white-space: nowrap;
 }
 
-/* ── Other cells ────────────────────────────────────────────────────────── */
-
-.email {
-  display: block;
-  font-size: 13px;
-  color: #475569;
+.listingId {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: #94a3b8;
+  font-family: ui-monospace, monospace;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.meta {
-  font-size: 12px;
-  color: #94a3b8;
-}
-
-/* Joined column — fixed date width, no awkward gap */
-.table td:nth-child(4) .meta {
+.sellerName {
+  font-size: 13px;
+  color: #334155;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* ── Role badge ─────────────────────────────────────────────────────────── */
-
-.badge {
+.kindBadge {
   display: inline-flex;
   align-items: center;
   padding: 3px 9px;
@@ -326,7 +253,17 @@
   text-transform: capitalize;
 }
 
-/* ── Status badge with dot ──────────────────────────────────────────────── */
+.price {
+  font-size: 13px;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.meta {
+  font-size: 12px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
 
 .statusBadge {
   display: inline-flex;
@@ -354,16 +291,40 @@
   border-color: #bbf7d0;
   color: #15803d;
 }
-.status_pending {
-  border-color: #fef08a;
-  color: #854d0e;
+.status_draft {
+  border-color: #e2e8f0;
+  color: #64748b;
 }
-.status_suspended {
+.status_inactive {
+  border-color: #e2e8f0;
+  color: #64748b;
+}
+.status_archived {
   border-color: #fecaca;
   color: #b91c1c;
 }
 
-/* ── Loading ─────────────────────────────────────────────────────────────── */
+.viewLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e3a2f;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.viewLink:hover {
+  text-decoration: underline;
+}
+
+.viewLinkIcon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
 
 .loadingState {
   display: flex;
@@ -397,7 +358,11 @@
   border-bottom: 1px solid #f1f5f9;
 }
 
-/* ── Empty state ────────────────────────────────────────────────────────── */
+.errorDetail {
+  font-size: 12px;
+  color: #94a3b8;
+  word-break: break-word;
+}
 
 .emptyState {
   display: flex;
@@ -445,8 +410,6 @@
   border-color: #cbd5e1;
 }
 
-/* ── Footer ─────────────────────────────────────────────────────────────── */
-
 .tableFooter {
   padding: 14px 18px;
   font-size: 12px;
@@ -458,8 +421,6 @@
 .tableFooter strong {
   color: #475569;
 }
-
-/* ── Responsive ─────────────────────────────────────────────────────────── */
 
 @media (max-width: 860px) {
   .toolbarRow {

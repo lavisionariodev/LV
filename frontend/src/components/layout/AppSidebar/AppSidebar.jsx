@@ -49,9 +49,10 @@ const SIDEBAR_CONFIG = {
     navItems: [
       { href: '/admin', label: 'Dashboard', icon: TbLayoutDashboardFilled },
       { href: '/admin/payouts', label: 'Payouts', icon: TbReportSearch },
-      { href: '/admin/disputes', label: 'Dispute', icon: TbReportSearch },
       { href: '/admin/sellers', label: 'Sellers', icon: LuUserCheck },
+      { href: '/admin/listings', label: 'Listings', icon: TbPackage },
       { href: '/admin/users', label: 'Users', icon: TbUsers },
+      { href: '/admin/disputes', label: 'Dispute', icon: TbReportSearch },
       { href: '/admin/seller-template', label: 'Template', icon: TbClipboardList },
     ],
   },
