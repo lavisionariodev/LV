@@ -5,6 +5,8 @@
   flex-direction: column;
   gap: 18px;
   width: 100%;
+  padding-bottom: 2.5rem;
+  box-sizing: border-box;
 }
 
 .shopVisibilityBanner {
@@ -532,6 +534,18 @@
   backdrop-filter: blur(4px);
 }
 
+/* Remove confirmation: same dimmed backdrop as modals but no blur (separate from .productModalOverlay) */
+.removeConfirmOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 22, 17, 0.6);
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
 .productModal {
   width: 100%;
   max-width: 860px;
@@ -753,6 +767,11 @@
   gap: 0.75rem;
 }
 
+/* Seller view modal: status only (no placeholder ratings). */
+.productPreviewHeaderRowEnd {
+  justify-content: flex-end;
+}
+
 .productPreviewRatings {
   display: flex;
   align-items: center;
@@ -863,37 +882,84 @@
 /* Remove confirmation dialog */
 .removeConfirmCard {
   width: 100%;
-  max-width: 420px;
-  background: #ffffff;
+  max-width: 440px;
   border-radius: 16px;
-  padding: 1.4rem 1.6rem 1.2rem;
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.2);
-  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: linear-gradient(180deg, #f8faf9 0%, #ffffff 42%);
+  box-shadow:
+    0 4px 6px rgba(15, 23, 42, 0.04),
+    0 22px 48px rgba(15, 23, 42, 0.12);
+}
+
+.removeConfirmCardBody {
+  padding: 1.35rem 1.5rem 1.15rem;
+}
+
+.removeConfirmHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.removeConfirmIconBadge {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(145deg, #fef2f2 0%, #fee2e2 100%);
+  border: 1px solid rgba(252, 165, 165, 0.55);
+  color: #b91c1c;
 }
 
 .removeConfirmTitle {
-  margin: 0 0 0.4rem;
+  margin: 0;
+  flex: 1;
+  min-width: 0;
   font-size: 1.05rem;
   font-weight: 600;
-  color: #111827;
+  letter-spacing: -0.01em;
+  color: #102820;
+  line-height: 1.3;
 }
 
 .removeConfirmText {
-  margin: 0 0 0.9rem;
+  margin: 0;
+  padding: 0.85rem 0.95rem;
   font-size: 0.9rem;
-  color: #4b5563;
-  line-height: 1.5;
+  color: #475569;
+  line-height: 1.55;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid #e8efec;
 }
 
-.removeConfirmName {
-  font-weight: 600;
-  color: #102820;
+.removeConfirmError {
+  margin: 0.75rem 0 0;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  font-size: 0.85rem;
+  color: #b91c1c;
+  line-height: 1.45;
+}
+
+.removeConfirmFooter {
+  padding: 1rem 1.5rem 1.35rem;
+  border-top: 1px solid #e8efec;
+  background: rgba(248, 250, 249, 0.92);
 }
 
 .removeConfirmActions {
   display: flex;
   justify-content: flex-end;
-  gap: 0.6rem;
+  flex-wrap: wrap;
+  gap: 0.65rem;
 }
 
 .removeConfirmCancel,
@@ -931,6 +997,14 @@
   color: #ffffff;
   box-shadow: 0 6px 14px rgba(185, 28, 28, 0.4);
   transform: translateY(-1px);
+}
+
+.removeConfirmCancel:disabled,
+.removeConfirmDelete:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .productModalForm {
@@ -1604,6 +1678,15 @@
   transform: translateY(-1px);
 }
 
+/* Modal footer Close/Cancel: same neutral hover as new-listing Cancel (not green fill). */
+.productModalFooter .productModalSecondary:hover {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #334155;
+  box-shadow: none;
+  transform: none;
+}
+
 .productModalPrimary {
   background: #204f38;
   border-color: #204f38;
@@ -1761,9 +1844,9 @@
 
 .newListingStepper {
   border-radius: 8px;
-  border: 1px solid #e8eef0;
-  background: #ffffff;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+  border: 1px solid #b8d4c4;
+  background: linear-gradient(180deg, #f7fcf9 0%, #eef6f1 100%);
+  box-shadow: 0 4px 14px rgba(22, 79, 56, 0.06);
   padding: 0.65rem 0.75rem 0.65rem;
 }
 

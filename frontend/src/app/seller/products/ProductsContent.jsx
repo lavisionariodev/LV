@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { TbPlus, TbSearch } from 'react-icons/tb'
+import { TbPlus, TbSearch, TbTrash } from 'react-icons/tb'
 import styles from './products.module.css'
 import {
   buildSellerListingPayload,
@@ -22,6 +22,7 @@ import {
   listMySellerListings,
   updateSellerListing,
   deleteSellerListing,
+  parseListingDynamicValues,
 } from '@/lib/seller-listings/client'
 import { getSellerByUserId } from '@/lib/sellers/client'
 import { supabase } from '@/lib/supabase/client'
@@ -38,18 +39,97 @@ function revokeLocalPreviewUrls(entries) {
   })
 }
 
+/** Buyer-facing kind label — matches shop listing mapping. */
+function formatListingKindLabel(kind) {
+  if (kind == null || typeof kind !== 'string') return ''
+  const k = kind.trim().toLowerCase()
+  if (k === 'service') return 'Service'
+  if (k === 'package') return 'Package'
+  const t = kind.trim()
+  return t ? t.charAt(0).toUpperCase() + t.slice(1) : ''
+}
+
+const VIEW_MODAL_EMPTY = '—'
+
+/** Display text from template fields (strings, numbers, etc.). */
+function coerceDisplayString(v) {
+  if (v == null) return ''
+  return String(v).trim()
+}
+
+/**
+ * Client-side listing search: case-insensitive; every whitespace-separated token must appear
+ * somewhere in the combined fields (AND). Avoids crashes on missing fields.
+ */
+function buildListingSearchHaystack(p) {
+  if (!p) return ''
+  const inc = Array.isArray(p.inclusions) ? p.inclusions.join(' ') : ''
+  const parts = [
+    p.name,
+    p.category,
+    p.city,
+    p.coverage,
+    p.duration,
+    p.detailCategory,
+    p.description,
+    p.longDescription,
+    p.availability,
+    p.listingKindLabel,
+    p.kind,
+    p.status,
+    inc,
+    p.whoThisIsFor,
+    p.importantNotes,
+  ]
+  return parts.map((x) => String(x ?? '').toLowerCase()).join(' ')
+}
+
+function listingMatchesSearchQuery(p, rawQuery) {
+  const trimmed = String(rawQuery ?? '').trim()
+  if (!trimmed) return true
+  const hay = buildListingSearchHaystack(p)
+  const tokens = trimmed.toLowerCase().split(/\s+/).filter(Boolean)
+  if (tokens.length === 0) return true
+  return tokens.every((t) => hay.includes(t))
+}
+
+/** View modal: prefer normalized fields, then raw dynamic_values (edit uses the same source). */
+function viewModalDurationText(p) {
+  const dv = parseListingDynamicValues(p?.dynamicValues ?? p?.dynamic_values)
+  const s = coerceDisplayString(p?.duration) || coerceDisplayString(dv.duration)
+  return s || VIEW_MODAL_EMPTY
+}
+
+function viewModalCoverageText(p) {
+  const dv = parseListingDynamicValues(p?.dynamicValues ?? p?.dynamic_values)
+  const cityOk = coerceDisplayString(p?.city)
+  const cityFallback = cityOk && cityOk !== 'N/A' ? cityOk : ''
+  const s =
+    coerceDisplayString(p?.coverage) ||
+    coerceDisplayString(dv.coverage) ||
+    coerceDisplayString(dv.location) ||
+    cityFallback
+  return s || VIEW_MODAL_EMPTY
+}
+
+function viewModalCategoryLine(p) {
+  const cat = coerceDisplayString(p?.category)
+  const det = coerceDisplayString(p?.detailCategory)
+  if (cat && det && det !== cat) return `${cat} · ${det}`
+  return det || cat || VIEW_MODAL_EMPTY
+}
+
 function normalizeListingRowToProduct(row) {
-  const dynamicValues =
-    row?.dynamic_values && typeof row.dynamic_values === 'object' ? row.dynamic_values : {}
+  const dynamicValues = parseListingDynamicValues(row?.dynamic_values ?? row?.dynamicValues)
   const imageUrls = Array.isArray(row?.image_urls) ? row.image_urls : []
 
   const listingName = dynamicValues.listing_name || row.listing_name || 'Untitled listing'
   const category = dynamicValues.category || row.category || 'Service'
   const description = dynamicValues.description || ''
   const areaRaw =
-    (typeof dynamicValues.coverage === 'string' && dynamicValues.coverage.trim()) ||
-    (typeof dynamicValues.location === 'string' && dynamicValues.location.trim()) ||
-    (typeof row.location === 'string' && row.location.trim()) ||
+    coerceDisplayString(dynamicValues.coverage) ||
+    coerceDisplayString(dynamicValues.location) ||
+    coerceDisplayString(row?.location) ||
     ''
   const location = areaRaw || 'N/A'
   const basePriceRaw = dynamicValues.base_price ?? row.base_price ?? 0
@@ -58,6 +138,9 @@ function normalizeListingRowToProduct(row) {
   const availability = dynamicValues.availability || 'Available'
   const kind = dynamicValues.kind || 'service'
   const primaryImage = imageUrls[0] || FALLBACK_IMAGE
+
+  const duration = coerceDisplayString(dynamicValues.duration)
+  const funeralCategoryRaw = coerceDisplayString(dynamicValues.funeral_category)
 
   const rawInc = dynamicValues.inclusions
   let inclusions = []
@@ -75,7 +158,12 @@ function normalizeListingRowToProduct(row) {
     templateId: row.template_id || null,
     name: listingName,
     kind,
+    listingKindLabel: formatListingKindLabel(kind),
     category,
+    /** Service area / coverage — same sources as header location line. */
+    coverage: areaRaw,
+    duration,
+    detailCategory: funeralCategoryRaw,
     startingPrice: basePrice,
     city: location,
     status,
@@ -86,9 +174,9 @@ function normalizeListingRowToProduct(row) {
     gallery: imageUrls.length ? imageUrls : [FALLBACK_IMAGE],
     dynamicValues,
     inclusions,
-    whoThisIsFor: dynamicValues.who_this_is_for || '',
-    importantNotes: dynamicValues.important_notes || '',
-    funeralCategory: dynamicValues.funeral_category || '',
+    whoThisIsFor: coerceDisplayString(dynamicValues.who_this_is_for),
+    importantNotes: coerceDisplayString(dynamicValues.important_notes),
+    funeralCategory: funeralCategoryRaw,
   }
 }
 
@@ -120,6 +208,8 @@ export default function ProductsContent({ initialKind = 'all' }) {
   const [pendingImageFiles, setPendingImageFiles] = useState([])
   const [products, setProducts] = useState([])
   const [productPendingRemoval, setProductPendingRemoval] = useState(null)
+  const [removeInProgress, setRemoveInProgress] = useState(false)
+  const [removeError, setRemoveError] = useState(null)
   const fileInputRef = useRef(null)
   const [template, setTemplate] = useState(null)
   const [templateFields, setTemplateFields] = useState([])
@@ -209,13 +299,7 @@ export default function ProductsContent({ initialKind = 'all' }) {
     }
 
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase()
-      list = list.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q) ||
-          p.city.toLowerCase().includes(q),
-      )
+      list = list.filter((p) => listingMatchesSearchQuery(p, searchQuery))
     }
 
     return list
@@ -282,30 +366,41 @@ export default function ProductsContent({ initialKind = 'all' }) {
   }
 
   const handleRequestRemove = (product) => {
+    setRemoveError(null)
+    handleCloseModal()
     setProductPendingRemoval(product)
   }
 
   const handleCancelRemove = () => {
+    if (removeInProgress) return
+    setRemoveError(null)
     setProductPendingRemoval(null)
   }
 
   const handleConfirmRemove = async () => {
-    if (!productPendingRemoval) return
+    if (!productPendingRemoval || removeInProgress) return
 
-    const { error } = await deleteSellerListing(productPendingRemoval.id)
-    if (error) {
-      setFormError(error)
-      return
+    setRemoveError(null)
+    setRemoveInProgress(true)
+    try {
+      const id = productPendingRemoval.id
+      const { error } = await deleteSellerListing(id)
+      if (error) {
+        setRemoveError(error)
+        return
+      }
+
+      setProducts((prev) => prev.filter((p) => p.id !== id))
+
+      if (selectedProduct?.id === id) {
+        setSelectedProduct(null)
+        setModalMode(null)
+      }
+
+      setProductPendingRemoval(null)
+    } finally {
+      setRemoveInProgress(false)
     }
-
-    setProducts((prev) => prev.filter((p) => p.id !== productPendingRemoval.id))
-
-    if (selectedProduct?.id === productPendingRemoval.id) {
-      setSelectedProduct(null)
-      setModalMode(null)
-    }
-
-    setProductPendingRemoval(null)
   }
 
   const getFieldValue = (fieldId) => formValues?.[fieldId]
@@ -321,6 +416,7 @@ export default function ProductsContent({ initialKind = 'all' }) {
       templateFields,
       getFieldValue,
       templateSectionIds,
+      editGallery,
     )
     if (missingRequired) {
       setFormError(`${missingRequired.label} is required.`)
@@ -383,10 +479,12 @@ export default function ProductsContent({ initialKind = 'all' }) {
           <input
             type="search"
             className={styles.searchBox}
-            placeholder="Search by name, category, or area"
+            placeholder="Search by name, category, area, description, duration…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            aria-label="Search products"
+            aria-label="Search listings by text"
+            autoComplete="off"
+            spellCheck={false}
           />
         </div>
         <Link href="/seller/products/new-listing" className={styles.addListingMobile}>
@@ -493,6 +591,7 @@ export default function ProductsContent({ initialKind = 'all' }) {
                     type="button"
                     className={styles.productActionDanger}
                     onClick={() => handleRequestRemove(product)}
+                    aria-haspopup="dialog"
                   >
                     Remove
                   </button>
@@ -549,12 +648,9 @@ export default function ProductsContent({ initialKind = 'all' }) {
                   </div>
 
                   <div className={styles.productPreviewBody}>
-                    <div className={styles.productPreviewHeaderRow}>
-                      <div className={styles.productPreviewRatings}>
-                        <span className={styles.productPreviewStars}>★★★★★</span>
-                        <span className={styles.productPreviewRatingScore}>4.9</span>
-                        <span className={styles.productPreviewRatingMeta}>· 42 reviews</span>
-                      </div>
+                    <div
+                      className={`${styles.productPreviewHeaderRow} ${styles.productPreviewHeaderRowEnd}`}
+                    >
                       <span
                         className={`${styles.productPreviewStockBadge} ${
                           selectedProduct.status === 'active'
@@ -562,7 +658,7 @@ export default function ProductsContent({ initialKind = 'all' }) {
                             : styles.productPreviewStockInactive
                         }`}
                       >
-                        {selectedProduct.status === 'active' ? 'In stock' : 'Inactive'}
+                        {selectedProduct.status === 'active' ? 'Active' : 'Inactive'}
                       </span>
                     </div>
 
@@ -572,11 +668,11 @@ export default function ProductsContent({ initialKind = 'all' }) {
                       </span>
                     </div>
 
-                    <p className={styles.productPreviewShortDesc}>
-                      {selectedProduct.longDescription ||
-                        selectedProduct.description ||
-                        'A thoughtfully curated memorial service that honors your loved one with grace, dignity, and compassion — guiding your family through every step of the process.'}
-                    </p>
+                    {(selectedProduct.longDescription || selectedProduct.description)?.trim() ? (
+                      <p className={styles.productPreviewShortDesc}>
+                        {selectedProduct.longDescription || selectedProduct.description}
+                      </p>
+                    ) : null}
 
                     <hr className={styles.productPreviewDivider} />
 
@@ -584,26 +680,25 @@ export default function ProductsContent({ initialKind = 'all' }) {
                       <div className={styles.productPreviewMetaItem}>
                         <span className={styles.productPreviewMetaLabel}>Type</span>
                         <span className={styles.productPreviewMetaValue}>
-                          {selectedProduct.type ||
-                            (selectedProduct.kind === 'service' ? 'Funeral Service' : 'Package')}
+                          {selectedProduct.listingKindLabel || VIEW_MODAL_EMPTY}
                         </span>
                       </div>
                       <div className={styles.productPreviewMetaItem}>
                         <span className={styles.productPreviewMetaLabel}>Category</span>
                         <span className={styles.productPreviewMetaValue}>
-                          {selectedProduct.detailCategory || selectedProduct.category}
+                          {viewModalCategoryLine(selectedProduct)}
                         </span>
                       </div>
                       <div className={styles.productPreviewMetaItem}>
                         <span className={styles.productPreviewMetaLabel}>Duration</span>
                         <span className={styles.productPreviewMetaValue}>
-                          {selectedProduct.duration || '3–5 Days'}
+                          {viewModalDurationText(selectedProduct)}
                         </span>
                       </div>
                       <div className={styles.productPreviewMetaItem}>
                         <span className={styles.productPreviewMetaLabel}>Coverage</span>
                         <span className={styles.productPreviewMetaValue}>
-                          {selectedProduct.coverage || 'Metro Manila'}
+                          {viewModalCoverageText(selectedProduct)}
                         </span>
                       </div>
                     </div>
@@ -619,19 +714,19 @@ export default function ProductsContent({ initialKind = 'all' }) {
                       </div>
                     ) : null}
 
-                    {selectedProduct.whoThisIsFor?.trim() ? (
+                    {coerceDisplayString(selectedProduct.whoThisIsFor) ? (
                       <div className={styles.productPreviewInclusions}>
                         <h3 className={styles.productModalSectionTitle}>Who this is for</h3>
-                        <p className={styles.productModalSubtitle} style={{ whiteSpace: 'pre-wrap' }}>
+                        <p className={styles.productModalText} style={{ whiteSpace: 'pre-wrap' }}>
                           {selectedProduct.whoThisIsFor}
                         </p>
                       </div>
                     ) : null}
 
-                    {selectedProduct.importantNotes?.trim() ? (
+                    {coerceDisplayString(selectedProduct.importantNotes) ? (
                       <div className={styles.productPreviewInclusions}>
                         <h3 className={styles.productModalSectionTitle}>Important notes</h3>
-                        <p className={styles.productModalSubtitle} style={{ whiteSpace: 'pre-wrap' }}>
+                        <p className={styles.productModalText} style={{ whiteSpace: 'pre-wrap' }}>
                           {selectedProduct.importantNotes}
                         </p>
                       </div>
@@ -679,35 +774,54 @@ export default function ProductsContent({ initialKind = 'all' }) {
 
       {productPendingRemoval && (
         <div
-          className={styles.productModalOverlay}
+          className={styles.removeConfirmOverlay}
           onClick={(e) => {
+            if (removeInProgress) return
             if (e.target === e.currentTarget) handleCancelRemove()
           }}
           role="dialog"
           aria-modal="true"
+          aria-labelledby="remove-listing-confirm-title"
+          aria-describedby="remove-listing-confirm-desc"
         >
           <div className={styles.removeConfirmCard} onClick={(e) => e.stopPropagation()}>
-            <h2 className={styles.removeConfirmTitle}>Remove listing?</h2>
-            <p className={styles.removeConfirmText}>
-              This will hide{' '}
-              <span className={styles.removeConfirmName}>{productPendingRemoval.name}</span> from your
-              products. You can add it again later if needed.
-            </p>
-            <div className={styles.removeConfirmActions}>
-              <button
-                type="button"
-                className={styles.removeConfirmCancel}
-                onClick={handleCancelRemove}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className={styles.removeConfirmDelete}
-                onClick={handleConfirmRemove}
-              >
-                Remove
-              </button>
+            <div className={styles.removeConfirmCardBody}>
+              <div className={styles.removeConfirmHeader}>
+                <div className={styles.removeConfirmIconBadge} aria-hidden>
+                  <TbTrash size={16} strokeWidth={1.65} />
+                </div>
+                <h2 id="remove-listing-confirm-title" className={styles.removeConfirmTitle}>
+                  Remove listing?
+                </h2>
+              </div>
+              <p id="remove-listing-confirm-desc" className={styles.removeConfirmText}>
+                This listing will be removed from your products. You can add it again later if needed.
+              </p>
+              {removeError ? (
+                <p className={styles.removeConfirmError} role="alert">
+                  {removeError}
+                </p>
+              ) : null}
+            </div>
+            <div className={styles.removeConfirmFooter}>
+              <div className={styles.removeConfirmActions}>
+                <button
+                  type="button"
+                  className={styles.removeConfirmCancel}
+                  onClick={handleCancelRemove}
+                  disabled={removeInProgress}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className={styles.removeConfirmDelete}
+                  onClick={handleConfirmRemove}
+                  disabled={removeInProgress}
+                >
+                  {removeInProgress ? 'Removing…' : 'Yes, remove'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -715,3 +829,4 @@ export default function ProductsContent({ initialKind = 'all' }) {
     </div>
   )
 }
+
