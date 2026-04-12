@@ -20,58 +20,31 @@ const Icon = {
   ),
 }
 
-function getInitials(name = '') {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((n) => n[0].toUpperCase())
-    .join('')
-}
-
-const AVATAR_COLORS = [
-  { bg: '#e2e8f0', text: '#334155' },
-  { bg: '#e0e7ff', text: '#3730a3' },
-  { bg: '#fce7f3', text: '#9d174d' },
-  { bg: '#dcfce7', text: '#166534' },
-  { bg: '#fef9c3', text: '#854d0e' },
-  { bg: '#fee2e2', text: '#991b1b' },
-  { bg: '#f3e8ff', text: '#6b21a8' },
-  { bg: '#ffedd5', text: '#9a3412' },
-]
-
-function avatarColor(name = '') {
-  let hash = 0
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + hash * 31
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
+function normalizeAvatarUrl(url) {
+  if (url == null || typeof url !== 'string') return null
+  const t = url.trim()
+  return t.length ? t : null
 }
 
 function Avatar({ name, src }) {
   const [imgError, setImgError] = useState(false)
+  const label = name || 'Buyer'
+  const url = normalizeAvatarUrl(src)
+  const showImg = url && !imgError
 
-  if (src && !imgError) {
+  if (showImg) {
     return (
       <img
-        src={src}
-        alt={name}
+        src={url}
+        alt=""
         className={styles.avatar}
         onError={() => setImgError(true)}
       />
     )
   }
 
-  if (name) {
-    const initials = getInitials(name)
-    const { bg, text } = avatarColor(name)
-    return (
-      <div className={styles.avatar} style={{ background: bg, color: text }}>
-        {initials}
-      </div>
-    )
-  }
-
   return (
-    <div className={`${styles.avatar} ${styles.avatarDefault}`}>
+    <div className={`${styles.avatar} ${styles.avatarDefault}`} title={label} aria-hidden>
       <svg viewBox="0 0 24 24" fill="none" className={styles.avatarIcon}>
         <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.5" />
         <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -132,7 +105,7 @@ export default function AdminBuyersPage() {
           role: row.role || 'buyer',
           joinedAt,
           status: 'active',
-          avatarUrl: profile?.avatar_url || null,
+          avatarUrl: normalizeAvatarUrl(profile?.avatar_url),
         }
       })
 

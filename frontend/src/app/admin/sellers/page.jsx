@@ -25,46 +25,28 @@ const Icon = {
   ),
 };
 
-function getInitials(name = '') {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((n) => n[0].toUpperCase())
-    .join('');
-}
+function SellerAvatar({ name, src }) {
+  const [imgError, setImgError] = useState(false);
+  const label = name || 'Seller';
+  const showImg = typeof src === 'string' && src.trim().length > 0 && !imgError;
 
-const AVATAR_COLORS = [
-  { bg: '#e0e7ff', text: '#3730a3' },
-  { bg: '#dcfce7', text: '#166534' },
-  { bg: '#fce7f3', text: '#9d174d' },
-  { bg: '#fef9c3', text: '#854d0e' },
-  { bg: '#fee2e2', text: '#991b1b' },
-  { bg: '#f3e8ff', text: '#6b21a8' },
-  { bg: '#ffedd5', text: '#9a3412' },
-  { bg: '#e2e8f0', text: '#334155' },
-];
+  if (showImg) {
+    return (
+      <img
+        src={src.trim()}
+        alt=""
+        className={styles.avatar}
+        onError={() => setImgError(true)}
+      />
+    );
+  }
 
-function avatarColor(name = '') {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + hash * 31;
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
-
-function SellerAvatar({ name }) {
-  if (!name) return (
-    <div className={`${styles.avatar} ${styles.avatarDefault}`}>
-      <svg viewBox="0 0 24 24" fill="none" className={styles.avatarIcon}>
-        <rect x="3" y="6" width="18" height="13" rx="2" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M8 6V5a4 4 0 018 0v1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      </svg>
-    </div>
-  );
-  const initials = getInitials(name);
-  const { bg, text } = avatarColor(name);
   return (
-    <div className={styles.avatar} style={{ background: bg, color: text }}>
-      {initials}
+    <div className={`${styles.avatar} ${styles.avatarDefault}`} title={label} aria-hidden>
+      <svg viewBox="0 0 24 24" fill="none" className={styles.avatarIcon}>
+        <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
     </div>
   );
 }
@@ -240,7 +222,7 @@ function SellerDetailModal({ seller, onClose }) {
         {/* Header */}
         <div className={styles.detailModalHeader}>
           <div className={styles.detailModalHeaderInner}>
-            <SellerAvatar name={seller.business_name} />
+            <SellerAvatar name={seller.business_name} src={seller.avatarUrl} />
             <div>
               <h2 id="seller-detail-title" className={styles.detailModalTitle}>
                 {seller.business_name || 'Seller details'}
@@ -487,7 +469,7 @@ export default function AdminSellersPage() {
 
                       <td>
                         <div className={styles.sellerCell}>
-                          <SellerAvatar name={seller.business_name} />
+                          <SellerAvatar name={seller.business_name} src={seller.avatarUrl} />
                           <div className={styles.sellerText}>
                             <p className={styles.sellerName}>{seller.business_name}</p>
                           </div>
