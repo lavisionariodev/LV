@@ -149,3 +149,85 @@ export function getEffectiveCommissionForSeller(sellerId) {
     ruleId: override ? override.id : commission.defaultRule.id,
   }
 }
+
+// --- Admin Payouts page (/admin/payouts) — mock listings + generator ---
+// Distinct from `commission` above (dashboard/settings model).
+
+export const PAYOUTS_PAGE_SELLERS = [
+  { id: 's1', name: 'Heaven Memorial Services', email: 'admin@heavenmemorial.ph', phone: '09171234567' },
+  { id: 's2', name: 'Grace Funeral Services', email: 'accounts@gracefuneral.ph', phone: '09281234567' },
+  { id: 's3', name: 'Eternal Rest Chapel', email: 'billing@eternalrest.ph', phone: '09391234567' },
+  { id: 's4', name: 'Serenity Funeral Home', email: 'finance@serenityfh.ph', phone: '09501234567' },
+]
+
+export const PAYOUTS_PAGE_BUYERS = [
+  { id: 'b1', name: 'Maria Santos', email: 'maria.santos@gmail.com', phone: '09171112222' },
+  { id: 'b2', name: 'Jose Reyes', email: 'jose.reyes@yahoo.com', phone: '09282223333' },
+  { id: 'b3', name: 'Ana Cruz', email: 'ana.cruz@outlook.com', phone: '09393334444' },
+  { id: 'b4', name: 'Pedro Dela Cruz', email: 'pedro.dc@gmail.com', phone: '09504445555' },
+  { id: 'b5', name: 'Lina Gomez', email: 'lina.gomez@gmail.com', phone: '09165556666' },
+  { id: 'b6', name: 'Ricardo Lim', email: 'r.lim@business.com', phone: '09276667777' },
+]
+
+export const PAYOUTS_PAGE_SERVICES = [
+  'Complete Funeral Package – Gold',
+  'Basic Cremation Package',
+  'Traditional Burial – Standard',
+  'Memorial Service Package',
+  'Embalming & Viewing Package',
+  'Premium Chapel Service',
+  'Eco-Friendly Green Burial',
+  'Full Service Cremation – Premium',
+]
+
+export const PAYOUTS_PAGE_PAYMENT_METHODS = ['GCash', 'Maya', 'Bank Transfer', 'Credit Card', 'Cash']
+
+export function generatePayoutsPageSampleTransactions() {
+  const txns = []
+  const now = new Date()
+  for (let i = 0; i < 32; i++) {
+    const seller = PAYOUTS_PAGE_SELLERS[i % PAYOUTS_PAGE_SELLERS.length]
+    const buyer = PAYOUTS_PAGE_BUYERS[i % PAYOUTS_PAGE_BUYERS.length]
+    const amount = [15000, 22500, 35000, 48000, 12000, 28000, 55000, 18500][i % 8]
+    const paymentStatuses = ['paid', 'paid', 'paid', 'pending', 'refunded']
+    const payoutStatuses = ['pending', 'processing', 'paid', 'on_hold', 'refunded']
+    const paymentStatus = paymentStatuses[i % paymentStatuses.length]
+    const payoutStatus = payoutStatuses[i % payoutStatuses.length]
+    const daysAgo = i * 3
+    const date = new Date(now)
+    date.setDate(date.getDate() - daysAgo)
+
+    txns.push({
+      id: `TXN-${String(10000 + i).padStart(5, '0')}`,
+      orderId: `ORD-${String(20000 + i).padStart(5, '0')}`,
+      sellerId: seller.id,
+      sellerName: seller.name,
+      sellerEmail: seller.email,
+      sellerPhone: seller.phone,
+      buyerId: buyer.id,
+      buyerName: buyer.name,
+      buyerEmail: buyer.email,
+      buyerPhone: buyer.phone,
+      service: PAYOUTS_PAGE_SERVICES[i % PAYOUTS_PAGE_SERVICES.length],
+      amount,
+      paymentMethod: PAYOUTS_PAGE_PAYMENT_METHODS[i % PAYOUTS_PAGE_PAYMENT_METHODS.length],
+      paymentStatus,
+      payoutStatus,
+      payoutReference: payoutStatus === 'paid' ? `REF-${String(30000 + i).padStart(6, '0')}` : '',
+      payoutDate: payoutStatus === 'paid' ? date.toISOString().split('T')[0] : '',
+      date: date.toISOString().split('T')[0],
+      dateObj: date,
+    })
+  }
+  return txns
+}
+
+export const PAYOUTS_PAGE_INITIAL_TRANSACTIONS = generatePayoutsPageSampleTransactions()
+
+export const PAYOUTS_PAGE_INITIAL_COMMISSION_SETTINGS = {
+  global: 10,
+  sellers: {
+    s1: 12,
+    s2: 8,
+  },
+}

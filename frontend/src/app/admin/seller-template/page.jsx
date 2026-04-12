@@ -352,7 +352,7 @@ export default function AdminSellerTemplatePage() {
 
   return (
     <div className={`${layoutStyles.dashWrap} ${styles.pageBleed} ${styles.templatePage}`}>
-      <section className={layoutStyles.panel}>
+      <section className={styles.pageSurface}>
 
         {/* ── Page header ── */}
         <div className={`${layoutStyles.panelHead} ${styles.pageHeader}`}>
