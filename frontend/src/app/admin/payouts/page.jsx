@@ -14,6 +14,8 @@ import {
   calcAmounts,
 } from '@/utils/adminPayouts'
 
+import { Dropdown } from '@/components/ui'
+
 import styles from './payouts.module.css'
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
@@ -33,61 +35,6 @@ const Icon = {
 }
 
 // ─── Sub-Components ──────────────────────────────────────────────────────────
-
-// ── Custom Dropdown ──────────────────────────────────────────────────────────
-function CustomDropdown({ value, onChange, options, placeholder, ariaLabel }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef(null)
-
-  useEffect(() => {
-    function handleClick(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [])
-
-  const selected = options.find(o => o.value === value)
-
-  return (
-    <div className={styles.customDropdown} ref={ref} aria-label={ariaLabel}>
-      <button
-        type="button"
-        className={`${styles.customDropdownTrigger} ${open ? styles.customDropdownTriggerOpen : ''}`}
-        onClick={() => setOpen(o => !o)}
-      >
-        <span className={styles.customDropdownLabel}>
-          {selected ? selected.label : placeholder}
-        </span>
-        <svg className={`${styles.customDropdownChevron} ${open ? styles.customDropdownChevronOpen : ''}`} viewBox="0 0 24 24" fill="none">
-          <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      </button>
-      {open && (
-        <div className={styles.customDropdownMenu}>
-          {options.map(opt => (
-            <button
-              key={opt.value}
-              type="button"
-              className={`${styles.customDropdownItem} ${value === opt.value ? styles.customDropdownItemActive : ''}`}
-              onClick={() => { onChange(opt.value); setOpen(false) }}
-            >
-              {opt.color && (
-                <span className={`${styles.customDropdownDot} ${styles[`dropDot_${opt.color}`]}`} />
-              )}
-              {opt.label}
-              {value === opt.value && (
-                <svg className={styles.customDropdownCheck} viewBox="0 0 24 24" fill="none">
-                  <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
 
 // ── Date Range Picker ────────────────────────────────────────────────────────
 function DateRangePicker({ from, to, onChange }) {
@@ -1184,7 +1131,7 @@ export default function AdminPayoutsPage() {
                   onChange={(from, to) => { setFilterDateFrom(from); setFilterDateTo(to) }}
                 />
 
-                <CustomDropdown
+                <Dropdown
                   value={filterPayout}
                   onChange={setFilterPayout}
                   ariaLabel="Payout status"
@@ -1195,7 +1142,7 @@ export default function AdminPayoutsPage() {
                   placeholder="All statuses"
                 />
 
-                <CustomDropdown
+                <Dropdown
                   value={filterSeller}
                   onChange={setFilterSeller}
                   ariaLabel="Seller"
@@ -1232,7 +1179,7 @@ export default function AdminPayoutsPage() {
               <div className={styles.filterBarExtra}>
                 <div className={styles.filterFieldInline}>
                   <span className={styles.filterFieldInlineLabel}>Payment</span>
-                  <CustomDropdown
+                  <Dropdown
                     value={filterPayment}
                     onChange={setFilterPayment}
                     ariaLabel="Payment status"

@@ -1,17 +1,28 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { FiRotateCcw } from 'react-icons/fi';
 import styles from './sellers.module.css';
 import { getEffectiveCommissionForSeller } from '@/data/adminSampleData';
 import { listSellersForAdmin, updateSellerStatus } from '@/lib/sellers/client';
 import { useToast } from '@/contexts/ToastContext';
+import { Dropdown } from '@/components/ui';
 
-const STATUS_OPTIONS = [
-  { value: 'all',       label: 'All'       },
-  { value: 'active',    label: 'Active'    },
-  { value: 'pending',   label: 'Pending'   },
-  { value: 'suspended', label: 'Suspended' },
+const STATUS_FILTER_OPTIONS = [
+  { value: 'all', label: 'All statuses', color: 'slate' },
+  { value: 'active', label: 'Active', color: 'green' },
+  { value: 'pending', label: 'Pending', color: 'amber' },
+  { value: 'suspended', label: 'Suspended', color: 'red' },
 ];
+
+const Icon = {
+  Search: () => (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+      <path d="M18 18l3.5 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  ),
+};
 
 function getInitials(name = '') {
   return name
@@ -82,6 +93,7 @@ export default function AdminSellersPage() {
   const [updatingId, setUpdatingId] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [selectedRows, setSelectedRows] = useState(() => new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -116,6 +128,13 @@ export default function AdminSellersPage() {
       });
   }, [sellers, statusFilter, search]);
 
+  const hasFilters = Boolean(search.trim()) || statusFilter !== 'all';
+
+  const clearFilters = () => {
+    setSearch('');
+    setStatusFilter('all');
+  };
+
   const handleStatusChange = async (sellerId, nextStatus) => {
     setUpdatingId(sellerId);
     try {
@@ -144,67 +163,91 @@ export default function AdminSellersPage() {
     <div className={styles.pageRoot}>
       <section className={styles.tablePanel}>
 
-        {/* ── Header ── */}
-        <div className={styles.tablePanelHead}>
-          <div className={styles.filterGroup}>
-            {STATUS_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                className={`${styles.filterBtn} ${statusFilter === opt.value ? styles.filterBtnActive : ''}`}
-                onClick={() => setStatusFilter(opt.value)}
-              >
-                {opt.label}
-                {opt.value !== 'all' && (
-                  <span className={styles.filterCount}>
-                    {sellers.filter((s) => s.status === opt.value).length}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
+        <div className={styles.toolbar}>
+          <div className={styles.toolbarRow}>
+            <div className={styles.toolbarControls}>
+              <div className={styles.toolbarSearchWrap}>
+                <Icon.Search />
+                <input
+                  className={styles.toolbarSearchInput}
+                  type="search"
+                  placeholder="Search by name or email…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  autoComplete="off"
+                />
+              </div>
 
-          <div className={styles.searchWrap}>
-            <svg className={styles.searchIcon} viewBox="0 0 20 20" fill="none">
-              <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.5" />
-              <path d="M15 15l-3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-            <input
-              type="search"
-              placeholder="Search by name or email…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className={styles.searchInput}
-            />
-            {search && (
-              <button
-                type="button"
-                className={styles.searchClear}
-                onClick={() => setSearch('')}
-                aria-label="Clear search"
-              >✕</button>
-            )}
+              <Dropdown
+                value={statusFilter}
+                onChange={setStatusFilter}
+                ariaLabel="Seller status"
+                options={STATUS_FILTER_OPTIONS}
+                placeholder="All statuses"
+              />
+            </div>
+
+            <button
+              type="button"
+              className={styles.toolbarClearAll}
+              onClick={clearFilters}
+              disabled={!hasFilters}
+            >
+              <FiRotateCcw className={styles.toolbarClearIcon} aria-hidden />
+              Clear All
+            </button>
           </div>
         </div>
 
-        {/* ── Table ── */}
         <div className={styles.tableWrap}>
           {loading ? (
             <div className={styles.loadingState}>
               <div className={styles.spinner} />
               <p>Loading sellers…</p>
             </div>
-          ) : (
+          ) : filtered.length === 0 ? null : (
             <table className={styles.table}>
+              <colgroup>
+                <col className={styles.colCheck} />
+                <col className={styles.colSeller} />
+                <col className={styles.colContact} />
+                <col className={styles.colBusiness} />
+                <col className={styles.colListings} />
+                <col className={styles.colCommission} />
+                <col className={styles.colStatus} />
+                <col className={styles.colActions} />
+              </colgroup>
               <thead>
                 <tr>
-                  <th className={styles.th}>Seller</th>
-                  <th className={styles.th}>Contact</th>
-                  <th className={styles.th}>Business Details</th>
-                  <th className={styles.th}>Listings</th>
-                  <th className={styles.th}>Commission</th>
-                  <th className={styles.th}>Status</th>
-                  <th className={styles.th}>Actions</th>
+                  <th className={styles.checkboxCell}>
+                    <input
+                      type="checkbox"
+                      className={styles.rowCheckbox}
+                      checked={
+                        filtered.length > 0 &&
+                        filtered.every((s) => selectedRows.has(s.user_id || s.id))
+                      }
+                      onChange={(e) => {
+                        setSelectedRows((prev) => {
+                          const next = new Set(prev);
+                          if (e.target.checked) {
+                            filtered.forEach((s) => next.add(s.user_id || s.id));
+                          } else {
+                            filtered.forEach((s) => next.delete(s.user_id || s.id));
+                          }
+                          return next;
+                        });
+                      }}
+                      aria-label="Select all sellers in view"
+                    />
+                  </th>
+                  <th>Seller</th>
+                  <th>Contact</th>
+                  <th>Business Details</th>
+                  <th>Listings</th>
+                  <th>Commission</th>
+                  <th>Status</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -215,15 +258,30 @@ export default function AdminSellersPage() {
                   const isUpdating = updatingId === sellerId;
 
                   return (
-                    <tr key={sellerId} className={styles.tr}>
+                    <tr key={sellerId} className={styles.primaryRow}>
+                      <td className={styles.checkboxCell}>
+                        <input
+                          type="checkbox"
+                          className={styles.rowCheckbox}
+                          checked={selectedRows.has(sellerId)}
+                          onChange={(e) => {
+                            setSelectedRows((prev) => {
+                              const next = new Set(prev);
+                              if (e.target.checked) next.add(sellerId);
+                              else next.delete(sellerId);
+                              return next;
+                            });
+                          }}
+                          aria-label={`Select ${seller.business_name || 'seller'}`}
+                        />
+                      </td>
 
-                      {/* Seller */}
-                      <td className={styles.td}>
+                      <td>
                         <div className={styles.sellerCell}>
                           <SellerAvatar name={seller.business_name} />
-                          <div>
+                          <div className={styles.sellerText}>
                             <p className={styles.sellerName}>{seller.business_name}</p>
-                            <p className={styles.sellerId}>
+                            <p className={styles.sellerId} title={`ID: ${seller.id}`}>
                               ID: {seller.id}
                               {seller.registered_at && (
                                 <> · Since {seller.registered_at}</>
@@ -233,8 +291,7 @@ export default function AdminSellersPage() {
                         </div>
                       </td>
 
-                      {/* Contact */}
-                      <td className={styles.td}>
+                      <td>
                         <p className={styles.contactName}>{seller.contact_name}</p>
                         <p className={styles.meta}>{seller.email}</p>
                         {seller.phone && (
@@ -242,20 +299,19 @@ export default function AdminSellersPage() {
                         )}
                       </td>
 
-                      {/* Business Details */}
-                      <td className={styles.td}>
+                      <td>
                         <div className={styles.businessDetails}>
                           {seller.business_info && (
                             <p className={styles.businessInfo}>
-                              <strong>Info:</strong> {seller.business_info.length > 100 
-                                ? `${seller.business_info.substring(0, 100)}...` 
+                              <strong>Info:</strong> {seller.business_info.length > 100
+                                ? `${seller.business_info.substring(0, 100)}...`
                                 : seller.business_info}
                             </p>
                           )}
                           {seller.address && (
                             <p className={styles.businessAddress}>
-                              <strong>Address:</strong> {seller.address.length > 80 
-                                ? `${seller.address.substring(0, 80)}...` 
+                              <strong>Address:</strong> {seller.address.length > 80
+                                ? `${seller.address.substring(0, 80)}...`
                                 : seller.address}
                             </p>
                           )}
@@ -265,16 +321,14 @@ export default function AdminSellersPage() {
                         </div>
                       </td>
 
-                      {/* Listings */}
-                      <td className={styles.td}>
+                      <td>
                         <p className={styles.listingCount}>
                           {seller.listing_count ?? '—'}
                         </p>
                         <p className={styles.meta}>listings</p>
                       </td>
 
-                      {/* Commission */}
-                      <td className={styles.td}>
+                      <td>
                         <CommissionBadge percentage={commissionInfo.percentage} isOverride={isOverride} />
                         {isOverride && (
                           <p className={`${styles.meta} ${styles.ruleId}`}>
@@ -283,13 +337,11 @@ export default function AdminSellersPage() {
                         )}
                       </td>
 
-                      {/* Status */}
-                      <td className={styles.td}>
+                      <td>
                         <StatusBadge status={seller.status} />
                       </td>
 
-                      {/* Actions */}
-                      <td className={styles.td}>
+                      <td>
                         <div className={styles.actions}>
                           {seller.status === 'pending' && (
                             <button
@@ -369,7 +421,7 @@ export default function AdminSellersPage() {
               <button
                 type="button"
                 className={styles.clearBtn}
-                onClick={() => { setSearch(''); setStatusFilter('all'); }}
+                onClick={() => { clearFilters(); }}
               >
                 Clear filters
               </button>
@@ -377,7 +429,6 @@ export default function AdminSellersPage() {
           )}
         </div>
 
-        {/* ── Footer ── */}
         {!loading && (
           <div className={styles.tableFooter}>
             Showing <strong>{filtered.length}</strong> of <strong>{sellers.length}</strong> sellers

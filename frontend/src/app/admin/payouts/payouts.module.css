@@ -2359,137 +2359,6 @@
   transform: translate(-50%, -50%);
 }
 
-/* ── Custom Dropdown ──────────────────────────────────────────────────────── */
-
-.customDropdown {
-  position: relative;
-  flex-shrink: 0;
-}
-
-.customDropdownTrigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 40px;
-  padding: 0 10px 0 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: #fff;
-  font-size: 13px;
-  font-weight: 500;
-  color: #374151;
-  cursor: pointer;
-  white-space: nowrap;
-  min-width: 120px;
-  max-width: 190px;
-  transition: border-color 0.15s, box-shadow 0.15s;
-  font-family: inherit;
-}
-
-.customDropdownTrigger:hover {
-  border-color: #cbd5e1;
-}
-
-.customDropdownTriggerOpen {
-  border-color: #102820;
-  box-shadow: 0 0 0 2px rgba(16, 40, 32, 0.08);
-}
-
-.customDropdownLabel {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-align: left;
-}
-
-.customDropdownChevron {
-  width: 14px;
-  height: 14px;
-  color: #94a3b8;
-  flex-shrink: 0;
-  transition: transform 0.18s ease;
-}
-
-.customDropdownChevronOpen {
-  transform: rotate(180deg);
-}
-
-.customDropdownMenu {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  min-width: 100%;
-  max-width: 240px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10), 0 2px 6px rgba(0, 0, 0, 0.06);
-  z-index: 100;
-  overflow: hidden;
-  padding: 4px;
-  animation: dropdownFadeIn 0.12s ease;
-}
-
-@keyframes dropdownFadeIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.customDropdownItem {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 10px;
-  border: none;
-  background: none;
-  font-size: 13px;
-  font-weight: 500;
-  color: #374151;
-  cursor: pointer;
-  border-radius: 7px;
-  text-align: left;
-  font-family: inherit;
-  transition: background 0.1s;
-  white-space: nowrap;
-}
-
-.customDropdownItem:hover {
-  background: #f1f5f9;
-  color: #0f172a;
-}
-
-.customDropdownItemActive {
-  background: #f9fefb;
-  color: #102820;
-  font-weight: 600;
-}
-
-.customDropdownItemActive:hover {
-  background: #f0fdf4;
-}
-
-.customDropdownDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.dropDot_green  { background: #22c55e; }
-.dropDot_amber  { background: #f59e0b; }
-.dropDot_red    { background: #ef4444; }
-.dropDot_blue   { background: #3b82f6; }
-.dropDot_slate  { background: #94a3b8; }
-
-.customDropdownCheck {
-  width: 14px;
-  height: 14px;
-  color: #102820;
-  margin-left: auto;
-  flex-shrink: 0;
-}
-
 /* ── Date Range Picker ────────────────────────────────────────────────────── */
 
 .drpWrap {
@@ -2575,6 +2444,17 @@
 
 .drpChevronOpen {
   transform: rotate(180deg);
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .drpCalendar {

@@ -1,8 +1,24 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { FiRotateCcw } from 'react-icons/fi'
 import styles from './users.module.css'
 import { supabase } from '@/lib/supabase/client'
+import { Dropdown } from '@/components/ui'
+
+const STATUS_FILTER_OPTIONS = [
+  { value: 'all', label: 'All statuses', color: 'slate' },
+  { value: 'active', label: 'Active', color: 'green' },
+]
+
+const Icon = {
+  Search: () => (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+      <path d="M18 18l3.5 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  ),
+}
 
 function getInitials(name = '') {
   return name
@@ -66,9 +82,11 @@ function Avatar({ name, src }) {
 
 export default function AdminUsersPage() {
   const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
   const [users, setUsers] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [selectedRows, setSelectedRows] = useState(() => new Set())
 
   useEffect(() => {
     let isMounted = true
@@ -131,6 +149,7 @@ export default function AdminUsersPage() {
 
   const filtered = useMemo(() => {
     return users.filter((user) => {
+      if (statusFilter !== 'all' && user.status !== statusFilter) return false
       if (!search.trim()) return true
       const q = search.trim().toLowerCase()
       return (
@@ -139,96 +158,168 @@ export default function AdminUsersPage() {
         user.id.toLowerCase().includes(q)
       )
     })
-  }, [users, search])
+  }, [users, search, statusFilter])
+
+  const hasFilters = Boolean(search.trim()) || statusFilter !== 'all'
+
+  const clearFilters = () => {
+    setSearch('')
+    setStatusFilter('all')
+  }
 
   return (
     <div className={styles.pageRoot}>
       <section className={styles.tablePanel}>
-        <div className={styles.tablePanelHead}>
-          <div className={styles.searchWrap}>
-            <svg className={styles.searchIcon} viewBox="0 0 20 20" fill="none">
-              <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.5" />
-              <path d="M15 15l-3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-            <input
-              type="search"
-              placeholder="Search name, email, or ID…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className={styles.searchInput}
-            />
-            {search && (
-              <button
-                type="button"
-                className={styles.searchClear}
-                onClick={() => setSearch('')}
-                aria-label="Clear search"
-              >
-                ✕
-              </button>
-            )}
+        <div className={styles.toolbar}>
+          <div className={styles.toolbarRow}>
+            <div className={styles.toolbarControls}>
+              <div className={styles.toolbarSearchWrap}>
+                <Icon.Search />
+                <input
+                  className={styles.toolbarSearchInput}
+                  type="search"
+                  placeholder="Search name, email, or ID…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  autoComplete="off"
+                />
+              </div>
+
+              <Dropdown
+                value={statusFilter}
+                onChange={setStatusFilter}
+                ariaLabel="Account status"
+                options={STATUS_FILTER_OPTIONS}
+                placeholder="All statuses"
+              />
+            </div>
+
+            <button
+              type="button"
+              className={styles.toolbarClearAll}
+              onClick={clearFilters}
+              disabled={!hasFilters}
+            >
+              <FiRotateCcw className={styles.toolbarClearIcon} aria-hidden />
+              Clear All
+            </button>
           </div>
         </div>
 
         <div className={styles.tableWrap}>
           {isLoading && (
-            <p className={styles.meta} style={{ padding: '12px 14px' }}>
-              Loading users…
-            </p>
+            <div className={styles.loadingState}>
+              <div className={styles.spinner} />
+              <p>Loading users…</p>
+            </div>
           )}
+
           {error && !isLoading && (
-            <p className={styles.meta} style={{ padding: '12px 14px' }}>
+            <p className={styles.loadError}>
               Could not load users from Supabase. Check RLS policies for `users` / `profiles`.
             </p>
           )}
 
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th className={styles.th}>User</th>
-                <th className={styles.th}>Email</th>
-                <th className={styles.th}>Joined</th>
-                <th className={styles.th}>Role</th>
-                <th className={styles.th}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((user) => (
-                <tr key={user.id} className={styles.tr}>
-                  <td className={styles.td}>
-                    <div className={styles.userCell}>
-                      <Avatar name={user.name} src={user.avatarUrl} />
-                      <div>
-                        <p className={styles.userName}>{user.name}</p>
-                        <p className={styles.userId}>{user.id}</p>
-                      </div>
-                    </div>
-                  </td>
-
-                  <td className={styles.td}>
-                    <span className={styles.email}>{user.email}</span>
-                  </td>
-
-                  <td className={styles.td}>
-                    <span className={styles.meta}>{user.joinedAt}</span>
-                  </td>
-
-                  <td className={styles.td}>
-                    <span className={styles.badge}>{user.role}</span>
-                  </td>
-
-                  <td className={styles.td}>
-                    <span className={`${styles.statusBadge} ${styles[`status_${user.status}`]}`}>
-                      <span className={styles.statusDot} />
-                      {user.status}
-                    </span>
-                  </td>
+          {!isLoading && !error && filtered.length > 0 && (
+            <table className={styles.table}>
+              <colgroup>
+                <col className={styles.colCheck} />
+                <col className={styles.colUser} />
+                <col className={styles.colEmail} />
+                <col className={styles.colJoined} />
+                <col className={styles.colRole} />
+                <col className={styles.colStatus} />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th className={styles.checkboxCell}>
+                    <input
+                      type="checkbox"
+                      className={styles.rowCheckbox}
+                      checked={
+                        filtered.length > 0 &&
+                        filtered.every((u) => selectedRows.has(u.id))
+                      }
+                      onChange={(e) => {
+                        setSelectedRows((prev) => {
+                          const next = new Set(prev)
+                          if (e.target.checked) {
+                            filtered.forEach((u) => next.add(u.id))
+                          } else {
+                            filtered.forEach((u) => next.delete(u.id))
+                          }
+                          return next
+                        })
+                      }}
+                      aria-label="Select all users in view"
+                    />
+                  </th>
+                  <th>User</th>
+                  <th>Email</th>
+                  <th>Joined</th>
+                  <th>Role</th>
+                  <th>Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.map((user) => (
+                  <tr key={user.id} className={styles.primaryRow}>
+                    <td className={styles.checkboxCell}>
+                      <input
+                        type="checkbox"
+                        className={styles.rowCheckbox}
+                        checked={selectedRows.has(user.id)}
+                        onChange={(e) => {
+                          setSelectedRows((prev) => {
+                            const next = new Set(prev)
+                            if (e.target.checked) next.add(user.id)
+                            else next.delete(user.id)
+                            return next
+                          })
+                        }}
+                        aria-label={`Select ${user.name}`}
+                      />
+                    </td>
 
-          {!isLoading && filtered.length === 0 && (
+                    <td>
+                      <div className={styles.userCell}>
+                        <Avatar name={user.name} src={user.avatarUrl} />
+                        <div className={styles.userText}>
+                          <p className={styles.userName}>{user.name}</p>
+                          <p className={styles.userId} title={user.id}>
+                            {user.id}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td>
+                      <span className={styles.email} title={user.email}>
+                        {user.email}
+                      </span>
+                    </td>
+
+                    <td>
+                      <span className={styles.meta}>{user.joinedAt}</span>
+                    </td>
+
+                    <td>
+                      <span className={styles.badge}>{user.role}</span>
+                    </td>
+
+                    <td>
+                      <span className={`${styles.statusBadge} ${styles[`status_${user.status}`]}`}>
+                        <span className={styles.statusDot} />
+                        {user.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {!isLoading && !error && filtered.length === 0 && (
             <div className={styles.emptyState}>
               <svg className={styles.emptyIcon} viewBox="0 0 48 48" fill="none">
                 <circle cx="22" cy="22" r="14" stroke="#cbd5e1" strokeWidth="2" />
@@ -239,7 +330,7 @@ export default function AdminUsersPage() {
               <button
                 type="button"
                 className={styles.clearBtn}
-                onClick={() => { setSearch('') }}
+                onClick={() => { clearFilters() }}
               >
                 Clear filters
               </button>
@@ -247,9 +338,11 @@ export default function AdminUsersPage() {
           )}
         </div>
 
-        <div className={styles.tableFooter}>
-          Showing <strong>{filtered.length}</strong> of <strong>{users.length}</strong> users
-        </div>
+        {!isLoading && !error && (
+          <div className={styles.tableFooter}>
+            Showing <strong>{filtered.length}</strong> of <strong>{users.length}</strong> users
+          </div>
+        )}
       </section>
     </div>
   )
