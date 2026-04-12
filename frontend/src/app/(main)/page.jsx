@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import styles from './homepage.module.css'
 
@@ -211,13 +211,13 @@ function HowItWorksSection() {
   )
 }
 
-/* ---------------- PARTNER HIGHLIGHT ---------------- */
+/* ---------------- PARTNER HIGHLIGHT — zoom-on-center carousel ---------------- */
 function PartnerHighlightSection() {
   const partners = [
     {
       name: 'Heritage Funeral Services',
       location: 'Quezon City',
-      years: '15 years in service',
+      years: '15 yrs',
       rating: '4.9',
       services: ['Traditional Burial', 'Catholic Rites', 'Embalming'],
       specialty: 'Traditional Catholic ceremonies',
@@ -226,7 +226,7 @@ function PartnerHighlightSection() {
     {
       name: 'Metro Cremation Care',
       location: 'Makati City',
-      years: '10 years in service',
+      years: '10 yrs',
       rating: '4.8',
       services: ['Cremation', 'Memorial Service', 'Urn Selection'],
       specialty: 'Modern cremation services',
@@ -235,12 +235,97 @@ function PartnerHighlightSection() {
     {
       name: 'Eternal Gardens Memorial',
       location: 'Cavite',
-      years: '20 years in service',
+      years: '20 yrs',
       rating: '5.0',
       services: ['Memorial Park', 'Garden Burial', 'Wake Services'],
       specialty: 'Memorial park and gardens',
       image: 'https://i.pinimg.com/1200x/84/d5/60/84d56082a8cf35ffd66ed28d57357894.jpg',
     },
+    {
+      name: 'Paz Memorial Chapel',
+      location: 'Pasig City',
+      years: '12 yrs',
+      rating: '4.7',
+      services: ['Chapel Wake', 'Final Arrangements', 'Documentation'],
+      specialty: 'Full chapel services',
+      image: 'https://i.pinimg.com/736x/6e/8b/75/6e8b7560bc2e8538768dcf04b39f76df.jpg',
+    },
+    {
+      name: 'Sanctuario Funeral Home',
+      location: 'Cebu City',
+      years: '18 yrs',
+      rating: '4.9',
+      services: ['Burial Services', 'Viewing', 'Grief Support'],
+      specialty: 'Holistic family care',
+      image: 'https://i.pinimg.com/736x/ec/fb/27/ecfb278d5b75bf40ca4e468f309847af.jpg',
+    },
+    {
+      name: 'Serene Passage Services',
+      location: 'Davao City',
+      years: '8 yrs',
+      rating: '4.8',
+      services: ['Cremation', 'Non-religious Rites', 'Urns & Keepsakes'],
+      specialty: 'Contemporary farewell services',
+      image: 'https://i.pinimg.com/1200x/84/d5/60/84d56082a8cf35ffd66ed28d57357894.jpg',
+    },
+  ]
+
+  const [activeIndex, setActiveIndex] = useState(0)
+  const [dotOffset, setDotOffset] = useState(0)
+  const intervalRef = useRef(null)
+  const VISIBLE_DOTS = 3 // number of dots shown in the window
+
+  const goTo = useCallback((index) => {
+    setActiveIndex(index)
+    // Compute dot window offset so active dot is centered (clamped)
+    const maxOffset = partners.length - VISIBLE_DOTS
+    const desiredOffset = index - Math.floor(VISIBLE_DOTS / 2)
+    setDotOffset(Math.max(0, Math.min(desiredOffset, maxOffset)))
+  }, [partners.length])
+
+  const startAutoplay = useCallback(() => {
+    clearInterval(intervalRef.current)
+    intervalRef.current = setInterval(() => {
+      setActiveIndex((prev) => {
+        const next = (prev + 1) % partners.length
+        const maxOffset = partners.length - VISIBLE_DOTS
+        const desiredOffset = next - Math.floor(VISIBLE_DOTS / 2)
+        setDotOffset(Math.max(0, Math.min(desiredOffset, maxOffset)))
+        return next
+      })
+    }, 3000)
+  }, [partners.length])
+
+  useEffect(() => {
+    startAutoplay()
+    return () => clearInterval(intervalRef.current)
+  }, [startAutoplay])
+
+  const handlePrev = () => {
+    const prev = (activeIndex - 1 + partners.length) % partners.length
+    goTo(prev)
+    startAutoplay()
+  }
+
+  const handleNext = () => {
+    const next = (activeIndex + 1) % partners.length
+    goTo(next)
+    startAutoplay()
+  }
+
+  const handleDot = (i) => {
+    goTo(i)
+    startAutoplay()
+  }
+
+  // Which indices to show: active -1, active, active +1 (with wrapping)
+  const getCardIndex = (offset) =>
+    (activeIndex + offset + partners.length) % partners.length
+
+  const visibleCards = [
+    { offset: -1, partner: partners[getCardIndex(-1)], key: getCardIndex(-1) },
+    { offset: 0,  partner: partners[getCardIndex(0)],  key: getCardIndex(0)  },
+    { offset: 1,  partner: partners[getCardIndex(1)],  key: getCardIndex(1)  },
   ]
 
   return (
@@ -255,59 +340,109 @@ function PartnerHighlightSection() {
           </p>
         </div>
 
-        <div className={styles.partnerGrid}>
-          {partners.map((partner, i) => (
-            <div key={i} className={styles.partnerCard}>
-              <div className={styles.partnerImageWrapper}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={partner.image}
-                  alt={partner.name}
-                  className={styles.partnerImage}
-                />
-                <div className={styles.partnerImageOverlay} />
-                <div className={styles.partnerRatingBadge}>★ {partner.rating}</div>
-              </div>
+        {/* Carousel */}
+        <div className={styles.partnerCarouselWrapper}>
+          <button
+            className={`${styles.carouselArrow} ${styles.carouselArrowLeft}`}
+            onClick={handlePrev}
+            aria-label="Previous partner"
+          >
+            ‹
+          </button>
 
-              <div className={styles.partnerContent}>
-                <div className={styles.partnerMeta}>
-                  <span className={styles.partnerLocation}>
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                      <circle cx="12" cy="10" r="3" />
-                    </svg>
-                    {partner.location}
-                  </span>
-                  <span className={styles.partnerYears}>{partner.years}</span>
+          <div className={styles.partnerCarouselTrack}>
+            {visibleCards.map(({ offset, partner, key }) => (
+              <div
+                key={key}
+                className={`${styles.partnerCarouselCard} ${
+                  offset === 0 ? styles.partnerCarouselCardActive : styles.partnerCarouselCardSide
+                }`}
+                onClick={() => offset !== 0 && (offset === -1 ? handlePrev() : handleNext())}
+              >
+                <div className={styles.partnerImageWrapper}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={partner.image}
+                    alt={partner.name}
+                    className={styles.partnerImage}
+                  />
+                  <div className={styles.partnerImageOverlay} />
+                  <div className={styles.partnerRatingBadge}>★ {partner.rating}</div>
+                  {/* Name badge on image for side cards */}
+                  {offset !== 0 && (
+                    <div className={styles.partnerSideNameBadge}>{partner.name}</div>
+                  )}
                 </div>
 
-                <h3 className={styles.partnerName}>{partner.name}</h3>
-                <p className={styles.partnerSpecialty}>Specializes in {partner.specialty}</p>
+                {/* Only show content for center card */}
+                {offset === 0 && (
+                  <div className={styles.partnerContent}>
+                    <div className={styles.partnerMeta}>
+                      <span className={styles.partnerLocation}>
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                          <circle cx="12" cy="10" r="3" />
+                        </svg>
+                        {partner.location}
+                      </span>
+                      <span className={styles.partnerYears}>{partner.years}</span>
+                    </div>
 
-                <ul className={styles.partnerServices}>
-                  {partner.services.map((s, j) => (
-                    <li key={j} className={styles.partnerServiceTag}>
-                      {s}
-                    </li>
-                  ))}
-                </ul>
+                    <h3 className={styles.partnerName}>{partner.name}</h3>
+                    <p className={styles.partnerSpecialty}>{partner.specialty}</p>
 
-                <Link href="/partners" className={styles.viewProviderBtn}>
-                  View Profile <span aria-hidden="true">›</span>
-                </Link>
+                    <ul className={styles.partnerServices}>
+                      {partner.services.map((s, j) => (
+                        <li key={j} className={styles.partnerServiceTag}>
+                          {s}
+                        </li>
+                      ))}
+                    </ul>
+
+                    <Link href="/partners" className={styles.viewProviderBtn}>
+                      View Profile <span aria-hidden="true">›</span>
+                    </Link>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+
+          <button
+            className={`${styles.carouselArrow} ${styles.carouselArrowRight}`}
+            onClick={handleNext}
+            aria-label="Next partner"
+          >
+            ›
+          </button>
+        </div>
+
+        {/* Sliding dot indicator */}
+        <div className={styles.partnerDotsContainer} aria-label="Partner navigation">
+          <div
+            className={styles.partnerDotsTrack}
+            style={{ transform: `translateX(${-dotOffset * 22}px)` }}
+          >
+            {partners.map((_, i) => (
+              <button
+                key={i}
+                className={`${styles.partnerDot} ${i === activeIndex ? styles.partnerDotActive : ''}`}
+                onClick={() => handleDot(i)}
+                aria-label={`Go to partner ${i + 1}`}
+                type="button"
+              />
+            ))}
+          </div>
         </div>
 
         <div className={styles.partnerCTA}>
