@@ -1346,134 +1346,124 @@ a.ctaPrimary {
   }
 }
 /* =========================
-   PARTNER CAROUSEL (zoom-on-center)
+   PARTNER CAROUSEL — continuous infinite
 ========================= */
 
-.partnerCarouselWrapper {
+.partnerCarouselOuter {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0;
-  margin-bottom: 40px;
-  overflow: hidden;
-  padding: 20px 0 30px;
+  margin-bottom: 16px;
 }
 
+/* The visible window — clips top/bottom but lets side cards peek */
+.partnerCarouselViewport {
+  overflow: hidden;
+  width: 100%;
+  padding: 32px 60px 16px;
+  position: relative;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+}
+
+/* The sliding strip — position relative so translateX works from left edge */
 .partnerCarouselTrack {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  width: 100%;
-  max-width: 960px;
+  align-items: flex-start;
+  gap: 20px;
+  /* width is content-driven; translate handles centering */
+  width: max-content;
+  will-change: transform;
 }
 
-/* Center (active) card */
+/* Individual card */
 .partnerCarouselCard {
   background: #FFFFFF;
   border-radius: 20px;
   overflow: hidden;
   border: 1px solid rgba(16, 40, 32, 0.1);
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: top center;
+  transition:
+    transform 0.55s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity  0.55s ease,
+    box-shadow 0.4s ease;
+}
+
+/* Active (center) card gets a lifted shadow */
+.partnerCarouselCard[style*="scale(1)"] {
+  box-shadow: 0 28px 72px rgba(16, 40, 32, 0.2);
+  border-color: rgba(168, 137, 74, 0.35);
+}
+
+/* Image block */
+.partnerCarouselCard .partnerImageWrapper {
   position: relative;
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
   flex-shrink: 0;
 }
 
-.partnerCarouselCardActive {
-  width: 340px;
-  transform: scale(1);
-  z-index: 10;
-  box-shadow: 0 24px 64px rgba(16, 40, 32, 0.18);
-  border-color: rgba(168, 137, 74, 0.3);
-}
-
-.partnerCarouselCardSide {
-  width: 240px;
-  transform: scale(0.88);
-  z-index: 5;
-  opacity: 0.72;
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(16, 40, 32, 0.08);
-}
-
-.partnerCarouselCardSide:hover {
-  opacity: 0.9;
-  transform: scale(0.91);
-}
-
-/* Image inside carousel cards */
-.partnerCarouselCardActive .partnerImageWrapper {
-  height: 220px;
-}
-
-.partnerCarouselCardSide .partnerImageWrapper {
-  height: 320px;
-}
-
-/* Side card name badge over image */
-.partnerSideNameBadge {
+/* Name label on non-center cards */
+.partnerSideLabel {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 24px 16px 16px;
-  background: linear-gradient(to top, rgba(16, 40, 32, 0.85) 0%, transparent 100%);
+  padding: 28px 14px 14px;
+  background: linear-gradient(to top, rgba(10, 28, 20, 0.88) 0%, transparent 100%);
   color: #F7F4EF;
   font-family: "Cormorant Garamond", serif;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 500;
-  letter-spacing: 0.3px;
   line-height: 1.3;
+  letter-spacing: 0.2px;
 }
 
-/* Arrow buttons for partner carousel */
-.partnerCarouselWrapper .carouselArrow {
+/* Arrow buttons — inside the outer flex row */
+.partnerCarouselOuter > .carouselArrow {
   position: relative;
   top: auto;
   transform: none;
   flex-shrink: 0;
   z-index: 20;
-  margin: 0 8px;
 }
 
 /* =========================
-   PARTNER CAROUSEL DOTS
+   DOT INDICATOR — sliding window
 ========================= */
 
-.partnerDotsContainer {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 56px;
-  /* clip to show only 3 dots at a time */
-  width: 66px; /* 3 × 22px */
+.partnerDotsOuter {
+  /* clip to show exactly 3 dots: 3×8px dots + 2×10px gaps = 44px; active pill=24px so ~58px max */
+  width: 58px;
   overflow: hidden;
-  margin-left: auto;
-  margin-right: auto;
+  margin: 0 auto 28px;
+  display: flex;
 }
 
 .partnerDotsTrack {
   display: flex;
   align-items: center;
   gap: 10px;
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .partnerDot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: rgba(16, 40, 32, 0.2);
+  flex-shrink: 0;
+  background: rgba(16, 40, 32, 0.22);
   border: none;
   cursor: pointer;
   padding: 0;
-  flex-shrink: 0;
   transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .partnerDot:hover {
-  background: rgba(168, 137, 74, 0.5);
+  background: rgba(168, 137, 74, 0.55);
 }
 
 .partnerDotActive {
@@ -1484,35 +1474,16 @@ a.ctaPrimary {
 
 /* Responsive */
 @media (max-width: 768px) {
-  .partnerCarouselCardActive {
-    width: 280px;
-  }
-  .partnerCarouselCardSide {
-    width: 180px;
-  }
-  .partnerCarouselCardActive .partnerImageWrapper {
-    height: 180px;
-  }
-  .partnerCarouselCardSide .partnerImageWrapper {
-    height: 260px;
+  .partnerCarouselCard .partnerImageWrapper {
+    height: 170px;
   }
 }
 
 @media (max-width: 480px) {
-  .partnerCarouselCardActive {
-    width: 240px;
+  .partnerCarouselCard .partnerImageWrapper {
+    height: 150px;
   }
-  .partnerCarouselCardSide {
-    width: 130px;
-    transform: scale(0.85);
-  }
-  .partnerCarouselCardActive .partnerImageWrapper {
-    height: 160px;
-  }
-  .partnerCarouselCardSide .partnerImageWrapper {
-    height: 220px;
-  }
-  .partnerSideNameBadge {
-    font-size: 13px;
+  .partnerSideLabel {
+    font-size: 12px;
   }
 }
