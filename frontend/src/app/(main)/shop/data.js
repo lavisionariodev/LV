@@ -56,7 +56,7 @@ export const PROVIDERS = [
     location: 'Quezon City, NCR',
     rating: 4.7,
     reviews: 89,
-    badge: 'Verified',
+    badge: null,
     lastActive: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),  // 3 hours ago
     joinedDate: '2021-08-01',
     businessStartedAt: '2012-04-20',
@@ -89,7 +89,7 @@ export const PROVIDERS = [
     location: 'Caloocan, NCR',
     rating: 4.5,
     reviews: 41,
-    badge: 'Verified',
+    badge: null,
     lastActive: new Date(Date.now() - 2 * 7 * 24 * 60 * 60 * 1000).toISOString(), // 2 weeks ago
     joinedDate: '2020-01-05',
     businessStartedAt: '1998-07-01',

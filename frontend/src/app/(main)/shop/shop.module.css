@@ -1261,8 +1261,8 @@
   background: rgba(16, 40, 32, 0.82);
 }
 
-.badgeVerified {
-  background: rgba(16, 40, 32, 0.82);
+.badgeMostPopular {
+  background: var(--color-gold-base, #B8962E);
 }
 
 .compareSelectedOverlay {

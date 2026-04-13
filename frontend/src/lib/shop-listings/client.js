@@ -6,7 +6,6 @@ const ALLOWED_SERVICE_IDS = new Set(['cremation', 'traditional-burial', 'memoria
 /** Placeholders until reviews/aggregates exist in the database. */
 const PLACEHOLDER_PROVIDER_RATING = 4.8
 const PLACEHOLDER_REVIEW_COUNT = 0
-const PLACEHOLDER_PROVIDER_BADGE = 'Verified'
 
 function normalizeServiceId(raw) {
   if (raw == null) return 'memorial-planning'
@@ -172,7 +171,7 @@ function mapRpcRowToListing(row) {
       location: loc,
       rating: PLACEHOLDER_PROVIDER_RATING,
       reviews: PLACEHOLDER_REVIEW_COUNT,
-      badge: PLACEHOLDER_PROVIDER_BADGE,
+      badge: null,
       joinedDate: sellerRegisteredAt ?? null,
       businessStartedAt: businessStartedAt ?? null,
     },
