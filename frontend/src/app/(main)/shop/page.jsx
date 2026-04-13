@@ -10,13 +10,14 @@ import { buildCartPayloadFromListing } from '@/lib/cart/fromListing'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/contexts/ToastContext'
+import { formatPhpAmount } from '@/lib/cart/formatPhp'
 import styles from './shop.module.css'
 
 export default function ShopPage() {
   const router = useRouter()
   const [listings, setListings] = useState(() => mergeShopListings([]))
   const [activeCategory, setActiveCategory] = useState('all')
-  const [sortBy, setSortBy] = useState('popular')
+  const [sortBy, setSortBy] = useState('newest')
   const [compareIds, setCompareIds] = useState([])
   const [locationQuery, setLocationQuery] = useState('')
   const [locationFocused, setLocationFocused] = useState(false)
@@ -62,11 +63,6 @@ export default function ShopPage() {
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [])
 
-  const hasLiveListings = useMemo(
-    () => listings.some((l) => l.source === 'database'),
-    [listings],
-  )
-
   const allProviders = useMemo(() => {
     const byId = new Map()
     listings.forEach((l) => {
@@ -100,8 +96,14 @@ export default function ShopPage() {
         const tb = new Date(b.createdAt || 0).getTime()
         return tb - ta
       })
+    } else if (sortBy === 'stock-desc') {
+      list.sort((a, b) => (b.inStock ? 1 : 0) - (a.inStock ? 1 : 0))
     } else {
-      list.sort((a, b) => (b.popular ? 1 : 0) - (a.popular ? 1 : 0))
+      list.sort((a, b) => {
+        const ta = new Date(a.createdAt || 0).getTime()
+        const tb = new Date(b.createdAt || 0).getTime()
+        return tb - ta
+      })
     }
 
     return list
@@ -218,7 +220,7 @@ export default function ShopPage() {
 
           {/* Sort pills */}
           {[
-            { value: 'popular',    label: 'Most Popular' },
+            { value: 'stock-desc', label: 'Availability' },
             { value: 'price-asc',  label: 'Price: Low–High' },
             { value: 'price-desc', label: 'Price: High–Low' },
             { value: 'rating',     label: 'Highest Rated' },
@@ -505,7 +507,7 @@ export default function ShopPage() {
               <div className={styles.sortWrap}>
                 <span className={styles.sortLabel}>Sort by</span>
                 <select className={styles.sortSelect} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                  <option value="popular">Most Popular</option>
+                  <option value="stock-desc">Availability (in stock first)</option>
                   <option value="price-asc">Price: Low to High</option>
                   <option value="price-desc">Price: High to Low</option>
                   <option value="rating">Highest Rated</option>
@@ -513,14 +515,6 @@ export default function ShopPage() {
                 </select>
               </div>
             </div>
-
-            {!hasLiveListings ? (
-              <p className={styles.liveDataHint} role="status">
-                No active listings returned from the database yet. Ensure migrations are applied, the seller account is
-                active or pending, each listing status is <strong>Active</strong>, and check the browser console for{' '}
-                <code className={styles.liveDataCode}>get_active_shop_listings</code> errors.
-              </p>
-            ) : null}
 
             {/* ── Compare tray (inline, single item hint) ── */}
             {compareIds.length === 1 && (
@@ -774,6 +768,10 @@ function ListingCard({ listing, styles, inCompare, onToggleCompare, compareDisab
   const handleAddToCart = async (e) => {
     e.preventDefault()
     e.stopPropagation()
+    if (listing.inStock === false) {
+      toast.error('This listing is out of stock')
+      return
+    }
     const pkgOpts = listing.sellerPackageOptions ?? []
     const defaultPkg = pkgOpts.length > 0 ? pkgOpts[0] : ''
     const { error: buildErr, payload } = buildCartPayloadFromListing(listing, {
@@ -821,7 +819,9 @@ function ListingCard({ listing, styles, inCompare, onToggleCompare, compareDisab
           ) : (
             <div className={styles.listingImagePlaceholder} aria-hidden />
           )}
-          {listing.popular && <span className={styles.popularBadge}>Most Popular</span>}
+          {listing.inStock === false && (
+            <span className={styles.outOfStockBadge}>Out of Stock</span>
+          )}
           {provider?.badge && (
             <span className={`${styles.providerBadge} ${styles[`badge${provider.badge.replace(' ', '')}`]}`}>
               {provider.badge}
@@ -864,7 +864,7 @@ function ListingCard({ listing, styles, inCompare, onToggleCompare, compareDisab
           <h3 className={styles.cardTitle}>{listing.name}</h3>
           <div className={styles.priceBlock}>
             <span className={styles.priceLabel}>Starting at</span>
-            <span className={styles.price}>₱{listing.price.toLocaleString('en-PH')}</span>
+            <span className={styles.price}>{formatPhpAmount(listing.price)}</span>
           </div>
         </div>
         </div>
@@ -875,7 +875,7 @@ function ListingCard({ listing, styles, inCompare, onToggleCompare, compareDisab
           type="button"
           className={`${styles.cardCta} ${styles.ctaBtn}`}
           onClick={handleAddToCart}
-          disabled={authLoading || adding}
+          disabled={authLoading || adding || listing.inStock === false}
           aria-busy={adding}
         >
             <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, flexShrink: 0 }}>
@@ -883,7 +883,7 @@ function ListingCard({ listing, styles, inCompare, onToggleCompare, compareDisab
               <circle cx="7" cy="13.5" r="1" fill="currentColor" stroke="none" />
               <circle cx="12" cy="13.5" r="1" fill="currentColor" stroke="none" />
             </svg>
-            {adding ? 'Adding…' : 'Add to Cart'}
+            {listing.inStock === false ? 'Out of Stock' : adding ? 'Adding…' : 'Add to Cart'}
           </button>
           <button
             className={`${styles.compareBtn}${inCompare ? ` ${styles.compareBtnActive}` : ''}${compareDisabled ? ` ${styles.compareBtnDisabled}` : ''}`}

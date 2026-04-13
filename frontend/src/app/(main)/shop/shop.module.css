@@ -523,23 +523,6 @@
   flex-wrap: wrap;
 }
 
-.liveDataHint {
-  width: 100%;
-  margin: 0 0 14px;
-  padding: 10px 12px;
-  font-size: 0.85rem;
-  line-height: 1.45;
-  color: #5c4a2a;
-  background: #fffbeb;
-  border: 1px solid #f59e0b;
-  border-radius: 8px;
-}
-
-.liveDataCode {
-  font-size: 0.8em;
-  word-break: break-all;
-}
-
 /* ─── Results Indicator ─────────────────────────────────────────────────────── */
 
 .resultsIndicator {
@@ -1234,6 +1217,23 @@
   font-family: "Lato", sans-serif;
   pointer-events: none;
   box-shadow: 0 2px 8px rgba(184, 150, 46, 0.35);
+}
+
+.outOfStockBadge {
+  position: absolute;
+  top: clamp(6px, 0.9vw, 12px);
+  left: clamp(6px, 0.9vw, 12px);
+  background: rgba(120, 53, 15, 0.92);
+  color: #fff;
+  font-size: clamp(7.5px, 0.75vw, 9.5px);
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: clamp(2px, 0.35vw, 4px) clamp(6px, 0.8vw, 10px);
+  border-radius: 100px;
+  font-family: "Lato", sans-serif;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .providerBadge {

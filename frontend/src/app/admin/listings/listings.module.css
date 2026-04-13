@@ -7,6 +7,10 @@
   color: #0f172a;
 }
 
+.approvalsPageStack {
+  gap: 28px;
+}
+
 /* ── Toolbar (no outer panel — sits in admin page content) ── */
 .toolbar {
   padding: 0 0 14px 0;
@@ -45,6 +49,13 @@
   max-width: 100%;
   margin-bottom: 8px;
   border-bottom: 1.5px solid #e9e9ef;
+}
+
+.tabsStack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
 }
 
 .tab {
@@ -352,6 +363,207 @@
   white-space: nowrap;
   text-transform: capitalize;
   border: 1px solid transparent;
+}
+
+.approvalBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-transform: capitalize;
+  border: 1px solid transparent;
+}
+
+.approval_pending {
+  border-color: #fde68a;
+  color: #92400e;
+  background: #fffbeb;
+}
+
+.approval_approved {
+  border-color: #bbf7d0;
+  color: #15803d;
+  background: #f0fdf4;
+}
+
+.approval_rejected {
+  border-color: #fecaca;
+  color: #b91c1c;
+  background: #fff5f5;
+}
+
+.approval_draft {
+  border-color: #e2e8f0;
+  color: #64748b;
+  background: #f8fafc;
+}
+
+.moderationRow {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.approveBtn,
+.rejectBtn {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid;
+  background: #fff;
+  font-family: inherit;
+  transition: background 0.12s, border-color 0.12s, transform 0.02s;
+}
+
+.approveBtn {
+  border-color: #bbf7d0;
+  color: #166534;
+  background: #f0fdf4;
+}
+
+.approveBtn:hover {
+  background: #ecfdf5;
+  border-color: #86efac;
+}
+
+.rejectBtn {
+  border-color: #fecaca;
+  color: #991b1b;
+  background: #fff5f5;
+}
+
+.rejectBtn:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
+.approveBtn:active,
+.rejectBtn:active {
+  transform: translateY(1px);
+}
+
+/* ── Reject modal ── */
+.rejectOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  z-index: 60;
+}
+
+.rejectCard {
+  width: 100%;
+  max-width: 520px;
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.18);
+  padding: 16px 16px;
+}
+
+.rejectHeader {
+  margin-bottom: 12px;
+}
+
+.rejectKicker {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: #b91c1c;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.rejectTitle {
+  margin: 6px 0 2px 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.rejectSub {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.rejectLabel {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.rejectTextarea {
+  width: 100%;
+  margin-top: 6px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+}
+
+.rejectTextarea:focus {
+  border-color: #cbd5e1;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.06);
+}
+
+.rejectError {
+  margin: 10px 0 0 0;
+  font-size: 12px;
+  color: #b91c1c;
+}
+
+.rejectActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.rejectCancel {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.rejectConfirm {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid #fecaca;
+  background: #fff5f5;
+  color: #991b1b;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.rejectCancel:disabled,
+.rejectConfirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .statusDot {
@@ -699,4 +911,288 @@
   .toolbarSearchInput {
     font-size: 16px; /* prevents iOS zoom-on-focus */
   }
+}
+
+/* =========================
+   REVIEW TABLE (pending listings)
+   Styled similar to admin sellers table
+   ========================= */
+
+.reviewPanel {
+  margin-top: 14px;
+  background: #fff;
+  border: 1px solid #e9e9ef;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.reviewHeader {
+  padding: 14px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.reviewKicker {
+  margin: 0 0 2px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.reviewTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reviewCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.reviewTableWrap {
+  overflow-x: auto;
+  padding: 0 18px;
+}
+
+.reviewTable {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 13px;
+}
+
+.colListing { width: 32%; }
+.colSeller { width: 26%; }
+.colKind { width: 12%; }
+.colPrice { width: 12%; }
+.colSubmitted { width: 12%; }
+.colActions { width: 6%; }
+
+.reviewTable thead tr {
+  background: #f8fafc;
+  border-bottom: 1px solid #e9e9ef;
+}
+
+.reviewTable th {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  padding: 11px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e9e9ef;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.reviewTable td {
+  padding: 12px 12px;
+  vertical-align: middle;
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.reviewRow {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.1s;
+}
+
+.reviewRow:hover {
+  background: #f8fafc;
+}
+
+.reviewRow:last-child {
+  border-bottom: none;
+}
+
+.reviewListingCell {
+  min-width: 0;
+}
+
+.reviewListingName {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reviewBadges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.reviewSellerText {
+  margin: 0;
+  color: #334155;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reviewKind {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.reviewPrice {
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.reviewSubmitted {
+  color: #64748b;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Actions col alignment */
+.reviewTable th.actionsTh,
+.reviewTable td.actionsCell {
+  text-align: center;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.actionsCell {
+  position: relative;
+  vertical-align: middle;
+}
+
+/* Row actions menu (kebab) */
+.actionMenuWrap {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+.actionMenuTrigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  line-height: 0;
+  transition: color 0.12s;
+}
+
+.actionMenuTrigger:hover {
+  color: #0f172a;
+  background: transparent;
+}
+
+.actionMenuTrigger:focus-visible {
+  outline: 2px solid #94a3b8;
+  outline-offset: 2px;
+}
+
+.actionMenuTriggerIcon {
+  display: block;
+  flex-shrink: 0;
+}
+
+.actionMenu {
+  position: fixed;
+  min-width: 180px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06);
+  z-index: 150;
+  padding: 4px;
+  text-align: left;
+}
+
+.actionMenuItem {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.1s;
+}
+
+.actionMenuItem:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.actionMenuItem:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.actionMenuItemPrimary {
+  color: #15803d;
+  font-weight: 600;
+}
+
+.actionMenuItemPrimary:hover:not(:disabled) {
+  background: #f0fdf4;
+}
+
+.actionMenuItemWarn {
+  color: #c2410c;
+  font-weight: 600;
+}
+
+.actionMenuItemWarn:hover:not(:disabled) {
+  background: #fff7ed;
+}
+
+.reviewEmpty {
+  padding: 32px 18px 38px;
+  text-align: center;
+}
+
+.reviewEmptyTitle {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.reviewEmptyText {
+  margin: 0;
+  font-size: 13px;
+  color: #94a3b8;
 }

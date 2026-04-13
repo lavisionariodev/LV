@@ -6,10 +6,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import styles from './cart.module.css'
-
-function formatPrice(n) {
-  return `₱${Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
-}
+import { formatPhpAmount } from '@/lib/cart/formatPhp'
 
 /** Map Supabase cart line (CartContext) to table row fields for the UI. */
 function mapCartItemToRow(item) {
@@ -27,7 +24,6 @@ function mapCartItemToRow(item) {
     provider: providerName,
     providerInitial: providerName.charAt(0).toUpperCase(),
     rating: null,
-    popular: false,
     badge: null,
   }
 }
@@ -299,17 +295,17 @@ export default function CartPage() {
                 <tbody>
                   <tr>
                     <th>Subtotal</th>
-                    <td>{formatPrice(subtotal)}</td>
+                    <td>{formatPhpAmount(subtotal)}</td>
                   </tr>
                   {couponApplied && (
                     <tr>
                       <th>Discount (10%)</th>
-                      <td style={{ color: '#2d7a4f' }}>− {formatPrice(discount)}</td>
+                      <td style={{ color: '#2d7a4f' }}>− {formatPhpAmount(discount)}</td>
                     </tr>
                   )}
                   <tr className={styles.totalRow}>
                     <th>Total</th>
-                    <td>{formatPrice(total)}</td>
+                    <td>{formatPhpAmount(total)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -450,22 +446,6 @@ function CartItemRow({ row, isSelected, onToggle, onUpdateQty, onRemove, qtyEdit
         </div>
         <div className={styles.productInfo}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 3, flexWrap: 'wrap' }}>
-            {row.popular && (
-              <span style={{
-                fontSize: 9,
-                fontWeight: 700,
-                letterSpacing: 1.2,
-                textTransform: 'uppercase',
-                color: '#fff',
-                background: 'var(--color-gold-base, #B8962E)',
-                borderRadius: 100,
-                padding: '2px 8px',
-                fontFamily: 'Lato, sans-serif',
-                flexShrink: 0,
-              }}>
-                Popular
-              </span>
-            )}
             {row.badge && (
               <span style={{
                 fontSize: 9,
@@ -524,7 +504,7 @@ function CartItemRow({ row, isSelected, onToggle, onUpdateQty, onRemove, qtyEdit
       {/* Price */}
       <div className={styles.itemPrice} data-label="Price">
         {row.price > 0
-          ? formatPrice(row.price)
+          ? formatPhpAmount(row.price)
           : <span className={styles.contactBadge}>Contact us</span>
         }
       </div>
@@ -561,7 +541,7 @@ function CartItemRow({ row, isSelected, onToggle, onUpdateQty, onRemove, qtyEdit
 
       {/* Subtotal */}
       <div className={styles.itemSubtotal} data-label="Subtotal">
-        {row.price > 0 ? formatPrice(row.subtotal) : '—'}
+        {row.price > 0 ? formatPhpAmount(row.subtotal) : '—'}
       </div>
 
       {/* Remove */}

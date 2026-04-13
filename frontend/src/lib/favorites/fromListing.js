@@ -27,6 +27,6 @@ export function buildFavoriteInsertFromListing(listing, meta) {
     seller_rating: provider?.rating != null ? Number(provider.rating) : null,
     seller_reviews: provider?.reviews != null ? Number(provider.reviews) : null,
     seller_badge: provider?.badge ?? null,
-    popular: Boolean(listing.popular),
+    popular: false,
   }
 }

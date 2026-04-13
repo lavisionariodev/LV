@@ -76,8 +76,7 @@ values (
     {"id":"description","order":1,"type":"textarea","label":"Description","required":true,"placeholder":"Describe your listing..."},
     {"id":"category","order":2,"type":"text","label":"Category","required":false,"placeholder":"e.g. Flowers, memorial packages"},
     {"id":"base_price","order":3,"type":"number","label":"Starting price","required":false,"placeholder":"0"},
-    {"id":"location","order":4,"type":"text","label":"Location","required":false,"placeholder":"e.g. Quezon City"},
-    {"id":"status","order":5,"type":"select","label":"Status","required":false,"options":["draft","active","inactive","archived"],"placeholder":"Select status"}
+    {"id":"location","order":4,"type":"text","label":"Location","required":false,"placeholder":"e.g. Quezon City"}
   ]'::jsonb,
   true
 )

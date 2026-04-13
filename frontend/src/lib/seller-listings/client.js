@@ -1,29 +1,13 @@
 import { supabase } from '@/lib/supabase/client'
+import { mergePendingChangesPayload } from '@/lib/seller-listings/pendingChanges'
 
 const LISTING_IMAGES_BUCKET = 'listing-images'
 
-/** Normalize jsonb / API quirks: plain object, JSON string, or camelCase `dynamicValues` on the row. */
-export function parseListingDynamicValues(raw) {
-  if (raw == null) return {}
-  if (typeof raw === 'object' && !Array.isArray(raw)) return raw
-  if (typeof raw === 'string') {
-    try {
-      const o = JSON.parse(raw)
-      return o && typeof o === 'object' && !Array.isArray(o) ? o : {}
-    } catch {
-      return {}
-    }
-  }
-  return {}
-}
-
 function normalizeListingRow(row) {
   const imageUrls = Array.isArray(row.image_urls) ? row.image_urls : []
-  const dv = parseListingDynamicValues(row?.dynamic_values ?? row?.dynamicValues)
   return {
     ...row,
     image_urls: imageUrls,
-    dynamic_values: dv,
   }
 }
 
@@ -136,6 +120,159 @@ export async function updateSellerListing(id, payload) {
   return { data: normalizeListingRow(data), error: null }
 }
 
+/** Seller: submit an existing listing for admin review. */
+export async function submitListingForReview(id) {
+  const { data: existing, error: fetchErr } = await supabase
+    .from('seller_listings')
+    .select('id, approval_status')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (fetchErr) {
+    return { data: null, error: fetchErr.message || 'Failed to load listing.' }
+  }
+
+  if (String(existing?.approval_status || '').toLowerCase() === 'approved') {
+    const { data, error } = await supabase.from('seller_listings').select('*').eq('id', id).maybeSingle()
+    if (error) {
+      return { data: null, error: error.message || 'Failed to load listing.' }
+    }
+    return { data: data ? normalizeListingRow(data) : null, error: null }
+  }
+
+  const { data, error } = await supabase
+    .from('seller_listings')
+    .update({
+      approval_status: 'pending',
+      submitted_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select('*')
+    .maybeSingle()
+
+  if (error) {
+    return { data: null, error: error.message || 'Failed to submit listing for review.' }
+  }
+
+  return { data: normalizeListingRow(data), error: null }
+}
+
+/** Seller: resubmit after rejection (same as submit; DB trigger clears rejection fields on pending). */
+export async function resubmitListingForReview(id) {
+  return submitListingForReview(id)
+}
+
+/** Admin: approve a listing (shop-visible if seller/listing are active). Merges pending_changes when present. */
+export async function approveListing(id) {
+  const { data: row, error: fetchErr } = await supabase.from('seller_listings').select('*').eq('id', id).maybeSingle()
+
+  if (fetchErr) {
+    return { data: null, error: fetchErr.message || 'Failed to load listing.' }
+  }
+  if (!row) {
+    return { data: null, error: 'Listing not found.' }
+  }
+
+  const pending = row.pending_changes
+  const hasPending =
+    pending &&
+    typeof pending === 'object' &&
+    !Array.isArray(pending) &&
+    Object.keys(pending).length > 0
+
+  const merge = hasPending ? mergePendingChangesPayload(pending) : {}
+
+  const update = {
+    approval_status: 'approved',
+    status: 'active',
+    reviewed_at: new Date().toISOString(),
+    rejection_reason: null,
+    staged_rejection_reason: null,
+    ...(hasPending
+      ? {
+          ...merge,
+          pending_changes: {},
+          pending_changes_submitted_at: null,
+        }
+      : {}),
+  }
+
+  const { data, error } = await supabase
+    .from('seller_listings')
+    .update(update)
+    .eq('id', id)
+    .select('*')
+    .maybeSingle()
+
+  if (error) {
+    return { data: null, error: error.message || 'Failed to approve listing.' }
+  }
+
+  return { data: normalizeListingRow(data), error: null }
+}
+
+/** Admin: reject a listing and include a reason. For approved listings with staged updates only, discards the stage. */
+export async function rejectListing(id, reason) {
+  const trimmed = String(reason ?? '').trim()
+
+  const { data: row, error: fetchErr } = await supabase
+    .from('seller_listings')
+    .select('approval_status, pending_changes')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (fetchErr) {
+    return { data: null, error: fetchErr.message || 'Failed to load listing.' }
+  }
+  if (!row) {
+    return { data: null, error: 'Listing not found.' }
+  }
+
+  const approval = String(row.approval_status || '').toLowerCase()
+  const pending = row.pending_changes
+  const hasPending =
+    pending &&
+    typeof pending === 'object' &&
+    !Array.isArray(pending) &&
+    Object.keys(pending).length > 0
+
+  if (approval === 'approved' && hasPending) {
+    const { data, error } = await supabase
+      .from('seller_listings')
+      .update({
+        pending_changes: {},
+        pending_changes_submitted_at: null,
+        staged_rejection_reason: trimmed || null,
+      })
+      .eq('id', id)
+      .select('*')
+      .maybeSingle()
+
+    if (error) {
+      return { data: null, error: error.message || 'Failed to reject staged updates.' }
+    }
+
+    return { data: normalizeListingRow(data), error: null }
+  }
+
+  const { data, error } = await supabase
+    .from('seller_listings')
+    .update({
+      approval_status: 'rejected',
+      rejection_reason: trimmed,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select('*')
+    .maybeSingle()
+
+  if (error) {
+    return { data: null, error: error.message || 'Failed to reject listing.' }
+  }
+
+  return { data: normalizeListingRow(data), error: null }
+}
+
 export async function deleteSellerListing(id) {
   const { error } = await supabase.from('seller_listings').delete().eq('id', id)
 
@@ -149,8 +286,12 @@ export async function deleteSellerListing(id) {
 /**
  * Admin: all listings with seller business name (requires RLS policy for admins).
  */
-export async function listSellerListingsForAdmin() {
-  const { data, error } = await supabase
+export async function listSellerListingsForAdmin(options = {}) {
+  const statusInRaw = Array.isArray(options?.statusIn) ? options.statusIn : null
+  const approvalStatusInRaw = Array.isArray(options?.approvalStatusIn) ? options.approvalStatusIn : null
+  const onlyActive = options?.onlyActive !== false
+
+  let query = supabase
     .from('seller_listings')
     .select(
       `
@@ -163,6 +304,25 @@ export async function listSellerListingsForAdmin() {
     `,
     )
     .order('updated_at', { ascending: false })
+
+  const statusIn = statusInRaw
+    ? statusInRaw.map((s) => String(s || '').trim().toLowerCase()).filter(Boolean)
+    : null
+  const approvalStatusIn = approvalStatusInRaw
+    ? approvalStatusInRaw.map((s) => String(s || '').trim().toLowerCase()).filter(Boolean)
+    : null
+
+  if (statusIn?.length) {
+    query = query.in('status', statusIn)
+  } else if (onlyActive) {
+    query = query.ilike('status', 'active')
+  }
+
+  if (approvalStatusIn?.length) {
+    query = query.in('approval_status', approvalStatusIn)
+  }
+
+  const { data, error } = await query
 
   if (error) {
     return { data: [], error: error.message || 'Failed to load listings.' }

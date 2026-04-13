@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useFavorites } from '@/contexts/FavoritesContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { formatPhpAmount } from '@/lib/cart/formatPhp'
 import styles from './favorites.module.css'
 
 // ─── Sort options ─────────────────────────────────────────────────────────────
@@ -286,9 +287,6 @@ function FavoriteCard({ item, isRemoving, onRemove, styles }) {
               {provider.initial}
             </div>
           )}
-          {item.popular && (
-            <span className={styles.popularBadge}>Most Popular</span>
-          )}
           {provider.badge && (
             <span className={`${styles.providerBadge} ${styles[`badge${provider.badge.replace(' ', '')}`]}`}>
               {provider.badge}
@@ -337,7 +335,7 @@ function FavoriteCard({ item, isRemoving, onRemove, styles }) {
             <h3 className={styles.cardTitle}>{item.name}</h3>
             <div className={styles.priceBlock}>
               <span className={styles.priceLabel}>Starting at</span>
-              <span className={styles.price}>₱{item.price.toLocaleString('en-PH')}</span>
+              <span className={styles.price}>{formatPhpAmount(item.price)}</span>
             </div>
           </div>
 

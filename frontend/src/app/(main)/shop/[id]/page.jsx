@@ -6,11 +6,12 @@ import { use, useState, useEffect, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getServiceById, PROVIDERS, SERVICES, REVIEWS, getReviewsByServiceId, CATEGORIES } from '../data'
 import { getRecommendedSimilarServices } from '../similarServices'
-import { fetchActiveShopListings, mergeShopListings } from '@/lib/shop-listings/client'
+import { fetchActiveShopListings, mergeShopListings, stockAvailabilityLabel } from '@/lib/shop-listings/client'
 import { buildCartPayloadFromListing } from '@/lib/cart/fromListing'
 import { useCart } from '@/contexts/CartContext'
 import { useFavorites } from '@/contexts/FavoritesContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { formatPhpAmount } from '@/lib/cart/formatPhp'
 import styles from './detail.module.css'
 
 export default function ServiceDetailPage({ params }) {
@@ -83,6 +84,10 @@ export default function ServiceDetailPage({ params }) {
     setGalleryIndex(0)
   }, [selectedListingId, galleryKey])
 
+  useEffect(() => {
+    setQuantity(1)
+  }, [selectedListingId])
+
   const mainGallerySrc =
     listingGalleryUrls.length > 0
       ? listingGalleryUrls[Math.min(galleryIndex, listingGalleryUrls.length - 1)]
@@ -94,6 +99,7 @@ export default function ServiceDetailPage({ params }) {
     selectedListing?.categoryLabel?.trim() || shopCategoryLabel || '—'
   const attrDuration = selectedListing?.duration?.trim() || '—'
   const attrCoverage = selectedListing?.coverage?.trim() || '—'
+  const stockInfo = selectedListing ? stockAvailabilityLabel(selectedListing.inStock) : null
 
   const buyerPackageOptions = selectedListing?.sellerPackageOptions ?? []
 
@@ -155,6 +161,11 @@ export default function ServiceDetailPage({ params }) {
   const handleAddToCart = async () => {
     if (!selectedListing || !service) return
     setAddError(null)
+
+    if (selectedListing.inStock === false) {
+      setAddError('This listing is out of stock.')
+      return
+    }
 
     const pkgOpts = selectedListing.sellerPackageOptions ?? []
     if (pkgOpts.length > 0 && !String(buyerPackage || '').trim()) {
@@ -381,14 +392,18 @@ export default function ServiceDetailPage({ params }) {
               <span className={styles.stars}>★★★★★</span>
               <span className={styles.ratingScore}>4.9</span>
               <span className={styles.ratingCount}>· 42 reviews</span>
-              <span className={styles.stockBadge}>In Stock</span>
+              <span
+                className={`${styles.stockBadge}${stockInfo && !stockInfo.inStock ? ` ${styles.stockBadgeOut}` : ''}`}
+              >
+                {stockInfo?.text ?? 'In Stock'}
+              </span>
             </div>
 
             {/* Price */}
             <div className={styles.priceRow}>
               <span className={styles.price}>
                 {selectedListing?.price != null
-                  ? `₱${Number(selectedListing.price).toLocaleString()}`
+                  ? formatPhpAmount(selectedListing.price)
                   : '₱ Contact for pricing'}
               </span>
               {service.priceNote && <span className={styles.priceNote}>{service.priceNote}</span>}
@@ -458,6 +473,7 @@ export default function ServiceDetailPage({ params }) {
                     className={styles.qtyBtn}
                     type="button"
                     onClick={() => setQuantity((q) => q + 1)}
+                    aria-label="Increase quantity"
                   >
                     +
                   </button>
@@ -475,10 +491,11 @@ export default function ServiceDetailPage({ params }) {
                   disabled={
                     !selectedListing ||
                     authLoading ||
+                    selectedListing.inStock === false ||
                     (buyerPackageOptions.length > 0 && !String(buyerPackage || '').trim())
                   }
                 >
-                  {addedMessage ? 'Added to cart' : 'Add to Cart'}
+                  {addedMessage ? 'Added to cart' : selectedListing?.inStock === false ? 'Out of Stock' : 'Add to Cart'}
                 </button>
               </div>
             </div>
@@ -528,10 +545,11 @@ export default function ServiceDetailPage({ params }) {
           disabled={
             !selectedListing ||
             authLoading ||
+            selectedListing.inStock === false ||
             (buyerPackageOptions.length > 0 && !String(buyerPackage || '').trim())
           }
         >
-          {addedMessage ? '✓ Added' : 'Add to Cart'}
+          {addedMessage ? '✓ Added' : selectedListing?.inStock === false ? 'Out of Stock' : 'Add to Cart'}
         </button>
         <button className={styles.mobileActionBarBook}>
           Book Now
@@ -750,7 +768,7 @@ function FullDescriptionSection({ service, selectedListing, styles, allServices 
                           <p className={styles.similarDesc}>{s.description}</p>
                           {lowestListing && (
                             <p className={styles.similarPrice}>
-                              From ₱{Number(lowestListing.price).toLocaleString()}
+                              From {formatPhpAmount(lowestListing.price)}
                             </p>
                           )}
                         </div>

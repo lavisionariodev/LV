@@ -16,8 +16,9 @@ import {
   TbChevronDown,
   TbChevronRight,
   TbMenu2,
-  TbClipboardList,
   TbAddressBook,
+  TbLayoutGrid,
+  TbClipboardCheck,
 } from 'react-icons/tb'
 import { LuUserCheck } from 'react-icons/lu'
 import { BsPerson } from 'react-icons/bs'
@@ -60,9 +61,16 @@ const SIDEBAR_CONFIG = {
           { href: '/admin/buyers', label: 'Buyers', icon: TbUsers },
         ],
       },
-      { href: '/admin/listings', label: 'Listings', icon: TbPackage },
+      {
+        label: 'Listings',
+        icon: TbPackage,
+        defaultHref: '/admin/listings/browse',
+        children: [
+          { href: '/admin/listings/browse', label: 'Browse', icon: TbLayoutGrid },
+          { href: '/admin/listings/approvals', label: 'Approvals', icon: TbClipboardCheck },
+        ],
+      },
       { href: '/admin/disputes', label: 'Dispute', icon: TbReportSearch },
-      { href: '/admin/seller-template', label: 'Template', icon: TbClipboardList },
     ],
   },
   seller: {

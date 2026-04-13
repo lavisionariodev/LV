@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useMemo, useState, useEffect } from 'react'
 import { PROVIDERS, SERVICES } from '../data'
-import { fetchActiveShopListings, mergeShopListings } from '@/lib/shop-listings/client'
+import { fetchActiveShopListings, mergeShopListings, stockAvailabilityLabel } from '@/lib/shop-listings/client'
+import { formatPhpAmount } from '@/lib/cart/formatPhp'
 import shopStyles from '../shop.module.css'
 import styles from './compare.module.css'
 
@@ -54,11 +55,6 @@ export default function ComparePage() {
   const highestRatedId = useMemo(() => {
     if (compareListings.length < 2) return null
     return compareListings.reduce((a, b) => ((a.provider?.rating ?? 0) >= (b.provider?.rating ?? 0) ? a : b)).listing?.id
-  }, [compareListings])
-
-  const mostPopularId = useMemo(() => {
-    if (compareListings.length < 2) return null
-    return compareListings.find((x) => x.listing.popular)?.listing?.id ?? null
   }, [compareListings])
 
   const bestValueId = useMemo(() => {
@@ -125,14 +121,6 @@ export default function ComparePage() {
               </p>
             </div>
           )}
-          {mostPopularId && (
-            <div className={shopStyles.compareHighlight}>
-              <p className={shopStyles.highlightLabel}>Most Popular</p>
-              <p className={shopStyles.highlightValue}>
-                {compareListings.find((x) => x.listing.id === mostPopularId)?.listing.name}
-              </p>
-            </div>
-          )}
           {bestValueId && (
             <div className={shopStyles.compareHighlight}>
               <p className={shopStyles.highlightLabel}>Best Value</p>
@@ -181,7 +169,7 @@ export default function ComparePage() {
                       }`}
                     >
                       <span className={shopStyles.comparePriceVal}>
-                        ₱{listing.price.toLocaleString('en-PH')}
+                        {formatPhpAmount(listing.price)}
                       </span>
                       {listing.id === lowestPriceId && (
                         <span className={shopStyles.compareCellTag}>Lowest</span>
@@ -252,21 +240,14 @@ export default function ComparePage() {
                   ))}
                 </tr>
 
-                {/* ── Popularity ── */}
+                {/* ── Availability ── */}
                 <tr className={shopStyles.compareRow}>
-                  <td className={shopStyles.compareRowLabel}>Popularity</td>
+                  <td className={shopStyles.compareRowLabel}>Availability</td>
                   {compareListings.map(({ listing }) => (
-                    <td
-                      key={listing.id}
-                      className={`${shopStyles.compareRowCell}${
-                        listing.id === mostPopularId ? ` ${shopStyles.compareCellHighlight}` : ''
-                      }`}
-                    >
-                      {listing.popular ? (
-                        <span className={shopStyles.comparePopularBadge}>Most Popular</span>
-                      ) : (
-                        <span className={shopStyles.compareText}>—</span>
-                      )}
+                    <td key={listing.id} className={shopStyles.compareRowCell}>
+                      <span className={shopStyles.compareText}>
+                        {stockAvailabilityLabel(listing.inStock).text}
+                      </span>
                     </td>
                   ))}
                 </tr>

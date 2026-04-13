@@ -1,5 +1,5 @@
--- Put listing status "active" first so template defaults match public shop visibility
--- (get_active_shop_listings only returns seller_listings.status = 'active').
+-- (Deprecated) This migration previously reordered a seller-editable `status` field in the template.
+-- Status is now system-driven (draft/pending/approved/archived) and should not appear in the template.
 
 update public.seller_form_templates
 set
@@ -7,16 +7,10 @@ set
     select coalesce(jsonb_agg(elem order by ord), '[]'::jsonb)
     from (
       select
-        case
-          when elem->>'id' = 'status' then jsonb_set(
-            elem,
-            '{options}',
-            '["active", "draft", "inactive", "archived"]'::jsonb
-          )
-          else elem
-        end as elem,
+        elem,
         ordinality as ord
       from jsonb_array_elements(fields) with ordinality as t(elem, ordinality)
+      where coalesce(elem->>'id', '') <> 'status'
     ) x
   ),
   updated_at = now()

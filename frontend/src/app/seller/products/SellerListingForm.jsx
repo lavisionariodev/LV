@@ -6,112 +6,47 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Check } from 'lucide-react'
 import { TbBulb, TbPhoto } from 'react-icons/tb'
-import { createSellerListing, uploadListingImages } from '@/lib/seller-listings/client'
+import {
+  createSellerListing,
+  submitListingForReview,
+  uploadListingImages,
+} from '@/lib/seller-listings/client'
 import { getSellerByUserId } from '@/lib/sellers/client'
 import { supabase } from '@/lib/supabase/client'
-import { fetchSellerTemplate } from '@/lib/seller-template/client'
-import {
-  getActiveTipSectionId,
-  getDefaultSectionConfig,
-  getOrderedSectionIds,
-  mergeSectionConfig,
-  normalizeSectionId,
-  sortTemplateFieldsForDisplay,
-} from '@/lib/seller-template/sections'
 import styles from './products.module.css'
 import NewListingLoadingState from '@/components/ui/Load/NewListingLoadingState'
 import { useMediaQuery } from '@/hooks'
+import { normalizeStockStatusValue } from '@/lib/shop-listings/client'
+import { formatPhpInputString, roundPhpAmount } from '@/lib/cart/formatPhp'
 
 /** Max images per listing (toolbar + upload strip). */
 export const MAX_LISTING_IMAGES = 10
 
-// --- Shared listing helpers (payload, validation, images) -----------------------------------------
+export const FALLBACK_IMAGE =
+  'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 640 420%22%3E%3Crect width=%22640%22 height=%22420%22 fill=%22%23d1d5db%22/%3E%3Cpath d=%22M230 160h180a22 22 0 0 1 22 22v56a22 22 0 0 1-22 22H230a22 22 0 0 1-22-22v-56a22 22 0 0 1 22-22Zm18 28a16 16 0 1 0 0.1 0Zm-8 56 38-34 35 30 44-40 55 44H240Z%22 fill=%22%239ca3af%22/%3E%3C/svg%3E'
 
-/** Default ids merged when missing from DB so sellers always get a complete form. */
-export const BUILTIN_LISTING_TEMPLATE_IDS = ['listing_images', 'listing_name', 'description']
+const LISTING_KIND_OPTIONS = [
+  { value: 'service', label: 'Service' },
+  { value: 'package', label: 'Package' },
+]
 
-export function isBuiltinListingTemplateId(id) {
-  return BUILTIN_LISTING_TEMPLATE_IDS.includes(String(id || ''))
+const SHOP_CATEGORY_OPTIONS = [
+  { value: 'memorial-planning', label: 'Memorial planning' },
+  { value: 'cremation', label: 'Cremation' },
+  { value: 'traditional-burial', label: 'Traditional burial' },
+  { value: 'other', label: 'Other' },
+]
+
+const SHOP_CATEGORY_SLUGS = new Set(SHOP_CATEGORY_OPTIONS.map((o) => o.value))
+
+function shopCategoryDisplayLabel(slug) {
+  const s = String(slug ?? '').trim().toLowerCase()
+  if (!s) return ''
+  const row = SHOP_CATEGORY_OPTIONS.find((o) => o.value === s)
+  return row?.label ?? ''
 }
 
-/** Defaults when template JSON omits these rows (admin can override labels, sections, max length, etc.). */
-export function getCoreListingFieldDefs() {
-  return [
-    {
-      id: 'listing_name',
-      label: 'Listing name',
-      type: 'text',
-      required: true,
-      placeholder: 'e.g. Memorial package — standard',
-      sublabel: '',
-      maxLength: 100,
-    },
-    {
-      id: 'description',
-      label: 'Description',
-      type: 'textarea',
-      required: false,
-      placeholder: 'Describe what this listing offers',
-      sublabel: 'Shown on the shop listing',
-      maxLength: 3000,
-    },
-  ]
-}
-
-export function getDefaultListingImagesFieldDef(firstSectionId) {
-  return {
-    id: 'listing_images',
-    type: 'images',
-    label: 'Images',
-    sublabel: 'Optional · JPG, PNG, multiple files',
-    placeholder: '',
-    required: false,
-    section: firstSectionId,
-    order: -3,
-    options: [],
-  }
-}
-
-/**
- * Merge saved template fields with built-in rows so listing name, description, and images stay configurable
- * in admin but still exist when the template is empty or legacy.
- */
-export function ensureBuiltInSellerTemplateFields(fields, orderedSectionIds) {
-  const first = orderedSectionIds?.length ? orderedSectionIds[0] : 'basic'
-  const list = Array.isArray(fields) ? [...fields] : []
-  const byId = new Map(list.map((f) => [String(f?.id), f]))
-
-  if (!byId.has('listing_images')) {
-    list.push(getDefaultListingImagesFieldDef(first))
-  }
-
-  const nameDescDefaults = getCoreListingFieldDefs()
-  nameDescDefaults.forEach((def, i) => {
-    if (!byId.has(def.id)) {
-      list.push({
-        ...def,
-        section: first,
-        order: def.id === 'listing_name' ? 0 : 1,
-        options: [],
-      })
-    }
-  })
-
-  return list
-}
-
-export function getCoreListingDefaults() {
-  return { listing_name: '', description: '' }
-}
-
-/** Multi-line package options: template type `string_list`, or legacy `package_options` as textarea. */
-export function isStringListField(field) {
-  if (!field) return false
-  const t = String(field.type || '')
-  if (t === 'string_list') return true
-  if (field.id === 'package_options' && t === 'textarea') return true
-  return false
-}
+const STOCK_STATUS_OPTIONS = ['In Stock', 'Out of Stock']
 
 export function normalizeStringListValue(raw) {
   if (raw == null) return []
@@ -122,14 +57,6 @@ export function normalizeStringListValue(raw) {
   return []
 }
 
-function stringListHasContent(value) {
-  return normalizeStringListValue(value).some((s) => String(s).trim() !== '')
-}
-
-export const FALLBACK_IMAGE =
-  'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 640 420%22%3E%3Crect width=%22640%22 height=%22420%22 fill=%22%23d1d5db%22/%3E%3Cpath d=%22M230 160h180a22 22 0 0 1 22 22v56a22 22 0 0 1-22 22H230a22 22 0 0 1-22-22v-56a22 22 0 0 1 22-22Zm18 28a16 16 0 1 0 0.1 0Zm-8 56 38-34 35 30 44-40 55 44H240Z%22 fill=%22%239ca3af%22/%3E%3C/svg%3E'
-
-/** True when the gallery has at least one real image (local preview or remote URL), not the gray placeholder. */
 export function listingGalleryHasUserImages(gallery) {
   if (!Array.isArray(gallery) || gallery.length === 0) return false
   return gallery.some((entry) => {
@@ -139,192 +66,6 @@ export function listingGalleryHasUserImages(gallery) {
     if (url.startsWith('blob:')) return true
     if (url.startsWith('http://') || url.startsWith('https://')) return true
     return false
-  })
-}
-
-/**
- * Step completion for sidebar: each section is complete when all required fields in that section have values.
- * Required `images` fields are checked against `listingGallery` (not `formValues`).
- */
-export function computeTemplateSectionCompletion(
-  formValues,
-  templateFields,
-  orderedSectionIds,
-  listingGallery = [],
-) {
-  if (!Array.isArray(orderedSectionIds) || !orderedSectionIds.length) return {}
-  const sorted = sortTemplateFieldsForDisplay(templateFields, orderedSectionIds)
-  const completed = {}
-  for (const secId of orderedSectionIds) {
-    const fieldsInSec = sorted.filter(
-      (f) => normalizeSectionId(f.section, orderedSectionIds) === secId,
-    )
-    const done = fieldsInSec.every((f) => {
-      if (f.type === 'images') {
-        if (!f.required) return true
-        return listingGalleryHasUserImages(listingGallery)
-      }
-      if (!f.required) return true
-      const v = formValues[f.id]
-      if (isStringListField(f)) return stringListHasContent(v)
-      return String(v ?? '').trim() !== ''
-    })
-    completed[secId] = done
-  }
-  return completed
-}
-
-export const STATUS_FIELD_DEFAULT = {
-  id: 'status',
-  label: 'Status',
-  type: 'select',
-  required: false,
-  placeholder: 'Select status',
-  options: ['draft', 'active', 'inactive', 'archived'],
-  order: 999,
-  section: 'others',
-  sublabel: '',
-}
-
-export function asInputValue(value) {
-  if (value == null) return ''
-  if (typeof value === 'number') return String(value)
-  return String(value)
-}
-
-export function getTemplateDefaults(fields) {
-  return (fields || []).reduce((acc, field) => {
-    if (field.type === 'images') return acc
-    if (isStringListField(field)) {
-      acc[field.id] = []
-      return acc
-    }
-    if (field.type === 'select') {
-      const first = Array.isArray(field.options) ? field.options[0] : ''
-      acc[field.id] = first || ''
-    } else {
-      acc[field.id] = ''
-    }
-    return acc
-  }, {})
-}
-
-export function ensureStatusField(fields) {
-  const list = Array.isArray(fields) ? [...fields] : []
-  const hasStatus = list.some((field) => field?.id === 'status')
-  if (hasStatus) return list
-  return [...list, { ...STATUS_FIELD_DEFAULT, order: list.length }]
-}
-
-export function dynamicValuesToFormState(dynamicValues, templateFields) {
-  const dv = dynamicValues && typeof dynamicValues === 'object' ? { ...dynamicValues } : {}
-  if (Array.isArray(dv.inclusions)) {
-    dv.inclusions = dv.inclusions.join('\n')
-  }
-  const merged = {
-    ...getCoreListingDefaults(),
-    ...getTemplateDefaults(templateFields),
-    ...dv,
-  }
-  ;(templateFields || []).forEach((field) => {
-    if (!isStringListField(field)) return
-    merged[field.id] = normalizeStringListValue(merged[field.id])
-  })
-  return merged
-}
-
-function coerceStringListDynamicValues(dynamicValues, templateFields) {
-  const dv = dynamicValues
-  for (const field of templateFields || []) {
-    if (!isStringListField(field)) continue
-    const id = field.id
-    const raw = dv[id]
-    if (Array.isArray(raw)) {
-      dv[id] = raw.map((s) => String(s).trim()).filter(Boolean)
-    } else if (typeof raw === 'string') {
-      dv[id] = raw
-        .split(/\n/)
-        .map((s) => s.trim())
-        .filter(Boolean)
-    } else {
-      dv[id] = []
-    }
-  }
-}
-
-export function buildSellerListingPayload({ template, formValues, selectedProduct, persistedImageUrls }) {
-  const dynamicValues = { ...formValues }
-  coerceStringListDynamicValues(dynamicValues, template?.fields || [])
-
-  const incRaw = dynamicValues.inclusions
-  if (typeof incRaw === 'string') {
-    dynamicValues.inclusions = incRaw
-      .split(/\n/)
-      .map((s) => s.trim())
-      .filter(Boolean)
-  }
-
-  const pkgOptRaw = dynamicValues.package_options
-  if (!Array.isArray(pkgOptRaw)) {
-    dynamicValues.package_options =
-      typeof pkgOptRaw === 'string'
-        ? pkgOptRaw
-            .split(/\n/)
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : []
-  }
-
-  delete dynamicValues.featured
-  delete dynamicValues.popular
-
-  const safeName =
-    String(dynamicValues.listing_name || selectedProduct?.name || '').trim() || 'Untitled listing'
-  const safeCategory =
-    String(dynamicValues.category || selectedProduct?.category || '').trim() || 'Service'
-  const area = String(
-    dynamicValues.coverage ?? dynamicValues.location ?? selectedProduct?.city ?? '',
-  ).trim()
-  const safeLocation = area || 'N/A'
-  const safeStatus = String(dynamicValues.status || selectedProduct?.status || 'draft')
-  const safePrice = Number(dynamicValues.base_price ?? selectedProduct?.startingPrice ?? 0) || 0
-
-  return {
-    template_id: template?.id || null,
-    listing_name: safeName,
-    category: safeCategory,
-    base_price: safePrice,
-    location: safeLocation,
-    status: safeStatus,
-    dynamic_values: dynamicValues,
-    image_urls: persistedImageUrls,
-  }
-}
-
-export function findFirstMissingRequiredField(
-  templateFields,
-  getFieldValue,
-  orderedSectionIds,
-  listingGallery = [],
-) {
-  const order =
-    Array.isArray(orderedSectionIds) && orderedSectionIds.length
-      ? orderedSectionIds
-      : getOrderedSectionIds(mergeSectionConfig(null))
-  const sorted = sortTemplateFieldsForDisplay(
-    Array.isArray(templateFields) ? templateFields : [],
-    order,
-  )
-  return sorted.find((field) => {
-    if (field.type === 'images') {
-      if (!field.required) return false
-      return !listingGalleryHasUserImages(listingGallery)
-    }
-    if (!field.required) return false
-    if (isStringListField(field)) {
-      return !stringListHasContent(getFieldValue(field.id))
-    }
-    return String(getFieldValue(field.id) ?? '').trim() === ''
   })
 }
 
@@ -359,48 +100,200 @@ export async function resolvePersistedImageUrls(editGallery, pendingImageFiles) 
   return { error: null, persistedImageUrls }
 }
 
-// --- ListingImageUploadTile ----------------------------------------------------------------------
+export function asInputValue(value) {
+  if (value == null) return ''
+  if (typeof value === 'number') return String(value)
+  return String(value)
+}
 
-/** Dashed “Add” tile — used by new listing + edit modal. */
-export function ListingImageUploadTile({
-  onClick,
-  disabled = false,
-  ariaLabel,
-  title,
-  subtitle,
-}) {
-  return (
-    <button
-      type="button"
-      className={styles.productModalUploadAddTile}
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={ariaLabel}
-      title={title}
-    >
-      <span className={styles.productModalUploadAddIconWrap}>
-        <TbPhoto className={styles.productModalUploadAddPhoto} size={26} aria-hidden />
-      </span>
-      <span className={styles.productModalUploadAddLabel}>Add</span>
-      {subtitle != null && subtitle !== '' ? (
-        <span className={styles.productModalUploadAddCount}>{subtitle}</span>
-      ) : null}
-    </button>
-  )
+export function getEmptyListingFormValues() {
+  return {
+    listing_name: '',
+    description: '',
+    funeral_category: 'memorial-planning',
+    funeral_category_other: '',
+    duration: '',
+    location: '',
+    kind: 'service',
+    base_price: '',
+    package_options: [],
+    stock_status: 'In Stock',
+    inclusions: '',
+    who_this_is_for: '',
+    important_notes: '',
+  }
 }
 
 /**
- * Native <select> popups are drawn by the OS and often render wider than the field on mobile.
- * On narrow viewports, use a bottom sheet so options stay full-width and aligned with the form.
+ * Map saved listing row or product summary (from ProductsContent) to form state.
  */
-function ListingFormSelectControl({ field, getFieldValue, setFieldValue }) {
+export function listingRowToFormValues(source) {
+  const empty = getEmptyListingFormValues()
+  if (!source) return empty
+
+  const pkgRaw = source.package_options ?? source.packageOptions
+  let package_options = []
+  if (Array.isArray(pkgRaw)) {
+    package_options = pkgRaw.map((x) => String(x ?? ''))
+  } else if (pkgRaw && typeof pkgRaw === 'object') {
+    package_options = []
+  }
+
+  const inc = source.inclusions
+  let inclusionsText = ''
+  if (Array.isArray(inc)) {
+    inclusionsText = inc.join('\n')
+  } else if (typeof inc === 'string') {
+    inclusionsText = inc
+  } else if (typeof source.inclusions === 'string') {
+    inclusionsText = source.inclusions
+  }
+
+  const loc =
+    source.location ??
+    source.coverage ??
+    (source.city && source.city !== 'N/A' ? source.city : '') ??
+    ''
+
+  const fcRawOriginal = String(source.funeral_category ?? source.funeralCategory ?? '').trim()
+  const rawFc = fcRawOriginal.toLowerCase()
+  let funeral_category = 'memorial-planning'
+  let funeral_category_other = ''
+  if (!rawFc) {
+    funeral_category = 'memorial-planning'
+  } else if (SHOP_CATEGORY_SLUGS.has(rawFc)) {
+    funeral_category = rawFc
+    if (rawFc === 'other') {
+      funeral_category_other = String(source.category ?? '').trim()
+    }
+  } else {
+    funeral_category = 'other'
+    funeral_category_other = fcRawOriginal
+  }
+
+  return {
+    ...empty,
+    listing_name: source.listing_name ?? source.name ?? '',
+    description: source.description ?? '',
+    funeral_category,
+    funeral_category_other,
+    duration: source.duration ?? '',
+    location: String(loc || ''),
+    kind: (source.listing_kind ?? source.kind ?? 'service').toLowerCase(),
+    base_price:
+      source.base_price != null
+        ? formatPhpInputString(source.base_price)
+        : source.startingPrice != null
+          ? formatPhpInputString(source.startingPrice)
+          : '',
+    package_options,
+    stock_status: normalizeStockStatusValue(source.stock_status ?? source.stockStatus) || 'In Stock',
+    inclusions: inclusionsText,
+    who_this_is_for: source.who_this_is_for ?? source.whoThisIsFor ?? '',
+    important_notes: source.important_notes ?? source.importantNotes ?? '',
+  }
+}
+
+export function buildSellerListingPayload({ formValues, selectedProduct, persistedImageUrls }) {
+  const pkg = normalizeStringListValue(formValues.package_options)
+    .map((s) => String(s).trim())
+    .filter(Boolean)
+
+  const stock = normalizeStockStatusValue(formValues.stock_status) || 'In Stock'
+  const area = String(formValues.location ?? '').trim()
+  const safeName = String(formValues.listing_name || selectedProduct?.name || '').trim() || 'Untitled listing'
+  const fcSlug = String(formValues.funeral_category || '').trim().toLowerCase()
+  const otherSpec = String(formValues.funeral_category_other ?? '').trim()
+  const safeCategory =
+    fcSlug === 'other'
+      ? otherSpec || 'Other'
+      : shopCategoryDisplayLabel(fcSlug) ||
+        String(selectedProduct?.category || '').trim() ||
+        'Service'
+  const safeStatus = String(selectedProduct?.status || 'draft')
+  const priceRaw = String(formValues.base_price ?? '').trim().replace(/,/g, '')
+  const safePrice = priceRaw === '' ? 0 : Number(priceRaw)
+  const price = Number.isFinite(safePrice) ? roundPhpAmount(safePrice) : 0
+
+  return {
+    listing_name: safeName,
+    category: safeCategory,
+    funeral_category: fcSlug || null,
+    description: String(formValues.description || '').trim() || null,
+    duration: String(formValues.duration || '').trim() || null,
+    location: area || 'N/A',
+    listing_kind: String(formValues.kind || 'service').trim().toLowerCase() || 'service',
+    base_price: price,
+    package_options: pkg.length ? pkg : [],
+    stock_status: stock,
+    inclusions: String(formValues.inclusions || '').trim() || null,
+    who_this_is_for: String(formValues.who_this_is_for || '').trim() || null,
+    important_notes: String(formValues.important_notes || '').trim() || null,
+    status: safeStatus,
+    image_urls: persistedImageUrls,
+  }
+}
+
+export function findFirstMissingRequiredField(formValues, editGallery = []) {
+  if (!String(formValues?.listing_name || '').trim()) {
+    return { id: 'listing_name', label: 'Listing name' }
+  }
+  if (String(formValues?.funeral_category || '').trim().toLowerCase() === 'other') {
+    if (!String(formValues?.funeral_category_other || '').trim()) {
+      return { id: 'funeral_category_other', label: 'Please specify your category' }
+    }
+  }
+  if (!listingGalleryHasUserImages(editGallery)) {
+    return { id: 'listing_images', label: 'Images' }
+  }
+  const rawPrice = String(formValues.base_price ?? '').trim().replace(/,/g, '')
+  if (rawPrice === '' || !Number.isFinite(Number(rawPrice))) {
+    return { id: 'base_price', label: 'Starting price' }
+  }
+  if (!String(formValues?.inclusions || '').trim()) {
+    return { id: 'inclusions', label: "What's included" }
+  }
+  if (!String(formValues?.who_this_is_for || '').trim()) {
+    return { id: 'who_this_is_for', label: 'Who this is for' }
+  }
+  if (!String(formValues?.important_notes || '').trim()) {
+    return { id: 'important_notes', label: 'Important notes' }
+  }
+  return null
+}
+
+function computeFixedSectionCompletion(formValues, listingGallery) {
+  const nameOk = String(formValues.listing_name || '').trim() !== ''
+  const imagesOk = listingGalleryHasUserImages(listingGallery)
+  const rawPrice = String(formValues.base_price ?? '').trim().replace(/,/g, '')
+  const priceOk = rawPrice !== '' && Number.isFinite(Number(rawPrice)) && Number(rawPrice) >= 0
+  const incOk = String(formValues.inclusions || '').trim() !== ''
+  const whoOk = String(formValues.who_this_is_for || '').trim() !== ''
+  const notesOk = String(formValues.important_notes || '').trim() !== ''
+  return {
+    basic: nameOk && imagesOk,
+    sales: priceOk,
+    others: incOk && whoOk && notesOk,
+  }
+}
+
+function getActiveTipSectionId(completed, order) {
+  for (const id of order) {
+    if (!completed[id]) return id
+  }
+  return order[order.length - 1]
+}
+
+// --- ListingFormSelectControl --------------------------------------------------------------------
+
+function ListingFormSelectControl({ label, value, options, onChange, placeholder }) {
   const isNarrow = useMediaQuery('(max-width: 640px)')
   const [sheetOpen, setSheetOpen] = useState(false)
   const [desktopOpen, setDesktopOpen] = useState(false)
   const desktopDropdownRef = useRef(null)
-  const rawValue = asInputValue(getFieldValue(field.id))
-  const placeholderText = field.placeholder || `Select ${String(field.label || '').toLowerCase()}`
-  const opts = Array.isArray(field.options) ? field.options : []
+  const rawValue = asInputValue(value)
+  const opts = Array.isArray(options) ? options : []
+  const placeholderText = placeholder || 'Select'
 
   useEffect(() => {
     if (!sheetOpen) return
@@ -432,7 +325,7 @@ function ListingFormSelectControl({ field, getFieldValue, setFieldValue }) {
   }, [sheetOpen])
 
   if (!isNarrow) {
-    const selectedLabel = opts.find((option) => option === rawValue) || placeholderText
+    const selectedLabel = opts.find((o) => o.value === rawValue)?.label || placeholderText
     return (
       <div
         className={`${styles.filterDropdownWrap} ${styles.modalDropdownWrap} ${
@@ -446,7 +339,7 @@ function ListingFormSelectControl({ field, getFieldValue, setFieldValue }) {
           onClick={() => setDesktopOpen((prev) => !prev)}
           aria-haspopup="listbox"
           aria-expanded={desktopOpen}
-          aria-label={field.label}
+          aria-label={label}
         >
           <span className={styles.filterDropdownLabel}>{selectedLabel}</span>
           <span className={styles.filterDropdownChevron} aria-hidden>
@@ -454,22 +347,22 @@ function ListingFormSelectControl({ field, getFieldValue, setFieldValue }) {
           </span>
         </button>
         {desktopOpen && (
-          <div className={styles.filterDropdownPanel} role="listbox" aria-label={`${field.label} options`}>
+          <div className={styles.filterDropdownPanel} role="listbox" aria-label={`${label} options`}>
             {opts.map((option) => (
               <button
-                key={option}
+                key={option.value}
                 type="button"
                 role="option"
-                aria-selected={rawValue === option}
+                aria-selected={rawValue === option.value}
                 className={`${styles.filterDropdownOption} ${
-                  rawValue === option ? styles.filterDropdownOptionSelected : ''
+                  rawValue === option.value ? styles.filterDropdownOptionSelected : ''
                 }`}
                 onClick={() => {
-                  setFieldValue(field.id, option)
+                  onChange(option.value)
                   setDesktopOpen(false)
                 }}
               >
-                {option}
+                {option.label}
               </button>
             ))}
           </div>
@@ -478,7 +371,7 @@ function ListingFormSelectControl({ field, getFieldValue, setFieldValue }) {
     )
   }
 
-  const display = rawValue || placeholderText
+  const display = opts.find((o) => o.value === rawValue)?.label || placeholderText
   const sheet = sheetOpen ? (
     <div className={styles.listingFormSelectSheetRoot}>
       <button
@@ -492,10 +385,10 @@ function ListingFormSelectControl({ field, getFieldValue, setFieldValue }) {
         className={styles.listingFormSelectSheet}
         role="dialog"
         aria-modal="true"
-        aria-label={field.label}
+        aria-label={label}
       >
         <div className={styles.listingFormSelectSheetHeader}>
-          <span className={styles.listingFormSelectSheetTitle}>{field.label}</span>
+          <span className={styles.listingFormSelectSheetTitle}>{label}</span>
           <button
             type="button"
             className={styles.listingFormSelectSheetClose}
@@ -508,19 +401,19 @@ function ListingFormSelectControl({ field, getFieldValue, setFieldValue }) {
         <div className={styles.listingFormSelectSheetList} role="listbox">
           {opts.map((opt) => (
             <button
-              key={opt}
+              key={opt.value}
               type="button"
               role="option"
-              aria-selected={rawValue === opt}
+              aria-selected={rawValue === opt.value}
               className={`${styles.listingFormSelectSheetRow} ${
-                rawValue === opt ? styles.listingFormSelectSheetRowActive : ''
+                rawValue === opt.value ? styles.listingFormSelectSheetRowActive : ''
               }`}
               onClick={() => {
-                setFieldValue(field.id, opt)
+                onChange(opt.value)
                 setSheetOpen(false)
               }}
             >
-              {opt}
+              {opt.label}
             </button>
           ))}
         </div>
@@ -536,7 +429,7 @@ function ListingFormSelectControl({ field, getFieldValue, setFieldValue }) {
         onClick={() => setSheetOpen(true)}
         aria-haspopup="listbox"
         aria-expanded={sheetOpen}
-        aria-label={field.label}
+        aria-label={label}
       >
         <span className={styles.listingFormSelectTriggerLabel}>{display}</span>
         <span className={styles.listingFormSelectTriggerCaret} aria-hidden>
@@ -548,277 +441,426 @@ function ListingFormSelectControl({ field, getFieldValue, setFieldValue }) {
   )
 }
 
-// --- SellerListingFormFields + file input --------------------------------------------------------
+export function ListingImageUploadTile({
+  onClick,
+  disabled = false,
+  ariaLabel,
+  title,
+  subtitle,
+}) {
+  return (
+    <button
+      type="button"
+      className={styles.productModalUploadAddTile}
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={ariaLabel}
+      title={title}
+    >
+      <span className={styles.productModalUploadAddIconWrap}>
+        <TbPhoto className={styles.productModalUploadAddPhoto} size={26} aria-hidden />
+      </span>
+      <span className={styles.productModalUploadAddLabel}>Add</span>
+      {subtitle != null && subtitle !== '' ? (
+        <span className={styles.productModalUploadAddCount}>{subtitle}</span>
+      ) : null}
+    </button>
+  )
+}
 
 export function SellerListingFormFields({
-  templateFields,
-  sectionConfig,
   formError,
   getFieldValue,
   setFieldValue,
   editGallery,
   onUploadClick,
   onRemoveImage,
-  /** e.g. "(3)" or "(3/10)" for new listing max images */
   imageUploadSubtitle,
 }) {
-  const sections = sectionConfig?.length ? sectionConfig : mergeSectionConfig(null)
-  const orderedSectionIds = getOrderedSectionIds(sections)
-  const firstSectionId = sections[0]?.id
-  const labelById = Object.fromEntries(sections.map((s) => [s.id, s.label]))
-  const mergedFields = useMemo(
-    () => ensureBuiltInSellerTemplateFields(templateFields, orderedSectionIds),
-    [templateFields, orderedSectionIds],
-  )
-  const sorted = sortTemplateFieldsForDisplay(mergedFields, orderedSectionIds)
   const subtitle =
     imageUploadSubtitle != null && imageUploadSubtitle !== ''
       ? imageUploadSubtitle
       : `(${editGallery.length})`
 
-  const renderImagesRow = (field) => {
-    const labelText = String(field.label || 'Images').trim() || 'Images'
-    const sub = String(field.sublabel || '').trim()
-    return (
-      <div key={field.id} className={styles.listingFormRow}>
-        <div className={styles.listingFormLabelCol}>
-          <div className={styles.listingFormLabelText}>
-            {field.required ? <span className={styles.listingFormRequired}>*</span> : null}
-            {labelText}
-          </div>
-          {sub ? <div className={styles.listingFormSublabel}>{sub}</div> : null}
-        </div>
-        <div className={styles.listingFormControlCol}>
-          <div className={styles.productModalUploadRow}>
-            <div className={styles.productModalUploadList}>
-              {editGallery.map((entry, idx) => (
-                <div key={idx} className={styles.productModalUploadPreview}>
-                  <img
-                    src={entry.url}
-                    alt={`${asInputValue(getFieldValue('listing_name')) || 'Listing'} ${idx + 1}`}
-                  />
-                  <button
-                    type="button"
-                    className={styles.productModalUploadRemove}
-                    onClick={() => onRemoveImage(idx)}
-                    aria-label="Remove image"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-            <ListingImageUploadTile
-              onClick={onUploadClick}
-              subtitle={subtitle}
-              aria-label="Upload images"
-              title="Add images"
-            />
-          </div>
-        </div>
-      </div>
+  const items = normalizeStringListValue(getFieldValue('package_options'))
+
+  const updatePackageAt = (index, value) => {
+    const next = [...items]
+    next[index] = value
+    setFieldValue('package_options', next)
+  }
+
+  const removePackageAt = (index) => {
+    setFieldValue(
+      'package_options',
+      items.filter((_, i) => i !== index),
     )
   }
 
-  const renderStringListRow = (field) => {
-    const sublabelText = String(field.sublabel || '').trim()
-    const ph = String(field.placeholder || '').trim()
-    const items = normalizeStringListValue(getFieldValue(field.id))
-
-    const updateAt = (index, value) => {
-      const next = [...items]
-      next[index] = value
-      setFieldValue(field.id, next)
-    }
-
-    const removeAt = (index) => {
-      setFieldValue(
-        field.id,
-        items.filter((_, i) => i !== index),
-      )
-    }
-
-    const addRow = () => {
-      setFieldValue(field.id, [...items, ''])
-    }
-
-    return (
-      <div key={field.id} className={styles.listingFormRow}>
-        <div className={styles.listingFormLabelCol}>
-          <div className={styles.listingFormLabelText}>
-            {field.required ? <span className={styles.listingFormRequired}>*</span> : null}
-            {field.label}
-          </div>
-          {sublabelText ? <div className={styles.listingFormSublabel}>{sublabelText}</div> : null}
-        </div>
-        <div className={styles.listingFormControlCol}>
-          <div className={styles.listingFormStringList}>
-            {items.map((val, idx) => (
-              <div key={idx} className={styles.listingFormStringListRow}>
-                <input
-                  type="text"
-                  className={styles.listingFormInput}
-                  value={val}
-                  placeholder={ph || 'Option label'}
-                  onChange={(e) => updateAt(idx, e.target.value)}
-                  aria-label={`${field.label} option ${idx + 1}`}
-                />
-                <button
-                  type="button"
-                  className={styles.listingFormStringListRemove}
-                  onClick={() => removeAt(idx)}
-                  aria-label={`Remove option ${idx + 1}`}
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              className={styles.listingFormStringListAdd}
-              onClick={addRow}
-            >
-              Add option
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  const renderFieldRow = (field) => {
-    const sublabelText = String(field.sublabel || '').trim()
-    const controlPlaceholder = String(field.placeholder || '').trim()
-    const maxLen =
-      field.maxLength != null &&
-      Number.isFinite(Number(field.maxLength)) &&
-      Number(field.maxLength) > 0
-        ? Math.min(Math.floor(Number(field.maxLength)), 100000)
-        : undefined
-    const rawValue = asInputValue(getFieldValue(field.id))
-    const charCount = rawValue.length
-    const shellTextareaPlaceholder =
-      field.id === 'description'
-        ? controlPlaceholder || 'Please enter a product description'
-        : controlPlaceholder
-
-    return (
-      <div key={field.id} className={styles.listingFormRow}>
-        <div className={styles.listingFormLabelCol}>
-          <div className={styles.listingFormLabelText}>
-            {field.required ? <span className={styles.listingFormRequired}>*</span> : null}
-            {field.label}
-          </div>
-          {sublabelText ? <div className={styles.listingFormSublabel}>{sublabelText}</div> : null}
-        </div>
-        <div className={styles.listingFormControlCol}>
-          {field.type === 'textarea' && maxLen ? (
-            <div className={styles.listingFormTextareaShell}>
-              <div className={styles.listingFormTextareaToolbar}>
-                <div className={styles.listingFormTextareaToolbarLeft}>
-                  <span className={styles.listingFormTextareaToolbarHint}>
-                    Up to {maxLen.toLocaleString()} characters
-                  </span>
-                </div>
-                <span className={styles.listingFormTextareaToolbarCount} aria-live="polite">
-                  {charCount}/{maxLen}
-                </span>
-              </div>
-              <textarea
-                className={styles.listingFormTextareaInShell}
-                value={rawValue}
-                placeholder={shellTextareaPlaceholder}
-                onChange={(e) => setFieldValue(field.id, e.target.value)}
-                aria-label={field.label}
-                maxLength={maxLen}
-              />
-            </div>
-          ) : field.type === 'textarea' ? (
-            <textarea
-              className={styles.listingFormTextarea}
-              value={rawValue}
-              placeholder={controlPlaceholder}
-              onChange={(e) => setFieldValue(field.id, e.target.value)}
-              aria-label={field.label}
-              maxLength={maxLen}
-            />
-          ) : field.type === 'select' ? (
-            <ListingFormSelectControl
-              field={field}
-              getFieldValue={getFieldValue}
-              setFieldValue={setFieldValue}
-            />
-          ) : maxLen ? (
-            <div
-              className={`${styles.listingFormFieldWithCount} ${styles.listingFormFieldWithCountSingle}`}
-            >
-              <input
-                type={field.type || 'text'}
-                className={styles.listingFormInput}
-                value={rawValue}
-                placeholder={controlPlaceholder}
-                onChange={(e) => setFieldValue(field.id, e.target.value)}
-                aria-label={field.label}
-                maxLength={maxLen}
-              />
-              <span className={styles.listingFormCharCount} aria-hidden>
-                {charCount}/{maxLen}
-              </span>
-            </div>
-          ) : (
-            <input
-              type={field.type || 'text'}
-              className={styles.listingFormInput}
-              value={rawValue}
-              placeholder={controlPlaceholder}
-              onChange={(e) => setFieldValue(field.id, e.target.value)}
-              aria-label={field.label}
-              maxLength={maxLen}
-            />
-          )}
-        </div>
-      </div>
-    )
+  const addPackageRow = () => {
+    setFieldValue('package_options', [...items, ''])
   }
 
   return (
     <div className={styles.listingFormFieldsRoot}>
       {formError ? <p className={styles.listingFormError}>{formError}</p> : null}
-      {templateFields.filter(
-        (f) => !['listing_name', 'description', 'listing_images', 'status'].includes(String(f?.id)),
-      ).length === 0 ? (
-        <p className={styles.listingFormEmpty}>
-          No extra fields yet — add more in Admin → Seller template. Name, description, and images
-          can be edited there too.
-        </p>
-      ) : null}
-      <div className={styles.listingFormSectionStack}>
-        {sections.map((sec) => {
-          const secId = sec.id
-          const inSection = sorted.filter(
-            (f) => normalizeSectionId(f.section, orderedSectionIds) === secId,
-          )
-          if (!inSection.length && secId !== firstSectionId) return null
 
-          return (
-            <div key={secId} className={styles.newListingCard}>
-              <div className={styles.listingFormSection}>
-                <h3 className={styles.listingFormSectionTitle}>
-                  {labelById[secId] || 'Untitled section'}
-                </h3>
-                <div className={styles.listingFormSectionCard}>
-                  {inSection.map((field) =>
-                    field.type === 'images'
-                      ? renderImagesRow(field)
-                      : isStringListField(field)
-                        ? renderStringListRow(field)
-                        : renderFieldRow(field),
-                  )}
+      <div className={styles.listingFormSectionStack}>
+        <div className={styles.newListingCard}>
+          <div className={styles.listingFormSection}>
+            <h3 className={styles.listingFormSectionTitle}>Basic information</h3>
+            <div className={styles.listingFormSectionCard}>
+              <div className={styles.listingFormRow}>
+                <div className={styles.listingFormLabelCol}>
+                  <div className={styles.listingFormLabelText}>
+                    <span className={styles.listingFormRequired}>*</span> Images
+                  </div>
+                  <div className={styles.listingFormSublabel}>JPG, PNG, WebP, or GIF · at least one image</div>
+                </div>
+                <div className={styles.listingFormControlCol}>
+                  <div className={styles.productModalUploadRow}>
+                    <div className={styles.productModalUploadList}>
+                      {editGallery.map((entry, idx) => (
+                        <div key={idx} className={styles.productModalUploadPreview}>
+                          <img
+                            src={entry.url}
+                            alt={`${asInputValue(getFieldValue('listing_name')) || 'Listing'} ${idx + 1}`}
+                          />
+                          <button
+                            type="button"
+                            className={styles.productModalUploadRemove}
+                            onClick={() => onRemoveImage(idx)}
+                            aria-label="Remove image"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <ListingImageUploadTile
+                      onClick={onUploadClick}
+                      subtitle={subtitle}
+                      aria-label="Upload images"
+                      title="Add images"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.listingFormRow}>
+                <div className={styles.listingFormLabelCol}>
+                  <div className={styles.listingFormLabelText}>
+                    <span className={styles.listingFormRequired}>*</span> Listing name
+                  </div>
+                </div>
+                <div className={styles.listingFormControlCol}>
+                  <div className={`${styles.listingFormFieldWithCount} ${styles.listingFormFieldWithCountSingle}`}>
+                    <input
+                      type="text"
+                      className={styles.listingFormInput}
+                      value={asInputValue(getFieldValue('listing_name'))}
+                      placeholder="e.g. Memorial package — standard"
+                      onChange={(e) => setFieldValue('listing_name', e.target.value)}
+                      maxLength={100}
+                      aria-label="Listing name"
+                    />
+                    <span className={styles.listingFormCharCount} aria-live="polite">
+                      {asInputValue(getFieldValue('listing_name')).length}/100
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.listingFormRow}>
+                <div className={styles.listingFormLabelCol}>
+                  <div className={styles.listingFormLabelText}>Listing type</div>
+                </div>
+                <div className={styles.listingFormControlCol}>
+                  <ListingFormSelectControl
+                    label="Listing type"
+                    value={getFieldValue('kind')}
+                    options={LISTING_KIND_OPTIONS}
+                    onChange={(v) => setFieldValue('kind', v)}
+                    placeholder="Type"
+                  />
+                </div>
+              </div>
+
+              <div className={styles.listingFormRow}>
+                <div className={styles.listingFormLabelCol}>
+                  <div className={styles.listingFormLabelText}>Description</div>
+                </div>
+                <div className={styles.listingFormControlCol}>
+                  <div className={styles.listingFormTextareaShell}>
+                    <div className={styles.listingFormTextareaToolbar}>
+                      <div className={styles.listingFormTextareaToolbarLeft}>
+                        <span className={styles.listingFormTextareaToolbarHint}>Up to 3,000 characters</span>
+                      </div>
+                      <span className={styles.listingFormTextareaToolbarCount} aria-live="polite">
+                        {asInputValue(getFieldValue('description')).length}/3000
+                      </span>
+                    </div>
+                    <textarea
+                      className={styles.listingFormTextareaInShell}
+                      value={asInputValue(getFieldValue('description'))}
+                      placeholder="Describe what this listing offers"
+                      onChange={(e) => setFieldValue('description', e.target.value)}
+                      maxLength={3000}
+                      aria-label="Description"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.listingFormRow}>
+                <div className={styles.listingFormLabelCol}>
+                  <div className={styles.listingFormLabelText}>Shop category</div>
+                  <div className={styles.listingFormSublabel}>
+                    How your listing is grouped in the shop (routing and filters)
+                  </div>
+                </div>
+                <div className={styles.listingFormControlCol}>
+                  <ListingFormSelectControl
+                    label="Shop category"
+                    value={getFieldValue('funeral_category')}
+                    options={SHOP_CATEGORY_OPTIONS}
+                    onChange={(v) => {
+                      setFieldValue('funeral_category', v)
+                      if (v !== 'other') setFieldValue('funeral_category_other', '')
+                    }}
+                    placeholder="Select category"
+                  />
+                </div>
+              </div>
+
+              {String(getFieldValue('funeral_category') || '')
+                .trim()
+                .toLowerCase() === 'other' ? (
+                <div className={styles.listingFormRow}>
+                  <div className={styles.listingFormLabelCol}>
+                    <div className={styles.listingFormLabelText}>
+                      <span className={styles.listingFormRequired}>*</span> Please specify
+                    </div>
+                  </div>
+                  <div className={styles.listingFormControlCol}>
+                    <input
+                      type="text"
+                      className={styles.listingFormInput}
+                      value={asInputValue(getFieldValue('funeral_category_other'))}
+                      placeholder="Type your category"
+                      onChange={(e) => setFieldValue('funeral_category_other', e.target.value)}
+                      maxLength={200}
+                      aria-label="Please specify shop category"
+                      id="seller-listing-funeral-category-other"
+                    />
+                  </div>
+                </div>
+              ) : null}
+
+              <div className={styles.listingFormRow}>
+                <div className={styles.listingFormLabelCol}>
+                  <div className={styles.listingFormLabelText}>Duration</div>
+                </div>
+                <div className={styles.listingFormControlCol}>
+                  <input
+                    type="text"
+                    className={styles.listingFormInput}
+                    value={asInputValue(getFieldValue('duration'))}
+                    placeholder="e.g. 2 hours"
+                    onChange={(e) => setFieldValue('duration', e.target.value)}
+                    aria-label="Duration"
+                  />
+                </div>
+              </div>
+
+              <div className={styles.listingFormRow}>
+                <div className={styles.listingFormLabelCol}>
+                  <div className={styles.listingFormLabelText}>Location / Coverage</div>
+                </div>
+                <div className={styles.listingFormControlCol}>
+                  <input
+                    type="text"
+                    className={styles.listingFormInput}
+                    value={asInputValue(getFieldValue('location'))}
+                    placeholder="Service area or city"
+                    onChange={(e) => setFieldValue('location', e.target.value)}
+                    aria-label="Location"
+                  />
+                </div>
+              </div>
+
+              <div className={styles.listingFormRow}>
+                <div className={styles.listingFormLabelCol}>
+                  <div className={styles.listingFormLabelText}>Package options</div>
+                  <div className={styles.listingFormSublabel}>Buyer-facing labels</div>
+                </div>
+                <div className={styles.listingFormControlCol}>
+                  <div className={styles.listingFormStringList}>
+                    {items.map((val, idx) => (
+                      <div key={idx} className={styles.listingFormStringListRow}>
+                        <input
+                          type="text"
+                          className={styles.listingFormInput}
+                          value={val}
+                          placeholder="Option label"
+                          onChange={(e) => updatePackageAt(idx, e.target.value)}
+                          aria-label={`Package option ${idx + 1}`}
+                        />
+                        <button
+                          type="button"
+                          className={styles.listingFormStringListRemove}
+                          onClick={() => removePackageAt(idx)}
+                          aria-label={`Remove option ${idx + 1}`}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                    <button type="button" className={styles.listingFormStringListAdd} onClick={addPackageRow}>
+                      Add option
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          )
-        })}
+          </div>
+        </div>
+
+        <div className={styles.newListingCard}>
+          <div className={styles.listingFormSection}>
+            <h3 className={styles.listingFormSectionTitle}>Sales information</h3>
+            <div className={styles.listingFormSectionCard}>
+              <div className={styles.listingFormRow}>
+                <div className={styles.listingFormLabelCol}>
+                  <div className={styles.listingFormLabelText}>
+                    <span className={styles.listingFormRequired}>*</span> Starting price (PHP)
+                  </div>
+                </div>
+                <div className={styles.listingFormControlCol}>
+                  <input
+                    type="number"
+                    className={styles.listingFormInput}
+                    value={asInputValue(getFieldValue('base_price'))}
+                    placeholder="0"
+                    min={0}
+                    step="0.01"
+                    onChange={(e) => setFieldValue('base_price', e.target.value)}
+                    aria-label="Starting price"
+                  />
+                </div>
+              </div>
+
+              <div className={styles.listingFormRow}>
+                <div className={styles.listingFormLabelCol}>
+                  <div className={styles.listingFormLabelText}>Availability</div>
+                </div>
+                <div className={styles.listingFormControlCol}>
+                  <ListingFormSelectControl
+                    label="Availability"
+                    value={getFieldValue('stock_status')}
+                    options={STOCK_STATUS_OPTIONS.map((s) => ({ value: s, label: s }))}
+                    onChange={(v) => setFieldValue('stock_status', v)}
+                    placeholder="Availability"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.newListingCard}>
+          <div className={styles.listingFormSection}>
+            <h3 className={styles.listingFormSectionTitle}>Others</h3>
+            <div className={styles.listingFormSectionCard}>
+              <div className={styles.listingFormRow}>
+                <div className={styles.listingFormLabelCol}>
+                  <div className={styles.listingFormLabelText}>
+                    <span className={styles.listingFormRequired}>*</span> What&apos;s included
+                  </div>
+                </div>
+                <div className={styles.listingFormControlCol}>
+                  <div className={styles.listingFormTextareaShell}>
+                    <div className={styles.listingFormTextareaToolbar}>
+                      <div className={styles.listingFormTextareaToolbarLeft}>
+                        <span className={styles.listingFormTextareaToolbarHint}>Up to 3,000 characters</span>
+                      </div>
+                      <span className={styles.listingFormTextareaToolbarCount} aria-live="polite">
+                        {asInputValue(getFieldValue('inclusions')).length}/3000
+                      </span>
+                    </div>
+                    <textarea
+                      className={styles.listingFormTextareaInShell}
+                      value={asInputValue(getFieldValue('inclusions'))}
+                      placeholder="One item per line"
+                      onChange={(e) => setFieldValue('inclusions', e.target.value)}
+                      maxLength={3000}
+                      rows={4}
+                      aria-label="What is included"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.listingFormRow}>
+                <div className={styles.listingFormLabelCol}>
+                  <div className={styles.listingFormLabelText}>
+                    <span className={styles.listingFormRequired}>*</span> Who this is for
+                  </div>
+                </div>
+                <div className={styles.listingFormControlCol}>
+                  <div className={styles.listingFormTextareaShell}>
+                    <div className={styles.listingFormTextareaToolbar}>
+                      <div className={styles.listingFormTextareaToolbarLeft}>
+                        <span className={styles.listingFormTextareaToolbarHint}>Up to 3,000 characters</span>
+                      </div>
+                      <span className={styles.listingFormTextareaToolbarCount} aria-live="polite">
+                        {asInputValue(getFieldValue('who_this_is_for')).length}/3000
+                      </span>
+                    </div>
+                    <textarea
+                      className={styles.listingFormTextareaInShell}
+                      value={asInputValue(getFieldValue('who_this_is_for'))}
+                      placeholder="Describe your audience"
+                      onChange={(e) => setFieldValue('who_this_is_for', e.target.value)}
+                      maxLength={3000}
+                      rows={3}
+                      aria-label="Who this is for"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.listingFormRow}>
+                <div className={styles.listingFormLabelCol}>
+                  <div className={styles.listingFormLabelText}>
+                    <span className={styles.listingFormRequired}>*</span> Important notes
+                  </div>
+                </div>
+                <div className={styles.listingFormControlCol}>
+                  <div className={styles.listingFormTextareaShell}>
+                    <div className={styles.listingFormTextareaToolbar}>
+                      <div className={styles.listingFormTextareaToolbarLeft}>
+                        <span className={styles.listingFormTextareaToolbarHint}>Up to 3,000 characters</span>
+                      </div>
+                      <span className={styles.listingFormTextareaToolbarCount} aria-live="polite">
+                        {asInputValue(getFieldValue('important_notes')).length}/3000
+                      </span>
+                    </div>
+                    <textarea
+                      className={styles.listingFormTextareaInShell}
+                      value={asInputValue(getFieldValue('important_notes'))}
+                      placeholder="Policies, disclaimers, or limitations"
+                      onChange={(e) => setFieldValue('important_notes', e.target.value)}
+                      maxLength={3000}
+                      rows={3}
+                      aria-label="Important notes"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -837,20 +879,26 @@ export function SellerListingFileInput({ fileInputRef, onFilesSelected, accept =
   )
 }
 
-// --- New listing page (route /seller/products/new-listing) -----------------------------------------------
+// --- New listing page ---------------------------------------------------------------------------------
 
 const ALLOWED_IMAGE_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
 
 const LISTING_IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,image/gif'
 
+const STATIC_SECTIONS = [
+  { id: 'basic', label: 'Basic information' },
+  { id: 'sales', label: 'Sales information' },
+  { id: 'others', label: 'Others' },
+]
+
 const FALLBACK_SECTION_TIPS = {
   basic: {
     title: 'Listing basics',
-    body: 'Use clear photos and a descriptive name so buyers know what they get. Category, duration, and coverage help them compare options and find you in search.',
+    body: 'Use clear photos and a descriptive name so buyers know what they get. Add package options for tiers or add-ons; category, duration, and coverage help them compare and find you in search.',
   },
   sales: {
     title: 'Pricing & options',
-    body: 'Set a starting price buyers can trust. Use price notes for caveats. Package options are great for tiers or add-ons.',
+    body: 'Set a starting price buyers can trust. Stock drives availability on the shop.',
   },
   others: {
     title: 'Inclusions & policies',
@@ -871,7 +919,7 @@ function NewListingProgressPanel({ sections, completed, activeId, tipTitle, tipB
     <aside className={styles.newListingAside} aria-label="Listing progress">
       <div className={styles.newListingStepper} role="group" aria-label="Section completion">
         <ol className={styles.newListingStepperList}>
-          {sections.map((s, index) => {
+          {sections.map((s) => {
             const isDone = completed[s.id]
             const isActive = !isDone && s.id === activeId
             return (
@@ -942,87 +990,33 @@ export default function NewListingClient() {
   const searchParams = useSearchParams()
   const fileInputRef = useRef(null)
 
-  const [formValues, setFormValues] = useState({})
-  const [template, setTemplate] = useState(null)
-  const [templateFields, setTemplateFields] = useState([])
-  const [sectionRows, setSectionRows] = useState(() => getDefaultSectionConfig())
+  const [formValues, setFormValues] = useState(() => getEmptyListingFormValues())
   const [editGallery, setEditGallery] = useState([])
   const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
-  const [loadingTemplate, setLoadingTemplate] = useState(true)
+  const [submitBusy, setSubmitBusy] = useState(false)
   const [loadingSeller, setLoadingSeller] = useState(true)
   const [sellerAccountStatus, setSellerAccountStatus] = useState(null)
   const [imageUploadNote, setImageUploadNote] = useState(null)
   const [toastMessage, setToastMessage] = useState('')
   const [toastType, setToastType] = useState('error')
 
-  const orderedSectionIds = useMemo(() => getOrderedSectionIds(sectionRows), [sectionRows])
-
-  const listingSections = useMemo(
-    () => sectionRows.map((s) => ({ id: s.id, label: s.label })),
-    [sectionRows],
-  )
-
-  const sectionConfigById = useMemo(
-    () => Object.fromEntries(sectionRows.map((s) => [s.id, s])),
-    [sectionRows],
-  )
+  const sectionOrder = useMemo(() => STATIC_SECTIONS.map((s) => s.id), [])
 
   const sectionCompletion = useMemo(
-    () =>
-      computeTemplateSectionCompletion(formValues, templateFields, orderedSectionIds, editGallery),
-    [formValues, templateFields, orderedSectionIds, editGallery],
+    () => computeFixedSectionCompletion(formValues, editGallery),
+    [formValues, editGallery],
   )
 
   const activeTipSectionId = useMemo(
-    () => getActiveTipSectionId(sectionCompletion, orderedSectionIds),
-    [sectionCompletion, orderedSectionIds],
+    () => getActiveTipSectionId(sectionCompletion, sectionOrder),
+    [sectionCompletion, sectionOrder],
   )
 
   const sidebarTip = useMemo(() => {
-    const row = sectionConfigById[activeTipSectionId]
     const fb = FALLBACK_SECTION_TIPS[activeTipSectionId] || FALLBACK_SECTION_TIPS.basic
-    const title = (row?.tipTitle && String(row.tipTitle).trim()) || fb.title
-    const body = (row?.tipBody && String(row.tipBody).trim()) || fb.body
-    return { title, body }
-  }, [sectionConfigById, activeTipSectionId])
-
-  useEffect(() => {
-    let mounted = true
-    ;(async () => {
-      setLoadingTemplate(true)
-      const { data, error } = await fetchSellerTemplate()
-      if (!mounted) return
-
-      if (!error && data) {
-        const mergedSec = data.sectionConfig || mergeSectionConfig(data.section_config)
-        setSectionRows(mergedSec)
-        setTemplate(data)
-        const orderIds = getOrderedSectionIds(mergedSec)
-        const rawFields = Array.isArray(data.fields) ? data.fields : []
-        const withBuiltins = ensureBuiltInSellerTemplateFields(rawFields, orderIds)
-        const sorted = sortTemplateFieldsForDisplay(withBuiltins, orderIds)
-        const fields = ensureStatusField(sorted)
-        setTemplateFields(fields)
-        setFormValues(dynamicValuesToFormState({}, fields))
-      } else {
-        const defSec = getDefaultSectionConfig()
-        setSectionRows(defSec)
-        setTemplate(null)
-        const orderIds = getOrderedSectionIds(defSec)
-        const withBuiltins = ensureBuiltInSellerTemplateFields([], orderIds)
-        const sorted = sortTemplateFieldsForDisplay(withBuiltins, orderIds)
-        const fallbackFields = ensureStatusField(sorted)
-        setTemplateFields(fallbackFields)
-        setFormValues(dynamicValuesToFormState({}, fallbackFields))
-      }
-
-      setLoadingTemplate(false)
-    })()
-    return () => {
-      mounted = false
-    }
-  }, [])
+    return { title: fb.title, body: fb.body }
+  }, [activeTipSectionId])
 
   useEffect(() => {
     if (!toastMessage) return
@@ -1074,9 +1068,7 @@ export default function NewListingClient() {
 
   const handleUploadClick = () => {
     if (atImageLimit) {
-      setImageUploadNote(
-        `Maximum ${MAX_LISTING_IMAGES} images. Remove one to add more.`,
-      )
+      setImageUploadNote(`Maximum ${MAX_LISTING_IMAGES} images. Remove one to add more.`)
       return
     }
     setImageUploadNote(null)
@@ -1139,30 +1131,14 @@ export default function NewListingClient() {
     })
   }
 
-  const templateSectionConfig = useMemo(() => {
-    if (template?.sectionConfig?.length) return template.sectionConfig
-    if (template?.section_config) return mergeSectionConfig(template.section_config)
-    return sectionRows
-  }, [template, sectionRows])
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setFormError('')
-    setToastMessage('')
-    setToastType('error')
-
-    const missingRequired = findFirstMissingRequiredField(
-      templateFields,
-      getFieldValue,
-      orderedSectionIds,
-      editGallery,
-    )
-    if (missingRequired) {
-      const msg = `${missingRequired.label} is required. Please complete the info.`
+  const validateBeforeSave = () => {
+    const missing = findFirstMissingRequiredField(formValues, editGallery)
+    if (missing) {
+      const msg = `${missing.label} is required. Please complete the info.`
       setFormError(msg)
       setToastType('error')
       setToastMessage(msg)
-      return
+      return { ok: false }
     }
 
     const rawPrice = String(formValues.base_price ?? '').trim().replace(/,/g, '')
@@ -1171,28 +1147,41 @@ export default function NewListingClient() {
       setFormError(msg)
       setToastType('error')
       setToastMessage(msg)
-      return
+      return { ok: false }
     }
 
-    setSaving(true)
+    return { ok: true }
+  }
+
+  const saveListing = async ({ intent }) => {
+    setFormError('')
+    setToastMessage('')
+    setToastType('error')
+
+    const { ok } = validateBeforeSave()
+    if (!ok) return
+
+    const busySetter = intent === 'submit' ? setSubmitBusy : setSaving
+    busySetter(true)
     const { error: uploadErr, persistedImageUrls } = await resolvePersistedImageUrls(editGallery, [])
     if (uploadErr) {
       setFormError(uploadErr)
       setToastType('error')
       setToastMessage(uploadErr)
-      setSaving(false)
+      busySetter(false)
       return
     }
 
     const payload = buildSellerListingPayload({
-      template,
       formValues,
       selectedProduct: null,
       persistedImageUrls,
     })
 
+    payload.status = 'draft'
+
     const { data, error } = await createSellerListing(payload)
-    setSaving(false)
+    busySetter(false)
 
     if (error || !data) {
       const msg = error || 'Failed to save listing.'
@@ -1202,13 +1191,31 @@ export default function NewListingClient() {
       return
     }
 
+    if (intent === 'submit') {
+      const { data: submitted, error: submitErr } = await submitListingForReview(data.id)
+      if (submitErr || !submitted) {
+        const msg = submitErr || 'Failed to submit listing for review.'
+        setFormError(msg)
+        setToastType('error')
+        setToastMessage(msg)
+        return
+      }
+    }
+
     setToastType('success')
-    setToastMessage('Listing saved successfully.')
+    setToastMessage(
+      intent === 'submit' ? 'Listing submitted for review.' : 'Draft saved successfully.',
+    )
     await new Promise((resolve) => window.setTimeout(resolve, 950))
     router.push('/seller/products')
   }
 
-  const loading = loadingSeller || loadingTemplate
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    await saveListing({ intent: 'draft' })
+  }
+
+  const loading = loadingSeller
 
   return (
     <div className={styles.newListingPage}>
@@ -1246,7 +1253,7 @@ export default function NewListingClient() {
       ) : (
         <div className={styles.newListingLayout}>
           <NewListingProgressPanel
-            sections={listingSections}
+            sections={STATIC_SECTIONS}
             completed={sectionCompletion}
             activeId={activeTipSectionId}
             tipTitle={sidebarTip.title}
@@ -1255,8 +1262,6 @@ export default function NewListingClient() {
           <div className={styles.newListingFormColumn}>
             <form className={styles.newListingForm} onSubmit={handleSubmit} noValidate>
               <SellerListingFormFields
-                templateFields={templateFields}
-                sectionConfig={templateSectionConfig}
                 formError={formError}
                 getFieldValue={getFieldValue}
                 setFieldValue={setFieldValue}
@@ -1284,11 +1289,20 @@ export default function NewListingClient() {
                   Cancel
                 </Link>
                 <button
-                  type="submit"
-                  className={styles.productModalPrimary}
-                  disabled={saving}
+                  type="button"
+                  className={styles.productModalSecondary}
+                  onClick={() => saveListing({ intent: 'draft' })}
+                  disabled={saving || submitBusy}
                 >
-                  {saving ? 'Saving…' : 'Save listing'}
+                  {saving ? 'Saving…' : 'Save as Draft'}
+                </button>
+                <button
+                  type="button"
+                  className={styles.productModalPrimary}
+                  onClick={() => saveListing({ intent: 'submit' })}
+                  disabled={saving || submitBusy}
+                >
+                  {submitBusy ? 'Submitting…' : 'Submit for review'}
                 </button>
               </div>
             </form>

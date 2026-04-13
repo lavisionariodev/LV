@@ -18,9 +18,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
-import { TbReportSearch, TbUsers, TbSearch, TbTemplate } from 'react-icons/tb'
+import { TbReportSearch, TbUsers, TbSearch } from 'react-icons/tb'
 import { LuUserCheck } from 'react-icons/lu'
-import { LuClipboardList, LuPencilLine, LuPlus } from 'react-icons/lu'
 
 // Bar chart: green shades only (values match globals.css --color-green-*)
 const BAR_COLORS = ['#1F312B', '#2D4A38', '#3D683A', '#4A7C47']
@@ -30,7 +29,6 @@ const QUICK_LINKS = [
   { id: 'disputes', label: 'Disputes', icon: TbReportSearch },
   { id: 'sellers', label: 'Sellers', icon: LuUserCheck },
   { id: 'buyers', label: 'Buyers', icon: TbUsers },
-  { id: 'template', label: 'Template', icon: TbTemplate },
 ]
 
 function formatShortDate(dateStr) {
@@ -365,30 +363,6 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
-          {activeQuickLink === 'template' && (
-            <div className={styles.qlPanel}>
-              <div className={styles.qlRows}>
-                <div className={styles.qlActionRow}>
-                  <span className={styles.qlActionIcon}><LuPlus /></span>
-                  <span className={styles.qlActionLabel}>Add field</span>
-                  <Link href="/admin/seller-template" className={styles.qlActionBtn}>Open</Link>
-                </div>
-                <div className={styles.qlActionRow}>
-                  <span className={styles.qlActionIcon}><LuPencilLine /></span>
-                  <span className={styles.qlActionLabel}>Edit field type & placeholder</span>
-                  <Link href="/admin/seller-template" className={styles.qlActionBtn}>Go</Link>
-                </div>
-                <div className={styles.qlActionRow}>
-                  <span className={styles.qlActionIcon}><LuClipboardList /></span>
-                  <span className={styles.qlActionLabel}>Reorder and delete fields</span>
-                  <Link href="/admin/seller-template" className={styles.qlActionBtn}>Go</Link>
-                </div>
-              </div>
-              <Link href="/admin/seller-template" className={styles.qlCta}>
-                Manage templates →
-              </Link>
-            </div>
-          )}
         </div>
 
       </section>
@@ -541,7 +515,7 @@ export default function AdminDashboardPage() {
             <Link href="/admin/sellers" className={styles.actionBtn}>
               Add Seller
             </Link>
-            <Link href="/admin/listings" className={styles.actionBtn}>
+            <Link href="/admin/listings/browse" className={styles.actionBtn}>
               View Listings
             </Link>
             <Link href="/admin/buyers" className={styles.actionBtn}>
