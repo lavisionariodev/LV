@@ -426,6 +426,271 @@
   border-top: 1px solid #f1f5f9;
 }
 
+/* Mobile filter slide-up sheet — hidden by default, shown only via JS on mobile */
+.mobileFiltersPanel {
+  display: none;
+}
+
+.mobileClearAllBtn {
+  display: none;
+}
+
+/* ── Mobile Filter Slide-Up Modal ──────────────────────────────────────────── */
+
+.mobileFilterOverlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0);
+  z-index: 998;
+  transition: background 0.3s ease;
+  pointer-events: none; /* prevent invisible overlay from blocking taps */
+}
+
+.mobileFilterOverlayVisible {
+  background: rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
+}
+
+.mobileFilterSheet {
+  display: none;
+  flex-direction: column;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.14);
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  max-height: 90dvh;
+  overflow: hidden;
+  pointer-events: none; /* sheet should not catch taps when closed */
+}
+
+.mobileFilterSheetOpen {
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.mobileFilterHandle {
+  width: 36px;
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 99px;
+  margin: 10px auto 0;
+  flex-shrink: 0;
+}
+
+.mobileFilterHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  flex-shrink: 0;
+}
+
+.mobileFilterTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.mobileFilterClose {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: #f1f5f9;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.mobileFilterClose:hover {
+  background: #e2e8f0;
+  color: #374151;
+}
+
+.mobileFilterClose svg {
+  width: 15px;
+  height: 15px;
+}
+
+.mobileFilterBody {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 6px 0 8px;
+}
+
+.mobileFilterRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 20px;
+  border-bottom: 1px solid #f8fafc;
+}
+
+.mobileDateRangeGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.mobileDateField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mobileDateFieldLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.mobileDateInput {
+  height: 44px;
+  border-radius: 12px;
+  border: 1.5px solid #e2e8f0;
+  background: #fff;
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  font-family: inherit;
+}
+
+.mobileDateInput:focus {
+  outline: none;
+  border-color: #94a3b8;
+}
+
+.mobileChoiceGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mobileChoiceBtn {
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 12px;
+  border-radius: 14px;
+  border: 1.5px solid #e2e8f0;
+  background: #fff;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.mobileChoiceBtn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.mobileChoiceBtnActive {
+  border-color: #0f172a;
+  background: #f1f5f9;
+}
+
+.mobileChoiceCheck {
+  font-weight: 900;
+}
+
+.mobileFilterRow:last-child {
+  border-bottom: none;
+}
+
+.mobileFilterLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.mobileFilterFooter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px 28px;
+  border-top: 1px solid #f1f5f9;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.mobileFilterClearBtn {
+  flex: 1;
+  height: 50px;
+  border-radius: 14px;
+  border: 1.5px solid #e2e8f0;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.mobileFilterClearBtn:hover:not(:disabled) {
+  border-color: #cbd5e1;
+  color: #374151;
+}
+
+.mobileFilterClearBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mobileFilterClearCount {
+  font-size: 12px;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.mobileFilterApplyBtn {
+  flex: 2;
+  height: 50px;
+  border-radius: 14px;
+  border: none;
+  background: #0f172a;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.mobileFilterApplyBtn:hover {
+  background: #1e293b;
+}
+
 .filterFieldInline {
   display: flex;
   align-items: center;
@@ -2135,6 +2400,8 @@
     width: fit-content;
     max-width: 100%;
     overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
   }
@@ -2150,6 +2417,42 @@
   .toolbarSelect { max-width: none; width: 100%; }
   .toolbarFiltersBtn { width: 100%; }
   .toolbarClearAll { justify-content: center; width: 100%; padding: 10px 8px; }
+
+  /* Mobile: collapse all controls under Filters (except search) */
+  .mobileFiltersPanel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #f1f5f9;
+  }
+
+  .mobileClearAllBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 12px 8px;
+    border: none;
+    background: none;
+    font-size: 13px;
+    font-weight: 500;
+    color: #64748b;
+    cursor: pointer;
+    transition: color 0.15s;
+    min-height: 44px;
+  }
+
+  .mobileClearAllBtn:hover:not(:disabled) {
+    color: #374151;
+  }
+
+  .mobileClearAllBtn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
 
   .filterBarExtra { flex-direction: column; align-items: stretch; }
   .filterFieldInline { flex-direction: column; align-items: stretch; gap: 6px; }
@@ -3319,4 +3622,838 @@
   .globalImpactGrid { grid-template-columns: 1fr; }
   .sellerOverrideRow { flex-direction: column; align-items: flex-start; }
   .sellerOverrideRight { width: 100%; justify-content: space-between; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE IMPROVEMENTS
+   Breakpoints: 640px (mobile), 480px (small mobile), 360px (tiny)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Base touch target improvements ─────────────────────────────────────── */
+
+@media (max-width: 640px) {
+
+  /* ── Page ───────────────────────────────────────────────────────────────── */
+  .page {
+    gap: 14px;
+    padding: 2px 0 24px;
+  }
+
+  /* ── Stats Grid — 2 col compact ─────────────────────────────────────────── */
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .statCard {
+    padding: 12px;
+    gap: 6px;
+    border-radius: 10px;
+  }
+
+  .statLabel {
+    font-size: 11px;
+  }
+
+  .statValue {
+    font-size: 16px;
+    font-weight: 800;
+  }
+
+  .statTrendValue { font-size: 11px; }
+  .statTrendArrow { width: 11px; height: 11px; }
+  .statSparkline  { width: 56px; height: 28px; }
+
+  /* ── Tab Nav — scrollable, bigger touch targets ──────────────────────────── */
+  .tabNav {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    gap: 0;
+    flex-wrap: nowrap;
+  }
+  .tabNav::-webkit-scrollbar { display: none; }
+
+  .tabBtn {
+    font-size: 13px;
+    font-weight: 500;
+    padding: 12px 18px 14px;
+    white-space: nowrap;
+    min-height: 44px;
+    flex-shrink: 0;
+  }
+
+  /* ── Table Panel ────────────────────────────────────────────────────────── */
+  .tablePanel {
+    border-radius: 12px;
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+  }
+
+  /* ── Toolbar ────────────────────────────────────────────────────────────── */
+  .toolbar {
+    padding: 12px;
+  }
+
+  .toolbarRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .toolbarControls {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .toolbarSearchWrap {
+    max-width: none;
+    width: 100%;
+    height: 44px;
+    border-radius: 10px;
+  }
+
+  .toolbarSearchInput {
+    font-size: 14px;
+  }
+
+  .drpWrap {
+    width: 100%;
+  }
+
+  .drpTrigger {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    height: 44px;
+    border-radius: 10px;
+    font-size: 14px;
+    box-sizing: border-box;
+  }
+
+  .toolbarSelect {
+    max-width: none;
+    width: 100%;
+    height: 44px;
+    font-size: 14px;
+    border-radius: 10px;
+  }
+
+  .toolbarFiltersBtn {
+    width: 100%;
+    height: 44px;
+    font-size: 14px;
+    border-radius: 10px;
+    justify-content: center;
+  }
+
+  .toolbarClearAll {
+    justify-content: center;
+    width: 100%;
+    padding: 12px 8px;
+    font-size: 13px;
+    min-height: 44px;
+  }
+
+  /* Filter bar extras */
+
+  /* ── Mobile Filter Slide-Up Sheet ────────────────────────────────────────── */
+  .mobileFilterOverlay {
+    display: block;
+  }
+
+  .mobileFilterSheet {
+    display: flex;
+  }
+
+  /* Expand Dropdown to full width inside sheet */
+  .mobileFilterRow > * {
+    width: 100%;
+  }
+
+  .mobileDateRangeGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .filterBarExtra {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .filterFieldInline {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .filterBar {
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .filterField select,
+  .filterField input[type="date"] {
+    width: 100%;
+    min-width: 0;
+    height: 44px;
+    font-size: 14px;
+    border-radius: 10px;
+  }
+
+  /* ── Date Range Picker calendar ─────────────────────────────────────────── */
+  .drpCalendar {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.16);
+    z-index: 9999;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+  }
+
+  .drpCalHeader {
+    padding: 16px 16px 12px;
+  }
+
+  .drpNavBtn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .drpNavBtn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .drpMonthLabel {
+    font-size: 15px;
+  }
+
+  .drpGrid {
+    padding: 12px 12px 8px;
+    gap: 4px;
+  }
+
+  .drpDayName {
+    height: 32px;
+    font-size: 11px;
+  }
+
+  .drpDay {
+    min-height: 38px;
+    font-size: 13px;
+    border-radius: 9px;
+  }
+
+  .drpFooter {
+    padding: 10px 16px 28px; /* extra bottom for safe area */
+  }
+
+  .drpClearBtn {
+    font-size: 13px;
+    padding: 8px 16px;
+    min-height: 36px;
+  }
+
+  /* ── Mobile card list — show cards, hide table ──────────────────────────── */
+  .mobileCardList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .tableWrap { display: none; }
+
+  /* ── Mobile Card Improvements ────────────────────────────────────────────── */
+  .mobileCard {
+    border-radius: 14px;
+    padding: 16px;
+    gap: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    transition: box-shadow 0.15s;
+  }
+
+  .mobileCard:active {
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+  }
+
+  .mobileCardTop {
+    gap: 12px;
+  }
+
+  .mobileCardAmount {
+    font-size: 18px;
+    letter-spacing: -0.3px;
+  }
+
+  .mobileCardService {
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .mobileCardMeta {
+    gap: 6px;
+  }
+
+  .mobileCardBuyer {
+    font-size: 13px;
+  }
+
+  .mobileCardDate {
+    font-size: 12px;
+  }
+
+  .mobileCardStatuses {
+    gap: 6px;
+  }
+
+  .mobileCardBreakdown {
+    padding: 10px 12px;
+    border-radius: 10px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .mobileCardBreakdownItem {
+    font-size: 12px;
+  }
+
+  .mobileCardDetailsBtn {
+    padding: 13px;
+    font-size: 13px;
+    min-height: 46px;
+    border-radius: 12px;
+  }
+
+  /* ── Pagination ─────────────────────────────────────────────────────────── */
+  .pagination {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .paginationControls {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .pageBtn {
+    min-width: 38px;
+    height: 38px;
+    font-size: 14px;
+    border-radius: 8px;
+    padding: 0 12px;
+  }
+
+  .paginationInfo {
+    text-align: center;
+    font-size: 13px;
+  }
+
+  /* ── Modal — bottom sheet ────────────────────────────────────────────────── */
+  .modalOverlay {
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .modal {
+    width: 100%;
+    max-width: 100%;
+    height: 94vh;
+    border-radius: 20px 20px 0 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Modal header ────────────────────────────────────────────────────────── */
+  .modalHeader {
+    padding: 16px 20px 14px;
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 10;
+    border-radius: 20px 20px 0 0;
+  }
+
+  .modalTitle {
+    font-size: 16px;
+  }
+
+  /* Add a drag handle visual cue */
+  .modalHeader::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 4px;
+    background: #e2e8f0;
+    border-radius: 99px;
+  }
+
+  .modalClose {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* ── Modal body ──────────────────────────────────────────────────────────── */
+  .modalBody {
+    padding: 0 20px 32px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    flex: 1;
+  }
+
+  .modalScrollBody {
+    display: block;
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+  }
+
+  /* ── Mobile mode bar ─────────────────────────────────────────────────────── */
+  .mobileModeBar {
+    display: flex;
+    padding: 12px 16px 0;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .mobileModeBtn {
+    flex: 1;
+    padding: 11px 12px;
+    border-radius: 12px;
+    border: 1.5px solid #e2e8f0;
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+    min-height: 46px;
+  }
+
+  .mobileModeBtnActive {
+    background: #0f172a;
+    color: #fff;
+    border-color: #0f172a;
+  }
+
+  .modalContentPane {
+    display: block;
+  }
+
+  .modalContentPaneMobile {
+    display: block;
+  }
+
+  .mobileHidden {
+    display: none !important;
+  }
+
+  .openPayoutBtn {
+    display: none;
+  }
+
+  /* ── Modal amount hero ───────────────────────────────────────────────────── */
+  .heroAmountValue {
+    font-size: 22px;
+  }
+
+  /* ── Modal status row ────────────────────────────────────────────────────── */
+  .modalStatusRow {
+    padding: 12px 0;
+  }
+
+  .modalStatusItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .modalStatusDivider {
+    margin: 0 12px;
+    height: 36px;
+  }
+
+  /* ── Modal info tabs ─────────────────────────────────────────────────────── */
+  .modalInfoTabBtn {
+    font-size: 13px;
+    padding: 9px 10px;
+    min-height: 40px;
+  }
+
+  .modalInfoRow {
+    gap: 8px;
+  }
+
+  .modalInfoRow span {
+    font-size: 12px;
+    min-width: 80px;
+  }
+
+  .modalInfoRow strong {
+    font-size: 13px;
+  }
+
+  /* ── Payout panel ────────────────────────────────────────────────────────── */
+  .payoutStatusCard {
+    padding: 13px 14px;
+    min-height: 50px;
+    font-size: 14px;
+    border-radius: 12px;
+  }
+
+  .payoutSaveBtn {
+    padding: 14px;
+    font-size: 14px;
+    border-radius: 14px;
+    min-height: 52px;
+  }
+
+  .payoutRefInput,
+  .payoutDateInput {
+    font-size: 15px;
+    padding: 12px 12px;
+    min-height: 46px;
+  }
+
+  /* ── Commission panel ────────────────────────────────────────────────────── */
+  .commissionPanelHeader {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 16px 16px 0;
+  }
+
+  .commissionPanelHeaderRight {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+  .commissionPanelHeaderRight::-webkit-scrollbar { display: none; }
+
+  .commissionSectionTabs {
+    padding: 12px 16px 0;
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .commissionSectionTabs::-webkit-scrollbar { display: none; }
+
+  .commissionSectionTab {
+    min-height: 44px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .commissionBody {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .commissionGaugeCard {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .gaugeCardLeft {
+    width: 100%;
+  }
+
+  .gaugeCardRight {
+    width: 100%;
+    align-self: stretch;
+  }
+
+  .gaugeEditBlock {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .gaugeDisplayBlock {
+    align-items: flex-start;
+  }
+
+  .gaugeDisplayRate {
+    font-size: 28px;
+  }
+
+  .gaugeEditRow {
+    flex-wrap: wrap;
+  }
+
+  .commissionGlobalRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .commissionRateInput {
+    font-size: 16px;
+    padding: 10px 12px;
+    min-height: 46px;
+    width: 80px;
+  }
+
+  /* Impact grid */
+  .globalImpactGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .impactCard {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  /* ── Seller override rows ────────────────────────────────────────────────── */
+  .sellerOverrideRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .sellerOverrideInfo {
+    width: 100%;
+  }
+
+  .sellerOverrideRight {
+    width: 100%;
+    justify-content: space-between;
+    padding-top: 8px;
+    border-top: 1px solid #f1f5f9;
+  }
+
+  .sellerRateVal {
+    font-size: 20px;
+  }
+
+  .sellerEditBlock {
+    width: 100%;
+  }
+
+  .btnEdit,
+  .btnSave,
+  .btnCancel {
+    min-height: 40px;
+    padding: 9px 14px;
+    font-size: 13px;
+    border-radius: 10px;
+  }
+
+  .btnRemoveOverride {
+    font-size: 12px;
+    padding: 8px 14px;
+    min-height: 36px;
+    border-radius: 9px;
+  }
+
+  /* ── Seller earnings panel ───────────────────────────────────────────────── */
+  .seGrid {
+    grid-template-columns: 1fr;
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .seCard {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .seBalances {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .seBalanceItem {
+    padding: 10px 8px;
+  }
+
+  .seBalLabel {
+    font-size: 9px;
+  }
+
+  .seBalVal {
+    font-size: 12px;
+  }
+
+  /* ── Expanded panel ──────────────────────────────────────────────────────── */
+  .expandedPanel {
+    flex-direction: column;
+  }
+
+  .expandedDivider {
+    width: 100%;
+    height: 1px;
+    align-self: auto;
+  }
+
+  .expandedTd {
+    padding: 0 10px 10px;
+  }
+
+  .expandedSection {
+    padding: 12px 14px;
+  }
+
+  /* ── Confirm reset modal ─────────────────────────────────────────────────── */
+  .confirmOverlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .confirmModal {
+    border-radius: 20px 20px 0 0;
+    max-width: 100%;
+    padding: 24px 24px 36px;
+  }
+
+  .confirmActions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .confirmCancelBtn,
+  .confirmResetBtn {
+    padding: 14px;
+    min-height: 50px;
+    font-size: 14px;
+    border-radius: 14px;
+  }
+
+  /* ── Badges — slightly larger on mobile ─────────────────────────────────── */
+  .badge {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+
+  .badgePayout {
+    font-size: 12px;
+  }
+
+}
+
+/* ── Small mobile tweaks (480px) ─────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .statCard { padding: 10px; }
+  .statValue { font-size: 15px; }
+  .statLabel { font-size: 10px; }
+  .statSparkline { width: 48px; height: 24px; }
+
+  .tabBtn {
+    padding: 11px 14px 13px;
+    font-size: 12px;
+  }
+
+  .mobileCardAmount { font-size: 17px; }
+
+  .seBalances {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .seBalVal { font-size: 11px; }
+
+  .globalImpactGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .drpCalendar {
+    border-radius: 16px 16px 0 0;
+  }
+
+}
+
+/* ── Tiny mobile (360px) ─────────────────────────────────────────────────── */
+
+@media (max-width: 380px) {
+
+  .statsGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .statCard { padding: 9px 10px; }
+  .statValue { font-size: 14px; }
+  .statSparkline { display: none; }
+
+  .mobileCardAmount { font-size: 16px; }
+  .mobileCard { padding: 13px; }
+
+  .tabBtn {
+    padding: 10px 12px 13px;
+    font-size: 12px;
+  }
+
+  .seBalances {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  .globalImpactGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .modalHeader {
+    padding: 14px 16px 12px;
+  }
+
+  .mobileModeBtn {
+    font-size: 13px;
+  }
+}
+
+/* ── Landscape mobile fix ────────────────────────────────────────────────── */
+
+@media (max-width: 768px) and (max-height: 500px) and (orientation: landscape) {
+  .modal {
+    height: 100vh;
+    border-radius: 0;
+  }
+
+  .modalOverlay {
+    align-items: center;
+  }
+
+  .drpCalendar {
+    position: absolute;
+    bottom: auto;
+    top: calc(100% + 6px);
+    left: 0;
+    width: 300px;
+    border-radius: 12px;
+  }
 }

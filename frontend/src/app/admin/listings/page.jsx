@@ -330,7 +330,7 @@ export default function AdminListingsPage() {
             ))}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className={styles.sortWrap}>
             <Dropdown
               value={sortKey}
               onChange={setSortKey}
@@ -347,6 +347,7 @@ export default function AdminListingsPage() {
           <div className={styles.toolbarSearchWrap}>
             <Icon.Search />
             <input
+              aria-label="Search listings"
               className={styles.toolbarSearchInput}
               type="search"
               placeholder="Search title, seller, or email…"

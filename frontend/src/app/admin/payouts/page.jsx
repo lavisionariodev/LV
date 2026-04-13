@@ -81,10 +81,8 @@ function DateRangePicker({ from, to, onChange }) {
     if (!d) return
     const dateStr = toStr(year, month, d)
     if (!from || (from && to)) {
-      // Start fresh selection
       onChange(dateStr, '')
     } else {
-      // Second click — assign from/to in order
       if (dateStr < from) onChange(dateStr, from)
       else onChange(from, dateStr)
       setOpen(false)
@@ -1070,6 +1068,23 @@ export default function AdminPayoutsPage() {
     showSellerEarnings,
   } = useAdminPayoutsPage()
 
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth <= 640 : false
+  )
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 640px)')
+    const handler = (e) => setIsMobile(e.matches)
+    mq.addEventListener('change', handler)
+    setIsMobile(mq.matches)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+
+  useEffect(() => {
+    if (!isMobile) setMobileFiltersOpen(false)
+  }, [isMobile])
+
   return (
     <div className={styles.page}>
       {/* Tab Navigation */}
@@ -1125,57 +1140,77 @@ export default function AdminPayoutsPage() {
                   />
                 </div>
 
-                <DateRangePicker
-                  from={filterDateFrom}
-                  to={filterDateTo}
-                  onChange={(from, to) => { setFilterDateFrom(from); setFilterDateTo(to) }}
-                />
+                {!isMobile ? (
+                  <>
+                    <DateRangePicker
+                      from={filterDateFrom}
+                      to={filterDateTo}
+                      onChange={(from, to) => { setFilterDateFrom(from); setFilterDateTo(to) }}
+                    />
 
-                <Dropdown
-                  value={filterPayout}
-                  onChange={setFilterPayout}
-                  ariaLabel="Payout status"
-                  options={[
-                    { value: 'all', label: 'All statuses' },
-                    ...Object.entries(PAYOUT_STATUS_META).map(([k, v]) => ({ value: k, label: v.label, color: v.color }))
-                  ]}
-                  placeholder="All statuses"
-                />
+                    <Dropdown
+                      value={filterPayout}
+                      onChange={setFilterPayout}
+                      ariaLabel="Payout status"
+                      options={[
+                        { value: 'all', label: 'All statuses' },
+                        ...Object.entries(PAYOUT_STATUS_META).map(([k, v]) => ({ value: k, label: v.label, color: v.color }))
+                      ]}
+                      placeholder="All statuses"
+                    />
 
-                <Dropdown
-                  value={filterSeller}
-                  onChange={setFilterSeller}
-                  ariaLabel="Seller"
-                  options={[
-                    { value: 'all', label: 'All sellers' },
-                    ...SELLERS.map(s => ({ value: s.id, label: s.name }))
-                  ]}
-                  placeholder="All sellers"
-                />
+                    <Dropdown
+                      value={filterSeller}
+                      onChange={setFilterSeller}
+                      ariaLabel="Seller"
+                      options={[
+                        { value: 'all', label: 'All sellers' },
+                        ...SELLERS.map(s => ({ value: s.id, label: s.name }))
+                      ]}
+                      placeholder="All sellers"
+                    />
 
-                <button
-                  type="button"
-                  className={`${styles.toolbarFiltersBtn} ${showFilters ? styles.toolbarFiltersBtnActive : ''}`}
-                  onClick={() => setShowFilters(!showFilters)}
-                >
-                  <Icon.Filter />
-                  Filters
-                  {filterPayment !== 'all' && <span className={styles.filterDot} />}
-                </button>
+                    <button
+                      type="button"
+                      className={`${styles.toolbarFiltersBtn} ${showFilters ? styles.toolbarFiltersBtnActive : ''}`}
+                      onClick={() => setShowFilters(!showFilters)}
+                    >
+                      <Icon.Filter />
+                      Filters
+                      {filterPayment !== 'all' && <span className={styles.filterDot} />}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className={`${styles.toolbarFiltersBtn} ${mobileFiltersOpen ? styles.toolbarFiltersBtnActive : ''}`}
+                    onClick={() => setMobileFiltersOpen(v => !v)}
+                    aria-expanded={mobileFiltersOpen}
+                    aria-controls="payoutsMobileFilters"
+                  >
+                    <Icon.Filter />
+                    Filters
+                    {filterDateFrom || filterDateTo || filterPayout !== 'all' || filterSeller !== 'all' || filterPayment !== 'all'
+                      ? <span className={styles.filterDot} />
+                      : null}
+                  </button>
+                )}
               </div>
 
-              <button
-                type="button"
-                className={styles.toolbarClearAll}
-                onClick={clearFilters}
-                disabled={!hasFilters}
-              >
-                <FiRotateCcw className={styles.toolbarClearIcon} aria-hidden />
-                Clear All
-              </button>
+              {!isMobile && (
+                <button
+                  type="button"
+                  className={styles.toolbarClearAll}
+                  onClick={clearFilters}
+                  disabled={!hasFilters}
+                >
+                  <FiRotateCcw className={styles.toolbarClearIcon} aria-hidden />
+                  Clear All
+                </button>
+              )}
             </div>
 
-            {showFilters && (
+            {!isMobile && showFilters && (
               <div className={styles.filterBarExtra}>
                 <div className={styles.filterFieldInline}>
                   <span className={styles.filterFieldInlineLabel}>Payment</span>
@@ -1192,6 +1227,8 @@ export default function AdminPayoutsPage() {
                 </div>
               </div>
             )}
+
+          
           </div>
 
           {/* Mobile Card List — hidden on desktop via CSS */}
@@ -1464,6 +1501,163 @@ export default function AdminPayoutsPage() {
         <SellerEarningsPanel transactions={transactions} settings={commissionSettings} />
       )}
       </div>
+
+      {/* Mobile Filter Slide-Up Modal */}
+      {isMobile && (
+        <>
+          {/* Backdrop */}
+          <div
+            className={`${styles.mobileFilterOverlay} ${mobileFiltersOpen ? styles.mobileFilterOverlayVisible : ''}`}
+            onClick={() => setMobileFiltersOpen(false)}
+            aria-hidden
+          />
+          {/* Sheet */}
+          <div
+            id="payoutsMobileFilters"
+            className={`${styles.mobileFilterSheet} ${mobileFiltersOpen ? styles.mobileFilterSheetOpen : ''}`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Filters"
+          >
+            {/* Drag handle */}
+            <div className={styles.mobileFilterHandle} />
+
+            {/* Header */}
+            <div className={styles.mobileFilterHeader}>
+              <span className={styles.mobileFilterTitle}>Filters</span>
+              <button
+                type="button"
+                className={styles.mobileFilterClose}
+                onClick={() => setMobileFiltersOpen(false)}
+                aria-label="Close filters"
+              >
+                <Icon.Close />
+              </button>
+            </div>
+
+            {/* Filter rows */}
+            <div className={styles.mobileFilterBody}>
+
+              <div className={styles.mobileFilterRow}>
+                <span className={styles.mobileFilterLabel}>Date Range</span>
+                <div className={styles.mobileDateRangeGrid}>
+                  <label className={styles.mobileDateField}>
+                    <span className={styles.mobileDateFieldLabel}>From</span>
+                    <input
+                      type="date"
+                      className={styles.mobileDateInput}
+                      value={filterDateFrom || ''}
+                      onChange={(e) => setFilterDateFrom(e.target.value)}
+                    />
+                  </label>
+                  <label className={styles.mobileDateField}>
+                    <span className={styles.mobileDateFieldLabel}>To</span>
+                    <input
+                      type="date"
+                      className={styles.mobileDateInput}
+                      value={filterDateTo || ''}
+                      onChange={(e) => setFilterDateTo(e.target.value)}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className={styles.mobileFilterRow}>
+                <span className={styles.mobileFilterLabel}>Payout Status</span>
+                <div className={styles.mobileChoiceGrid} role="radiogroup" aria-label="Payout status">
+                  {[
+                    { value: 'all', label: 'All statuses' },
+                    ...Object.entries(PAYOUT_STATUS_META).map(([k, v]) => ({ value: k, label: v.label })),
+                  ].map((opt) => {
+                    const active = filterPayout === opt.value
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        className={`${styles.mobileChoiceBtn} ${active ? styles.mobileChoiceBtnActive : ''}`}
+                        onClick={() => setFilterPayout(opt.value)}
+                        role="radio"
+                        aria-checked={active}
+                      >
+                        <span>{opt.label}</span>
+                        {active && <span className={styles.mobileChoiceCheck} aria-hidden>✓</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className={styles.mobileFilterRow}>
+                <span className={styles.mobileFilterLabel}>Seller</span>
+                <div className={styles.mobileChoiceGrid} role="radiogroup" aria-label="Seller">
+                  {[{ id: 'all', name: 'All sellers' }, ...SELLERS].map((s) => {
+                    const value = s.id
+                    const active = filterSeller === value
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        className={`${styles.mobileChoiceBtn} ${active ? styles.mobileChoiceBtnActive : ''}`}
+                        onClick={() => setFilterSeller(value)}
+                        role="radio"
+                        aria-checked={active}
+                      >
+                        <span>{s.name}</span>
+                        {active && <span className={styles.mobileChoiceCheck} aria-hidden>✓</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className={styles.mobileFilterRow}>
+                <span className={styles.mobileFilterLabel}>Payment Status</span>
+                <div className={styles.mobileChoiceGrid} role="radiogroup" aria-label="Payment status">
+                  {[
+                    { value: 'all', label: 'Payment: All' },
+                    ...Object.entries(PAYMENT_STATUS_META).map(([k, v]) => ({ value: k, label: `Payment: ${v.label}` })),
+                  ].map((opt) => {
+                    const active = filterPayment === opt.value
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        className={`${styles.mobileChoiceBtn} ${active ? styles.mobileChoiceBtnActive : ''}`}
+                        onClick={() => setFilterPayment(opt.value)}
+                        role="radio"
+                        aria-checked={active}
+                      >
+                        <span>{opt.label}</span>
+                        {active && <span className={styles.mobileChoiceCheck} aria-hidden>✓</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Footer actions */}
+            <div className={styles.mobileFilterFooter}>
+              <button
+                type="button"
+                className={styles.mobileFilterClearBtn}
+                onClick={() => { clearFilters(); }}
+                disabled={!hasFilters}
+              >
+                Clear all {hasFilters && <span className={styles.mobileFilterClearCount}>({[filterDateFrom, filterDateTo, filterPayout !== 'all' && filterPayout, filterSeller !== 'all' && filterSeller, filterPayment !== 'all' && filterPayment].filter(Boolean).length})</span>}
+              </button>
+              <button
+                type="button"
+                className={styles.mobileFilterApplyBtn}
+                onClick={() => setMobileFiltersOpen(false)}
+              >
+                Show Results
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Modal */}
       {selectedTxn && (

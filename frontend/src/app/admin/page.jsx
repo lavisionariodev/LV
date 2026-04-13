@@ -18,10 +18,9 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
-import { TbReportSearch, TbUsers, TbSearch, TbTemplate, TbFlag } from 'react-icons/tb'
+import { TbReportSearch, TbUsers, TbSearch, TbTemplate } from 'react-icons/tb'
 import { LuUserCheck } from 'react-icons/lu'
-import { RiUserAddLine } from 'react-icons/ri'
-import { LuClipboardList, LuPencilLine, LuPlus, LuCheck } from 'react-icons/lu'
+import { LuClipboardList, LuPencilLine, LuPlus } from 'react-icons/lu'
 
 // Bar chart: green shades only (values match globals.css --color-green-*)
 const BAR_COLORS = ['#1F312B', '#2D4A38', '#3D683A', '#4A7C47']

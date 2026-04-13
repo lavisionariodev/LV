@@ -50,41 +50,61 @@ export default function AdminDisputeDetailPage() {
     <div className={layoutStyles.dashWrap}>
       <section className={layoutStyles.panel}>
         <div className={layoutStyles.panelHead}>
-          <p className={layoutStyles.panelTitle}>Dispute {dispute.id}</p>
-          <button
-            type="button"
-            className={layoutStyles.smallBtn}
-            onClick={() => router.push('/admin/disputes')}
-          >
+          <div className={styles.headLeft}>
+            <p className={layoutStyles.panelTitle}>Dispute</p>
+            <p className={styles.headRef}>{dispute.id}</p>
+          </div>
+          <button type="button" className={styles.backBtn} onClick={() => router.push('/admin/disputes')}>
             Back to list
           </button>
         </div>
 
-        <div className={styles.detailGrid}>
-          <div>
-            <strong>Order reference:</strong> {dispute.orderRef}
+        <div className={styles.form}>
+          <div className={styles.section}>
+            <p className={styles.sectionTitle}>Case summary</p>
+            <div className={styles.fieldGrid}>
+              <div className={styles.field}>
+                <span className={styles.label}>Order reference</span>
+                <span className={styles.value}>{dispute.orderRef}</span>
+              </div>
+              <div className={styles.field}>
+                <span className={styles.label}>Opened on</span>
+                <span className={styles.value}>{dispute.openedAt}</span>
+              </div>
+              <div className={styles.field}>
+                <span className={styles.label}>Reason</span>
+                <span className={styles.value}>{dispute.reason}</span>
+              </div>
+              <div className={styles.field}>
+                <span className={styles.label}>Current status</span>
+                <span className={styles.value}>
+                  <span className={styles.statusPill} data-status={status}>{status.replaceAll('_', ' ')}</span>
+                </span>
+              </div>
+            </div>
           </div>
-          <div>
-            <strong>Opened on:</strong> {dispute.openedAt}
+
+          <div className={styles.section}>
+            <p className={styles.sectionTitle}>Parties</p>
+            <div className={styles.partyGrid}>
+              <div className={styles.partyCard} data-role="complainant">
+                <span className={styles.partyKicker}>Complainant</span>
+                <span className={styles.partyName}>{dispute.complainantName}</span>
+                <span className={styles.partyMeta}>Buyer</span>
+              </div>
+              <div className={styles.partyCard} data-role="respondent">
+                <span className={styles.partyKicker}>Respondent</span>
+                <span className={styles.partyName}>{dispute.respondentName}</span>
+                <span className={styles.partyMeta}>Seller</span>
+              </div>
+            </div>
           </div>
-          <div>
-            <strong>Complainant:</strong> {dispute.complainantName} (buyer)
-          </div>
-          <div>
-            <strong>Respondent:</strong> {dispute.respondentName} (seller)
-          </div>
-          <div>
-            <strong>Reason:</strong> {dispute.reason}
-          </div>
-          <div>
-            <strong>Current status:</strong>{' '}
-            <span className={layoutStyles.badge}>{status}</span>
-          </div>
-          <div>
-            <strong>Description</strong>
-            <p className={styles.descriptionBlock}>
+
+          <div className={styles.section}>
+            <p className={styles.sectionTitle}>Description</p>
+            <div className={styles.textAreaLike}>
               {dispute.description}
-            </p>
+            </div>
           </div>
         </div>
 
@@ -97,40 +117,27 @@ export default function AdminDisputeDetailPage() {
           </p>
 
           <div className={styles.statusActions}>
-            <button
-              type="button"
-              className={layoutStyles.smallBtn}
-              onClick={() => setStatus('open')}
-            >
-              Mark as open
-            </button>
-            <button
-              type="button"
-              className={layoutStyles.smallBtn}
-              onClick={() => setStatus('under_review')}
-            >
-              Mark under review
-            </button>
-            <button
-              type="button"
-              className={layoutStyles.smallBtn}
-              onClick={() => setStatus('resolved')}
-            >
-              Mark resolved
-            </button>
-            <button
-              type="button"
-              className={layoutStyles.smallBtn}
-              onClick={() => setStatus('closed')}
-            >
-              Close dispute
-            </button>
+            {[
+              { k: 'open', label: 'Open' },
+              { k: 'under_review', label: 'Under review' },
+              { k: 'resolved', label: 'Resolved' },
+              { k: 'closed', label: 'Closed' },
+            ].map((s) => {
+              const active = status === s.k
+              return (
+                <button
+                  key={s.k}
+                  type="button"
+                  className={`${styles.statusBtn} ${active ? styles.statusBtnActive : ''}`}
+                  onClick={() => setStatus(s.k)}
+                  aria-pressed={active}
+                >
+                  {s.label}
+                </button>
+              )
+            })}
             {currentIndex !== -1 && currentIndex < STATUS_FLOW.length - 1 && (
-              <button
-                type="button"
-                className={layoutStyles.smallBtn}
-                onClick={goToNextStatus}
-              >
+              <button type="button" className={styles.nextBtn} onClick={goToNextStatus}>
                 Move to next step
               </button>
             )}
