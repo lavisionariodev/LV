@@ -258,61 +258,78 @@ function PartnerHighlightSection() {
   ]
 
   const N = PARTNERS.length
-  const CARD_W = 320
-  const GAP = 24
-
-  const [activeReal, setActiveReal] = useState(0)
-  const [virtualIdx, setVirtualIdx] = useState(N) // start at first real card in triple-cloned track
+  // virtualIdx always lives in [N, 2N) — the "real" copy in the tripled track
+  // We triple so there's always a full set of cards on both sides for the infinite illusion
+  const [virtualIdx, setVirtualIdx] = useState(N)
   const [animating, setAnimating] = useState(false)
+  const transitionRef = useRef(false)
   const autoRef = useRef(null)
   const pausedRef = useRef(false)
 
-  // Triple the array so we always have cards on both sides: [...N clones, ...N real, ...N clones]
+  // activeReal: 0-based index into PARTNERS[]
+  const activeReal = virtualIdx % N
+
+  // Triple-cloned track
   const track = [...PARTNERS, ...PARTNERS, ...PARTNERS]
 
+  // Card dimensions — must match CSS
+  const CARD_W = 300
+  const CARD_W_CENTER = 320   // center card is rendered slightly wider via scale, but track uses same slot
+  const GAP = 28
+
+  // Pixel offset so the card at `idx` is centered in the viewport
+  // We use a CSS variable --carousel-center set on the viewport to avoid JS layout reads
   const getTranslate = (idx) =>
     `calc(50% - ${idx * (CARD_W + GAP) + CARD_W / 2}px)`
 
-  const navigate = useCallback((dir) => {
-    if (animating) return
+  const advance = useCallback((dir) => {
+    if (transitionRef.current) return
+    transitionRef.current = true
     setAnimating(true)
     setVirtualIdx(v => v + dir)
-    setActiveReal(r => ((r + dir) % N + N) % N)
-  }, [animating, N])
+  }, [])
 
   const handleTransitionEnd = useCallback(() => {
+    transitionRef.current = false
     setAnimating(false)
-    // If we've drifted too far from the middle copy, silently snap back
+    // Silently snap back to middle copy to keep the illusion infinite
     setVirtualIdx(v => {
       if (v >= N * 2) return v - N
-      if (v < N) return v + N
+      if (v < N)      return v + N
       return v
     })
   }, [N])
 
+  // Two-phase auto: pause at center (PAUSE_MS), then slide (SLIDE_MS), repeat
+  const PAUSE_MS = 1800
+  const SLIDE_MS  = 650
+
   const startAuto = useCallback(() => {
-    clearInterval(autoRef.current)
-    autoRef.current = setInterval(() => {
-      if (!pausedRef.current) navigate(1)
-    }, 3500)
-  }, [navigate])
+    clearTimeout(autoRef.current)
+    const schedule = () => {
+      autoRef.current = setTimeout(() => {
+        if (!pausedRef.current) advance(1)
+        autoRef.current = setTimeout(schedule, SLIDE_MS)
+      }, PAUSE_MS)
+    }
+    schedule()
+  }, [advance])
 
   useEffect(() => {
     startAuto()
-    return () => clearInterval(autoRef.current)
+    return () => clearTimeout(autoRef.current)
   }, [startAuto])
 
-  const onPrev = () => { clearInterval(autoRef.current); navigate(-1); startAuto() }
-  const onNext = () => { clearInterval(autoRef.current); navigate(1); startAuto() }
+  const onPrev = () => { clearTimeout(autoRef.current); advance(-1); startAuto() }
+  const onNext = () => { clearTimeout(autoRef.current); advance(1);  startAuto() }
 
   const handleDotClick = (realIdx) => {
-    if (animating) return
-    clearInterval(autoRef.current)
-    const delta = realIdx - activeReal
+    if (transitionRef.current) return
+    const delta = ((realIdx - activeReal) % N + N) % N
     if (delta === 0) return
-    setAnimating(true)
-    setVirtualIdx(v => v + delta)
-    setActiveReal(realIdx)
+    // Always go forward to the nearest target for smooth UX
+    clearTimeout(autoRef.current)
+    advance(delta <= N / 2 ? delta : delta - N)
     startAuto()
   }
 
@@ -345,26 +362,31 @@ function PartnerHighlightSection() {
               className={styles.partnerCarouselTrack}
               style={{
                 transform: `translateX(${getTranslate(virtualIdx)})`,
-                transition: animating ? 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
+                transition: animating ? `transform ${SLIDE_MS}ms cubic-bezier(0.33, 1, 0.68, 1)` : 'none',
               }}
               onTransitionEnd={handleTransitionEnd}
             >
               {track.map((partner, i) => {
                 const offset = i - virtualIdx
-                const isCenter = offset === 0
+                const isCenter   = offset === 0
                 const isAdjacent = Math.abs(offset) === 1
+                const isVisible  = Math.abs(offset) <= 1
 
                 return (
                   <div
                     key={i}
-                    className={styles.partnerCarouselCard}
-                    data-center={isCenter ? 'true' : undefined}
+                    className={`${styles.partnerCarouselCard} ${isCenter ? styles.partnerCarouselCardCenter : ''}`}
                     style={{
                       width: `${CARD_W}px`,
-                      opacity: isCenter ? 1 : isAdjacent ? 0.55 : 0.25,
-                      transform: isCenter ? 'scale(1)' : 'scale(0.9)',
+                      opacity:   isCenter ? 1 : isAdjacent ? 0.78 : 0,
+                      transform: isCenter
+                        ? 'scale(1.07) translateZ(0)'
+                        : isAdjacent
+                          ? 'scale(0.92) translateZ(0)'
+                          : 'scale(0.88) translateZ(0)',
+                      pointerEvents: isVisible ? 'auto' : 'none',
                       cursor: isCenter ? 'default' : 'pointer',
-                      pointerEvents: isCenter || isAdjacent ? 'auto' : 'none',
+                      visibility: Math.abs(offset) > 2 ? 'hidden' : 'visible',
                     }}
                     onClick={() => {
                       if (isCenter) return
