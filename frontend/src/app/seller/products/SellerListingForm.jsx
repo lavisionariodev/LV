@@ -17,7 +17,7 @@ import styles from './products.module.css'
 import NewListingLoadingState from '@/components/ui/Load/NewListingLoadingState'
 import { useMediaQuery } from '@/hooks'
 import { normalizeStockStatusValue } from '@/lib/shop-listings/client'
-import { formatPhpInputString, roundPhpAmount } from '@/lib/cart/formatPhp'
+import { formatPhpInputString, parsePhpAmountInputString } from '@/lib/cart/formatPhp'
 
 /** Max images per listing (toolbar + upload strip). */
 export const MAX_LISTING_IMAGES = 10
@@ -212,8 +212,8 @@ export function buildSellerListingPayload({ formValues, selectedProduct, persist
         'Service'
   const safeStatus = String(selectedProduct?.status || 'draft')
   const priceRaw = String(formValues.base_price ?? '').trim().replace(/,/g, '')
-  const safePrice = priceRaw === '' ? 0 : Number(priceRaw)
-  const price = Number.isFinite(safePrice) ? roundPhpAmount(safePrice) : 0
+  const parsedPrice = parsePhpAmountInputString(priceRaw)
+  const price = Number.isFinite(parsedPrice) ? parsedPrice : 0
 
   return {
     listing_name: safeName,
@@ -247,7 +247,8 @@ export function findFirstMissingRequiredField(formValues, editGallery = []) {
     return { id: 'listing_images', label: 'Images' }
   }
   const rawPrice = String(formValues.base_price ?? '').trim().replace(/,/g, '')
-  if (rawPrice === '' || !Number.isFinite(Number(rawPrice))) {
+  const parsedPrice = parsePhpAmountInputString(rawPrice)
+  if (rawPrice === '' || !Number.isFinite(parsedPrice)) {
     return { id: 'base_price', label: 'Starting price' }
   }
   if (!String(formValues?.inclusions || '').trim()) {
@@ -266,7 +267,8 @@ function computeFixedSectionCompletion(formValues, listingGallery) {
   const nameOk = String(formValues.listing_name || '').trim() !== ''
   const imagesOk = listingGalleryHasUserImages(listingGallery)
   const rawPrice = String(formValues.base_price ?? '').trim().replace(/,/g, '')
-  const priceOk = rawPrice !== '' && Number.isFinite(Number(rawPrice)) && Number(rawPrice) >= 0
+  const parsedPrice = parsePhpAmountInputString(rawPrice)
+  const priceOk = rawPrice !== '' && Number.isFinite(parsedPrice) && parsedPrice >= 0
   const incOk = String(formValues.inclusions || '').trim() !== ''
   const whoOk = String(formValues.who_this_is_for || '').trim() !== ''
   const notesOk = String(formValues.important_notes || '').trim() !== ''
@@ -738,12 +740,12 @@ export function SellerListingFormFields({
                 </div>
                 <div className={styles.listingFormControlCol}>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
+                    autoComplete="off"
                     className={styles.listingFormInput}
                     value={asInputValue(getFieldValue('base_price'))}
                     placeholder="0"
-                    min={0}
-                    step="0.01"
                     onChange={(e) => setFieldValue('base_price', e.target.value)}
                     aria-label="Starting price"
                   />
@@ -1142,7 +1144,8 @@ export default function NewListingClient() {
     }
 
     const rawPrice = String(formValues.base_price ?? '').trim().replace(/,/g, '')
-    if (rawPrice !== '' && Number.isFinite(Number(rawPrice)) && Number(rawPrice) < 0) {
+    const parsedPrice = parsePhpAmountInputString(rawPrice)
+    if (rawPrice !== '' && Number.isFinite(parsedPrice) && parsedPrice < 0) {
       const msg = 'Starting price cannot be negative.'
       setFormError(msg)
       setToastType('error')

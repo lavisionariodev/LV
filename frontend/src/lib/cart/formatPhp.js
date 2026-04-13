@@ -8,6 +8,56 @@ export function roundPhpAmount(n) {
 }
 
 /**
+ * Parse a seller/buyer-entered peso string (commas allowed) using integer centavos math so values like
+ * 20000 are not corrupted by IEEE-754 parsing or HTML number-input float quirks.
+ *
+ * @param {unknown} raw
+ * @returns {number} finite amount, or NaN if empty/invalid
+ */
+export function parsePhpAmountInputString(raw) {
+  let s = String(raw ?? '')
+    .trim()
+    .replace(/,/g, '')
+  if (s === '') return NaN
+  if (s.endsWith('.')) s = s.slice(0, -1)
+  if (s === '' || s === '-') return NaN
+
+  const neg = s.startsWith('-')
+  const u = neg ? s.slice(1) : s
+  if (u === '') return NaN
+
+  if (!/^(\d+\.?\d*|\.\d+)$/.test(u)) return NaN
+
+  let intStr
+  let fracStr
+  if (u.startsWith('.')) {
+    intStr = '0'
+    fracStr = u.slice(1).replace(/\D/g, '')
+  } else {
+    const dot = u.indexOf('.')
+    if (dot === -1) {
+      intStr = u
+      fracStr = ''
+    } else {
+      intStr = u.slice(0, dot)
+      fracStr = u.slice(dot + 1).replace(/\D/g, '')
+    }
+  }
+
+  if (intStr !== '' && !/^\d+$/.test(intStr)) return NaN
+  const whole = intStr === '' ? 0 : parseInt(intStr, 10)
+  if (!Number.isFinite(whole)) return NaN
+
+  const frac2 = (fracStr.slice(0, 2) + '00').slice(0, 2)
+  const fracNum = frac2 === '' ? 0 : parseInt(frac2, 10)
+  if (!Number.isFinite(fracNum)) return NaN
+
+  const absCents = whole * 100 + fracNum
+  const signedCents = neg ? -absCents : absCents
+  return roundPhpAmount(signedCents / 100)
+}
+
+/**
  * Format a peso amount for display: whole amounts omit ".00"; fractional amounts show up to 2 decimals.
  *
  * @param {number|null|undefined} amount
