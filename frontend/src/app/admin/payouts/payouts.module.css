@@ -552,10 +552,28 @@
   gap: 6px;
 }
 
+.mobileDateInputWrap {
+  position: relative;
+}
+
+.mobileDatePlaceholder {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  font-weight: 600;
+  color: #94a3b8;
+  pointer-events: none;
+  user-select: none;
+  line-height: 1;
+  z-index: 1;
+}
+
 .mobileDateFieldLabel {
   font-size: 11px;
   font-weight: 700;
-  color: #94a3b8;
+  color: #0f172a;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -570,6 +588,14 @@
   font-weight: 600;
   color: #0f172a;
   font-family: inherit;
+  position: relative;
+  z-index: 2;
+}
+
+/* When empty, hide native date placeholder text to avoid "double" placeholder */
+.mobileDateInput[data-empty="true"] {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
 }
 
 .mobileDateInput:focus {
@@ -603,6 +629,8 @@
   transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
 
+/* Accent is applied only when selected (active) */
+
 .mobileChoiceBtn:hover {
   background: #f8fafc;
   border-color: #cbd5e1;
@@ -612,6 +640,13 @@
   border-color: #0f172a;
   background: #f1f5f9;
 }
+
+/* Stronger accent when selected */
+.mobileChoiceBtnActive[data-accent="green"] { border-color: #16a34a; background: #f0fdf4; color: #15803d; }
+.mobileChoiceBtnActive[data-accent="amber"] { border-color: #d97706; background: #fffbeb; color: #b45309; }
+.mobileChoiceBtnActive[data-accent="red"]   { border-color: #dc2626; background: #fff5f5; color: #b91c1c; }
+.mobileChoiceBtnActive[data-accent="blue"]  { border-color: #2563eb; background: #eff6ff; color: #1d4ed8; }
+.mobileChoiceBtnActive[data-accent="slate"] { border-color: #0f172a; background: #f1f5f9; color: #0f172a; }
 
 .mobileChoiceCheck {
   font-weight: 900;
@@ -2386,14 +2421,29 @@
   /* Stats: two columns, compact */
   .statsGrid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    gap: 12px;
   }
-  .statValue { font-size: 17px; font-weight: 700; }
-  .statTrendValue { font-size: 11px; }
-  .statTrendArrow { width: 11px; height: 11px; }
+  .statValue {
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+  .statTrendValue { font-size: 14px; }
+  .statTrendArrow { width: 14px; height: 14px; }
   .statSparkline { width: 60px; height: 30px; }
-  .statLabel { font-size: 11px; }
-  .statCard { padding: 10px 12px; gap: 6px; }
+  .statLabel { font-size: 13px; line-height: 1.35; }
+  .statCard {
+    padding: 14px 14px;
+    gap: 10px;
+    border-radius: 12px;
+    min-height: 94px;
+  }
+  /* Desktop-only: hide the right-side sparkline on mobile */
+  .statRight { display: none; }
+  .statBody { justify-content: flex-start; gap: 12px; }
+  .statLeft { width: 100%; }
+  .statTrend { gap: 4px; }
 
   /* Tabs: scrollable row — line stays tab-width; scroll wrapper is page */
   .tabNav {
@@ -3642,27 +3692,36 @@
   /* ── Stats Grid — 2 col compact ─────────────────────────────────────────── */
   .statsGrid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    gap: 12px;
   }
 
   .statCard {
-    padding: 12px;
-    gap: 6px;
-    border-radius: 10px;
+    padding: 14px 14px;
+    gap: 10px;
+    border-radius: 12px;
+    min-height: 94px;
   }
 
   .statLabel {
-    font-size: 11px;
+    font-size: 13px;
+    line-height: 1.35;
   }
 
   .statValue {
-    font-size: 16px;
+    font-size: 22px;
     font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
   }
 
-  .statTrendValue { font-size: 11px; }
-  .statTrendArrow { width: 11px; height: 11px; }
+  .statTrend { gap: 4px; }
+  .statTrendValue { font-size: 14px; }
+  .statTrendArrow { width: 14px; height: 14px; }
   .statSparkline  { width: 56px; height: 28px; }
+  /* Desktop-only: hide the right-side sparkline on mobile */
+  .statRight { display: none; }
+  .statBody { justify-content: flex-start; gap: 12px; }
+  .statLeft { width: 100%; }
 
   /* ── Tab Nav — scrollable, bigger touch targets ──────────────────────────── */
   .tabNav {
@@ -3778,7 +3837,8 @@
   }
 
   .mobileDateRangeGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+    align-items: end;
   }
 
   .filterBarExtra {
@@ -4370,9 +4430,9 @@
     gap: 8px;
   }
 
-  .statCard { padding: 10px; }
-  .statValue { font-size: 15px; }
-  .statLabel { font-size: 10px; }
+  .statCard { padding: 12px; min-height: 90px; }
+  .statValue { font-size: 20px; }
+  .statLabel { font-size: 12px; }
   .statSparkline { width: 48px; height: 24px; }
 
   .tabBtn {
@@ -4407,8 +4467,9 @@
     gap: 6px;
   }
 
-  .statCard { padding: 9px 10px; }
-  .statValue { font-size: 14px; }
+  .statCard { padding: 11px 12px; min-height: 86px; }
+  .statValue { font-size: 18px; }
+  .statLabel { font-size: 11px; }
   .statSparkline { display: none; }
 
   .mobileCardAmount { font-size: 16px; }

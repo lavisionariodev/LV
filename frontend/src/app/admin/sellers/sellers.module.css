@@ -1036,13 +1036,14 @@
 
 @media (max-width: 640px) {
 
-  .pageRoot { gap: 0; background: #f1f5f9; }
+  /* No outer background on mobile (let the layout/page handle it) */
+  .pageRoot { gap: 0; background: transparent; }
 
   .tablePanel {
     border-left: none;
     border-right: none;
     border-radius: 0;
-    background: #f1f5f9;
+    background: transparent;
     border-top: none;
     border-bottom: none;
   }
@@ -1124,7 +1125,7 @@
   .tableWrap {
     padding: 0;
     overflow-x: visible;
-    background: #f1f5f9;
+    background: transparent;
   }
 
   .table          { display: block; }
@@ -1436,12 +1437,12 @@
     padding: 12px 14px;
     font-size: 12px;
     text-align: center;
-    background: #f1f5f9;
+    background: transparent;
     border-top: none;
   }
 
   /* ── Empty + loading ─────────────────────────────────────────────────── */
-  .emptyState { padding: 40px 20px; background: #f1f5f9; }
+  .emptyState { padding: 40px 20px; background: transparent; }
   .clearBtn   { min-height: 44px; padding: 11px 20px; font-size: 13px; border-radius: 10px; }
 }
 
