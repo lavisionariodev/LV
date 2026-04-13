@@ -4,37 +4,31 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { FiExternalLink, FiRotateCcw } from 'react-icons/fi'
 import { VscSettings } from 'react-icons/vsc'
-import styles from './listings.module.css'
-import { listSellerListingsForAdmin, parseListingDynamicValues } from '@/lib/seller-listings/client'
+import styles from '../listings.module.css'
+import { listSellerListingsForAdmin } from '@/lib/seller-listings/client'
 import { getShopHrefForSellerListingRow } from '@/lib/shop-listings/client'
+import { formatPhpAmount } from '@/lib/cart/formatPhp'
 import { Dropdown } from '@/components/ui'
 
-/* ─── Filter options ─────────────────────────────────────── */
-
-const STATUS_TABS = [
-  { value: 'all',      label: 'All' },
-  { value: 'active',   label: 'Active' },
-  { value: 'draft',    label: 'Draft' },
-  { value: 'inactive', label: 'Inactive' },
+const APPROVED_STATUS_TABS = [
+  { value: 'active', label: 'Active' },
   { value: 'archived', label: 'Archived' },
 ]
 
 const KIND_FILTER_OPTIONS = [
-  { value: 'all',     label: 'All kinds' },
+  { value: 'all', label: 'All kinds' },
   { value: 'service', label: 'Service' },
   { value: 'package', label: 'Package' },
   { value: 'product', label: 'Product' },
-  { value: 'other',   label: 'Other / unset' },
+  { value: 'other', label: 'Other / unset' },
 ]
 
 const SORT_OPTIONS = [
-  { value: 'updated',    label: 'Sort: Updated' },
-  { value: 'price_asc',  label: 'Sort: Price ↑' },
+  { value: 'updated', label: 'Sort: Updated' },
+  { value: 'price_asc', label: 'Sort: Price ↑' },
   { value: 'price_desc', label: 'Sort: Price ↓' },
-  { value: 'name',       label: 'Sort: Name' },
+  { value: 'name', label: 'Sort: Name' },
 ]
-
-/* ─── Icons ──────────────────────────────────────────────── */
 
 const Icon = {
   Search: () => (
@@ -45,8 +39,6 @@ const Icon = {
   ),
 }
 
-/* ─── Main image (seller_listings.image_urls) or kind placeholder ─ */
-
 function getMainListingImageUrl(row) {
   const raw = row?.image_urls
   const list = Array.isArray(raw) ? raw : []
@@ -54,33 +46,41 @@ function getMainListingImageUrl(row) {
   return u ? u.trim() : null
 }
 
-function ListingThumb({ row, kind }) {
-  const url = getMainListingImageUrl(row)
-  const [imgFailed, setImgFailed] = useState(false)
-
-  if (url && !imgFailed) {
-    return (
-      <div className={styles.thumb}>
-        <img
-          src={url}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          onError={() => setImgFailed(true)}
-        />
-      </div>
-    )
-  }
-
-  return <KindThumb kind={kind} />
+function kindKeyFromRow(row) {
+  const k = typeof row.listing_kind === 'string' ? row.listing_kind.trim().toLowerCase() : ''
+  if (k === 'service' || k === 'package' || k === 'product') return k
+  return 'other'
 }
 
-const KindThumb = ({ kind }) => {
+function kindLabelFromRow(row) {
+  const k = typeof row.listing_kind === 'string' ? row.listing_kind.trim().toLowerCase() : ''
+  if (k === 'service') return 'Service'
+  if (k === 'package') return 'Package'
+  if (k === 'product') return 'Product'
+  if (typeof row.listing_kind === 'string' && row.listing_kind.trim()) {
+    const t = row.listing_kind.trim()
+    return t.charAt(0).toUpperCase() + t.slice(1)
+  }
+  return '—'
+}
+
+function StatusBadge({ status }) {
+  const s = String(status || 'draft').toLowerCase()
+  const tone = styles[`status_${s}`] ? styles[`status_${s}`] : styles.status_draft
+  return (
+    <span className={`${styles.statusBadge} ${tone}`}>
+      <span className={styles.statusDot} />
+      {s}
+    </span>
+  )
+}
+
+function KindThumb({ kind }) {
   const colors = {
     service: '#f0fdf4',
     package: '#eff6ff',
     product: '#fdf4ff',
-    other:   '#fff7ed',
+    other: '#fff7ed',
   }
   const bg = colors[kind] || colors.other
 
@@ -115,52 +115,26 @@ const KindThumb = ({ kind }) => {
   )
 }
 
-/* ─── Helpers ────────────────────────────────────────────── */
+function ListingThumb({ row, kind }) {
+  const url = getMainListingImageUrl(row)
+  const [imgFailed, setImgFailed] = useState(false)
 
-function kindKeyFromRow(row) {
-  const dv = parseListingDynamicValues(row?.dynamic_values)
-  const k = typeof dv.kind === 'string' ? dv.kind.trim().toLowerCase() : ''
-  if (k === 'service' || k === 'package' || k === 'product') return k
-  return 'other'
-}
-
-function kindLabelFromRow(row) {
-  const dv = parseListingDynamicValues(row?.dynamic_values)
-  const k = typeof dv.kind === 'string' ? dv.kind.trim().toLowerCase() : ''
-  if (k === 'service') return 'Service'
-  if (k === 'package') return 'Package'
-  if (k === 'product') return 'Product'
-  if (typeof dv.kind === 'string' && dv.kind.trim()) {
-    const t = dv.kind.trim()
-    return t.charAt(0).toUpperCase() + t.slice(1)
+  if (url && !imgFailed) {
+    return (
+      <div className={styles.thumb}>
+        <img
+          src={url}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onError={() => setImgFailed(true)}
+        />
+      </div>
+    )
   }
-  return '—'
-}
 
-function formatPrice(raw) {
-  if (raw == null || raw === '') return '—'
-  const n = Number(raw)
-  if (!Number.isFinite(n)) return '—'
-  return new Intl.NumberFormat('en-PH', {
-    style: 'currency',
-    currency: 'PHP',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(n)
+  return <KindThumb kind={kind} />
 }
-
-function StatusBadge({ status }) {
-  const s = String(status || 'draft').toLowerCase()
-  const tone = styles[`status_${s}`] ? styles[`status_${s}`] : styles.status_draft
-  return (
-    <span className={`${styles.statusBadge} ${tone}`}>
-      <span className={styles.statusDot} />
-      {s}
-    </span>
-  )
-}
-
-/* ─── Listing card ───────────────────────────────────────── */
 
 function ListingCard({ row }) {
   const kind = kindKeyFromRow(row)
@@ -172,10 +146,11 @@ function ListingCard({ row }) {
       ? `${business} · ${email}`
       : email || business || '—'
   const isActive = String(row.status || '').toLowerCase() === 'active'
+  const approval = String(row.approval_status || 'draft').toLowerCase()
+  const isShopVisible = isActive && approval === 'approved'
 
   return (
     <div className={styles.card}>
-      {/* ── Top section ── */}
       <div className={styles.cardMain}>
         <ListingThumb row={row} kind={kind} />
 
@@ -187,16 +162,15 @@ function ListingCard({ row }) {
           <div className={styles.cardTags}>
             <span className={styles.cardTag}>{kindLabelFromRow(row)}</span>
             <span className={styles.cardTag} style={{ fontWeight: 700, color: '#0f172a' }}>
-              {formatPrice(row.base_price)}
+              {formatPhpAmount(row.base_price)}
             </span>
           </div>
         </div>
 
-        {/* ── Right: status + shop link (views/orders removed until backed by real columns/API) ── */}
         <div className={styles.cardRight}>
           <StatusBadge status={row.status} />
 
-          {isActive ? (
+          {isShopVisible ? (
             <a
               href={shopHref}
               target="_blank"
@@ -215,52 +189,53 @@ function ListingCard({ row }) {
   )
 }
 
-/* ─── Page ───────────────────────────────────────────────── */
-
-export default function AdminListingsPage() {
-  const [search, setSearch]           = useState('')
-  const [activeTab, setActiveTab]     = useState('all')
-  const [kindFilter, setKindFilter]   = useState('all')
-  const [sortKey, setSortKey]         = useState('updated')
-  const [rows, setRows]               = useState([])
-  const [isLoading, setIsLoading]     = useState(true)
-  const [error, setError]             = useState(null)
+export default function AdminListingsBrowsePage() {
+  const [search, setSearch] = useState('')
+  const [statusTab, setStatusTab] = useState('active')
+  const [kindFilter, setKindFilter] = useState('all')
+  const [sortKey, setSortKey] = useState('updated')
+  const [approvedRows, setApprovedRows] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     let mounted = true
     async function load() {
-      setIsLoading(true)
       setError(null)
-      const { data, error: loadError } = await listSellerListingsForAdmin()
+      setIsLoading(true)
+      const res = await listSellerListingsForAdmin({
+        statusIn: ['active', 'archived'],
+        approvalStatusIn: ['approved'],
+      })
       if (!mounted) return
-      if (loadError) {
-        setError(loadError)
-        setRows([])
+      if (res.error) {
+        setError(res.error)
+        setApprovedRows(Array.isArray(res.data) ? res.data : [])
       } else {
-        setRows(Array.isArray(data) ? data : [])
+        setApprovedRows(Array.isArray(res.data) ? res.data : [])
       }
       setIsLoading(false)
     }
     load()
-    return () => { mounted = false }
+    return () => {
+      mounted = false
+    }
   }, [])
 
-  /* ── Tab counts ── */
-  const tabCounts = useMemo(() => {
-    const counts = { all: rows.length }
-    STATUS_TABS.forEach(({ value }) => {
-      if (value !== 'all')
-        counts[value] = rows.filter(r => String(r.status || '').toLowerCase() === value).length
-    })
+  const statusCounts = useMemo(() => {
+    const counts = { active: 0, archived: 0 }
+    for (const r of approvedRows) {
+      const s = String(r?.status || '').toLowerCase()
+      if (s === 'active') counts.active += 1
+      if (s === 'archived') counts.archived += 1
+    }
     return counts
-  }, [rows])
+  }, [approvedRows])
 
-  /* ── Filtered + sorted ── */
-  const filtered = useMemo(() => {
-    let result = rows.filter((row) => {
-      const status = String(row.status || '').toLowerCase()
-
-      if (activeTab !== 'all' && status !== activeTab) return false
+  const approvedFiltered = useMemo(() => {
+    let result = approvedRows.filter((row) => {
+      const st = String(row.status || '').toLowerCase()
+      if (st !== statusTab) return false
 
       const kk = kindKeyFromRow(row)
       if (kindFilter !== 'all' && kk !== kindFilter) return false
@@ -281,7 +256,6 @@ export default function AdminListingsPage() {
       const n = Number(r?.base_price)
       return Number.isFinite(n) ? n : 0
     }
-    // Sort
     if (sortKey === 'price_asc') {
       result = result.slice().sort((a, b) => priceNum(a) - priceNum(b))
     }
@@ -300,10 +274,9 @@ export default function AdminListingsPage() {
     }
 
     return result
-  }, [rows, search, activeTab, kindFilter, sortKey])
+  }, [approvedRows, search, statusTab, kindFilter, sortKey])
 
-  const hasFilters =
-    Boolean(search.trim()) || kindFilter !== 'all'
+  const hasFilters = Boolean(search.trim()) || kindFilter !== 'all'
 
   const clearFilters = () => {
     setSearch('')
@@ -312,22 +285,22 @@ export default function AdminListingsPage() {
 
   return (
     <div className={styles.pageRoot}>
-      {/* ── Toolbar ── */}
       <div className={styles.toolbar}>
-        {/* Row 1: tabs + sort */}
         <div className={styles.toolbarTopRow}>
-          <div className={styles.tabs}>
-            {STATUS_TABS.map(({ value, label }) => (
-              <button
-                key={value}
-                type="button"
-                className={`${styles.tab}${activeTab === value ? ` ${styles.active}` : ''}`}
-                onClick={() => setActiveTab(value)}
-              >
-                {label}
-                <span className={styles.tabCount}>{tabCounts[value] ?? 0}</span>
-              </button>
-            ))}
+          <div className={styles.tabsStack}>
+            <div className={styles.tabs}>
+              {APPROVED_STATUS_TABS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={`${styles.tab}${statusTab === value ? ` ${styles.active}` : ''}`}
+                  onClick={() => setStatusTab(value)}
+                >
+                  {label}
+                  <span className={styles.tabCount}>{statusCounts[value] ?? 0}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className={styles.sortWrap}>
@@ -342,7 +315,6 @@ export default function AdminListingsPage() {
           </div>
         </div>
 
-        {/* Row 2: search + kind filter + clear */}
         <div className={styles.filterRow}>
           <div className={styles.toolbarSearchWrap}>
             <Icon.Search />
@@ -377,12 +349,11 @@ export default function AdminListingsPage() {
         </div>
       </div>
 
-      {/* ── Content ── */}
       <div className={styles.cardList}>
         {isLoading && (
           <div className={styles.loadingState}>
             <div className={styles.spinner} />
-            <p>Loading listings…</p>
+            <p>Loading approved listings…</p>
           </div>
         )}
 
@@ -396,11 +367,12 @@ export default function AdminListingsPage() {
           </p>
         )}
 
-        {!isLoading && !error && filtered.length > 0 &&
-          filtered.map((row) => <ListingCard key={row.id} row={row} />)
-        }
+        {!isLoading && !error && approvedFiltered.length > 0 &&
+          approvedFiltered.map((row) => (
+            <ListingCard key={row.id} row={row} />
+          ))}
 
-        {!isLoading && !error && filtered.length === 0 && (
+        {!isLoading && !error && approvedFiltered.length === 0 && (
           <div className={styles.emptyState}>
             <svg className={styles.emptyIcon} viewBox="0 0 48 48" fill="none">
               <rect x="8" y="12" width="32" height="26" rx="3" stroke="currentColor" strokeWidth="2" />
@@ -408,7 +380,7 @@ export default function AdminListingsPage() {
             </svg>
             <p className={styles.emptyTitle}>No listings found</p>
             <p className={styles.emptyText}>
-              {rows.length === 0
+              {approvedRows.length === 0
                 ? 'No seller listings in the database yet, or you may lack permission to read them.'
                 : 'No listings match your current filters.'}
             </p>
@@ -417,7 +389,7 @@ export default function AdminListingsPage() {
                 Clear filters
               </button>
             )}
-            {rows.length === 0 && !hasFilters && (
+            {approvedRows.length === 0 && !hasFilters && (
               <Link
                 href="/admin/sellers"
                 className={styles.clearBtn}
@@ -430,10 +402,10 @@ export default function AdminListingsPage() {
         )}
       </div>
 
-      {/* ── Footer ── */}
       {!isLoading && !error && (
         <div className={styles.tableFooter}>
-          Showing <strong>{filtered.length}</strong> of <strong>{rows.length}</strong> listings
+          Showing <strong>{approvedFiltered.length}</strong> of <strong>{approvedRows.length}</strong>{' '}
+          approved listings
         </div>
       )}
     </div>

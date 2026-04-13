@@ -11,6 +11,20 @@ const supabaseHostname = (() => {
 })()
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      {
+        source: '/admin/listings',
+        destination: '/admin/listings/browse',
+        permanent: true,
+      },
+      {
+        source: '/admin/listings/review',
+        destination: '/admin/listings/approvals',
+        permanent: true,
+      },
+    ]
+  },
   images: {
     remotePatterns: [
       {

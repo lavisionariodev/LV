@@ -4,14 +4,15 @@
     opacity: 0.45;
   }
   50% {
-    opacity: 0.85;
+    opacity: 0.88;
   }
 }
 
 .loadingRoot {
   position: relative;
   width: 100%;
-  padding-bottom: 0.25rem;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .srOnly {
@@ -26,34 +27,81 @@
   border: 0;
 }
 
-.loadingGrid {
-  display: grid;
-  grid-template-columns: minmax(220px, 270px) minmax(0, 1fr);
-  gap: 1.5rem;
-  align-items: start;
+/* Same vertical rhythm as .newListingLayout (stacked column, not side-by-side) */
+.loadingStack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  align-items: stretch;
   width: 100%;
+}
+
+.loadingAside,
+.loadingMain {
+  width: 100%;
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
+  min-width: 0;
 }
 
 .loadingAside {
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
-  min-width: 0;
-}
-
-.loadingMain {
-  min-width: 0;
+  gap: 0.7rem;
 }
 
 .skeletonCard {
-  border-radius: 8px;
-  border: 1px solid #e8eef0;
-  background: #ffffff;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
-  padding: 0.85rem 0.9rem 1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(31, 49, 43, 0.11);
+  background: linear-gradient(180deg, #ffffff 0%, rgba(247, 244, 239, 0.65) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    0 8px 20px rgba(31, 49, 43, 0.08);
+  padding: 0.85rem 0.95rem 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
+}
+
+.skeletonCardStepper {
+  padding: 0.62rem 0.8rem;
+  border-radius: 12px;
+  background: #fafafa;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.skeletonStepperTrack {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.skeletonStepDot {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: linear-gradient(90deg, #e8eef2 0%, #f1f5f9 50%, #e8eef2 100%);
+  background-size: 200% 100%;
+  animation: newListingSkeletonPulse 1.6s ease-in-out infinite;
+}
+
+.skeletonStepLine {
+  flex: 1 1 auto;
+  height: 1px;
+  min-width: 0.5rem;
+  border-radius: 1px;
+  background: linear-gradient(90deg, #e2e8f0 0%, #f1f5f9 50%, #e2e8f0 100%);
+  animation: newListingSkeletonPulse 1.6s ease-in-out infinite;
+  animation-delay: 0.05s;
+}
+
+.skeletonCardSection {
+  border-radius: 18px;
+  padding: 1rem 1.05rem 1.05rem;
 }
 
 .skeletonLine {
@@ -84,7 +132,7 @@
 
 .skeletonBlock {
   height: 4.25rem;
-  border-radius: 8px;
+  border-radius: 10px;
   background: linear-gradient(90deg, #e8eef2 0%, #f1f5f9 50%, #e8eef2 100%);
   background-size: 200% 100%;
   animation: newListingSkeletonPulse 1.6s ease-in-out infinite;
@@ -95,49 +143,65 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 0.65rem;
-  padding-top: 0.35rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
   margin-top: 0.15rem;
+  border-top: 1px solid rgba(31, 49, 43, 0.12);
 }
 
 .skeletonBtnGhost {
-  width: 4.5rem;
-  height: 2.25rem;
-  border-radius: 8px;
+  width: 4.75rem;
+  height: 2.35rem;
+  border-radius: 10px;
   background: #f1f5f9;
   animation: newListingSkeletonPulse 1.6s ease-in-out infinite;
   animation-delay: 0.15s;
 }
 
+.skeletonBtnGhostWide {
+  width: 6.25rem;
+  height: 2.35rem;
+  border-radius: 10px;
+  background: #f1f5f9;
+  animation: newListingSkeletonPulse 1.6s ease-in-out infinite;
+  animation-delay: 0.18s;
+}
+
 .skeletonBtnPrimary {
-  width: 6.5rem;
-  height: 2.25rem;
-  border-radius: 8px;
+  min-width: 7rem;
+  height: 2.35rem;
+  border-radius: 10px;
   background: linear-gradient(90deg, #c5d9ce 0%, #dce8e2 50%, #c5d9ce 100%);
   background-size: 200% 100%;
   animation: newListingSkeletonPulse 1.6s ease-in-out infinite;
-  animation-delay: 0.2s;
+  animation-delay: 0.22s;
 }
 
-@media (max-width: 1024px) {
-  .loadingGrid {
-    grid-template-columns: 1fr;
-    gap: 1.15rem;
+@media (max-width: 480px) {
+  .loadingStack {
+    gap: 0.85rem;
   }
 
-  .loadingAside {
-    flex-direction: row;
-    flex-wrap: wrap;
+  .skeletonCard {
+    padding: 0.75rem 0.85rem 0.9rem;
+    border-radius: 14px;
   }
 
-  .loadingAside .skeletonCard {
-    flex: 1 1 220px;
-    min-width: min(100%, 260px);
+  .skeletonCardSection {
+    padding: 0.9rem 0.88rem 0.95rem;
   }
-}
 
-@media (max-width: 640px) {
-  .loadingAside {
-    flex-direction: column;
+  .skeletonFooter {
+    gap: 0.55rem;
+  }
+
+  .skeletonBtnGhost {
+    width: 4.25rem;
+  }
+
+  .skeletonBtnGhostWide {
+    flex: 1 1 5rem;
+    min-width: 5rem;
   }
 }

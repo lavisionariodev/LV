@@ -453,6 +453,11 @@
   text-transform: uppercase;
 }
 
+.stockBadgeOut {
+  background: rgba(185, 28, 28, 0.12);
+  color: #991b1b;
+}
+
 .priceRow {
   display: flex;
   align-items: baseline;

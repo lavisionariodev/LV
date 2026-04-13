@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { roundPhpAmount } from '@/lib/cart/formatPhp'
 
 const ALLOWED_SERVICE_IDS = new Set(['cremation', 'traditional-burial', 'memorial-planning'])
 
@@ -7,9 +8,6 @@ const PLACEHOLDER_PROVIDER_RATING = 4.8
 const PLACEHOLDER_REVIEW_COUNT = 0
 const PLACEHOLDER_PROVIDER_BADGE = 'Verified'
 
-/**
- * Map funeral category from DB (column or dynamic_values.funeral_category) to shop service slugs.
- */
 function normalizeServiceId(raw) {
   if (raw == null) return 'memorial-planning'
   const s = String(raw).trim().toLowerCase().replace(/\s+/g, '-')
@@ -22,29 +20,26 @@ function normalizeServiceId(raw) {
 
 /**
  * Shop detail URL for a raw `seller_listings` row (admin deep links).
- * Uses category / dynamic_values category fields the same way as the shop RPC mapping.
  */
 export function getShopHrefForSellerListingRow(row) {
   if (!row?.id) return '/shop'
-  const dv = parseDynamicValues(row.dynamic_values)
-  const raw = row.category ?? dv.funeral_category ?? dv.category ?? ''
+  const raw = row.funeral_category ?? row.category ?? ''
   const serviceId = normalizeServiceId(raw)
   return `/shop/${serviceId}?listing=${encodeURIComponent(String(row.id))}`
 }
 
-function parseInclusions(description, dynamicValues) {
-  const dv = dynamicValues && typeof dynamicValues === 'object' ? dynamicValues : {}
-  if (Array.isArray(dv.inclusions) && dv.inclusions.length) {
-    return dv.inclusions.map((x) => String(x).trim()).filter(Boolean).slice(0, 12)
-  }
-  if (typeof dv.inclusions === 'string' && dv.inclusions.trim()) {
-    return dv.inclusions
+function parseInclusions(description, inclusionsText) {
+  if (typeof inclusionsText === 'string' && inclusionsText.trim()) {
+    return inclusionsText
       .split(/\n|•|;/)
       .map((x) => x.trim())
       .filter(Boolean)
       .slice(0, 12)
   }
-  const text = typeof description === 'string' ? description : typeof dv.description === 'string' ? dv.description : ''
+  const text =
+    typeof description === 'string'
+      ? description
+      : ''
   if (text.trim()) {
     const parts = text
       .split(/\n|•|;/)
@@ -56,25 +51,6 @@ function parseInclusions(description, dynamicValues) {
   return ['See listing details']
 }
 
-function parseDynamicValues(raw) {
-  if (raw == null) return {}
-  if (typeof raw === 'object' && !Array.isArray(raw)) return raw
-  if (typeof raw === 'string') {
-    try {
-      const o = JSON.parse(raw)
-      return o && typeof o === 'object' && !Array.isArray(o) ? o : {}
-    } catch {
-      return {}
-    }
-  }
-  return {}
-}
-
-/**
- * Labels for the buyer-facing Package dropdown on shop detail/cart.
- * RPC `get_active_shop_listings` returns non-empty `dynamic_values.package_options` from the listing
- * when present, otherwise `sellers.package_options` (see migration 036).
- */
 function parseSellerPackageOptions(raw) {
   if (raw == null) return []
   let list = []
@@ -103,11 +79,49 @@ function formatListingKindLabel(kind) {
   return t ? t.charAt(0).toUpperCase() + t.slice(1) : ''
 }
 
+/**
+ * Stock from `seller_listings.stock_status` ("In Stock" | "Out of Stock") or legacy numeric hints.
+ */
+export function parseInStockFromStockStatus(raw) {
+  if (raw == null || raw === '') return true
+  const t = String(raw).trim().toLowerCase()
+  if (t === 'out of stock' || t === 'out_of_stock') return false
+  if (t === 'in stock' || t === 'in_stock') return true
+  return true
+}
+
+export function stockAvailabilityLabel(inStock) {
+  const ok = inStock !== false
+  return {
+    text: ok ? 'In Stock' : 'Out of Stock',
+    inStock: ok,
+  }
+}
+
+/**
+ * Normalize to "In Stock" | "Out of Stock" for the `stock_status` column.
+ * Accepts an object with stock_status (legacy) or a plain string.
+ */
+export function normalizeStockStatusValue(input) {
+  if (input == null || input === '') return null
+  if (typeof input === 'object' && !Array.isArray(input)) {
+    const o = input
+    if (Object.prototype.hasOwnProperty.call(o, 'stock_quantity')) {
+      const n = Number(o.stock_quantity)
+      if (Number.isFinite(n)) return n > 0 ? 'In Stock' : 'Out of Stock'
+    }
+    return normalizeStockStatusValue(o.stock_status)
+  }
+  const t = String(input).trim().toLowerCase().replace(/\s+/g, ' ')
+  if (t === 'out of stock' || t === 'out_of_stock') return 'Out of Stock'
+  if (t === 'in stock' || t === 'in_stock' || t === '') return 'In Stock'
+  return 'In Stock'
+}
+
 function mapRpcRowToListing(row) {
   if (!row) return null
-  const dv = parseDynamicValues(row.dynamic_values)
   const serviceId = normalizeServiceId(row.public_category_slug)
-  const price = row.base_price != null ? Number(row.base_price) : 0
+  const price = row.base_price != null ? roundPhpAmount(row.base_price) : 0
   const sellerId = row.seller_user_id
   const loc = (row.business_location || row.listing_location || '').trim() || 'Philippines'
 
@@ -117,30 +131,22 @@ function mapRpcRowToListing(row) {
     .map((u) => u.trim())
   const firstImage = imageUrls[0] ?? null
 
-  /** Website signup — `sellers.registered_at` (no listing fallback; see migration 028). */
-  const sellerRegisteredAt =
-    row.seller_registered_at ?? row.sellerRegisteredAt ?? null
-  /** Business operations start — `sellers.business_started_at` (onboarding). */
-  const businessStartedAt =
-    row.seller_business_started_at ?? row.sellerBusinessStartedAt ?? null
+  const sellerRegisteredAt = row.seller_registered_at ?? row.sellerRegisteredAt ?? null
+  const businessStartedAt = row.seller_business_started_at ?? row.sellerBusinessStartedAt ?? null
 
-  const description = typeof dv.description === 'string' ? dv.description.trim() : ''
-  const whoThisIsFor = typeof dv.who_this_is_for === 'string' ? dv.who_this_is_for.trim() : ''
-  const importantNotes = typeof dv.important_notes === 'string' ? dv.important_notes.trim() : ''
+  const description = typeof row.description === 'string' ? row.description.trim() : ''
+  const whoThisIsFor = typeof row.who_this_is_for === 'string' ? row.who_this_is_for.trim() : ''
+  const importantNotes = typeof row.important_notes === 'string' ? row.important_notes.trim() : ''
   const sellerPackageOptions = parseSellerPackageOptions(row.seller_package_options)
 
-  const duration =
-    typeof dv.duration === 'string' ? dv.duration.trim() : ''
+  const duration = typeof row.duration === 'string' ? row.duration.trim() : ''
   const categoryLabel =
-    typeof dv.category === 'string' ? dv.category.trim() : ''
+    typeof row.listing_category === 'string' ? row.listing_category.trim() : ''
   const listingKindLabel = formatListingKindLabel(
-    typeof dv.kind === 'string' ? dv.kind : '',
+    typeof row.listing_kind === 'string' ? row.listing_kind : '',
   )
   const coverage =
-    (typeof dv.coverage === 'string' && dv.coverage.trim()) ||
-    (typeof dv.location === 'string' && dv.location.trim()) ||
-    (typeof row.listing_location === 'string' && row.listing_location.trim()) ||
-    ''
+    (typeof row.listing_location === 'string' && row.listing_location.trim()) || ''
 
   return {
     id: String(row.listing_id),
@@ -148,8 +154,8 @@ function mapRpcRowToListing(row) {
     providerId: String(sellerId),
     name: row.listing_name || 'Service listing',
     price: Number.isFinite(price) ? price : 0,
-    popular: Boolean(dv.featured || dv.popular),
-    inclusions: parseInclusions(dv.description, dv),
+    inStock: parseInStockFromStockStatus(row.stock_status),
+    inclusions: parseInclusions(description, row.inclusions),
     description,
     whoThisIsFor,
     importantNotes,
@@ -175,7 +181,6 @@ function mapRpcRowToListing(row) {
   }
 }
 
-/** Maps RPC rows from `get_active_shop_listings` to the shop listing shape (database-only). */
 export function mergeShopListings(dbRows) {
   return (dbRows || []).map(mapRpcRowToListing).filter(Boolean)
 }
@@ -192,7 +197,6 @@ export async function fetchActiveShopListings({ bustCache = false } = {}) {
   const { data, error } = await supabase.rpc('get_active_shop_listings')
 
   if (error) {
-    /* Do not cache failures — previously [] was cached 45s and hid transient RPC/permission issues. */
     console.warn('[shop] get_active_shop_listings:', error.message, error)
     return []
   }

@@ -43,7 +43,7 @@
 /* Stats strip */
 .statsStrip {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.9rem;
 }
 
@@ -1025,7 +1025,7 @@
   gap: 0.5rem;
 }
 
-/* Template form: global errors + one card per section (new listing + edit modal). */
+/* Listing form: global errors + one card per section (new listing + edit modal). */
 .listingFormFieldsRoot {
   display: flex;
   flex-direction: column;
@@ -1041,13 +1041,13 @@
   min-width: 0;
 }
 
-/* Section card already has padding; inner card padding is reduced. */
+/* Section card already has padding; inner bordered card keeps a little horizontal inset. */
 .newListingCard .listingFormSection {
   margin-top: 0;
 }
 
 .newListingCard .listingFormSectionCard {
-  padding: 0.35rem 0 0;
+  padding: 0.4rem 0.9rem 0.35rem;
 }
 
 /* Seller listing form: label + sublabel (left), control (right) */
@@ -1731,7 +1731,7 @@
 
 @media (max-width: 960px) {
   .statsStrip {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .productsGrid {
@@ -1745,9 +1745,7 @@
     gap: 0.6rem;
   }
 
-  .statCard:nth-child(3) {
-    grid-column: 1 / -1;
-  }
+  /* keep all stat cards uniform; no special spanning */
 
   .filtersRow {
     flex-direction: column;
@@ -2144,6 +2142,11 @@
   .newListingCard {
     padding: 1rem 0.95rem 1rem;
     border-radius: 14px;
+  }
+
+  .newListingCard .listingFormSectionCard {
+    padding: 0.45rem 0.72rem 0.22rem;
+    border-radius: 12px;
   }
 
   .listingFormSectionCard {
@@ -2624,6 +2627,10 @@
   .newListingCard {
     padding: 0.95rem 0.92rem 1rem;
     border-radius: 14px;
+  }
+
+  .newListingCard .listingFormSectionCard {
+    padding: 0.48rem 0.62rem 0.18rem;
   }
 
   .newListingForm {

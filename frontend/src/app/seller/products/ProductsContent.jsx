@@ -7,25 +7,23 @@ import { TbPlus, TbSearch, TbTrash } from 'react-icons/tb'
 import styles from './products.module.css'
 import {
   buildSellerListingPayload,
-  dynamicValuesToFormState,
-  ensureBuiltInSellerTemplateFields,
-  ensureStatusField,
   FALLBACK_IMAGE,
   findFirstMissingRequiredField,
+  listingRowToFormValues,
   resolvePersistedImageUrls,
   SellerListingFileInput,
   SellerListingFormFields,
 } from './SellerListingForm'
-import { fetchSellerTemplate } from '@/lib/seller-template/client'
-import { getOrderedSectionIds, mergeSectionConfig, sortTemplateFieldsForDisplay } from '@/lib/seller-template/sections'
 import {
   listMySellerListings,
+  submitListingForReview,
   updateSellerListing,
   deleteSellerListing,
-  parseListingDynamicValues,
 } from '@/lib/seller-listings/client'
 import { getSellerByUserId } from '@/lib/sellers/client'
 import { supabase } from '@/lib/supabase/client'
+import { formatPhpAmount, roundPhpAmount } from '@/lib/cart/formatPhp'
+import { hasPendingSellerChanges, mergePendingChangesIntoListingRow } from '@/lib/seller-listings/pendingChanges'
 
 // ---------------------------------------------------------------------------
 // Listing form utilities (products list + edit modal)
@@ -51,7 +49,6 @@ function formatListingKindLabel(kind) {
 
 const VIEW_MODAL_EMPTY = '—'
 
-/** Display text from template fields (strings, numbers, etc.). */
 function coerceDisplayString(v) {
   if (v == null) return ''
   return String(v).trim()
@@ -93,60 +90,54 @@ function listingMatchesSearchQuery(p, rawQuery) {
   return tokens.every((t) => hay.includes(t))
 }
 
-/** View modal: prefer normalized fields, then raw dynamic_values (edit uses the same source). */
 function viewModalDurationText(p) {
-  const dv = parseListingDynamicValues(p?.dynamicValues ?? p?.dynamic_values)
-  const s = coerceDisplayString(p?.duration) || coerceDisplayString(dv.duration)
+  const s = coerceDisplayString(p?.duration)
   return s || VIEW_MODAL_EMPTY
 }
 
 function viewModalCoverageText(p) {
-  const dv = parseListingDynamicValues(p?.dynamicValues ?? p?.dynamic_values)
   const cityOk = coerceDisplayString(p?.city)
   const cityFallback = cityOk && cityOk !== 'N/A' ? cityOk : ''
-  const s =
-    coerceDisplayString(p?.coverage) ||
-    coerceDisplayString(dv.coverage) ||
-    coerceDisplayString(dv.location) ||
-    cityFallback
+  const s = coerceDisplayString(p?.coverage) || cityFallback
   return s || VIEW_MODAL_EMPTY
 }
 
 function viewModalCategoryLine(p) {
   const cat = coerceDisplayString(p?.category)
   const det = coerceDisplayString(p?.detailCategory)
-  if (cat && det && det !== cat) return `${cat} · ${det}`
-  return det || cat || VIEW_MODAL_EMPTY
+  if (cat) return cat
+  return det || VIEW_MODAL_EMPTY
+}
+
+function parsePackageOptionsColumn(raw) {
+  if (raw == null) return []
+  if (Array.isArray(raw)) return raw.map((x) => String(x).trim()).filter(Boolean)
+  return []
 }
 
 function normalizeListingRowToProduct(row) {
-  const dynamicValues = parseListingDynamicValues(row?.dynamic_values ?? row?.dynamicValues)
-  const imageUrls = Array.isArray(row?.image_urls) ? row.image_urls : []
+  const effective = mergePendingChangesIntoListingRow(row)
+  const imageUrls = Array.isArray(effective?.image_urls) ? effective.image_urls : []
 
-  const listingName = dynamicValues.listing_name || row.listing_name || 'Untitled listing'
-  const category = dynamicValues.category || row.category || 'Service'
-  const description = dynamicValues.description || ''
-  const areaRaw =
-    coerceDisplayString(dynamicValues.coverage) ||
-    coerceDisplayString(dynamicValues.location) ||
-    coerceDisplayString(row?.location) ||
-    ''
+  const listingName = effective.listing_name || 'Untitled listing'
+  const category = effective.category || 'Service'
+  const description = effective.description || ''
+  const areaRaw = coerceDisplayString(effective?.location) || ''
   const location = areaRaw || 'N/A'
-  const basePriceRaw = dynamicValues.base_price ?? row.base_price ?? 0
-  const basePrice = Number(basePriceRaw) || 0
-  const status = dynamicValues.status || row.status || 'draft'
-  const availability = dynamicValues.availability || 'Available'
-  const kind = dynamicValues.kind || 'service'
+  const basePrice = effective.base_price != null ? roundPhpAmount(effective.base_price) : 0
+  const status = effective.status || 'draft'
+  const kind = effective.listing_kind || 'service'
+  const stock = effective.stock_status
+  const availability =
+    stock === 'Out of Stock' ? 'Out of Stock' : stock === 'In Stock' ? 'Available' : 'Available'
   const primaryImage = imageUrls[0] || FALLBACK_IMAGE
 
-  const duration = coerceDisplayString(dynamicValues.duration)
-  const funeralCategoryRaw = coerceDisplayString(dynamicValues.funeral_category)
+  const duration = coerceDisplayString(effective.duration)
+  const funeralCategoryRaw = coerceDisplayString(effective.funeral_category)
 
-  const rawInc = dynamicValues.inclusions
+  const rawInc = effective.inclusions
   let inclusions = []
-  if (Array.isArray(rawInc)) {
-    inclusions = rawInc.map((x) => String(x).trim()).filter(Boolean)
-  } else if (typeof rawInc === 'string') {
+  if (typeof rawInc === 'string' && rawInc.trim()) {
     inclusions = rawInc
       .split(/\n/)
       .map((x) => x.trim())
@@ -155,28 +146,33 @@ function normalizeListingRowToProduct(row) {
 
   return {
     id: row.id,
-    templateId: row.template_id || null,
     name: listingName,
     kind,
     listingKindLabel: formatListingKindLabel(kind),
     category,
-    /** Service area / coverage — same sources as header location line. */
     coverage: areaRaw,
     duration,
     detailCategory: funeralCategoryRaw,
     startingPrice: basePrice,
     city: location,
     status,
+    approvalStatus: row?.approval_status ?? row?.approvalStatus ?? 'draft',
+    rejectionReason: row?.rejection_reason ?? row?.rejectionReason ?? null,
+    submittedAt: row?.submitted_at ?? row?.submittedAt ?? null,
+    reviewedAt: row?.reviewed_at ?? row?.reviewedAt ?? null,
     availability,
     description,
     longDescription: description,
     image: primaryImage,
     gallery: imageUrls.length ? imageUrls : [FALLBACK_IMAGE],
-    dynamicValues,
     inclusions,
-    whoThisIsFor: coerceDisplayString(dynamicValues.who_this_is_for),
-    importantNotes: coerceDisplayString(dynamicValues.important_notes),
+    whoThisIsFor: coerceDisplayString(effective.who_this_is_for),
+    importantNotes: coerceDisplayString(effective.important_notes),
     funeralCategory: funeralCategoryRaw,
+    packageOptions: parsePackageOptionsColumn(effective.package_options),
+    stockStatus: effective.stock_status ?? null,
+    hasPendingUpdate: hasPendingSellerChanges(row),
+    stagedRejectionReason: row?.staged_rejection_reason ?? row?.stagedRejectionReason ?? null,
   }
 }
 
@@ -184,13 +180,19 @@ function normalizeListingRowToProduct(row) {
 // Products list + view/edit modals
 // ---------------------------------------------------------------------------
 
-function formatPrice(amount) {
-  if (typeof amount !== 'number') return '—'
-  return new Intl.NumberFormat('en-PH', {
-    style: 'currency',
-    currency: 'PHP',
-    maximumFractionDigits: 0,
-  }).format(amount)
+function isProductShopActive(p) {
+  return p?.status === 'active' && p?.approvalStatus === 'approved'
+}
+
+function productStateLabel(p) {
+  const approval = String(p?.approvalStatus || 'draft').toLowerCase()
+  const status = String(p?.status || 'draft').toLowerCase()
+  if (approval === 'pending') return 'Pending review'
+  if (approval === 'rejected') return 'Rejected'
+  if (status === 'archived') return 'Archived'
+  if (approval === 'approved' && p?.hasPendingUpdate) return 'Changes pending review'
+  if (isProductShopActive(p)) return 'Active'
+  return 'Draft'
 }
 
 const TYPE_FILTERS = [
@@ -210,9 +212,8 @@ export default function ProductsContent({ initialKind = 'all' }) {
   const [productPendingRemoval, setProductPendingRemoval] = useState(null)
   const [removeInProgress, setRemoveInProgress] = useState(false)
   const [removeError, setRemoveError] = useState(null)
+  const [archiveBusyId, setArchiveBusyId] = useState(null)
   const fileInputRef = useRef(null)
-  const [template, setTemplate] = useState(null)
-  const [templateFields, setTemplateFields] = useState([])
   const [formValues, setFormValues] = useState({})
   const [formError, setFormError] = useState('')
   const [loadingData, setLoadingData] = useState(true)
@@ -231,8 +232,10 @@ export default function ProductsContent({ initialKind = 'all' }) {
     const load = async () => {
       setLoadingData(true)
 
-      const [{ data: templateData }, { data: listingRows, error: listingError }, authRes] =
-        await Promise.all([fetchSellerTemplate(), listMySellerListings(), supabase.auth.getUser()])
+      const [{ data: listingRows, error: listingError }, authRes] = await Promise.all([
+        listMySellerListings(),
+        supabase.auth.getUser(),
+      ])
 
       if (!mounted) return
 
@@ -242,27 +245,6 @@ export default function ProductsContent({ initialKind = 'all' }) {
         if (mounted) setSellerAccountStatus(sellerRow?.status ?? null)
       } else if (mounted) {
         setSellerAccountStatus(null)
-      }
-
-      if (templateData) {
-        const mergedSec =
-          templateData.sectionConfig || mergeSectionConfig(templateData.section_config)
-        const orderIds = getOrderedSectionIds(mergedSec)
-        const withBuiltins = ensureBuiltInSellerTemplateFields(
-          [...(templateData.fields || [])],
-          orderIds,
-        )
-        const sorted = ensureStatusField(
-          sortTemplateFieldsForDisplay(withBuiltins, orderIds),
-        )
-        setTemplate(templateData)
-        setTemplateFields(sorted)
-      } else {
-        const orderIds = getOrderedSectionIds(mergeSectionConfig(null))
-        const withBuiltins = ensureBuiltInSellerTemplateFields([], orderIds)
-        setTemplateFields(
-          ensureStatusField(sortTemplateFieldsForDisplay(withBuiltins, orderIds)),
-        )
       }
 
       if (listingError) {
@@ -281,16 +263,6 @@ export default function ProductsContent({ initialKind = 'all' }) {
     }
   }, [])
 
-  const templateSectionConfig = useMemo(() => {
-    if (template?.sectionConfig?.length) return template.sectionConfig
-    return mergeSectionConfig(template?.section_config)
-  }, [template])
-
-  const templateSectionIds = useMemo(
-    () => getOrderedSectionIds(templateSectionConfig),
-    [templateSectionConfig],
-  )
-
   const filteredProducts = useMemo(() => {
     let list = [...products]
 
@@ -306,8 +278,9 @@ export default function ProductsContent({ initialKind = 'all' }) {
   }, [products, typeFilter, searchQuery])
 
   const total = products.length
-  const activeCount = products.filter((p) => p.status === 'active').length
-  const inactiveCount = total - activeCount
+  const activeCount = products.filter((p) => isProductShopActive(p)).length
+  const pendingCount = products.filter((p) => String(p?.approvalStatus || '').toLowerCase() === 'pending').length
+  const draftCount = products.filter((p) => productStateLabel(p) === 'Draft').length
 
   const handleOpenView = (product) => {
     setSelectedProduct(product)
@@ -320,7 +293,7 @@ export default function ProductsContent({ initialKind = 'all' }) {
     setEditGallery((product.gallery ?? [product.image].filter(Boolean)).map((url) => ({ url, file: null })))
     setPendingImageFiles([])
     setFormError('')
-    setFormValues(dynamicValuesToFormState(product.dynamicValues, templateFields))
+    setFormValues(listingRowToFormValues(product))
   }
 
   const handleCloseModal = () => {
@@ -407,17 +380,13 @@ export default function ProductsContent({ initialKind = 'all' }) {
 
   const setFieldValue = (fieldId, value) => {
     setFormValues((prev) => ({ ...prev, [fieldId]: value }))
+    setFormError('')
   }
 
   const handleSaveProduct = async () => {
     if (!selectedProduct) return
 
-    const missingRequired = findFirstMissingRequiredField(
-      templateFields,
-      getFieldValue,
-      templateSectionIds,
-      editGallery,
-    )
+    const missingRequired = findFirstMissingRequiredField(formValues, editGallery)
     if (missingRequired) {
       setFormError(`${missingRequired.label} is required.`)
       return
@@ -433,7 +402,6 @@ export default function ProductsContent({ initialKind = 'all' }) {
     }
 
     const payload = buildSellerListingPayload({
-      template,
       formValues,
       selectedProduct,
       persistedImageUrls,
@@ -449,6 +417,41 @@ export default function ProductsContent({ initialKind = 'all' }) {
     )
 
     handleCloseModal()
+  }
+
+  const handleSubmitForReview = async (product) => {
+    if (!product?.id) return
+    const { data, error } = await submitListingForReview(product.id)
+    if (error || !data) {
+      setFormError(error || 'Failed to submit listing for review.')
+      return
+    }
+    setProducts((prev) =>
+      prev.map((p) => (p.id === product.id ? normalizeListingRowToProduct(data) : p)),
+    )
+    if (selectedProduct?.id === product.id) {
+      setSelectedProduct(normalizeListingRowToProduct(data))
+    }
+    setModalMode('view')
+  }
+
+  const handleToggleArchive = async (product, nextStatus) => {
+    if (!product?.id) return
+    if (archiveBusyId) return
+    setFormError('')
+    setArchiveBusyId(product.id)
+    try {
+      const { data, error } = await updateSellerListing(product.id, { status: nextStatus })
+      if (error || !data) {
+        setFormError(error || 'Failed to update listing status.')
+        return
+      }
+      const mapped = normalizeListingRowToProduct(data)
+      setProducts((prev) => prev.map((p) => (p.id === product.id ? mapped : p)))
+      setSelectedProduct((prev) => (prev?.id === product.id ? mapped : prev))
+    } finally {
+      setArchiveBusyId(null)
+    }
   }
 
   return (
@@ -505,9 +508,14 @@ export default function ProductsContent({ initialKind = 'all' }) {
           <p className={styles.statHint}>Visible to buyers</p>
         </div>
         <div className={styles.statCard}>
-          <p className={styles.statLabel}>Inactive</p>
-          <p className={styles.statValue}>{inactiveCount}</p>
-          <p className={styles.statHint}>Hidden from shop</p>
+          <p className={styles.statLabel}>Draft</p>
+          <p className={styles.statValue}>{draftCount}</p>
+          <p className={styles.statHint}>Not submitted</p>
+        </div>
+        <div className={styles.statCard}>
+          <p className={styles.statLabel}>Pending</p>
+          <p className={styles.statValue}>{pendingCount}</p>
+          <p className={styles.statHint}>Under review</p>
         </div>
       </section>
 
@@ -540,14 +548,25 @@ export default function ProductsContent({ initialKind = 'all' }) {
                   </div>
                   <span
                     className={`${styles.statusPill} ${
-                      product.status === 'active'
+                      isProductShopActive(product)
                         ? styles.statusPillActive
                         : styles.statusPillInactive
                     }`}
                   >
-                    {product.status === 'active' ? 'Active' : 'Inactive'}
+                    {productStateLabel(product)}
                   </span>
                 </div>
+
+                {product.approvalStatus && product.approvalStatus !== 'approved' ? (
+                  <div className={styles.productMeta} style={{ marginTop: 6 }}>
+                    <p style={{ margin: 0, fontSize: 12, color: '#475569' }}>
+                      Approval: <strong>{product.approvalStatus === 'pending' ? 'Pending review' : product.approvalStatus}</strong>
+                      {product.approvalStatus === 'rejected' && product.rejectionReason ? (
+                        <> · <span title={product.rejectionReason}>Rejected</span></>
+                      ) : null}
+                    </p>
+                  </div>
+                ) : null}
 
                 <div className={styles.productImageWrap}>
                   <Image
@@ -565,7 +584,7 @@ export default function ProductsContent({ initialKind = 'all' }) {
                   <p className={styles.productPrice}>
                     <span className={styles.productPriceLabel}>Starting at</span>{' '}
                     <span className={styles.productPriceValue}>
-                      {formatPrice(product.startingPrice)}
+                      {formatPhpAmount(product.startingPrice)}
                     </span>
                   </p>
                   <p className={styles.productLocation}>{product.city}</p>
@@ -633,6 +652,25 @@ export default function ProductsContent({ initialKind = 'all' }) {
             </div>
 
             <div className={styles.productModalBody}>
+              {modalMode === 'view' && selectedProduct?.hasPendingUpdate ? (
+                <div className={styles.shopVisibilityBanner} role="status" style={{ marginBottom: 16 }}>
+                  <strong>Review pending:</strong> Your latest edits are waiting for an administrator. The
+                  public shop still shows your last approved details until those changes are approved.
+                </div>
+              ) : null}
+              {modalMode === 'view' && selectedProduct?.stagedRejectionReason ? (
+                <div
+                  className={styles.shopVisibilityBanner}
+                  role="status"
+                  style={{
+                    marginBottom: 16,
+                    borderColor: '#fecaca',
+                    background: '#fef2f2',
+                  }}
+                >
+                  <strong>Staged update not approved:</strong> {selectedProduct.stagedRejectionReason}
+                </div>
+              ) : null}
               {modalMode === 'view' ? (
                 <div className={styles.productPreviewRow}>
                   <div className={styles.productPreviewImageCol}>
@@ -653,18 +691,63 @@ export default function ProductsContent({ initialKind = 'all' }) {
                     >
                       <span
                         className={`${styles.productPreviewStockBadge} ${
-                          selectedProduct.status === 'active'
+                          isProductShopActive(selectedProduct)
                             ? styles.productPreviewStockActive
                             : styles.productPreviewStockInactive
                         }`}
                       >
-                        {selectedProduct.status === 'active' ? 'Active' : 'Inactive'}
+                        {productStateLabel(selectedProduct)}
                       </span>
+                      {selectedProduct.approvalStatus ? (
+                        <span
+                          className={styles.productPreviewStockBadge}
+                          style={{
+                            marginLeft: 8,
+                            background:
+                              selectedProduct.approvalStatus === 'approved'
+                                ? '#ecfdf5'
+                                : selectedProduct.approvalStatus === 'pending'
+                                  ? '#fffbeb'
+                                  : selectedProduct.approvalStatus === 'rejected'
+                                    ? '#fef2f2'
+                                    : '#f1f5f9',
+                            borderColor:
+                              selectedProduct.approvalStatus === 'approved'
+                                ? '#a7f3d0'
+                                : selectedProduct.approvalStatus === 'pending'
+                                  ? '#fde68a'
+                                  : selectedProduct.approvalStatus === 'rejected'
+                                    ? '#fecaca'
+                                    : '#cbd5e1',
+                            color:
+                              selectedProduct.approvalStatus === 'approved'
+                                ? '#065f46'
+                                : selectedProduct.approvalStatus === 'pending'
+                                  ? '#92400e'
+                                  : selectedProduct.approvalStatus === 'rejected'
+                                    ? '#991b1b'
+                                    : '#334155',
+                          }}
+                          title={
+                            selectedProduct.approvalStatus === 'rejected'
+                              ? selectedProduct.rejectionReason || 'Rejected'
+                              : undefined
+                          }
+                        >
+                          {selectedProduct.approvalStatus === 'pending'
+                            ? 'Pending review'
+                            : selectedProduct.approvalStatus === 'approved'
+                              ? 'Approved'
+                              : selectedProduct.approvalStatus === 'rejected'
+                                ? 'Rejected'
+                                : 'Draft'}
+                        </span>
+                      ) : null}
                     </div>
 
                     <div className={styles.productPreviewPriceRow}>
                       <span className={styles.productPreviewPrice}>
-                        {formatPrice(selectedProduct.startingPrice)}
+                        {formatPhpAmount(selectedProduct.startingPrice)}
                       </span>
                     </div>
 
@@ -736,8 +819,6 @@ export default function ProductsContent({ initialKind = 'all' }) {
               ) : (
                 <>
                   <SellerListingFormFields
-                    templateFields={templateFields}
-                    sectionConfig={templateSectionConfig}
                     formError={formError}
                     getFieldValue={getFieldValue}
                     setFieldValue={setFieldValue}
@@ -758,6 +839,41 @@ export default function ProductsContent({ initialKind = 'all' }) {
               >
                 Close
               </button>
+              {modalMode === 'view' &&
+                selectedProduct &&
+                selectedProduct.approvalStatus === 'approved' && (
+                  selectedProduct.status === 'archived' ? (
+                    <button
+                      type="button"
+                      className={styles.productModalSecondary}
+                      onClick={() => handleToggleArchive(selectedProduct, 'active')}
+                      disabled={archiveBusyId === selectedProduct.id}
+                    >
+                      {archiveBusyId === selectedProduct.id ? 'Updating…' : 'Unarchive'}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className={styles.productModalSecondary}
+                      onClick={() => handleToggleArchive(selectedProduct, 'archived')}
+                      disabled={archiveBusyId === selectedProduct.id}
+                    >
+                      {archiveBusyId === selectedProduct.id ? 'Updating…' : 'Archive'}
+                    </button>
+                  )
+                )}
+              {modalMode === 'view' &&
+                selectedProduct &&
+                (selectedProduct.approvalStatus === 'draft' ||
+                  selectedProduct.approvalStatus === 'rejected') && (
+                  <button
+                    type="button"
+                    className={styles.productModalPrimary}
+                    onClick={() => handleSubmitForReview(selectedProduct)}
+                  >
+                    Submit for review
+                  </button>
+                )}
               {modalMode === 'edit' && (
                 <button
                   type="button"

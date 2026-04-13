@@ -10,6 +10,9 @@ export function buildCartPayloadFromListing(listing, { quantity = 1, buyerPackag
   if (!listing) {
     return { error: 'Listing not available.', payload: null }
   }
+  if (listing.inStock === false) {
+    return { error: 'This listing is out of stock.', payload: null }
+  }
   const pkgOpts = listing.sellerPackageOptions ?? []
   const pkg =
     pkgOpts.length > 0

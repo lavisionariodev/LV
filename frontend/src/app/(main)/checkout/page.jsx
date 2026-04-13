@@ -7,10 +7,7 @@
 import { useCart } from "@/contexts/CartContext"
 import { getUser } from "@/lib/auth/session"
 import { getUserRole, ROLE_BUYER } from "@/lib/auth/roles"
-
- function formatPrice(n) {
-   return `₱${Number(n).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`
- }
+import { formatPhpAmount } from "@/lib/cart/formatPhp"
 
  export default function CheckoutPage() {
    const router = useRouter()
@@ -182,7 +179,7 @@ import { getUserRole, ROLE_BUYER } from "@/lib/auth/roles"
                      <div className={styles.itemMetaRight}>
                        <span className={styles.itemQty}>×{item.qty ?? 1}</span>
                        <span className={styles.itemPrice}>
-                         {formatPrice((item.price || 0) * (item.qty || 1))}
+                         {formatPhpAmount((item.price || 0) * (item.qty || 1))}
                        </span>
                      </div>
                    </li>
@@ -191,11 +188,11 @@ import { getUserRole, ROLE_BUYER } from "@/lib/auth/roles"
 
                <div className={styles.summaryRow}>
                  <span>Subtotal</span>
-                 <span>{formatPrice(subtotal)}</span>
+                 <span>{formatPhpAmount(subtotal)}</span>
                </div>
                <div className={`${styles.summaryRow} ${styles.summaryTotal}`}>
                  <span>Total</span>
-                 <span>{formatPrice(subtotal)}</span>
+                 <span>{formatPhpAmount(subtotal)}</span>
                </div>
 
                <button
