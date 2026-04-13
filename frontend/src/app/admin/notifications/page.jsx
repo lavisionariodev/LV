@@ -19,7 +19,7 @@ const NOTIFICATION_ICON_BY_KEY = {
 function hydrateNotificationSamples(rows) {
   return rows.map((n) => ({
     ...n,
-    icon: NOTIFICATION_ICON_BY_KEY[n.iconKey],
+    icon: NOTIFICATION_ICON_BY_KEY[n.iconKey] || TbAlertTriangle,
   }))
 }
 
@@ -193,7 +193,7 @@ export default function NotificationsPage() {
           ) : (
             <div className={styles.notifList}>
               {filtered.map((notif, i) => {
-                const Icon = notif.icon
+                const Icon = notif.icon || TbAlertTriangle
                 return (
                   <div
                     key={notif.id}
@@ -269,7 +269,7 @@ export default function NotificationsPage() {
         ) : (
           <div className={styles.mobileList}>
             {filtered.map((notif) => {
-              const Icon = notif.icon
+              const Icon = notif.icon || TbAlertTriangle
               return (
                 <div
                   key={notif.id}
