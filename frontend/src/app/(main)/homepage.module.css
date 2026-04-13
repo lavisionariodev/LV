@@ -287,34 +287,10 @@ a.ctaPrimary {
   overflow: hidden;
 }
 
-.howItWorksSection::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    radial-gradient(ellipse 60% 50% at 80% 20%, rgba(168, 137, 74, 0.08) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 60% at 10% 80%, rgba(168, 137, 74, 0.06) 0%, transparent 50%);
-  pointer-events: none;
-}
-
 .howItWorksHeader {
   text-align: center;
-  max-width: 640px;
-  margin: 0 auto 80px;
+  margin: 0 auto 64px;
   position: relative;
-}
-
-.howItWorksEyebrow {
-  display: inline-block;
-  font-family: "Lato", sans-serif;
-  font-size: 10px;
-  font-weight: 400;
-  letter-spacing: 5px;
-  text-transform: uppercase;
-  color: #A8894A;
-  margin-bottom: 20px;
-  padding: 6px 18px;
-  border: 1px solid rgba(168, 137, 74, 0.35);
 }
 
 .howItWorksTitle {
@@ -323,103 +299,65 @@ a.ctaPrimary {
   font-weight: 300;
   color: #F7F4EF;
   letter-spacing: 4px;
-  margin: 0 0 20px;
+  margin: 0;
   line-height: 1.15;
 }
 
-.howItWorksSubtitle {
-  font-family: "Lato", sans-serif;
-  font-size: 14px;
-  font-weight: 300;
-  color: rgba(247, 244, 239, 0.55);
-  line-height: 1.9;
-  margin: 0;
-  letter-spacing: 0.3px;
-}
-
-/* Steps 4-column grid */
-.howItWorksGrid {
+/* Timeline layout */
+.howItWorksTimeline {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1px;
-  background: rgba(168, 137, 74, 0.15);
-  border: 1px solid rgba(168, 137, 74, 0.15);
-  position: relative;
+  gap: 0;
 }
 
-.howItWorksCard {
-  padding: 52px 36px 44px;
-  background: rgba(255, 255, 255, 0.03);
-  position: relative;
-  transition: background 0.4s ease;
-  overflow: hidden;
+.howItWorksStep {
+  display: flex;
+  flex-direction: column;
+  padding-right: 32px;
 }
 
-.howItWorksCard::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, #A8894A, rgba(168, 137, 74, 0.3));
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+.howItWorksStep:last-child {
+  padding-right: 0;
 }
 
-.howItWorksCard:hover {
-  background: rgba(168, 137, 74, 0.06);
+.howItWorksStepNum {
+  font-family: "Lato", sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 3px;
+  color: rgba(247, 244, 239, 0.35);
+  margin-bottom: 12px;
 }
 
-.howItWorksCard:hover::after {
-  transform: scaleX(1);
-}
-
-.howItWorksCard:last-child {
-  border-right: none;
-}
-
-.howItWorksCardTop {
+.howItWorksDotRow {
   display: flex;
   align-items: center;
-  gap: 0;
-  margin-bottom: 28px;
-  position: relative;
+  margin-bottom: 20px;
 }
 
-.howItWorksNumber {
-  font-family: "Cormorant Garamond", serif;
-  font-size: 72px;
-  font-weight: 300;
-  color: rgba(168, 137, 74, 0.18);
-  line-height: 1;
-  letter-spacing: -2px;
-  display: block;
-  transition: color 0.3s ease;
+.howItWorksDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #F7F4EF;
+  flex-shrink: 0;
 }
 
-.howItWorksCard:hover .howItWorksNumber {
-  color: rgba(168, 137, 74, 0.38);
-}
-
-/* Horizontal connector line between steps — hidden on last card */
-.howItWorksConnector {
-  display: none;
+.howItWorksLine {
+  flex: 1;
+  height: 1px;
+  background: rgba(247, 244, 239, 0.18);
+  margin-left: 10px;
 }
 
 .howItWorksCardTitle {
   font-family: "Cormorant Garamond", serif;
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 500;
   color: #F7F4EF;
-  letter-spacing: 0.5px;
-  margin: 0 0 14px;
+  letter-spacing: 0.3px;
+  margin: 0 0 10px;
   line-height: 1.25;
-}
-
-.howItWorksCardLead {
-  display: none;
 }
 
 .howItWorksCardBody {
@@ -427,47 +365,46 @@ a.ctaPrimary {
   font-size: 13px;
   font-weight: 300;
   line-height: 1.9;
-  color: rgba(247, 244, 239, 0.55);
+  color: rgba(247, 244, 239, 0.45);
   margin: 0;
   letter-spacing: 0.2px;
 }
 
-/* CTA link below grid */
-.howItWorksCTA {
-  margin-top: 40px;
-  text-align: center;
+@media (max-width: 768px) {
+  .howItWorksSection {
+    padding: 80px var(--page-padding, 24px);
+  }
+  .howItWorksTimeline {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 40px 0;
+  }
+  .howItWorksStep {
+    padding-right: 24px;
+  }
+  .howItWorksStep:nth-child(2),
+  .howItWorksStep:nth-child(4) {
+    padding-right: 0;
+  }
+  .howItWorksStep:nth-child(2) .howItWorksLine,
+  .howItWorksStep:nth-child(4) .howItWorksLine {
+    display: none;
+  }
 }
 
-.howItWorksLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-family: "Lato", sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 2.5px;
-  text-transform: uppercase;
-  color: #A8894A;
-  text-decoration: none;
-  border-bottom: 1px solid rgba(168, 137, 74, 0.4);
-  padding-bottom: 4px;
-  transition: all 0.3s ease;
-}
-
-.howItWorksLink:hover {
-  color: #C9AA6A;
-  border-bottom-color: #C9AA6A;
-  gap: 12px;
-}
-
-.howItWorksLinkArrow {
-  font-size: 18px;
-  line-height: 1;
-  transition: transform 0.3s ease;
-}
-
-.howItWorksLink:hover .howItWorksLinkArrow {
-  transform: translateX(3px);
+@media (max-width: 480px) {
+  .howItWorksSection {
+    padding: 60px 16px;
+  }
+  .howItWorksTimeline {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .howItWorksStep {
+    padding-right: 0;
+  }
+  .howItWorksLine {
+    display: none;
+  }
 }
 
 /* =========================
@@ -1153,17 +1090,6 @@ a.ctaPrimary {
   .howItWorksGrid {
     grid-template-columns: repeat(2, 1fr);
   }
-  .howItWorksCard:nth-child(2) {
-    border-right: none;
-  }
-  .howItWorksCard:nth-child(3) {
-    border-top: 1px solid rgba(16, 40, 32, 0.08);
-    border-right: 1px solid rgba(16, 40, 32, 0.08);
-  }
-  .howItWorksCard:nth-child(4) {
-    border-top: 1px solid rgba(16, 40, 32, 0.08);
-    border-right: none;
-  }
   .aboutIntroGrid {
     grid-template-columns: 1fr;
     gap: 48px;
@@ -1224,13 +1150,6 @@ a.ctaPrimary {
   .ctaTitle {
     font-size: 36px;
   }
-  /* How It Works */
-  .howItWorksSection {
-    padding: 80px var(--page-padding, 24px);
-  }
-  .howItWorksGrid {
-    grid-template-columns: 1fr 1fr;
-  }
   /* About */
   .aboutSection {
     padding: 80px var(--page-padding, 24px);
@@ -1279,17 +1198,6 @@ a.ctaPrimary {
   .partnerContent {
     padding: 30px 24px;
   }
-  /* How It Works */
-  .howItWorksGrid {
-    grid-template-columns: 1fr;
-  }
-  .howItWorksCard {
-    border-right: none;
-    border-bottom: 1px solid rgba(16, 40, 32, 0.08);
-  }
-  .howItWorksCard:last-child {
-    border-bottom: none;
-  }
   /* About */
   .aboutWhyGrid {
     padding-top: 40px;
@@ -1327,13 +1235,6 @@ a.ctaPrimary {
   .partnerContent {
     padding: 24px 16px;
   }
-  /* How It Works */
-  .howItWorksSection {
-    padding: 60px 16px;
-  }
-  .howItWorksCard {
-    padding: 36px 24px;
-  }
   /* About */
   .aboutSection {
     padding: 60px 16px;
@@ -1346,53 +1247,80 @@ a.ctaPrimary {
   }
 }
 /* =========================
-   PARTNER CAROUSEL — continuous infinite
+   PARTNER CAROUSEL — infinite
 ========================= */
 
 .partnerCarouselOuter {
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin-bottom: 16px;
+  gap: 16px;
+  margin-bottom: 28px;
 }
 
-/* The visible window — clips top/bottom but lets side cards peek */
+/* The visible window — overflow:hidden but padded so box-shadow isn't clipped */
 .partnerCarouselViewport {
+  flex: 1;
   overflow: hidden;
-  width: 100%;
-  padding: 32px 60px 16px;
+  /* Extra vertical padding so scaled cards + shadows don't get clipped */
+  padding: 24px 0 28px;
   position: relative;
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
-  mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
 }
 
-/* The sliding strip — position relative so translateX works from left edge */
+/* Dedicated arrow for partner carousel */
+.partnerCarouselArrow {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(16, 40, 32, 0.2);
+  background: #FFFFFF;
+  color: #102820;
+  font-size: 26px;
+  font-weight: 300;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  z-index: 10;
+  transition: all 0.3s ease;
+  line-height: 1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.partnerCarouselArrow:hover {
+  border-color: #A8894A;
+  color: #A8894A;
+  box-shadow: 0 4px 16px rgba(168, 137, 74, 0.2);
+}
+
+/* The sliding strip */
 .partnerCarouselTrack {
   display: flex;
-  align-items: flex-start;
-  gap: 20px;
-  /* width is content-driven; translate handles centering */
+  align-items: center;
+  gap: 24px;
   width: max-content;
   will-change: transform;
 }
 
-/* Individual card */
+/* Individual card — NO transform-origin top center, transitions only opacity/transform/shadow */
 .partnerCarouselCard {
   background: #FFFFFF;
-  border-radius: 20px;
+  border-radius: 16px;
   overflow: hidden;
   border: 1px solid rgba(16, 40, 32, 0.1);
-  transform-origin: top center;
+  flex-shrink: 0;
+  transform-origin: center center;
   transition:
-    transform 0.55s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity  0.55s ease,
-    box-shadow 0.4s ease;
+    transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    opacity 0.5s ease,
+    box-shadow 0.4s ease,
+    border-color 0.4s ease;
 }
 
-/* Active (center) card gets a lifted shadow */
-.partnerCarouselCard[style*="scale(1)"] {
-  box-shadow: 0 28px 72px rgba(16, 40, 32, 0.2);
+.partnerCarouselCard[data-center='true'] {
+  box-shadow: 0 20px 60px rgba(16, 40, 32, 0.18);
   border-color: rgba(168, 137, 74, 0.35);
 }
 
@@ -1405,49 +1333,22 @@ a.ctaPrimary {
   flex-shrink: 0;
 }
 
-/* Name label on non-center cards */
-.partnerSideLabel {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 28px 14px 14px;
-  background: linear-gradient(to top, rgba(10, 28, 20, 0.88) 0%, transparent 100%);
-  color: #F7F4EF;
-  font-family: "Cormorant Garamond", serif;
-  font-size: 15px;
-  font-weight: 500;
-  line-height: 1.3;
-  letter-spacing: 0.2px;
-}
-
-/* Arrow buttons — inside the outer flex row */
-.partnerCarouselOuter > .carouselArrow {
-  position: relative;
-  top: auto;
-  transform: none;
-  flex-shrink: 0;
-  z-index: 20;
-}
-
 /* =========================
-   DOT INDICATOR — sliding window
+   DOT INDICATOR
 ========================= */
 
 .partnerDotsOuter {
-  /* clip to show exactly 3 dots: 3×8px dots + 2×10px gaps = 44px; active pill=24px so ~58px max */
-  width: 58px;
-  overflow: hidden;
-  margin: 0 auto 28px;
   display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto 36px;
+  height: 14px;
 }
 
 .partnerDotsTrack {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-shrink: 0;
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .partnerDot {
@@ -1472,10 +1373,15 @@ a.ctaPrimary {
   border-radius: 4px;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .partnerCarouselCard .partnerImageWrapper {
     height: 170px;
+  }
+  .partnerCarouselArrow {
+    width: 40px;
+    height: 40px;
+    font-size: 22px;
+    flex: 0 0 40px;
   }
 }
 
@@ -1483,7 +1389,10 @@ a.ctaPrimary {
   .partnerCarouselCard .partnerImageWrapper {
     height: 150px;
   }
-  .partnerSideLabel {
-    font-size: 12px;
+  .partnerCarouselArrow {
+    width: 34px;
+    height: 34px;
+    font-size: 20px;
+    flex: 0 0 34px;
   }
 }
