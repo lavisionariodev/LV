@@ -1543,21 +1543,37 @@ export default function AdminPayoutsPage() {
                 <div className={styles.mobileDateRangeGrid}>
                   <label className={styles.mobileDateField}>
                     <span className={styles.mobileDateFieldLabel}>From</span>
-                    <input
-                      type="date"
-                      className={styles.mobileDateInput}
-                      value={filterDateFrom || ''}
-                      onChange={(e) => setFilterDateFrom(e.target.value)}
-                    />
+                    <div className={styles.mobileDateInputWrap}>
+                      <input
+                        type="date"
+                        className={styles.mobileDateInput}
+                        value={filterDateFrom || ''}
+                        data-empty={!filterDateFrom}
+                        onChange={(e) => setFilterDateFrom(e.target.value)}
+                      />
+                      {!filterDateFrom && (
+                        <span className={styles.mobileDatePlaceholder} aria-hidden>
+                          mm/dd/yyyy
+                        </span>
+                      )}
+                    </div>
                   </label>
                   <label className={styles.mobileDateField}>
                     <span className={styles.mobileDateFieldLabel}>To</span>
-                    <input
-                      type="date"
-                      className={styles.mobileDateInput}
-                      value={filterDateTo || ''}
-                      onChange={(e) => setFilterDateTo(e.target.value)}
-                    />
+                    <div className={styles.mobileDateInputWrap}>
+                      <input
+                        type="date"
+                        className={styles.mobileDateInput}
+                        value={filterDateTo || ''}
+                        data-empty={!filterDateTo}
+                        onChange={(e) => setFilterDateTo(e.target.value)}
+                      />
+                      {!filterDateTo && (
+                        <span className={styles.mobileDatePlaceholder} aria-hidden>
+                          mm/dd/yyyy
+                        </span>
+                      )}
+                    </div>
                   </label>
                 </div>
               </div>
@@ -1566,8 +1582,8 @@ export default function AdminPayoutsPage() {
                 <span className={styles.mobileFilterLabel}>Payout Status</span>
                 <div className={styles.mobileChoiceGrid} role="radiogroup" aria-label="Payout status">
                   {[
-                    { value: 'all', label: 'All statuses' },
-                    ...Object.entries(PAYOUT_STATUS_META).map(([k, v]) => ({ value: k, label: v.label })),
+                    { value: 'all', label: 'All statuses', accent: 'slate' },
+                    ...Object.entries(PAYOUT_STATUS_META).map(([k, v]) => ({ value: k, label: v.label, accent: v.color })),
                   ].map((opt) => {
                     const active = filterPayout === opt.value
                     return (
@@ -1578,6 +1594,7 @@ export default function AdminPayoutsPage() {
                         onClick={() => setFilterPayout(opt.value)}
                         role="radio"
                         aria-checked={active}
+                        data-accent={opt.accent}
                       >
                         <span>{opt.label}</span>
                         {active && <span className={styles.mobileChoiceCheck} aria-hidden>✓</span>}
@@ -1614,8 +1631,8 @@ export default function AdminPayoutsPage() {
                 <span className={styles.mobileFilterLabel}>Payment Status</span>
                 <div className={styles.mobileChoiceGrid} role="radiogroup" aria-label="Payment status">
                   {[
-                    { value: 'all', label: 'Payment: All' },
-                    ...Object.entries(PAYMENT_STATUS_META).map(([k, v]) => ({ value: k, label: `Payment: ${v.label}` })),
+                    { value: 'all', label: 'All', accent: 'slate' },
+                    ...Object.entries(PAYMENT_STATUS_META).map(([k, v]) => ({ value: k, label: v.label, accent: v.color })),
                   ].map((opt) => {
                     const active = filterPayment === opt.value
                     return (
@@ -1626,6 +1643,7 @@ export default function AdminPayoutsPage() {
                         onClick={() => setFilterPayment(opt.value)}
                         role="radio"
                         aria-checked={active}
+                        data-accent={opt.accent}
                       >
                         <span>{opt.label}</span>
                         {active && <span className={styles.mobileChoiceCheck} aria-hidden>✓</span>}
