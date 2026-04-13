@@ -6,6 +6,10 @@ import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { SERVICES, CATEGORIES, PROVIDERS } from './data'
 import { fetchActiveShopListings, mergeShopListings } from '@/lib/shop-listings/client'
+import { buildCartPayloadFromListing } from '@/lib/cart/fromListing'
+import { useCart } from '@/contexts/CartContext'
+import { useAuth } from '@/contexts/AuthContext'
+import { useToast } from '@/contexts/ToastContext'
 import styles from './shop.module.css'
 
 export default function ShopPage() {
@@ -557,12 +561,10 @@ export default function ShopPage() {
                 {/* Desktop grid — hidden on mobile via CSS */}
                 <div className={styles.grid}>
                   {paginatedListings.map((listing) => {
-                    const service = SERVICES.find((s) => s.id === listing.serviceId)
                     return (
                       <ListingCard
                         key={listing.id}
                         listing={listing}
-                        service={service}
                         styles={styles}
                         inCompare={compareIds.includes(listing.id)}
                         onToggleCompare={toggleCompare}
@@ -626,12 +628,10 @@ export default function ShopPage() {
                 {/* ── Mobile grid + inline pagination — hidden on tablet/desktop via CSS ── */}
                 <div className={styles.mobileGrid}>
                   {mobilePaginatedListings.map((listing) => {
-                    const service = SERVICES.find((s) => s.id === listing.serviceId)
                     return (
                       <ListingCard
                         key={listing.id}
                         listing={listing}
-                        service={service}
                         styles={styles}
                         inCompare={compareIds.includes(listing.id)}
                         onToggleCompare={toggleCompare}
@@ -763,8 +763,45 @@ export default function ShopPage() {
 
 // ─── ListingCard ──────────────────────────────────────────────────────────────
 
-function ListingCard({ listing, service, styles, inCompare, onToggleCompare, compareDisabled }) {
+function ListingCard({ listing, styles, inCompare, onToggleCompare, compareDisabled }) {
   const provider = listing.provider ?? PROVIDERS.find((p) => p.id === listing.providerId)
+  const { addItem } = useCart()
+  const { user, authLoading, isBuyer } = useAuth()
+  const router = useRouter()
+  const toast = useToast()
+  const [adding, setAdding] = useState(false)
+
+  const handleAddToCart = async (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const pkgOpts = listing.sellerPackageOptions ?? []
+    const defaultPkg = pkgOpts.length > 0 ? pkgOpts[0] : ''
+    const { error: buildErr, payload } = buildCartPayloadFromListing(listing, {
+      quantity: 1,
+      buyerPackage: defaultPkg,
+    })
+    if (buildErr || !payload) {
+      toast.error(buildErr || 'Could not add to cart')
+      return
+    }
+    const redirectPath = `/shop/${listing.serviceId}?listing=${encodeURIComponent(listing.id)}`
+    if (!user) {
+      router.push(`/buyer/login?redirect=${encodeURIComponent(redirectPath)}`)
+      return
+    }
+    if (!isBuyer) {
+      router.push(`/buyer/login?redirect=${encodeURIComponent(redirectPath)}`)
+      return
+    }
+    setAdding(true)
+    try {
+      const { error } = await addItem(payload)
+      if (error) toast.error(error.message || 'Could not add to cart')
+      else toast.success('Added to cart')
+    } finally {
+      setAdding(false)
+    }
+  }
 
   return (
     <div className={`${styles.card} ${styles.listingCard}${inCompare ? ` ${styles.listingCardSelected}` : ''}`}>
@@ -834,13 +871,19 @@ function ListingCard({ listing, service, styles, inCompare, onToggleCompare, com
       </Link>
 
       <div className={styles.cardActions}>
-        <button className={`${styles.cardCta} ${styles.ctaBtn}`} onClick={() => {}}>
+        <button
+          type="button"
+          className={`${styles.cardCta} ${styles.ctaBtn}`}
+          onClick={handleAddToCart}
+          disabled={authLoading || adding}
+          aria-busy={adding}
+        >
             <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, flexShrink: 0 }}>
               <path d="M1 1h2l1.5 7.5h8l1.5-5H4.5" />
               <circle cx="7" cy="13.5" r="1" fill="currentColor" stroke="none" />
               <circle cx="12" cy="13.5" r="1" fill="currentColor" stroke="none" />
             </svg>
-            Add to Cart
+            {adding ? 'Adding…' : 'Add to Cart'}
           </button>
           <button
             className={`${styles.compareBtn}${inCompare ? ` ${styles.compareBtnActive}` : ''}${compareDisabled ? ` ${styles.compareBtnDisabled}` : ''}`}

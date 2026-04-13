@@ -1,165 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useFavorites } from '@/contexts/FavoritesContext'
+import { useAuth } from '@/contexts/AuthContext'
 import styles from './favorites.module.css'
-
-// ─── Sample Favorites (hardcoded from data.js) ───────────────────────────────
-
-const SAMPLE_FAVORITES = [
-  {
-    id: 'cremation-premium',
-    name: 'Premium Cremation Package',
-    serviceId: 'cremation',
-    serviceLabel: 'Cremation Services',
-    price: 38000,
-    popular: true,
-    inclusions: [
-      'Death certificate processing',
-      'Mahogany urn',
-      '2-day chapel viewing',
-      'Flower arrangement',
-      'Embalming',
-    ],
-    image: '/sample/services/1.jpg',
-    savedAt: '2025-06-12',
-    provider: {
-      name: 'Serenity Chapel',
-      location: 'Manila, NCR',
-      rating: 4.9,
-      reviews: 124,
-      badge: 'Top Rated',
-      initial: 'S',
-    },
-  },
-  {
-    id: 'burial-full',
-    name: 'Full Traditional Burial',
-    serviceId: 'traditional-burial',
-    serviceLabel: 'Traditional Burial',
-    price: 95000,
-    popular: true,
-    inclusions: [
-      'Premium casket',
-      '5-day chapel viewing',
-      'Full embalming',
-      'Flower arrangement',
-      'Hearse convoy',
-      'Reception catering (50 pax)',
-    ],
-    image: '/sample/services/2.jpg',
-    savedAt: '2025-06-10',
-    provider: {
-      name: 'Serenity Chapel',
-      location: 'Manila, NCR',
-      rating: 4.9,
-      reviews: 124,
-      badge: 'Top Rated',
-      initial: 'S',
-    },
-  },
-  {
-    id: 'memorial-classic',
-    name: 'Classic Memorial Service',
-    serviceId: 'memorial-planning',
-    serviceLabel: 'Memorial Planning',
-    price: 32000,
-    popular: true,
-    inclusions: [
-      'Venue (up to 80 guests)',
-      'Custom AV tribute video',
-      'Floral arrangements',
-      'Memorial program',
-      'Live music',
-    ],
-    image: '/sample/services/3.jpg',
-    savedAt: '2025-06-08',
-    provider: {
-      name: 'Eternal Rest Services',
-      location: 'Quezon City, NCR',
-      rating: 4.7,
-      reviews: 89,
-      badge: 'Verified',
-      initial: 'E',
-    },
-  },
-  {
-    id: 'cremation-eco',
-    name: 'Eco Cremation',
-    serviceId: 'cremation',
-    serviceLabel: 'Cremation Services',
-    price: 22000,
-    popular: false,
-    inclusions: [
-      'Biodegradable urn',
-      'Ash scattering ceremony',
-      'Death certificate',
-      'Memorial card printing',
-    ],
-    image: '/sample/services/1.jpg',
-    savedAt: '2025-06-05',
-    provider: {
-      name: 'Compassion Care',
-      location: 'Pasig, NCR',
-      rating: 4.6,
-      reviews: 57,
-      badge: null,
-      initial: 'C',
-    },
-  },
-  {
-    id: 'burial-deluxe',
-    name: 'Deluxe Burial Service',
-    serviceId: 'traditional-burial',
-    serviceLabel: 'Traditional Burial',
-    price: 120000,
-    popular: false,
-    inclusions: [
-      'Mahogany casket',
-      '7-day viewing',
-      'Embalming + cosmetology',
-      'Floral tributes',
-      'Hearse + escort',
-      'Catering (100 pax)',
-      'Video tribute',
-    ],
-    image: '/sample/services/2.jpg',
-    savedAt: '2025-06-01',
-    provider: {
-      name: 'Golden Lily Funerals',
-      location: 'Makati, NCR',
-      rating: 4.8,
-      reviews: 203,
-      badge: 'Premium',
-      initial: 'G',
-    },
-  },
-  {
-    id: 'memorial-intimate',
-    name: 'Intimate Memorial Gathering',
-    serviceId: 'memorial-planning',
-    serviceLabel: 'Memorial Planning',
-    price: 15000,
-    popular: false,
-    inclusions: [
-      'Venue (up to 30 guests)',
-      'Photo display setup',
-      'Memorial program booklets',
-      'Sound system',
-    ],
-    image: '/sample/services/3.jpg',
-    savedAt: '2025-05-28',
-    provider: {
-      name: 'Haven Memorial',
-      location: 'Caloocan, NCR',
-      rating: 4.5,
-      reviews: 41,
-      badge: 'Verified',
-      initial: 'H',
-    },
-  },
-]
 
 // ─── Sort options ─────────────────────────────────────────────────────────────
 
@@ -173,51 +19,109 @@ const SORT_OPTIONS = [
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function FavoritesPage() {
-  const [favorites,  setFavorites]  = useState(SAMPLE_FAVORITES)
-  const [sortBy,     setSortBy]     = useState('newest')
+  const { user, authLoading, isBuyer } = useAuth()
+  const { items: favorites, loading, removeFavorite, restoreFavorite } = useFavorites()
+  const [sortBy, setSortBy] = useState('newest')
   const [removingId, setRemovingId] = useState(null)
-  const [undoItem,   setUndoItem]   = useState(null)
+  const [undoItem, setUndoItem] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
 
   const ITEMS_PER_PAGE = 15 // 3 columns × 5 rows
 
-  const sorted = [...favorites].sort((a, b) => {
-    if (sortBy === 'price-asc')  return a.price - b.price
-    if (sortBy === 'price-desc') return b.price - a.price
-    if (sortBy === 'rating')     return b.provider.rating - a.provider.rating
-    return new Date(b.savedAt) - new Date(a.savedAt)
-  })
+  useEffect(() => {
+    if (!undoItem) return undefined
+    const t = setTimeout(() => setUndoItem(null), 5000)
+    return () => clearTimeout(t)
+  }, [undoItem])
+
+  const sorted = useMemo(() => {
+    const list = [...favorites]
+    list.sort((a, b) => {
+      if (sortBy === 'price-asc') return a.price - b.price
+      if (sortBy === 'price-desc') return b.price - a.price
+      if (sortBy === 'rating') return b.provider.rating - a.provider.rating
+      return new Date(b.savedAt) - new Date(a.savedAt)
+    })
+    return list
+  }, [favorites, sortBy])
 
   const totalPages = Math.ceil(sorted.length / ITEMS_PER_PAGE)
   const paginated = sorted.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [sortBy, favorites.length])
 
   function handlePageChange(page) {
     setCurrentPage(page)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  function handleRemove(id) {
+  async function handleRemove(id) {
     const item = favorites.find((f) => f.id === id)
     setRemovingId(id)
-    setTimeout(() => {
-      setFavorites((prev) => prev.filter((f) => f.id !== id))
-      setRemovingId(null)
-      setUndoItem(item)
-      setTimeout(() => setUndoItem(null), 5000)
-    }, 320)
+    const { error } = await removeFavorite(id)
+    setRemovingId(null)
+    if (!error && item) setUndoItem(item)
   }
 
-  function handleUndo() {
+  async function handleUndo() {
     if (!undoItem) return
-    setFavorites((prev) => {
-      const exists = prev.find((f) => f.id === undoItem.id)
-      if (exists) return prev
-      return [undoItem, ...prev]
-    })
+    await restoreFavorite(undoItem)
     setUndoItem(null)
   }
 
   const isEmpty = favorites.length === 0
+  const showLoading = authLoading || (Boolean(user) && isBuyer && loading)
+
+  if (showLoading) {
+    return (
+      <section className={styles.page}>
+        <div className={styles.content}>
+          <p style={{ fontFamily: 'Lato, sans-serif', color: 'rgba(16,40,32,0.55)', padding: '2rem 0' }}>
+            Loading favorites…
+          </p>
+        </div>
+      </section>
+    )
+  }
+
+  if (!user) {
+    return (
+      <section className={styles.page}>
+        <div className={styles.content}>
+          <div className={styles.emptySection}>
+            <div className={styles.emptyIconWrap} aria-hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+            </div>
+            <h2 className={styles.emptyTitle}>Sign in to view favorites</h2>
+            <p className={styles.emptySub}>Save listings you care about and access them on any device.</p>
+            <Link href={`/buyer/login?redirect=${encodeURIComponent('/favorites')}`} className={styles.emptyLink}>
+              Sign in
+            </Link>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (!isBuyer) {
+    return (
+      <section className={styles.page}>
+        <div className={styles.content}>
+          <div className={styles.emptySection}>
+            <h2 className={styles.emptyTitle}>Buyer account required</h2>
+            <p className={styles.emptySub}>Use a buyer account to save services to your favorites.</p>
+            <Link href={`/buyer/login?redirect=${encodeURIComponent('/favorites')}`} className={styles.emptyLink}>
+              Sign in as buyer
+            </Link>
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section className={styles.page}>
@@ -347,19 +251,41 @@ function FavoriteCard({ item, isRemoving, onRemove, styles }) {
 
       {/* ── Clickable area (image + body) — mirrors shop's listingCardLink ── */}
       <Link
-        href={`/shop/${item.serviceId}?listing=${encodeURIComponent(item.id)}`}
+        href={`/shop/${item.serviceId}?listing=${encodeURIComponent(item.listingId)}`}
         className={styles.cardLink}
       >
 
         {/* ── Image ── */}
         <div className={styles.listingImageWrap}>
+          {item.image && (item.image.startsWith('http') || item.image.startsWith('/')) ? (
           <Image
             src={item.image}
             alt={item.name}
             width={400}
             height={220}
             className={styles.cardImage}
+            unoptimized={item.image.startsWith('blob:')}
           />
+          ) : (
+            <div
+              className={styles.cardImage}
+              style={{
+                minHeight: 220,
+                background: 'linear-gradient(135deg, #EDE8E0 0%, #D5CCBC 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontFamily: 'Cormorant Garamond, serif',
+                fontSize: 42,
+                fontWeight: 600,
+                color: 'var(--color-green, #102820)',
+                opacity: 0.35,
+              }}
+              aria-hidden
+            >
+              {provider.initial}
+            </div>
+          )}
           {item.popular && (
             <span className={styles.popularBadge}>Most Popular</span>
           )}
