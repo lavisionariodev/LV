@@ -396,6 +396,8 @@ export function ListingImageUploadTile({
 function ListingFormSelectControl({ field, getFieldValue, setFieldValue }) {
   const isNarrow = useMediaQuery('(max-width: 640px)')
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [desktopOpen, setDesktopOpen] = useState(false)
+  const desktopDropdownRef = useRef(null)
   const rawValue = asInputValue(getFieldValue(field.id))
   const placeholderText = field.placeholder || `Select ${String(field.label || '').toLowerCase()}`
   const opts = Array.isArray(field.options) ? field.options : []
@@ -410,6 +412,17 @@ function ListingFormSelectControl({ field, getFieldValue, setFieldValue }) {
   }, [sheetOpen])
 
   useEffect(() => {
+    if (!desktopOpen || isNarrow) return
+    const handleClickOutside = (e) => {
+      if (desktopDropdownRef.current && !desktopDropdownRef.current.contains(e.target)) {
+        setDesktopOpen(false)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [desktopOpen, isNarrow])
+
+  useEffect(() => {
     if (!sheetOpen) return
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -419,20 +432,49 @@ function ListingFormSelectControl({ field, getFieldValue, setFieldValue }) {
   }, [sheetOpen])
 
   if (!isNarrow) {
+    const selectedLabel = opts.find((option) => option === rawValue) || placeholderText
     return (
-      <select
-        className={styles.listingFormSelect}
-        value={rawValue}
-        onChange={(e) => setFieldValue(field.id, e.target.value)}
-        aria-label={field.label}
+      <div
+        className={`${styles.filterDropdownWrap} ${styles.modalDropdownWrap} ${
+          desktopOpen ? styles.filterDropdownOpen : ''
+        }`}
+        ref={desktopDropdownRef}
       >
-        <option value="">{placeholderText}</option>
-        {opts.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
+        <button
+          type="button"
+          className={styles.filterDropdownTrigger}
+          onClick={() => setDesktopOpen((prev) => !prev)}
+          aria-haspopup="listbox"
+          aria-expanded={desktopOpen}
+          aria-label={field.label}
+        >
+          <span className={styles.filterDropdownLabel}>{selectedLabel}</span>
+          <span className={styles.filterDropdownChevron} aria-hidden>
+            ▾
+          </span>
+        </button>
+        {desktopOpen && (
+          <div className={styles.filterDropdownPanel} role="listbox" aria-label={`${field.label} options`}>
+            {opts.map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="option"
+                aria-selected={rawValue === option}
+                className={`${styles.filterDropdownOption} ${
+                  rawValue === option ? styles.filterDropdownOptionSelected : ''
+                }`}
+                onClick={() => {
+                  setFieldValue(field.id, option)
+                  setDesktopOpen(false)
+                }}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     )
   }
 
@@ -464,18 +506,6 @@ function ListingFormSelectControl({ field, getFieldValue, setFieldValue }) {
           </button>
         </div>
         <div className={styles.listingFormSelectSheetList} role="listbox">
-          <button
-            type="button"
-            role="option"
-            className={styles.listingFormSelectSheetRow}
-            aria-selected={rawValue === ''}
-            onClick={() => {
-              setFieldValue(field.id, '')
-              setSheetOpen(false)
-            }}
-          >
-            {placeholderText}
-          </button>
           {opts.map((opt) => (
             <button
               key={opt}
@@ -836,20 +866,35 @@ function revokeLocalPreviewUrls(entries) {
   })
 }
 
-function NewListingProgressPanel({ sections, completed, tipTitle, tipBody }) {
+function NewListingProgressPanel({ sections, completed, activeId, tipTitle, tipBody }) {
   return (
     <aside className={styles.newListingAside} aria-label="Listing progress">
       <div className={styles.newListingStepper} role="group" aria-label="Section completion">
         <ol className={styles.newListingStepperList}>
           {sections.map((s, index) => {
             const isDone = completed[s.id]
-            const isLast = index === sections.length - 1
+            const isActive = !isDone && s.id === activeId
             return (
-              <li key={s.id} className={styles.newListingStepItem}>
+              <li
+                key={s.id}
+                className={`${styles.newListingStepItem} ${
+                  isDone
+                    ? styles.newListingStepItemDone
+                    : isActive
+                      ? styles.newListingStepItemActive
+                      : styles.newListingStepItemTodo
+                }`}
+              >
                 <div className={styles.newListingStepTrack}>
                   <div className={styles.newListingStepDotAlign}>
                     <span
-                      className={isDone ? styles.newListingStepIconDone : styles.newListingStepIconTodo}
+                      className={
+                        isDone
+                          ? styles.newListingStepIconDone
+                          : isActive
+                            ? styles.newListingStepIconActive
+                            : styles.newListingStepIconTodo
+                      }
                       aria-hidden
                     >
                       {isDone ? (
@@ -862,10 +907,15 @@ function NewListingProgressPanel({ sections, completed, tipTitle, tipBody }) {
                       ) : null}
                     </span>
                   </div>
-                  {!isLast ? <span className={styles.newListingStepLine} aria-hidden /> : null}
+                  <span
+                    className={`${styles.newListingStepLine} ${
+                      isDone ? styles.newListingStepLineDone : ''
+                    }`}
+                    aria-hidden
+                  />
                 </div>
                 <span
-                  className={styles.newListingStepLabel}
+                  className={`${styles.newListingStepLabel} ${isActive ? styles.newListingStepLabelActive : ''}`}
                   aria-label={`${s.label}: ${isDone ? 'complete' : 'incomplete'}`}
                 >
                   {s.label}
@@ -903,6 +953,8 @@ export default function NewListingClient() {
   const [loadingSeller, setLoadingSeller] = useState(true)
   const [sellerAccountStatus, setSellerAccountStatus] = useState(null)
   const [imageUploadNote, setImageUploadNote] = useState(null)
+  const [toastMessage, setToastMessage] = useState('')
+  const [toastType, setToastType] = useState('error')
 
   const orderedSectionIds = useMemo(() => getOrderedSectionIds(sectionRows), [sectionRows])
 
@@ -971,6 +1023,12 @@ export default function NewListingClient() {
       mounted = false
     }
   }, [])
+
+  useEffect(() => {
+    if (!toastMessage) return
+    const timer = window.setTimeout(() => setToastMessage(''), 3000)
+    return () => window.clearTimeout(timer)
+  }, [toastMessage])
 
   useEffect(() => {
     const k = searchParams.get('kind')
@@ -1090,6 +1148,8 @@ export default function NewListingClient() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setFormError('')
+    setToastMessage('')
+    setToastType('error')
 
     const missingRequired = findFirstMissingRequiredField(
       templateFields,
@@ -1098,13 +1158,19 @@ export default function NewListingClient() {
       editGallery,
     )
     if (missingRequired) {
-      setFormError(`${missingRequired.label} is required.`)
+      const msg = `${missingRequired.label} is required. Please complete the info.`
+      setFormError(msg)
+      setToastType('error')
+      setToastMessage(msg)
       return
     }
 
     const rawPrice = String(formValues.base_price ?? '').trim().replace(/,/g, '')
     if (rawPrice !== '' && Number.isFinite(Number(rawPrice)) && Number(rawPrice) < 0) {
-      setFormError('Starting price cannot be negative.')
+      const msg = 'Starting price cannot be negative.'
+      setFormError(msg)
+      setToastType('error')
+      setToastMessage(msg)
       return
     }
 
@@ -1112,6 +1178,8 @@ export default function NewListingClient() {
     const { error: uploadErr, persistedImageUrls } = await resolvePersistedImageUrls(editGallery, [])
     if (uploadErr) {
       setFormError(uploadErr)
+      setToastType('error')
+      setToastMessage(uploadErr)
       setSaving(false)
       return
     }
@@ -1127,10 +1195,16 @@ export default function NewListingClient() {
     setSaving(false)
 
     if (error || !data) {
-      setFormError(error || 'Failed to save listing.')
+      const msg = error || 'Failed to save listing.'
+      setFormError(msg)
+      setToastType('error')
+      setToastMessage(msg)
       return
     }
 
+    setToastType('success')
+    setToastMessage('Listing saved successfully.')
+    await new Promise((resolve) => window.setTimeout(resolve, 950))
     router.push('/seller/products')
   }
 
@@ -1138,6 +1212,17 @@ export default function NewListingClient() {
 
   return (
     <div className={styles.newListingPage}>
+      {toastMessage ? (
+        <div
+          className={`${styles.newListingToast} ${
+            toastType === 'success' ? styles.newListingToastSuccess : ''
+          }`}
+          role={toastType === 'success' ? 'status' : 'alert'}
+          aria-live={toastType === 'success' ? 'polite' : 'assertive'}
+        >
+          {toastMessage}
+        </div>
+      ) : null}
       {sellerAccountStatus && sellerAccountStatus !== 'active' ? (
         <div className={styles.shopVisibilityBanner} role="status" aria-live="polite">
           {sellerAccountStatus === 'pending' ? (
@@ -1163,10 +1248,10 @@ export default function NewListingClient() {
           <NewListingProgressPanel
             sections={listingSections}
             completed={sectionCompletion}
+            activeId={activeTipSectionId}
             tipTitle={sidebarTip.title}
             tipBody={sidebarTip.body}
           />
-
           <div className={styles.newListingFormColumn}>
             <form className={styles.newListingForm} onSubmit={handleSubmit} noValidate>
               <SellerListingFormFields
