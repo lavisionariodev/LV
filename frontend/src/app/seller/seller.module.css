@@ -14,7 +14,8 @@
 .shell {
   display: grid;
   grid-template-columns: var(--sidebar-width) 1fr;
-  height: 100vh;
+  height: 100vh; /* fallback */
+  height: 100dvh; /* avoid mobile browser chrome vh issues */
   overflow: hidden;
   background: #f9fcff;
   transition: grid-template-columns 0.25s ease;
@@ -28,7 +29,8 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  height: 100vh;
+  height: 100vh; /* fallback */
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -72,7 +74,8 @@
   .shell,
   .shellCollapsed {
     grid-template-columns: 1fr;
-    height: 100vh;
+    height: 100vh; /* fallback */
+    height: 100dvh;
   }
 
   /*

@@ -7,6 +7,7 @@ import styles from './sellers.module.css';
 import { getEffectiveCommissionForSeller } from '@/data/adminSampleData';
 import { listSellersForAdmin, updateSellerStatus } from '@/lib/sellers/client';
 import { useToast } from '@/contexts/ToastContext';
+import { useMediaQuery } from '@/hooks';
 import { Dropdown } from '@/components/ui';
 
 const STATUS_FILTER_OPTIONS = [
@@ -275,13 +276,34 @@ function SellerDetailModal({ seller, onClose }) {
 
 export default function AdminSellersPage() {
   const toast = useToast();
+  const isMobile = useMediaQuery('(max-width: 640px)');
   const [sellers, setSellers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedRows, setSelectedRows] = useState(() => new Set());
   const [detailSeller, setDetailSeller] = useState(null);
+
+  useEffect(() => {
+    if (!isMobile || !filtersOpen) return;
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    function onKeyDown(e) {
+      if (e.key === 'Escape') setFiltersOpen(false);
+    }
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [filtersOpen, isMobile]);
+
+  // Desktop uses inline Dropdown (no modal / no outside-click handler needed).
 
   useEffect(() => {
     let cancelled = false;
@@ -322,6 +344,9 @@ export default function AdminSellersPage() {
     setSearch('');
     setStatusFilter('all');
   };
+
+  const statusLabel =
+    STATUS_FILTER_OPTIONS.find((o) => o.value === statusFilter)?.label ?? 'All statuses';
 
   const handleStatusChange = async (sellerId, nextStatus) => {
     setUpdatingId(sellerId);
@@ -371,13 +396,26 @@ export default function AdminSellersPage() {
                 />
               </div>
 
-              <Dropdown
-                value={statusFilter}
-                onChange={setStatusFilter}
-                ariaLabel="Seller status"
-                options={STATUS_FILTER_OPTIONS}
-                placeholder="All statuses"
-              />
+              {!isMobile ? (
+                <Dropdown
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  ariaLabel="Seller status"
+                  options={STATUS_FILTER_OPTIONS}
+                  placeholder="All statuses"
+                />
+              ) : (
+                <button
+                  type="button"
+                  className={styles.filterTrigger}
+                  onClick={() => setFiltersOpen(true)}
+                  aria-haspopup="dialog"
+                  aria-expanded={filtersOpen}
+                >
+                  {statusLabel}
+                  <span className={styles.filterTriggerChevron} aria-hidden>▾</span>
+                </button>
+              )}
             </div>
 
             <button
@@ -391,6 +429,74 @@ export default function AdminSellersPage() {
             </button>
           </div>
         </div>
+
+        {isMobile && filtersOpen && (
+          <div
+            className={styles.filterSheetOverlay}
+            role="presentation"
+            onClick={() => setFiltersOpen(false)}
+          >
+            <div
+              className={styles.filterSheet}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Filters"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className={styles.filterSheetHandle} aria-hidden />
+              <div className={styles.filterSheetHeader}>
+                <p className={styles.filterSheetTitle}>Filter</p>
+                <button
+                  type="button"
+                  className={styles.filterSheetClose}
+                  onClick={() => setFiltersOpen(false)}
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className={styles.filterSheetBody}>
+                <p className={styles.filterSheetLabel}>Status</p>
+                <div className={styles.filterOptions}>
+                  {STATUS_FILTER_OPTIONS.map((opt) => {
+                    const active = opt.value === statusFilter;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        className={`${styles.filterOption} ${active ? styles.filterOptionActive : ''}`}
+                        onClick={() => {
+                          setStatusFilter(opt.value);
+                          setFiltersOpen(false);
+                        }}
+                        aria-pressed={active}
+                      >
+                        <span>{opt.label}</span>
+                        {active && <span className={styles.filterOptionCheck} aria-hidden>✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className={styles.filterSheetFooter}>
+                  <button
+                    type="button"
+                    className={styles.filterSheetClearAll}
+                    onClick={() => {
+                      clearFilters();
+                      setFiltersOpen(false);
+                    }}
+                    disabled={!hasFilters}
+                  >
+                    <FiRotateCcw className={styles.toolbarClearIcon} aria-hidden />
+                    Clear All
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className={styles.tableWrap}>
           {loading ? (

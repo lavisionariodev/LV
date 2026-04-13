@@ -117,6 +117,248 @@
   flex-shrink: 0;
 }
 
+/* ── Filter bottom sheet (replaces dropdown) ────────────────────────────── */
+
+.filterWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.filterTrigger {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 160px;
+  max-width: 220px;
+  font-family: inherit;
+}
+
+.filterTrigger:hover {
+  border-color: #cbd5e1;
+}
+
+.filterTrigger:focus-visible {
+  outline: 2px solid #94a3b8;
+  outline-offset: 2px;
+}
+
+.filterTriggerChevron {
+  color: #94a3b8;
+  font-weight: 700;
+  margin-left: auto;
+}
+
+.filterDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 220px;
+  max-width: 260px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.10);
+  padding: 6px;
+  z-index: 60;
+}
+
+.filterDropdownItem {
+  width: 100%;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  padding: 10px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.filterDropdownItem:hover {
+  background: #f8fafc;
+}
+
+.filterDropdownItemActive {
+  background: #f1f5f9;
+}
+
+.filterDropdownCheck {
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.filterSheetOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+}
+
+.filterSheet {
+  width: 100%;
+  max-width: 520px;
+  background: #fff;
+  border-radius: 18px 18px 0 0;
+  border: 1px solid #e9e9ef;
+  border-bottom: none;
+  box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.12);
+  transform: translateY(0);
+  animation: sheetUp 180ms ease-out;
+}
+
+@keyframes sheetUp {
+  from { transform: translateY(12px); opacity: 0.9; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.filterSheetHandle {
+  width: 44px;
+  height: 4px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  margin: 10px auto 0;
+}
+
+.filterSheetHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.filterSheetTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.filterSheetClose {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, color 0.12s;
+}
+
+.filterSheetClose:hover {
+  background: #f8fafc;
+  color: #334155;
+}
+
+.filterSheetBody {
+  padding: 14px;
+}
+
+.filterSheetLabel {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.filterOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filterSheetFooter {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.filterSheetClearAll {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 11px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+  font-family: inherit;
+}
+
+.filterSheetClearAll:hover:not(:disabled) {
+  color: #374151;
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.filterSheetClearAll:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.filterOption {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.filterOption:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.filterOptionActive {
+  border-color: #0f172a;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.1);
+}
+
+.filterOptionCheck {
+  color: #0f172a;
+  font-weight: 800;
+}
+
 /* ── Table ──────────────────────────────────────────────────────────────── */
 
 .tableWrap {
@@ -472,4 +714,254 @@
   .toolbarSearchWrap {
     max-width: none;
   }
+}
+
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE UI — buyers  (≤ 640 px only — desktop untouched)
+   Card layout mirrors the reference design:
+     [Avatar]  Name                         ← top row
+               email · joined               ← sub-row (meta)
+     [Status]  [Email chip]  [Joined chip]  ← chip row
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+
+  /* Page background matches reference (light grey) */
+  .pageRoot { gap: 0; background: #f1f5f9; }
+
+  /* Panel: no side borders, full bleed */
+  .tablePanel {
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+    background: #f1f5f9;
+    border-top: none;
+    border-bottom: none;
+  }
+
+  /* ── Toolbar ─────────────────────────────────────────────────────────── */
+  .toolbar {
+    padding: 12px;
+    background: #fff;
+    border-bottom: 1px solid #e9e9ef;
+    border-radius: 0;
+  }
+
+  .toolbarRow        { flex-direction: column; align-items: stretch; gap: 8px; }
+  .toolbarControls   { flex-direction: column; align-items: stretch; gap: 8px; width: 100%; }
+  .toolbarControls > * { width: 100%; }
+
+  .toolbarSearchWrap {
+    max-width: none;
+    width: 100%;
+    height: 48px;
+    min-height: 48px;
+    padding: 0 14px;
+    gap: 10px;
+    border-radius: 12px;
+    border-color: #e2e8f0;
+    box-sizing: border-box;
+    /* Ensure flex children fill the height properly */
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .toolbarSearchWrap svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  .toolbarSearchInput {
+    flex: 1 1 0%;
+    min-width: 0;
+    width: 100%;
+    height: 48px;         /* explicit height matches parent — no more collapsing */
+    font-size: 16px;      /* prevents iOS auto-zoom on focus */
+    line-height: 48px;    /* vertically centres text without padding tricks */
+    padding: 0;
+    margin: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #374151;
+    font-family: inherit;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .toolbarSearchInput::placeholder {
+    font-size: 16px;
+    color: #94a3b8;
+    line-height: normal;
+  }
+
+  .filterTrigger {
+    height: 48px;
+    min-height: 48px;
+    border-radius: 12px;
+    max-width: none;
+    width: 100%;
+    font-size: 16px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+  }
+
+  .toolbarClearAll {
+    display: none;
+  }
+
+  /* ── Table → Card list ───────────────────────────────────────────────── */
+  .tableWrap {
+    padding: 0;
+    overflow-x: visible;
+    background: #f1f5f9;
+  }
+
+  /* Turn the whole table into a block so we can style rows as cards */
+  .table          { display: block; }
+  .table thead    { display: none; }
+  .table tbody    { display: flex; flex-direction: column; gap: 10px; padding: 12px; }
+
+  /* ── Row = Card ──────────────────────────────────────────────────────── */
+  .primaryRow {
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    transition: box-shadow 0.15s;
+    /* Reset table-row defaults */
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .primaryRow:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.09); }
+  .primaryRow:last-child { border-bottom: 1px solid #e5e7eb; }
+
+  /* All cells: reset, hide by default */
+  .primaryRow td {
+    display: none;
+    padding: 0;
+    border: none;
+    vertical-align: unset;
+    font-size: 13px;
+  }
+
+  /* ── Checkbox cell (col 1) — hidden on mobile ────────────────────────── */
+  .primaryRow td.checkboxCell { display: none; }
+
+  /* ── TOP ROW: avatar + name block (col 2) ───────────────────────────── */
+  .primaryRow td:nth-child(2) {
+    display: flex;
+    align-items: center;
+    padding: 14px 14px 6px 14px;
+  }
+
+  .buyerCell  { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+  .buyerText  { flex: 1; min-width: 0; }
+
+  .avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;   /* squircle like reference image */
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  .buyerName {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+  }
+
+  /* ── EMAIL ROW (col 3) — shown as small grey subtitle ───────────────── */
+  .primaryRow td:nth-child(3) {
+    display: block;
+    padding: 0 14px 10px 72px; /* indent to align under name (14 pad + 46 avatar + 12 gap) */
+  }
+
+  .email {
+    font-size: 12px;
+    color: #94a3b8;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ── CHIP ROW: joined (col 4) + status (col 6) ──────────────────────── */
+  /* Both sit in a flex row at the bottom of the card */
+  .primaryRow td:nth-child(4) {
+    display: flex;
+    align-items: center;
+    padding: 0 14px 14px 14px;
+    gap: 8px;
+    flex-wrap: wrap;
+    /* Order trick: joined comes first, then status */
+    order: 10;
+  }
+
+  /* Role col (col 5) — hidden */
+  .primaryRow td:nth-child(5) { display: none; }
+
+  /* Status col (col 6) — chip, same row as joined */
+  .primaryRow td:nth-child(6) {
+    display: flex;
+    align-items: center;
+    padding: 0 14px 14px 0;
+    gap: 8px;
+    flex-wrap: wrap;
+    order: 11;
+  }
+
+  /* ── Chip pill styles ────────────────────────────────────────────────── */
+  /* Joined date — pill like reference "60051 - NY" */
+  .meta {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 11px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  /* Status badges — keep existing colours, adjust sizing */
+  .statusBadge {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 11px;
+    border-radius: 999px;
+  }
+
+  /* ── Footer ──────────────────────────────────────────────────────────── */
+  .tableFooter {
+    padding: 12px 14px;
+    font-size: 12px;
+    text-align: center;
+    background: #f1f5f9;
+    border-top: none;
+  }
+
+  /* ── Empty state ──────────────────────────────────────────────────────── */
+  .emptyState { padding: 40px 20px; background: #f1f5f9; }
+  .clearBtn   { min-height: 44px; padding: 11px 20px; font-size: 13px; border-radius: 10px; }
+}
+
+/* ── Tiny phones ─────────────────────────────────────────────────────────── */
+@media (max-width: 380px) {
+  .primaryRow td:nth-child(3) { padding-left: 66px; }
+  .buyerName { font-size: 14px; }
+  .avatar    { width: 40px; height: 40px; }
 }

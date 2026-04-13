@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { FiRotateCcw } from 'react-icons/fi'
 import styles from './disputes.module.css'
 import { disputes as initialDisputes } from '@/data/adminSampleData'
 
@@ -72,13 +71,6 @@ export default function AdminDisputesPage() {
     })
   }, [statusFilter, search])
 
-  const hasFilters = Boolean(search.trim()) || statusFilter !== 'all'
-
-  const clearFilters = () => {
-    setSearch('')
-    setStatusFilter('all')
-  }
-
   return (
     <div className={styles.page}>
       <section className={styles.statsGrid}>
@@ -134,15 +126,6 @@ export default function AdminDisputesPage() {
                 autoComplete="off"
               />
             </div>
-            <button
-              type="button"
-              className={styles.toolbarClearAll}
-              onClick={clearFilters}
-              disabled={!hasFilters}
-            >
-              <FiRotateCcw className={styles.toolbarClearIcon} aria-hidden />
-              Clear
-            </button>
           </div>
         </div>
 
@@ -226,11 +209,6 @@ export default function AdminDisputesPage() {
               </svg>
               <p className={styles.emptyTitle}>No disputes found</p>
               <p className={styles.emptyText}>Try a different search or status filter.</p>
-              {hasFilters && (
-                <button type="button" className={styles.clearBtn} onClick={clearFilters}>
-                  Clear filters
-                </button>
-              )}
             </div>
           )}
         </div>

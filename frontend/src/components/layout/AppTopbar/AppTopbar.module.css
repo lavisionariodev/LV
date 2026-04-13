@@ -7,7 +7,7 @@
   height: var(--sidebar-header-height);
   background: #FFFFFF;
   border-bottom: 1px solid #eef0f4;
-  padding: 0 18px;
+  padding: 0 26px 0 18px;
 
   display: flex;
   align-items: center;
@@ -67,35 +67,53 @@
   background: #f8fafc;
 }
 
+/* Notifications icon: no container, just the icon stroke */
+.notifIconBtn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  line-height: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #0f172a;
+  cursor: pointer;
+}
+
+.notifIconBtn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.notifIconBtn:focus-visible {
+  outline: 2px solid #94a3b8;
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
 /* Profile - click to show dropdown */
 .profileWrap {
   position: relative;
 }
 
-/* Outer container - same height as notifications icon (40px) */
+/* Profile trigger: no outer container (only avatar + chevron) */
 .profileIconWrap {
-  height: 40px;
-  min-width: 40px;
-  padding: 0 6px;
-  box-sizing: border-box;
-  border-radius: 12px;
-  border: 1px solid #eef0f4;
-  background: #ffffff;
-
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-}
-
-.profileIconWrap:hover,
-.profileWrapOpen .profileIconWrap {
-  background: #f8fafc;
+  height: auto;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
 }
 
 .profileTrigger {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0;
   padding: 0;
   border-radius: 999px;
   cursor: pointer;
@@ -103,6 +121,12 @@
   background: none;
   font: inherit;
   color: inherit;
+}
+
+.profileTrigger:focus-visible {
+  outline: 2px solid #94a3b8;
+  outline-offset: 4px;
+  border-radius: 10px;
 }
 
 .profileAvatar {
@@ -118,6 +142,20 @@
   overflow: hidden;
   flex-shrink: 0;
   user-select: none;
+  transition: box-shadow 0.15s ease, transform 0.15s ease, filter 0.15s ease;
+}
+
+.profileTrigger:hover .profileAvatar,
+.profileWrapOpen .profileAvatar {
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.10);
+}
+
+.profileTrigger:active .profileAvatar {
+  transform: scale(0.98);
+}
+
+.profileTrigger:focus-visible .profileAvatar {
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.55);
 }
 
 .profileAvatarImg {
@@ -128,21 +166,6 @@
   display: block;
   user-select: none;
   -webkit-user-drag: none;
-}
-
-.profileChevron {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  color: #64748b;
-  flex-shrink: 0;
-  transition: transform 0.2s ease, color 0.2s ease;
-}
-
-.profileWrapOpen .profileChevron {
-  color: #0f172a;
-  transform: rotate(180deg);
 }
 
 /* Dropdown - visible on click */
@@ -301,9 +324,6 @@
     padding-right: 16px;
     gap: 12px;
   }
-  .profileChevron {
-    display: none;
-  }
   .pageTitle {
     font-size: 18px;
     font-weight: 700;
@@ -444,6 +464,7 @@
 /* ── Notification overlay ── */
 .notifWrap {
   position: relative;
+  margin-right: 8px;
 }
 
 

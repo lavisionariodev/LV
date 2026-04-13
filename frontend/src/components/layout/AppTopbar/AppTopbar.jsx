@@ -7,7 +7,7 @@ import Image from 'next/image'
 import styles from './AppTopbar.module.css'
 import { TbBell } from 'react-icons/tb'
 import { FaUser } from 'react-icons/fa6'
-import { LuLogOut, LuChevronDown } from 'react-icons/lu'
+import { LuLogOut } from 'react-icons/lu'
 import { IoIosArrowBack } from 'react-icons/io'
 import { TbSettings, TbMessage2Question } from 'react-icons/tb'
 import { Logout } from '@/components/ui'
@@ -254,7 +254,7 @@ export default function AppTopbar({ variant, onLogout, isMobile, sidebarCollapse
           >
             <button
               type="button"
-              className={styles.iconBtn}
+              className={styles.notifIconBtn}
               aria-label="Notifications"
               onClick={() => setNotifOpen((o) => !o)}
             >
@@ -333,9 +333,6 @@ export default function AppTopbar({ variant, onLogout, isMobile, sidebarCollapse
                     <FaUser />
                   )}
                 </div>
-                <span className={styles.profileChevron} aria-hidden>
-                  <LuChevronDown />
-                </span>
               </div>
             </div>
 

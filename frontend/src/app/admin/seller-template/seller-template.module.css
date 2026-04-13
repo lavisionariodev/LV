@@ -47,6 +47,12 @@
     width: calc(100% + 32px);
     max-width: none;
   }
+
+  /* Add inner gutters so content doesn't touch screen edges */
+  .pageSurface {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
 }
 
 @media (max-width: 600px) {
@@ -54,6 +60,11 @@
     margin-left: -14px;
     margin-right: -14px;
     width: calc(100% + 28px);
+  }
+
+  .pageSurface {
+    padding-left: 14px;
+    padding-right: 14px;
   }
 }
 
@@ -1163,21 +1174,225 @@
   }
 }
 
+/* ─────────────────────────────────────────
+   MOBILE  ≤ 520 px  — comprehensive pass
+   ───────────────────────────────────────── */
 @media (max-width: 520px) {
-  .fieldItem {
-    flex-direction: column;
-    align-items: flex-start;
+
+  /* ── Page header ── */
+  .pageHeader {
+    display: none;
   }
 
-  .fieldActions {
+  .pageHeaderLeft {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  /* Status pill sits below title */
+  .statusPill {
+    font-size: 11px;
+    padding: 4px 9px;
+  }
+
+  /* ── Section guidance block ── */
+  .sectionGuidance {
+    padding: 14px 12px;
+    margin-bottom: 16px;
+  }
+
+  .sectionGuidanceHead {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .sectionGuidanceHeadLeft {
+    gap: 6px;
+  }
+
+  /* Action buttons fill the row side by side */
+  .sectionGuidanceHeadRight {
     width: 100%;
-    justify-content: flex-end;
+    display: flex;
+    gap: 8px;
+  }
+
+  .btnSectionAdd,
+  .btnSaveGuidance {
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+    padding: 9px 10px;
+    font-size: 12px;
+    min-height: 38px;
+    white-space: nowrap;
+  }
+
+  /* ── Add-section inline form ── */
+  .addSectionInline {
+    flex-direction: column;
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .addSectionInline .label {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Confirm / cancel button pair inside inline form */
+  .addSectionInline .btnPrimary,
+  .addSectionInline .btnGhost {
+    flex: 1;
+    min-height: 40px;
+    font-size: 13px;
+  }
+
+  /* ── Section guidance grid cards ── */
+  .sectionGuidanceGrid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .sectionCardTop {
+    padding: 10px 10px;
+    gap: 6px;
+  }
+
+  .sectionCardTopRight {
     gap: 4px;
   }
 
+  .btnExpandGuidance {
+    font-size: 11px;
+    padding: 5px 8px;
+    min-height: 32px;
+  }
+
+  /* Move-up/down section icon buttons */
+  .sectionCardTopRight .iconBtn {
+    padding: 5px 8px;
+    min-height: 32px;
+    min-width: 32px;
+  }
+
+  /* ── Form card (field list) ── */
+  .formCard {
+    padding: 12px;
+  }
+
+  .listHeader {
+    margin-bottom: 12px;
+    gap: 8px;
+  }
+
+  /* "Add field" button — compact, not full-width here */
+  .listHeader .btnPrimary {
+    flex: 0 0 auto;
+    padding: 8px 14px;
+    font-size: 12px;
+    min-height: 36px;
+  }
+
+  /* ── Field list items ── */
+  .fieldItem {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 10px 10px;
+    gap: 8px;
+  }
+
+  .fieldInfo {
+    width: 100%;
+  }
+
+  .fieldLabel {
+    font-size: 13px;
+    white-space: normal; /* allow wrapping on narrow screens */
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  .fieldMeta {
+    flex-wrap: wrap;
+    gap: 4px 6px;
+  }
+
+  /* Action row: move buttons left, edit/delete right */
+  .fieldActions {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
   .moveGroup {
-    transform: scale(0.9);
-    transform-origin: left center;
+    transform: none; /* remove scale hack — use proper sizing */
+    display: flex;
+    gap: 0;
+  }
+
+  .moveGroup .iconBtn {
+    padding: 6px 11px;
+    font-size: 13px;
+    min-height: 34px;
+    min-width: 34px;
+  }
+
+  /* Edit + Delete sit in a flex group on the right */
+  .fieldActions > .iconBtnEdit,
+  .fieldActions > .iconBtnDanger,
+  .fieldActions > .deleteConfirm {
+    margin-left: auto;
+  }
+
+  .iconBtnEdit,
+  .iconBtnDanger {
+    padding: 6px 12px;
+    font-size: 12px;
+    min-height: 34px;
+  }
+
+  .deleteConfirm {
+    gap: 6px;
+  }
+
+  .deleteConfirm .iconBtnDanger,
+  .deleteConfirm .iconBtn {
+    padding: 6px 10px;
+    min-height: 34px;
+  }
+
+  /* ── Preview panel ── */
+  .preview {
+    padding: 12px;
+    /* Collapsed stepper on mobile */
+  }
+
+  .previewStepper {
+    padding: 8px 10px;
+    gap: 4px 0;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .previewStepper::-webkit-scrollbar {
+    display: none;
+  }
+
+  .previewStepLabel {
+    max-width: 80px;
+    font-size: 10px;
+  }
+
+  .previewStepLine {
+    width: 8px;
   }
 
   .previewForm {
@@ -1185,35 +1400,102 @@
   }
 
   .previewInput {
-    font-size: 12px;
-    padding: 7px 9px;
+    font-size: 13px;
+    padding: 8px 10px;
   }
 
   .previewSubmit {
-    font-size: 12px;
-    padding: 8px 12px;
+    font-size: 13px;
+    padding: 10px 14px;
+    min-height: 40px;
   }
 
-  .sectionGuidanceHead {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .pageHeader {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
+  /* ── Modal — bottom-sheet on mobile ── */
   .modalOverlay {
-    padding: 12px;
+    padding: 0;
     align-items: flex-end;
   }
 
   .modalPanel {
-    max-height: 90vh;
-    border-radius: var(--radius-card) var(--radius-card) 0 0;
+    max-height: 92vh;
+    border-radius: 18px 18px 0 0;
     box-shadow:
-      0 -8px 40px rgba(16, 40, 32, 0.12),
+      0 -8px 40px rgba(16, 40, 32, 0.14),
       0 0 0 1px var(--accent-border);
+    /* drag handle hint */
+    padding-top: 4px;
+  }
+
+  /* Drag-handle pip */
+  .modalPanel::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 99px;
+    margin: 0 auto 2px;
+    flex-shrink: 0;
+  }
+
+  .modalHeader {
+    padding: 10px 20px 0;
+  }
+
+  .modalBody {
+    padding: 14px 20px 24px; /* extra bottom for safe-area */
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+  }
+
+  /* Modal footer buttons stack on very narrow */
+  .modalFooter {
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  .modalFooter .btnGhost,
+  .modalFooter .btnPrimary {
+    flex: 1;
+    min-height: 42px;
+    font-size: 13px;
+    text-align: center;
+    justify-content: center;
+  }
+
+  /* ── Field form inside modal ── */
+  .fieldForm {
+    gap: 12px;
+  }
+
+  .input,
+  .select {
+    font-size: 16px; /* prevent iOS zoom on focus */
+    padding: 10px 12px;
+    min-height: 44px;
+  }
+
+  .textareaSm {
+    font-size: 16px;
+    padding: 10px 12px;
+  }
+
+  .checkLabel {
+    font-size: 14px;
+    gap: 10px;
+  }
+
+  .checkLabel input {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* ── Guidance modal body ── */
+  .guidanceModalBody {
+    gap: 12px;
+  }
+
+  /* ── Empty state ── */
+  .emptyState {
+    padding: 28px 12px;
   }
 }

@@ -635,12 +635,12 @@
   .tr {
     display: grid;
     grid-template-columns: 1fr auto;
-    grid-template-rows: auto auto auto auto;
-    gap: 8px 10px;
+    grid-template-rows: auto auto auto auto auto;
+    gap: 10px 10px;
     background: #fff;
     border: 1px solid #e9e9ef;
-    border-radius: 12px;
-    padding: 14px;
+    border-radius: 16px;
+    padding: 14px 14px 12px;
     margin: 0 12px 10px;
     box-sizing: border-box;
   }
@@ -676,7 +676,14 @@
   }
 
   .td:nth-child(4) {
-    display: none;
+    grid-column: 1 / -1;
+    grid-row: 4;
+    display: block;
+  }
+
+  .td:nth-child(4) .descText {
+    padding-top: 10px;
+    border-top: 1px solid #f1f5f9;
   }
 
   .td:nth-child(5) {
@@ -689,7 +696,7 @@
 
   .td:nth-child(6) {
     grid-column: 2;
-    grid-row: 2 / 4;
+    grid-row: 2 / 5;
     display: flex;
     justify-content: flex-end;
     align-items: flex-end;
@@ -698,21 +705,50 @@
   .dateText {
     display: inline;
     font-size: 12px;
+    font-weight: 800;
+    color: #0f172a;
   }
 
   .refText {
     display: inline;
     margin-left: 6px;
     font-size: 10px;
+    font-weight: 700;
+    color: #94a3b8;
   }
 
   .orderRef {
-    font-size: 11px;
-    margin-bottom: 4px;
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+
+  .parties {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .arrowIcon {
+    display: none;
+  }
+
+  .partyChip {
+    width: 24px;
+    height: 24px;
+    border-radius: 8px;
+    font-size: 10px;
   }
 
   .partyName {
-    font-size: 11px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #334155;
+  }
+
+  .descText {
+    font-size: 12px;
+    line-height: 1.55;
+    -webkit-line-clamp: 3;
   }
 
   .reasonTag {
@@ -722,13 +758,14 @@
 
   .statusBadge {
     font-size: 10px;
-    padding: 4px 8px;
+    padding: 4px 9px;
   }
 
   .viewBtn {
     font-size: 11px;
-    padding: 6px 12px;
-    border-radius: 8px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    min-height: 34px;
   }
 
   .tableFooter {
