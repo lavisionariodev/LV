@@ -2,73 +2,71 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import { useCart } from '@/contexts/CartContext'
+import { useAuth } from '@/contexts/AuthContext'
 import styles from './cart.module.css'
-
-// ─── Sample Data ────────────────────────────────────────────────────────────
-const SAMPLE_CART_ITEMS = [
-  {
-    id: 'c1',
-    name: 'Full Memorial Service Package',
-    description: 'Complete funeral arrangement including viewing, chapel service, and graveside ceremony with full coordination.',
-    price: 85000,
-    qty: 1,
-    img: '/sample/services/1.jpg',
-    provider: 'Eternal Grace Funeral Home',
-    providerInitial: 'E',
-    rating: 4.9,
-    popular: true,
-    badge: 'Top Rated',
-  },
-  {
-    id: 'c2',
-    name: 'Floral Tribute Arrangement',
-    description: 'Premium sympathy floral arrangements including casket spray, standing wreaths, and altar florals.',
-    price: 28000,
-    qty: 1,
-    img: '/sample/services/2.jpg',
-    provider: 'Serenity Blooms',
-    providerInitial: 'S',
-    rating: 4.7,
-    popular: false,
-    badge: null,
-  },
-  {
-    id: 'c3',
-    name: 'Embalming & Preparation',
-    description: 'Professional embalming and dignified preparation of the deceased, ensuring a peaceful and presentable appearance.',
-    price: 18500,
-    qty: 1,
-    img: '/sample/services/3.jpg',
-    provider: 'Dignidad Memorial Services',
-    providerInitial: 'D',
-    rating: 4.8,
-    popular: true,
-    badge: 'Premium',
-  },
-]
 
 function formatPrice(n) {
   return `₱${Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
 }
 
+/** Map Supabase cart line (CartContext) to table row fields for the UI. */
+function mapCartItemToRow(item) {
+  const desc = item.description || ''
+  const parts = desc.split(' · ')
+  const providerName = (parts[0] || '').trim() || 'Seller'
+  const detailLine = parts.length > 1 ? parts.slice(1).join(' · ').trim() : ''
+  return {
+    id: item.id,
+    name: item.name,
+    description: detailLine,
+    price: Number(item.price) || 0,
+    qty: item.qty ?? 1,
+    img: item.img,
+    provider: providerName,
+    providerInitial: providerName.charAt(0).toUpperCase(),
+    rating: null,
+    popular: false,
+    badge: null,
+  }
+}
+
 // ─── Main Cart Page ──────────────────────────────────────────────────────────
 export default function CartPage() {
+  const { items: cartItems, loading: cartLoading, updateQty: cartUpdateQty, removeItem: cartRemoveItem } =
+    useCart()
+  const { authLoading, isBuyer, user } = useAuth()
   const [mounted, setMounted] = useState(false)
-  const [items, setItems] = useState(SAMPLE_CART_ITEMS)
   const [selected, setSelected] = useState(new Set())
   const [coupon, setCoupon] = useState('')
   const [couponApplied, setCouponApplied] = useState(false)
   const [qtyEdits, setQtyEdits] = useState({})
 
-  useEffect(() => { setMounted(true) }, [])
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
-  if (!mounted) return null
+  useEffect(() => {
+    const ids = new Set(cartItems.map((i) => i.id))
+    setSelected((prev) => {
+      const filtered = [...prev].filter((id) => ids.has(id))
+      if (filtered.length === prev.size && [...prev].every((id) => ids.has(id))) return prev
+      return new Set(filtered)
+    })
+  }, [cartItems])
 
-  const rows = items.map((item) => ({
-    ...item,
-    subtotal: item.price * item.qty,
-  }))
+  const rows = useMemo(
+    () =>
+      cartItems.map((item) => {
+        const base = mapCartItemToRow(item)
+        return {
+          ...base,
+          subtotal: base.price * base.qty,
+        }
+      }),
+    [cartItems],
+  )
 
   const allSelected = rows.length > 0 && rows.every((r) => selected.has(r.id))
   const someSelected = selected.size > 0 && !allSelected
@@ -86,18 +84,25 @@ export default function CartPage() {
     })
   }
 
-  const updateQty = (id, val) => {
+  const updateQty = async (id, val) => {
     const num = Math.max(1, parseInt(val, 10) || 1)
-    setItems((prev) => prev.map((item) => item.id === id ? { ...item, qty: num } : item))
+    await cartUpdateQty(id, num)
   }
 
-  const removeItem = (id) => {
-    setItems((prev) => prev.filter((item) => item.id !== id))
-    setSelected((prev) => { const next = new Set(prev); next.delete(id); return next })
+  const removeItem = async (id) => {
+    await cartRemoveItem(id)
+    setSelected((prev) => {
+      const next = new Set(prev)
+      next.delete(id)
+      return next
+    })
   }
 
-  const removeSelected = () => {
-    selected.forEach((id) => removeItem(id))
+  const removeSelected = async () => {
+    const ids = [...selected]
+    for (const id of ids) {
+      await cartRemoveItem(id)
+    }
     setSelected(new Set())
   }
 
@@ -107,6 +112,26 @@ export default function CartPage() {
   const total = subtotal - discount
 
   const isEmpty = rows.length === 0
+  const showCartLoading = !authLoading && isBuyer && user && cartLoading
+
+  if (!mounted) return null
+
+  if (authLoading || showCartLoading) {
+    return (
+      <section className={styles.cartPage}>
+        <header className={styles.hero}>
+          <div className={styles.heroInner}>
+            <h1 className={styles.heroTitle}>Your Cart</h1>
+          </div>
+        </header>
+        <div className={styles.content}>
+          <p style={{ fontFamily: 'Lato, sans-serif', color: 'rgba(16,40,32,0.55)', padding: '2rem 0' }}>
+            Loading your cart…
+          </p>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section className={styles.cartPage}>
@@ -142,6 +167,14 @@ export default function CartPage() {
             </div>
             <h2 className={styles.emptyTitle}>Your cart is empty</h2>
             <p className={styles.emptySub}>Add packages or services to see them here.</p>
+            {!user && (
+              <p className={styles.emptySub} style={{ marginTop: 8 }}>
+                <Link href={`/buyer/login?redirect=${encodeURIComponent('/cart')}`} className={styles.emptyLink} style={{ display: 'inline' }}>
+                  Sign in as a buyer
+                </Link>{' '}
+                to sync your cart across devices.
+              </p>
+            )}
             <Link href="/shop" className={styles.emptyLink}>Browse Services</Link>
           </div>
         ) : (
@@ -203,11 +236,12 @@ export default function CartPage() {
                 <button
                   type="button"
                   className={styles.updateBtn}
-                  onClick={() => {
-                    Object.entries(qtyEdits).forEach(([id, val]) => {
+                  onClick={async () => {
+                    const entries = Object.entries(qtyEdits)
+                    for (const [id, val] of entries) {
                       const num = parseInt(val, 10)
-                      if (!isNaN(num) && num >= 1) updateQty(id, num)
-                    })
+                      if (!isNaN(num) && num >= 1) await updateQty(id, num)
+                    }
                     setQtyEdits({})
                   }}
                 >
@@ -382,27 +416,37 @@ function CartItemRow({ row, isSelected, onToggle, onUpdateQty, onRemove, qtyEdit
       {/* Product */}
       <div className={styles.itemProduct}>
         <div className={styles.thumbWrap}>
-          {/* Placeholder image using a coloured div — replace with next/image in prod */}
-          <div
-            className={styles.thumb}
-            style={{
-              background: 'linear-gradient(135deg, #EDE8E0 0%, #D5CCBC 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <span style={{
-              fontSize: 22,
-              fontFamily: 'Cormorant Garamond, serif',
-              fontWeight: 600,
-              color: 'var(--color-green, #102820)',
-              opacity: 0.45,
-              lineHeight: 1,
-            }}>
-              {row.providerInitial}
-            </span>
-          </div>
+          {row.img && (row.img.startsWith('http') || row.img.startsWith('/')) ? (
+            <Image
+              src={row.img}
+              alt=""
+              width={76}
+              height={76}
+              className={styles.thumb}
+              unoptimized={row.img.startsWith('blob:')}
+            />
+          ) : (
+            <div
+              className={styles.thumb}
+              style={{
+                background: 'linear-gradient(135deg, #EDE8E0 0%, #D5CCBC 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <span style={{
+                fontSize: 22,
+                fontFamily: 'Cormorant Garamond, serif',
+                fontWeight: 600,
+                color: 'var(--color-green, #102820)',
+                opacity: 0.45,
+                lineHeight: 1,
+              }}>
+                {row.providerInitial}
+              </span>
+            </div>
+          )}
         </div>
         <div className={styles.productInfo}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 3, flexWrap: 'wrap' }}>
@@ -463,6 +507,7 @@ function CartItemRow({ row, isSelected, onToggle, onUpdateQty, onRemove, qtyEdit
               {row.providerInitial}
             </div>
             <span style={{ fontSize: 12, color: '#888', fontFamily: 'Lato, sans-serif' }}>{row.provider}</span>
+            {row.rating != null && (
             <span style={{ display: 'flex', alignItems: 'center', gap: 2, marginLeft: 4 }}>
               <svg width="10" height="10" viewBox="0 0 12 12" fill="var(--color-gold-base, #B8962E)">
                 <path d="M6 1l1.35 2.73L10.5 4.2l-2.25 2.19.53 3.1L6 7.9l-2.78 1.6.53-3.1L1.5 4.2l3.15-.47z" />
@@ -471,6 +516,7 @@ function CartItemRow({ row, isSelected, onToggle, onUpdateQty, onRemove, qtyEdit
                 {row.rating}
               </span>
             </span>
+            )}
           </div>
         </div>
       </div>

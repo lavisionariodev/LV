@@ -351,6 +351,17 @@
   border-color: #c0392b;
 }
 
+.btnSaveGalleryActive {
+  color: #c0392b;
+  border-color: rgba(192, 57, 43, 0.45);
+  background: rgba(192, 57, 43, 0.06);
+}
+
+.btnSaveGalleryActive svg {
+  fill: #c0392b;
+  stroke: #c0392b;
+}
+
 .shareRow {
   display: flex;
   align-items: center;

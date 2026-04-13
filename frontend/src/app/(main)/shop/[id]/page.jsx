@@ -7,7 +7,9 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { getServiceById, PROVIDERS, SERVICES, REVIEWS, getReviewsByServiceId, CATEGORIES } from '../data'
 import { getRecommendedSimilarServices } from '../similarServices'
 import { fetchActiveShopListings, mergeShopListings } from '@/lib/shop-listings/client'
+import { buildCartPayloadFromListing } from '@/lib/cart/fromListing'
 import { useCart } from '@/contexts/CartContext'
+import { useFavorites } from '@/contexts/FavoritesContext'
 import { useAuth } from '@/contexts/AuthContext'
 import styles from './detail.module.css'
 
@@ -15,6 +17,7 @@ export default function ServiceDetailPage({ params }) {
   const { id } = use(params)
   const service = getServiceById(id)
   const { addItem } = useCart()
+  const { toggleFavorite, isFavorite } = useFavorites()
   const { user, authLoading, isBuyer } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -48,6 +51,8 @@ export default function ServiceDetailPage({ params }) {
   const [quantity, setQuantity] = useState(1)
   const [addedMessage, setAddedMessage] = useState(false)
   const [addError, setAddError] = useState(null)
+  const [saveBusy, setSaveBusy] = useState(false)
+  const [saveError, setSaveError] = useState(null)
 
   useEffect(() => {
     const ids = new Set(listingsForService.map((l) => String(l.id)))
@@ -105,6 +110,48 @@ export default function ServiceDetailPage({ params }) {
     ? (selectedListing.provider ?? PROVIDERS.find((p) => p.id === selectedListing.providerId))
     : null
 
+  const pkgOptsForSave = selectedListing?.sellerPackageOptions ?? []
+  const effectiveFavoritePkg = pkgOptsForSave.length > 0 ? String(buyerPackage || '').trim() : ''
+  const savedToWishlist =
+    Boolean(selectedListing) && isFavorite(selectedListing.id, effectiveFavoritePkg)
+
+  const redirectToLogin = () => {
+    const target =
+      selectedListingId && selectedListing
+        ? `/shop/${id}?listing=${encodeURIComponent(selectedListingId)}`
+        : `/shop/${id}`
+    router.push(`/buyer/login?redirect=${encodeURIComponent(target)}`)
+  }
+
+  const handleSaveToggle = async () => {
+    if (!selectedListing || !service) return
+    setSaveError(null)
+    if (!user) {
+      redirectToLogin()
+      return
+    }
+    if (!isBuyer) {
+      redirectToLogin()
+      return
+    }
+    const pkgOpts = selectedListing.sellerPackageOptions ?? []
+    if (pkgOpts.length > 0 && !String(buyerPackage || '').trim()) {
+      setSaveError('Please select a package before saving.')
+      return
+    }
+    setSaveBusy(true)
+    try {
+      const { error } = await toggleFavorite(selectedListing, {
+        serviceId: id,
+        serviceLabel: service.name,
+        packageOption: effectiveFavoritePkg,
+      })
+      if (error) setSaveError(error.message || 'Could not update favorites')
+    } finally {
+      setSaveBusy(false)
+    }
+  }
+
   const handleAddToCart = async () => {
     if (!selectedListing || !service) return
     setAddError(null)
@@ -115,42 +162,26 @@ export default function ServiceDetailPage({ params }) {
       return
     }
 
-    const cartProductId =
-      pkgOpts.length > 0 && buyerPackage
-        ? `${selectedListing.id}::pkg::${encodeURIComponent(buyerPackage)}`
-        : selectedListing.id
-    const cartName =
-      pkgOpts.length > 0 && buyerPackage
-        ? `${selectedListing.name} — ${buyerPackage}`
-        : selectedListing.name
-
     if (!user) {
-      const target =
-        selectedListingId && selectedListing
-          ? `/shop/${id}?listing=${encodeURIComponent(selectedListingId)}`
-          : `/shop/${id}`
-      router.push(`/buyer/login?redirect=${encodeURIComponent(target)}`)
+      redirectToLogin()
       return
     }
     if (!isBuyer) {
-      const back =
-        selectedListingId && selectedListing
-          ? `/shop/${id}?listing=${encodeURIComponent(selectedListingId)}`
-          : `/shop/${id}`
-      router.push(`/buyer/login?redirect=${encodeURIComponent(back)}`)
+      redirectToLogin()
       return
     }
 
-    const { error } = await addItem({
-      id: cartProductId,
-      name: cartName,
-      img: mainGallerySrc || listingGalleryUrls[0] || '',
-      price: selectedListing.price,
-      description: provider
-        ? `${provider.name} · ${selectedListing.inclusions?.[0] ?? ''}`
-        : selectedListing.inclusions?.[0] ?? '',
-      qty: quantity,
+    const { error: buildErr, payload } = buildCartPayloadFromListing(selectedListing, {
+      quantity,
+      buyerPackage,
+      heroImage: mainGallerySrc || listingGalleryUrls[0] || '',
     })
+    if (buildErr || !payload) {
+      setAddError(buildErr || 'Could not add to cart')
+      return
+    }
+
+    const { error } = await addItem(payload)
     if (error) {
       setAddError(error.message || 'Could not add to cart')
       return
@@ -293,11 +324,18 @@ export default function ServiceDetailPage({ params }) {
 
             {/* ── Save + Share row ── */}
             <div className={styles.galleryMeta}>
-              <button className={styles.btnSaveGallery} aria-label="Save to wishlist">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <button
+                type="button"
+                className={`${styles.btnSaveGallery}${savedToWishlist ? ` ${styles.btnSaveGalleryActive}` : ''}`}
+                aria-label={savedToWishlist ? 'Remove from saved' : 'Save to wishlist'}
+                aria-pressed={savedToWishlist}
+                disabled={!selectedListing || authLoading || saveBusy}
+                onClick={handleSaveToggle}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill={savedToWishlist ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                 </svg>
-                Save
+                {saveBusy ? '…' : savedToWishlist ? 'Saved' : 'Save'}
               </button>
               <div className={styles.shareRow}>
                 <span className={styles.shareLabel}>Share</span>
@@ -323,6 +361,14 @@ export default function ServiceDetailPage({ params }) {
                 </button>
               </div>
             </div>
+            {saveError && (
+              <p
+                className={styles.tabText}
+                style={{ color: 'var(--color-error, #b91c1c)', marginTop: 8, fontSize: 12 }}
+              >
+                {saveError}
+              </p>
+            )}
           </div>
 
           {/* ── RIGHT: Product details ── */}
