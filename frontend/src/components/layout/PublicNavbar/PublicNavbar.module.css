@@ -585,6 +585,16 @@ a.userLink {
   flex: 1;
 }
 
+@media print {
+  /* Hide navbar + bottom bar in print */
+  .topBar,
+  .mainNav,
+  .navActionsMobile,
+  .bottomNav {
+    display: none !important;
+  }
+}
+
 .navbarSearchWrapHidden {
   display: none;
 }

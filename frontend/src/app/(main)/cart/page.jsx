@@ -7,6 +7,7 @@ import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import styles from './cart.module.css'
 import { formatPhpAmount } from '@/lib/cart/formatPhp'
+import { useSiteContent } from '@/lib/siteContent/client'
 
 /** Map Supabase cart line (CartContext) to table row fields for the UI. */
 function mapCartItemToRow(item) {
@@ -33,6 +34,7 @@ export default function CartPage() {
   const { items: cartItems, loading: cartLoading, updateQty: cartUpdateQty, removeItem: cartRemoveItem } =
     useCart()
   const { authLoading, isBuyer, user } = useAuth()
+  const { data: siteContent } = useSiteContent()
   const [mounted, setMounted] = useState(false)
   const [selected, setSelected] = useState(new Set())
   const [coupon, setCoupon] = useState('')
@@ -133,6 +135,151 @@ export default function CartPage() {
 
   return (
     <section className={styles.cartPage}>
+      <div className={styles.printReceipt} aria-hidden>
+
+        {/* ── Invoice Header ── */}
+        <header className={styles.receiptHeader}>
+          <div className={styles.receiptHeaderLeft}>
+            <div className={styles.receiptBrand}>{siteContent?.systemName || 'La Visionario'}</div>
+            <div className={styles.receiptBrandTagline}>Professional Services &amp; Packages</div>
+            <div className={styles.receiptBrandContact}>
+              <span>support@lavisionario.com</span>
+              <span className={styles.receiptDot}>·</span>
+              <span>www.lavisionario.com</span>
+            </div>
+          </div>
+          <div className={styles.receiptHeaderRight}>
+            <div className={styles.receiptInvoiceLabel}>INVOICE</div>
+            <div className={styles.receiptMetaGrid}>
+              <span className={styles.receiptMetaKey}>Invoice No.</span>
+              <span className={styles.receiptMetaVal}>
+                {`INV-${Date.now().toString().slice(-8)}`}
+              </span>
+              <span className={styles.receiptMetaKey}>Date</span>
+              <span className={styles.receiptMetaVal}>
+                {new Date().toLocaleDateString('en-PH', { dateStyle: 'medium' })}
+              </span>
+              <span className={styles.receiptMetaKey}>Time</span>
+              <span className={styles.receiptMetaVal}>
+                {new Date().toLocaleTimeString('en-PH', { timeStyle: 'short' })}
+              </span>
+              <span className={styles.receiptMetaKey}>Status</span>
+              <span className={`${styles.receiptMetaVal} ${styles.receiptStatusBadge}`}>Pending</span>
+            </div>
+          </div>
+        </header>
+
+        {/* ── Bill To / Prepared By ── */}
+        <div className={styles.receiptParties}>
+          <div className={styles.receiptPartyBlock}>
+            <div className={styles.receiptPartyLabel}>Bill To</div>
+            <div className={styles.receiptPartyName}>{user?.user_metadata?.full_name || user?.email || 'Guest Customer'}</div>
+            {user?.email && <div className={styles.receiptPartyDetail}>{user.email}</div>}
+            <div className={styles.receiptPartyDetail}>Philippines</div>
+          </div>
+          <div className={styles.receiptPartyBlock}>
+            <div className={styles.receiptPartyLabel}>Prepared By</div>
+            <div className={styles.receiptPartyName}>{siteContent?.systemName || 'La Visionario'}</div>
+            <div className={styles.receiptPartyDetail}>Sales &amp; Booking Team</div>
+            <div className={styles.receiptPartyDetail}>Subject to verification</div>
+          </div>
+          <div className={styles.receiptPartyBlock}>
+            <div className={styles.receiptPartyLabel}>Payment Method</div>
+            <div className={styles.receiptPartyName}>To Be Arranged</div>
+            <div className={styles.receiptPartyDetail}>GCash · Bank Transfer</div>
+            <div className={styles.receiptPartyDetail}>Cash on Delivery</div>
+          </div>
+        </div>
+
+        {/* ── Line Items ── */}
+        <div className={styles.receiptBody}>
+          <table className={styles.receiptTable}>
+            <thead>
+              <tr>
+                <th className={styles.receiptThNo}>#</th>
+                <th>Service / Package</th>
+                <th className={styles.receiptThProvider}>Provider</th>
+                <th className={styles.receiptThRight}>Unit Price</th>
+                <th className={styles.receiptThRight}>Qty</th>
+                <th className={styles.receiptThRight}>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {activeRows.map((row, i) => (
+                <tr key={row.id}>
+                  <td className={styles.receiptTdNo}>{i + 1}</td>
+                  <td>
+                    <div className={styles.receiptItemName}>{row.name}</div>
+                    {row.description && (
+                      <div className={styles.receiptItemDesc}>{row.description}</div>
+                    )}
+                  </td>
+                  <td className={styles.receiptTdProvider}>
+                    {row.provider || '—'}
+                  </td>
+                  <td className={styles.receiptTdRight}>
+                    {row.price > 0 ? formatPhpAmount(row.price) : 'TBA'}
+                  </td>
+                  <td className={styles.receiptTdRight}>{row.qty ?? 1}</td>
+                  <td className={styles.receiptTdRight}>
+                    {row.price > 0 ? formatPhpAmount((row.price || 0) * (row.qty || 1)) : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* ── Totals ── */}
+          <div className={styles.receiptTotalsWrap}>
+            <div className={styles.receiptTotals}>
+              <div className={styles.receiptTotalsRow}>
+                <span>Subtotal</span>
+                <span>{formatPhpAmount(subtotal)}</span>
+              </div>
+              {couponApplied && (
+                <div className={`${styles.receiptTotalsRow} ${styles.receiptTotalsDiscount}`}>
+                  <span>Discount (10% — Coupon Applied)</span>
+                  <span>− {formatPhpAmount(discount)}</span>
+                </div>
+              )}
+              <div className={styles.receiptTotalsRow}>
+                <span>VAT / Tax</span>
+                <span className={styles.receiptMuted}>Inclusive</span>
+              </div>
+              <div className={`${styles.receiptTotalsRow} ${styles.receiptTotalsRowStrong}`}>
+                <span>Total Due</span>
+                <span>{formatPhpAmount(total)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Notes & Footer ── */}
+        <div className={styles.receiptNotes}>
+          <div className={styles.receiptNoteBlock}>
+            <div className={styles.receiptNoteLabel}>Notes</div>
+            <div className={styles.receiptNoteText}>
+              All bookings are subject to availability and confirmation by our sales team. A representative will contact you within 24 hours to finalize details.
+            </div>
+          </div>
+          <div className={styles.receiptNoteBlock}>
+            <div className={styles.receiptNoteLabel}>Terms</div>
+            <div className={styles.receiptNoteText}>
+              This is a cart summary only and does not constitute proof of payment or a confirmed booking.
+            </div>
+          </div>
+        </div>
+
+        <footer className={styles.receiptFooter}>
+          <div className={styles.receiptFooterLeft}>
+            <strong>{siteContent?.systemName || 'La Visionario'}</strong> — Thank you for your interest in our services.
+          </div>
+          <div className={styles.receiptFooterRight}>
+            Printed: {new Date().toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' })}
+          </div>
+        </footer>
+
+      </div>
 
       {/* ── Hero Header ── */}
       <header className={styles.hero}>
