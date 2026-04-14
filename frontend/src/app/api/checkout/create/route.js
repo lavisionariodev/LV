@@ -84,126 +84,23 @@ export async function POST(request) {
 
   const origin = new URL(request.url).origin
   const secretKey = process.env.PAYMONGO_SECRET_KEY
+  // NOTE: Payment is no longer created during checkout creation.
+  // New flow: buyer submits booking request -> seller confirms -> buyer pays.
+  // PAYMONGO_SECRET_KEY is used later in /api/checkout/pay.
   if (!secretKey) {
-    return NextResponse.json(
-      { error: 'Missing PAYMONGO_SECRET_KEY on server.' },
-      { status: 500 },
-    )
+    // Keep this as a soft failure only if buyer attempts to pay; for now, checkout creation can proceed.
   }
 
-  const paymongoReference = `lv_${crypto.randomUUID()}`
-
-  // Create DB payment first so success/cancel URLs can reference it.
-  const { data: paymentRow, error: paymentErr } = await supabaseAdmin
-    .from('payments')
-    .insert({
-      buyer_id: user.id,
-      provider: 'paymongo',
-      status: 'pending',
+  return NextResponse.json(
+    {
+      ok: true,
+      order_ids: orderIds,
       amount: amountPhp,
       currency,
-      paymongo_reference: paymongoReference,
-      metadata: { order_ids: orderIds },
-    })
-    .select('*')
-    .single()
-
-  if (paymentErr) {
-    return NextResponse.json(
-      { error: paymentErr.message ?? 'Failed to create payment record.' },
-      { status: 500 },
-    )
-  }
-
-  if (Array.isArray(orderIds) && orderIds.length > 0) {
-    const rows = orderIds.map((orderId) => ({
-      payment_id: paymentRow.id,
-      order_id: orderId,
-    }))
-    await supabaseAdmin.from('payment_orders').insert(rows)
-  }
-
-  const successUrl = `${origin}/checkout/success?payment=${encodeURIComponent(
-    paymentRow.id,
-  )}`
-  const cancelUrl = `${origin}/checkout/failed?payment=${encodeURIComponent(
-    paymentRow.id,
-  )}`
-
-  const paymongoRes = await fetch('https://api.paymongo.com/v1/checkout_sessions', {
-    method: 'POST',
-    headers: {
-      Authorization: getBasicAuthHeader(secretKey),
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
+      line_items: lineItems,
+      next_step: 'await_seller_confirmation',
     },
-    body: JSON.stringify({
-      data: {
-        attributes: {
-          line_items: [
-            // Keep checkout summary concise; detailed breakdown is stored in metadata + DB.
-            {
-              name: 'Booking request',
-              amount: amountCentavos,
-              quantity: 1,
-              currency,
-            },
-          ],
-          payment_method_types: ['card', 'gcash'],
-          success_url: successUrl,
-          cancel_url: cancelUrl,
-          reference_number: paymongoReference,
-          metadata: {
-            payment_id: paymentRow.id,
-            order_ids: orderIds,
-            line_items: lineItems,
-          },
-        },
-      },
-    }),
-  })
-
-  const paymongoBody = await paymongoRes.json().catch(() => null)
-
-  if (!paymongoRes.ok) {
-    await supabaseAdmin
-      .from('payments')
-      .update({
-        status: 'failed',
-        metadata: {
-          ...(paymentRow.metadata ?? {}),
-          paymongo_error: paymongoBody,
-        },
-      })
-      .eq('id', paymentRow.id)
-
-    return NextResponse.json(
-      { error: 'Failed to create PayMongo checkout session.' },
-      { status: 502 },
-    )
-  }
-
-  const checkoutId = paymongoBody?.data?.id ?? null
-  const checkoutUrl = paymongoBody?.data?.attributes?.checkout_url ?? null
-
-  if (!checkoutId || !checkoutUrl) {
-    return NextResponse.json(
-      { error: 'PayMongo response missing checkout_url.' },
-      { status: 502 },
-    )
-  }
-
-  await supabaseAdmin
-    .from('payments')
-    .update({
-      paymongo_checkout_id: checkoutId,
-      metadata: {
-        ...(paymentRow.metadata ?? {}),
-        paymongo_checkout_id: checkoutId,
-      },
-    })
-    .eq('id', paymentRow.id)
-
-  return NextResponse.json({ redirect_url: checkoutUrl }, { status: 200 })
+    { status: 200 },
+  )
 }
 
