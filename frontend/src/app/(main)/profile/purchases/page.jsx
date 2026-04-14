@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getUserRole, ROLE_SELLER } from '@/lib/auth/roles';
+import { supabase } from '@/lib/supabase/client';
 import styles from '../profile.module.css';
 import purchaseStyles from './purchases.module.css';
 
@@ -17,14 +18,6 @@ const STATUS_CONFIG = {
 
 const ALL_STATUSES = ['All', ...Object.keys(STATUS_CONFIG)];
 const PAGE_SIZE = 5;
-
-const MOCK_PURCHASES = [
-  { id: 'ORD-00123', service: 'Full Burial Package', provider: 'Serenity Memorial Services', bookedDate: '2025-03-10', scheduledDate: '2025-03-18', status: 'Completed', price: 85000, paymentMethod: 'GCash', items: ['Casket selection', 'Embalming', 'Chapel service (2 days)', 'Hearse transport'] },
-  { id: 'ORD-00141', service: 'Cremation Package', provider: 'Eternal Light Crematorium', bookedDate: '2025-05-02', scheduledDate: '2025-05-09', status: 'Confirmed', price: 32000, paymentMethod: 'Bank Transfer', items: ['Direct cremation', 'Urn (standard)', 'Death certificate assistance'] },
-  { id: 'ORD-00158', service: 'Memorial Flowers Arrangement', provider: 'Grace Blooms', bookedDate: '2025-05-15', scheduledDate: '2025-05-20', status: 'Pending', price: 4500, paymentMethod: 'Credit Card', items: ['Wreath (large)', 'Standing spray x2', 'Casket spray'] },
-  { id: 'ORD-00172', service: 'Grief Counseling Session', provider: 'Healing Hearts PH', bookedDate: '2025-06-01', scheduledDate: '2025-06-07', status: 'In Progress', price: 2500, paymentMethod: 'Maya', items: ['1-hour individual session', 'Follow-up email support'] },
-  { id: 'ORD-00180', service: 'Obituary & Prayer Card Printing', provider: 'Remembrance Print Co.', bookedDate: '2025-06-10', scheduledDate: '2025-06-13', status: 'Cancelled', price: 1800, paymentMethod: 'GCash', items: ['Obituary layout (1 page)', 'Prayer cards x50'] },
-];
 
 function formatPrice(amount) { return '₱' + amount.toLocaleString('en-PH'); }
 function formatDate(dateStr) { return new Date(dateStr).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }); }
@@ -98,6 +91,8 @@ export default function PurchasesPage() {
   const [activeFilter, setActiveFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [loadingPurchases, setLoadingPurchases] = useState(false);
+  const [purchases, setPurchases] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -110,6 +105,81 @@ export default function PurchasesPage() {
     check();
     return () => { cancelled = true; };
   }, [user]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      if (!user) return;
+      setLoadingPurchases(true);
+      try {
+        const { data: orders, error: ordersErr } = await supabase
+          .from('orders')
+          .select('id,order_number,status,subtotal,currency,created_at,preferred_date')
+          .eq('buyer_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (ordersErr) {
+          setPurchases([]);
+          return;
+        }
+
+        const orderIds = (orders ?? []).map((o) => o.id);
+        const { data: items } = orderIds.length
+          ? await supabase
+              .from('order_items')
+              .select('order_id,name,quantity')
+              .in('order_id', orderIds)
+          : { data: [] };
+
+        const itemsByOrder = new Map();
+        for (const it of items ?? []) {
+          const list = itemsByOrder.get(it.order_id) ?? [];
+          list.push(it);
+          itemsByOrder.set(it.order_id, list);
+        }
+
+        const mapped = (orders ?? []).map((o) => {
+          const orderItems = itemsByOrder.get(o.id) ?? [];
+          const service =
+            orderItems.length === 1
+              ? orderItems[0].name
+              : orderItems.length > 1
+                ? `${orderItems.length} items`
+                : 'Booking'
+
+          const status =
+            o.status === 'paid'
+              ? 'Confirmed'
+              : o.status === 'failed'
+                ? 'Cancelled'
+                : 'Pending'
+
+          return {
+            id: o.order_number || o.id,
+            service,
+            provider: 'Seller',
+            bookedDate: o.created_at,
+            scheduledDate: o.preferred_date || o.created_at,
+            status,
+            price: Number(o.subtotal) || 0,
+            paymentMethod: 'PayMongo',
+            items: orderItems.map((it) => `${it.name} ×${it.quantity ?? 1}`),
+          };
+        });
+
+        if (!cancelled) {
+          setPurchases(mapped);
+        }
+      } finally {
+        if (!cancelled) setLoadingPurchases(false);
+      }
+    }
+
+    if (!isSeller) load();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, isSeller]);
 
   useEffect(() => { setCurrentPage(1); }, [activeFilter, search]);
 
@@ -130,7 +200,7 @@ export default function PurchasesPage() {
     );
   }
 
-  const filtered = MOCK_PURCHASES.filter(p => {
+  const filtered = purchases.filter(p => {
     const matchStatus = activeFilter === 'All' || p.status === activeFilter;
     const q = search.toLowerCase();
     const matchSearch = !q || p.service.toLowerCase().includes(q) || p.provider.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
@@ -164,7 +234,11 @@ export default function PurchasesPage() {
             ))}
           </div>
         </div>
-        {filtered.length === 0 ? (
+        {loadingPurchases ? (
+          <div className={purchaseStyles.emptyState}>
+            <p className={purchaseStyles.emptyText}>Loading your purchases…</p>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className={purchaseStyles.emptyState}>
             <p className={purchaseStyles.emptyText}>{search || activeFilter !== 'All' ? 'No purchases match your filter.' : 'Your purchases will appear here once you place an order.'}</p>
           </div>

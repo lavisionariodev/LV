@@ -106,6 +106,8 @@ export default function CartPage() {
   const subtotal = activeRows.reduce((sum, r) => sum + r.subtotal, 0)
   const discount = couponApplied ? Math.round(subtotal * 0.1) : 0
   const total = subtotal - discount
+  const checkoutHref =
+    selected.size > 0 ? `/checkout?items=${encodeURIComponent([...selected].join(","))}` : "/checkout"
 
   const isEmpty = rows.length === 0
   const showCartLoading = !authLoading && isBuyer && user && cartLoading
@@ -321,7 +323,7 @@ export default function CartPage() {
                   Print Invoice
                 </button>
                 <Link
-                  href="/checkout"
+                  href={checkoutHref}
                   className={styles.checkoutBtn}
                   style={{ textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, textDecoration: 'none' }}
                 >

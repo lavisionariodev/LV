@@ -27,6 +27,7 @@ lerna-debug.log*
 frontend/.next/
 frontend/out/
 frontend/build/
+frontend/.env
 frontend/.env.local
 frontend/.env.*.local
 frontend/npm-debug.log*

@@ -22,6 +22,8 @@ import {
   TbPhoto,
 } from 'react-icons/tb'
 import styles from './orders.module.css'
+import { useAuth } from '@/contexts/AuthContext'
+import { supabase } from '@/lib/supabase/client'
 
 const ORDER_STATUSES = [
   { id: 'all', label: 'All Orders' },
@@ -180,15 +182,100 @@ function formatDate(s) {
 }
 
 export default function OrdersContent({ initialTab, initialOrderId, initialAction }) {
+  const { user, authLoading, isSeller } = useAuth()
   const [activeTab, setActiveTab] = useState(initialTab || 'all')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [orderForUpdateStatus, setOrderForUpdateStatus] = useState(null)
   const [showUpdateStatus, setShowUpdateStatus] = useState(false)
-  const [orders, setOrders] = useState(MOCK_ORDERS)
+  const [orders, setOrders] = useState([])
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false)
   const [previewAttachment, setPreviewAttachment] = useState(null)
   const filterDropdownRef = useRef(null)
+
+  const loadOrders = async ({ signal } = {}) => {
+    if (!user?.id || !isSeller) return
+    const { data, error } = await supabase
+      .from('orders')
+      .select(
+        'id,order_number,status,subtotal,created_at,preferred_date,contact_name,contact_email,contact_phone,notes,service_location,deceased_name,date_of_death,wake_duration_days,order_items(name,quantity)',
+      )
+      .eq('seller_user_id', user.id)
+      .order('created_at', { ascending: false })
+      .abortSignal?.(signal)
+
+    if (signal?.aborted) return
+    if (error) {
+      setOrders([])
+      return
+    }
+
+    const mapped = (data ?? []).map((o) => {
+        const items = o.order_items ?? []
+        const servicePackage =
+          items.length === 1
+            ? items[0].name
+            : items.length > 1
+              ? `${items.length} items`
+              : 'Booking'
+
+        const paymentStatus = o.status === 'paid' ? 'paid' : 'pending'
+        const orderStatus = o.status === 'failed' ? 'cancelled' : 'pending'
+
+        return {
+          id: o.id,
+          displayId: o.order_number || o.id,
+          customerName: o.contact_name || 'Buyer',
+          servicePackage,
+          dateOfService: (o.preferred_date || o.created_at || '').slice(0, 10),
+          location: o.service_location || '—',
+          totalPrice: Number(o.subtotal) || 0,
+          paymentStatus,
+          orderStatus,
+          isUrgent: false,
+          customerPhone: o.contact_phone || '—',
+          customerEmail: o.contact_email || '—',
+          deceasedName: o.deceased_name || null,
+          dateOfDeath: o.date_of_death ? String(o.date_of_death) : null,
+          religion: null,
+          specialRequests: o.notes || null,
+          addOns: items.map((it) => `${it.name} ×${it.quantity ?? 1}`),
+          wakeDuration:
+            typeof o.wake_duration_days === 'number'
+              ? `${o.wake_duration_days} day${o.wake_duration_days === 1 ? '' : 's'}`
+              : '—',
+          burialLocation: o.service_location || '—',
+          paymentMethod: 'PayMongo',
+          refundRequested: false,
+          refundReason: null,
+          refundAttachments: [],
+        }
+      })
+
+    setOrders(mapped)
+  }
+
+  useEffect(() => {
+    if (authLoading) return
+    const controller = new AbortController()
+    loadOrders({ signal: controller.signal })
+
+    // Keep payment status in sync after PayMongo webhooks update the DB.
+    const onFocus = () => loadOrders({ signal: controller.signal })
+    window.addEventListener('focus', onFocus)
+
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        loadOrders({ signal: controller.signal })
+      }
+    }, 12_000)
+
+    return () => {
+      controller.abort()
+      window.removeEventListener('focus', onFocus)
+      window.clearInterval(interval)
+    }
+  }, [user?.id, authLoading, isSeller])
 
   useEffect(() => {
     if (initialTab && ORDER_STATUSES.some((t) => t.id === initialTab)) {
@@ -227,7 +314,11 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
-      list = list.filter((o) => o.customerName.toLowerCase().includes(q) || o.id.toLowerCase().includes(q))
+      list = list.filter(
+        (o) =>
+          o.customerName.toLowerCase().includes(q) ||
+          String(o.displayId || o.id).toLowerCase().includes(q),
+      )
     }
     return list
   }, [orders, activeTab, searchQuery])
@@ -506,7 +597,7 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
               filteredOrders.map((order) => (
                 <tr key={order.id} className={styles.orderRow}>
                   <td className={styles.cellOrderId} data-label="Order ID">
-                    <span className={styles.orderId}>{order.id}</span>
+                    <span className={styles.orderId}>{order.displayId || order.id}</span>
                     {order.isUrgent && <span className={`${styles.badge} ${styles.badgeUrgent}`}>Urgent</span>}
                   </td>
                   <td data-label="Customer">{order.customerName}</td>
@@ -585,7 +676,7 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2 id="order-details-title" className={styles.modalTitle}>
-                Order {selectedOrder.id}
+                Order {selectedOrder.displayId || selectedOrder.id}
                 {selectedOrder.isUrgent && <span className={`${styles.badge} ${styles.badgeUrgent}`}>Urgent</span>}
               </h2>
               <button
