@@ -50,7 +50,15 @@ export default function AdminLoginPage() {
       password: signInData.password,
     });
     if (signInError) {
-      setError(signInError.message);
+      const raw = signInError.message || "Login failed. Please check your credentials.";
+      const normalized = raw.toLowerCase();
+      if (normalized.includes("invalid login credentials")) {
+        setError(
+          "Invalid login credentials. Admin accounts must exist in Supabase Authentication (email/password) and be whitelisted in the admins table."
+        );
+      } else {
+        setError(raw);
+      }
       setLoading(false);
       return;
     }

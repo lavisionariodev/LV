@@ -46,6 +46,7 @@ function ResetPasswordInner() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
 
   // Supabase may send a short-lived code in the query (?code=...) for PKCE flows.
   const code = searchParams.get("code");
@@ -82,6 +83,33 @@ function ResetPasswordInner() {
       }
     });
 
+    // If we have access/refresh tokens in the URL hash, explicitly set session.
+    // This prevents "Auth session missing!" when Supabase doesn't automatically consume the fragment.
+    (async () => {
+      if (typeof window === "undefined") return;
+      const rawHash = window.location.hash || "";
+      if (!rawHash.startsWith("#")) return;
+      const params = new URLSearchParams(rawHash.slice(1));
+      const access_token = params.get("access_token");
+      const refresh_token = params.get("refresh_token");
+      if (!access_token || !refresh_token) return;
+      try {
+        const { error } = await supabase.auth.setSession({
+          access_token,
+          refresh_token,
+        });
+        if (error) {
+          console.error("Error setting session from recovery hash:", error);
+          return;
+        }
+        // Clean up fragment to avoid leaking tokens via copy/paste screenshots etc.
+        window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+        setHasRecovery(true);
+      } catch (err) {
+        console.error("Unexpected error setting session from recovery hash:", err);
+      }
+    })();
+
     // If we have a code in the query, exchange it for a session so Supabase can emit PASSWORD_RECOVERY.
     (async () => {
       if (!code) return;
@@ -92,6 +120,20 @@ function ResetPasswordInner() {
         }
       } catch (err) {
         console.error("Unexpected error exchanging recovery code:", err);
+      }
+    })();
+
+    // Track whether we actually have a session (updateUser requires it).
+    (async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error("Error getting session:", error);
+          return;
+        }
+        if (data?.session) setSessionReady(true);
+      } catch (err) {
+        console.error("Unexpected error getting session:", err);
       }
     })();
 
@@ -119,6 +161,13 @@ function ResetPasswordInner() {
     const validation = validateNewPassword(password, confirmPassword);
     if (!validation.valid) {
       toast.error(validation.message);
+      return;
+    }
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData?.session) {
+      toast.error(
+        "Auth session missing. Please open the reset link again (it may have expired) and try resetting your password."
+      );
       return;
     }
     setSubmitting(true);
