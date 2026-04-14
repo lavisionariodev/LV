@@ -1161,8 +1161,10 @@ export default function NewListingClient() {
     setToastMessage('')
     setToastType('error')
 
-    const { ok } = validateBeforeSave()
-    if (!ok) return
+    if (intent === 'submit') {
+      const { ok } = validateBeforeSave()
+      if (!ok) return
+    }
 
     const busySetter = intent === 'submit' ? setSubmitBusy : setSaving
     busySetter(true)
@@ -1181,7 +1183,7 @@ export default function NewListingClient() {
       persistedImageUrls,
     })
 
-    payload.status = 'draft'
+    payload.status = intent === 'submit' ? 'active' : 'draft'
 
     const { data, error } = await createSellerListing(payload)
     busySetter(false)
@@ -1287,13 +1289,13 @@ export default function NewListingClient() {
               <div className={styles.newListingFooter}>
                 <Link
                   href="/seller/products"
-                  className={`${styles.productModalSecondary} ${styles.newListingFooterLink}`}
+                  className={`${styles.productModalSecondary} ${styles.newListingFooterLink} ${styles.newListingFooterCancel}`}
                 >
                   Cancel
                 </Link>
                 <button
                   type="button"
-                  className={styles.productModalSecondary}
+                  className={`${styles.productModalSecondary} ${styles.newListingFooterDraft}`}
                   onClick={() => saveListing({ intent: 'draft' })}
                   disabled={saving || submitBusy}
                 >
@@ -1301,7 +1303,7 @@ export default function NewListingClient() {
                 </button>
                 <button
                   type="button"
-                  className={styles.productModalPrimary}
+                  className={`${styles.productModalPrimary} ${styles.newListingFooterSubmit}`}
                   onClick={() => saveListing({ intent: 'submit' })}
                   disabled={saving || submitBusy}
                 >

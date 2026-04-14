@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { rowToSiteContent, siteContentToRow } from './mapping'
+import { rowToSiteContent } from './mapping'
 
 const TABLE = 'site_content'
 const GLOBAL_ID = 'global'
@@ -66,24 +66,21 @@ export function useSiteContent() {
 }
 
 export async function upsertSiteContent(content) {
-  const row = siteContentToRow(content)
+  const res = await fetch('/api/admin/site-content', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      content,
+    }),
+  })
 
-  const { data, error } = await supabase
-    .from(TABLE)
-    .upsert(
-      {
-        id: GLOBAL_ID,
-        ...row,
-      },
-      { onConflict: 'id' },
-    )
-    .select('*')
-    .single()
+  const body = await res.json().catch(() => null)
 
-  if (error) {
-    throw error
+  if (!res.ok) {
+    const msg = body?.error || 'Failed to save site content.'
+    throw new Error(msg)
   }
 
-  return rowToSiteContent(data)
+  return body?.data
 }
 

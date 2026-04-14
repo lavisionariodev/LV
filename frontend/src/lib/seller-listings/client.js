@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase/client'
-import { mergePendingChangesPayload } from '@/lib/seller-listings/pendingChanges'
 
 const LISTING_IMAGES_BUCKET = 'listing-images'
 
@@ -145,6 +144,8 @@ export async function submitListingForReview(id) {
     .update({
       approval_status: 'pending',
       submitted_at: new Date().toISOString(),
+      // Seller intent: ready to be visible once approved (shop RPC still gates on approval + seller status).
+      status: 'active',
     })
     .eq('id', id)
     .select('*')
@@ -164,113 +165,35 @@ export async function resubmitListingForReview(id) {
 
 /** Admin: approve a listing (shop-visible if seller/listing are active). Merges pending_changes when present. */
 export async function approveListing(id) {
-  const { data: row, error: fetchErr } = await supabase.from('seller_listings').select('*').eq('id', id).maybeSingle()
-
-  if (fetchErr) {
-    return { data: null, error: fetchErr.message || 'Failed to load listing.' }
+  try {
+    const res = await fetch(`/api/admin/listings/${id}/approve`, { method: 'POST' })
+    const body = await res.json().catch(() => null)
+    if (!res.ok) {
+      return { data: null, error: body?.error || 'Failed to approve listing.' }
+    }
+    return { data: body?.data ? normalizeListingRow(body.data) : null, error: null }
+  } catch (e) {
+    return { data: null, error: e?.message || 'Failed to approve listing.' }
   }
-  if (!row) {
-    return { data: null, error: 'Listing not found.' }
-  }
-
-  const pending = row.pending_changes
-  const hasPending =
-    pending &&
-    typeof pending === 'object' &&
-    !Array.isArray(pending) &&
-    Object.keys(pending).length > 0
-
-  const merge = hasPending ? mergePendingChangesPayload(pending) : {}
-
-  const update = {
-    approval_status: 'approved',
-    status: 'active',
-    reviewed_at: new Date().toISOString(),
-    rejection_reason: null,
-    staged_rejection_reason: null,
-    ...(hasPending
-      ? {
-          ...merge,
-          pending_changes: {},
-          pending_changes_submitted_at: null,
-        }
-      : {}),
-  }
-
-  const { data, error } = await supabase
-    .from('seller_listings')
-    .update(update)
-    .eq('id', id)
-    .select('*')
-    .maybeSingle()
-
-  if (error) {
-    return { data: null, error: error.message || 'Failed to approve listing.' }
-  }
-
-  return { data: normalizeListingRow(data), error: null }
 }
 
 /** Admin: reject a listing and include a reason. For approved listings with staged updates only, discards the stage. */
 export async function rejectListing(id, reason) {
   const trimmed = String(reason ?? '').trim()
-
-  const { data: row, error: fetchErr } = await supabase
-    .from('seller_listings')
-    .select('approval_status, pending_changes')
-    .eq('id', id)
-    .maybeSingle()
-
-  if (fetchErr) {
-    return { data: null, error: fetchErr.message || 'Failed to load listing.' }
-  }
-  if (!row) {
-    return { data: null, error: 'Listing not found.' }
-  }
-
-  const approval = String(row.approval_status || '').toLowerCase()
-  const pending = row.pending_changes
-  const hasPending =
-    pending &&
-    typeof pending === 'object' &&
-    !Array.isArray(pending) &&
-    Object.keys(pending).length > 0
-
-  if (approval === 'approved' && hasPending) {
-    const { data, error } = await supabase
-      .from('seller_listings')
-      .update({
-        pending_changes: {},
-        pending_changes_submitted_at: null,
-        staged_rejection_reason: trimmed || null,
-      })
-      .eq('id', id)
-      .select('*')
-      .maybeSingle()
-
-    if (error) {
-      return { data: null, error: error.message || 'Failed to reject staged updates.' }
-    }
-
-    return { data: normalizeListingRow(data), error: null }
-  }
-
-  const { data, error } = await supabase
-    .from('seller_listings')
-    .update({
-      approval_status: 'rejected',
-      rejection_reason: trimmed,
-      reviewed_at: new Date().toISOString(),
+  try {
+    const res = await fetch(`/api/admin/listings/${id}/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: trimmed }),
     })
-    .eq('id', id)
-    .select('*')
-    .maybeSingle()
-
-  if (error) {
-    return { data: null, error: error.message || 'Failed to reject listing.' }
+    const body = await res.json().catch(() => null)
+    if (!res.ok) {
+      return { data: null, error: body?.error || 'Failed to reject listing.' }
+    }
+    return { data: body?.data ? normalizeListingRow(body.data) : null, error: null }
+  } catch (e) {
+    return { data: null, error: e?.message || 'Failed to reject listing.' }
   }
-
-  return { data: normalizeListingRow(data), error: null }
 }
 
 export async function deleteSellerListing(id) {
