@@ -11,6 +11,7 @@ import { buildCartPayloadFromListing } from '@/lib/cart/fromListing'
 import { useCart } from '@/contexts/CartContext'
 import { useFavorites } from '@/contexts/FavoritesContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { useToast } from '@/contexts/ToastContext'
 import { formatPhpAmount } from '@/lib/cart/formatPhp'
 import styles from './detail.module.css'
 
@@ -20,6 +21,7 @@ export default function ServiceDetailPage({ params }) {
   const { addItem } = useCart()
   const { toggleFavorite, isFavorite } = useFavorites()
   const { user, authLoading, isBuyer } = useAuth()
+  const toast = useToast()
   const router = useRouter()
   const searchParams = useSearchParams()
   const listingQuery = searchParams.get('listing')
@@ -50,7 +52,7 @@ export default function ServiceDetailPage({ params }) {
   const [selectedListingId, setSelectedListingId] = useState('')
   const [buyerPackage, setBuyerPackage] = useState('')
   const [quantity, setQuantity] = useState(1)
-  const [addedMessage, setAddedMessage] = useState(false)
+  const [addBusy, setAddBusy] = useState(false)
   const [addError, setAddError] = useState(null)
   const [saveBusy, setSaveBusy] = useState(false)
   const [saveError, setSaveError] = useState(null)
@@ -160,6 +162,7 @@ export default function ServiceDetailPage({ params }) {
 
   const handleAddToCart = async () => {
     if (!selectedListing || !service) return
+    if (addBusy) return
     setAddError(null)
 
     if (selectedListing.inStock === false) {
@@ -192,13 +195,19 @@ export default function ServiceDetailPage({ params }) {
       return
     }
 
-    const { error } = await addItem(payload)
-    if (error) {
-      setAddError(error.message || 'Could not add to cart')
-      return
+    setAddBusy(true)
+    try {
+      const { error } = await addItem(payload)
+      if (error) {
+        const msg = error.message || 'Could not add to cart'
+        setAddError(msg)
+        toast.error(msg)
+        return
+      }
+      toast.success('Added to cart')
+    } finally {
+      setAddBusy(false)
     }
-    setAddedMessage(true)
-    setTimeout(() => setAddedMessage(false), 2000)
   }
 
   if (!service) {
@@ -491,11 +500,12 @@ export default function ServiceDetailPage({ params }) {
                   disabled={
                     !selectedListing ||
                     authLoading ||
+                    addBusy ||
                     selectedListing.inStock === false ||
                     (buyerPackageOptions.length > 0 && !String(buyerPackage || '').trim())
                   }
                 >
-                  {addedMessage ? 'Added to cart' : selectedListing?.inStock === false ? 'Out of Stock' : 'Add to Cart'}
+                  {addBusy ? 'Adding…' : selectedListing?.inStock === false ? 'Out of Stock' : 'Add to Cart'}
                 </button>
               </div>
             </div>
@@ -545,11 +555,12 @@ export default function ServiceDetailPage({ params }) {
           disabled={
             !selectedListing ||
             authLoading ||
+            addBusy ||
             selectedListing.inStock === false ||
             (buyerPackageOptions.length > 0 && !String(buyerPackage || '').trim())
           }
         >
-          {addedMessage ? '✓ Added' : selectedListing?.inStock === false ? 'Out of Stock' : 'Add to Cart'}
+          {addBusy ? 'Adding…' : selectedListing?.inStock === false ? 'Out of Stock' : 'Add to Cart'}
         </button>
         <button className={styles.mobileActionBarBook}>
           Book Now

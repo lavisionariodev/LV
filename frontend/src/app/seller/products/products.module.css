@@ -2681,17 +2681,21 @@
     border-top: 1px solid rgba(31, 49, 43, 0.12);
     box-shadow: none;
     padding: 0.32rem 0 0;
-    flex-direction: row;
-    justify-content: stretch;
-    gap: 0.6rem;
-    flex-wrap: nowrap;
     border-radius: 0;
     z-index: auto;
+
+    /* 3 actions on mobile: 2-up row + full-width submit */
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0.6rem;
+    align-items: stretch;
   }
 
-  .newListingFooter .newListingFooterLink,
-  .newListingFooter .productModalPrimary {
-    flex: 1;
+  .newListingFooter .newListingFooterCancel,
+  .newListingFooter .newListingFooterDraft,
+  .newListingFooter .newListingFooterSubmit {
+    width: 100%;
+    min-width: 0;
     text-align: center;
     justify-content: center;
     padding: 0.7rem 0.75rem;
@@ -2699,6 +2703,12 @@
     font-weight: 600;
     border-radius: 12px;
     min-height: 2.75rem;
+    box-sizing: border-box;
+  }
+
+  /* Ensure the submit button gets its own row */
+  .newListingFooter .newListingFooterSubmit {
+    grid-column: 1 / -1;
   }
 }
 
