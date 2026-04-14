@@ -147,13 +147,8 @@ import { supabase } from "@/lib/supabase/client"
         return
       }
 
-      const redirectUrl = body?.redirect_url
-      if (!redirectUrl) {
-        setSubmitError("Checkout failed: missing redirect link.")
-        return
-      }
-
-      window.location.href = redirectUrl
+      // New flow: booking request is created first and awaits seller confirmation.
+      router.replace('/profile/purchases')
     } catch (e) {
       setSubmitError("Network error. Please try again.")
     } finally {
@@ -353,7 +348,7 @@ import { supabase } from "@/lib/supabase/client"
                 onClick={submitCheckout}
                 disabled={submitting}
                >
-                {submitting ? "Redirecting to payment..." : "Proceed to Payment"}
+                {submitting ? "Submitting request..." : "Submit booking request"}
                </button>
 
                <button

@@ -57,6 +57,16 @@ function PurchaseCard({ purchase }) {
       <div className={purchaseStyles.cardActions}>
         <button type="button" className={purchaseStyles.actionLink} onClick={() => setExpanded(v => !v)}>{expanded ? 'Hide details' : 'View details'}</button>
         <button type="button" className={purchaseStyles.actionLink}>Download receipt</button>
+        {purchase.canPay && (
+          <button
+            type="button"
+            className={styles.primaryButton}
+            onClick={purchase.onPay}
+            style={{ marginLeft: 'auto' }}
+          >
+            Pay now
+          </button>
+        )}
         {purchase.status === 'Completed' && <button type="button" className={purchaseStyles.actionLink}>Leave a review</button>}
         {(purchase.status === 'Pending' || purchase.status === 'Confirmed') && (
           <button type="button" className={`${purchaseStyles.actionLink} ${purchaseStyles.actionDanger}`}>Cancel booking</button>
@@ -114,7 +124,7 @@ export default function PurchasesPage() {
       try {
         const { data: orders, error: ordersErr } = await supabase
           .from('orders')
-          .select('id,order_number,status,subtotal,currency,created_at,preferred_date')
+          .select('id,order_number,fulfillment_status,payment_status,status,subtotal,currency,created_at,preferred_date')
           .eq('buyer_id', user.id)
           .order('created_at', { ascending: false });
 
@@ -147,15 +157,23 @@ export default function PurchasesPage() {
                 ? `${orderItems.length} items`
                 : 'Booking'
 
+          const fulfillment = o.fulfillment_status || 'pending'
+          const payment = o.payment_status || (o.status === 'paid' ? 'paid' : o.status === 'failed' ? 'failed' : 'unpaid')
+
           const status =
-            o.status === 'paid'
-              ? 'Confirmed'
-              : o.status === 'failed'
-                ? 'Cancelled'
-                : 'Pending'
+            fulfillment === 'completed'
+              ? 'Completed'
+              : fulfillment === 'in_progress'
+                ? 'In Progress'
+                : fulfillment === 'confirmed'
+                  ? 'Confirmed'
+                  : fulfillment === 'cancelled'
+                    ? 'Cancelled'
+                    : 'Pending'
 
           return {
             id: o.order_number || o.id,
+            rawOrderId: o.id,
             service,
             provider: 'Seller',
             bookedDate: o.created_at,
@@ -164,6 +182,7 @@ export default function PurchasesPage() {
             price: Number(o.subtotal) || 0,
             paymentMethod: 'PayMongo',
             items: orderItems.map((it) => `${it.name} ×${it.quantity ?? 1}`),
+            canPay: fulfillment === 'confirmed' && payment === 'unpaid',
           };
         });
 
@@ -245,7 +264,27 @@ export default function PurchasesPage() {
         ) : (
           <>
             <div className={purchaseStyles.paginationMeta}>Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length} {filtered.length === 1 ? 'order' : 'orders'}</div>
-            <div className={purchaseStyles.cardList}>{paginated.map(p => <PurchaseCard key={p.id} purchase={p} />)}</div>
+            <div className={purchaseStyles.cardList}>
+              {paginated.map(p => (
+                <PurchaseCard
+                  key={p.id}
+                  purchase={{
+                    ...p,
+                    onPay: async () => {
+                      const res = await fetch('/api/checkout/pay', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderIds: [p.rawOrderId] }),
+                      })
+                      const body = await res.json().catch(() => null)
+                      if (res.ok && body?.redirect_url) {
+                        window.location.href = body.redirect_url
+                      }
+                    },
+                  }}
+                />
+              ))}
+            </div>
             <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
           </>
         )}

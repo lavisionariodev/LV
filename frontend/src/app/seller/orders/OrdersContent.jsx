@@ -198,7 +198,7 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
     const { data, error } = await supabase
       .from('orders')
       .select(
-        'id,order_number,status,subtotal,created_at,preferred_date,contact_name,contact_email,contact_phone,notes,service_location,deceased_name,date_of_death,wake_duration_days,order_items(name,quantity)',
+        'id,order_number,status,fulfillment_status,payment_status,subtotal,created_at,preferred_date,contact_name,contact_email,contact_phone,notes,service_location,deceased_name,date_of_death,wake_duration_days,order_items(name,quantity)',
       )
       .eq('seller_user_id', user.id)
       .order('created_at', { ascending: false })
@@ -219,8 +219,22 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
               ? `${items.length} items`
               : 'Booking'
 
-        const paymentStatus = o.status === 'paid' ? 'paid' : 'pending'
-        const orderStatus = o.status === 'failed' ? 'cancelled' : 'pending'
+        const paymentStatus =
+          o.payment_status ||
+          (o.status === 'paid' ? 'paid' : o.status === 'failed' ? 'failed' : 'unpaid')
+
+        const fulfillmentStatus = o.fulfillment_status || 'pending'
+
+        const orderStatus =
+          fulfillmentStatus === 'confirmed'
+            ? 'confirmed'
+            : fulfillmentStatus === 'in_progress'
+              ? 'in_progress'
+              : fulfillmentStatus === 'completed'
+                ? 'completed'
+                : fulfillmentStatus === 'cancelled'
+                  ? 'cancelled'
+                  : 'pending'
 
         return {
           id: o.id,
@@ -328,9 +342,19 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
     [orders]
   )
 
-  const handleAcceptOrder = (order) => {
-    setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, orderStatus: 'confirmed' } : o)))
-    setSelectedOrder((prev) => (prev?.id === order.id ? { ...prev, orderStatus: 'confirmed' } : prev))
+  const handleAcceptOrder = async (order) => {
+    try {
+      const res = await fetch('/api/seller/orders/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id }),
+      })
+      if (!res.ok) return
+      await loadOrders()
+      setSelectedOrder((prev) => (prev?.id === order.id ? { ...prev, orderStatus: 'confirmed' } : prev))
+    } catch {
+      // ignore UI update on network error
+    }
   }
 
   const handleDeclineOrder = (order) => {

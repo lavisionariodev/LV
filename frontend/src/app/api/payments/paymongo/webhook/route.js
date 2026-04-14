@@ -139,7 +139,7 @@ export async function POST(request) {
       if (orderIds.length > 0) {
         await supabaseAdmin
           .from('orders')
-          .update({ status: 'paid' })
+          .update({ payment_status: 'paid', status: 'paid' })
           .in('id', orderIds)
       }
     }
@@ -159,7 +159,7 @@ export async function POST(request) {
       if (orderIds.length > 0) {
         await supabaseAdmin
           .from('orders')
-          .update({ status: 'failed' })
+          .update({ payment_status: 'failed', status: 'failed' })
           .in('id', orderIds)
       }
     }
