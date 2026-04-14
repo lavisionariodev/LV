@@ -358,15 +358,30 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
   }
 
   const handleDeclineOrder = (order) => {
-    setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, orderStatus: 'cancelled' } : o)))
-    setSelectedOrder(null)
+    handleUpdateStatus(order, 'cancelled')
   }
 
-  const handleUpdateStatus = (order, newStatus) => {
-    setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, orderStatus: newStatus } : o)))
-    setSelectedOrder((prev) => (prev?.id === order.id ? { ...prev, orderStatus: newStatus } : prev))
-    setShowUpdateStatus(false)
-    setOrderForUpdateStatus(null)
+  const handleUpdateStatus = async (order, newStatus) => {
+    try {
+      // Only fulfillment statuses are persisted. "refunded" is currently UI-only.
+      if (['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'].includes(newStatus)) {
+        const res = await fetch('/api/seller/orders/update-fulfillment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: order.id, fulfillment_status: newStatus }),
+        })
+        if (!res.ok) return
+        await loadOrders()
+      } else {
+        setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, orderStatus: newStatus } : o)))
+      }
+
+      setSelectedOrder((prev) => (prev?.id === order.id ? { ...prev, orderStatus: newStatus } : prev))
+      setShowUpdateStatus(false)
+      setOrderForUpdateStatus(null)
+    } catch {
+      // ignore
+    }
   }
 
   const handleMarkCompleted = (order) => {
