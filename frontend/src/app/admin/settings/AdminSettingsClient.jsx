@@ -960,6 +960,7 @@ export default function AdminSettingsClient() {
   const searchParams = useSearchParams()
   const fileRef = useRef(null)
   const avatarPreviewRef = useRef('')
+  const toast = useToast()
 
   const [loading, setLoading] = useState(true)
   const [isEditingPersonal, setIsEditingPersonal] = useState(false)
@@ -977,6 +978,7 @@ export default function AdminSettingsClient() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passStatus, setPassStatus] = useState('')
   const [passError, setPassError] = useState('')
+  const [isEditingPassword, setIsEditingPassword] = useState(false)
 
   const isMobile = useMediaQuery('(max-width: 640px)')
 
@@ -1175,8 +1177,11 @@ export default function AdminSettingsClient() {
       )
       setIsEditingPersonal(false)
       setPersonalStatus('Profile updated successfully.')
+      toast.success('Profile updated successfully.')
     } catch (err) {
-      setPersonalError(err.message || 'Failed to update profile.')
+      const message = err.message || 'Failed to update profile.'
+      setPersonalError(message)
+      toast.error(message)
     }
   }
 
@@ -1202,29 +1207,53 @@ export default function AdminSettingsClient() {
     setPassError('')
     setPassStatus('')
     if (!currentPassword) {
-      setPassError('Please enter your current password.')
+      const message = 'Please enter your current password.'
+      setPassError(message)
+      toast.error(message)
       return false
     }
     const validation = validateNewPassword(newPassword, confirmPassword)
     if (!validation.valid) {
       setPassError(validation.message)
+      toast.error(validation.message)
       return false
     }
     try {
       const { error } = await supabase.auth.updateUser({ password: newPassword })
       if (error) {
-        setPassError(error.message || 'Failed to update password.')
+        const message = error.message || 'Failed to update password.'
+        setPassError(message)
+        toast.error(message)
         return false
       }
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
       setPassStatus('Password updated successfully.')
+      toast.success('Password updated successfully.')
+      setIsEditingPassword(false)
       return true
     } catch (err) {
-      setPassError(err.message || 'Failed to update password.')
+      const message = err.message || 'Failed to update password.'
+      setPassError(message)
+      toast.error(message)
       return false
     }
+  }
+
+  const onStartPasswordEdit = () => {
+    setPassError('')
+    setPassStatus('')
+    setIsEditingPassword(true)
+  }
+
+  const onCancelPasswordEdit = () => {
+    setPassError('')
+    setPassStatus('')
+    setCurrentPassword('')
+    setNewPassword('')
+    setConfirmPassword('')
+    setIsEditingPassword(false)
   }
 
   const shownAvatar = avatarPreview || profile?.avatarUrl || ''
@@ -1494,9 +1523,24 @@ export default function AdminSettingsClient() {
                 </p>
               </div>
               <div className={styles.headActions}>
-                <button form={formId} type="submit" className={styles.primaryBtn}>
-                  Save Changes
-                </button>
+                {isEditingPassword ? (
+                  <>
+                    <button
+                      type="button"
+                      className={styles.secondaryBtn}
+                      onClick={onCancelPasswordEdit}
+                    >
+                      Cancel
+                    </button>
+                    <button form={formId} type="submit" className={styles.primaryBtn}>
+                      Save Changes
+                    </button>
+                  </>
+                ) : (
+                  <button type="button" className={styles.primaryBtn} onClick={onStartPasswordEdit}>
+                    Change password
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -1513,6 +1557,7 @@ export default function AdminSettingsClient() {
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   className={styles.input}
+                  disabled={!isEditingPassword}
                 />
               </div>
               <div className={styles.passField}>
@@ -1526,6 +1571,7 @@ export default function AdminSettingsClient() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className={styles.input}
+                  disabled={!isEditingPassword}
                 />
               </div>
               <div className={styles.passField}>
@@ -1539,6 +1585,7 @@ export default function AdminSettingsClient() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className={styles.input}
+                  disabled={!isEditingPassword}
                 />
               </div>
             </div>

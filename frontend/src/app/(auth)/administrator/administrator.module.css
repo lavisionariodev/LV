@@ -1,15 +1,16 @@
 @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap");
 
-/* Page & header (merged from layout) */
+/* ── Page shell ── */
 .pageWrapper {
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: #f5f5f5;
+  background: #FFFFFF;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
 }
 
+/* ── Header ── */
 .header {
   background: white;
   border-bottom: 1px solid #e5e5e5;
@@ -68,8 +69,7 @@
   border-left: 1px solid #ddd;
 }
 
-
-/* Main content */
+/* ── Main content ── */
 .mainContent {
   padding: 70px 20px 60px;
   flex: 1;
@@ -86,7 +86,7 @@
   align-items: center;
 }
 
-/* Left section */
+/* ── Left section ── */
 .leftSection {
   padding: 0 40px;
 }
@@ -124,7 +124,25 @@
   font-size: 50px;
 }
 
-/* Right section - login card */
+/* ── Mobile logo icon (hidden on desktop, shown in card on mobile) ── */
+.mobileLogoWrap {
+  display: none;
+}
+
+.mobileLogoIcon {
+  width: 68px;
+  height: 68px;
+  background: #204F38;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 36px;
+  margin: 0 auto 20px;
+}
+
+/* ── Right section – login card ── */
 .rightSection {
   display: flex;
   justify-content: center;
@@ -134,42 +152,42 @@
   width: 100%;
   max-width: 380px;
   background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-  padding: 32px;
+  border-radius: 16px;
+  box-shadow: 0 2px 24px rgba(0, 0, 0, 0.08);
+  padding: 36px 32px 32px;
   border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .heading {
   margin: 0;
   text-align: center;
-  font-size: 20px;
-  font-weight: 500;
-  color: #333;
+  font-size: 22px;
+  font-weight: 600;
+  color: #1a1a1a;
 }
 
 .subheading {
-  margin: 12px 0 22px 0;
+  margin: 8px 0 24px 0;
   text-align: center;
   font-size: 13px;
-  color: #666;
+  color: #888;
   line-height: 18px;
 }
 
 .error {
-  margin: 0 0 12px 0;
+  margin: 0 0 14px 0;
   padding: 10px 12px;
   font-size: 13px;
   color: #b91c1c;
   background: #fef2f2;
-  border-radius: 6px;
+  border-radius: 8px;
   border: 1px solid #fecaca;
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .field {
@@ -179,25 +197,32 @@
 }
 
 .label {
-  font-size: 12px;
-  font-weight: 700;
-  color: #333;
+  font-size: 13px;
+  font-weight: 500;
+  color: #444;
 }
 
 .input {
   width: 100%;
-  padding: 12px 16px;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  padding: 13px 16px;
+  border: 1.5px solid #e8e8e8;
+  border-radius: 10px;
   font-size: 14px;
   outline: none;
-  transition: border-color 0.2s;
+  background: #fafafa;
+  transition: border-color 0.2s, background 0.2s;
   box-sizing: border-box;
+  color: #1a1a1a;
+}
+
+.input::placeholder {
+  color: #bbb;
 }
 
 .input:focus {
   outline: none;
   border-color: #204F38;
+  background: #fff;
 }
 
 .passwordWrapper {
@@ -206,7 +231,7 @@
 }
 
 .passwordWrapper .input {
-  padding-right: 40px;
+  padding-right: 44px;
 }
 
 .eyeIcon {
@@ -217,24 +242,24 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #999;
+  color: #aaa;
   padding: 4px;
   display: flex;
   align-items: center;
 }
 
 .eyeIcon:hover {
-  color: #666;
+  color: #555;
 }
 
 .forgotBelow {
-  margin-top: 6px;
+  margin-top: 4px;
   align-self: flex-end;
   background: none;
   border: none;
   padding: 0;
   color: #204F38;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
 }
@@ -245,28 +270,35 @@
 }
 
 .primaryBtn {
-  margin-top: 22px;
+  margin-top: 8px;
   width: 100%;
   border: none;
-  border-radius: 4px;
-  padding: 12px;
-  font-size: 14px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 600;
   background: #204F38;
   color: white;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.1s;
+  letter-spacing: 0.2px;
 }
 
 .primaryBtn:hover {
   background: #163d2e;
 }
 
-/* ----- Responsive: width ----- */
+.primaryBtn:active {
+  transform: scale(0.98);
+}
 
-/* Tablet: stack columns, icon + title on same row */
+.primaryBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Tablet: stack columns ── */
 @media (max-width: 968px) {
   .contentWrapper {
     grid-template-columns: 1fr;
@@ -313,106 +345,24 @@
   }
 }
 
-/* Small tablet / large phone */
+/* ── Mobile: centered card with icon on top ── */
 @media (max-width: 640px) {
   .headerContent {
-    padding: 16px 20px;
-  }
-
-  .logoText {
-    font-size: 20px;
+    padding: 14px 20px;
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    gap: 8px;
   }
 
   .badge {
+    display: inline-flex;
     font-size: 16px;
     padding-left: 10px;
   }
 
-  .mainContent {
-    padding: 32px 16px 40px;
-  }
-
-  .contentWrapper {
-    gap: 28px;
-    padding: 0 8px;
-  }
-
-  .mainTitle {
-    font-size: 20px;
-  }
-
-  .leftSection .mainTitle {
-    margin-bottom: 0;
-  }
-
-  .mainSubtitle {
-    font-size: 14px;
-    margin-bottom: 1.5rem;
-  }
-
-  .leftSection .mainSubtitle {
-    display: none;
-  }
-
-  .mainSubtitle br {
-    display: none;
-  }
-
-  .adminIcon {
-    width: 64px;
-    height: 64px;
-    font-size: 34px;
-  }
-
-  .leftSection .adminIcon {
-    margin-bottom: 0;
-    width: 64px;
-    height: 64px;
-    font-size: 34px;
-  }
-
-  .leftSection .secureNote {
-    font-size: 13px;
-    text-align: center;
-  }
-
-  .leftSection {
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 10px;
-  }
-
-  .contentWrapper {
-    justify-content: center;
-  }
-
-  .loginCard {
-    padding: 24px 20px;
-    max-width: 100%;
-  }
-
-  .heading {
-    font-size: 18px;
-  }
-
-  .subheading {
-    font-size: 12px;
-    margin: 10px 0 18px 0;
-  }
-
-  .primaryBtn {
-    margin-top: 16px;
-    padding: 11px;
-  }
-}
-
-/* Phone */
-@media (max-width: 480px) {
-  .headerContent {
-    padding: 12px 16px;
+  .logo {
     gap: 8px;
   }
 
@@ -426,65 +376,101 @@
   }
 
   .logoText {
-    font-size: 18px;
-  }
-
-  .badge {
-    font-size: 14px;
-    padding-left: 8px;
-    border-left-width: 1px;
+    font-size: 20px;
   }
 
   .mainContent {
-    padding: 24px 12px 32px;
+    padding: 50px 20px 72px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
   }
 
   .contentWrapper {
-    padding: 0 4px;
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 0;
+    width: 100%;
+    max-width: 400px;
   }
 
-  .mainTitle {
-    font-size: 18px;
+  /* Hide the left descriptive section on mobile */
+  .leftSection {
+    display: none;
   }
 
-  .leftSection .mainTitle {
-    margin-bottom: 0;
+  .mobileLogoWrap {
+    display: block;
   }
 
-  .mainSubtitle {
-    font-size: 13px;
-    margin-bottom: 1.25rem;
-  }
-
-  .adminIcon {
-    width: 52px;
-    height: 52px;
-    font-size: 28px;
-  }
-
-  .leftSection .adminIcon {
-    margin-bottom: 0;
-    width: 52px;
-    height: 52px;
-    font-size: 28px;
+  .rightSection {
+    width: 100%;
   }
 
   .loginCard {
-    padding: 20px 16px;
+    max-width: 100%;
+    border-radius: 20px;
+    padding: 32px 24px 28px;
+    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.10);
   }
 
   .heading {
-    font-size: 17px;
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a1a1a;
+  }
+
+  .subheading {
+    font-size: 13px;
+    color: #999;
+    margin: 6px 0 20px 0;
+  }
+
+  .form {
+    gap: 14px;
+  }
+
+  .label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #333;
   }
 
   .input {
-    padding: 10px 14px;
-    font-size: 16px; /* avoids zoom on iOS */
+    padding: 13px 16px;
+    font-size: 16px; /* prevents iOS zoom */
+    border-radius: 10px;
+  }
+
+  .primaryBtn {
+    margin-top: 6px;
+    padding: 15px;
+    font-size: 15px;
+    border-radius: 10px;
+  }
+
+  .forgotBelow {
+    font-size: 13px;
   }
 }
 
-/* ----- Responsive: height (short viewports) ----- */
+/* ── Small phones ── */
+@media (max-width: 380px) {
+  .headerContent {
+    padding: 14px 16px 0;
+  }
 
+  .loginCard {
+    padding: 28px 18px 24px;
+    border-radius: 18px;
+  }
+
+  .heading {
+    font-size: 20px;
+  }
+}
+
+/* ── Short viewports ── */
 @media (max-height: 700px) {
   .mainContent {
     padding: 32px 20px 32px;
@@ -537,5 +523,25 @@
 
   .mainSubtitle {
     margin-bottom: 1rem;
+  }
+}
+
+@media (max-height: 700px) and (max-width: 640px) {
+  .mainContent {
+    padding: 12px 20px 20px;
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+
+  .heading {
+    font-size: 19px;
+  }
+
+  .form {
+    gap: 12px;
+  }
+
+  .primaryBtn {
+    padding: 13px;
   }
 }
