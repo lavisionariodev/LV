@@ -105,8 +105,13 @@ export default function AdminLoginPage() {
 
           <div className={styles.rightSection}>
             <div className={styles.loginCard}>
+              <div className={styles.mobileLogoWrap}>
+                <div className={styles.mobileLogoIcon}>
+                  <MdOutlineAdminPanelSettings />
+                </div>
+              </div>
               <h2 className={styles.heading}>Admin Login</h2>
-              <p className={styles.subheading}>Enter your credentials to continue.</p>
+              <p className={styles.subheading}>Login to your admin account</p>
 
               {error && !showForgotPasswordModal && (
                 <p className={styles.error} role="alert">
@@ -176,7 +181,7 @@ export default function AdminLoginPage() {
                 </div>
 
                 <button type="submit" className={styles.primaryBtn} disabled={loading}>
-                  {loading ? "Signing in…" : "Log in"}
+                  {loading ? "Signing In…" : "Log In"}
                 </button>
               </form>
             </div>
