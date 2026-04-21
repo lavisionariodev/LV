@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { FiArrowUp, FiArrowDown, FiRotateCcw } from 'react-icons/fi'
 import { TbX } from 'react-icons/tb'
+import { LuSettings2 } from 'react-icons/lu'
 
 import { PAYOUTS_PAGE_SELLERS as SELLERS, generatePayoutsPageSampleChangeLog } from '@/data/adminSampleData'
 import { useAdminPayoutsPage } from '@/hooks'
@@ -1125,29 +1126,70 @@ export default function AdminPayoutsPage() {
           <div className={styles.toolbar}>
             <div className={styles.toolbarRow}>
               <div className={styles.toolbarControls}>
-                <div className={styles.toolbarSearchWrap}>
-                  <Icon.Search />
-                  <input
-                    className={styles.toolbarSearchInput}
-                    type="search"
-                    placeholder="Search (Order ID)"
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    autoComplete="off"
-                  />
-                  {String(search || '').trim() ? (
+                {isMobile ? (
+                  <div className={`${styles.mobileSearchWrap}${hasFilters ? ` ${styles.mobileSearchWrapActive}` : ''}`}>
+                    <span className={styles.mobileSearchIcon}>
+                      <Icon.Search />
+                    </span>
+                    <input
+                      className={styles.mobileSearchInput}
+                      type="search"
+                      placeholder="Search (Order ID)"
+                      value={search}
+                      onChange={e => setSearch(e.target.value)}
+                      autoComplete="off"
+                    />
+                    {String(search || '').trim() ? (
+                      <button
+                        type="button"
+                        className={styles.mobileSearchClearBtn}
+                        onClick={() => setSearch('')}
+                        aria-label="Clear search"
+                      >
+                        <TbX aria-hidden />
+                      </button>
+                    ) : null}
+                    <div className={styles.mobileSearchDivider} />
                     <button
                       type="button"
-                      className={styles.toolbarSearchClearBtn}
-                      onClick={() => setSearch('')}
-                      aria-label="Clear search"
+                      className={styles.mobileFilterBtn}
+                      onClick={() => setMobileFiltersOpen(v => !v)}
+                      aria-haspopup="dialog"
+                      aria-expanded={mobileFiltersOpen}
+                      aria-controls="payoutsMobileFilters"
+                      aria-label="Open filters"
                     >
-                      <TbX aria-hidden />
+                      <LuSettings2
+                        aria-hidden
+                        className={`${styles.mobileFilterIcon}${hasFilters ? ` ${styles.mobileFilterIconActive}` : ''}`}
+                      />
                     </button>
-                  ) : null}
-                </div>
+                  </div>
+                ) : (
+                  <div className={styles.toolbarSearchWrap}>
+                    <Icon.Search />
+                    <input
+                      className={styles.toolbarSearchInput}
+                      type="search"
+                      placeholder="Search (Order ID)"
+                      value={search}
+                      onChange={e => setSearch(e.target.value)}
+                      autoComplete="off"
+                    />
+                    {String(search || '').trim() ? (
+                      <button
+                        type="button"
+                        className={styles.toolbarSearchClearBtn}
+                        onClick={() => setSearch('')}
+                        aria-label="Clear search"
+                      >
+                        <TbX aria-hidden />
+                      </button>
+                    ) : null}
+                  </div>
+                )}
 
-                {!isMobile ? (
+                {!isMobile && (
                   <>
                     <DateRangePicker
                       from={filterDateFrom}
@@ -1160,10 +1202,10 @@ export default function AdminPayoutsPage() {
                       onChange={setFilterPayout}
                       ariaLabel="Payout status"
                       options={[
-                        { value: 'all', label: 'All statuses' },
+                        { value: 'all', label: 'All' },
                         ...Object.entries(PAYOUT_STATUS_META).map(([k, v]) => ({ value: k, label: v.label, color: v.color }))
                       ]}
-                      placeholder="All statuses"
+                      placeholder="All"
                     />
 
                     <Dropdown
@@ -1171,10 +1213,10 @@ export default function AdminPayoutsPage() {
                       onChange={setFilterSeller}
                       ariaLabel="Seller"
                       options={[
-                        { value: 'all', label: 'All sellers' },
+                        { value: 'all', label: 'All' },
                         ...SELLERS.map(s => ({ value: s.id, label: s.name }))
                       ]}
-                      placeholder="All sellers"
+                      placeholder="All"
                     />
 
                     <button
@@ -1187,20 +1229,6 @@ export default function AdminPayoutsPage() {
                       {filterPayment !== 'all' && <span className={styles.filterDot} />}
                     </button>
                   </>
-                ) : (
-                  <button
-                    type="button"
-                    className={`${styles.toolbarFiltersBtn} ${mobileFiltersOpen ? styles.toolbarFiltersBtnActive : ''}`}
-                    onClick={() => setMobileFiltersOpen(v => !v)}
-                    aria-expanded={mobileFiltersOpen}
-                    aria-controls="payoutsMobileFilters"
-                  >
-                    <Icon.Filter />
-                    Filters
-                    {filterDateFrom || filterDateTo || filterPayout !== 'all' || filterSeller !== 'all' || filterPayment !== 'all'
-                      ? <span className={styles.filterDot} />
-                      : null}
-                  </button>
                 )}
               </div>
 
@@ -1560,7 +1588,7 @@ export default function AdminPayoutsPage() {
                       />
                       {!filterDateFrom && (
                         <span className={styles.mobileDatePlaceholder} aria-hidden>
-                          mm/dd/yyyy
+                          Select Date
                         </span>
                       )}
                     </div>
@@ -1577,7 +1605,7 @@ export default function AdminPayoutsPage() {
                       />
                       {!filterDateTo && (
                         <span className={styles.mobileDatePlaceholder} aria-hidden>
-                          mm/dd/yyyy
+                          Select Date
                         </span>
                       )}
                     </div>
@@ -1589,7 +1617,7 @@ export default function AdminPayoutsPage() {
                 <span className={styles.mobileFilterLabel}>Payout Status</span>
                 <div className={styles.mobileChoiceGrid} role="radiogroup" aria-label="Payout status">
                   {[
-                    { value: 'all', label: 'All statuses', accent: 'slate' },
+                    { value: 'all', label: 'All', accent: 'slate' },
                     ...Object.entries(PAYOUT_STATUS_META).map(([k, v]) => ({ value: k, label: v.label, accent: v.color })),
                   ].map((opt) => {
                     const active = filterPayout === opt.value
@@ -1604,7 +1632,7 @@ export default function AdminPayoutsPage() {
                         data-accent={opt.accent}
                       >
                         <span>{opt.label}</span>
-                        {active && <span className={styles.mobileChoiceCheck} aria-hidden>✓</span>}
+                        {active && <span className={styles.mobileChoiceCheck} aria-hidden />}
                       </button>
                     )
                   })}
@@ -1614,7 +1642,7 @@ export default function AdminPayoutsPage() {
               <div className={styles.mobileFilterRow}>
                 <span className={styles.mobileFilterLabel}>Seller</span>
                 <div className={styles.mobileChoiceGrid} role="radiogroup" aria-label="Seller">
-                  {[{ id: 'all', name: 'All sellers' }, ...SELLERS].map((s) => {
+                  {[{ id: 'all', name: 'All' }, ...SELLERS].map((s) => {
                     const value = s.id
                     const active = filterSeller === value
                     return (
@@ -1627,7 +1655,7 @@ export default function AdminPayoutsPage() {
                         aria-checked={active}
                       >
                         <span>{s.name}</span>
-                        {active && <span className={styles.mobileChoiceCheck} aria-hidden>✓</span>}
+                        {active && <span className={styles.mobileChoiceCheck} aria-hidden />}
                       </button>
                     )
                   })}
@@ -1653,7 +1681,7 @@ export default function AdminPayoutsPage() {
                         data-accent={opt.accent}
                       >
                         <span>{opt.label}</span>
-                        {active && <span className={styles.mobileChoiceCheck} aria-hidden>✓</span>}
+                        {active && <span className={styles.mobileChoiceCheck} aria-hidden />}
                       </button>
                     )
                   })}

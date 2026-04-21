@@ -775,7 +775,7 @@ export default function AdminProfileClient() {
             onClick={onCancelPersonalEdit}
           />
           <div
-            className={styles.bottomSheet}
+            className={`${styles.bottomSheet} ${styles.bottomSheetProfileEdit}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="adminPersonalSheetTitle"

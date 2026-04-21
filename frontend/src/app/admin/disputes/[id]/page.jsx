@@ -9,6 +9,65 @@ import { getDisputeById } from '@/data/adminSampleData'
 
 const STATUS_FLOW = ['open', 'under_review', 'resolved', 'closed']
 
+const STATUS_LABELS = {
+  open: 'Open',
+  under_review: 'Under review',
+  resolved: 'Resolved',
+  closed: 'Closed',
+}
+
+function getInitials(name = '') {
+  const parts = String(name).trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  const first = parts[0]?.[0] || ''
+  const last = (parts.length > 1 ? parts[parts.length - 1]?.[0] : parts[0]?.[1]) || ''
+  return `${first}${last}`.toUpperCase() || '?'
+}
+
+function StatusBanner({ status, openedAt }) {
+  return (
+    <div className={`${styles.statusBanner} ${styles[`banner_${status}`] || ''}`}>
+      <div className={styles.bannerLeft}>
+        <span className={styles.bannerLabel}>Status</span>
+        <span className={`${styles.statusPill} ${styles[`status_${status}`] || ''}`}>
+          <span className={styles.statusDot} />
+          {STATUS_LABELS[status] ?? status}
+        </span>
+      </div>
+      {openedAt && <span className={styles.bannerDate}>Filed {openedAt}</span>}
+    </div>
+  )
+}
+
+function StepTracker({ currentStatus }) {
+  const currentIndex = STATUS_FLOW.indexOf(currentStatus)
+  return (
+    <div className={styles.stepTrack}>
+      {STATUS_FLOW.map((s, i) => {
+        const done = i < currentIndex
+        const active = i === currentIndex
+        return (
+          <div
+            key={s}
+            className={`${styles.stepItem}${done ? ` ${styles.stepDone}` : ''}${active ? ` ${styles.stepActive}` : ''}`}
+          >
+            <div className={`${styles.stepDot}${done ? ` ${styles.stepDotDone}` : ''}${active ? ` ${styles.stepDotActive}` : ''}`}>
+              {done ? (
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden>
+                  <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : (
+                i + 1
+              )}
+            </div>
+            <span className={styles.stepLabel}>{STATUS_LABELS[s]}</span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function AdminDisputeDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -49,17 +108,31 @@ export default function AdminDisputeDetailPage() {
   return (
     <div className={layoutStyles.dashWrap}>
       <section className={layoutStyles.panel}>
+
+        {/* ── Page header ── */}
         <div className={layoutStyles.panelHead}>
           <div className={styles.headLeft}>
             <p className={layoutStyles.panelTitle}>Dispute</p>
             <p className={styles.headRef}>{dispute.id}</p>
           </div>
-          <button type="button" className={styles.backBtn} onClick={() => router.push('/admin/disputes')}>
+          <button
+            type="button"
+            className={styles.backBtn}
+            onClick={() => router.push('/admin/disputes')}
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
+              <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
             Back to list
           </button>
         </div>
 
+        {/* ── Status banner ── */}
+        <StatusBanner status={status} openedAt={dispute.openedAt} />
+
         <div className={styles.form}>
+
+          {/* ── Case summary ── */}
           <div className={styles.section}>
             <p className={styles.sectionTitle}>Case summary</p>
             <div className={styles.fieldGrid}>
@@ -68,102 +141,97 @@ export default function AdminDisputeDetailPage() {
                 <span className={styles.value}>{dispute.orderRef}</span>
               </div>
               <div className={styles.field}>
-                <span className={styles.label}>Opened on</span>
-                <span className={styles.value}>{dispute.openedAt}</span>
+                <span className={styles.label}>Dispute ID</span>
+                <span className={styles.value}>{dispute.id}</span>
               </div>
               <div className={styles.field}>
                 <span className={styles.label}>Reason</span>
                 <span className={styles.value}>{dispute.reason}</span>
               </div>
               <div className={styles.field}>
-                <span className={styles.label}>Current status</span>
-                <span className={styles.value}>
-                  <span className={styles.statusPill} data-status={status}>{status.replaceAll('_', ' ')}</span>
-                </span>
+                <span className={styles.label}>Opened on</span>
+                <span className={styles.value}>{dispute.openedAt}</span>
               </div>
             </div>
           </div>
 
+          {/* ── Parties ── */}
           <div className={styles.section}>
             <p className={styles.sectionTitle}>Parties</p>
             <div className={styles.partyGrid}>
               <div className={styles.partyCard} data-role="complainant">
                 <span className={styles.partyKicker}>Complainant</span>
+                <div className={styles.partyAvatar} data-role="complainant" aria-hidden>
+                  {getInitials(dispute.complainantName)}
+                </div>
                 <span className={styles.partyName}>{dispute.complainantName}</span>
                 <span className={styles.partyMeta}>Buyer</span>
               </div>
               <div className={styles.partyCard} data-role="respondent">
                 <span className={styles.partyKicker}>Respondent</span>
+                <div className={styles.partyAvatar} data-role="respondent" aria-hidden>
+                  {getInitials(dispute.respondentName)}
+                </div>
                 <span className={styles.partyName}>{dispute.respondentName}</span>
                 <span className={styles.partyMeta}>Seller</span>
               </div>
             </div>
           </div>
 
+          {/* ── Description ── */}
           <div className={styles.section}>
             <p className={styles.sectionTitle}>Description</p>
-            <div className={styles.textAreaLike}>
-              {dispute.description}
-            </div>
+            <div className={styles.textAreaLike}>{dispute.description}</div>
           </div>
+
         </div>
 
-        <hr className={styles.divider} />
-
-        <div className={styles.demoNote}>
-          <p className={styles.demoHint}>
-            This is a frontend-only demo. Changing the status updates local state only
-            and does not persist anywhere.
-          </p>
-
+        {/* ── Status management ── */}
+        <div className={styles.statusSection}>
+          <p className={styles.sectionTitle}>Status workflow</p>
+          <StepTracker currentStatus={status} />
           <div className={styles.statusActions}>
-            {[
-              { k: 'open', label: 'Open' },
-              { k: 'under_review', label: 'Under review' },
-              { k: 'resolved', label: 'Resolved' },
-              { k: 'closed', label: 'Closed' },
-            ].map((s) => {
-              const active = status === s.k
+            {STATUS_FLOW.map((s) => {
+              const active = status === s
               return (
                 <button
-                  key={s.k}
+                  key={s}
                   type="button"
-                  className={`${styles.statusBtn} ${active ? styles.statusBtnActive : ''}`}
-                  onClick={() => setStatus(s.k)}
+                  className={`${styles.statusBtn}${active ? ` ${styles.statusBtnActive}` : ''}`}
+                  onClick={() => setStatus(s)}
                   aria-pressed={active}
                 >
-                  {s.label}
+                  {STATUS_LABELS[s]}
                 </button>
               )
             })}
             {currentIndex !== -1 && currentIndex < STATUS_FLOW.length - 1 && (
               <button type="button" className={styles.nextBtn} onClick={goToNextStatus}>
-                Move to next step
+                Move to next step →
               </button>
             )}
           </div>
+          <p className={styles.demoHint}>
+            Frontend-only demo. Status changes update local state only and do not persist.
+          </p>
         </div>
 
         <hr className={styles.divider} />
 
+        {/* ── Footer note ── */}
         <div className={styles.footerNote}>
           <p>
             In a real implementation this screen would also show the full message
-            history, attached evidence, and links to the related transaction and
-            payments.
-          </p>
-          <p>
-            For now, use this as a template for the dispute resolution workflow and
-            the allowed status transitions.
+            history, attached evidence, and links to the related transaction and payments.
           </p>
           <p>
             You can always go back to{' '}
-            <Link href="/admin/disputes" className={styles.link}>the disputes list</Link> to review other
-            records.
+            <Link href="/admin/disputes" className={styles.link}>the disputes list</Link>{' '}
+            to review other records.
           </p>
         </div>
+
       </section>
     </div>
   )
 }
-

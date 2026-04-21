@@ -89,6 +89,7 @@ function getStatusDotColor(status) {
 export default function AdminDashboardPage() {
   const router = useRouter()
   const [adminProfile, setAdminProfile] = useState(null)
+  const [adminProfileLoading, setAdminProfileLoading] = useState(true)
 
   const [sellerQuery, setSellerQuery] = useState('')
   const [sellerResults, setSellerResults] = useState([])
@@ -100,11 +101,14 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     let cancelled = false
     const load = async () => {
+      if (!cancelled) setAdminProfileLoading(true)
       try {
         const data = await fetchCurrentAdminProfile()
         if (!cancelled) setAdminProfile(data)
       } catch {
-        // ignore; fall back to default UI
+        if (!cancelled) setAdminProfile(null)
+      } finally {
+        if (!cancelled) setAdminProfileLoading(false)
       }
     }
     load()
@@ -114,11 +118,11 @@ export default function AdminDashboardPage() {
   }, [])
 
   const avatarUrl = adminProfile?.avatarUrl || ''
-  const avatarFallback = (adminProfile?.fullName || 'Admin').trim().charAt(0).toUpperCase()
+  const avatarFallback = (adminProfile?.fullName || '').trim().charAt(0).toUpperCase()
   const greetingName =
     adminProfile?.firstName?.trim() ||
     (adminProfile?.fullName || '').trim().split(' ')[0] ||
-    'Admin'
+    ''
 
   useEffect(() => {
     const q = sellerQuery.trim()
@@ -165,6 +169,14 @@ export default function AdminDashboardPage() {
     if (q) params.set('q', q)
     router.push(`/admin/sellers?${params.toString()}`)
     setSellerOpen(false)
+  }
+
+  if (adminProfileLoading) {
+    return (
+      <div className={styles.dashLoadingScreen} role="status" aria-label="Loading dashboard">
+        <span className={styles.dashSpinner} aria-hidden="true" />
+      </div>
+    )
   }
 
   return (
@@ -260,7 +272,9 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className={styles.mobileHeroBalance}>
-            <p className={styles.mobileHeroBalanceLabel}>Welcome back, {greetingName}</p>
+            <p className={styles.mobileHeroBalanceLabel}>
+              {greetingName ? `Welcome back, ${greetingName}` : 'Welcome back'}
+            </p>
             <p className={styles.mobileHeroBalanceValue}>
               {dashboard.stats.totalSellers + dashboard.stats.totalBuyers} Users
             </p>

@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { BsThreeDots } from 'react-icons/bs';
 import { FiRotateCcw } from 'react-icons/fi';
 import { TbX } from 'react-icons/tb';
+import { LuSettings2 } from 'react-icons/lu';
 import styles from './sellers.module.css';
 import { getEffectiveCommissionForSeller } from '@/data/adminSampleData';
 import { listSellersForAdmin, updateSellerStatus } from '@/lib/sellers/client';
@@ -398,47 +399,75 @@ export default function AdminSellersPage() {
         <div className={styles.toolbar}>
           <div className={styles.toolbarRow}>
             <div className={styles.toolbarControls}>
-              <div className={styles.toolbarSearchWrap}>
-                <Icon.Search />
-                <input
-                  className={styles.toolbarSearchInput}
-                  type="search"
-                  placeholder="Search by name or email…"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  autoComplete="off"
-                />
-                {search.trim() ? (
+              {isMobile ? (
+                <div className={`${styles.mobileSearchWrap}${statusFilter !== 'all' ? ` ${styles.mobileSearchWrapActive}` : ''}`}>
+                  <span className={styles.mobileSearchIcon}>
+                    <Icon.Search />
+                  </span>
+                  <input
+                    className={styles.mobileSearchInput}
+                    type="search"
+                    placeholder="Search by name or email…"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    autoComplete="off"
+                  />
+                  {search.trim() ? (
+                    <button
+                      type="button"
+                      className={styles.mobileSearchClearBtn}
+                      onClick={() => setSearch('')}
+                      aria-label="Clear search"
+                    >
+                      <TbX aria-hidden />
+                    </button>
+                  ) : null}
+                  <div className={styles.mobileSearchDivider} />
                   <button
                     type="button"
-                    className={styles.toolbarSearchClearBtn}
-                    onClick={() => setSearch('')}
-                    aria-label="Clear search"
+                    className={styles.mobileFilterBtn}
+                    onClick={() => setFiltersOpen(true)}
+                    aria-haspopup="dialog"
+                    aria-expanded={filtersOpen}
+                    aria-label="Open filters"
                   >
-                    <TbX aria-hidden />
+                    <LuSettings2
+                      aria-hidden
+                      className={`${styles.mobileFilterIcon}${statusFilter !== 'all' ? ` ${styles.mobileFilterIconActive}` : ''}`}
+                    />
                   </button>
-                ) : null}
-              </div>
-
-              {!isMobile ? (
-                <Dropdown
-                  value={statusFilter}
-                  onChange={setStatusFilter}
-                  ariaLabel="Seller status"
-                  options={STATUS_FILTER_OPTIONS}
-                  placeholder="All statuses"
-                />
+                </div>
               ) : (
-                <button
-                  type="button"
-                  className={styles.filterTrigger}
-                  onClick={() => setFiltersOpen(true)}
-                  aria-haspopup="dialog"
-                  aria-expanded={filtersOpen}
-                >
-                  {statusLabel}
-                  <span className={styles.filterTriggerChevron} aria-hidden>▾</span>
-                </button>
+                <>
+                  <div className={styles.toolbarSearchWrap}>
+                    <Icon.Search />
+                    <input
+                      className={styles.toolbarSearchInput}
+                      type="search"
+                      placeholder="Search by name or email…"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      autoComplete="off"
+                    />
+                    {search.trim() ? (
+                      <button
+                        type="button"
+                        className={styles.toolbarSearchClearBtn}
+                        onClick={() => setSearch('')}
+                        aria-label="Clear search"
+                      >
+                        <TbX aria-hidden />
+                      </button>
+                    ) : null}
+                  </div>
+                  <Dropdown
+                    value={statusFilter}
+                    onChange={setStatusFilter}
+                    ariaLabel="Seller status"
+                    options={STATUS_FILTER_OPTIONS}
+                    placeholder="All statuses"
+                  />
+                </>
               )}
             </div>
 
@@ -497,7 +526,7 @@ export default function AdminSellersPage() {
                         aria-pressed={active}
                       >
                         <span>{opt.label}</span>
-                        {active && <span className={styles.filterOptionCheck} aria-hidden>✓</span>}
+                        {active && <span className={styles.filterOptionCheck} aria-hidden />}
                       </button>
                     );
                   })}
@@ -673,7 +702,7 @@ export default function AdminSellersPage() {
           )}
         </div>
 
-        {!loading && (
+        {!loading && filtered.length > 0 && (
           <div className={styles.tableFooter}>
             Showing <strong>{filtered.length}</strong> of <strong>{sellers.length}</strong> sellers
           </div>
