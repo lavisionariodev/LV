@@ -194,7 +194,7 @@
 }
 
 .mobileFilterIconActive {
-  color: #166534;
+  color: #15803d;
 }
 
 /* Active filter pill */
@@ -204,11 +204,11 @@
   gap: 6px;
   padding: 5px 10px 5px 12px;
   border-radius: 999px;
-  background: #f0fdf4;
-  border: 1px solid #5dcb85;
+  background: #fff;
+  border: 1px solid #e2e8f0;
   font-size: 12px;
   font-weight: 600;
-  color: #15803d;
+  color: #475569;
   align-self: flex-start;
 }
 
@@ -223,7 +223,7 @@
   border: none;
   background: transparent;
   padding: 0;
-  color: #4ade80;
+  color: #94a3b8;
   cursor: pointer;
   line-height: 0;
 }

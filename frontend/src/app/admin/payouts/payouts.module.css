@@ -191,7 +191,7 @@
 
 .toolbar {
   padding: 14px 16px;
-  border-bottom: 1px solid #f1f5f9;
+  border: none;
   background: #fff;
 }
 
@@ -807,10 +807,10 @@
   gap: 8px;
   height: 48px;
   padding: 0 6px 0 14px;
-  border: none;
+  border: 1px solid #e5e7eb;
   border-radius: 14px;
   background: #ffffff;
-  box-shadow: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
@@ -836,10 +836,7 @@
 }
 
 .mobileSearchInput {
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  height: 44px;
-  padding: 0 12px;
+  border: none;
   outline: none;
   flex: 1;
   min-width: 0;
@@ -853,7 +850,6 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  width: 100%;
 }
 
 .mobileActivePill {
@@ -862,11 +858,11 @@
   gap: 6px;
   padding: 5px 10px 5px 12px;
   border-radius: 999px;
-  background: #f0fdf4;
-  border: 1px solid #5dcb85;
+  background: #fff;
+  border: 1px solid #e2e8f0;
   font-size: 12px;
   font-weight: 600;
-  color: #15803d;
+  color: #475569;
   align-self: flex-start;
 }
 
@@ -881,7 +877,7 @@
   border: none;
   background: transparent;
   padding: 0;
-  color: #4ade80;
+  color: #94a3b8;
   cursor: pointer;
   line-height: 0;
 }
@@ -963,7 +959,7 @@
 }
 
 .mobileFilterIconActive {
-  color: #166534;
+  color: #15803d;
 }
 
 .filterFieldInline {
@@ -4054,10 +4050,7 @@
 
   /* ── Table Panel ────────────────────────────────────────────────────────── */
   .tablePanel {
-    border-radius: 12px;
-    border-left: none;
-    border-right: none;
-    border-radius: 0;
+    border: none;
   }
 
   /* ── Toolbar ────────────────────────────────────────────────────────────── */
