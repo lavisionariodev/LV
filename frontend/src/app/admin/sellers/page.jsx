@@ -3,12 +3,14 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { BsThreeDots } from 'react-icons/bs';
 import { FiRotateCcw } from 'react-icons/fi';
+import { TbX } from 'react-icons/tb';
 import styles from './sellers.module.css';
 import { getEffectiveCommissionForSeller } from '@/data/adminSampleData';
 import { listSellersForAdmin, updateSellerStatus } from '@/lib/sellers/client';
 import { useToast } from '@/contexts/ToastContext';
 import { useMediaQuery } from '@/hooks';
 import { Dropdown } from '@/components/ui';
+import { useSearchParams } from 'next/navigation';
 
 const STATUS_FILTER_OPTIONS = [
   { value: 'all', label: 'All statuses', color: 'slate' },
@@ -275,13 +277,15 @@ function SellerDetailModal({ seller, onClose }) {
 }
 
 export default function AdminSellersPage() {
+  const searchParams = useSearchParams();
   const toast = useToast();
   const isMobile = useMediaQuery('(max-width: 640px)');
+  const highlightId = searchParams.get('highlight') || '';
   const [sellers, setSellers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(() => searchParams.get('q') || '');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedRows, setSelectedRows] = useState(() => new Set());
   const [detailSeller, setDetailSeller] = useState(null);
@@ -321,6 +325,16 @@ export default function AdminSellersPage() {
     load();
     return () => { cancelled = true; };
   }, [toast]);
+
+  useEffect(() => {
+    if (loading) return;
+    if (!highlightId) return;
+    const rows = document.querySelectorAll('[data-seller-id]');
+    const el = Array.from(rows).find((node) => node?.dataset?.sellerId === highlightId);
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  }, [highlightId, loading]);
 
   const filtered = useMemo(() => {
     return sellers
@@ -394,6 +408,16 @@ export default function AdminSellersPage() {
                   onChange={(e) => setSearch(e.target.value)}
                   autoComplete="off"
                 />
+                {search.trim() ? (
+                  <button
+                    type="button"
+                    className={styles.toolbarSearchClearBtn}
+                    onClick={() => setSearch('')}
+                    aria-label="Clear search"
+                  >
+                    <TbX aria-hidden />
+                  </button>
+                ) : null}
               </div>
 
               {!isMobile ? (
@@ -555,7 +579,11 @@ export default function AdminSellersPage() {
                   const isUpdating = updatingId === sellerId;
 
                   return (
-                    <tr key={sellerId} className={styles.primaryRow}>
+                    <tr
+                      key={sellerId}
+                      data-seller-id={sellerId}
+                      className={`${styles.primaryRow} ${highlightId && String(sellerId) === String(highlightId) ? styles.rowHighlight : ''}`}
+                    >
                       <td className={styles.checkboxCell}>
                         <input
                           type="checkbox"

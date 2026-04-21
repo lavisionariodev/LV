@@ -170,7 +170,7 @@ export default function AppTopbar({ variant, onLogout, isMobile, sidebarCollapse
   const pageTitle = getPageTitle(variant, pathname)
   const isAdminHome =
     isAdmin && pathname && pathname.split(/[?#]/)[0] === '/admin'
-  const heading = isAdminHome && isMobile ? 'Hello, Admin!' : pageTitle
+  const heading = isAdminHome && isMobile ? 'Home' : pageTitle
 
   const cleanPathname = pathname?.split(/[?#]/)[0] || ''
   const isSettingsPage = isMobile && (

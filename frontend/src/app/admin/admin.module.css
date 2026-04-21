@@ -335,17 +335,26 @@
 }
 
 @media (max-width: 860px) {
+  /* ── Shell ── */
   .shell,
   .shellCollapsed {
     grid-template-columns: 1fr;
-    height: 100vh; /* fallback */
+    height: 100vh;
     height: 100dvh;
   }
 
-  .content {
-    padding: 16px 16px 92px;
+  /* ── Page background: light gray like banking apps ── */
+  .mainScroll {
+    background: #fbfdfb;
   }
 
+  /* ── Remove padding so hero bleeds edge to edge ── */
+  .content {
+    padding: 0 0 92px;
+    max-width: 100%;
+  }
+
+  /* ── Show / hide blocks ── */
   .quickLinks {
     display: block;
   }
@@ -354,11 +363,385 @@
     display: none;
   }
 
+  /* =============================================
+     MOBILE HERO HEADER  (BCA-style dark green)
+     ============================================= */
+  .mobileHeroHeader {
+    background: linear-gradient(160deg, #0d2218 0%, #102820 40%, #163a27 100%);
+    border-radius: 22px;
+    padding: 24px 24px 60px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* decorative background circles */
+  .mobileHeroHeader::before {
+    content: '';
+    position: absolute;
+    top: -60px;
+    right: -60px;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.04);
+    pointer-events: none;
+  }
+
+  .mobileHeroHeader::after {
+    content: '';
+    position: absolute;
+    bottom: -30px;
+    left: -40px;
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: rgba(74, 222, 128, 0.06);
+    pointer-events: none;
+  }
+
+  .mobileHeroTop {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .mobileHeroLogo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mobileHeroLogoIcon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 15px;
+  }
+
+  .mobileHeroLogoText {
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.02em;
+  }
+
+  .mobileHeroAvatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2d6a4f 0%, #40916c 100%);
+    border: 2px solid #4ade80;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .mobileHeroAvatarImg {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .mobileHeroBalance {
+    position: relative;
+    z-index: 1;
+  }
+
+  .mobileHeroBalanceLabel {
+    margin: 0 0 4px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.55);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .mobileHeroBalanceValue {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+
+  .mobileHeroBalanceSub {
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .mobileHeroOnlineDot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #4ade80;
+    flex-shrink: 0;
+  }
+
+  /* =============================================
+     NAV ACTION CARDS (float over hero, 4-column grid)
+     ============================================= */
+  .mobileNavCards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px;
+    margin: -34px 30px 0;
+    position: relative;
+    z-index: 10;
+  }
+
+  .mobileNavCard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .mobileNavCardTile {
+    background: #ffffff;
+    border-radius: 12px;
+    aspect-ratio: 1 / 1;
+    padding: 4px;
+    width: min(62px, 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.10), 0 1px 4px rgba(0, 0, 0, 0.06);
+    border: 1.5px solid #f0f0f0;
+  }
+
+  .mobileNavCard:active {
+    transform: scale(0.96);
+  }
+
+  .mobileNavCard:active .mobileNavCardTile {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.09);
+  }
+
+  .mobileNavCardIcon {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: #f4f7f5;
+    border: 1.5px solid #e2ede6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #102820;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  .mobileNavCardLabel {
+    font-size: 11px;
+    font-weight: 700;
+    color: #374151;
+    text-align: center;
+    letter-spacing: 0.01em;
+  }
+
+  /* =============================================
+     BODY PADDING WRAPPER
+     ============================================= */
+  .mobileBody {
+    padding: 28px 16px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* =============================================
+     SEARCH BAR
+     ============================================= */
+  .homeSearchWrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1.5px solid #e5e7eb;
+    background: #ffffff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    position: relative;
+  }
+
+  .homeSearchIcon {
+    font-size: 17px;
+    color: #94a3b8;
+    flex-shrink: 0;
+  }
+
+  .homeSearchInput {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 13px;
+    color: #0f172a;
+  }
+
+  .homeSearchInput::placeholder {
+    color: #94a3b8;
+  }
+
+  /* Hide native (browser) search clear button */
+  .homeSearchInput::-webkit-search-cancel-button,
+  .homeSearchInput::-webkit-search-decoration,
+  .homeSearchInput::-webkit-search-results-button,
+  .homeSearchInput::-webkit-search-results-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .homeSearchClearBtn {
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    line-height: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .homeSearchClearBtn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .homeSearchClearBtn:hover {
+    color: #64748b;
+  }
+
+  .homeSearchClearBtn:focus-visible {
+    outline: 2px solid rgba(15, 23, 42, 0.25);
+    outline-offset: 4px;
+    border-radius: 8px;
+  }
+
+  .homeSearchDropdown {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 8px);
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    box-shadow: 0 12px 32px rgba(2, 6, 23, 0.12);
+    overflow: hidden;
+    z-index: 40;
+  }
+
+  .homeSearchDropdownEmpty {
+    padding: 12px 14px;
+    font-size: 12px;
+    color: #64748b;
+  }
+
+  .homeSearchDropdownItem {
+    width: 100%;
+    border: none;
+    background: transparent;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+  }
+
+  .homeSearchDropdownItem:hover {
+    background: #f8fafc;
+  }
+
+  .homeSearchResultAvatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    background: #f0fdf4;
+    border: 1px solid #dcfce7;
+    display: grid;
+    place-items: center;
+    color: #166534;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .homeSearchResultAvatarImg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .homeSearchResultAvatarFallback {
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .homeSearchResultText {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .homeSearchResultName {
+    font-size: 12px;
+    font-weight: 800;
+    color: #0f172a;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .homeSearchResultMeta {
+    font-size: 11px;
+    color: #64748b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .homeSearchResultCta {
+    font-size: 11px;
+    font-weight: 800;
+    color: #166534;
+    flex-shrink: 0;
+  }
+
+  /* =============================================
+     QUICK LINKS (tab icons row)
+     ============================================= */
   .quickLinksRow {
     display: flex;
-    gap: 4px;
-    margin-top: 8px;
-    padding-bottom: 8px;
+    gap: 0;
+    padding: 2px 0 4px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
@@ -372,104 +755,302 @@
     flex: 1 1 0;
     min-width: 0;
     padding: 6px 4px;
-    border-radius: 12px;
+    border-radius: 14px;
     border: none;
     background: transparent;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
     text-decoration: none;
-    color: #0f172a;
-    font-size: 12px;
+    color: #475569;
+    font-size: 11px;
+    cursor: pointer;
+    transition: color 0.15s ease;
   }
 
   .quickLinkIcon {
     width: 52px;
     height: 52px;
-    border-radius: 999px;
+    border-radius: 14px;
     background: #ffffff;
+    border: 1.5px solid #e9eef2;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--color-main-accent);
+    color: #102820;
     font-size: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+    transition: background 0.15s ease, border-color 0.15s ease;
   }
 
   .quickLinkLabel {
     font-weight: 600;
     white-space: nowrap;
     text-align: center;
+    color: #475569;
+    transition: color 0.15s ease;
   }
 
-  .homeSearchWrap {
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px;
-    border-radius: 10px;
-    border: 1px solid #e5e7eb;
-    background: #ffffff;
+  /* Active tab state */
+  .quickLinkCardActive .quickLinkIcon {
+    background: #102820;
+    border-color: #102820;
+    color: #ffffff;
   }
 
-  .homeSearchIcon {
-    font-size: 16px;
-    color: #94a3b8;
+  .quickLinkCardActive .quickLinkLabel {
+    color: #102820;
   }
 
-  .homeSearchInput {
-    width: 100%;
-    border: none;
-    outline: none;
-    background: transparent;
-    font-size: 13px;
-  }
-
+  /* =============================================
+     HIGHLIGHT CARD (analytics CTA)
+     ============================================= */
   .homeHighlightCard {
-    margin-top: 16px;
-    padding: 14px 16px;
+    padding: 16px 18px;
     border-radius: 16px;
-    background: linear-gradient(135deg, #102820 0%, #163628 55%, #204F38 100%);
+    background: linear-gradient(135deg, #0d2218 0%, #163628 55%, #204F38 100%);
     color: #ecfdf5;
     display: flex;
     flex-direction: column;
     gap: 6px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Hide decorative circle on mobile */
+  .homeHighlightCard::after {
+    content: none;
   }
 
   .homeHighlightTitle {
     margin: 0;
     font-size: 14px;
     font-weight: 700;
+    position: relative;
+    z-index: 1;
   }
 
   .homeHighlightText {
     margin: 0;
     font-size: 12px;
-    opacity: 0.95;
+    opacity: 0.80;
+    line-height: 1.5;
+    position: relative;
+    z-index: 1;
   }
 
   .homeHighlightLink {
-    margin-top: 4px;
+    margin-top: 6px;
     font-size: 12px;
-    font-weight: 600;
-    text-decoration: underline;
-    color: #ecfdf5;
+    font-weight: 700;
+    text-decoration: none;
+    color: #4ade80;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    position: relative;
+    z-index: 1;
   }
 
+  .homeHighlightLink::after {
+    content: '→';
+  }
+
+  /* =============================================
+     MOBILE STATS GRID (dashboard home)
+     Reference: 2x2 card tiles (icon + text + action)
+     ============================================= */
+  .mobileStatsGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .mobileStatCard {
+    background: #ffffff;
+    border: 1px solid #eef2f7;
+    border-radius: 16px;
+    padding: 14px 14px 12px;
+    text-decoration: none;
+    color: inherit;
+    box-shadow: 0 6px 18px rgba(2, 6, 23, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .mobileStatCard:active {
+    transform: scale(0.99);
+  }
+
+  .mobileStatCardTop {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .mobileStatIcon {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    background: #f0fdf4;
+    border: 1px solid #dcfce7;
+    color: #166534;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 18px;
+  }
+
+  .mobileStatTitle {
+    font-size: 12px;
+    font-weight: 700;
+    color: #0f172a;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobileStatValue {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+
+  .mobileStatFooter {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .mobileStatSubtitle {
+    font-size: 11px;
+    color: #64748b;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobileStatAction {
+    font-size: 11px;
+    font-weight: 800;
+    color: #166534;
+    flex-shrink: 0;
+  }
+
+  /* =============================================
+     CONTENT PANEL (qlPanel) — banking card style
+     ============================================= */
   .quickLinkContent {
     display: block;
   }
 
-  .quickLinkCardActive .quickLinkIcon {
-    background: var(--color-main-accent);
-    color: #ffffff;
+  .qlPanel {
+    margin-top: 0;
+    background: #ffffff;
+    border: none;
+    border-radius: 18px;
+    padding: 18px;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.07), 0 1px 4px rgba(0, 0, 0, 0.04);
+    gap: 14px;
   }
 
-  .quickLinkCardActive .quickLinkLabel {
-    color: var(--color-main-accent);
+  /* stat chips — banking-style number tiles */
+  .qlChips {
+    gap: 8px;
   }
 
+  .qlChip {
+    background: #f6faf7;
+    border: 1.5px solid #e0ede6;
+    border-radius: 14px;
+    padding: 12px 10px;
+  }
+
+  .qlChipValue {
+    font-size: 22px;
+    font-weight: 800;
+    color: #102820;
+  }
+
+  .qlChipLabel {
+    font-size: 10px;
+    color: #52796f;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  /* rows — transaction-list style */
+  .qlRows {
+    gap: 6px;
+  }
+
+  .qlRow {
+    background: #f8fbf9;
+    border: 1.5px solid #e8f0eb;
+    border-radius: 14px;
+    padding: 12px 14px;
+    gap: 12px;
+  }
+
+  .qlDot {
+    width: 9px;
+    height: 9px;
+  }
+
+  .qlRowType {
+    font-size: 13px;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .qlRowDate {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 1px;
+  }
+
+  .qlBadge {
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1.5px solid #d1fae5;
+    background: #ecfdf5;
+    color: #065f46;
+    font-weight: 700;
+    text-transform: capitalize;
+  }
+
+  /* CTA button — full width, solid green */
+  .qlCta {
+    border-radius: 14px;
+    padding: 13px;
+    font-size: 13px;
+    background: #102820;
+    letter-spacing: 0.01em;
+  }
+
+  /* =============================================
+     SECTION TITLE in mobile body
+     ============================================= */
+  .mobileSectionTitle {
+    margin: 0 0 10px;
+    font-size: 15px;
+    font-weight: 800;
+    color: #0f172a;
+  }
 }
 
 @media (max-width: 600px) {

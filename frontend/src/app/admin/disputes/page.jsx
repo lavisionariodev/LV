@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import styles from './disputes.module.css'
 import { disputes as initialDisputes } from '@/data/adminSampleData'
+import { TbX } from 'react-icons/tb'
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'All' },
@@ -125,6 +126,16 @@ export default function AdminDisputesPage() {
                 className={styles.toolbarSearchInput}
                 autoComplete="off"
               />
+              {search.trim() ? (
+                <button
+                  type="button"
+                  className={styles.toolbarSearchClearBtn}
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                >
+                  <TbX aria-hidden />
+                </button>
+              ) : null}
             </div>
           </div>
         </div>

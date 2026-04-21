@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { FiRotateCcw } from 'react-icons/fi'
+import { TbX } from 'react-icons/tb'
 import styles from './buyers.module.css'
 import { supabase } from '@/lib/supabase/client'
 import { useMediaQuery } from '@/hooks'
@@ -181,6 +182,16 @@ export default function AdminBuyersPage() {
                   onChange={(e) => setSearch(e.target.value)}
                   autoComplete="off"
                 />
+                {search.trim() ? (
+                  <button
+                    type="button"
+                    className={styles.toolbarSearchClearBtn}
+                    onClick={() => setSearch('')}
+                    aria-label="Clear search"
+                  >
+                    <TbX aria-hidden />
+                  </button>
+                ) : null}
               </div>
 
               {!isMobile ? (

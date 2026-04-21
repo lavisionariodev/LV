@@ -97,7 +97,6 @@ export default function AdminProfileClient() {
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [passStatus, setPassStatus] = useState('')
   const [passError, setPassError] = useState('')
 
   useEffect(() => {
@@ -314,7 +313,6 @@ export default function AdminProfileClient() {
   const handlePasswordSubmit = async (e) => {
     e.preventDefault()
     setPassError('')
-    setPassStatus('')
     if (!currentPassword) {
       setPassError('Please enter your current password.')
       return false
@@ -343,7 +341,6 @@ export default function AdminProfileClient() {
 
   const onClosePasswordSheet = () => {
     setPassError('')
-    setPassStatus('')
     setCurrentPassword('')
     setNewPassword('')
     setConfirmPassword('')
@@ -352,7 +349,6 @@ export default function AdminProfileClient() {
 
   const onOpenPasswordSheet = () => {
     setPassError('')
-    setPassStatus('')
     setShowPasswordSheet(true)
   }
 
@@ -391,7 +387,6 @@ export default function AdminProfileClient() {
     if (!isMobile) return
     if (searchParams.get('tab') === 'password') {
       setPassError('')
-      setPassStatus('')
       setShowPasswordSheet(true)
       router.replace('/admin/profile', { scroll: false })
     }
@@ -402,7 +397,6 @@ export default function AdminProfileClient() {
     const onKey = (e) => {
       if (e.key === 'Escape') {
         setPassError('')
-        setPassStatus('')
         setCurrentPassword('')
         setNewPassword('')
         setConfirmPassword('')

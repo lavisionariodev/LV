@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { FiArrowUp, FiArrowDown, FiRotateCcw } from 'react-icons/fi'
+import { TbX } from 'react-icons/tb'
 
 import { PAYOUTS_PAGE_SELLERS as SELLERS } from '@/data/adminSampleData'
 import { useAdminPayoutsPage } from '@/hooks'
@@ -1138,6 +1139,16 @@ export default function AdminPayoutsPage() {
                     onChange={e => setSearch(e.target.value)}
                     autoComplete="off"
                   />
+                  {String(search || '').trim() ? (
+                    <button
+                      type="button"
+                      className={styles.toolbarSearchClearBtn}
+                      onClick={() => setSearch('')}
+                      aria-label="Clear search"
+                    >
+                      <TbX aria-hidden />
+                    </button>
+                  ) : null}
                 </div>
 
                 {!isMobile ? (
