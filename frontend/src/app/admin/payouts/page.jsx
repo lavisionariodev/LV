@@ -214,12 +214,19 @@ function Badge({ type, value }) {
 }
 
 
-function StatCard({ label, value, percent }) {
+function StatCard({ label, shortLabel, value, percent, className }) {
   const isPositive = percent >= 0
 
   return (
-    <div className={styles.statCard}>
-      <p className={styles.statLabel}>{label}</p>
+    <div className={`${styles.statCard}${className ? ` ${className}` : ''}`}>
+      <p className={styles.statLabel}>
+        {shortLabel ? (
+          <>
+            <span className={styles.statLabelLong}>{label}</span>
+            <span className={styles.statLabelShort}>{shortLabel}</span>
+          </>
+        ) : label}
+      </p>
       <div className={styles.statBody}>
         <div className={styles.statLeft}>
           <p className={styles.statValue}>{value}</p>
@@ -1124,10 +1131,10 @@ export default function AdminPayoutsPage() {
       {/* Financial overview — only on "All" tab (not Transactions / Commission / Seller alone) */}
       {activeTab === 'all' && (
         <section className={styles.statsGrid}>
-          <StatCard label="Platform Revenue" value={formatPHP(summary.platformRevenue)} percent={14} />
-          <StatCard label="Total Order" value={summary.total} percent={-17} />
-          <StatCard label="Pending Payouts" value={formatPHP(summary.pendingAmt)} percent={8} />
-          <StatCard label="Completed Payouts" value={formatPHP(summary.completedAmt)} percent={23} />
+          <StatCard label="Platform Revenue" shortLabel="Revenue" value={formatPHP(summary.platformRevenue)} percent={14} />
+          <StatCard label="Total Orders" shortLabel="Total Orders" value={summary.total} percent={-17} />
+          <StatCard label="Pending Payouts" shortLabel="Pending Payouts" value={formatPHP(summary.pendingAmt)} percent={8} />
+          <StatCard label="Completed Payouts" shortLabel="Completed" value={formatPHP(summary.completedAmt)} percent={23} className={styles.statCardMobileHide} />
         </section>
       )}
 
