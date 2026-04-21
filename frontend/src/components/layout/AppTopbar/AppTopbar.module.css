@@ -370,6 +370,7 @@
     height: 56px;
     padding-left: 14px;
     padding-right: 14px;
+    padding-top: 6px;
     gap: 8px;
   }
   .pageTitle {
