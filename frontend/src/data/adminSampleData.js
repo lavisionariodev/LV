@@ -81,6 +81,76 @@ export const disputes = [
     description:
       'Concern about chapel availability was resolved with an alternative slot and complimentary flowers.',
   },
+  {
+    id: 'DSP-004',
+    orderRef: 'ORD-110',
+    transactionId: 'TXN-004',
+    openedAt: '2025-03-02',
+    complainantId: 'USR-004',
+    complainantName: 'Ana Cruz',
+    respondentId: 'SEL-003',
+    respondentName: 'Serenity Funeral Home',
+    reason: 'Late delivery',
+    status: 'open',
+    description:
+      'Buyer reported the service team arrived beyond the agreed schedule, causing delays during the viewing.',
+  },
+  {
+    id: 'DSP-005',
+    orderRef: 'ORD-112',
+    transactionId: 'TXN-005',
+    openedAt: '2025-03-05',
+    complainantId: 'USR-005',
+    complainantName: 'Jose Lim',
+    respondentId: 'SEL-001',
+    respondentName: 'Heavenly Flowers Co.',
+    reason: 'Incomplete inclusions',
+    status: 'under_review',
+    description:
+      'Customer claimed several inclusions listed in the package were missing and requested adjustments or refund.',
+  },
+  {
+    id: 'DSP-006',
+    orderRef: 'ORD-115',
+    transactionId: 'TXN-006',
+    openedAt: '2025-03-08',
+    complainantId: 'USR-006',
+    complainantName: 'Lina Gomez',
+    respondentId: 'SEL-002',
+    respondentName: 'Memorial Services PH',
+    reason: 'Billing discrepancy',
+    status: 'resolved',
+    description:
+      'A discrepancy in quoted vs billed add-on fees was clarified and corrected, closing the case.',
+  },
+  {
+    id: 'DSP-007',
+    orderRef: 'ORD-118',
+    transactionId: 'TXN-007',
+    openedAt: '2025-03-12',
+    complainantId: 'USR-007',
+    complainantName: 'Ricardo Santos',
+    respondentId: 'SEL-004',
+    respondentName: 'Metro Memorial Services',
+    reason: 'Service quality',
+    status: 'closed',
+    description:
+      'Complaint about staff coordination was reviewed; parties agreed to close after follow-up and apology.',
+  },
+  {
+    id: 'DSP-008',
+    orderRef: 'ORD-121',
+    transactionId: 'TXN-008',
+    openedAt: '2025-03-18',
+    complainantId: 'USR-008',
+    complainantName: 'Camille Reyes',
+    respondentId: 'SEL-003',
+    respondentName: 'Serenity Funeral Home',
+    reason: 'Reschedule request',
+    status: 'under_review',
+    description:
+      'Family requested rescheduling due to venue constraints; admin is reviewing policy and seller response timeline.',
+  },
 ]
 
 /** Disputes that still need admin attention (open or under review). Swap for an API count later. */

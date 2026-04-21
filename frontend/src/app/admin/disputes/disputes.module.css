@@ -5,7 +5,7 @@
   flex-direction: column;
   gap: 20px;
   color: #0f172a;
-  padding: 4px 0 32px;
+  padding: 4px 0 0;
 }
 
 /* ── Stats ───────────────────────────────────────────────────────────────── */
@@ -431,23 +431,74 @@
   letter-spacing: 0.01em;
 }
 
+.table th.checkboxCell,
+.table td.checkboxCell {
+  text-align: center;
+  vertical-align: middle;
+  padding-left: 10px;
+  padding-right: 4px;
+}
+
+.rowCheckbox {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-block;
+  vertical-align: middle;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+}
+
+.rowCheckbox:focus-visible {
+  outline: 2px solid rgba(15, 23, 42, 0.25);
+  outline-offset: 4px;
+}
+
+.rowCheckbox:checked {
+  background: #0f172a;
+  border-color: #0f172a;
+}
+
+.rowCheckbox:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: rotate(45deg);
+}
+
+.rowCheckbox:hover:not(:checked) {
+  border-color: #94a3b8;
+}
+
 .thRight {
   text-align: right;
   width: 88px;
 }
 
 .table th:nth-child(1),
-.table td:nth-child(1) { width: 12%; min-width: 108px; }
+.table td:nth-child(1) { width: 44px; }
 .table th:nth-child(2),
-.table td:nth-child(2) { width: 26%; }
+.table td:nth-child(2) { width: 12%; min-width: 108px; }
 .table th:nth-child(3),
-.table td:nth-child(3) { width: 14%; }
+.table td:nth-child(3) { width: 26%; }
 .table th:nth-child(4),
-.table td:nth-child(4) { width: 28%; }
+.table td:nth-child(4) { width: 14%; }
 .table th:nth-child(5),
-.table td:nth-child(5) { width: 14%; }
+.table td:nth-child(5) { width: 28%; }
 .table th:nth-child(6),
-.table td:nth-child(6) { width: 10%; }
+.table td:nth-child(6) { width: 14%; }
+.table th:nth-child(7),
+.table td:nth-child(7) { width: 10%; }
 
 .tr {
   border-bottom: 1px solid #f1f5f9;
@@ -822,7 +873,7 @@
 
 @media (max-width: 640px) {
   .page {
-    padding: 0 12px 32px;
+    padding: 0 12px 0;
   }
 
   /* Show mobile search section */

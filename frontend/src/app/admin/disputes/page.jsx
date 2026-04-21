@@ -99,6 +99,7 @@ export default function AdminDisputesPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [filterModalOpen, setFilterModalOpen] = useState(false)
+  const [selectedRows, setSelectedRows] = useState(() => new Set())
 
   const summary = useMemo(() => {
     const open = initialDisputes.filter((d) => d.status === 'open').length
@@ -256,6 +257,25 @@ export default function AdminDisputesPage() {
           <table className={styles.table}>
             <thead>
               <tr>
+                <th className={styles.checkboxCell}>
+                  <input
+                    type="checkbox"
+                    className={styles.rowCheckbox}
+                    checked={filtered.length > 0 && filtered.every((d) => selectedRows.has(d.id))}
+                    onChange={(e) => {
+                      setSelectedRows((prev) => {
+                        const next = new Set(prev)
+                        if (e.target.checked) {
+                          filtered.forEach((d) => next.add(d.id))
+                        } else {
+                          filtered.forEach((d) => next.delete(d.id))
+                        }
+                        return next
+                      })
+                    }}
+                    aria-label="Select all disputes in view"
+                  />
+                </th>
                 <th>Filed</th>
                 <th>Order &amp; parties</th>
                 <th>Reason</th>
@@ -267,6 +287,22 @@ export default function AdminDisputesPage() {
             <tbody>
               {filtered.map((d) => (
                 <tr key={d.id} className={styles.tr}>
+                  <td className={styles.checkboxCell}>
+                    <input
+                      type="checkbox"
+                      className={styles.rowCheckbox}
+                      checked={selectedRows.has(d.id)}
+                      onChange={(e) => {
+                        setSelectedRows((prev) => {
+                          const next = new Set(prev)
+                          if (e.target.checked) next.add(d.id)
+                          else next.delete(d.id)
+                          return next
+                        })
+                      }}
+                      aria-label={`Select dispute ${d.id}`}
+                    />
+                  </td>
                   <td className={styles.td}>
                     <span className={styles.dateText}>{d.openedAt}</span>
                     <span className={styles.refText}>{d.id}</span>
