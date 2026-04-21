@@ -1,11 +1,13 @@
 -- Run this in Supabase Dashboard → SQL Editor.
 -- After running: create your first admin in Authentication → Users, then insert that user's id and email here:
---   INSERT INTO public.admins (id, email, full_name) VALUES ('<user-uuid-from-auth>', 'admin@example.com', 'Admin Name');
+--   INSERT INTO public.admins (id, email, first_name, last_name)
+--   VALUES ('<user-uuid-from-auth>', 'admin@example.com', 'Admin', 'User');
 
 CREATE TABLE public.admins (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email text NOT NULL,
-  full_name text,
+  first_name text,
+  last_name text,
   role text DEFAULT 'admin',
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()

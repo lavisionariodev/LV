@@ -237,6 +237,14 @@ export const PAYOUTS_PAGE_INITIAL_COMMISSION_SETTINGS = {
   },
 }
 
+export function generatePayoutsPageSampleChangeLog(nowTs = Date.now()) {
+  return [
+    { id: 1, type: 'global', label: 'Global rate', from: 10, to: 10, ts: nowTs - 3600000 * 24 },
+    { id: 2, type: 'seller', label: 'Heaven Memorial Services', from: 10, to: 12, ts: nowTs - 3600000 * 12 },
+    { id: 3, type: 'seller', label: 'Grace Funeral Services', from: 10, to: 8, ts: nowTs - 3600000 * 2 },
+  ]
+}
+
 // --- Help center (/admin/help) — static copy + topic metadata (icons resolved in page) ---
 
 export const helpCenterTopics = [

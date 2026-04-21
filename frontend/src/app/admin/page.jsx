@@ -59,7 +59,7 @@ const MOBILE_STAT_CARDS = [
     value: (stats) => stats.transactionsLast30Days,
     subtitle: 'Last 30 days',
     icon: TbCreditCard,
-    href: '/admin/analytics',
+    href: '/admin/payouts',
     actionLabel: 'View',
   },
   {
@@ -115,6 +115,10 @@ export default function AdminDashboardPage() {
 
   const avatarUrl = adminProfile?.avatarUrl || ''
   const avatarFallback = (adminProfile?.fullName || 'Admin').trim().charAt(0).toUpperCase()
+  const greetingName =
+    adminProfile?.firstName?.trim() ||
+    (adminProfile?.fullName || '').trim().split(' ')[0] ||
+    'Admin'
 
   useEffect(() => {
     const q = sellerQuery.trim()
@@ -246,7 +250,8 @@ export default function AdminDashboardPage() {
                   width={36}
                   height={36}
                   className={styles.mobileHeroAvatarImg}
-                  unoptimized
+                  sizes="36px"
+                  priority
                 />
               ) : (
                 avatarFallback
@@ -255,7 +260,7 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className={styles.mobileHeroBalance}>
-            <p className={styles.mobileHeroBalanceLabel}>Welcome back, Admin</p>
+            <p className={styles.mobileHeroBalanceLabel}>Welcome back, {greetingName}</p>
             <p className={styles.mobileHeroBalanceValue}>
               {dashboard.stats.totalSellers + dashboard.stats.totalBuyers} Users
             </p>

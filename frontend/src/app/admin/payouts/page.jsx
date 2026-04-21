@@ -4,7 +4,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { FiArrowUp, FiArrowDown, FiRotateCcw } from 'react-icons/fi'
 import { TbX } from 'react-icons/tb'
 
-import { PAYOUTS_PAGE_SELLERS as SELLERS } from '@/data/adminSampleData'
+import { PAYOUTS_PAGE_SELLERS as SELLERS, generatePayoutsPageSampleChangeLog } from '@/data/adminSampleData'
 import { useAdminPayoutsPage } from '@/hooks'
 import {
   formatPHP,
@@ -628,11 +628,7 @@ function CommissionPanel({ settings, onUpdateSettings, transactions = [] }) {
   const [sellerInputs, setSellerInputs] = useState({})
   const [editingSeller, setEditingSeller] = useState(null)
   const [confirmReset, setConfirmReset] = useState(false)
-  const [changeLog, setChangeLog] = useState([
-    { id: 1, type: 'global', label: 'Global rate', from: 10, to: 10, ts: Date.now() - 3600000 * 24 },
-    { id: 2, type: 'seller', label: 'Heaven Memorial Services', from: 10, to: 12, ts: Date.now() - 3600000 * 12 },
-    { id: 3, type: 'seller', label: 'Grace Funeral Services', from: 10, to: 8, ts: Date.now() - 3600000 * 2 },
-  ])
+  const [changeLog, setChangeLog] = useState(() => generatePayoutsPageSampleChangeLog())
   const [showLog, setShowLog] = useState(false)
   const [activeSection, setActiveSection] = useState('global') // 'global' | 'sellers'
 

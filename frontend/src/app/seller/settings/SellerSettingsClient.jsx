@@ -398,6 +398,7 @@ export default function SellerSettingsClient() {
   }
 
   const shownAvatar = avatarPreview || profile?.avatarUrl || ''
+  const shownAvatarIsBlob = Boolean(shownAvatar && shownAvatar.startsWith('blob:'))
   const formId = 'sellerPasswordForm'
   const id = (name) => `seller_${name}`
   const shopId = (name) => `seller_shop_${name}`
@@ -701,7 +702,8 @@ export default function SellerSettingsClient() {
                       width={54}
                       height={54}
                       className={styles.avatarImg}
-                      unoptimized
+                      sizes="54px"
+                      unoptimized={shownAvatarIsBlob}
                     />
                   ) : (
                     <div className={styles.avatarFallback}><FaUser /></div>

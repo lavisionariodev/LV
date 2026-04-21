@@ -327,7 +327,7 @@ export default function AppTopbar({ variant, onLogout, isMobile, sidebarCollapse
                       width={28}
                       height={28}
                       className={styles.profileAvatarImg}
-                      unoptimized
+                      sizes="28px"
                     />
                   ) : (
                     <FaUser />
@@ -346,7 +346,7 @@ export default function AppTopbar({ variant, onLogout, isMobile, sidebarCollapse
                       width={40}
                       height={40}
                       className={styles.profileDropdownAvatarImg}
-                      unoptimized
+                      sizes="40px"
                     />
                   ) : (
                     <span className={styles.profileDropdownAvatarFallback}>
