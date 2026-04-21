@@ -514,11 +514,14 @@ export default function AdminSellersPage() {
                 <div className={styles.filterOptions}>
                   {STATUS_FILTER_OPTIONS.map((opt) => {
                     const active = opt.value === statusFilter;
+                    const isDefault = opt.value === 'all'
                     return (
                       <button
                         key={opt.value}
                         type="button"
-                        className={`${styles.filterOption} ${active ? styles.filterOptionActive : ''}`}
+                        className={`${styles.filterOption} ${
+                          active ? (isDefault ? styles.filterOptionActiveDefault : styles.filterOptionActive) : ''
+                        }`}
                         onClick={() => {
                           setStatusFilter(opt.value);
                           setFiltersOpen(false);

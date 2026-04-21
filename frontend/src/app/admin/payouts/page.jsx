@@ -1621,11 +1621,14 @@ export default function AdminPayoutsPage() {
                     ...Object.entries(PAYOUT_STATUS_META).map(([k, v]) => ({ value: k, label: v.label, accent: v.color })),
                   ].map((opt) => {
                     const active = filterPayout === opt.value
+                    const isDefault = opt.value === 'all'
                     return (
                       <button
                         key={opt.value}
                         type="button"
-                        className={`${styles.mobileChoiceBtn} ${active ? styles.mobileChoiceBtnActive : ''}`}
+                        className={`${styles.mobileChoiceBtn} ${
+                          active ? (isDefault ? styles.mobileChoiceBtnActiveDefault : styles.mobileChoiceBtnActive) : ''
+                        }`}
                         onClick={() => setFilterPayout(opt.value)}
                         role="radio"
                         aria-checked={active}
@@ -1645,11 +1648,14 @@ export default function AdminPayoutsPage() {
                   {[{ id: 'all', name: 'All' }, ...SELLERS].map((s) => {
                     const value = s.id
                     const active = filterSeller === value
+                    const isDefault = value === 'all'
                     return (
                       <button
                         key={value}
                         type="button"
-                        className={`${styles.mobileChoiceBtn} ${active ? styles.mobileChoiceBtnActive : ''}`}
+                        className={`${styles.mobileChoiceBtn} ${
+                          active ? (isDefault ? styles.mobileChoiceBtnActiveDefault : styles.mobileChoiceBtnActive) : ''
+                        }`}
                         onClick={() => setFilterSeller(value)}
                         role="radio"
                         aria-checked={active}
@@ -1670,11 +1676,14 @@ export default function AdminPayoutsPage() {
                     ...Object.entries(PAYMENT_STATUS_META).map(([k, v]) => ({ value: k, label: v.label, accent: v.color })),
                   ].map((opt) => {
                     const active = filterPayment === opt.value
+                    const isDefault = opt.value === 'all'
                     return (
                       <button
                         key={opt.value}
                         type="button"
-                        className={`${styles.mobileChoiceBtn} ${active ? styles.mobileChoiceBtnActive : ''}`}
+                        className={`${styles.mobileChoiceBtn} ${
+                          active ? (isDefault ? styles.mobileChoiceBtnActiveDefault : styles.mobileChoiceBtnActive) : ''
+                        }`}
                         onClick={() => setFilterPayment(opt.value)}
                         role="radio"
                         aria-checked={active}

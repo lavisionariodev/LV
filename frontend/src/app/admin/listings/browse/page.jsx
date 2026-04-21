@@ -4,11 +4,14 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { FiExternalLink, FiRotateCcw } from 'react-icons/fi'
 import { VscSettings } from 'react-icons/vsc'
+import { LuSettings2 } from 'react-icons/lu'
 import styles from '../listings.module.css'
+import ListingsMobileTabs from '../ListingsMobileTabs'
 import { listSellerListingsForAdmin } from '@/lib/seller-listings/client'
 import { getShopHrefForSellerListingRow } from '@/lib/shop-listings/client'
 import { formatPhpAmount } from '@/lib/cart/formatPhp'
 import { Dropdown } from '@/components/ui'
+import { useMediaQuery } from '@/hooks'
 import { TbX } from 'react-icons/tb'
 
 const APPROVED_STATUS_TABS = [
@@ -25,7 +28,7 @@ const KIND_FILTER_OPTIONS = [
 ]
 
 const SORT_OPTIONS = [
-  { value: 'updated', label: 'Sort: Updated' },
+  { value: 'updated', label: 'Sort: Default' },
   { value: 'price_asc', label: 'Sort: Price ↑' },
   { value: 'price_desc', label: 'Sort: Price ↓' },
   { value: 'name', label: 'Sort: Name' },
@@ -191,13 +194,32 @@ function ListingCard({ row }) {
 }
 
 export default function AdminListingsBrowsePage() {
+  const isMobile = useMediaQuery('(max-width: 860px)')
   const [search, setSearch] = useState('')
   const [statusTab, setStatusTab] = useState('active')
   const [kindFilter, setKindFilter] = useState('all')
   const [sortKey, setSortKey] = useState('updated')
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [approvedRows, setApprovedRows] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  useEffect(() => {
+    if (!isMobile || !filtersOpen) return
+
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    function onKeyDown(e) {
+      if (e.key === 'Escape') setFiltersOpen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+
+    return () => {
+      document.body.style.overflow = prevOverflow
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [filtersOpen, isMobile])
 
   useEffect(() => {
     let mounted = true
@@ -284,8 +306,18 @@ export default function AdminListingsBrowsePage() {
     setKindFilter('all')
   }
 
+  const clearAllMobile = () => {
+    clearFilters()
+    setSortKey('updated')
+    setFiltersOpen(false)
+  }
+
+  const mobileHasFilters = hasFilters || sortKey !== 'updated'
+
   return (
     <div className={styles.pageRoot}>
+      <ListingsMobileTabs />
+
       <div className={styles.toolbar}>
         <div className={styles.toolbarTopRow}>
           <div className={styles.tabsStack}>
@@ -304,24 +336,28 @@ export default function AdminListingsBrowsePage() {
             </div>
           </div>
 
-          <div className={styles.sortWrap}>
-            <Dropdown
-              value={sortKey}
-              onChange={setSortKey}
-              ariaLabel="Sort listings"
-              options={SORT_OPTIONS}
-              placeholder="Sort: Updated"
-              leadingIcon={<VscSettings />}
-            />
-          </div>
+          {!isMobile && (
+            <div className={styles.sortWrap}>
+              <Dropdown
+                value={sortKey}
+                onChange={setSortKey}
+                ariaLabel="Sort listings"
+                options={SORT_OPTIONS}
+                placeholder="Sort"
+                leadingIcon={<VscSettings />}
+              />
+            </div>
+          )}
         </div>
 
-        <div className={styles.filterRow}>
-          <div className={styles.toolbarSearchWrap}>
-            <Icon.Search />
+        {isMobile ? (
+          <div className={`${styles.mobileSearchWrap}${mobileHasFilters ? ` ${styles.mobileSearchWrapActive}` : ''}`}>
+            <span className={styles.mobileSearchIcon}>
+              <Icon.Search />
+            </span>
             <input
               aria-label="Search listings"
-              className={styles.toolbarSearchInput}
+              className={styles.mobileSearchInput}
               type="search"
               placeholder="Search title, seller, or email…"
               value={search}
@@ -331,34 +367,171 @@ export default function AdminListingsBrowsePage() {
             {search.trim() ? (
               <button
                 type="button"
-                className={styles.toolbarSearchClearBtn}
+                className={styles.mobileSearchClearBtn}
                 onClick={() => setSearch('')}
                 aria-label="Clear search"
               >
                 <TbX aria-hidden />
               </button>
             ) : null}
+            <div className={styles.mobileSearchDivider} />
+            <button
+              type="button"
+              className={styles.mobileFilterBtn}
+              onClick={() => setFiltersOpen(true)}
+              aria-haspopup="dialog"
+              aria-expanded={filtersOpen}
+              aria-label="Open filters"
+            >
+              <LuSettings2
+                aria-hidden
+                className={`${styles.mobileFilterIcon}${mobileHasFilters ? ` ${styles.mobileFilterIconActive}` : ''}`}
+              />
+            </button>
           </div>
+        ) : (
+          <div className={styles.filterRow}>
+            <div className={styles.toolbarSearchWrap}>
+              <Icon.Search />
+              <input
+                aria-label="Search listings"
+                className={styles.toolbarSearchInput}
+                type="search"
+                placeholder="Search title, seller, or email…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                autoComplete="off"
+              />
+              {search.trim() ? (
+                <button
+                  type="button"
+                  className={styles.toolbarSearchClearBtn}
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                >
+                  <TbX aria-hidden />
+                </button>
+              ) : null}
+            </div>
 
-          <Dropdown
-            value={kindFilter}
-            onChange={setKindFilter}
-            ariaLabel="Listing kind"
-            options={KIND_FILTER_OPTIONS}
-            placeholder="All kinds"
-          />
+            <Dropdown
+              value={kindFilter}
+              onChange={setKindFilter}
+              ariaLabel="Listing kind"
+              options={KIND_FILTER_OPTIONS}
+              placeholder="All kinds"
+            />
 
-          <button
-            type="button"
-            className={styles.toolbarClearAll}
-            onClick={clearFilters}
-            disabled={!hasFilters}
-          >
-            <FiRotateCcw className={styles.toolbarClearIcon} aria-hidden />
-            Clear
-          </button>
-        </div>
+            <button
+              type="button"
+              className={styles.toolbarClearAll}
+              onClick={clearFilters}
+              disabled={!hasFilters}
+            >
+              <FiRotateCcw className={styles.toolbarClearIcon} aria-hidden />
+              Clear
+            </button>
+          </div>
+        )}
       </div>
+
+      {isMobile && filtersOpen && (
+        <div
+          className={styles.filterSheetOverlay}
+          role="presentation"
+          onClick={() => setFiltersOpen(false)}
+        >
+          <div
+            className={styles.filterSheet}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Filters"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.filterSheetHandle} aria-hidden />
+            <div className={styles.filterSheetHeader}>
+              <p className={styles.filterSheetTitle}>Filters</p>
+              <button
+                type="button"
+                className={styles.filterSheetClose}
+                onClick={() => setFiltersOpen(false)}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className={styles.filterSheetBody}>
+              <p className={styles.filterSheetLabel}>Sort</p>
+              <div className={styles.filterOptions}>
+                {SORT_OPTIONS.map((opt) => {
+                  const active = opt.value === sortKey
+                  const rawLabel = String(opt.label || '')
+                  const displayLabel =
+                    opt.value === 'updated'
+                      ? rawLabel
+                      : rawLabel.replace(/^Sort:\s*/i, '') || opt.label
+                  const isDefault = opt.value === 'updated'
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      className={`${styles.filterOption} ${
+                        active ? (isDefault ? styles.filterOptionActiveDefault : styles.filterOptionActive) : ''
+                      }`}
+                      onClick={() => {
+                        setSortKey(opt.value)
+                        setFiltersOpen(false)
+                      }}
+                      aria-pressed={active}
+                    >
+                      <span>{displayLabel}</span>
+                      {active && <span className={styles.filterOptionCheck} aria-hidden />}
+                    </button>
+                  )
+                })}
+              </div>
+
+              <p className={styles.filterSheetLabel}>Kind</p>
+              <div className={styles.filterOptions}>
+                {KIND_FILTER_OPTIONS.map((opt) => {
+                  const active = opt.value === kindFilter
+                  const isDefault = opt.value === 'all'
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      className={`${styles.filterOption} ${
+                        active ? (isDefault ? styles.filterOptionActiveDefault : styles.filterOptionActive) : ''
+                      }`}
+                      onClick={() => {
+                        setKindFilter(opt.value)
+                        setFiltersOpen(false)
+                      }}
+                      aria-pressed={active}
+                    >
+                      <span>{opt.label}</span>
+                      {active && <span className={styles.filterOptionCheck} aria-hidden />}
+                    </button>
+                  )
+                })}
+              </div>
+
+              <div className={styles.filterSheetFooter}>
+                <button
+                  type="button"
+                  className={styles.filterSheetClearAll}
+                  onClick={clearAllMobile}
+                  disabled={!mobileHasFilters}
+                >
+                  <FiRotateCcw className={styles.toolbarClearIcon} aria-hidden />
+                  Clear all
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className={styles.cardList}>
         {isLoading && (
@@ -413,7 +586,7 @@ export default function AdminListingsBrowsePage() {
         )}
       </div>
 
-      {!isLoading && !error && (
+      {!isLoading && !error && approvedFiltered.length > 0 && (
         <div className={styles.tableFooter}>
           Showing <strong>{approvedFiltered.length}</strong> of <strong>{approvedRows.length}</strong>{' '}
           approved listings

@@ -30,7 +30,7 @@ const CHART_ACCENT = '#1F312B'
 const NAV_ACTIONS = [
   { id: 'sellers',  label: 'Sellers',  icon: LuUserCheck,    href: '/admin/sellers' },
   { id: 'buyers',   label: 'Buyers',   icon: TbUsers,        href: '/admin/buyers' },
-  { id: 'billing',  label: 'Billing',  icon: TbCreditCard,   href: '/admin/billing' },
+  { id: 'billing',  label: 'Billing',  icon: TbCreditCard,   href: '/admin/profile/billing' },
   { id: 'disputes', label: 'Disputes', icon: TbReportSearch, href: '/admin/disputes' },
 ]
 

@@ -345,6 +345,12 @@ export default function AppSidebar({
                     icon: TbReportSearch,
                   },
                   {
+                    href: '/admin/listings/browse',
+                    label: 'Listings',
+                    icon: TbPackage,
+                    activePrefix: '/admin/listings',
+                  },
+                  {
                     href: '/admin/analytics',
                     label: 'Analytics',
                     icon: TbChartBar,
@@ -360,7 +366,10 @@ export default function AppSidebar({
                   variant === 'seller' ? BOTTOM_NAV_MAIN_ITEMS : undefined,
                 )
           ).map((item) => {
-            const active = isActive(item.href)
+            const active =
+              item.activePrefix && pathname
+                ? pathname.startsWith(item.activePrefix)
+                : isActive(item.href)
             const Icon = item.icon
             return (
               <Link

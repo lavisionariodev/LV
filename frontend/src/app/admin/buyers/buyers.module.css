@@ -515,11 +515,18 @@
   font-weight: 600;
 }
 
+.filterOptionActiveDefault {
+  background: #f5f8fb;
+  border-color: #e2e8f0;
+  color: #64748b;
+  font-weight: 600;
+}
+
 .filterOptionCheck {
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  background: #2aaf5b;
+  background: currentColor;
   flex-shrink: 0;
 }
 
@@ -721,10 +728,6 @@
   flex-wrap: wrap;
 }
 
-.mobileStatusInline {
-  display: none;
-}
-
 /* Joined column — fixed date width, no awkward gap */
 .table td:nth-child(4) .meta {
   white-space: nowrap;
@@ -781,6 +784,11 @@
 .status_suspended {
   border-color: #fecaca;
   color: #b91c1c;
+}
+
+/* Mobile-only inline status (next to Joined date). Hidden on desktop. */
+.mobileStatusInline {
+  display: none;
 }
 
 /* ── Loading ─────────────────────────────────────────────────────────────── */
