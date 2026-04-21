@@ -965,7 +965,8 @@ export default function AdminSettingsClient() {
   const [loading, setLoading] = useState(true)
   const [isEditingPersonal, setIsEditingPersonal] = useState(false)
   const [profile, setProfile] = useState(null)
-  const [draftName, setDraftName] = useState('')
+  const [draftFirstName, setDraftFirstName] = useState('')
+  const [draftLastName, setDraftLastName] = useState('')
   const [draftEmail, setDraftEmail] = useState('')
   const [draftSmsPhone, setDraftSmsPhone] = useState('')
   const [avatarPreview, setAvatarPreview] = useState('')
@@ -998,7 +999,14 @@ export default function AdminSettingsClient() {
         const data = await fetchCurrentAdminProfile()
         if (cancelled) return
         setProfile(data)
-        setDraftName(data.fullName || '')
+        setDraftFirstName(data.firstName || (data.fullName || '').trim().split(' ')[0] || '')
+        setDraftLastName(
+          data.lastName ||
+            (() => {
+              const parts = (data.fullName || '').trim().split(' ').filter(Boolean)
+              return parts.length > 1 ? parts.slice(1).join(' ') : ''
+            })(),
+        )
         setDraftEmail(data.email || '')
         setDraftSmsPhone(data.smsPhone || '')
       } catch (err) {
@@ -1029,10 +1037,10 @@ export default function AdminSettingsClient() {
     return ''
   }
 
-  const validateName = (value) => {
-    const v = value.trim()
-    if (!v) return 'Please enter your name.'
-    if (v.length < 2) return 'Name is too short.'
+  const validateFirstName = (value) => {
+    const v = String(value || '').trim()
+    if (!v) return 'Please enter your first name.'
+    if (v.length < 2) return 'First name is too short.'
     return ''
   }
 
@@ -1125,7 +1133,14 @@ export default function AdminSettingsClient() {
     setPersonalError('')
     setPersonalStatus('')
     if (profile) {
-      setDraftName(profile.fullName || '')
+      setDraftFirstName(profile.firstName || (profile.fullName || '').trim().split(' ')[0] || '')
+      setDraftLastName(
+        profile.lastName ||
+          (() => {
+            const parts = (profile.fullName || '').trim().split(' ').filter(Boolean)
+            return parts.length > 1 ? parts.slice(1).join(' ') : ''
+          })(),
+      )
       setDraftEmail(profile.email || '')
       setDraftSmsPhone(profile.smsPhone || '')
     }
@@ -1135,9 +1150,9 @@ export default function AdminSettingsClient() {
   const onSavePersonal = async () => {
     setPersonalError('')
     setPersonalStatus('')
-    const nameErr = validateName(draftName)
-    if (nameErr) {
-      setPersonalError(nameErr)
+    const firstErr = validateFirstName(draftFirstName)
+    if (firstErr) {
+      setPersonalError(firstErr)
       return
     }
     const emailErr = validateEmail(draftEmail)
@@ -1154,7 +1169,10 @@ export default function AdminSettingsClient() {
       setPersonalError('Profile is not loaded yet.')
       return
     }
-    const trimmedName = draftName.trim()
+    const firstName = String(draftFirstName || '').trim()
+    const lastNameRaw = String(draftLastName || '').trim()
+    const lastName = lastNameRaw ? lastNameRaw : null
+    const trimmedName = [firstName, lastNameRaw].filter(Boolean).join(' ')
     const trimmedEmail = draftEmail.trim()
     const trimmedSms = draftSmsPhone.trim()
     try {
@@ -1163,7 +1181,8 @@ export default function AdminSettingsClient() {
       const { error } = await supabase
         .from('admins')
         .update({
-          full_name: trimmedName,
+          first_name: firstName,
+          last_name: lastName,
           email: trimmedEmail,
           sms_phone: trimmedSms || null,
           updated_at: new Date().toISOString(),
@@ -1172,7 +1191,14 @@ export default function AdminSettingsClient() {
       if (error) throw error
       setProfile((prev) =>
         prev
-          ? { ...prev, fullName: trimmedName, email: trimmedEmail, smsPhone: trimmedSms }
+          ? {
+              ...prev,
+              firstName,
+              lastName,
+              fullName: trimmedName,
+              email: trimmedEmail,
+              smsPhone: trimmedSms,
+            }
           : prev,
       )
       setIsEditingPersonal(false)
@@ -1189,7 +1215,14 @@ export default function AdminSettingsClient() {
     setPersonalError('')
     setPersonalStatus('')
     if (profile) {
-      setDraftName(profile.fullName || '')
+      setDraftFirstName(profile.firstName || (profile.fullName || '').trim().split(' ')[0] || '')
+      setDraftLastName(
+        profile.lastName ||
+          (() => {
+            const parts = (profile.fullName || '').trim().split(' ').filter(Boolean)
+            return parts.length > 1 ? parts.slice(1).join(' ') : ''
+          })(),
+      )
       setDraftEmail(profile.email || '')
       setDraftSmsPhone(profile.smsPhone || '')
     }
@@ -1257,6 +1290,7 @@ export default function AdminSettingsClient() {
   }
 
   const shownAvatar = avatarPreview || profile?.avatarUrl || ''
+  const shownAvatarIsBlob = Boolean(shownAvatar && shownAvatar.startsWith('blob:'))
   const formId = 'adminPasswordForm'
   const id = (name) => `admin_${name}`
 
@@ -1400,7 +1434,8 @@ export default function AdminSettingsClient() {
                         width={96}
                         height={96}
                         className={styles.avatarImg}
-                        unoptimized
+                        sizes="96px"
+                        unoptimized={shownAvatarIsBlob}
                       />
                     ) : (
                       <div className={styles.avatarFallback}><FaUser /></div>
@@ -1449,13 +1484,24 @@ export default function AdminSettingsClient() {
                 <p className={styles.settingsRowDesc}>Used for account and audit references.</p>
               </div>
               <div className={`${styles.settingsRowControl} ${styles.profileControl}`}>
-                <input
-                  id={id('name')}
-                  value={draftName}
-                  onChange={(e) => setDraftName(e.target.value)}
-                  className={`${styles.input} ${!isEditingPersonal ? styles.inputReadOnly : ''}`}
-                  disabled={!isEditingPersonal}
-                />
+                <div style={{ display: 'grid', gap: 10 }}>
+                  <input
+                    id={id('first_name')}
+                    placeholder="First name"
+                    value={draftFirstName}
+                    onChange={(e) => setDraftFirstName(e.target.value)}
+                    className={`${styles.input} ${!isEditingPersonal ? styles.inputReadOnly : ''}`}
+                    disabled={!isEditingPersonal}
+                  />
+                  <input
+                    id={id('last_name')}
+                    placeholder="Last name"
+                    value={draftLastName}
+                    onChange={(e) => setDraftLastName(e.target.value)}
+                    className={`${styles.input} ${!isEditingPersonal ? styles.inputReadOnly : ''}`}
+                    disabled={!isEditingPersonal}
+                  />
+                </div>
               </div>
             </div>
 

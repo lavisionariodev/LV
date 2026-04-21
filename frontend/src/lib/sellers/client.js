@@ -150,6 +150,46 @@ export async function listSellersForAdmin() {
   }));
 }
 
+/**
+ * Admin helper: search sellers for typeahead (small, fast results).
+ * Matches business name, contact name, or email (case-insensitive).
+ */
+export async function searchSellersForAdmin(query, limit = 6) {
+  const q = String(query || '').trim();
+  if (!q) return [];
+
+  const like = `%${q}%`;
+  const { data, error } = await supabase
+    .from('sellers')
+    .select('user_id, business_name, contact_name, email, status, registered_at')
+    .or(`business_name.ilike.${like},contact_name.ilike.${like},email.ilike.${like}`)
+    .order('registered_at', { ascending: false })
+    .limit(limit);
+
+  if (error || !data) return [];
+
+  const rows = data.filter(Boolean);
+  const ids = [...new Set(rows.map((r) => r.user_id).filter(Boolean))];
+  if (ids.length === 0) return rows.map((r) => ({ ...r, avatarUrl: null }));
+
+  const { data: profiles, error: profilesError } = await supabase
+    .from('profiles')
+    .select('id, avatar_url')
+    .in('id', ids);
+
+  const avatarByUserId = new Map();
+  if (!profilesError && profiles) {
+    for (const p of profiles) {
+      avatarByUserId.set(p.id, normalizeAvatarUrl(p.avatar_url));
+    }
+  }
+
+  return rows.map((r) => ({
+    ...r,
+    avatarUrl: avatarByUserId.get(r.user_id) ?? null,
+  }));
+}
+
 export async function updateSellerStatus(sellerId, status) {
   if (!sellerId) {
     return { data: null, error: 'Missing seller id' };

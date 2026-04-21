@@ -9,6 +9,7 @@ import { listSellerListingsForAdmin } from '@/lib/seller-listings/client'
 import { getShopHrefForSellerListingRow } from '@/lib/shop-listings/client'
 import { formatPhpAmount } from '@/lib/cart/formatPhp'
 import { Dropdown } from '@/components/ui'
+import { TbX } from 'react-icons/tb'
 
 const APPROVED_STATUS_TABS = [
   { value: 'active', label: 'Active' },
@@ -327,6 +328,16 @@ export default function AdminListingsBrowsePage() {
               onChange={(e) => setSearch(e.target.value)}
               autoComplete="off"
             />
+            {search.trim() ? (
+              <button
+                type="button"
+                className={styles.toolbarSearchClearBtn}
+                onClick={() => setSearch('')}
+                aria-label="Clear search"
+              >
+                <TbX aria-hidden />
+              </button>
+            ) : null}
           </div>
 
           <Dropdown

@@ -1,11 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import styles from './admin.module.css'
-import { dashboard, disputes as disputesData } from '@/data/adminSampleData'
-import { listSellersForAdmin } from '@/lib/sellers/client'
-import { supabase } from '@/lib/supabase/client'
+import { dashboard } from '@/data/adminSampleData'
+import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
+import { searchSellersForAdmin } from '@/lib/sellers/client'
 import {
   AreaChart,
   Area,
@@ -18,17 +20,57 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
-import { TbReportSearch, TbUsers, TbSearch } from 'react-icons/tb'
+import { TbReportSearch, TbUsers, TbSearch, TbCreditCard, TbX } from 'react-icons/tb'
 import { LuUserCheck } from 'react-icons/lu'
 
 // Bar chart: green shades only (values match globals.css --color-green-*)
 const BAR_COLORS = ['#1F312B', '#2D4A38', '#3D683A', '#4A7C47']
 const CHART_ACCENT = '#1F312B'
 
-const QUICK_LINKS = [
-  { id: 'disputes', label: 'Disputes', icon: TbReportSearch },
-  { id: 'sellers', label: 'Sellers', icon: LuUserCheck },
-  { id: 'buyers', label: 'Buyers', icon: TbUsers },
+const NAV_ACTIONS = [
+  { id: 'sellers',  label: 'Sellers',  icon: LuUserCheck,    href: '/admin/sellers' },
+  { id: 'buyers',   label: 'Buyers',   icon: TbUsers,        href: '/admin/buyers' },
+  { id: 'billing',  label: 'Billing',  icon: TbCreditCard,   href: '/admin/billing' },
+  { id: 'disputes', label: 'Disputes', icon: TbReportSearch, href: '/admin/disputes' },
+]
+
+const MOBILE_STAT_CARDS = [
+  {
+    id: 'totalSellers',
+    title: 'Sellers',
+    value: (stats) => stats.totalSellers,
+    subtitle: 'Registered sellers',
+    icon: LuUserCheck,
+    href: '/admin/sellers',
+    actionLabel: 'View',
+  },
+  {
+    id: 'totalBuyers',
+    title: 'Buyers',
+    value: (stats) => stats.totalBuyers,
+    subtitle: 'Buyer accounts',
+    icon: TbUsers,
+    href: '/admin/buyers',
+    actionLabel: 'View',
+  },
+  {
+    id: 'transactions',
+    title: 'Transactions',
+    value: (stats) => stats.transactionsLast30Days,
+    subtitle: 'Last 30 days',
+    icon: TbCreditCard,
+    href: '/admin/payouts',
+    actionLabel: 'View',
+  },
+  {
+    id: 'openDisputes',
+    title: 'Disputes',
+    value: (stats) => stats.openDisputes,
+    subtitle: 'Open cases',
+    icon: TbReportSearch,
+    href: '/admin/disputes',
+    actionLabel: 'Review',
+  },
 ]
 
 function formatShortDate(dateStr) {
@@ -45,83 +87,97 @@ function getStatusDotColor(status) {
 }
 
 export default function AdminDashboardPage() {
-  const [activeQuickLink, setActiveQuickLink] = useState('disputes')
-  const [sellerPreview, setSellerPreview] = useState({
-    total: dashboard.stats.totalSellers,
-    active: 0,
-    pending: 0,
-    recent: [],
-  })
-  const [buyerPreview, setBuyerPreview] = useState({
-    total: dashboard.stats.totalBuyers,
-    recent: [],
-  })
+  const router = useRouter()
+  const [adminProfile, setAdminProfile] = useState(null)
+  const [adminProfileLoading, setAdminProfileLoading] = useState(true)
+
+  const [sellerQuery, setSellerQuery] = useState('')
+  const [sellerResults, setSellerResults] = useState([])
+  const [sellerLoading, setSellerLoading] = useState(false)
+  const [sellerOpen, setSellerOpen] = useState(false)
+  const searchWrapRef = useRef(null)
+  const searchInputRef = useRef(null)
 
   useEffect(() => {
-    let mounted = true
-
-    const loadPreviewData = async () => {
+    let cancelled = false
+    const load = async () => {
+      if (!cancelled) setAdminProfileLoading(true)
       try {
-        const sellers = await listSellersForAdmin()
-        if (mounted && Array.isArray(sellers)) {
-          setSellerPreview({
-            total: sellers.length,
-            active: sellers.filter((s) => s?.status === 'active').length,
-            pending: sellers.filter((s) => s?.status === 'pending').length,
-            recent: sellers.slice(0, 3),
-          })
-        }
-      } catch (error) {
-        console.error('Failed to load seller preview data:', error)
-      }
-
-      try {
-        const [{ count }, { data: recentBuyers }] = await Promise.all([
-          supabase
-            .from('users')
-            .select('id', { count: 'exact', head: true })
-            .eq('role', 'buyer'),
-          supabase
-            .from('users')
-            .select(`
-              id,
-              email,
-              created_at,
-              profiles (
-                full_name
-              )
-            `)
-            .eq('role', 'buyer')
-            .order('created_at', { ascending: false })
-            .limit(3),
-        ])
-
-        if (!mounted) return
-
-        const mappedRecent = (recentBuyers || []).map((u) => {
-          const profile = Array.isArray(u.profiles) ? u.profiles[0] : u.profiles
-          return {
-            id: u.id,
-            name: profile?.full_name || u.email || 'Unnamed buyer',
-            email: u.email || 'No email',
-            joinedAt: u.created_at ? new Date(u.created_at).toISOString().slice(0, 10) : 'N/A',
-          }
-        })
-
-        setBuyerPreview({
-          total: count ?? mappedRecent.length,
-          recent: mappedRecent,
-        })
-      } catch (error) {
-        console.error('Failed to load buyer preview data:', error)
+        const data = await fetchCurrentAdminProfile()
+        if (!cancelled) setAdminProfile(data)
+      } catch {
+        if (!cancelled) setAdminProfile(null)
+      } finally {
+        if (!cancelled) setAdminProfileLoading(false)
       }
     }
-
-    loadPreviewData()
+    load()
     return () => {
-      mounted = false
+      cancelled = true
     }
   }, [])
+
+  const avatarUrl = adminProfile?.avatarUrl || ''
+  const avatarFallback = (adminProfile?.fullName || '').trim().charAt(0).toUpperCase()
+  const greetingName =
+    adminProfile?.firstName?.trim() ||
+    (adminProfile?.fullName || '').trim().split(' ')[0] ||
+    ''
+
+  useEffect(() => {
+    const q = sellerQuery.trim()
+    if (q.length < 2) {
+      setSellerResults([])
+      setSellerLoading(false)
+      return
+    }
+
+    let cancelled = false
+    setSellerLoading(true)
+    const t = setTimeout(async () => {
+      try {
+        const rows = await searchSellersForAdmin(q, 6)
+        if (!cancelled) setSellerResults(Array.isArray(rows) ? rows : [])
+      } finally {
+        if (!cancelled) setSellerLoading(false)
+      }
+    }, 300)
+
+    return () => {
+      cancelled = true
+      clearTimeout(t)
+    }
+  }, [sellerQuery])
+
+  useEffect(() => {
+    if (!sellerOpen) return
+    const onDown = (e) => {
+      if (searchWrapRef.current && !searchWrapRef.current.contains(e.target)) {
+        setSellerOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [sellerOpen])
+
+  const goSeller = (seller) => {
+    const id = seller?.user_id || seller?.id
+    if (!id) return
+    const q = sellerQuery.trim()
+    const params = new URLSearchParams()
+    params.set('highlight', id)
+    if (q) params.set('q', q)
+    router.push(`/admin/sellers?${params.toString()}`)
+    setSellerOpen(false)
+  }
+
+  if (adminProfileLoading) {
+    return (
+      <div className={styles.dashLoadingScreen} role="status" aria-label="Loading dashboard">
+        <span className={styles.dashSpinner} aria-hidden="true" />
+      </div>
+    )
+  }
 
   return (
     <div className={styles.dashWrap}>
@@ -182,188 +238,178 @@ export default function AdminDashboardPage() {
         </div>
       </section>
 
-      {/* Mobile-first home hub: search, quick links, highlight */}
+      {/* Mobile-first home hub */}
       <section className={styles.quickLinks}>
-        <div className={styles.homeSearchWrap}>
-          <span className={styles.homeSearchIcon}>
-            <TbSearch />
-          </span>
-          <input
-            type="search"
-            placeholder="Search buyers, sellers, or orders"
-            className={styles.homeSearchInput}
-          />
+
+        {/* ── BCA-style hero header ── */}
+        <div className={styles.mobileHeroHeader}>
+          <div className={styles.mobileHeroTop}>
+            <div className={styles.mobileHeroLogo}>
+              <div className={styles.mobileHeroLogoIcon}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+                    strokeLinecap="round" strokeLinejoin="round" width="17" height="17">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                  <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+              </div>
+              <span className={styles.mobileHeroLogoText}>Admin Portal</span>
+            </div>
+            <div className={styles.mobileHeroAvatar} aria-label="Admin avatar">
+              {avatarUrl ? (
+                <Image
+                  src={avatarUrl}
+                  alt="Admin avatar"
+                  width={36}
+                  height={36}
+                  className={styles.mobileHeroAvatarImg}
+                  sizes="36px"
+                  priority
+                />
+              ) : (
+                avatarFallback
+              )}
+            </div>
+          </div>
+
+          <div className={styles.mobileHeroBalance}>
+            <p className={styles.mobileHeroBalanceLabel}>
+              {greetingName ? `Welcome back, ${greetingName}` : 'Welcome back'}
+            </p>
+            <p className={styles.mobileHeroBalanceValue}>
+              {dashboard.stats.totalSellers + dashboard.stats.totalBuyers} Users
+            </p>
+            <p className={styles.mobileHeroBalanceSub}>
+              <span className={styles.mobileHeroOnlineDot} />
+              All systems operational
+            </p>
+          </div>
         </div>
 
-        <div className={styles.quickLinksRow} role="tablist">
-          {QUICK_LINKS.map(({ id, label, icon: Icon }) => {
-            const isActive = activeQuickLink === id
-            return (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                className={`${styles.quickLinkCard} ${
-                  isActive ? styles.quickLinkCardActive : ''
-                }`}
-                onClick={() => setActiveQuickLink(id)}
-              >
-                <span className={styles.quickLinkIcon}>
+        {/* ── Nav action cards ── */}
+        <div className={styles.mobileNavCards}>
+          {NAV_ACTIONS.map(({ id, label, icon: Icon, href }) => (
+            <Link key={id} href={href} className={styles.mobileNavCard}>
+              <span className={styles.mobileNavCardTile} aria-hidden="true">
+                <span className={styles.mobileNavCardIcon}>
                   <Icon />
                 </span>
-                <span className={styles.quickLinkLabel}>{label}</span>
+              </span>
+              <span className={styles.mobileNavCardLabel}>{label}</span>
+            </Link>
+          ))}
+        </div>
+
+        {/* ── Body content with padding ── */}
+        <div className={styles.mobileBody}>
+
+          {/* Search bar */}
+          <div className={styles.homeSearchWrap} ref={searchWrapRef}>
+            <span className={styles.homeSearchIcon}>
+              <TbSearch />
+            </span>
+            <input
+              ref={searchInputRef}
+              type="search"
+              placeholder="Search sellers by name or email"
+              className={styles.homeSearchInput}
+              value={sellerQuery}
+              onChange={(e) => {
+                setSellerQuery(e.target.value)
+                setSellerOpen(true)
+              }}
+              onFocus={() => setSellerOpen(true)}
+              autoComplete="off"
+            />
+
+            {sellerQuery.trim() ? (
+              <button
+                type="button"
+                className={styles.homeSearchClearBtn}
+                onClick={() => {
+                  setSellerQuery('')
+                  setSellerResults([])
+                  setSellerOpen(false)
+                  searchInputRef.current?.focus()
+                }}
+                aria-label="Clear search"
+              >
+                <TbX aria-hidden />
               </button>
-            )
-          })}
-        </div>
+            ) : null}
 
-        <div className={styles.homeHighlightCard}>
-          <p className={styles.homeHighlightTitle}>Keep your marketplace healthy</p>
-          <p className={styles.homeHighlightText}>
-            Regularly review disputes and pending payouts so buyers and sellers
-            stay confident on the platform.
-          </p>
-          <Link href="/admin/analytics" className={styles.homeHighlightLink}>
-            View analytics
-          </Link>
-        </div>
-
-        <div className={styles.quickLinkContent}>
-          {activeQuickLink === 'disputes' && (
-            <div className={styles.qlPanel}>
-              {/* stat chips */}
-              <div className={styles.qlChips}>
-                <div className={styles.qlChip}>
-                  <span className={styles.qlChipValue}>{disputesData.length}</span>
-                  <span className={styles.qlChipLabel}>Total</span>
-                </div>
-                <div className={styles.qlChip}>
-                  <span className={styles.qlChipValue}>
-                    {disputesData.filter((d) => d.status === 'open').length}
-                  </span>
-                  <span className={styles.qlChipLabel}>Open</span>
-                </div>
-                <div className={styles.qlChip}>
-                  <span className={styles.qlChipValue}>
-                    {disputesData.filter((d) => d.status === 'under_review').length}
-                  </span>
-                  <span className={styles.qlChipLabel}>Review</span>
-                </div>
-                <div className={styles.qlChip}>
-                  <span className={styles.qlChipValue}>
-                    {disputesData.filter((d) => d.status === 'resolved').length}
-                  </span>
-                  <span className={styles.qlChipLabel}>Resolved</span>
-                </div>
-              </div>
-              {/* recent rows */}
-              <div className={styles.qlRows}>
-                {disputesData.slice(0, 3).map((item) => (
-                  <div className={styles.qlRow} key={item.id}>
-                    <span
-                      className={styles.qlDot}
-                      style={{ backgroundColor: getStatusDotColor(item.status.replace('_', ' ')) }}
-                    />
-                    <div className={styles.qlRowMeta}>
-                      <span className={styles.qlRowType}>{item.reason}</span>
-                      <span className={styles.qlRowDate}>{item.openedAt}</span>
-                    </div>
-                    <span className={styles.qlBadge}>{item.status.replace('_', ' ')}</span>
-                  </div>
-                ))}
-              </div>
-              <Link href="/admin/disputes" className={styles.qlCta}>
-                View all disputes →
-              </Link>
-            </div>
-          )}
-
-          {activeQuickLink === 'sellers' && (
-            <div className={styles.qlPanel}>
-              <div className={styles.qlChips}>
-                <div className={styles.qlChip}>
-                  <span className={styles.qlChipValue}>{sellerPreview.total}</span>
-                  <span className={styles.qlChipLabel}>Total</span>
-                </div>
-                <div className={styles.qlChip}>
-                  <span className={styles.qlChipValue}>{sellerPreview.active}</span>
-                  <span className={styles.qlChipLabel}>Active</span>
-                </div>
-                <div className={styles.qlChip}>
-                  <span className={styles.qlChipValue}>{sellerPreview.pending}</span>
-                  <span className={styles.qlChipLabel}>Pending</span>
-                </div>
-              </div>
-              <div className={styles.qlRows}>
-                {sellerPreview.recent.length > 0 ? (
-                  sellerPreview.recent.map((seller) => (
-                    <div className={styles.qlRow} key={seller.user_id || seller.id}>
-                      <span
-                        className={styles.qlDot}
-                        style={{ backgroundColor: getStatusDotColor(seller.status) }}
-                      />
-                      <div className={styles.qlRowMeta}>
-                        <span className={styles.qlRowType}>{seller.business_name || 'Unnamed seller'}</span>
-                        <span className={styles.qlRowDate}>{seller.email || 'No email'}</span>
-                      </div>
-                      <span className={styles.qlBadge}>{seller.status || 'unknown'}</span>
-                    </div>
-                  ))
+            {sellerOpen && (sellerQuery.trim().length >= 2) && (
+              <div className={styles.homeSearchDropdown} role="listbox" aria-label="Seller results">
+                {sellerLoading ? (
+                  <div className={styles.homeSearchDropdownEmpty}>Searching…</div>
+                ) : sellerResults.length === 0 ? (
+                  <div className={styles.homeSearchDropdownEmpty}>No sellers found</div>
                 ) : (
-                  <div className={styles.qlActionRow}>
-                    <span className={styles.qlActionIcon}><TbUsers /></span>
-                    <span className={styles.qlActionLabel}>No sellers available yet</span>
-                  </div>
+                  sellerResults.map((s) => {
+                    const id = s.user_id || s.id
+                    const name = s.business_name || s.contact_name || s.email || 'Seller'
+                    const meta = s.email || s.contact_name || ''
+                    const initial = String(name).trim().charAt(0).toUpperCase()
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        className={styles.homeSearchDropdownItem}
+                        role="option"
+                        onClick={() => goSeller(s)}
+                      >
+                        <span className={styles.homeSearchResultAvatar} aria-hidden="true">
+                          {s.avatarUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={s.avatarUrl} alt="" className={styles.homeSearchResultAvatarImg} />
+                          ) : (
+                            <span className={styles.homeSearchResultAvatarFallback}>{initial}</span>
+                          )}
+                        </span>
+                        <span className={styles.homeSearchResultText}>
+                          <span className={styles.homeSearchResultName}>{name}</span>
+                          {meta ? <span className={styles.homeSearchResultMeta}>{meta}</span> : null}
+                        </span>
+                        <span className={styles.homeSearchResultCta} aria-hidden="true">View</span>
+                      </button>
+                    )
+                  })
                 )}
               </div>
-              <Link href="/admin/sellers" className={styles.qlCta}>
-                Manage sellers →
-              </Link>
-            </div>
-          )}
+            )}
+          </div>
 
-          {activeQuickLink === 'buyers' && (
-            <div className={styles.qlPanel}>
-              <div className={styles.qlChips}>
-                <div className={styles.qlChip}>
-                  <span className={styles.qlChipValue}>{buyerPreview.total}</span>
-                  <span className={styles.qlChipLabel}>Total</span>
-                </div>
-                <div className={styles.qlChip}>
-                  <span className={styles.qlChipValue}>{buyerPreview.recent.length}</span>
-                  <span className={styles.qlChipLabel}>Latest shown</span>
-                </div>
-              </div>
-              <div className={styles.qlRows}>
-                {buyerPreview.recent.length > 0 ? (
-                  buyerPreview.recent.map((buyer) => (
-                    <div className={styles.qlRow} key={buyer.id}>
-                      <span
-                        className={styles.qlDot}
-                        style={{ backgroundColor: getStatusDotColor('active') }}
-                      />
-                      <div className={styles.qlRowMeta}>
-                        <span className={styles.qlRowType}>{buyer.name}</span>
-                        <span className={styles.qlRowDate}>{buyer.joinedAt}</span>
-                      </div>
-                      <span className={styles.qlBadge}>buyer</span>
-                    </div>
-                  ))
-                ) : (
-                  <div className={styles.qlActionRow}>
-                    <span className={styles.qlActionIcon}><TbUsers /></span>
-                    <span className={styles.qlActionLabel}>No buyers available yet</span>
-                  </div>
-                )}
-              </div>
-              <Link href="/admin/buyers" className={styles.qlCta}>
-                Manage buyers →
-              </Link>
-            </div>
-          )}
+          {/* Analytics highlight card */}
+          <div className={styles.homeHighlightCard}>
+            <p className={styles.homeHighlightTitle}>Keep your marketplace healthy</p>
+            <p className={styles.homeHighlightText}>
+              Regularly review disputes and pending payouts so buyers and sellers
+              stay confident on the platform.
+            </p>
+            <Link href="/admin/analytics" className={styles.homeHighlightLink}>
+              View analytics
+            </Link>
+          </div>
 
-        </div>
+          {/* Mobile stat cards (dashboard only) */}
+          <div className={styles.mobileStatsGrid} aria-label="Admin stats">
+            {MOBILE_STAT_CARDS.map(({ id, title, value, subtitle, icon: Icon, href, actionLabel }) => (
+              <Link key={id} href={href} className={styles.mobileStatCard}>
+                <div className={styles.mobileStatCardTop}>
+                  <span className={styles.mobileStatIcon} aria-hidden="true">
+                    <Icon />
+                  </span>
+                  <span className={styles.mobileStatTitle}>{title}</span>
+                </div>
+                <p className={styles.mobileStatValue}>{Number(value(dashboard.stats)).toLocaleString()}</p>
+                <div className={styles.mobileStatFooter}>
+                  <span className={styles.mobileStatSubtitle}>{subtitle}</span>
+                  <span className={styles.mobileStatAction}>{actionLabel}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+        </div>{/* end mobileBody */}
 
       </section>
 

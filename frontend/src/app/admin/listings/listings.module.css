@@ -178,6 +178,44 @@
   color: #94a3b8;
 }
 
+/* Hide native (browser) search clear button */
+.toolbarSearchInput::-webkit-search-cancel-button,
+.toolbarSearchInput::-webkit-search-decoration,
+.toolbarSearchInput::-webkit-search-results-button,
+.toolbarSearchInput::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.toolbarSearchClearBtn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  line-height: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.toolbarSearchClearBtn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.toolbarSearchClearBtn:hover {
+  color: #64748b;
+}
+
+.toolbarSearchClearBtn:focus-visible {
+  outline: 2px solid rgba(15, 23, 42, 0.25);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
 .filterBtn {
   height: 36px;
   padding: 0 12px;

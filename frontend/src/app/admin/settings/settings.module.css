@@ -1,57 +1,57 @@
 /* =====================
    PAGE SHELL
    ===================== */
-   .page {
-    width: 100%;
-    min-height: 100%;
-    background: #ffffff;
-  }
+.page {
+  width: 100%;
+  min-height: 100%;
+  background: #ffffff;
+}
 
-  .pageMobileSubpage {
-    overflow: hidden;
-  }
-  
-  /* =====================
-     TAB BAR (boxed tabs)
-     ===================== */
-  .tabBar {
-    display: flex;
-    align-items: center;
-    flex-wrap: nowrap;
-    gap: 2px;
-    margin-bottom: 20px;
-    padding: 8px;
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  .tabBar::-webkit-scrollbar {
-    display: none;
-  }
-  
-  .tabItem {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    padding: 4px 12px;
-    margin: 0;
-    font-size: 13px;
-    font-weight: 500;
-    color: #9ba2ac;
-    border: 1px solid transparent;
-    border-radius: 6px;
-    background: transparent;
-    cursor: pointer;
-    white-space: nowrap;
-    text-decoration: none;
-    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-  }
+.pageMobileSubpage {
+  overflow: hidden;
+}
+
+/* =====================
+   TAB BAR (boxed tabs)
+   ===================== */
+.tabBar {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 2px;
+  margin-bottom: 20px;
+  padding: 8px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tabBar::-webkit-scrollbar {
+  display: none;
+}
+
+.tabItem {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 4px 12px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #9ba2ac;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
 
   .tabItem:is(button) {
     font-family: inherit;
@@ -1093,6 +1093,14 @@
     min-height: 80vh;
     animation: sheetSlideIn 0.25s ease-out forwards;
   }
+
+  /* Mobile "Manage Profile" sheet needs extra room for name fields. */
+  .bottomSheetProfileEdit {
+    min-height: 86vh;
+    max-height: min(92vh, 100dvh);
+    display: flex;
+    flex-direction: column;
+  }
   
   .bottomSheetHandle {
     width: 40px;
@@ -1253,6 +1261,14 @@
     max-height: 60vh;
     overflow-y: auto;
     padding-top: 30px;
+  }
+
+  .bottomSheetProfileEdit .bottomSheetBody {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    padding-top: 20px;
+    -webkit-overflow-scrolling: touch;
   }
   
   .sheetAvatarSection {

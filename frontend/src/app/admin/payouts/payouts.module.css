@@ -247,6 +247,44 @@
   color: #94a3b8;
 }
 
+/* Hide native (browser) search clear button */
+.toolbarSearchInput::-webkit-search-cancel-button,
+.toolbarSearchInput::-webkit-search-decoration,
+.toolbarSearchInput::-webkit-search-results-button,
+.toolbarSearchInput::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.toolbarSearchClearBtn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  line-height: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.toolbarSearchClearBtn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.toolbarSearchClearBtn:hover {
+  color: #64748b;
+}
+
+.toolbarSearchClearBtn:focus-visible {
+  outline: 2px solid rgba(15, 23, 42, 0.25);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
 /* Date range — readout + invisible date inputs (left / right halves) */
 .dateRangeBox {
   position: relative;
@@ -637,19 +675,18 @@
 }
 
 .mobileChoiceBtnActive {
-  border-color: #0f172a;
-  background: #f1f5f9;
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #15803d;
+  font-weight: 600;
 }
 
-/* Stronger accent when selected */
-.mobileChoiceBtnActive[data-accent="green"] { border-color: #16a34a; background: #f0fdf4; color: #15803d; }
-.mobileChoiceBtnActive[data-accent="amber"] { border-color: #d97706; background: #fffbeb; color: #b45309; }
-.mobileChoiceBtnActive[data-accent="red"]   { border-color: #dc2626; background: #fff5f5; color: #b91c1c; }
-.mobileChoiceBtnActive[data-accent="blue"]  { border-color: #2563eb; background: #eff6ff; color: #1d4ed8; }
-.mobileChoiceBtnActive[data-accent="slate"] { border-color: #0f172a; background: #f1f5f9; color: #0f172a; }
-
 .mobileChoiceCheck {
-  font-weight: 900;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #2aaf5b;
+  flex-shrink: 0;
 }
 
 .mobileFilterRow:last-child {
@@ -712,18 +749,137 @@
   flex: 2;
   height: 50px;
   border-radius: 14px;
-  border: none;
-  background: #0f172a;
-  color: #fff;
+  border: 1.5px solid #cfe0d3;
+  background: #f8fbf9;
+  color: #166534;
   font-size: 14px;
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
 .mobileFilterApplyBtn:hover {
-  background: #1e293b;
+  background: #dcfce7;
+  border-color: #a7f3d0;
+}
+
+/* ── Mobile combined search + filter (matches sellers) ─────────────────── */
+
+.mobileSearchWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 6px 0 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.mobileSearchWrap:focus-within {
+  border-color: #cbd5e1;
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.05);
+}
+
+.mobileSearchWrapActive {
+  border-color: #86efac;
+}
+
+.mobileSearchIcon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: #94a3b8;
+}
+
+.mobileSearchIcon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.mobileSearchInput {
+  border: none;
+  outline: none;
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  background: transparent;
+  color: #0f172a;
+  font-family: inherit;
+}
+
+.mobileSearchInput::placeholder {
+  color: #94a3b8;
+}
+
+.mobileSearchInput::-webkit-search-cancel-button,
+.mobileSearchInput::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.mobileSearchClearBtn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  line-height: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.mobileSearchClearBtn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.mobileSearchClearBtn:hover {
+  color: #64748b;
+}
+
+.mobileSearchDivider {
+  width: 1px;
+  height: 22px;
+  background: #e5e7eb;
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+
+.mobileFilterBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  transition: background 0.12s;
+}
+
+.mobileFilterBtn:hover {
+  background: #f1f5f9;
+}
+
+.mobileFilterIcon {
+  width: 18px;
+  height: 18px;
+  color: #166534;
+  transition: color 0.15s;
+}
+
+.mobileFilterIconActive {
+  color: #166534;
 }
 
 .filterFieldInline {
@@ -2638,22 +2794,21 @@
   width: 100%;
   padding: 10px;
   border-radius: 10px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
-  color: #334155;
-  font-size: 12px;
+  border: 1px solid #d7e1db;
+  background: #ffffff;
+  color: #166534;
+  font-size: 13px;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  transition: all 0.15s;
 }
-.mobileCardDetailsBtn:hover {
-  background: #0f172a;
-  color: #fff;
-  border-color: #0f172a;
-}
-/* ── Custom Checkbox ──────────────────────────────────────────────────────── */
 
+.mobileCardDetailsBtn:hover {
+  background: #f0fdf4;
+  color: #166534;
+}
+
+/* ── Custom Checkbox ──────────────────────────────────────────────────────── */
 .rowCheckbox {
   appearance: none;
   -webkit-appearance: none;
