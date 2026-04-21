@@ -79,7 +79,11 @@ function MobileFilterModal({ isOpen, onClose, statusFilter, setStatusFilter, tab
             <button
               key={opt.value}
               type="button"
-              className={`${styles.filterModalOption}${statusFilter === opt.value ? ` ${styles.filterModalOptionActive}` : ''}`}
+              className={`${styles.filterModalOption}${
+                statusFilter === opt.value
+                  ? ` ${opt.value === 'all' ? styles.filterModalOptionActiveDefault : styles.filterModalOptionActive}`
+                  : ''
+              }`}
               onClick={() => {
                 setStatusFilter(opt.value)
                 onClose()

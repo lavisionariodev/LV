@@ -217,10 +217,10 @@
   align-items: center;
   gap: 8px;
   height: 40px;
-  padding: 0 12px;
-  border: 1px solid #e5e7eb;
+  padding: 0;
+  border: none;
   border-radius: 8px;
-  background: #fff;
+  background: transparent;
   flex: 1;
   min-width: 160px;
   max-width: 280px;
@@ -240,7 +240,10 @@
 }
 
 .toolbarSearchInput {
-  border: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  height: 40px;
+  padding: 0 12px;
   outline: none;
   flex: 1;
   min-width: 0;
@@ -804,10 +807,10 @@
   gap: 8px;
   height: 48px;
   padding: 0 6px 0 14px;
-  border: 1px solid #e5e7eb;
+  border: none;
   border-radius: 14px;
   background: #ffffff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: none;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
@@ -833,7 +836,10 @@
 }
 
 .mobileSearchInput {
-  border: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  height: 44px;
+  padding: 0 12px;
   outline: none;
   flex: 1;
   min-width: 0;
@@ -841,6 +847,48 @@
   background: transparent;
   color: #0f172a;
   font-family: inherit;
+}
+
+.mobileSearchSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.mobileActivePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px 5px 12px;
+  border-radius: 999px;
+  background: #f0fdf4;
+  border: 1px solid #5dcb85;
+  font-size: 12px;
+  font-weight: 600;
+  color: #15803d;
+  align-self: flex-start;
+}
+
+.mobileActivePillLabel {
+  line-height: 1;
+}
+
+.mobileActivePillClear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: #4ade80;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.mobileActivePillClear svg {
+  width: 13px;
+  height: 13px;
 }
 
 .mobileSearchInput::placeholder {

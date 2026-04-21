@@ -313,6 +313,16 @@ export default function AdminListingsBrowsePage() {
   }
 
   const mobileHasFilters = hasFilters || sortKey !== 'updated'
+  const activeFilterLabels = useMemo(() => {
+    const labels = []
+    if (sortKey !== 'updated') {
+      labels.push((SORT_OPTIONS.find((o) => o.value === sortKey)?.label || sortKey).replace(/^Sort:\s*/i, ''))
+    }
+    if (kindFilter !== 'all') {
+      labels.push(KIND_FILTER_OPTIONS.find((o) => o.value === kindFilter)?.label || kindFilter)
+    }
+    return labels
+  }, [sortKey, kindFilter])
 
   return (
     <div className={styles.pageRoot}>
@@ -351,43 +361,63 @@ export default function AdminListingsBrowsePage() {
         </div>
 
         {isMobile ? (
-          <div className={`${styles.mobileSearchWrap}${mobileHasFilters ? ` ${styles.mobileSearchWrapActive}` : ''}`}>
-            <span className={styles.mobileSearchIcon}>
-              <Icon.Search />
-            </span>
-            <input
-              aria-label="Search listings"
-              className={styles.mobileSearchInput}
-              type="search"
-              placeholder="Search title, seller, or email…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              autoComplete="off"
-            />
-            {search.trim() ? (
+          <div className={styles.mobileSearchSection}>
+            <div className={`${styles.mobileSearchWrap}${mobileHasFilters ? ` ${styles.mobileSearchWrapActive}` : ''}`}>
+              <span className={styles.mobileSearchIcon}>
+                <Icon.Search />
+              </span>
+              <input
+                aria-label="Search listings"
+                className={styles.mobileSearchInput}
+                type="search"
+                placeholder="Search title, seller, or email…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                autoComplete="off"
+              />
+              {search.trim() ? (
+                <button
+                  type="button"
+                  className={styles.mobileSearchClearBtn}
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                >
+                  <TbX aria-hidden />
+                </button>
+              ) : null}
+              <div className={styles.mobileSearchDivider} />
               <button
                 type="button"
-                className={styles.mobileSearchClearBtn}
-                onClick={() => setSearch('')}
-                aria-label="Clear search"
+                className={styles.mobileFilterBtn}
+                onClick={() => setFiltersOpen(true)}
+                aria-haspopup="dialog"
+                aria-expanded={filtersOpen}
+                aria-label="Open filters"
               >
-                <TbX aria-hidden />
+                <LuSettings2
+                  aria-hidden
+                  className={`${styles.mobileFilterIcon}${mobileHasFilters ? ` ${styles.mobileFilterIconActive}` : ''}`}
+                />
               </button>
-            ) : null}
-            <div className={styles.mobileSearchDivider} />
-            <button
-              type="button"
-              className={styles.mobileFilterBtn}
-              onClick={() => setFiltersOpen(true)}
-              aria-haspopup="dialog"
-              aria-expanded={filtersOpen}
-              aria-label="Open filters"
-            >
-              <LuSettings2
-                aria-hidden
-                className={`${styles.mobileFilterIcon}${mobileHasFilters ? ` ${styles.mobileFilterIconActive}` : ''}`}
-              />
-            </button>
+            </div>
+            {activeFilterLabels.map((label) => (
+              <div key={label} className={styles.mobileActivePill}>
+                <span className={styles.mobileActivePillLabel}>{label}</span>
+                <button
+                  type="button"
+                  className={styles.mobileActivePillClear}
+                  onClick={() => {
+                    const sortLabel = (SORT_OPTIONS.find((o) => o.value === sortKey)?.label || sortKey).replace(/^Sort:\s*/i, '')
+                    const kindLabel = KIND_FILTER_OPTIONS.find((o) => o.value === kindFilter)?.label || kindFilter
+                    if (label === sortLabel) setSortKey('updated')
+                    if (label === kindLabel) setKindFilter('all')
+                  }}
+                  aria-label={`Clear ${label} filter`}
+                >
+                  <TbX aria-hidden />
+                </button>
+              </div>
+            ))}
           </div>
         ) : (
           <div className={styles.filterRow}>

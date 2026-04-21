@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import styles from './admin.module.css'
 import { dashboard } from '@/data/adminSampleData'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
-import { searchSellersForAdmin } from '@/lib/sellers/client'
+import { listSellersForAdmin, searchSellersForAdmin } from '@/lib/sellers/client'
 import {
   AreaChart,
   Area,
@@ -95,6 +95,7 @@ export default function AdminDashboardPage() {
   const [sellerResults, setSellerResults] = useState([])
   const [sellerLoading, setSellerLoading] = useState(false)
   const [sellerOpen, setSellerOpen] = useState(false)
+  const [activeSellerCount, setActiveSellerCount] = useState(dashboard.stats.totalSellers)
   const searchWrapRef = useRef(null)
   const searchInputRef = useRef(null)
 
@@ -112,6 +113,26 @@ export default function AdminDashboardPage() {
       }
     }
     load()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    const loadActiveSellers = async () => {
+      try {
+        const sellers = await listSellersForAdmin()
+        if (cancelled) return
+        const activeCount = Array.isArray(sellers)
+          ? sellers.filter((s) => String(s?.status || '').toLowerCase() === 'active').length
+          : dashboard.stats.totalSellers
+        setActiveSellerCount(activeCount)
+      } catch {
+        if (!cancelled) setActiveSellerCount(dashboard.stats.totalSellers)
+      }
+    }
+    loadActiveSellers()
     return () => {
       cancelled = true
     }
@@ -280,7 +301,7 @@ export default function AdminDashboardPage() {
               {greetingName ? `Welcome back, ${greetingName}` : 'Welcome back'}
             </p>
             <p className={styles.mobileHeroBalanceValue}>
-              {dashboard.stats.totalSellers + dashboard.stats.totalBuyers} Users
+              {activeSellerCount} Sellers
             </p>
             <p className={styles.mobileHeroBalanceSub}>
               <span className={styles.mobileHeroOnlineDot} />
