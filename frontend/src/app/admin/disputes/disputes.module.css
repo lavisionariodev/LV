@@ -834,6 +834,11 @@
   border-color: #5dcb85;
 }
 
+.filterModalOptionActiveDefault {
+  background: #fafdff;
+  border-color: #e2e8f0;
+}
+
 .filterModalOptionLabel {
   font-size: 14px;
   font-weight: 500;
@@ -842,6 +847,11 @@
 
 .filterModalOptionActive .filterModalOptionLabel {
   color: #15803d;
+  font-weight: 600;
+}
+
+.filterModalOptionActiveDefault .filterModalOptionLabel {
+  color: #64748b;
   font-weight: 600;
 }
 
@@ -863,6 +873,11 @@
 .filterModalOptionActive .filterModalOptionCount {
   background: #dcfce7;
   color: #15803d;
+}
+
+.filterModalOptionActiveDefault .filterModalOptionCount {
+  background: #f1f5f9;
+  color: #64748b;
 }
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */

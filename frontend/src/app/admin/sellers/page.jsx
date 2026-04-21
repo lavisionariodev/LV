@@ -362,6 +362,7 @@ export default function AdminSellersPage() {
 
   const statusLabel =
     STATUS_FILTER_OPTIONS.find((o) => o.value === statusFilter)?.label ?? 'All statuses';
+  const activeFilterLabel = statusFilter !== 'all' ? statusLabel : null;
 
   const handleStatusChange = async (sellerId, nextStatus) => {
     setUpdatingId(sellerId);
@@ -400,42 +401,57 @@ export default function AdminSellersPage() {
           <div className={styles.toolbarRow}>
             <div className={styles.toolbarControls}>
               {isMobile ? (
-                <div className={`${styles.mobileSearchWrap}${statusFilter !== 'all' ? ` ${styles.mobileSearchWrapActive}` : ''}`}>
-                  <span className={styles.mobileSearchIcon}>
-                    <Icon.Search />
-                  </span>
-                  <input
-                    className={styles.mobileSearchInput}
-                    type="search"
-                    placeholder="Search by name or email…"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    autoComplete="off"
-                  />
-                  {search.trim() ? (
+                <div className={styles.mobileSearchSection}>
+                  <div className={`${styles.mobileSearchWrap}${statusFilter !== 'all' ? ` ${styles.mobileSearchWrapActive}` : ''}`}>
+                    <span className={styles.mobileSearchIcon}>
+                      <Icon.Search />
+                    </span>
+                    <input
+                      className={styles.mobileSearchInput}
+                      type="search"
+                      placeholder="Search by name or email…"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      autoComplete="off"
+                    />
+                    {search.trim() ? (
+                      <button
+                        type="button"
+                        className={styles.mobileSearchClearBtn}
+                        onClick={() => setSearch('')}
+                        aria-label="Clear search"
+                      >
+                        <TbX aria-hidden />
+                      </button>
+                    ) : null}
+                    <div className={styles.mobileSearchDivider} />
                     <button
                       type="button"
-                      className={styles.mobileSearchClearBtn}
-                      onClick={() => setSearch('')}
-                      aria-label="Clear search"
+                      className={styles.mobileFilterBtn}
+                      onClick={() => setFiltersOpen(true)}
+                      aria-haspopup="dialog"
+                      aria-expanded={filtersOpen}
+                      aria-label="Open filters"
                     >
-                      <TbX aria-hidden />
+                      <LuSettings2
+                        aria-hidden
+                        className={`${styles.mobileFilterIcon}${statusFilter !== 'all' ? ` ${styles.mobileFilterIconActive}` : ''}`}
+                      />
                     </button>
-                  ) : null}
-                  <div className={styles.mobileSearchDivider} />
-                  <button
-                    type="button"
-                    className={styles.mobileFilterBtn}
-                    onClick={() => setFiltersOpen(true)}
-                    aria-haspopup="dialog"
-                    aria-expanded={filtersOpen}
-                    aria-label="Open filters"
-                  >
-                    <LuSettings2
-                      aria-hidden
-                      className={`${styles.mobileFilterIcon}${statusFilter !== 'all' ? ` ${styles.mobileFilterIconActive}` : ''}`}
-                    />
-                  </button>
+                  </div>
+                  {activeFilterLabel && (
+                    <div className={styles.mobileActivePill}>
+                      <span className={styles.mobileActivePillLabel}>{activeFilterLabel}</span>
+                      <button
+                        type="button"
+                        className={styles.mobileActivePillClear}
+                        onClick={() => setStatusFilter('all')}
+                        aria-label="Clear filter"
+                      >
+                        <TbX aria-hidden />
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <>

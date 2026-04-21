@@ -36,6 +36,10 @@ const Icon = {
   ),
 }
 
+const DEFAULT_PAYOUT_OPTION = { value: 'all', label: 'All' }
+const DEFAULT_SELLER_OPTION = { value: 'all', label: 'All' }
+const DEFAULT_PAYMENT_OPTION = { value: 'all', label: 'All' }
+
 // ─── Sub-Components ──────────────────────────────────────────────────────────
 
 // ── Date Range Picker ────────────────────────────────────────────────────────
@@ -1070,6 +1074,19 @@ export default function AdminPayoutsPage() {
     typeof window !== 'undefined' ? window.innerWidth <= 640 : false
   )
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
+  const activeFilterLabels = useMemo(() => {
+    const labels = []
+    if (filterPayout !== 'all') {
+      labels.push(PAYOUT_STATUS_META[filterPayout]?.label || filterPayout)
+    }
+    if (filterSeller !== 'all') {
+      labels.push(SELLERS.find((s) => s.id === filterSeller)?.name || filterSeller)
+    }
+    if (filterPayment !== 'all') {
+      labels.push(PAYMENT_STATUS_META[filterPayment]?.label || filterPayment)
+    }
+    return labels
+  }, [filterPayout, filterSeller, filterPayment])
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 640px)')
@@ -1127,43 +1144,65 @@ export default function AdminPayoutsPage() {
             <div className={styles.toolbarRow}>
               <div className={styles.toolbarControls}>
                 {isMobile ? (
-                  <div className={`${styles.mobileSearchWrap}${hasFilters ? ` ${styles.mobileSearchWrapActive}` : ''}`}>
-                    <span className={styles.mobileSearchIcon}>
-                      <Icon.Search />
-                    </span>
-                    <input
-                      className={styles.mobileSearchInput}
-                      type="search"
-                      placeholder="Search (Order ID)"
-                      value={search}
-                      onChange={e => setSearch(e.target.value)}
-                      autoComplete="off"
-                    />
-                    {String(search || '').trim() ? (
+                  <div className={styles.mobileSearchSection}>
+                    <div className={`${styles.mobileSearchWrap}${hasFilters ? ` ${styles.mobileSearchWrapActive}` : ''}`}>
+                      <span className={styles.mobileSearchIcon}>
+                        <Icon.Search />
+                      </span>
+                      <input
+                        className={styles.mobileSearchInput}
+                        type="search"
+                        placeholder="Search (Order ID)"
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        autoComplete="off"
+                      />
+                      {String(search || '').trim() ? (
+                        <button
+                          type="button"
+                          className={styles.mobileSearchClearBtn}
+                          onClick={() => setSearch('')}
+                          aria-label="Clear search"
+                        >
+                          <TbX aria-hidden />
+                        </button>
+                      ) : null}
+                      <div className={styles.mobileSearchDivider} />
                       <button
                         type="button"
-                        className={styles.mobileSearchClearBtn}
-                        onClick={() => setSearch('')}
-                        aria-label="Clear search"
+                        className={styles.mobileFilterBtn}
+                        onClick={() => setMobileFiltersOpen(v => !v)}
+                        aria-haspopup="dialog"
+                        aria-expanded={mobileFiltersOpen}
+                        aria-controls="payoutsMobileFilters"
+                        aria-label="Open filters"
                       >
-                        <TbX aria-hidden />
+                        <LuSettings2
+                          aria-hidden
+                          className={`${styles.mobileFilterIcon}${hasFilters ? ` ${styles.mobileFilterIconActive}` : ''}`}
+                        />
                       </button>
-                    ) : null}
-                    <div className={styles.mobileSearchDivider} />
-                    <button
-                      type="button"
-                      className={styles.mobileFilterBtn}
-                      onClick={() => setMobileFiltersOpen(v => !v)}
-                      aria-haspopup="dialog"
-                      aria-expanded={mobileFiltersOpen}
-                      aria-controls="payoutsMobileFilters"
-                      aria-label="Open filters"
-                    >
-                      <LuSettings2
-                        aria-hidden
-                        className={`${styles.mobileFilterIcon}${hasFilters ? ` ${styles.mobileFilterIconActive}` : ''}`}
-                      />
-                    </button>
+                    </div>
+                    {activeFilterLabels.map((label) => (
+                      <div key={label} className={styles.mobileActivePill}>
+                        <span className={styles.mobileActivePillLabel}>{label}</span>
+                        <button
+                          type="button"
+                          className={styles.mobileActivePillClear}
+                          onClick={() => {
+                            const payoutLabel = PAYOUT_STATUS_META[filterPayout]?.label || filterPayout
+                            const sellerLabel = SELLERS.find((s) => s.id === filterSeller)?.name || filterSeller
+                            const paymentLabel = PAYMENT_STATUS_META[filterPayment]?.label || filterPayment
+                            if (label === payoutLabel) setFilterPayout('all')
+                            if (label === sellerLabel) setFilterSeller('all')
+                            if (label === paymentLabel) setFilterPayment('all')
+                          }}
+                          aria-label={`Clear ${label} filter`}
+                        >
+                          <TbX aria-hidden />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <div className={styles.toolbarSearchWrap}>
@@ -1202,7 +1241,7 @@ export default function AdminPayoutsPage() {
                       onChange={setFilterPayout}
                       ariaLabel="Payout status"
                       options={[
-                        { value: 'all', label: 'All' },
+                        DEFAULT_PAYOUT_OPTION,
                         ...Object.entries(PAYOUT_STATUS_META).map(([k, v]) => ({ value: k, label: v.label, color: v.color }))
                       ]}
                       placeholder="All"
@@ -1213,7 +1252,7 @@ export default function AdminPayoutsPage() {
                       onChange={setFilterSeller}
                       ariaLabel="Seller"
                       options={[
-                        { value: 'all', label: 'All' },
+                        DEFAULT_SELLER_OPTION,
                         ...SELLERS.map(s => ({ value: s.id, label: s.name }))
                       ]}
                       placeholder="All"
@@ -1254,7 +1293,7 @@ export default function AdminPayoutsPage() {
                     onChange={setFilterPayment}
                     ariaLabel="Payment status"
                     options={[
-                      { value: 'all', label: 'All' },
+                      DEFAULT_PAYMENT_OPTION,
                       ...Object.entries(PAYMENT_STATUS_META).map(([k, v]) => ({ value: k, label: v.label, color: v.color }))
                     ]}
                     placeholder="All"
