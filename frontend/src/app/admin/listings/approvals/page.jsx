@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { BsThreeDots } from 'react-icons/bs'
 import styles from '../listings.module.css'
+import ListingsMobileTabs from '../ListingsMobileTabs'
 import {
   approveListing,
   listSellerListingsForAdmin,
@@ -747,6 +748,8 @@ export default function AdminListingsApprovalsPage() {
 
   return (
     <div className={`${styles.pageRoot} ${styles.approvalsPageStack} ${styles.approvalsGreenTheme}`}>
+      <ListingsMobileTabs />
+
       {/* Summary stats strip */}
       {!isLoading && !error && (
         <div className={`${styles.approvalsSummaryStrip} ${styles.approvalsSummaryStripGreen}`}>

@@ -517,11 +517,18 @@
   font-weight: 600;
 }
 
+.filterOptionActiveDefault {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #64748b;
+  font-weight: 600;
+}
+
 .filterOptionCheck {
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  background: #2aaf5b;
+  background: currentColor;
   flex-shrink: 0;
 }
 
