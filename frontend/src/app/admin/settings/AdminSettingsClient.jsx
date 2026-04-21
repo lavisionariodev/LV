@@ -1484,7 +1484,7 @@ export default function AdminSettingsClient() {
                 <p className={styles.settingsRowDesc}>Used for account and audit references.</p>
               </div>
               <div className={`${styles.settingsRowControl} ${styles.profileControl}`}>
-                <div style={{ display: 'grid', gap: 10 }}>
+                <div className={styles.nameFieldsRow}>
                   <input
                     id={id('first_name')}
                     placeholder="First name"

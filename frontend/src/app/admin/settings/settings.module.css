@@ -5,6 +5,7 @@
   width: 100%;
   min-height: 100%;
   background: #ffffff;
+  padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
 }
 
 .pageMobileSubpage {
@@ -410,6 +411,13 @@
     grid-template-columns: 1fr 1fr;
     gap: 12px;
   }
+
+  .nameFieldsRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: 100%;
+  }
   
   .settingsFieldInput {
     width: 100%;
@@ -796,6 +804,10 @@
     }
   
     .settingsRowControlPair {
+      grid-template-columns: 1fr;
+    }
+
+    .nameFieldsRow {
       grid-template-columns: 1fr;
     }
   }

@@ -28,11 +28,12 @@
   padding: 20px 20px 18px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   gap: 6px;
   min-width: 0;
   position: relative;
+  text-align: left;
 }
 
 .statItem + .statItem::before {
@@ -49,19 +50,19 @@
   font-size: 26px;
   font-weight: 800;
   color: #ffffff;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.04em;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
 .statItemLabel {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
   color: #bfc9c1;
   line-height: 1.2;
   white-space: nowrap;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
 }
 
 /* ── Mobile-only standalone search section ───────────────────────────────── */
