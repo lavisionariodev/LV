@@ -286,6 +286,19 @@ export default function AdminListingsBrowsePage() {
 
   return (
     <div className={styles.pageRoot}>
+      <nav className={styles.listingsMobileSwitch} aria-label="Listings navigation">
+        <Link
+          href="/admin/listings/browse"
+          className={`${styles.listingsMobileSwitchLink} ${styles.listingsMobileSwitchLinkActive}`}
+          aria-current="page"
+        >
+          Browse
+        </Link>
+        <Link href="/admin/listings/approvals" className={styles.listingsMobileSwitchLink}>
+          Approvals
+        </Link>
+      </nav>
+
       <div className={styles.toolbar}>
         <div className={styles.toolbarTopRow}>
           <div className={styles.tabsStack}>

@@ -721,10 +721,6 @@
   flex-wrap: wrap;
 }
 
-.mobileStatusInline {
-  display: none;
-}
-
 /* Joined column — fixed date width, no awkward gap */
 .table td:nth-child(4) .meta {
   white-space: nowrap;
@@ -781,6 +777,11 @@
 .status_suspended {
   border-color: #fecaca;
   color: #b91c1c;
+}
+
+/* Mobile-only inline status (next to Joined date). Hidden on desktop. */
+.mobileStatusInline {
+  display: none;
 }
 
 /* ── Loading ─────────────────────────────────────────────────────────────── */

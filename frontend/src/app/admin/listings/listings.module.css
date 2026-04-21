@@ -50,6 +50,49 @@
   gap: 12px;
 }
 
+/* ── Mobile-only section switch (Browse / Approvals) ── */
+.listingsMobileSwitch {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .listingsMobileSwitch {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    padding: 6px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .listingsMobileSwitchLink {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 34px;
+    border-radius: 999px;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 700;
+    color: #475569;
+    background: transparent;
+    transition: background 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
+  }
+
+  .listingsMobileSwitchLinkActive {
+    background: #102820;
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(2, 6, 23, 0.12);
+  }
+
+  .listingsMobileSwitchLink:active {
+    transform: translateY(1px);
+  }
+}
+
 .toolbarTopRow {
   display: flex;
   align-items: flex-end;
