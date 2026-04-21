@@ -1752,14 +1752,11 @@
 }
 
 .approvalsSummaryStripGreen {
-  background: linear-gradient(
-    180deg,
-    rgba(16, 40, 32, 0.05) 0%,
-    rgba(16, 40, 32, 0.07) 100%
-  );
-  border-color: var(--approvals-green-border, rgba(16, 40, 32, 0.16));
-  border-radius: 16px;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 1px 2px rgba(16, 40, 32, 0.04);
+  /* Match disputes stat bar styling */
+  background: linear-gradient(160deg, #0d2218 0%, #102820 40%, #163a27 100%);
+  border-color: rgba(16, 40, 32, 0.22);
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(2, 6, 23, 0.14), inset 0 1px 0 rgba(255,255,255,0.06);
 }
 
 .summaryStatItem {
@@ -1781,6 +1778,17 @@
   box-shadow: 0 0 0 1px rgba(21, 128, 61, 0.06);
 }
 
+.approvalsSummaryStripGreen .summaryStatItem {
+  align-items: center;
+  justify-content: center;
+}
+
+.approvalsSummaryStripGreen .summaryStatItemActive {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
 .summaryStatItem + .summaryStatItem {
   padding-left: 16px;
 }
@@ -1797,6 +1805,10 @@
     transparent
   );
   flex-shrink: 0;
+}
+
+.approvalsSummaryStripGreen .summaryStatDivider {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .summaryStatValue {
@@ -1818,6 +1830,13 @@
   font-weight: 700;
 }
 
+.approvalsSummaryStripGreen .summaryStatValue,
+.approvalsSummaryStripGreen .summaryStatValueHighlight,
+.approvalsSummaryStripGreen .summaryStatValueZero {
+  color: #ffffff;
+  text-shadow: none;
+}
+
 .summaryStatLabel {
   font-size: 10px;
   font-weight: 600;
@@ -1830,6 +1849,15 @@
 
 .summaryStatLabelActive {
   color: #166534;
+}
+
+.approvalsSummaryStripGreen .summaryStatLabel,
+.approvalsSummaryStripGreen .summaryStatLabelActive {
+  color: #bfc9c1;
+}
+
+.summaryStatLabelShort {
+  display: none;
 }
 
 /* ── Error banner ── */
@@ -2387,11 +2415,19 @@
   .summaryStatLabel     { font-size: 9px; }
   .summaryStatItem {
     padding: 8px 10px;
-    min-width: 100%;
+    min-width: 0;
   }
 
   .summaryStatItem + .summaryStatItem {
     padding-left: 10px;
+  }
+
+  .summaryStatLabelLong {
+    display: none;
+  }
+
+  .summaryStatLabelShort {
+    display: inline;
   }
 
   .rejectCard    { padding: 18px 16px; }

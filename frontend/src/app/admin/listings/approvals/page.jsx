@@ -764,7 +764,8 @@ export default function AdminListingsApprovalsPage() {
             <span
               className={`${styles.summaryStatLabel} ${pendingRows.length > 0 ? styles.summaryStatLabelActive : ''}`}
             >
-              New Listings
+              <span className={styles.summaryStatLabelLong}>New Listings</span>
+              <span className={styles.summaryStatLabelShort}>New</span>
             </span>
           </div>
           <div className={styles.summaryStatDivider} />
@@ -779,7 +780,8 @@ export default function AdminListingsApprovalsPage() {
             <span
               className={`${styles.summaryStatLabel} ${stagedRows.length > 0 ? styles.summaryStatLabelActive : ''}`}
             >
-              Staged Updates
+              <span className={styles.summaryStatLabelLong}>Staged Updates</span>
+              <span className={styles.summaryStatLabelShort}>Staged</span>
             </span>
           </div>
           <div className={styles.summaryStatDivider} />
@@ -794,7 +796,8 @@ export default function AdminListingsApprovalsPage() {
             <span
               className={`${styles.summaryStatLabel} ${totalPending > 0 ? styles.summaryStatLabelActive : ''}`}
             >
-              Total Pending
+              <span className={styles.summaryStatLabelLong}>Total Pending</span>
+              <span className={styles.summaryStatLabelShort}>Pendings</span>
             </span>
           </div>
         </div>
