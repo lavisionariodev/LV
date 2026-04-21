@@ -39,6 +39,8 @@
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  overscroll-behavior: contain; /* prevent scroll chaining to window on mobile */
+  -webkit-overflow-scrolling: touch;
 }
 .content {
   max-width: 1200px;

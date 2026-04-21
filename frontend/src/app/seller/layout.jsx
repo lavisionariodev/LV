@@ -80,13 +80,13 @@ export default function SellerLayout({ children }) {
           onMobileClose={() => setMobileMenuOpen(false)}
         />
         <div className={styles.main}>
-          <AppTopbar
-            variant="seller"
-            onLogout={handleLogout}
-            isMobile={isMobile}
-            sidebarCollapsed={collapsed}
-          />
           <div className={styles.mainScroll}>
+            <AppTopbar
+              variant="seller"
+              onLogout={handleLogout}
+              isMobile={isMobile}
+              sidebarCollapsed={collapsed}
+            />
             <div className={styles.content}>{children}</div>
           </div>
         </div>
