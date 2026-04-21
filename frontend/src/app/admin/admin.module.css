@@ -44,6 +44,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain; /* prevent scroll chaining to window on mobile */
+  background: #ffffff;
 }
 
 .content {
@@ -252,8 +253,10 @@
   cursor: pointer;
 }
 
-.smallBtn:hover {
-  background: #f8fafc;
+@media (hover: hover) and (pointer: fine) {
+  .smallBtn:hover {
+    background: #f8fafc;
+  }
 }
 
 .table {
@@ -330,9 +333,11 @@
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
-.actionBtn:hover {
-  background-color: rgba(16, 40, 32, 0.12);
-  border-color: var(--color-main-accent);
+@media (hover: hover) and (pointer: fine) {
+  .actionBtn:hover {
+    background-color: rgba(16, 40, 32, 0.12);
+    border-color: var(--color-main-accent);
+  }
 }
 
 /* =========================
@@ -369,7 +374,7 @@
 
   /* ── Page background: light gray like banking apps ── */
   .mainScroll {
-    background: #fbfdfb;
+    background: #ffffff;
   }
 
   /* ── Remove padding so hero bleeds edge to edge ── */
@@ -656,8 +661,10 @@
     height: 18px;
   }
 
-  .homeSearchClearBtn:hover {
-    color: #64748b;
+  @media (hover: hover) and (pointer: fine) {
+    .homeSearchClearBtn:hover {
+      color: #64748b;
+    }
   }
 
   .homeSearchClearBtn:focus-visible {
@@ -698,8 +705,10 @@
     font-family: inherit;
   }
 
-  .homeSearchDropdownItem:hover {
-    background: #f8fafc;
+  @media (hover: hover) and (pointer: fine) {
+    .homeSearchDropdownItem:hover {
+      background: #f8fafc;
+    }
   }
 
   .homeSearchResultAvatar {
@@ -1249,9 +1258,11 @@
   transition: background 0.15s ease, color 0.15s ease;
 }
 
-.qlActionBtn:hover {
-  background: #102820;
-  color: #fff;
+@media (hover: hover) and (pointer: fine) {
+  .qlActionBtn:hover {
+    background: #102820;
+    color: #fff;
+  }
 }
 
 /* full-width CTA at bottom of panel */
@@ -1268,8 +1279,10 @@
   transition: opacity 0.15s ease;
 }
 
-.qlCta:hover {
-  opacity: 0.88;
+@media (hover: hover) and (pointer: fine) {
+  .qlCta:hover {
+    opacity: 0.88;
+  }
 }
 
 /* =========================
@@ -1325,6 +1338,12 @@
   .analyticsChartGrid {
     grid-template-columns: 1fr;
     gap: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .analyticsStatsGrid {
+    display: none;
   }
 }
 

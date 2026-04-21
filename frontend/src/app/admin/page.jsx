@@ -254,7 +254,11 @@ export default function AdminDashboardPage() {
               </div>
               <span className={styles.mobileHeroLogoText}>Admin Portal</span>
             </div>
-            <div className={styles.mobileHeroAvatar} aria-label="Admin avatar">
+            <Link
+              href="/admin/profile"
+              className={styles.mobileHeroAvatar}
+              aria-label="Go to profile"
+            >
               {avatarUrl ? (
                 <Image
                   src={avatarUrl}
@@ -268,7 +272,7 @@ export default function AdminDashboardPage() {
               ) : (
                 avatarFallback
               )}
-            </div>
+            </Link>
           </div>
 
           <div className={styles.mobileHeroBalance}>

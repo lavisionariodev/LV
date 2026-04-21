@@ -94,7 +94,7 @@
 }
 
 .mobileSearchWrapActive {
-  border-color: #86efac;
+  border-color: #15803d;
 }
 
 .mobileSearchIcon {
@@ -149,8 +149,10 @@
   height: 15px;
 }
 
-.mobileSearchClearBtn:hover {
-  color: #64748b;
+@media (hover: hover) and (pointer: fine) {
+  .mobileSearchClearBtn:hover {
+    color: #64748b;
+  }
 }
 
 /* Vertical divider between input and filter icon */
@@ -178,8 +180,10 @@
   transition: background 0.12s;
 }
 
-.mobileFilterBtn:hover {
-  background: #f1f5f9;
+@media (hover: hover) and (pointer: fine) {
+  .mobileFilterBtn:hover {
+    background: #f1f5f9;
+  }
 }
 
 .mobileFilterIcon {
@@ -201,7 +205,7 @@
   padding: 5px 10px 5px 12px;
   border-radius: 999px;
   background: #f0fdf4;
-  border: 1px solid #86efac;
+  border: 1px solid #5dcb85;
   font-size: 12px;
   font-weight: 600;
   color: #15803d;
@@ -287,8 +291,10 @@
   white-space: nowrap;
 }
 
-.tab:hover {
-  color: #334155;
+@media (hover: hover) and (pointer: fine) {
+  .tab:hover {
+    color: #334155;
+  }
 }
 
 .tabActive {
@@ -392,8 +398,10 @@
   height: 18px;
 }
 
-.toolbarSearchClearBtn:hover {
-  color: #64748b;
+@media (hover: hover) and (pointer: fine) {
+  .toolbarSearchClearBtn:hover {
+    color: #64748b;
+  }
 }
 
 .toolbarSearchClearBtn:focus-visible {
@@ -476,8 +484,10 @@
   transform: rotate(45deg);
 }
 
-.rowCheckbox:hover:not(:checked) {
-  border-color: #94a3b8;
+@media (hover: hover) and (pointer: fine) {
+  .rowCheckbox:hover:not(:checked) {
+    border-color: #94a3b8;
+  }
 }
 
 .thRight {
@@ -505,7 +515,9 @@
   transition: background 0.1s;
 }
 
-.tr:hover { background: #f8fafc; }
+@media (hover: hover) and (pointer: fine) {
+  .tr:hover { background: #f8fafc; }
+}
 .tr:last-child { border-bottom: none; }
 
 .td {
@@ -657,10 +669,12 @@
   font-family: inherit;
 }
 
-.viewBtn:hover {
-  background: #0f172a;
-  color: #fff;
-  border-color: #0f172a;
+@media (hover: hover) and (pointer: fine) {
+  .viewBtn:hover {
+    background: #0f172a;
+    color: #fff;
+    border-color: #0f172a;
+  }
 }
 
 /* ── Empty ───────────────────────────────────────────────────────────────── */
@@ -692,9 +706,11 @@
   transition: background 0.12s, border-color 0.12s;
 }
 
-.clearBtn:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
+@media (hover: hover) and (pointer: fine) {
+  .clearBtn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+  }
 }
 
 /* ── Footer ──────────────────────────────────────────────────────────────── */
@@ -780,7 +796,9 @@
 }
 
 .filterModalClose svg { width: 16px; height: 16px; }
-.filterModalClose:hover { background: #e2e8f0; }
+@media (hover: hover) and (pointer: fine) {
+  .filterModalClose:hover { background: #e2e8f0; }
+}
 
 .filterModalOptions {
   display: flex;
@@ -804,14 +822,16 @@
   text-align: left;
 }
 
-.filterModalOption:hover {
-  background: #f8fafc;
-  border-color: #e9e9ef;
+@media (hover: hover) and (pointer: fine) {
+  .filterModalOption:hover {
+    background: #f8fafc;
+    border-color: #e9e9ef;
+  }
 }
 
 .filterModalOptionActive {
   background: #f0fdf4;
-  border-color: #86efac;
+  border-color: #5dcb85;
 }
 
 .filterModalOptionLabel {
@@ -1077,10 +1097,7 @@
     letter-spacing: 0.01em;
   }
 
-  .mobileViewBtn:hover {
-    background: #f0fdf4;
-    color: #166534;
-  }
+  /* Hover effects disabled on touch devices */
 
   .tableFooter { font-size: 11px; padding: 12px; }
   .emptyTitle  { font-size: 14px; }
