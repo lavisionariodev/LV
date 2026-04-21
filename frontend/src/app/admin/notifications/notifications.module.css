@@ -84,9 +84,11 @@
   white-space: nowrap;
 }
 
-.filterTab:not(.filterTabActive):hover {
-  border-color: #c8cad0;
-  color: #0f172a;
+@media (hover: hover) and (pointer: fine) {
+  .filterTab:not(.filterTabActive):hover {
+    border-color: #c8cad0;
+    color: #0f172a;
+  }
 }
 
 .filterTabActive {
@@ -123,16 +125,20 @@
   border-bottom: 1px solid #f1f5f9;
 }
 
-.notifItem:hover {
-  background: #f8fafc;
+@media (hover: hover) and (pointer: fine) {
+  .notifItem:hover {
+    background: #f8fafc;
+  }
 }
 
 .notifUnread {
   background: #f8fbff;
 }
 
-.notifUnread:hover {
-  background: #f0f6ff;
+@media (hover: hover) and (pointer: fine) {
+  .notifUnread:hover {
+    background: #f0f6ff;
+  }
 }
 
 /* Icon */
@@ -412,10 +418,12 @@
   transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
 
-.dotsBtn:hover {
-  background: #f1f5f9;
-  color: #0f172a;
-  border-color: #d0d1d6;
+@media (hover: hover) and (pointer: fine) {
+  .dotsBtn:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+    border-color: #d0d1d6;
+  }
 }
 
 .menuDropdown {
@@ -461,16 +469,20 @@
   white-space: nowrap;
 }
 
-.menuItem:hover {
-  background: #f8fafc;
+@media (hover: hover) and (pointer: fine) {
+  .menuItem:hover {
+    background: #f8fafc;
+  }
 }
 
 .menuItemDanger {
   color: #be123c;
 }
 
-.menuItemDanger:hover {
-  background: #fff1f2;
+@media (hover: hover) and (pointer: fine) {
+  .menuItemDanger:hover {
+    background: #fff1f2;
+  }
 }
 
 .menuItemIcon {

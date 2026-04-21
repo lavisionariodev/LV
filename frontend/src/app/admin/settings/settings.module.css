@@ -57,9 +57,11 @@
     font-family: inherit;
   }
   
-  .tabItem:hover:not(.tabItemActive) {
-    color: #64748b;
-    background: #f8fafc;
+  @media (hover: hover) and (pointer: fine) {
+    .tabItem:hover:not(.tabItemActive) {
+      color: #64748b;
+      background: #f8fafc;
+    }
   }
   
   .tabItem:focus-visible {
@@ -201,8 +203,10 @@
     text-decoration: none;
   }
 
-  .desktopSettingsNoticeLink:hover {
-    text-decoration: underline;
+  @media (hover: hover) and (pointer: fine) {
+    .desktopSettingsNoticeLink:hover {
+      text-decoration: underline;
+    }
   }
 
   .profileDetails {
@@ -495,8 +499,10 @@
     text-decoration: none;
   }
   
-  .notificationsCta:hover {
-    text-decoration: underline;
+  @media (hover: hover) and (pointer: fine) {
+    .notificationsCta:hover {
+      text-decoration: underline;
+    }
   }
   
   .notificationsLead {
@@ -716,8 +722,10 @@
     text-decoration: none;
   }
 
-  .billingCta:hover {
-    text-decoration: underline;
+  @media (hover: hover) and (pointer: fine) {
+    .billingCta:hover {
+      text-decoration: underline;
+    }
   }
 
   .billingPlaceholder {
@@ -760,8 +768,10 @@
     text-decoration: none;
   }
 
-  .billingQuickLink:hover {
-    text-decoration: underline;
+  @media (hover: hover) and (pointer: fine) {
+    .billingQuickLink:hover {
+      text-decoration: underline;
+    }
   }
 
   .billingQuickLinksSep {
@@ -979,9 +989,11 @@
     border: 1px solid var(--color-main-accent);
   }
   
+@media (hover: hover) and (pointer: fine) {
   .primaryBtn:hover:not(:disabled) {
     opacity: 0.88;
   }
+}
   
   .primaryBtn:disabled {
     opacity: 0.5;
@@ -994,9 +1006,11 @@
     border: 1px solid #e5e7eb;
   }
   
+@media (hover: hover) and (pointer: fine) {
   .secondaryBtn:hover:not(:disabled) {
     background: #e5e7eb;
   }
+}
 
   .secondaryBtn:disabled {
     opacity: 0.5;
@@ -1009,9 +1023,11 @@
     border: 1px solid #ffe4e6;
   }
   
+@media (hover: hover) and (pointer: fine) {
   .dangerBtn:hover {
     background: #ffe4e6;
   }
+}
   
   .dangerBtn:disabled {
     opacity: 0.5;
@@ -1197,9 +1213,11 @@
     font-weight: 500;
   }
 
+@media (hover: hover) and (pointer: fine) {
   .sheetHeaderTextBtnCancel:hover:not(:disabled) {
     color: #64748b;
   }
+}
 
   .sheetHeaderTextBtnSave {
     grid-column: 3;
@@ -1208,9 +1226,11 @@
     font-weight: 700;
   }
 
+@media (hover: hover) and (pointer: fine) {
   .sheetHeaderTextBtnSave:hover:not(:disabled) {
     color: #020617;
   }
+}
 
   /* Primary dismiss label (e.g. "Done") — same visual as Save */
   .sheetHeaderTextBtnDone {
@@ -1220,9 +1240,11 @@
     font-weight: 700;
   }
 
+@media (hover: hover) and (pointer: fine) {
   .sheetHeaderTextBtnDone:hover:not(:disabled) {
     color: #020617;
   }
+}
 
   /* Site content modal — styled buttons instead of bare text */
   .siteContentModalActions .sheetHeaderTextBtnCancel,
@@ -1242,10 +1264,12 @@
     color: #475569;
   }
 
+@media (hover: hover) and (pointer: fine) {
   .siteContentModalActions .sheetHeaderTextBtnCancel:hover:not(:disabled) {
     background: #e2e8f0;
     color: #334155;
   }
+}
 
   .siteContentModalActions .sheetHeaderTextBtnSave,
   .siteContentModalActions .sheetHeaderTextBtnDone {
@@ -1253,11 +1277,13 @@
     color: #ffffff;
   }
 
+@media (hover: hover) and (pointer: fine) {
   .siteContentModalActions .sheetHeaderTextBtnSave:hover:not(:disabled),
   .siteContentModalActions .sheetHeaderTextBtnDone:hover:not(:disabled) {
     background: #1e293b;
     color: #ffffff;
   }
+}
 
   .bottomSheetSettingsShell .bottomSheetBodySettings {
     flex: 1 1 auto;
@@ -1333,9 +1359,11 @@
     cursor: pointer;
   }
   
+@media (hover: hover) and (pointer: fine) {
   .sheetRemoveBtn:hover {
     text-decoration: underline;
   }
+}
   
   .sheetAvatarHint {
     font-size: 11px;
@@ -1635,10 +1663,12 @@
     transition: background 0.15s ease, border-color 0.15s ease;
   }
 
+@media (hover: hover) and (pointer: fine) {
   .settingsMobileIconEditBtn:hover:not(:disabled) {
     background: #f8fafc;
     border-color: #020617;
   }
+}
 
   .settingsMobileIconEditBtn:focus-visible {
     outline: 2px solid var(--color-main-accent);
@@ -1912,8 +1942,10 @@
       transition: color 0.15s, opacity 0.15s;
     }
 
-    .mobileSubpageBack:hover:not(:disabled) {
-      color: #0f172a;
+    @media (hover: hover) and (pointer: fine) {
+      .mobileSubpageBack:hover:not(:disabled) {
+        color: #0f172a;
+      }
     }
 
     .mobileSubpageBack:disabled {

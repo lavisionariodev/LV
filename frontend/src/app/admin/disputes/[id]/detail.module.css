@@ -42,10 +42,12 @@
   white-space: nowrap;
 }
 
-.backBtn:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  color: #0f172a;
+@media (hover: hover) and (pointer: fine) {
+  .backBtn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #0f172a;
+  }
 }
 
 /* ── Status banner ── */
@@ -364,10 +366,12 @@
   text-align: center;
 }
 
-.statusBtn:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  color: #0f172a;
+@media (hover: hover) and (pointer: fine) {
+  .statusBtn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #0f172a;
+  }
 }
 
 .statusBtnActive {
@@ -391,8 +395,10 @@
   transition: background 0.12s;
 }
 
-.nextBtn:hover {
-  background: #163628;
+@media (hover: hover) and (pointer: fine) {
+  .nextBtn:hover {
+    background: #163628;
+  }
 }
 
 .demoHint {
@@ -422,8 +428,10 @@
   text-decoration: underline;
 }
 
-.link:hover {
-  text-decoration: none;
+@media (hover: hover) and (pointer: fine) {
+  .link:hover {
+    text-decoration: none;
+  }
 }
 
 /* ── Responsive ── */

@@ -6,7 +6,7 @@
   display: grid;
   place-items: center;
   min-height: 100vh;
-  background: #f9fcff;
+  background: #ffffff;
   font-size: 14px;
   color: #6b7280;
 }
@@ -17,7 +17,7 @@
   height: 100vh; /* fallback */
   height: 100dvh; /* avoid mobile browser chrome vh issues */
   overflow: hidden;
-  background: #f9fcff;
+  background: #ffffff;
   transition: grid-template-columns 0.25s ease;
 }
 

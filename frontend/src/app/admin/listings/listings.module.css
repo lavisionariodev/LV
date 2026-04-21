@@ -148,8 +148,10 @@
   transition: color 0.15s, border-color 0.15s;
 }
 
-.tab:hover {
-  color: #334155;
+@media (hover: hover) and (pointer: fine) {
+  .tab:hover {
+    color: #334155;
+  }
 }
 
 .tab.active {
@@ -201,7 +203,7 @@
 }
 
 .mobileSearchWrapActive {
-  border-color: #86efac;
+  border-color: #15803d;
 }
 
 .mobileSearchIcon {
@@ -256,8 +258,10 @@
   height: 15px;
 }
 
-.mobileSearchClearBtn:hover {
-  color: #64748b;
+@media (hover: hover) and (pointer: fine) {
+  .mobileSearchClearBtn:hover {
+    color: #64748b;
+  }
 }
 
 .mobileSearchDivider {
@@ -283,8 +287,10 @@
   transition: background 0.12s;
 }
 
-.mobileFilterBtn:hover {
-  background: #f1f5f9;
+@media (hover: hover) and (pointer: fine) {
+  .mobileFilterBtn:hover {
+    background: #f1f5f9;
+  }
 }
 
 .mobileFilterIcon {
@@ -372,8 +378,10 @@
   transition: background 0.12s;
 }
 
-.filterSheetClose:hover {
-  background: #e2e8f0;
+@media (hover: hover) and (pointer: fine) {
+  .filterSheetClose:hover {
+    background: #e2e8f0;
+  }
 }
 
 .filterSheetBody {
@@ -418,10 +426,12 @@
   font-family: inherit;
 }
 
-.filterSheetClearAll:hover:not(:disabled) {
-  color: #374151;
-  background: #f8fafc;
-  border-color: #cbd5e1;
+@media (hover: hover) and (pointer: fine) {
+  .filterSheetClearAll:hover:not(:disabled) {
+    color: #374151;
+    background: #f8fafc;
+    border-color: #cbd5e1;
+  }
 }
 
 .filterSheetClearAll:disabled {
@@ -447,20 +457,22 @@
   transition: background 0.12s, border-color 0.12s;
 }
 
-.filterOption:hover {
-  background: #f8fafc;
-  border-color: #e9e9ef;
+@media (hover: hover) and (pointer: fine) {
+  .filterOption:hover {
+    background: #f8fafc;
+    border-color: #e9e9ef;
+  }
 }
 
 .filterOptionActive {
   background: #f0fdf4;
-  border-color: #86efac;
+  border-color: #5dcb85;
   color: #15803d;
   font-weight: 600;
 }
 
 .filterOptionActiveDefault {
-  background: #f5f8fb;
+  background: #fafdff;
   border-color: #e2e8f0;
   color: #64748b;
   font-weight: 600;
@@ -544,8 +556,10 @@
   height: 18px;
 }
 
-.toolbarSearchClearBtn:hover {
-  color: #64748b;
+@media (hover: hover) and (pointer: fine) {
+  .toolbarSearchClearBtn:hover {
+    color: #64748b;
+  }
 }
 
 .toolbarSearchClearBtn:focus-visible {
@@ -578,10 +592,12 @@
   flex-shrink: 0;
 }
 
-.filterBtn:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  color: #334155;
+@media (hover: hover) and (pointer: fine) {
+  .filterBtn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #334155;
+  }
 }
 
 .filterBtn.active {
@@ -607,8 +623,10 @@
   font-family: inherit;
 }
 
-.toolbarClearAll:hover:not(:disabled) {
-  color: #374151;
+@media (hover: hover) and (pointer: fine) {
+  .toolbarClearAll:hover:not(:disabled) {
+    color: #374151;
+  }
 }
 
 .toolbarClearAll:disabled {
@@ -639,8 +657,10 @@
   transition: border-color 0.15s;
 }
 
-.card:hover {
-  border-color: #cbd5e1;
+@media (hover: hover) and (pointer: fine) {
+  .card:hover {
+    border-color: #cbd5e1;
+  }
 }
 
 .cardMain {
@@ -833,9 +853,11 @@
   background: #f0fdf4;
 }
 
-.approveBtn:hover {
-  background: #ecfdf5;
-  border-color: #86efac;
+@media (hover: hover) and (pointer: fine) {
+  .approveBtn:hover {
+    background: #ecfdf5;
+    border-color: #5dcb85;
+  }
 }
 
 .rejectBtn {
@@ -844,9 +866,11 @@
   background: #fff5f5;
 }
 
-.rejectBtn:hover {
-  background: #fef2f2;
-  border-color: #fca5a5;
+@media (hover: hover) and (pointer: fine) {
+  .rejectBtn:hover {
+    background: #fef2f2;
+    border-color: #fca5a5;
+  }
 }
 
 .approveBtn:active,
@@ -1021,9 +1045,11 @@
   white-space: nowrap;
 }
 
-.viewLink:hover {
-  background: #fff;
-  border-color: #cbd5e1;
+@media (hover: hover) and (pointer: fine) {
+  .viewLink:hover {
+    background: #fff;
+    border-color: #cbd5e1;
+  }
 }
 
 .viewLinkIcon {
@@ -1161,9 +1187,11 @@
   transition: background 0.12s, border-color 0.12s;
 }
 
-.clearBtn:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
+@media (hover: hover) and (pointer: fine) {
+  .clearBtn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+  }
 }
 
 /* ── Footer ── */
@@ -1390,8 +1418,10 @@
   color: #fff;
 }
 
-.reviewHeaderBtn:hover {
-  background: #15803d;
+@media (hover: hover) and (pointer: fine) {
+  .reviewHeaderBtn:hover {
+    background: #15803d;
+  }
 }
 
 /* Column header row */
@@ -1445,8 +1475,10 @@
   cursor: pointer;
 }
 
-.reviewRow:hover {
-  background: #f8fafc;
+@media (hover: hover) and (pointer: fine) {
+  .reviewRow:hover {
+    background: #f8fafc;
+  }
 }
 
 .reviewRow:first-child {
@@ -1534,17 +1566,21 @@
   transition: color 0.12s, background 0.12s;
 }
 
-.reviewSeeMore:hover {
-  color: #0f172a;
-  background: #f8fafc;
+@media (hover: hover) and (pointer: fine) {
+  .reviewSeeMore:hover {
+    color: #0f172a;
+    background: #f8fafc;
+  }
 }
 
 .reviewSeeMore svg {
   transition: transform 0.15s;
 }
 
-.reviewSeeMore:hover svg {
-  transform: translateX(3px);
+@media (hover: hover) and (pointer: fine) {
+  .reviewSeeMore:hover svg {
+    transform: translateX(3px);
+  }
 }
 
 /* Row actions menu (kebab) */
@@ -1572,10 +1608,12 @@
   transition: color 0.12s, background 0.12s, border-color 0.12s;
 }
 
-.actionMenuTrigger:hover {
-  color: #0f172a;
-  background: #f1f5f9;
-  border-color: #e2e8f0;
+@media (hover: hover) and (pointer: fine) {
+  .actionMenuTrigger:hover {
+    color: #0f172a;
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+  }
 }
 
 .actionMenuTrigger:focus-visible {
@@ -1617,8 +1655,10 @@
   transition: background 0.1s;
 }
 
-.actionMenuItem:hover:not(:disabled) {
-  background: #f1f5f9;
+@media (hover: hover) and (pointer: fine) {
+  .actionMenuItem:hover:not(:disabled) {
+    background: #f1f5f9;
+  }
 }
 
 .actionMenuItem:disabled {
@@ -1631,8 +1671,10 @@
   font-weight: 600;
 }
 
-.actionMenuItemPrimary:hover:not(:disabled) {
-  background: #f0fdf4;
+@media (hover: hover) and (pointer: fine) {
+  .actionMenuItemPrimary:hover:not(:disabled) {
+    background: #f0fdf4;
+  }
 }
 
 .actionMenuItemWarn {
@@ -1640,8 +1682,10 @@
   font-weight: 600;
 }
 
-.actionMenuItemWarn:hover:not(:disabled) {
-  background: #fff5f5;
+@media (hover: hover) and (pointer: fine) {
+  .actionMenuItemWarn:hover:not(:disabled) {
+    background: #fff5f5;
+  }
 }
 
 /* Empty state */
@@ -2041,9 +2085,11 @@
   border-color: var(--approvals-green-mid, #15803d);
 }
 
-.stagedApproveBtn:hover:not(:disabled) {
-  background: #166534;
-  border-color: #166534;
+@media (hover: hover) and (pointer: fine) {
+  .stagedApproveBtn:hover:not(:disabled) {
+    background: #166534;
+    border-color: #166534;
+  }
 }
 
 .stagedRejectBtn {
@@ -2052,9 +2098,11 @@
   border-color: #fecaca;
 }
 
-.stagedRejectBtn:hover:not(:disabled) {
-  background: #fff5f5;
-  border-color: #f87171;
+@media (hover: hover) and (pointer: fine) {
+  .stagedRejectBtn:hover:not(:disabled) {
+    background: #fff5f5;
+    border-color: #f87171;
+  }
 }
 
 .stagedApproveBtn:disabled,
@@ -2220,9 +2268,11 @@
   transition: background 0.12s, border-color 0.12s;
 }
 
-.rejectCancel:hover:not(:disabled) {
-  background: #f8fafc;
-  border-color: #cbd5e1;
+@media (hover: hover) and (pointer: fine) {
+  .rejectCancel:hover:not(:disabled) {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+  }
 }
 
 .rejectConfirm {
@@ -2239,7 +2289,9 @@
   transition: background 0.12s;
 }
 
-.rejectConfirm:hover:not(:disabled) { background: #b91c1c; }
+@media (hover: hover) and (pointer: fine) {
+  .rejectConfirm:hover:not(:disabled) { background: #b91c1c; }
+}
 
 .rejectConfirm:disabled,
 .rejectCancel:disabled {
@@ -2267,7 +2319,7 @@
 }
 
 .mobileCard:first-child { border-top: none; }
-.mobileCard:hover { background: #f8fafc; }
+/* Hover effects disabled on touch devices */
 
 .mobileCardTop {
   display: flex;
@@ -2350,7 +2402,7 @@
   border-color: #1D9E75;
 }
 
-.mobileApproveBtn:hover:not(:disabled) { background: #15803d; }
+/* Hover effects disabled on touch devices */
 
 .mobileRejectBtn {
   background: #fff;
@@ -2358,10 +2410,7 @@
   border-color: #fca5a5;
 }
 
-.mobileRejectBtn:hover:not(:disabled) {
-  background: #fff5f5;
-  border-color: #f87171;
-}
+/* Hover effects disabled on touch devices */
 
 .mobileApproveBtn:active,
 .mobileRejectBtn:active { transform: translateY(1px); }

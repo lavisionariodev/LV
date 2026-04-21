@@ -129,8 +129,10 @@
   cursor: pointer;
 }
 
-.faqBtn:hover {
-  background: #f8fafc;
+@media (hover: hover) and (pointer: fine) {
+  .faqBtn:hover {
+    background: #f8fafc;
+  }
 }
 
 .faqQ {
@@ -281,8 +283,10 @@
   white-space: nowrap;
 }
 
-.primaryBtn:hover {
-  opacity: 0.92;
+@media (hover: hover) and (pointer: fine) {
+  .primaryBtn:hover {
+    opacity: 0.92;
+  }
 }
 
 /* Responsive */

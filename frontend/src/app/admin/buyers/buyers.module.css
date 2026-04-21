@@ -114,8 +114,10 @@
   height: 18px;
 }
 
-.toolbarSearchClearBtn:hover {
-  color: #64748b;
+@media (hover: hover) and (pointer: fine) {
+  .toolbarSearchClearBtn:hover {
+    color: #64748b;
+  }
 }
 
 .toolbarSearchClearBtn:focus-visible {
@@ -140,8 +142,10 @@
   font-family: inherit;
 }
 
-.toolbarClearAll:hover:not(:disabled) {
-  color: #374151;
+@media (hover: hover) and (pointer: fine) {
+  .toolbarClearAll:hover:not(:disabled) {
+    color: #374151;
+  }
 }
 
 .toolbarClearAll:disabled {
@@ -176,7 +180,7 @@
 }
 
 .mobileSearchWrapActive {
-  border-color: #86efac;
+  border-color: #15803d;
 }
 
 .mobileSearchIcon {
@@ -231,8 +235,10 @@
   height: 15px;
 }
 
-.mobileSearchClearBtn:hover {
-  color: #64748b;
+@media (hover: hover) and (pointer: fine) {
+  .mobileSearchClearBtn:hover {
+    color: #64748b;
+  }
 }
 
 .mobileSearchDivider {
@@ -258,8 +264,10 @@
   transition: background 0.12s;
 }
 
-.mobileFilterBtn:hover {
-  background: #f1f5f9;
+@media (hover: hover) and (pointer: fine) {
+  .mobileFilterBtn:hover {
+    background: #f1f5f9;
+  }
 }
 
 .mobileFilterIcon {
@@ -299,8 +307,10 @@
   font-family: inherit;
 }
 
-.filterTrigger:hover {
-  border-color: #cbd5e1;
+@media (hover: hover) and (pointer: fine) {
+  .filterTrigger:hover {
+    border-color: #cbd5e1;
+  }
 }
 
 .filterTrigger:focus-visible {
@@ -345,8 +355,10 @@
   font-family: inherit;
 }
 
-.filterDropdownItem:hover {
-  background: #f8fafc;
+@media (hover: hover) and (pointer: fine) {
+  .filterDropdownItem:hover {
+    background: #f8fafc;
+  }
 }
 
 .filterDropdownItemActive {
@@ -428,8 +440,10 @@
   transition: background 0.12s;
 }
 
-.filterSheetClose:hover {
-  background: #e2e8f0;
+@media (hover: hover) and (pointer: fine) {
+  .filterSheetClose:hover {
+    background: #e2e8f0;
+  }
 }
 
 .filterSheetBody {
@@ -474,10 +488,12 @@
   font-family: inherit;
 }
 
-.filterSheetClearAll:hover:not(:disabled) {
-  color: #374151;
-  background: #f8fafc;
-  border-color: #cbd5e1;
+@media (hover: hover) and (pointer: fine) {
+  .filterSheetClearAll:hover:not(:disabled) {
+    color: #374151;
+    background: #f8fafc;
+    border-color: #cbd5e1;
+  }
 }
 
 .filterSheetClearAll:disabled {
@@ -503,20 +519,22 @@
   transition: background 0.12s, border-color 0.12s;
 }
 
-.filterOption:hover {
-  background: #f8fafc;
-  border-color: #e9e9ef;
+@media (hover: hover) and (pointer: fine) {
+  .filterOption:hover {
+    background: #f8fafc;
+    border-color: #e9e9ef;
+  }
 }
 
 .filterOptionActive {
   background: #f0fdf4;
-  border-color: #86efac;
+  border-color: #5dcb85;
   color: #15803d;
   font-weight: 600;
 }
 
 .filterOptionActiveDefault {
-  background: #f5f8fb;
+  background: #fafdff;
   border-color: #e2e8f0;
   color: #64748b;
   font-weight: 600;
@@ -592,8 +610,10 @@
   transition: background 0.1s;
 }
 
-.primaryRow:hover {
-  background: #f8fafc;
+@media (hover: hover) and (pointer: fine) {
+  .primaryRow:hover {
+    background: #f8fafc;
+  }
 }
 
 .primaryRow:last-child {
@@ -649,8 +669,10 @@
   box-sizing: border-box;
 }
 
-.rowCheckbox:hover:not(:checked) {
-  border-color: #94a3b8;
+@media (hover: hover) and (pointer: fine) {
+  .rowCheckbox:hover:not(:checked) {
+    border-color: #94a3b8;
+  }
 }
 
 /* ── Avatar & buyer cell ─────────────────────────────────────────────────── */
@@ -868,9 +890,11 @@
   transition: background 0.12s, border-color 0.12s;
 }
 
-.clearBtn:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
+@media (hover: hover) and (pointer: fine) {
+  .clearBtn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+  }
 }
 
 /* ── Footer ─────────────────────────────────────────────────────────────── */
@@ -1026,7 +1050,7 @@
     /* Reset table-row defaults */
     border-bottom: 1px solid #e5e7eb;
   }
-  .primaryRow:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.09); }
+  /* Hover effects disabled on touch devices */
   .primaryRow:last-child { border-bottom: 1px solid #e5e7eb; }
 
   /* All cells: reset, hide by default */
