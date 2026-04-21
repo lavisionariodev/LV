@@ -73,13 +73,13 @@ export default function AdminLayout({ children }) {
         />
       </Suspense>
       <div className={styles.main}>
+        <AppTopbar
+          variant="admin"
+          onLogout={handleLogout}
+          isMobile={isMobile}
+          sidebarCollapsed={collapsed}
+        />
         <div className={styles.mainScroll}>
-          <AppTopbar
-            variant="admin"
-            onLogout={handleLogout}
-            isMobile={isMobile}
-            sidebarCollapsed={collapsed}
-          />
           <div className={styles.content}>{children}</div>
         </div>
       </div>
