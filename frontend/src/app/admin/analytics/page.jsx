@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import layoutStyles from '../admin.module.css'
 import { dashboard } from '@/data/adminSampleData'
+import { formatCount } from '@/utils/formatCount'
 import {
   AreaChart,
   Area,
@@ -32,22 +33,22 @@ export default function AdminAnalyticsPage() {
       <section className={layoutStyles.analyticsStatsGrid}>
         <div className={layoutStyles.statCard}>
           <p className={layoutStyles.statLabel}>Total Sellers</p>
-          <p className={layoutStyles.statValue}>{dashboard.stats.totalSellers}</p>
+          <p className={layoutStyles.statValue}>{formatCount(dashboard.stats.totalSellers)}</p>
           <p className={layoutStyles.statHint}>Registered sellers</p>
         </div>
         <div className={layoutStyles.statCard}>
           <p className={layoutStyles.statLabel}>Total Buyers</p>
-          <p className={layoutStyles.statValue}>{dashboard.stats.totalBuyers}</p>
+          <p className={layoutStyles.statValue}>{formatCount(dashboard.stats.totalBuyers)}</p>
           <p className={layoutStyles.statHint}>Buyer accounts</p>
         </div>
         <div className={layoutStyles.statCard}>
           <p className={layoutStyles.statLabel}>Transactions</p>
-          <p className={layoutStyles.statValue}>{dashboard.stats.transactionsLast30Days}</p>
+          <p className={layoutStyles.statValue}>{formatCount(dashboard.stats.transactionsLast30Days)}</p>
           <p className={layoutStyles.statHint}>Last 30 days (count)</p>
         </div>
         <div className={layoutStyles.statCard}>
           <p className={layoutStyles.statLabel}>Open Disputes</p>
-          <p className={layoutStyles.statValue}>{dashboard.stats.openDisputes}</p>
+          <p className={layoutStyles.statValue}>{formatCount(dashboard.stats.openDisputes)}</p>
           <p className={layoutStyles.statHint}>Needs review</p>
         </div>
       </section>

@@ -24,6 +24,7 @@ import { getSellerByUserId } from '@/lib/sellers/client'
 import { supabase } from '@/lib/supabase/client'
 import { formatPhpAmount, roundPhpAmount } from '@/lib/cart/formatPhp'
 import { hasPendingSellerChanges, mergePendingChangesIntoListingRow } from '@/lib/seller-listings/pendingChanges'
+import { formatCount } from '@/utils/formatCount'
 
 // ---------------------------------------------------------------------------
 // Listing form utilities (products list + edit modal)
@@ -499,22 +500,22 @@ export default function ProductsContent({ initialKind = 'all' }) {
       <section className={styles.statsStrip} aria-label="Listing overview">
         <div className={styles.statCard}>
           <p className={styles.statLabel}>Total listings</p>
-          <p className={styles.statValue}>{total}</p>
+          <p className={styles.statValue}>{formatCount(total)}</p>
           <p className={styles.statHint}>Services &amp; packages</p>
         </div>
         <div className={styles.statCard}>
           <p className={styles.statLabel}>Active</p>
-          <p className={styles.statValue}>{activeCount}</p>
+          <p className={styles.statValue}>{formatCount(activeCount)}</p>
           <p className={styles.statHint}>Visible to buyers</p>
         </div>
         <div className={styles.statCard}>
           <p className={styles.statLabel}>Draft</p>
-          <p className={styles.statValue}>{draftCount}</p>
+          <p className={styles.statValue}>{formatCount(draftCount)}</p>
           <p className={styles.statHint}>Not submitted</p>
         </div>
         <div className={styles.statCard}>
           <p className={styles.statLabel}>Pending</p>
-          <p className={styles.statValue}>{pendingCount}</p>
+          <p className={styles.statValue}>{formatCount(pendingCount)}</p>
           <p className={styles.statHint}>Under review</p>
         </div>
       </section>

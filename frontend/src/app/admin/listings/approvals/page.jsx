@@ -15,6 +15,7 @@ import {
   mergePendingChangesIntoListingRow,
   PENDING_CHANGE_KEYS,
 } from '@/lib/seller-listings/pendingChanges'
+import { formatCount } from '@/utils/formatCount'
 
 const PENDING_FIELD_LABELS = {
   listing_name: 'Title',
@@ -759,7 +760,7 @@ export default function AdminListingsApprovalsPage() {
             <span
               className={`${styles.summaryStatValue} ${pendingRows.length > 0 ? styles.summaryStatValueHighlight : styles.summaryStatValueZero}`}
             >
-              {pendingRows.length}
+              {formatCount(pendingRows.length)}
             </span>
             <span
               className={`${styles.summaryStatLabel} ${pendingRows.length > 0 ? styles.summaryStatLabelActive : ''}`}
@@ -775,7 +776,7 @@ export default function AdminListingsApprovalsPage() {
             <span
               className={`${styles.summaryStatValue} ${stagedRows.length > 0 ? styles.summaryStatValueHighlight : styles.summaryStatValueZero}`}
             >
-              {stagedRows.length}
+              {formatCount(stagedRows.length)}
             </span>
             <span
               className={`${styles.summaryStatLabel} ${stagedRows.length > 0 ? styles.summaryStatLabelActive : ''}`}
@@ -791,7 +792,7 @@ export default function AdminListingsApprovalsPage() {
             <span
               className={`${styles.summaryStatValue} ${totalPending > 0 ? styles.summaryStatValueHighlight : styles.summaryStatValueZero}`}
             >
-              {totalPending}
+              {formatCount(totalPending)}
             </span>
             <span
               className={`${styles.summaryStatLabel} ${totalPending > 0 ? styles.summaryStatLabelActive : ''}`}
@@ -829,7 +830,7 @@ export default function AdminListingsApprovalsPage() {
           <ApprovalsTableSection
             title="New Listings"
             kicker="Pending first-time approval"
-            count={pendingRows.length}
+            count={formatCount(pendingRows.length)}
             isLoading={false}
             rows={pendingRows}
             emptyTitle="Nothing pending approval"
@@ -843,7 +844,7 @@ export default function AdminListingsApprovalsPage() {
           <StagedUpdatesSection
             title="Information updates"
             kicker="Staged shop listing edits"
-            count={stagedRows.length}
+            count={formatCount(stagedRows.length)}
             isLoading={false}
             rows={stagedRows}
             emptyTitle="No staged updates"
