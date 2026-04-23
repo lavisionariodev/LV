@@ -11,8 +11,10 @@ import { listSellerListingsForAdmin } from '@/lib/seller-listings/client'
 import { getShopHrefForSellerListingRow } from '@/lib/shop-listings/client'
 import { formatPhpAmount } from '@/lib/cart/formatPhp'
 import { Dropdown } from '@/components/ui'
-import { useMediaQuery } from '@/hooks'
+import { useDebouncedEffect, useMediaQuery } from '@/hooks'
 import { TbX } from 'react-icons/tb'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { readEnum, readString, replaceUrlQuery } from '@/lib/url/queryParams'
 
 const APPROVED_STATUS_TABS = [
   { value: 'active', label: 'Active' },
@@ -194,15 +196,47 @@ function ListingCard({ row }) {
 }
 
 export default function AdminListingsBrowsePage() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const isMobile = useMediaQuery('(max-width: 860px)')
-  const [search, setSearch] = useState('')
-  const [statusTab, setStatusTab] = useState('active')
-  const [kindFilter, setKindFilter] = useState('all')
-  const [sortKey, setSortKey] = useState('updated')
+  const [search, setSearch] = useState(() => readString(searchParams, 'q', ''))
+  const [statusTab, setStatusTab] = useState(() =>
+    readEnum(searchParams, 'status', APPROVED_STATUS_TABS.map((t) => t.value), 'active')
+  )
+  const [kindFilter, setKindFilter] = useState(() =>
+    readEnum(searchParams, 'kind', KIND_FILTER_OPTIONS.map((o) => o.value), 'all')
+  )
+  const [sortKey, setSortKey] = useState(() =>
+    readEnum(searchParams, 'sort', SORT_OPTIONS.map((o) => o.value), 'updated')
+  )
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [approvedRows, setApprovedRows] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  // Sync state <- URL (back/forward, shared links)
+  useEffect(() => {
+    const nextQ = readString(searchParams, 'q', '')
+    const nextStatus = readEnum(searchParams, 'status', APPROVED_STATUS_TABS.map((t) => t.value), 'active')
+    const nextKind = readEnum(searchParams, 'kind', KIND_FILTER_OPTIONS.map((o) => o.value), 'all')
+    const nextSort = readEnum(searchParams, 'sort', SORT_OPTIONS.map((o) => o.value), 'updated')
+    if (nextQ !== search) setSearch(nextQ)
+    if (nextStatus !== statusTab) setStatusTab(nextStatus)
+    if (nextKind !== kindFilter) setKindFilter(nextKind)
+    if (nextSort !== sortKey) setSortKey(nextSort)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
+  // Sync URL <- state (debounce search typing)
+  useDebouncedEffect(() => {
+    replaceUrlQuery(router, pathname, searchParams, {
+      q: search,
+      status: { value: statusTab, omitIf: 'active' },
+      kind: { value: kindFilter, omitIf: 'all' },
+      sort: { value: sortKey, omitIf: 'updated' },
+    })
+  }, [search, statusTab, kindFilter, sortKey, router, pathname, searchParams], 300)
 
   useEffect(() => {
     if (!isMobile || !filtersOpen) return
