@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { TbPlus, TbSearch, TbTrash } from 'react-icons/tb'
 import styles from './products.module.css'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   buildSellerListingPayload,
   FALLBACK_IMAGE,
@@ -25,6 +26,8 @@ import { supabase } from '@/lib/supabase/client'
 import { formatPhpAmount, roundPhpAmount } from '@/lib/cart/formatPhp'
 import { hasPendingSellerChanges, mergePendingChangesIntoListingRow } from '@/lib/seller-listings/pendingChanges'
 import { formatCount } from '@/utils/formatCount'
+import { useDebouncedEffect } from '@/hooks'
+import { readEnum, readString, replaceUrlQuery } from '@/lib/url/queryParams'
 
 // ---------------------------------------------------------------------------
 // Listing form utilities (products list + edit modal)
@@ -203,8 +206,14 @@ const TYPE_FILTERS = [
 ]
 
 export default function ProductsContent({ initialKind = 'all' }) {
-  const [searchQuery, setSearchQuery] = useState('')
-  const [typeFilter, setTypeFilter] = useState(initialKind || 'all')
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  const allowedKinds = TYPE_FILTERS.map((t) => t.id)
+  const defaultKind = allowedKinds.includes(initialKind) ? initialKind : 'all'
+  const [searchQuery, setSearchQuery] = useState(() => readString(searchParams, 'q', ''))
+  const [typeFilter, setTypeFilter] = useState(() => readEnum(searchParams, 'kind', allowedKinds, defaultKind))
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [modalMode, setModalMode] = useState(null) // 'view' | 'edit'
   const [editGallery, setEditGallery] = useState([])
@@ -226,6 +235,23 @@ export default function ProductsContent({ initialKind = 'all' }) {
       setTypeFilter(initialKind)
     }
   }, [initialKind])
+
+  // Sync state <- URL (back/forward, shared links)
+  useEffect(() => {
+    const nextQ = readString(searchParams, 'q', '')
+    const nextKind = readEnum(searchParams, 'kind', allowedKinds, defaultKind)
+    if (nextQ !== searchQuery) setSearchQuery(nextQ)
+    if (nextKind !== typeFilter) setTypeFilter(nextKind)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
+  // Sync URL <- state (debounce typing)
+  useDebouncedEffect(() => {
+    replaceUrlQuery(router, pathname, searchParams, {
+      q: searchQuery,
+      kind: { value: typeFilter, omitIf: defaultKind },
+    })
+  }, [searchQuery, typeFilter, router, pathname, searchParams], 300)
 
   useEffect(() => {
     let mounted = true

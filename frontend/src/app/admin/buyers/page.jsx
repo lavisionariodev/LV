@@ -6,8 +6,10 @@ import { TbX } from 'react-icons/tb'
 import { LuSettings2 } from 'react-icons/lu'
 import styles from './buyers.module.css'
 import { supabase } from '@/lib/supabase/client'
-import { useMediaQuery } from '@/hooks'
+import { useDebouncedEffect, useMediaQuery } from '@/hooks'
 import { Dropdown } from '@/components/ui'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { readEnum, readString, replaceUrlQuery } from '@/lib/url/queryParams'
 
 const STATUS_FILTER_OPTIONS = [
   { value: 'all', label: 'All statuses', color: 'slate' },
@@ -57,14 +59,36 @@ function Avatar({ name, src }) {
 }
 
 export default function AdminBuyersPage() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const isMobile = useMediaQuery('(max-width: 640px)')
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [search, setSearch] = useState(() => readString(searchParams, 'q', ''))
+  const [statusFilter, setStatusFilter] = useState(() =>
+    readEnum(searchParams, 'status', STATUS_FILTER_OPTIONS.map((o) => o.value), 'all')
+  )
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [buyers, setBuyers] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedRows, setSelectedRows] = useState(() => new Set())
+
+  // Sync state <- URL (back/forward, shared links)
+  useEffect(() => {
+    const nextQ = readString(searchParams, 'q', '')
+    const nextStatus = readEnum(searchParams, 'status', STATUS_FILTER_OPTIONS.map((o) => o.value), 'all')
+    if (nextQ !== search) setSearch(nextQ)
+    if (nextStatus !== statusFilter) setStatusFilter(nextStatus)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
+  // Sync URL <- state (debounce search typing)
+  useDebouncedEffect(() => {
+    replaceUrlQuery(router, pathname, searchParams, {
+      q: search,
+      status: { value: statusFilter, omitIf: 'all' },
+    })
+  }, [search, statusFilter, router, pathname, searchParams], 300)
 
   useEffect(() => {
     if (!isMobile || !filtersOpen) return

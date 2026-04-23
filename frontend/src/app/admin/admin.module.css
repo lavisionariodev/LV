@@ -175,35 +175,131 @@
   display: none;
 }
 
+/* Desktop: charts left, stat cards right — two rows of 2 cards */
+.desktopDashGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 2.2fr) minmax(320px, 1.1fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.desktopChartsCol {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+.revenueOverviewPanel {
+  height: 360px; /* keep dashboard hero chart compact after removing "By category" */
+  flex: 0 0 360px;
+}
+
+.desktopChartsCol > * {
+  min-height: 0;
+}
+
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  grid-template-columns: 1fr;
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  height: 100%;
+}
+
+@media (min-width: 1101px) {
+  .statsGrid {
+    height: 360px; /* match .revenueOverviewPanel height */
+  }
 }
 
 .statCard {
   background: #ffffff;
   border: 1px solid #e9e9ef;
   border-radius: 16px;
-  padding: 16px;
+  padding: 16px 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.statCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.statCardArrow {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e9e9ef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: #374151;
+  flex-shrink: 0;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .statCardArrow:hover {
+    background: #102820;
+    border-color: #102820;
+    color: #fff;
+  }
+}
+
+.statCardIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
+  color: #166534;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.statCardBody {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.statCardText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
 }
 
 .statLabel {
   margin: 0;
   font-size: 13px;
   color: #64748b;
+  font-weight: 500;
 }
 
 .statValue {
-  margin: 8px 0 0;
+  margin: 0;
   font-size: 24px;
   font-weight: 800;
   color: #000;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .statHint {
-  margin: 6px 0 0;
-  font-size: 12px;
+  margin: 0;
+  font-size: 11px;
   color: var(--color-main-accent);
 }
 
@@ -353,8 +449,14 @@
     grid-template-columns: var(--sidebar-width-collapsed) 1fr;
   }
 
+  .desktopDashGrid {
+    grid-template-columns: 1fr;
+  }
+
   .statsGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto;
+    height: auto;
   }
 
   .lowerGrid {

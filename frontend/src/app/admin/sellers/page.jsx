@@ -11,7 +11,9 @@ import { listSellersForAdmin, updateSellerStatus } from '@/lib/sellers/client';
 import { useToast } from '@/contexts/ToastContext';
 import { useMediaQuery } from '@/hooks';
 import { Dropdown } from '@/components/ui';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useDebouncedEffect } from '@/hooks';
+import { readEnum, readString, replaceUrlQuery } from '@/lib/url/queryParams';
 
 const STATUS_FILTER_OPTIONS = [
   { value: 'all', label: 'All statuses', color: 'slate' },
@@ -278,6 +280,8 @@ function SellerDetailModal({ seller, onClose }) {
 }
 
 export default function AdminSellersPage() {
+  const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams();
   const toast = useToast();
   const isMobile = useMediaQuery('(max-width: 640px)');
@@ -285,11 +289,30 @@ export default function AdminSellersPage() {
   const [sellers, setSellers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [search, setSearch] = useState(() => searchParams.get('q') || '');
+  const [statusFilter, setStatusFilter] = useState(() =>
+    readEnum(searchParams, 'status', STATUS_FILTER_OPTIONS.map((o) => o.value), 'all')
+  );
+  const [search, setSearch] = useState(() => readString(searchParams, 'q', ''));
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedRows, setSelectedRows] = useState(() => new Set());
   const [detailSeller, setDetailSeller] = useState(null);
+
+  // Sync state <- URL (back/forward, shared links)
+  useEffect(() => {
+    const nextQ = readString(searchParams, 'q', '')
+    const nextStatus = readEnum(searchParams, 'status', STATUS_FILTER_OPTIONS.map((o) => o.value), 'all')
+    if (nextQ !== search) setSearch(nextQ)
+    if (nextStatus !== statusFilter) setStatusFilter(nextStatus)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
+  // Sync URL <- state (debounce search typing)
+  useDebouncedEffect(() => {
+    replaceUrlQuery(router, pathname, searchParams, {
+      q: search,
+      status: { value: statusFilter, omitIf: 'all' },
+    })
+  }, [search, statusFilter, router, pathname, searchParams], 300)
 
   useEffect(() => {
     if (!isMobile || !filtersOpen) return;

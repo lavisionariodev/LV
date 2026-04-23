@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   TbSearch,
   TbX,
@@ -25,6 +26,8 @@ import styles from './orders.module.css'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase/client'
 import { formatCount } from '@/utils/formatCount'
+import { useDebouncedEffect } from '@/hooks'
+import { readEnum, readString, replaceUrlQuery } from '@/lib/url/queryParams'
 
 const ORDER_STATUSES = [
   { id: 'all', label: 'All Orders' },
@@ -183,9 +186,14 @@ function formatDate(s) {
 }
 
 export default function OrdersContent({ initialTab, initialOrderId, initialAction }) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const { user, authLoading, isSeller } = useAuth()
-  const [activeTab, setActiveTab] = useState(initialTab || 'all')
-  const [searchQuery, setSearchQuery] = useState('')
+  const allowedTabs = ORDER_STATUSES.map((t) => t.id)
+  const defaultTab = initialTab && allowedTabs.includes(initialTab) ? initialTab : 'all'
+  const [activeTab, setActiveTab] = useState(() => readEnum(searchParams, 'tab', allowedTabs, defaultTab))
+  const [searchQuery, setSearchQuery] = useState(() => readString(searchParams, 'q', ''))
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [orderForUpdateStatus, setOrderForUpdateStatus] = useState(null)
   const [showUpdateStatus, setShowUpdateStatus] = useState(false)
@@ -293,10 +301,26 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
   }, [user?.id, authLoading, isSeller])
 
   useEffect(() => {
-    if (initialTab && ORDER_STATUSES.some((t) => t.id === initialTab)) {
-      setActiveTab(initialTab)
-    }
+    // Back-compat: if parent route supplies initialTab, respect it.
+    if (initialTab && ORDER_STATUSES.some((t) => t.id === initialTab)) setActiveTab(initialTab)
   }, [initialTab])
+
+  // Sync state <- URL (back/forward, shared links)
+  useEffect(() => {
+    const nextTab = readEnum(searchParams, 'tab', allowedTabs, defaultTab)
+    const nextQ = readString(searchParams, 'q', '')
+    if (nextTab !== activeTab) setActiveTab(nextTab)
+    if (nextQ !== searchQuery) setSearchQuery(nextQ)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
+  // Sync URL <- state (debounce typing; keep tab in URL too)
+  useDebouncedEffect(() => {
+    replaceUrlQuery(router, pathname, searchParams, {
+      tab: { value: activeTab, omitIf: defaultTab },
+      q: searchQuery,
+    })
+  }, [activeTab, searchQuery, router, pathname, searchParams], 300)
 
   useEffect(() => {
     if (!initialOrderId) return

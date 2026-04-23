@@ -1,10 +1,12 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useMemo, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { TbSearch, TbUser, TbPhone, TbMail, TbX, TbReceipt } from 'react-icons/tb'
 import styles from './customers.module.css'
 import { formatCount } from '@/utils/formatCount'
+import { useDebouncedEffect } from '@/hooks'
+import { readString, replaceUrlQuery } from '@/lib/url/queryParams'
 
 const MOCK_CUSTOMERS = [
   {
@@ -79,11 +81,28 @@ function formatDate(dateString) {
 }
 
 export default function SellerCustomersPage() {
-  const [searchQuery, setSearchQuery] = useState('')
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  const [searchQuery, setSearchQuery] = useState(() => readString(searchParams, 'q', ''))
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const [customerForMessage, setCustomerForMessage] = useState(null)
   const [messageText, setMessageText] = useState('')
-  const router = useRouter()
+
+  // Sync state <- URL (back/forward, shared links)
+  useEffect(() => {
+    const nextQ = readString(searchParams, 'q', '')
+    if (nextQ !== searchQuery) setSearchQuery(nextQ)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
+  // Sync URL <- state (debounce typing)
+  useDebouncedEffect(() => {
+    replaceUrlQuery(router, pathname, searchParams, {
+      q: searchQuery,
+    })
+  }, [searchQuery, router, pathname, searchParams], 300)
 
   const totalCustomers = MOCK_CUSTOMERS.length
   const returningCustomers = MOCK_CUSTOMERS.filter((c) => c.bookings.length > 1).length
