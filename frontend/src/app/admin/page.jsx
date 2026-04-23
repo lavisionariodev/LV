@@ -15,9 +15,6 @@ import { calcAmounts, formatPHP, getCommissionRate } from '@/utils/adminPayouts'
 import {
   AreaChart,
   Area,
-  BarChart,
-  Bar,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -26,9 +23,8 @@ import {
 } from 'recharts'
 import { TbReportSearch, TbUsers, TbSearch, TbCreditCard, TbX } from 'react-icons/tb'
 import { LuUserCheck } from 'react-icons/lu'
+import { MdArrowOutward } from 'react-icons/md'
 
-// Bar chart: green shades only (values match globals.css --color-green-*)
-const BAR_COLORS = ['#1F312B', '#2D4A38', '#3D683A', '#4A7C47']
 const CHART_ACCENT = '#1F312B'
 
 const NAV_ACTIONS = [
@@ -94,6 +90,9 @@ function getStatusDotColor(status) {
   return '#94a3b8'
 }
 
+// ── Sparkline ──────────────────────────────────────────────────────────────
+// Thin, very light smooth curve. No fill, no dots, no axes.
+// Sits on the right side of the stat card body as a decorative trend indicator.
 export default function AdminDashboardPage() {
   const router = useRouter()
   const [adminProfile, setAdminProfile] = useState(null)
@@ -303,32 +302,112 @@ export default function AdminDashboardPage() {
         </div>
       </section>
 
-      {/* Desktop-only summary cards (analytics move to /admin/analytics on mobile) */}
-      <section className={`${styles.statsGrid} ${styles.homeDesktopOnly}`}>
-        <div className={styles.statCard}>
-          <p className={styles.statLabel}>Platform revenue</p>
-          <p className={styles.statValue}>{formatPHP(payoutMetrics.platformRevenue30d)}</p>
-          <p className={styles.statHint}>Last 30 days</p>
+      {/* Desktop-only: charts (left) + stat cards (right) side by side */}
+      <div className={`${styles.desktopDashGrid} ${styles.homeDesktopOnly}`}>
+
+        {/* LEFT — two charts stacked */}
+        <div className={styles.desktopChartsCol}>
+          {/* Revenue by day — Area chart */}
+          <div className={`${styles.panel} ${styles.revenueOverviewPanel}`} style={{ display: 'flex', flexDirection: 'column' }}>
+            <div className={styles.panelHead}>
+              <p className={styles.panelTitle}>Revenue overview (sample data)</p>
+            </div>
+            <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: 14, color: '#374151' }}>
+              Last 7 days
+            </p>
+            <div style={{ flex: 1, minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={dashboard.revenueByDay}
+                margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={CHART_ACCENT} stopOpacity={0.35} />
+                    <stop offset="100%" stopColor={CHART_ACCENT} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={formatShortDate}
+                  tick={{ fontSize: 11, fill: '#64748b' }}
+                />
+                <YAxis
+                  tickFormatter={(v) => `₱${(v / 1000).toFixed(0)}k`}
+                  tick={{ fontSize: 11, fill: '#64748b' }}
+                  width={44}
+                />
+                <Tooltip
+                  formatter={(value) => [`₱ ${Number(value).toLocaleString()}`, 'Revenue']}
+                  labelFormatter={(label) => `Date: ${label}`}
+                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="total"
+                  stroke={CHART_ACCENT}
+                  strokeWidth={2}
+                  fill="url(#revenueGradient)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+            </div>
+          </div>
         </div>
 
-        <div className={styles.statCard}>
-          <p className={styles.statLabel}>Pending payouts</p>
-          <p className={styles.statValue}>{formatPHP(payoutMetrics.pendingPayoutAmt)}</p>
-          <p className={styles.statHint}>Pending/processing/on-hold</p>
+        {/* RIGHT — 4×1 stat cards */}
+        <div className={styles.statsGrid}>
+          <div className={styles.statCard}>
+            <div className={styles.statCardTop}>
+              <p className={styles.statLabel}>Platform revenue</p>
+              <Link href="/admin/analytics" className={styles.statCardArrow} aria-label="View platform revenue">
+                <MdArrowOutward />
+              </Link>
+            </div>
+            <div className={styles.statCardBody}>
+              <span className={styles.statCardIcon} aria-hidden="true"><TbCreditCard /></span>
+              <div className={styles.statCardText}>
+                <p className={styles.statValue}>{formatPHP(payoutMetrics.platformRevenue30d)}</p>
+                <p className={styles.statHint}>Last 30 days</p>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.statCard}>
+            <div className={styles.statCardTop}>
+              <p className={styles.statLabel}>Pending payouts</p>
+              <Link href="/admin/payouts" className={styles.statCardArrow} aria-label="View pending payouts">
+                <MdArrowOutward />
+              </Link>
+            </div>
+            <div className={styles.statCardBody}>
+              <span className={styles.statCardIcon} aria-hidden="true"><TbCreditCard /></span>
+              <div className={styles.statCardText}>
+                <p className={styles.statValue}>{formatPHP(payoutMetrics.pendingPayoutAmt)}</p>
+                <p className={styles.statHint}>Pending/processing/on-hold</p>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.statCard}>
+            <div className={styles.statCardTop}>
+              <p className={styles.statLabel}>Disputes needing attention</p>
+              <Link href="/admin/disputes" className={styles.statCardArrow} aria-label="View disputes">
+                <MdArrowOutward />
+              </Link>
+            </div>
+            <div className={styles.statCardBody}>
+              <span className={styles.statCardIcon} aria-hidden="true"><TbReportSearch /></span>
+              <div className={styles.statCardText}>
+                <p className={styles.statValue}>{formatCount(disputesNeedingAttention, { desktop: true })}</p>
+                <p className={styles.statHint}>Open + under review</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className={styles.statCard}>
-          <p className={styles.statLabel}>Disputes needing attention</p>
-          <p className={styles.statValue}>{formatCount(disputesNeedingAttention, { desktop: true })}</p>
-          <p className={styles.statHint}>Open + under review</p>
-        </div>
-
-        <div className={styles.statCard}>
-          <p className={styles.statLabel}>Listings pending review</p>
-          <p className={styles.statValue}>{formatCount(listingsPendingReviewCount, { desktop: true })}</p>
-          <p className={styles.statHint}>New + staged updates</p>
-        </div>
-      </section>
+      </div>{/* end desktopDashGrid */}
 
       {/* Mobile-first home hub */}
       <section className={styles.quickLinks}>
@@ -521,112 +600,6 @@ export default function AdminDashboardPage() {
 
         </div>{/* end mobileBody */}
 
-      </section>
-
-      {/* Desktop-only revenue charts (hidden on mobile home) */}
-      <section className={`${styles.panel} ${styles.homeDesktopOnly}`}>
-        <div className={styles.panelHead}>
-          <p className={styles.panelTitle}>Revenue overview (sample data)</p>
-        </div>
-
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'minmax(0, 1.6fr) minmax(280px, 1fr)',
-            gap: 24,
-            alignItems: 'stretch',
-          }}
-        >
-          {/* Revenue by day — Area chart */}
-          <div style={{ minHeight: 260 }}>
-            <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: 14 }}>
-              Last 7 days
-            </p>
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart
-                data={dashboard.revenueByDay}
-                margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={CHART_ACCENT} stopOpacity={0.35} />
-                    <stop offset="100%" stopColor={CHART_ACCENT} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis
-                  dataKey="date"
-                  tickFormatter={formatShortDate}
-                  tick={{ fontSize: 11, fill: '#64748b' }}
-                />
-                <YAxis
-                  tickFormatter={(v) => `₱${(v / 1000).toFixed(0)}k`}
-                  tick={{ fontSize: 11, fill: '#64748b' }}
-                  width={44}
-                />
-                <Tooltip
-                  formatter={(value) => [`₱ ${Number(value).toLocaleString()}`, 'Revenue']}
-                  labelFormatter={(label) => `Date: ${label}`}
-                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="total"
-                  stroke={CHART_ACCENT}
-                  strokeWidth={2}
-                  fill="url(#revenueGradient)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Revenue by category — Horizontal bar chart */}
-          <div style={{ minHeight: 260, minWidth: 0 }}>
-            <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: 14 }}>
-              By category
-            </p>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart
-                data={dashboard.revenueByCategory}
-                layout="vertical"
-                margin={{ top: 4, right: 8, left: 0, bottom: 4 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
-                <XAxis
-                  type="number"
-                  tickFormatter={(v) => `₱${(v / 1000).toFixed(0)}k`}
-                  tick={{ fontSize: 10, fill: '#64748b' }}
-                  width={40}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="name"
-                  tick={{ fontSize: 11, fill: '#374151' }}
-                  width={100}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <Tooltip
-                  formatter={(value) => [`₱ ${Number(value).toLocaleString()}`, 'Revenue']}
-                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                />
-                <Bar
-                  dataKey="value"
-                  radius={[0, 4, 4, 0]}
-                  maxBarSize={24}
-                  label={false}
-                >
-                  {dashboard.revenueByCategory.map((_, index) => (
-                    <Cell
-                      key={index}
-                      fill={BAR_COLORS[index % BAR_COLORS.length]}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
       </section>
 
       {/* Desktop-only recent activity and quick actions */}
