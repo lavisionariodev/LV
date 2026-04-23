@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { TbSearch, TbUser, TbPhone, TbMail, TbX, TbReceipt } from 'react-icons/tb'
 import styles from './customers.module.css'
+import { formatCount } from '@/utils/formatCount'
 
 const MOCK_CUSTOMERS = [
   {
@@ -124,22 +125,22 @@ export default function SellerCustomersPage() {
       <section className={styles.statsStrip} aria-label="Customer overview">
         <div className={styles.statCard}>
           <p className={styles.statLabel}>Total customers</p>
-          <p className={styles.statValue}>{totalCustomers}</p>
+          <p className={styles.statValue}>{formatCount(totalCustomers)}</p>
           <p className={styles.statHint}>Families on record</p>
         </div>
         <div className={styles.statCard}>
           <p className={styles.statLabel}>Returning customers</p>
-          <p className={styles.statValue}>{returningCustomers}</p>
+          <p className={styles.statValue}>{formatCount(returningCustomers)}</p>
           <p className={styles.statHint}>Booked more than once</p>
         </div>
         <div className={styles.statCard}>
           <p className={styles.statLabel}>New this month</p>
-          <p className={styles.statValue}>{newCustomersThisMonth}</p>
+          <p className={styles.statValue}>{formatCount(newCustomersThisMonth)}</p>
           <p className={styles.statHint}>First service this month</p>
         </div>
         <div className={styles.statCard}>
           <p className={styles.statLabel}>Active clients</p>
-          <p className={styles.statValue}>{activeClients}</p>
+          <p className={styles.statValue}>{formatCount(activeClients)}</p>
           <p className={styles.statHint}>With recent services</p>
         </div>
       </section>
@@ -371,7 +372,7 @@ export default function SellerCustomersPage() {
                   <div className={styles.summaryStat}>
                     <span className={styles.summaryStatLabel}>Total bookings</span>
                     <span className={styles.summaryStatValue}>
-                      {selectedCustomer.bookings.length}
+                      {formatCount(selectedCustomer.bookings.length)}
                     </span>
                   </div>
                   <div className={styles.summaryStat}>

@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import styles from './admin.module.css'
 import { dashboard } from '@/data/adminSampleData'
+import { formatCount } from '@/utils/formatCount'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
 import { listSellersForAdmin, searchSellersForAdmin } from '@/lib/sellers/client'
 import {
@@ -234,27 +235,27 @@ export default function AdminDashboardPage() {
       <section className={`${styles.statsGrid} ${styles.homeDesktopOnly}`}>
         <div className={styles.statCard}>
           <p className={styles.statLabel}>Total Sellers</p>
-          <p className={styles.statValue}>{dashboard.stats.totalSellers}</p>
+          <p className={styles.statValue}>{formatCount(dashboard.stats.totalSellers)}</p>
           <p className={styles.statHint}>Registered sellers</p>
         </div>
 
         <div className={styles.statCard}>
           <p className={styles.statLabel}>Total Buyers</p>
-          <p className={styles.statValue}>{dashboard.stats.totalBuyers}</p>
+          <p className={styles.statValue}>{formatCount(dashboard.stats.totalBuyers)}</p>
           <p className={styles.statHint}>Buyer accounts</p>
         </div>
 
         <div className={styles.statCard}>
           <p className={styles.statLabel}>Transactions</p>
           <p className={styles.statValue}>
-            {dashboard.stats.transactionsLast30Days}
+            {formatCount(dashboard.stats.transactionsLast30Days)}
           </p>
           <p className={styles.statHint}>Last 30 days (count)</p>
         </div>
 
         <div className={styles.statCard}>
           <p className={styles.statLabel}>Open Disputes</p>
-          <p className={styles.statValue}>{dashboard.stats.openDisputes}</p>
+          <p className={styles.statValue}>{formatCount(dashboard.stats.openDisputes)}</p>
           <p className={styles.statHint}>Needs review</p>
         </div>
       </section>
@@ -301,7 +302,7 @@ export default function AdminDashboardPage() {
               {greetingName ? `Welcome back, ${greetingName}` : 'Welcome back'}
             </p>
             <p className={styles.mobileHeroBalanceValue}>
-              {activeSellerCount} Sellers
+              {formatCount(activeSellerCount)} Sellers
             </p>
             <p className={styles.mobileHeroBalanceSub}>
               <span className={styles.mobileHeroOnlineDot} />
@@ -425,7 +426,7 @@ export default function AdminDashboardPage() {
                   </span>
                   <span className={styles.mobileStatTitle}>{title}</span>
                 </div>
-                <p className={styles.mobileStatValue}>{Number(value(dashboard.stats)).toLocaleString()}</p>
+                <p className={styles.mobileStatValue}>{formatCount(value(dashboard.stats))}</p>
                 <div className={styles.mobileStatFooter}>
                   <span className={styles.mobileStatSubtitle}>{subtitle}</span>
                   <span className={styles.mobileStatAction}>{actionLabel}</span>

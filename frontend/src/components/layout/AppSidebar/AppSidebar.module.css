@@ -1,6 +1,7 @@
 .sidebar {
   width: var(--sidebar-width);
-  height: 100vh;
+  height: 100vh; /* fallback */
+  height: 100dvh; /* match portal shell on mobile browsers */
   box-sizing: border-box;
   position: sticky;
   top: 0;
@@ -353,7 +354,8 @@
     position: fixed;
     top: 0;
     left: 0;
-    height: 100vh;
+    height: 100vh; /* fallback */
+    height: 100dvh; /* avoid vh overflow vs dvh shell */
     width: var(--sidebar-width);
     box-shadow: 0 16px 40px rgba(15, 23, 42, 0.28);
     transform: translateX(-100%);

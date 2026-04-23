@@ -24,6 +24,7 @@ import {
 import styles from './orders.module.css'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase/client'
+import { formatCount } from '@/utils/formatCount'
 
 const ORDER_STATUSES = [
   { id: 'all', label: 'All Orders' },
@@ -486,20 +487,20 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
       <div className={styles.statsStrip}>
         <div className={`${styles.statCard} ${styles.statCardTotal}`}>
           <div className={styles.statCardTitle}>Total orders</div>
-          <div className={styles.statCardValue}>{orders.length}</div>
+          <div className={styles.statCardValue}>{formatCount(orders.length)}</div>
           <div className={styles.statCardDesc}>All time (sample data)</div>
         </div>
         <div className={`${styles.statCard} ${styles.statCardPending}`}>
           <div className={styles.statCardTitle}>Pending approvals</div>
           <div className={styles.statCardValue}>
-            {orders.filter((o) => o.orderStatus === 'pending').length}
+            {formatCount(orders.filter((o) => o.orderStatus === 'pending').length)}
           </div>
           <div className={styles.statCardDesc}>Waiting for your confirmation</div>
         </div>
         <div className={`${styles.statCard} ${styles.statCardInProgress}`}>
           <div className={styles.statCardTitle}>In progress</div>
           <div className={styles.statCardValue}>
-            {orders.filter((o) => o.orderStatus === 'in_progress' || o.orderStatus === 'confirmed').length}
+            {formatCount(orders.filter((o) => o.orderStatus === 'in_progress' || o.orderStatus === 'confirmed').length)}
           </div>
           <div className={styles.statCardDesc}>Preparation or service ongoing</div>
         </div>
@@ -520,7 +521,7 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
         <section className={styles.refundListSection}>
           <div className={styles.refundListHeader}>
             <h2 className={styles.refundListTitle}>Refund requests</h2>
-            <span className={styles.refundListCount}>{refundRequests.length} pending</span>
+            <span className={styles.refundListCount}>{formatCount(refundRequests.length)} pending</span>
           </div>
           <div className={styles.refundCards}>
             {refundRequests.map((order) => (

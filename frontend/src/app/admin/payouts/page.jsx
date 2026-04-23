@@ -15,6 +15,7 @@ import {
   getCommissionRate,
   calcAmounts,
 } from '@/utils/adminPayouts'
+import { formatCount } from '@/utils/formatCount'
 
 import { Dropdown } from '@/components/ui'
 
@@ -1132,7 +1133,7 @@ export default function AdminPayoutsPage() {
       {activeTab === 'all' && (
         <section className={styles.statsGrid}>
           <StatCard label="Platform Revenue" shortLabel="Revenue" value={formatPHP(summary.platformRevenue)} percent={14} />
-          <StatCard label="Total Orders" shortLabel="Total Orders" value={summary.total} percent={-17} />
+          <StatCard label="Total Orders" shortLabel="Total Orders" value={formatCount(summary.total)} percent={-17} />
           <StatCard label="Pending Payouts" shortLabel="Pending Payouts" value={formatPHP(summary.pendingAmt)} percent={8} />
           <StatCard label="Completed Payouts" shortLabel="Completed" value={formatPHP(summary.completedAmt)} percent={23} className={styles.statCardMobileHide} />
         </section>
