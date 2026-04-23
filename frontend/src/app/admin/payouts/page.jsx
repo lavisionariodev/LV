@@ -15,7 +15,7 @@ import {
   getCommissionRate,
   calcAmounts,
 } from '@/utils/adminPayouts'
-import { formatCount } from '@/utils/formatCount'
+import { formatCount, formatPHPMobile } from '@/utils/formatCount'
 
 import { Dropdown } from '@/components/ui'
 
@@ -1132,10 +1132,10 @@ export default function AdminPayoutsPage() {
       {/* Financial overview — only on "All" tab (not Transactions / Commission / Seller alone) */}
       {activeTab === 'all' && (
         <section className={styles.statsGrid}>
-          <StatCard label="Platform Revenue" shortLabel="Revenue" value={formatPHP(summary.platformRevenue)} percent={14} />
-          <StatCard label="Total Orders" shortLabel="Total Orders" value={formatCount(summary.total)} percent={-17} />
-          <StatCard label="Pending Payouts" shortLabel="Pending Payouts" value={formatPHP(summary.pendingAmt)} percent={8} />
-          <StatCard label="Completed Payouts" shortLabel="Completed" value={formatPHP(summary.completedAmt)} percent={23} className={styles.statCardMobileHide} />
+          <StatCard label="Platform Revenue" shortLabel="Revenue" value={isMobile ? formatPHPMobile(summary.platformRevenue) : formatPHP(summary.platformRevenue)} percent={14} />
+          <StatCard label="Total Orders" shortLabel="Total Orders" value={formatCount(summary.total, { desktop: !isMobile })} percent={-17} />
+          <StatCard label="Pending Payouts" shortLabel="Pending Payouts" value={isMobile ? formatPHPMobile(summary.pendingAmt) : formatPHP(summary.pendingAmt)} percent={8} />
+          <StatCard label="Completed Payouts" shortLabel="Completed" value={isMobile ? formatPHPMobile(summary.completedAmt) : formatPHP(summary.completedAmt)} percent={23} className={styles.statCardMobileHide} />
         </section>
       )}
 

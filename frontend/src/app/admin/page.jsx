@@ -1,14 +1,17 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import styles from './admin.module.css'
-import { dashboard } from '@/data/adminSampleData'
-import { formatCount } from '@/utils/formatCount'
+import { dashboard, disputes, PAYOUTS_PAGE_INITIAL_TRANSACTIONS, PAYOUTS_PAGE_INITIAL_COMMISSION_SETTINGS } from '@/data/adminSampleData'
+import { formatCount, formatPHPMobile } from '@/utils/formatCount'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
 import { listSellersForAdmin, searchSellersForAdmin } from '@/lib/sellers/client'
+import { listSellerListingsForAdmin } from '@/lib/seller-listings/client'
+import { hasPendingSellerChanges } from '@/lib/seller-listings/pendingChanges'
+import { calcAmounts, formatPHP, getCommissionRate } from '@/utils/adminPayouts'
 import {
   AreaChart,
   Area,
@@ -37,40 +40,44 @@ const NAV_ACTIONS = [
 
 const MOBILE_STAT_CARDS = [
   {
-    id: 'totalSellers',
-    title: 'Sellers',
-    value: (stats) => stats.totalSellers,
-    subtitle: 'Registered sellers',
-    icon: LuUserCheck,
-    href: '/admin/sellers',
-    actionLabel: 'View',
-  },
-  {
-    id: 'totalBuyers',
-    title: 'Buyers',
-    value: (stats) => stats.totalBuyers,
-    subtitle: 'Buyer accounts',
-    icon: TbUsers,
-    href: '/admin/buyers',
-    actionLabel: 'View',
-  },
-  {
-    id: 'transactions',
-    title: 'Transactions',
-    value: (stats) => stats.transactionsLast30Days,
+    id: 'platformRevenue',
+    title: 'Revenue',
+    value: (metrics) => metrics.platformRevenue30d,
     subtitle: 'Last 30 days',
     icon: TbCreditCard,
     href: '/admin/payouts',
     actionLabel: 'View',
+    format: 'php',
   },
   {
-    id: 'openDisputes',
+    id: 'pendingPayouts',
+    title: 'Pending payouts',
+    value: (metrics) => metrics.pendingPayoutAmt,
+    subtitle: 'Pending/processing/on-hold',
+    icon: TbCreditCard,
+    href: '/admin/payouts',
+    actionLabel: 'Review',
+    format: 'php',
+  },
+  {
+    id: 'disputesAttention',
     title: 'Disputes',
-    value: (stats) => stats.openDisputes,
-    subtitle: 'Open cases',
+    value: (metrics) => metrics.disputesNeedingAttention,
+    subtitle: 'Needs attention',
     icon: TbReportSearch,
     href: '/admin/disputes',
     actionLabel: 'Review',
+    format: 'count',
+  },
+  {
+    id: 'listingsPending',
+    title: 'Listings',
+    value: (metrics) => metrics.listingsPendingReview,
+    subtitle: 'Pending review',
+    icon: TbReportSearch,
+    href: '/admin/listings/approvals',
+    actionLabel: 'Review',
+    format: 'count',
   },
 ]
 
@@ -97,8 +104,48 @@ export default function AdminDashboardPage() {
   const [sellerLoading, setSellerLoading] = useState(false)
   const [sellerOpen, setSellerOpen] = useState(false)
   const [activeSellerCount, setActiveSellerCount] = useState(dashboard.stats.totalSellers)
+  const [listingsPendingReviewCount, setListingsPendingReviewCount] = useState(0)
   const searchWrapRef = useRef(null)
   const searchInputRef = useRef(null)
+
+  const payoutMetrics = (() => {
+    // Use the same computation as /admin/payouts until a live API exists.
+    // Keeps the dashboard aligned with payouts UI and avoids duplicating a new data layer right now.
+    const now = Date.now()
+    const cutoff30d = now - 30 * 24 * 60 * 60 * 1000
+    let platformRevenue30d = 0
+    let pendingPayoutAmt = 0
+
+    for (const t of PAYOUTS_PAGE_INITIAL_TRANSACTIONS) {
+      if (!t || t.paymentStatus !== 'paid') continue
+
+      const ts =
+        t.dateObj instanceof Date
+          ? t.dateObj.getTime()
+          : t.date
+            ? new Date(`${t.date}T12:00:00`).getTime()
+            : NaN
+
+      if (Number.isFinite(ts) && ts >= cutoff30d) {
+        const rate = getCommissionRate(t.sellerId, PAYOUTS_PAGE_INITIAL_COMMISSION_SETTINGS)
+        const { commission, sellerEarnings } = calcAmounts(t.amount, rate)
+        platformRevenue30d += commission
+
+        const ps = String(t.payoutStatus || '').toLowerCase()
+        if (ps === 'pending' || ps === 'processing' || ps === 'on_hold') {
+          pendingPayoutAmt += sellerEarnings
+        }
+      }
+    }
+
+    return { platformRevenue30d, pendingPayoutAmt }
+  })()
+
+  const disputesNeedingAttention = useMemo(() => {
+    return (Array.isArray(disputes) ? disputes : []).filter(
+      (d) => d?.status === 'open' || d?.status === 'under_review',
+    ).length
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -134,6 +181,31 @@ export default function AdminDashboardPage() {
       }
     }
     loadActiveSellers()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    const loadListingsPending = async () => {
+      try {
+        const [pendingRes, approvedRes] = await Promise.all([
+          listSellerListingsForAdmin({ approvalStatusIn: ['pending'], onlyActive: false }),
+          listSellerListingsForAdmin({ statusIn: ['active', 'archived'], approvalStatusIn: ['approved'] }),
+        ])
+
+        if (cancelled) return
+
+        const pendingRows = Array.isArray(pendingRes?.data) ? pendingRes.data : []
+        const approvedRows = Array.isArray(approvedRes?.data) ? approvedRes.data : []
+        const stagedCount = approvedRows.filter((row) => hasPendingSellerChanges(row)).length
+        setListingsPendingReviewCount(pendingRows.length + stagedCount)
+      } catch {
+        if (!cancelled) setListingsPendingReviewCount(0)
+      }
+    }
+    loadListingsPending()
     return () => {
       cancelled = true
     }
@@ -234,29 +306,27 @@ export default function AdminDashboardPage() {
       {/* Desktop-only summary cards (analytics move to /admin/analytics on mobile) */}
       <section className={`${styles.statsGrid} ${styles.homeDesktopOnly}`}>
         <div className={styles.statCard}>
-          <p className={styles.statLabel}>Total Sellers</p>
-          <p className={styles.statValue}>{formatCount(dashboard.stats.totalSellers)}</p>
-          <p className={styles.statHint}>Registered sellers</p>
+          <p className={styles.statLabel}>Platform revenue</p>
+          <p className={styles.statValue}>{formatPHP(payoutMetrics.platformRevenue30d)}</p>
+          <p className={styles.statHint}>Last 30 days</p>
         </div>
 
         <div className={styles.statCard}>
-          <p className={styles.statLabel}>Total Buyers</p>
-          <p className={styles.statValue}>{formatCount(dashboard.stats.totalBuyers)}</p>
-          <p className={styles.statHint}>Buyer accounts</p>
+          <p className={styles.statLabel}>Pending payouts</p>
+          <p className={styles.statValue}>{formatPHP(payoutMetrics.pendingPayoutAmt)}</p>
+          <p className={styles.statHint}>Pending/processing/on-hold</p>
         </div>
 
         <div className={styles.statCard}>
-          <p className={styles.statLabel}>Transactions</p>
-          <p className={styles.statValue}>
-            {formatCount(dashboard.stats.transactionsLast30Days)}
-          </p>
-          <p className={styles.statHint}>Last 30 days (count)</p>
+          <p className={styles.statLabel}>Disputes needing attention</p>
+          <p className={styles.statValue}>{formatCount(disputesNeedingAttention, { desktop: true })}</p>
+          <p className={styles.statHint}>Open + under review</p>
         </div>
 
         <div className={styles.statCard}>
-          <p className={styles.statLabel}>Open Disputes</p>
-          <p className={styles.statValue}>{formatCount(dashboard.stats.openDisputes)}</p>
-          <p className={styles.statHint}>Needs review</p>
+          <p className={styles.statLabel}>Listings pending review</p>
+          <p className={styles.statValue}>{formatCount(listingsPendingReviewCount, { desktop: true })}</p>
+          <p className={styles.statHint}>New + staged updates</p>
         </div>
       </section>
 
@@ -418,7 +488,7 @@ export default function AdminDashboardPage() {
 
           {/* Mobile stat cards (dashboard only) */}
           <div className={styles.mobileStatsGrid} aria-label="Admin stats">
-            {MOBILE_STAT_CARDS.map(({ id, title, value, subtitle, icon: Icon, href, actionLabel }) => (
+            {MOBILE_STAT_CARDS.map(({ id, title, value, subtitle, icon: Icon, href, actionLabel, format }) => (
               <Link key={id} href={href} className={styles.mobileStatCard}>
                 <div className={styles.mobileStatCardTop}>
                   <span className={styles.mobileStatIcon} aria-hidden="true">
@@ -426,7 +496,21 @@ export default function AdminDashboardPage() {
                   </span>
                   <span className={styles.mobileStatTitle}>{title}</span>
                 </div>
-                <p className={styles.mobileStatValue}>{formatCount(value(dashboard.stats))}</p>
+                <p className={styles.mobileStatValue}>
+                  {format === 'php'
+                    ? formatPHPMobile(value({
+                        platformRevenue30d: payoutMetrics.platformRevenue30d,
+                        pendingPayoutAmt: payoutMetrics.pendingPayoutAmt,
+                        disputesNeedingAttention,
+                        listingsPendingReview: listingsPendingReviewCount,
+                      }))
+                    : formatCount(value({
+                        platformRevenue30d: payoutMetrics.platformRevenue30d,
+                        pendingPayoutAmt: payoutMetrics.pendingPayoutAmt,
+                        disputesNeedingAttention,
+                        listingsPendingReview: listingsPendingReviewCount,
+                      }))}
+                </p>
                 <div className={styles.mobileStatFooter}>
                   <span className={styles.mobileStatSubtitle}>{subtitle}</span>
                   <span className={styles.mobileStatAction}>{actionLabel}</span>
