@@ -104,6 +104,14 @@ export function useAdminPayoutsPage() {
     if (currentPage > totalPages) setCurrentPage(totalPages)
   }, [currentPage, totalPages])
 
+  // Ensure tab param is always present for non-default tabs (and omitted for "all").
+  // This runs immediately on tab changes (not debounced behind search typing).
+  useEffect(() => {
+    replaceUrlQuery(router, pathname, searchParams, {
+      tab: { value: activeTab, omitIf: 'all' },
+    })
+  }, [activeTab, router, pathname, searchParams])
+
   // Sync URL <- state (debounce search typing; keep tabs in URL too)
   useDebouncedEffect(() => {
     replaceUrlQuery(router, pathname, searchParams, {

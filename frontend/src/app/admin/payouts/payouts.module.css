@@ -225,10 +225,10 @@
   align-items: center;
   gap: 8px;
   height: 40px;
-  padding: 0;
-  border: none;
+  padding: 0 12px;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
-  background: transparent;
+  background: #fff;
   flex: 1;
   min-width: 160px;
   max-width: 280px;
@@ -248,10 +248,10 @@
 }
 
 .toolbarSearchInput {
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  height: 40px;
-  padding: 0 12px;
+  border: none;
+  border-radius: 0;
+  height: 100%;
+  padding: 0;
   outline: none;
   flex: 1;
   min-width: 0;
