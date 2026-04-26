@@ -1262,10 +1262,10 @@ a.ctaPrimary {
 .partnerCarouselViewport {
   overflow: hidden;
   width: 100%;
-  padding: 32px 0 16px;
+  padding: 40px 0 24px;
   position: relative;
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);
-  mask-image: linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 14%, black 86%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, black 14%, black 86%, transparent 100%);
 }
 
 /* Arrows float over the carousel */
@@ -1285,17 +1285,16 @@ a.ctaPrimary {
   right: 0 !important;
 }
 
-/* The sliding strip — position relative so translateX works from left edge */
+/* The sliding strip */
 .partnerCarouselTrack {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 24px;
-  /* width is content-driven; translate handles centering */
   width: max-content;
   will-change: transform;
 }
 
-/* Individual card */
+/* Individual card — fixed height so all cards are same size regardless of content visibility */
 .partnerCarouselCard {
   background: #FFFFFF;
   border-radius: 20px;
@@ -1305,13 +1304,31 @@ a.ctaPrimary {
   transition:
     transform 0.55s cubic-bezier(0.4, 0, 0.2, 1),
     opacity  0.55s ease,
-    box-shadow 0.4s ease;
+    box-shadow 0.55s ease;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Active (center) card gets a lifted shadow */
-.partnerCarouselCard[style*="scale(1)"] {
+/* Active (center) card gets lifted shadow + gold border accent */
+.partnerCarouselCardActive {
   box-shadow: 0 28px 72px rgba(16, 40, 32, 0.2);
-  border-color: rgba(168, 137, 74, 0.35);
+  border-color: rgba(168, 137, 74, 0.4);
+}
+
+/* Side label: always rendered, hidden on the active card */
+.partnerCarouselCard .partnerSideLabel {
+  display: block;
+}
+.partnerCarouselCardActive .partnerSideLabel {
+  display: none;
+}
+
+/* Content panel: always rendered, hidden on non-active cards */
+.partnerCarouselCard .partnerContent {
+  display: none;
+}
+.partnerCarouselCardActive .partnerContent {
+  display: flex;
 }
 
 /* Image block */

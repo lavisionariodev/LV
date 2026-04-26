@@ -415,11 +415,11 @@ function PartnerHighlightSection() {
                 return (
                   <div
                     key={i}
-                    className={styles.partnerCarouselCard}
+                    className={`${styles.partnerCarouselCard} ${isCenter ? styles.partnerCarouselCardActive : ''}`}
                     style={{
                       width: `${CARD_W}px`,
                       transform: isCenter ? 'scale(1.06)' : isAdjacent ? 'scale(0.88)' : 'scale(0.78)',
-                      opacity: isCenter ? 1 : isAdjacent ? 0.7 : 0.35,
+                      opacity: isCenter ? 1 : isAdjacent ? 0.72 : 0.38,
                       zIndex: isCenter ? 10 : isAdjacent ? 5 : 1,
                       cursor: isCenter ? 'default' : 'pointer',
                       transition: `transform ${TRANSITION_MS}ms cubic-bezier(0.4,0,0.2,1), opacity ${TRANSITION_MS}ms ease`,
@@ -437,35 +437,33 @@ function PartnerHighlightSection() {
                       <img src={partner.image} alt={partner.name} className={styles.partnerImage} />
                       <div className={styles.partnerImageOverlay} />
                       <div className={styles.partnerRatingBadge}>★ {partner.rating}</div>
-                      {!isCenter && (
-                        <div className={styles.partnerSideLabel}>{partner.name}</div>
-                      )}
+                      {/* Side label always in DOM; hidden on center via CSS */}
+                      <div className={styles.partnerSideLabel}>{partner.name}</div>
                     </div>
 
-                    {isCenter && (
-                      <div className={styles.partnerContent}>
-                        <div className={styles.partnerMeta}>
-                          <span className={styles.partnerLocation}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                              <circle cx="12" cy="10" r="3" />
-                            </svg>
-                            {partner.location}
-                          </span>
-                          <span className={styles.partnerYears}>{partner.years}</span>
-                        </div>
-                        <h3 className={styles.partnerName}>{partner.name}</h3>
-                        <p className={styles.partnerSpecialty}>{partner.specialty}</p>
-                        <ul className={styles.partnerServices}>
-                          {partner.services.map((s, j) => (
-                            <li key={j} className={styles.partnerServiceTag}>{s}</li>
-                          ))}
-                        </ul>
-                        <Link href="/partners" className={styles.viewProviderBtn}>
-                          View Profile <span aria-hidden="true">›</span>
-                        </Link>
+                    {/* Detail panel always in DOM so card height stays fixed; CSS toggles visibility */}
+                    <div className={styles.partnerContent}>
+                      <div className={styles.partnerMeta}>
+                        <span className={styles.partnerLocation}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                            <circle cx="12" cy="10" r="3" />
+                          </svg>
+                          {partner.location}
+                        </span>
+                        <span className={styles.partnerYears}>{partner.years}</span>
                       </div>
-                    )}
+                      <h3 className={styles.partnerName}>{partner.name}</h3>
+                      <p className={styles.partnerSpecialty}>{partner.specialty}</p>
+                      <ul className={styles.partnerServices}>
+                        {partner.services.map((s, j) => (
+                          <li key={j} className={styles.partnerServiceTag}>{s}</li>
+                        ))}
+                      </ul>
+                      <Link href="/partners" className={styles.viewProviderBtn}>
+                        View Profile <span aria-hidden="true">›</span>
+                      </Link>
+                    </div>
                   </div>
                 )
               })}
