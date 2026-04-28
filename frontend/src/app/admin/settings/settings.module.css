@@ -113,6 +113,12 @@
     border-radius: 12px;
     padding: 22px 26px 26px;
   }
+
+/* Borderless shell (mobile profile detail pages) */
+.cardBorderless {
+  border: none;
+  box-shadow: none;
+}
   
   .cardHeadRow {
     display: flex;
@@ -234,6 +240,12 @@
     border-radius: 12px;
     overflow: visible;
   }
+
+/* Borderless shell (mobile profile detail pages) */
+.settingsProgramBorderless {
+  border: none;
+  box-shadow: none;
+}
 
   /* Stacked under mobile settings subpage header (no duplicate title chrome) */
   .settingsProgramMobileEmbedded {

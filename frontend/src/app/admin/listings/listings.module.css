@@ -212,6 +212,14 @@
   gap: 8px;
 }
 
+.mobileActivePillsRow {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
 .mobileActivePill {
   display: inline-flex;
   align-items: center;
@@ -223,7 +231,7 @@
   font-size: 12px;
   font-weight: 600;
   color: #475569;
-  align-self: flex-start;
+  align-self: auto;
 }
 
 .mobileActivePillLabel {

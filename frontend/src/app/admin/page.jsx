@@ -36,16 +36,6 @@ const NAV_ACTIONS = [
 
 const MOBILE_STAT_CARDS = [
   {
-    id: 'platformRevenue',
-    title: 'Revenue',
-    value: (metrics) => metrics.platformRevenue30d,
-    subtitle: 'Last 30 days',
-    icon: TbCreditCard,
-    href: '/admin/payouts',
-    actionLabel: 'View',
-    format: 'php',
-  },
-  {
     id: 'pendingPayouts',
     title: 'Pending payouts',
     value: (metrics) => metrics.pendingPayoutAmt,
@@ -54,6 +44,16 @@ const MOBILE_STAT_CARDS = [
     href: '/admin/payouts',
     actionLabel: 'Review',
     format: 'php',
+  },
+  {
+    id: 'activeSellers',
+    title: 'Sellers',
+    value: (metrics) => metrics.activeSellerCount,
+    subtitle: 'Active sellers',
+    icon: LuUserCheck,
+    href: '/admin/sellers',
+    actionLabel: 'View',
+    format: 'count',
   },
   {
     id: 'disputesAttention',
@@ -451,7 +451,7 @@ export default function AdminDashboardPage() {
               {greetingName ? `Welcome back, ${greetingName}` : 'Welcome back'}
             </p>
             <p className={styles.mobileHeroBalanceValue}>
-              {formatCount(activeSellerCount)} Sellers
+              {formatPHPMobile(payoutMetrics.platformRevenue30d)} Revenue
             </p>
             <p className={styles.mobileHeroBalanceSub}>
               <span className={styles.mobileHeroOnlineDot} />
@@ -578,12 +578,14 @@ export default function AdminDashboardPage() {
                 <p className={styles.mobileStatValue}>
                   {format === 'php'
                     ? formatPHPMobile(value({
+                        activeSellerCount,
                         platformRevenue30d: payoutMetrics.platformRevenue30d,
                         pendingPayoutAmt: payoutMetrics.pendingPayoutAmt,
                         disputesNeedingAttention,
                         listingsPendingReview: listingsPendingReviewCount,
                       }))
                     : formatCount(value({
+                        activeSellerCount,
                         platformRevenue30d: payoutMetrics.platformRevenue30d,
                         pendingPayoutAmt: payoutMetrics.pendingPayoutAmt,
                         disputesNeedingAttention,

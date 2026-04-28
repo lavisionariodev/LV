@@ -434,24 +434,28 @@ export default function AdminListingsBrowsePage() {
                 />
               </button>
             </div>
-            {activeFilterLabels.map((label) => (
-              <div key={label} className={styles.mobileActivePill}>
-                <span className={styles.mobileActivePillLabel}>{label}</span>
-                <button
-                  type="button"
-                  className={styles.mobileActivePillClear}
-                  onClick={() => {
-                    const sortLabel = (SORT_OPTIONS.find((o) => o.value === sortKey)?.label || sortKey).replace(/^Sort:\s*/i, '')
-                    const kindLabel = KIND_FILTER_OPTIONS.find((o) => o.value === kindFilter)?.label || kindFilter
-                    if (label === sortLabel) setSortKey('updated')
-                    if (label === kindLabel) setKindFilter('all')
-                  }}
-                  aria-label={`Clear ${label} filter`}
-                >
-                  <TbX aria-hidden />
-                </button>
+            {activeFilterLabels.length > 0 && (
+              <div className={styles.mobileActivePillsRow} aria-label="Active filters">
+                {activeFilterLabels.map((label) => (
+                  <div key={label} className={styles.mobileActivePill}>
+                    <span className={styles.mobileActivePillLabel}>{label}</span>
+                    <button
+                      type="button"
+                      className={styles.mobileActivePillClear}
+                      onClick={() => {
+                        const sortLabel = (SORT_OPTIONS.find((o) => o.value === sortKey)?.label || sortKey).replace(/^Sort:\s*/i, '')
+                        const kindLabel = KIND_FILTER_OPTIONS.find((o) => o.value === kindFilter)?.label || kindFilter
+                        if (label === sortLabel) setSortKey('updated')
+                        if (label === kindLabel) setKindFilter('all')
+                      }}
+                      aria-label={`Clear ${label} filter`}
+                    >
+                      <TbX aria-hidden />
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         ) : (
           <div className={styles.filterRow}>

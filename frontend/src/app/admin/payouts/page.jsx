@@ -1191,26 +1191,30 @@ export default function AdminPayoutsPage() {
                         />
                       </button>
                     </div>
-                    {activeFilterLabels.map((label) => (
-                      <div key={label} className={styles.mobileActivePill}>
-                        <span className={styles.mobileActivePillLabel}>{label}</span>
-                        <button
-                          type="button"
-                          className={styles.mobileActivePillClear}
-                          onClick={() => {
-                            const payoutLabel = PAYOUT_STATUS_META[filterPayout]?.label || filterPayout
-                            const sellerLabel = SELLERS.find((s) => s.id === filterSeller)?.name || filterSeller
-                            const paymentLabel = PAYMENT_STATUS_META[filterPayment]?.label || filterPayment
-                            if (label === payoutLabel) setFilterPayout('all')
-                            if (label === sellerLabel) setFilterSeller('all')
-                            if (label === paymentLabel) setFilterPayment('all')
-                          }}
-                          aria-label={`Clear ${label} filter`}
-                        >
-                          <TbX aria-hidden />
-                        </button>
+                    {activeFilterLabels.length > 0 && (
+                      <div className={styles.mobileActivePillsRow} aria-label="Active filters">
+                        {activeFilterLabels.map((label) => (
+                          <div key={label} className={styles.mobileActivePill}>
+                            <span className={styles.mobileActivePillLabel}>{label}</span>
+                            <button
+                              type="button"
+                              className={styles.mobileActivePillClear}
+                              onClick={() => {
+                                const payoutLabel = PAYOUT_STATUS_META[filterPayout]?.label || filterPayout
+                                const sellerLabel = SELLERS.find((s) => s.id === filterSeller)?.name || filterSeller
+                                const paymentLabel = PAYMENT_STATUS_META[filterPayment]?.label || filterPayment
+                                if (label === payoutLabel) setFilterPayout('all')
+                                if (label === sellerLabel) setFilterSeller('all')
+                                if (label === paymentLabel) setFilterPayment('all')
+                              }}
+                              aria-label={`Clear ${label} filter`}
+                            >
+                              <TbX aria-hidden />
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
                 ) : (
                   <div className={styles.toolbarSearchWrap}>
