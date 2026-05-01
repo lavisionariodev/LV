@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import styles from './homepage.module.css'
 
@@ -198,7 +198,7 @@ function HowItWorksSection() {
   )
 }
 
-/* ---------------- PARTNER HIGHLIGHT — continuous infinite carousel ---------------- */
+/* ---------------- PARTNER HIGHLIGHT ---------------- */
 function PartnerHighlightSection() {
   const PARTNERS = [
     {
@@ -257,128 +257,16 @@ function PartnerHighlightSection() {
     },
   ]
 
+  const [active, setActive] = useState(0)
   const N = PARTNERS.length
-  // card width + gap in px — must match CSS
-  const CARD_W = 300
-  const GAP = 24
-
-  // activeReal: which real partner (0..N-1) is in the center
-  const [activeReal, setActiveReal] = useState(0)
-
-  // virtualIdx: unbounded index into the cloned track.
-  // Track layout: [clone of last N items] + [all N real items] + [clone of first N items]
-  // We start in the middle set, so virtualIdx N = first real item centered.
-  const CLONE_COUNT = N
-  const [virtualIdx, setVirtualIdx] = useState(CLONE_COUNT)
-  const [transitionEnabled, setTransitionEnabled] = useState(true)
-
-  // Refs to avoid stale closures in timers
-  const virtualIdxRef = useRef(CLONE_COUNT)
-  const activeRealRef = useRef(0)
-  const autoRef = useRef(null)
-  const pauseRef = useRef(false)
-
-  // The full track: N clones of end + N real + N clones of start
-  const track = [...PARTNERS.slice(-CLONE_COUNT), ...PARTNERS, ...PARTNERS.slice(0, CLONE_COUNT)]
-
-  // Silently jump without animation when we hit the clone region
-  const jumpSilently = useCallback((newVirtual) => {
-    setTransitionEnabled(false)
-    setVirtualIdx(newVirtual)
-    virtualIdxRef.current = newVirtual
-  }, [])
-
-  const goTo = useCallback((newVirtual, newReal, withTransition = true) => {
-    setTransitionEnabled(withTransition)
-    setVirtualIdx(newVirtual)
-    setActiveReal(newReal)
-    virtualIdxRef.current = newVirtual
-    activeRealRef.current = newReal
-  }, [])
-
-  const advance = useCallback((dir = 1) => {
-    const curV = virtualIdxRef.current
-    const curR = activeRealRef.current
-    const newV = curV + dir
-    const newR = ((curR + dir) % N + N) % N
-    goTo(newV, newR, true)
-  }, [N, goTo])
-
-  // After each CSS transition ends, check if we've slid into a clone
-  // and silently teleport back to the real section.
-  const handleTransitionEnd = useCallback(() => {
-    const curV = virtualIdxRef.current
-    // We have CLONE_COUNT clones prepended; real items start at index CLONE_COUNT.
-    // Real items end at CLONE_COUNT + N - 1.
-    if (curV >= CLONE_COUNT + N) {
-      // Slid past the end — jump back to real start
-      jumpSilently(curV - N)
-    } else if (curV < CLONE_COUNT) {
-      // Slid before the start — jump back to real end
-      jumpSilently(curV + N)
-    }
-  }, [CLONE_COUNT, N, jumpSilently])
-
-  // Autoplay: slide → pause 1.5s at center → slide again
-  const TRANSITION_MS = 550
-  const PAUSE_MS = 1500
-
-  const scheduleNext = useCallback(() => {
-    clearTimeout(autoRef.current)
-    if (pauseRef.current) return
-    // Wait for the slide transition to finish, then pause, then advance again
-    autoRef.current = setTimeout(() => {
-      if (pauseRef.current) return
-      advance(1)
-      scheduleNext()
-    }, TRANSITION_MS + PAUSE_MS)
-  }, [advance])
-
-  useEffect(() => {
-    scheduleNext()
-    return () => clearTimeout(autoRef.current)
-  }, [scheduleNext])
-
-  const handlePrev = () => {
-    pauseRef.current = true
-    clearTimeout(autoRef.current)
-    advance(-1)
-    // Resume after a generous delay so user can navigate freely
-    autoRef.current = setTimeout(() => {
-      pauseRef.current = false
-      scheduleNext()
-    }, 3000)
-  }
-
-  const handleNext = () => {
-    pauseRef.current = true
-    clearTimeout(autoRef.current)
-    advance(1)
-    autoRef.current = setTimeout(() => {
-      pauseRef.current = false
-      scheduleNext()
-    }, 3000)
-  }
-
-  const handleDotClick = (realIdx) => {
-    pauseRef.current = true
-    clearTimeout(autoRef.current)
-    const delta = realIdx - activeRealRef.current
-    goTo(virtualIdxRef.current + delta, realIdx, true)
-    autoRef.current = setTimeout(() => {
-      pauseRef.current = false
-      scheduleNext()
-    }, 3000)
-  }
-
-  // Centering: viewport is 100% wide; track starts at left edge.
-  // To center item at virtualIdx, we shift track so that item's left edge
-  // is at (viewportWidth/2 - CARD_W/2). We express this as a CSS calc.
-  const translateX = `calc(50% - ${CARD_W / 2}px - ${virtualIdx * (CARD_W + GAP)}px)`
+  const prev = () => setActive(i => (i - 1 + N) % N)
+  const next = () => setActive(i => (i + 1) % N)
+  const p = PARTNERS[active]
 
   return (
     <section className={styles.partnerSection}>
       <div className={styles.inner}>
+
         <div className={styles.partnerHeader}>
           <span className={styles.partnerEyebrow}>Verified Providers</span>
           <h2 className={styles.partnerSectionTitle}>Funeral Homes &amp; Partnerships</h2>
@@ -388,111 +276,88 @@ function PartnerHighlightSection() {
           </p>
         </div>
 
-        {/* Carousel viewport */}
-        <div className={styles.partnerCarouselOuter}>
-          <button
-            className={`${styles.carouselArrow} ${styles.carouselArrowLeft}`}
-            onClick={handlePrev}
-            aria-label="Previous partner"
-          >‹</button>
+        {/* Card stage */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '24px', margin: '0 auto', maxWidth: '900px' }}>
 
-          <div className={styles.partnerCarouselViewport}>
-            <div
-              className={styles.partnerCarouselTrack}
-              style={{
-                transform: `translateX(${translateX})`,
-                transition: transitionEnabled
-                  ? `transform ${TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`
-                  : 'none',
-              }}
-              onTransitionEnd={handleTransitionEnd}
-            >
-              {track.map((partner, i) => {
-                const isCenter = i === virtualIdx
-                const dist = Math.abs(i - virtualIdx)
-                const isAdjacent = dist === 1
+          {/* Prev button */}
+          <button onClick={prev} aria-label="Previous" style={{
+            flexShrink: 0, width: '48px', height: '48px', borderRadius: '50%',
+            border: '1px solid rgba(16,40,32,0.15)', background: '#fff',
+            fontSize: '22px', cursor: 'pointer', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', color: '#102820',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)', transition: 'background 0.2s',
+          }}>‹</button>
 
-                return (
-                  <div
-                    key={i}
-                    className={`${styles.partnerCarouselCard} ${isCenter ? styles.partnerCarouselCardActive : ''}`}
-                    style={{
-                      width: `${CARD_W}px`,
-                      transform: isCenter ? 'scale(1.06)' : isAdjacent ? 'scale(0.88)' : 'scale(0.78)',
-                      opacity: isCenter ? 1 : isAdjacent ? 0.72 : 0.38,
-                      zIndex: isCenter ? 10 : isAdjacent ? 5 : 1,
-                      cursor: isCenter ? 'default' : 'pointer',
-                      transition: `transform ${TRANSITION_MS}ms cubic-bezier(0.4,0,0.2,1), opacity ${TRANSITION_MS}ms ease`,
-                      flexShrink: 0,
-                    }}
-                    onClick={() => {
-                      if (!isCenter) {
-                        if (i < virtualIdx) handlePrev()
-                        else handleNext()
-                      }
-                    }}
-                  >
-                    <div className={styles.partnerImageWrapper}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={partner.image} alt={partner.name} className={styles.partnerImage} />
-                      <div className={styles.partnerImageOverlay} />
-                      <div className={styles.partnerRatingBadge}>★ {partner.rating}</div>
-                      {/* Side label always in DOM; hidden on center via CSS */}
-                      <div className={styles.partnerSideLabel}>{partner.name}</div>
-                    </div>
+          {/* Active card */}
+          <div key={active} style={{
+            flex: '0 0 340px', borderRadius: '20px', overflow: 'hidden',
+            background: '#fff', border: '1px solid rgba(168,137,74,0.35)',
+            boxShadow: '0 24px 64px rgba(16,40,32,0.16)',
+            animation: 'partnerZoomIn 0.35s cubic-bezier(0.34,1.56,0.64,1)',
+          }}>
+            {/* Image */}
+            <div style={{ position: 'relative', height: '200px', overflow: 'hidden' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={p.image} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(16,40,32,0.55) 0%, transparent 55%)' }} />
+              <div style={{
+                position: 'absolute', top: '12px', right: '12px',
+                background: 'rgba(168,137,74,0.92)', color: '#fff',
+                borderRadius: '20px', padding: '4px 10px', fontSize: '12px', fontWeight: 600,
+              }}>★ {p.rating}</div>
+            </div>
 
-                    {/* Detail panel always in DOM so card height stays fixed; CSS toggles visibility */}
-                    <div className={styles.partnerContent}>
-                      <div className={styles.partnerMeta}>
-                        <span className={styles.partnerLocation}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                            <circle cx="12" cy="10" r="3" />
-                          </svg>
-                          {partner.location}
-                        </span>
-                        <span className={styles.partnerYears}>{partner.years}</span>
-                      </div>
-                      <h3 className={styles.partnerName}>{partner.name}</h3>
-                      <p className={styles.partnerSpecialty}>{partner.specialty}</p>
-                      <ul className={styles.partnerServices}>
-                        {partner.services.map((s, j) => (
-                          <li key={j} className={styles.partnerServiceTag}>{s}</li>
-                        ))}
-                      </ul>
-                      <Link href="/partners" className={styles.viewProviderBtn}>
-                        View Profile <span aria-hidden="true">›</span>
-                      </Link>
-                    </div>
-                  </div>
-                )
-              })}
+            {/* Details */}
+            <div style={{ padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '12px', color: '#6b7c70', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  {p.location}
+                </span>
+                <span style={{ fontSize: '12px', color: '#6b7c70', background: 'rgba(16,40,32,0.06)', borderRadius: '12px', padding: '2px 10px' }}>{p.years}</span>
+              </div>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#102820' }}>{p.name}</h3>
+              <p style={{ margin: 0, fontSize: '13px', color: '#6b7c70' }}>{p.specialty}</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
+                {p.services.map((s, i) => (
+                  <span key={i} style={{
+                    fontSize: '11px', padding: '4px 10px', borderRadius: '20px',
+                    background: 'rgba(168,137,74,0.1)', color: '#8a6d3b', border: '1px solid rgba(168,137,74,0.2)',
+                  }}>{s}</span>
+                ))}
+              </div>
+              <Link href="/partners" style={{
+                marginTop: '8px', display: 'inline-flex', alignItems: 'center', gap: '6px',
+                background: '#102820', color: '#fff', borderRadius: '10px',
+                padding: '10px 20px', fontSize: '13px', fontWeight: 600,
+                textDecoration: 'none', alignSelf: 'flex-start',
+              }}>View Profile ›</Link>
             </div>
           </div>
 
-          <button
-            className={`${styles.carouselArrow} ${styles.carouselArrowRight}`}
-            onClick={handleNext}
-            aria-label="Next partner"
-          >›</button>
+          {/* Next button */}
+          <button onClick={next} aria-label="Next" style={{
+            flexShrink: 0, width: '48px', height: '48px', borderRadius: '50%',
+            border: '1px solid rgba(16,40,32,0.15)', background: '#fff',
+            fontSize: '22px', cursor: 'pointer', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', color: '#102820',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)', transition: 'background 0.2s',
+          }}>›</button>
         </div>
 
-        {/* Pagination dots — all N dots, active one highlighted */}
-        <div className={styles.partnerDotsOuter}>
-          <div className={styles.partnerDotsTrack}>
-            {PARTNERS.map((partner, i) => (
-              <button
-                key={i}
-                type="button"
-                className={`${styles.partnerDot} ${i === activeReal ? styles.partnerDotActive : ''}`}
-                onClick={() => handleDotClick(i)}
-                aria-label={`Go to ${partner.name}`}
-              />
-            ))}
-          </div>
+        {/* Dots */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '24px' }}>
+          {PARTNERS.map((_, i) => (
+            <button key={i} onClick={() => setActive(i)} aria-label={`Go to ${PARTNERS[i].name}`} style={{
+              width: i === active ? '24px' : '8px', height: '8px',
+              borderRadius: '4px', border: 'none', cursor: 'pointer', padding: 0,
+              background: i === active ? '#102820' : 'rgba(16,40,32,0.2)',
+              transition: 'all 0.3s ease',
+            }} />
+          ))}
         </div>
 
-        <div className={styles.partnerCTA}>
+        <div className={styles.partnerCTA} style={{ marginTop: '40px' }}>
           <p className={styles.partnerCTAText}>
             Browse our full network of verified funeral homes across the Philippines.
           </p>
@@ -501,7 +366,15 @@ function PartnerHighlightSection() {
             <span className={styles.partnerCTAArrow}>›</span>
           </Link>
         </div>
+
       </div>
+
+      <style>{`
+        @keyframes partnerZoomIn {
+          from { opacity: 0; transform: scale(0.88); }
+          to   { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
     </section>
   )
 }
