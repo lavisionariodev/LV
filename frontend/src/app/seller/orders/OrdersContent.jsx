@@ -8,7 +8,7 @@ import {
   TbEye,
   TbCheck,
   TbCircleX,
-  TbEdit,
+  TbClipboardCheck,
   TbChevronDown,
   TbReceipt,
   TbPackage,
@@ -681,21 +681,26 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                   </td>
                   <td data-label="Actions">
                     <div className={styles.cellActions}>
+                      {/* View details */}
                       <button
                         type="button"
                         className={`${styles.btnIcon} ${styles.btnIconView}`}
                         onClick={() => setSelectedOrder(order)}
                         title="View Details"
+                        aria-label="View order details"
                       >
                         <TbEye size={16} />
                       </button>
+
+                      {/* Pending-only: quick accept / decline */}
                       {order.orderStatus === 'pending' && (
                         <>
                           <button
                             type="button"
                             className={`${styles.btnIcon} ${styles.btnIconAccept} ${styles.hideOnMobile}`}
                             onClick={() => handleAcceptOrder(order)}
-                            title="Accept Order"
+                            title="Confirm Order"
+                            aria-label="Confirm order"
                           >
                             <TbCheck size={16} />
                           </button>
@@ -704,11 +709,14 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                             className={`${styles.btnIcon} ${styles.btnIconDecline} ${styles.hideOnMobile}`}
                             onClick={() => handleDeclineOrder(order)}
                             title="Decline Order"
+                            aria-label="Decline order"
                           >
                             <TbCircleX size={16} />
                           </button>
                         </>
                       )}
+
+                      {/* Update status — replaced pencil/edit with TbRefresh to signal progress update */}
                       <button
                         type="button"
                         className={`${styles.btnIcon} ${styles.btnIconUpdate}`}
@@ -716,9 +724,10 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                           setOrderForUpdateStatus(order)
                           setShowUpdateStatus(true)
                         }}
-                        title="Edit"
+                        title="Update Status"
+                        aria-label="Update order status"
                       >
-                        <TbEdit size={16} />
+                        <TbClipboardCheck size={16} />
                       </button>
                     </div>
                   </td>
