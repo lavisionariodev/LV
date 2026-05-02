@@ -190,16 +190,20 @@ export default function SellerProfilePage({
   const [activeTab, setActiveTab] = useState('listings')
   const [sortBy, setSortBy] = useState('newest')
   const [currentPage, setCurrentPage] = useState(1)
+  const [searchQuery, setSearchQuery] = useState('')
   const ITEMS_PER_PAGE = 9
 
   const sortedListings = useMemo(() => {
-    const list = [...listings]
-    if (sortBy === 'price-asc') list.sort((a, b) => a.price - b.price)
-    else if (sortBy === 'price-desc') list.sort((a, b) => b.price - a.price)
-    else if (sortBy === 'rating') list.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
-    else list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
-    return list
-  }, [listings, sortBy])
+    const q = searchQuery.trim().toLowerCase()
+    const filtered = q
+      ? listings.filter((l) => l.name?.toLowerCase().includes(q))
+      : [...listings]
+    if (sortBy === 'price-asc') filtered.sort((a, b) => a.price - b.price)
+    else if (sortBy === 'price-desc') filtered.sort((a, b) => b.price - a.price)
+    else if (sortBy === 'rating') filtered.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+    else filtered.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+    return filtered
+  }, [listings, sortBy, searchQuery])
 
   const totalPages = Math.ceil(sortedListings.length / ITEMS_PER_PAGE)
   const paginatedListings = useMemo(() => {
@@ -346,23 +350,53 @@ export default function SellerProfilePage({
           {activeTab === 'listings' && (
             <div className={styles.tabContent} role="tabpanel">
               <div className={styles.listingsToolbar}>
-                <p className={styles.listingsCount}>
-                  <span className={styles.listingsCountNum}>{sortedListings.length}</span>
-                  &nbsp;listing{sortedListings.length !== 1 ? 's' : ''}
-                </p>
-                <div className={styles.sortWrap}>
-                  <span className={styles.sortLabel}>Sort by</span>
-                  <select
-                    className={styles.sortSelect}
-                    value={sortBy}
-                    onChange={(e) => { setSortBy(e.target.value); setCurrentPage(1) }}
-                    aria-label="Sort listings"
-                  >
-                    <option value="newest">Newest</option>
-                    <option value="price-asc">Price: Low to High</option>
-                    <option value="price-desc">Price: High to Low</option>
-                    <option value="rating">Top Rated</option>
-                  </select>
+                <div className={styles.searchWrap}>
+                  <svg className={styles.searchIcon} viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="6.5" cy="6.5" r="5" />
+                    <path d="M11 11l3.5 3.5" />
+                  </svg>
+                  <input
+                    type="search"
+                    className={styles.searchInput}
+                    placeholder="Search listings…"
+                    value={searchQuery}
+                    onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1) }}
+                    aria-label="Search listings"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      className={styles.searchClear}
+                      onClick={() => { setSearchQuery(''); setCurrentPage(1) }}
+                      aria-label="Clear search"
+                    >
+                      <svg viewBox="0 0 10 10" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <path d="M2 2l6 6M8 2L2 8" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+
+                <div className={styles.toolbarRight}>
+                  <p className={styles.listingsCount}>
+                    <span className={styles.listingsCountNum}>{sortedListings.length}</span>
+                    &nbsp;listing{sortedListings.length !== 1 ? 's' : ''}
+                    {searchQuery && <span className={styles.searchResultHint}> for "{searchQuery}"</span>}
+                  </p>
+                  <div className={styles.sortWrap}>
+                    <span className={styles.sortLabel}>Sort by</span>
+                    <select
+                      className={styles.sortSelect}
+                      value={sortBy}
+                      onChange={(e) => { setSortBy(e.target.value); setCurrentPage(1) }}
+                      aria-label="Sort listings"
+                    >
+                      <option value="newest">Newest</option>
+                      <option value="price-asc">Price: Low to High</option>
+                      <option value="price-desc">Price: High to Low</option>
+                      <option value="rating">Top Rated</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -410,7 +444,11 @@ export default function SellerProfilePage({
                   )}
                 </>
               ) : (
-                <EmptyState icon="listing" title="No listings yet" text="This seller hasn't published any listings." />
+                <EmptyState
+                  icon="listing"
+                  title={searchQuery ? 'No results found' : 'No listings yet'}
+                  text={searchQuery ? `No listings match "${searchQuery}". Try a different keyword.` : "This seller hasn't published any listings."}
+                />
               )}
             </div>
           )}

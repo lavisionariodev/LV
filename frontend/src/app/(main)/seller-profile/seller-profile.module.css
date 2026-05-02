@@ -362,11 +362,84 @@
 
 .listingsToolbar {
   display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.searchWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  color: #aaa;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 10px 36px 10px 36px;
+  border: 1.5px solid rgba(16, 40, 32, 0.14);
+  border-radius: 5px;
+  font-size: 13px;
+  font-family: "Lato", sans-serif;
+  color: #333;
+  background: #FFFFFF;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+}
+
+.searchInput::placeholder {
+  color: #bbb;
+}
+
+.searchInput:focus {
+  border-color: rgba(184, 150, 46, 0.5);
+  box-shadow: 0 0 0 3px rgba(184, 150, 46, 0.08);
+}
+
+.searchClear {
+  position: absolute;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(16, 40, 32, 0.08);
+  color: #888;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.searchClear:hover {
+  background: rgba(16, 40, 32, 0.14);
+  color: var(--color-green, #102820);
+}
+
+.toolbarRight {
+  display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.searchResultHint {
+  color: #aaa;
+  font-weight: 400;
 }
 
 .listingsCount {
@@ -1199,6 +1272,10 @@
   .sortSelect {
     font-size: 12px;
     padding: 8px 28px 8px 10px;
+  }
+  .searchInput {
+    font-size: 12px;
+    padding: 9px 34px 9px 34px;
   }
 }
 
