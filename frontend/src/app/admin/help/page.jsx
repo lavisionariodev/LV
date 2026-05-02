@@ -16,7 +16,7 @@ import {
   helpCenterFaqs,
   helpCenterPlaybooks,
   helpCenterEscalationContacts,
-} from '@/data/adminSampleData'
+} from './helpContent'
 
 const HELP_TOPIC_ICON_MAP = {
   LuUserCheck,

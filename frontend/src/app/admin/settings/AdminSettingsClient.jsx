@@ -56,7 +56,9 @@ export function AdminBillingSettingsPanel({ variant = 'default' }) {
   const rule = commission.defaultRule
   const overrideCount = commission.sellerOverrides?.length ?? 0
 
-  const wrapClass = isSheet ? styles.settingsSheetEmbed : `${styles.card} ${styles.full}`
+  const wrapClass = isSheet
+    ? styles.settingsSheetEmbed
+    : `${styles.card} ${styles.full} ${isProfileDetail ? styles.cardBorderless : ''}`
 
   return (
     <section className={wrapClass}>
@@ -358,7 +360,7 @@ export const AdminNotificationPreferencesPanel = forwardRef(function AdminNotifi
 
   const wrapClass = isSheet
     ? styles.settingsSheetEmbed
-    : `${styles.card} ${styles.full}`
+    : `${styles.card} ${styles.full} ${isProfileDetail ? styles.cardBorderless : ''}`
 
   if (loading) {
     return (
@@ -828,7 +830,7 @@ export function AdminSiteContentPanel({
       className={
         embeddedInMobileSettings
           ? `${styles.settingsProgram} ${styles.settingsProgramMobileEmbedded}`
-          : styles.settingsProgram
+          : `${styles.settingsProgram} ${profileDetailPage ? styles.settingsProgramBorderless : ''}`
       }
     >
       {!hideProgramHead && (

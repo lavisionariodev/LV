@@ -222,16 +222,18 @@ export default function AdminDisputesPage() {
         </div>
 
         {activeFilterLabel && (
-          <div className={styles.mobileActivePill}>
-            <span className={styles.mobileActivePillLabel}>{activeFilterLabel}</span>
-            <button
-              type="button"
-              className={styles.mobileActivePillClear}
-              onClick={() => setStatusFilter('all')}
-              aria-label="Clear filter"
-            >
-              <TbX aria-hidden />
-            </button>
+          <div className={styles.mobileActivePillsRow} aria-label="Active filters">
+            <div className={styles.mobileActivePill}>
+              <span className={styles.mobileActivePillLabel}>{activeFilterLabel}</span>
+              <button
+                type="button"
+                className={styles.mobileActivePillClear}
+                onClick={() => setStatusFilter('all')}
+                aria-label="Clear filter"
+              >
+                <TbX aria-hidden />
+              </button>
+            </div>
           </div>
         )}
       </div>

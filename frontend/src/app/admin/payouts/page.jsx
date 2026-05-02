@@ -1,23 +1,24 @@
 'use client'
 
-import React, { useState, useMemo, useRef, useEffect } from 'react'
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { FiArrowUp, FiArrowDown, FiRotateCcw } from 'react-icons/fi'
-import { TbX } from 'react-icons/tb'
+import { TbCreditCardPay, TbPlayerPause, TbX } from 'react-icons/tb'
 import { LuSettings2 } from 'react-icons/lu'
 
-import { PAYOUTS_PAGE_SELLERS as SELLERS, generatePayoutsPageSampleChangeLog } from '@/data/adminSampleData'
 import { useAdminPayoutsPage } from '@/hooks'
 import {
   formatPHP,
   formatDateRangeLabel,
   PAYMENT_STATUS_META,
   PAYOUT_STATUS_META,
-  getCommissionRate,
-  calcAmounts,
+  getTxnCommissionParts,
 } from '@/utils/adminPayouts'
+import { computeCommissionSnapshot } from '@/utils/commissionSnapshot'
 import { formatCount, formatPHPMobile } from '@/utils/formatCount'
 
 import { Dropdown } from '@/components/ui'
+import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
+import confirmModalStyles from '@/components/ui/Modal/ConfirmModal.module.css'
 
 import styles from './payouts.module.css'
 
@@ -207,11 +208,380 @@ function DateRangePicker({ from, to, onChange }) {
 
 function Badge({ type, value }) {
   const meta = type === 'payment' ? PAYMENT_STATUS_META[value] : PAYOUT_STATUS_META[value]
-  if (!meta) return null
+  const label = meta?.label ?? (value ? String(value) : '—')
   if (type === 'payout') {
-    return <span className={`${styles.badgePayout} ${styles[`badgePayout_${meta.color}`]}`}>{meta.label}</span>
+    const cls = meta ? styles[`badgePayout_${meta.color}`] : styles.badgePayout_slate
+    return <span className={`${styles.badgePayout} ${cls || ''}`}>{label}</span>
   }
-  return <span className={`${styles.badge} ${styles[`badge_${meta.color}`]}`}>{meta.label}</span>
+  const paymentCls = meta ? styles[`badge_${meta.color}`] : styles.badge_slate
+  return <span className={`${styles.badge} ${paymentCls || ''}`}>{label}</span>
+}
+
+const PAYOUTS_TABLE_SKELETON_ROWS = 6
+const PAYOUTS_MOBILE_SKELETON_CARDS = 4
+
+function PayoutsTransactionsLoadingLiveRegion() {
+  return (
+    <span className={styles.payoutsLoadingSrOnly} aria-live="polite" aria-busy="true">
+      Loading payouts and transactions. Please wait.
+    </span>
+  )
+}
+
+function PayoutsMobileTransactionSkeleton() {
+  return (
+    <>
+      {Array.from({ length: PAYOUTS_MOBILE_SKELETON_CARDS }, (_, i) => (
+        <div
+          key={`payout-m-sk-${i}`}
+          className={`${styles.mobileCard} ${styles.mobileCardSkeleton}`}
+          aria-hidden
+        >
+          <div className={styles.mobileCardTop}>
+            <span className={`${styles.tableSkeletonBar} ${styles.mobileSkOrder}`} />
+            <span className={`${styles.tableSkeletonBar} ${styles.mobileSkAmount}`} />
+          </div>
+          <span className={`${styles.tableSkeletonBar} ${styles.mobileSkService}`} />
+          <div className={styles.mobileCardMeta}>
+            <span className={`${styles.tableSkeletonBar} ${styles.mobileSkBuyer}`} />
+            <span className={`${styles.tableSkeletonBar} ${styles.mobileSkDate}`} />
+          </div>
+          <div className={styles.mobileCardStatuses}>
+            <span className={`${styles.tableSkeletonBar} ${styles.mobileSkPill}`} />
+            <span className={`${styles.tableSkeletonBar} ${styles.mobileSkPill}`} />
+          </div>
+        </div>
+      ))}
+    </>
+  )
+}
+
+function PayoutsTableSkeletonBody() {
+  return (
+    <>
+      {Array.from({ length: PAYOUTS_TABLE_SKELETON_ROWS }, (_, row) => (
+        <tr key={`payout-sk-${row}`} className={styles.tableSkeletonRow}>
+          <td className={styles.checkboxCell}>
+            <span className={`${styles.tableSkeletonBar} ${styles.tableSkeletonCheckbox}`} aria-hidden />
+          </td>
+          <td>
+            <span className={`${styles.tableSkeletonBar} ${styles.tableSkeletonBarOrder}`} aria-hidden />
+          </td>
+          <td>
+            <span className={`${styles.tableSkeletonBar} ${styles.tableSkeletonBarService}`} aria-hidden />
+          </td>
+          <td>
+            <div className={styles.tableSkeletonStack}>
+              <span className={`${styles.tableSkeletonBar} ${styles.tableSkeletonBarBuyer}`} aria-hidden />
+              <span className={`${styles.tableSkeletonBar} ${styles.tableSkeletonBarEmail}`} aria-hidden />
+            </div>
+          </td>
+          <td>
+            <span className={`${styles.tableSkeletonBar} ${styles.tableSkeletonPill}`} aria-hidden />
+          </td>
+          <td>
+            <span className={`${styles.tableSkeletonBar} ${styles.tableSkeletonPill}`} aria-hidden />
+          </td>
+          <td>
+            <span className={`${styles.tableSkeletonBar} ${styles.tableSkeletonBarDate}`} aria-hidden />
+          </td>
+          <td>
+            <span className={`${styles.tableSkeletonBar} ${styles.tableSkeletonBarAmount}`} aria-hidden />
+          </td>
+          <td>
+            <div className={styles.rowActions}>
+              <span className={`${styles.tableSkeletonBar} ${styles.tableSkeletonChevron}`} aria-hidden />
+            </div>
+          </td>
+        </tr>
+      ))}
+    </>
+  )
+}
+
+// ─── Escrow release (desktop expanded row + mobile sheet) ────────────────────
+
+function EscrowReleasePanel({
+  t,
+  releaseOrder,
+  holdOrder,
+  unholdOrder,
+  compactUi = false,
+  /** `'sheet'` — mobile order-details modal layout (distinct from desktop expanded row). */
+  variant = 'default',
+}) {
+  const isSheet = variant === 'sheet'
+  const useCompactCopy = compactUi || isSheet
+  const [releaseModalOpen, setReleaseModalOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState(null)
+  const [holdModalOpen, setHoldModalOpen] = useState(false)
+  const [holdReasonInput, setHoldReasonInput] = useState('')
+  const [holdModalErr, setHoldModalErr] = useState(null)
+
+  const closeHoldModal = useCallback(() => {
+    if (busy) return
+    setHoldModalOpen(false)
+    setHoldModalErr(null)
+    setHoldReasonInput('')
+  }, [busy])
+
+  const handleReleaseModalCancel = useCallback(() => {
+    if (busy) return
+    setReleaseModalOpen(false)
+  }, [busy])
+
+  useEffect(() => {
+    setReleaseModalOpen(false)
+    setErr(null)
+    setBusy(false)
+    setHoldModalOpen(false)
+    setHoldReasonInput('')
+    setHoldModalErr(null)
+  }, [t.id])
+
+  const canRelease =
+    t.payoutStatus === 'escrowed' &&
+    t.paymentStatus === 'paid' &&
+    t.fulfillmentStatus === 'completed'
+
+  const blockers = []
+  if (t.paymentStatus !== 'paid') {
+    blockers.push(useCompactCopy ? 'Not paid.' : 'Payment is not marked paid.')
+  }
+  if (t.fulfillmentStatus !== 'completed') {
+    blockers.push(useCompactCopy ? 'Service not completed.' : 'Fulfillment is not completed.')
+  }
+  if (t.payoutStatus === 'on_hold') {
+    blockers.push(
+      useCompactCopy ? 'On hold — remove hold first.' : 'Escrow is on hold — remove hold before releasing.',
+    )
+  }
+  if (t.payoutStatus === 'released') {
+    blockers.push(useCompactCopy ? 'Released.' : 'Already released.')
+  }
+
+  async function handleConfirmRelease() {
+    if (busy) return
+    setBusy(true)
+    setErr(null)
+    try {
+      await releaseOrder(t.orderUuid)
+      setReleaseModalOpen(false)
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Release failed.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function openHoldModal() {
+    setHoldReasonInput('')
+    setHoldModalErr(null)
+    setHoldModalOpen(true)
+  }
+
+  async function submitHoldFromModal() {
+    const reason = holdReasonInput.trim()
+    if (!reason) {
+      setHoldModalErr(
+        useCompactCopy ? 'Enter a hold reason.' : 'A reason is required before placing this order on hold.',
+      )
+      return
+    }
+    setBusy(true)
+    setErr(null)
+    setHoldModalErr(null)
+    try {
+      await holdOrder(t.orderUuid, reason)
+      setHoldModalOpen(false)
+      setHoldModalErr(null)
+      setHoldReasonInput('')
+    } catch (e) {
+      setHoldModalErr(e instanceof Error ? e.message : 'Hold failed.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function doUnhold() {
+    setBusy(true)
+    setErr(null)
+    try {
+      await unholdOrder(t.orderUuid)
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Unhold failed.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <>
+      <ConfirmModal
+        open={holdModalOpen}
+        variant="warning"
+        icon={<TbPlayerPause size={22} strokeWidth={1.75} aria-hidden />}
+        title={
+          <span className={confirmModalStyles.modalTitleDivider}>
+            <span className={confirmModalStyles.titleCompound}>
+              <span className={confirmModalStyles.titleCompoundOrder}>
+                {t.orderId || t.orderUuid || '—'}
+              </span>
+              <span className={confirmModalStyles.titleCompoundSub}>Place on hold</span>
+            </span>
+          </span>
+        }
+        message={
+          useCompactCopy
+            ? 'Funds stay on hold until you remove it. Seller is not paid until then.'
+            : 'Funds stay with the platform until you remove this hold; the seller will not be paid out until then.'
+        }
+        subtitleAlign="left"
+        extra={
+          <>
+            <label htmlFor={`escrow-hold-reason-${t.id}`} className={confirmModalStyles.modalFieldLabel}>
+              Reason
+            </label>
+            <textarea
+              id={`escrow-hold-reason-${t.id}`}
+              className={confirmModalStyles.modalTextarea}
+              rows={4}
+              value={holdReasonInput}
+              onChange={(e) => {
+                setHoldReasonInput(e.target.value)
+                if (holdModalErr) setHoldModalErr(null)
+              }}
+              placeholder={
+                useCompactCopy
+                  ? 'e.g. Dispute, review, buyer request…'
+                  : 'e.g. Dispute opened, compliance review, buyer request…'
+              }
+              disabled={busy}
+              autoFocus
+            />
+            {holdModalErr ? <p className={confirmModalStyles.modalFieldError}>{holdModalErr}</p> : null}
+          </>
+        }
+        confirmLabel={
+          busy ? (useCompactCopy ? 'Holding…' : 'Placing hold…') : useCompactCopy ? 'Place hold' : 'Place on hold'
+        }
+        cancelLabel="Cancel"
+        onConfirm={submitHoldFromModal}
+        onCancel={closeHoldModal}
+        disableActions={busy}
+      />
+      <ConfirmModal
+        open={releaseModalOpen}
+        variant="primary"
+        icon={<TbCreditCardPay size={22} strokeWidth={1.75} aria-hidden />}
+        title={useCompactCopy ? 'Release payout' : 'Release payout?'}
+        message={
+          useCompactCopy ? (
+            <>
+              <strong>{t.orderId || t.orderUuid || '—'}</strong>
+              {' · '}
+              Net to seller{' '}
+              <strong className={confirmModalStyles.subtitleAccentGreen}>
+                {formatPHP(Number(t.net_amount) || 0)}
+              </strong>
+              . Continue only when the payout should be finalized.
+            </>
+          ) : (
+            <>
+              This will mark order{' '}
+              <strong>{t.orderId || t.orderUuid || '—'}</strong>
+              {' '}
+              as released. Net to seller after platform fee:{' '}
+              <strong className={confirmModalStyles.subtitleAccentGreen}>
+                {formatPHP(Number(t.net_amount) || 0)}
+              </strong>
+              . This action should only be used when you intend to complete the payout release.
+            </>
+          )
+        }
+        confirmLabel={busy ? 'Releasing…' : useCompactCopy ? 'Release' : 'Release payout'}
+        cancelLabel="Cancel"
+        onConfirm={handleConfirmRelease}
+        onCancel={handleReleaseModalCancel}
+        disableActions={busy}
+      />
+    <div className={isSheet ? styles.msheetReleaseCard : styles.escrowActionCard}>
+      <p className={isSheet ? styles.msheetReleaseTitle : styles.escrowActionTitle}>
+        Release payout
+      </p>
+      <p className={isSheet ? styles.msheetReleaseNetLine : styles.escrowActionHint}>
+        {useCompactCopy ? (
+          <>
+            Net to seller <strong>{formatPHP(Number(t.net_amount) || 0)}</strong>
+          </>
+        ) : (
+          <>
+            Net to seller after platform fee:{' '}
+            <strong>{formatPHP(Number(t.net_amount) || 0)}</strong>
+          </>
+        )}
+      </p>
+      {t.payoutStatus === 'released' && (t.released_at || t.payoutDate) && (
+        <p className={isSheet ? styles.msheetReleasedLine : styles.escrowActionReleased}>
+          Released {t.released_at ? String(t.released_at).slice(0, 10) : t.payoutDate}
+          {t.payoutReference ? ` · Ref ${t.payoutReference}` : ''}
+        </p>
+      )}
+      {t.hold_reason && (
+        <p className={isSheet ? styles.msheetHoldNote : styles.escrowHoldReason}>
+          Hold: {t.hold_reason}
+        </p>
+      )}
+      {blockers.length > 0 && t.payoutStatus !== 'released' && (
+        isSheet ? (
+          <div className={styles.msheetBlockerRibbon} role="status">
+            {blockers.join(' · ')}
+          </div>
+        ) : (
+          <ul className={styles.escrowBlockers}>
+            {blockers.map((b) => (
+              <li key={b}>{b}</li>
+            ))}
+          </ul>
+        )
+      )}
+      {err && <p className={isSheet ? styles.msheetInlineErr : styles.escrowActionErr}>{err}</p>}
+      <div className={isSheet ? styles.msheetReleaseBtns : styles.escrowActionBtns}>
+        {t.payoutStatus === 'escrowed' && (
+          <>
+            <button
+              type="button"
+              className={isSheet ? styles.msheetBtnRelease : styles.releaseBtnArm}
+              disabled={!canRelease || busy}
+              onClick={() => canRelease && setReleaseModalOpen(true)}
+            >
+              Release
+            </button>
+            <button
+              type="button"
+              className={isSheet ? styles.msheetBtnHold : styles.holdEscrowBtn}
+              disabled={busy}
+              onClick={openHoldModal}
+            >
+              Hold
+            </button>
+          </>
+        )}
+        {t.payoutStatus === 'on_hold' && (
+          <button
+            type="button"
+            className={isSheet ? styles.msheetBtnUnholdFull : styles.unholdEscrowBtn}
+            disabled={busy}
+            onClick={doUnhold}
+          >
+            Remove hold
+          </button>
+        )}
+      </div>
+    </div>
+    </>
+  )
 }
 
 
@@ -318,292 +688,344 @@ function StatCard({ label, shortLabel, value, percent, className }) {
   )
 }
 
-// ─── Payout Panel (slides in to the left of Details modal) ──────────────────
+function EscrowCommissionRateEditor({
+  t,
+  updateOrderCommission,
+  compactUi = false,
+  variant = 'default',
+}) {
+  const isSheet = variant === 'sheet'
+  const useCompactCopy = compactUi || isSheet
+  const locked = t.payoutStatus === 'released'
+  const gross = Number(t.amount) || Number(t.gross_amount) || 0
+  const savedRate = Number(t.commission_rate_percent)
 
-function PayoutPanel({ txn, settings, onClose, onUpdatePayout, mobileInline = false }) {
-  const [payoutRef, setPayoutRef] = useState(txn.payoutReference)
-  const [payoutDate, setPayoutDate] = useState(txn.payoutDate || new Date().toISOString().split('T')[0])
-  const [editingRef, setEditingRef] = useState(false)
+  const [draft, setDraft] = useState(() => (Number.isFinite(savedRate) ? String(savedRate) : ''))
+  const [localErr, setLocalErr] = useState(null)
+  const [saving, setSaving] = useState(false)
 
-  const handleStatusChange = (newStatus) => {
-    onUpdatePayout(txn.id, newStatus, payoutRef, payoutDate)
+  useEffect(() => {
+    const sr = Number(t.commission_rate_percent)
+    setDraft(Number.isFinite(sr) ? String(sr) : '')
+    setLocalErr(null)
+    setSaving(false)
+  }, [t.id, t.commission_rate_percent, t.payoutStatus])
+
+  const parsedDraft = useMemo(() => {
+    const s = draft.trim().replace(',', '.')
+    if (s === '') return null
+    const n = Number.parseFloat(s)
+    if (!Number.isFinite(n) || n < 0 || n > 100) return null
+    return Math.round(n * 100) / 100
+  }, [draft])
+
+  const unchanged =
+    parsedDraft != null &&
+    Math.round(parsedDraft * 100) === Math.round((Number.isFinite(savedRate) ? savedRate : 0) * 100)
+
+  const preview =
+    parsedDraft != null && !unchanged ? computeCommissionSnapshot(gross, parsedDraft) : null
+
+  async function handleSave() {
+    if (!parsedDraft) {
+      setLocalErr(useCompactCopy ? 'Enter 0–100.' : 'Rate must be a number from 0 through 100.')
+      return
+    }
+    setSaving(true)
+    setLocalErr(null)
+    try {
+      await updateOrderCommission(t.orderUuid, parsedDraft)
+    } catch (e) {
+      setLocalErr(e instanceof Error ? e.message : 'Update failed.')
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const handleSaveRef = () => {
-    onUpdatePayout(txn.id, txn.payoutStatus, payoutRef, payoutDate)
-    setEditingRef(false)
+  if (locked) {
+    return (
+      <p
+        className={
+          isSheet ? styles.msheetCommissionLockedNote : styles.expandedCommissionLocked
+        }
+      >
+        {useCompactCopy
+          ? 'Commission is locked after release.'
+          : 'Commission rate cannot be changed after this order has been released.'}
+      </p>
+    )
   }
 
-  const bodyContent = (
-      <div className={styles.payoutPanelBody}>
-
-        {/* Current status badge */}
-        <div className={styles.payoutCurrentStatus}>
-          <span className={styles.payoutCurrentLabel}>Current Status</span>
-          <Badge type="payout" value={txn.payoutStatus}/>
+  if (isSheet) {
+    return (
+      <section className={styles.msheetCommissionSection} aria-label="Commission rate for this order">
+        <div className={styles.msheetCommissionHeader}>
+          <span className={styles.msheetCommissionHeadline}>Commission rate</span>
+          <span className={styles.msheetCommissionSub}>Applies only to this order</span>
         </div>
-
-        {/* Status picker */}
-        <div className={styles.payoutStatusSection}>
-          <p className={styles.payoutSectionLabel}>Update Status</p>
-          <div className={styles.payoutStatusGrid}>
-            {['pending','processing','paid','on_hold','refunded'].map(s => {
-              const meta = PAYOUT_STATUS_META[s]
-              const isActive = txn.payoutStatus === s
-              return (
-                <button
-                  key={s}
-                  className={`${styles.payoutStatusCard} ${isActive ? styles.payoutStatusCardActive : ''} ${styles[`payoutCard_${meta.color}`]}`}
-                  onClick={() => handleStatusChange(s)}
-                >
-                  <span className={styles.payoutStatusCardDot}/>
-                  {meta.label}
-                  {isActive && <span className={styles.payoutActiveCheck}><Icon.Check /></span>}
-                </button>
-              )
-            })}
+        <div className={styles.msheetCommissionRow}>
+          <div className={styles.msheetRateControl}>
+            <input
+              type="text"
+              inputMode="decimal"
+              className={styles.msheetRateInput}
+              value={draft}
+              onChange={(e) => {
+                setDraft(e.target.value)
+                setLocalErr(null)
+              }}
+              aria-invalid={Boolean(localErr)}
+              aria-label="Commission percent"
+            />
+            <span className={styles.msheetRateSuffix}>%</span>
           </div>
+          <button
+            type="button"
+            className={styles.msheetRateSaveBtn}
+            disabled={saving || parsedDraft === null || unchanged}
+            onClick={handleSave}
+            aria-label={saving ? 'Saving commission rate' : 'Save commission rate'}
+          >
+            {saving ? '…' : 'Save'}
+          </button>
         </div>
-
-        {/* Reference number */}
-        <div className={styles.payoutFieldSection}>
-          <p className={styles.payoutSectionLabel}>Payout Reference #</p>
-          {editingRef ? (
-            <div className={styles.payoutRefEditRow}>
-              <input
-                className={styles.payoutRefInput}
-                value={payoutRef}
-                onChange={e => setPayoutRef(e.target.value)}
-                placeholder="e.g. REF-123456"
-                autoFocus
-              />
-              <button className={styles.btnSave} onClick={handleSaveRef}>Save</button>
-              <button className={styles.cancelRefBtn} onClick={() => setEditingRef(false)}>Cancel</button>
-            </div>
-          ) : (
-            <div className={styles.payoutRefDisplay}>
-              <span className={styles.payoutRefValue}>{payoutRef || <span className={styles.payoutRefEmpty}>Not set</span>}</span>
-              <button className={styles.editRefBtn} onClick={() => setEditingRef(true)}><Icon.Edit /> Edit</button>
-            </div>
-          )}
-        </div>
-
-        {/* Payout date */}
-        <div className={styles.payoutFieldSection}>
-          <p className={styles.payoutSectionLabel}>Payout Date</p>
-          <input
-            type="date"
-            className={styles.payoutDateInput}
-            value={payoutDate}
-            onChange={e => setPayoutDate(e.target.value)}
-          />
-        </div>
-
-        {/* Confirm save */}
-        <button
-          className={styles.payoutSaveBtn}
-          onClick={() => { onUpdatePayout(txn.id, txn.payoutStatus, payoutRef, payoutDate); onClose() }}
-        >
-          <Icon.Check /> Save Changes
-        </button>
-
-      </div>
-  )
-
-  if (mobileInline) return bodyContent
+        {preview && (
+          <div className={styles.msheetCommissionPreview}>
+            <span>{formatPHP(preview.commissionAmountPhp)} fee</span>
+            <span className={styles.msheetCommissionPreviewSep}>·</span>
+            <span>{formatPHP(preview.netAmountPhp)} net</span>
+          </div>
+        )}
+        {localErr && <p className={styles.msheetCommissionErr}>{localErr}</p>}
+      </section>
+    )
+  }
 
   return (
-    <div className={styles.payoutPanel}>
-      <div className={styles.payoutPanelHeader}>
-        <div>
-          <p className={styles.payoutPanelTitle}>Payout Management</p>
-          <p className={styles.payoutPanelSub}>{txn.orderId}</p>
-        </div>
-        <button className={styles.modalClose} onClick={onClose}><Icon.Close /></button>
+    <div className={styles.expandedCommissionEdit}>
+      <p className={styles.expandedCommissionEditLabel}>
+        {useCompactCopy ? 'Commission % (this order)' : 'Commission rate for this order'}
+      </p>
+      <div className={styles.expandedCommissionEditRow}>
+        <input
+          type="text"
+          inputMode="decimal"
+          className={styles.expandedCommissionRateInput}
+          value={draft}
+          onChange={(e) => {
+            setDraft(e.target.value)
+            setLocalErr(null)
+          }}
+          aria-invalid={Boolean(localErr)}
+        />
+        <span className={styles.expandedCommissionPercentSuffix}>%</span>
+        <button
+          type="button"
+          className={styles.expandedCommissionSaveBtn}
+          disabled={saving || parsedDraft === null || unchanged}
+          onClick={handleSave}
+        >
+          {saving ? 'Saving…' : 'Save'}
+        </button>
       </div>
-      {bodyContent}
+      {preview && (
+        <p
+          className={`${styles.expandedCommissionHint}${
+            useCompactCopy ? ` ${styles.expandedCommissionHintStack}` : ''
+          }`}
+        >
+          {useCompactCopy ? (
+            <>
+              Fee {formatPHP(preview.commissionAmountPhp)}
+              <span className={styles.expandedCommissionHintNet}>
+                Net {formatPHP(preview.netAmountPhp)}
+              </span>
+            </>
+          ) : (
+            <>
+              Preview: platform fee {formatPHP(preview.commissionAmountPhp)} · seller net{' '}
+              {formatPHP(preview.netAmountPhp)}
+            </>
+          )}
+        </p>
+      )}
+      {localErr && <p className={styles.expandedCommissionErr}>{localErr}</p>}
     </div>
   )
 }
 
-// ─── Transaction Details Modal ────────────────────────────────────────────────
-
-const MODAL_TABS = ['Buyer', 'Seller', 'Service']
-const MOBILE_MODAL_MODES = ['Details', 'Manage Payout']
-
-function TransactionModal({ txn, settings, onClose, onUpdatePayout }) {
-  const [showPayoutPanel, setShowPayoutPanel] = useState(false)
-  const [activeInfoTab, setActiveInfoTab] = useState('Buyer')
-  // Mobile mode: 'details' | 'payout' — toggled via segmented control at top
-  const [mobileMode, setMobileMode] = useState('details')
-  const [isMobile, setIsMobile] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth <= 640 : false
-  )
-
-  React.useEffect(() => {
-    const mq = window.matchMedia('(max-width: 640px)')
-    const handler = (e) => setIsMobile(e.matches)
-    mq.addEventListener('change', handler)
-    setIsMobile(mq.matches)
-    return () => mq.removeEventListener('change', handler)
-  }, [])
-
-  const rate = getCommissionRate(txn.sellerId, settings)
-  const { commission, sellerEarnings } = calcAmounts(txn.amount, rate)
+/** Dedicated mobile bottom-sheet layout (not the desktop expanded row). */
+function MobileTxnDetailSheetContent({
+  t,
+  commissionSettings,
+  releaseOrder,
+  holdOrder,
+  unholdOrder,
+  updateOrderCommission,
+}) {
+  const { rate, commission, sellerEarnings } = getTxnCommissionParts(t, commissionSettings)
+  const splitRate = Math.min(100, Math.max(0, Number(rate) || 0))
 
   return (
-    <div className={styles.modalOverlay} onClick={onClose}>
+    <div className={styles.msheetRoot}>
+      <section className={styles.msheetCard} aria-label="Seller">
+        <div className={styles.msheetEyebrow}>Seller</div>
+        <div className={styles.msheetSellerBiz}>{t.sellerName}</div>
+        {(t.sellerEmail || '').trim().length > 0 && (
+          <div className={styles.msheetSellerContact}>{t.sellerEmail}</div>
+        )}
+        {(t.sellerPhone || '').trim().length > 0 && (
+          <div className={styles.msheetSellerPhone}>{t.sellerPhone}</div>
+        )}
+      </section>
 
-      {/* Payout panel — slides in to the left (desktop only) */}
-      {showPayoutPanel && !isMobile && (
-        <div className={styles.payoutPanelWrap} onClick={e => e.stopPropagation()}>
-          <PayoutPanel
-            txn={txn}
-            settings={settings}
-            onClose={() => setShowPayoutPanel(false)}
-            onUpdatePayout={onUpdatePayout}
+      <section className={styles.msheetCard} aria-label="Commission breakdown">
+        <div className={styles.msheetEyebrow}>Money split</div>
+        <div className={styles.msheetMoneyLines}>
+          <div className={styles.msheetMoneyLine}>
+            <span>Collected</span>
+            <span className={styles.msheetMoneyVal}>{formatPHP(t.amount)}</span>
+          </div>
+          <div className={styles.msheetMoneyLineMuted}>
+            <span>Fee ({rate}%)</span>
+            <span className={styles.msheetMoneyDeduct}>− {formatPHP(commission)}</span>
+          </div>
+        </div>
+        <div className={styles.msheetSellerNetBanner}>
+          <span className={styles.msheetSellerNetLbl}>Seller receives</span>
+          <span className={styles.msheetSellerNetFig}>{formatPHP(sellerEarnings)}</span>
+        </div>
+        <div className={styles.msheetSplitTrack} title={`Platform ${rate}% · Seller ${100 - rate}%`}>
+          <span className={styles.msheetSplitPlat} style={{ flex: `0 0 ${splitRate}%` }} />
+          <span className={styles.msheetSplitSeller} style={{ flex: '1 1 0', minWidth: 0 }} />
+        </div>
+      </section>
+
+      <EscrowCommissionRateEditor
+        t={t}
+        updateOrderCommission={updateOrderCommission}
+        variant="sheet"
+      />
+
+      <section className={styles.msheetCard} aria-label="Order status">
+        <div className={styles.msheetEyebrow}>Status</div>
+        <div className={styles.msheetStatusRow}>
+          <span className={styles.msheetStatusKey}>Service</span>
+          <span className={styles.msheetStatusVal}>{t.fulfillmentStatus || '—'}</span>
+        </div>
+        <div className={styles.msheetBadgeRow}>
+          <Badge type="payment" value={t.paymentStatus} />
+          <Badge type="payout" value={t.payoutStatus} />
+        </div>
+        {(t.payoutReference || t.payoutDate) && (
+          <div className={styles.msheetRefRow}>
+            {t.payoutReference && (
+              <span className={styles.msheetRefChip}>Ref {t.payoutReference}</span>
+            )}
+            {t.payoutDate && <span className={styles.msheetDateChip}>{t.payoutDate}</span>}
+          </div>
+        )}
+      </section>
+
+      <EscrowReleasePanel
+        t={t}
+        releaseOrder={releaseOrder}
+        holdOrder={holdOrder}
+        unholdOrder={unholdOrder}
+        variant="sheet"
+      />
+    </div>
+  )
+}
+
+function ExpandedEscrowDetails({
+  t,
+  commissionSettings,
+  releaseOrder,
+  holdOrder,
+  unholdOrder,
+  updateOrderCommission,
+  compactUi = false,
+}) {
+  const { rate, commission, sellerEarnings } = getTxnCommissionParts(t, commissionSettings)
+
+  return (
+    <div className={styles.expandedPanelRow}>
+      <div className={styles.expandedPanelLeft}>
+        <div className={styles.expandedSection}>
+          <p className={styles.expandedSectionLabel}>
+            <svg viewBox="0 0 24 24" fill="none"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5m14 0h2M5 21H3M9 7h1m-1 4h1m4-4h1m-1 4h1M9 21v-4a1 1 0 011-1h4a1 1 0 011 1v4H9z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+            Seller
+          </p>
+          <p className={styles.expandedSellerName}>{t.sellerName}</p>
+          <p className={styles.expandedSellerEmail}>{t.sellerEmail}</p>
+          <p className={styles.expandedSellerPhone}>{t.sellerPhone}</p>
+        </div>
+
+        <div className={styles.expandedDivider}/>
+
+        <div className={styles.expandedSection}>
+          <p className={styles.expandedSectionLabel}>
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.93V18h-2v-1.07A4.004 4.004 0 018 13h2c0 1.1.9 2 2 2s2-.9 2-2c0-1.1-.9-2-2-2a4 4 0 01-4-4c0-1.86 1.28-3.41 3-3.86V2h2v1.14A4.004 4.004 0 0116 7h-2c0-1.1-.9-2-2-2s-2 .9-2 2 .9 2 2 2a4 4 0 014 4c0 1.86-1.28 3.41-3 3.93z" fill="currentColor"/></svg>
+            {compactUi ? 'Commission' : 'Commission breakdown'}
+          </p>
+          <div className={styles.breakdownRows}>
+            <div className={styles.breakdownRow}>
+              <span>{compactUi ? 'Collected' : 'Total collected'}</span>
+              <strong>{formatPHP(t.amount)}</strong>
+            </div>
+            <div className={`${styles.breakdownRow} ${styles.breakdownPlatform}`}>
+              <span>
+                {compactUi ? `Fee (${rate}%)` : `Platform fee (${rate}%)`}
+              </span>
+              <strong>− {formatPHP(commission)}</strong>
+            </div>
+            <div className={`${styles.breakdownRow} ${styles.breakdownSeller}`}>
+              <span>Seller net</span>
+              <strong>{formatPHP(sellerEarnings)}</strong>
+            </div>
+          </div>
+          <div className={styles.splitBar}>
+            <div className={styles.splitBarSegment} style={{ width: `${rate}%`, background: '#334155' }} title={`Platform ${rate}%`} />
+            <div className={styles.splitBarSegment} style={{ width: `${100 - rate}%`, background: '#10b981' }} title={`Seller ${100 - rate}%`} />
+          </div>
+          <EscrowCommissionRateEditor
+            t={t}
+            updateOrderCommission={updateOrderCommission}
+            compactUi={compactUi}
           />
         </div>
-      )}
 
-      {/* Main details modal */}
-      <div className={styles.modal} onClick={e => e.stopPropagation()}>
+        <div className={styles.expandedDivider}/>
 
-        {/* ── Header ── */}
-        <div className={styles.modalHeader}>
-          <div>
-            <h2 className={styles.modalTitle}>Transaction Details</h2>
-            <p className={styles.modalSubtitle}>{txn.orderId} · {txn.id}</p>
+        <div className={styles.expandedSection}>
+          <p className={styles.expandedSectionLabel}>
+            <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+            Status
+          </p>
+          <p className={styles.expandedFulfillmentLine}>
+            {compactUi ? 'Service: ' : 'Fulfillment: '}
+            <strong>{t.fulfillmentStatus || '—'}</strong>
+          </p>
+          <div className={styles.payoutStatusRow}>
+            <Badge type="payment" value={t.paymentStatus} />
+            <Badge type="payout" value={t.payoutStatus} />
+            {t.payoutReference && <span className={styles.refChip}>Ref: {t.payoutReference}</span>}
+            {t.payoutDate && <span className={styles.dateChip}>{t.payoutDate}</span>}
           </div>
-          <button className={styles.modalClose} onClick={onClose}><Icon.Close /></button>
         </div>
+      </div>
 
-        {/* ── Mobile mode switcher (Details / Manage Payout) ── */}
-        <div className={styles.mobileModeBar}>
-          {MOBILE_MODAL_MODES.map(mode => (
-            <button
-              key={mode}
-              className={`${styles.mobileModeBtn} ${mobileMode === (mode === 'Details' ? 'details' : 'payout') ? styles.mobileModeBtnActive : ''}`}
-              onClick={() => setMobileMode(mode === 'Details' ? 'details' : 'payout')}
-            >
-              {mode}
-            </button>
-          ))}
-        </div>
+      <div className={styles.expandedDividerVert} aria-hidden />
 
-        {/* ── Scrollable body ── */}
-        <div className={styles.modalScrollBody}>
-
-          {/* ── View: Details (always visible on desktop; conditional on mobile) ── */}
-          <div className={`${styles.modalContentPane} ${mobileMode === 'payout' ? styles.mobileHidden : ''}`}>
-            <div className={styles.modalBody}>
-
-              {/* Amounts Hero */}
-              <div className={styles.modalAmountHero}>
-                <div className={styles.heroAmount}>
-                  <span className={styles.heroAmountLabel}>Total Amount</span>
-                  <span className={styles.heroAmountValue}>{formatPHP(txn.amount)}</span>
-                </div>
-                <div className={styles.heroSplit}>
-                  <div className={styles.heroSplitItem}>
-                    <div className={styles.heroSplitLeft}>
-                      <span className={styles.heroSplitDot} style={{background:'#94a3b8'}}/>
-                      <p className={styles.heroSplitLabel}>Platform Commission ({rate}%)</p>
-                    </div>
-                    <span className={styles.heroSplitVal}>{formatPHP(commission)}</span>
-                  </div>
-                  <div className={styles.heroSplitItem}>
-                    <div className={styles.heroSplitLeft}>
-                      <span className={styles.heroSplitDot} style={{background:'#10b981'}}/>
-                      <p className={styles.heroSplitLabel}>Seller Earnings</p>
-                    </div>
-                    <span className={styles.heroSplitVal}>{formatPHP(sellerEarnings)}</span>
-                  </div>
-                </div>
-                <div className={styles.heroBar}>
-                  <div className={styles.heroBarFill} style={{width:`${rate}%`, background:'#475569'}}/>
-                  <div className={styles.heroBarFill} style={{width:`${100-rate}%`, background:'#10b981'}}/>
-                </div>
-              </div>
-
-              {/* Status row */}
-              <div className={styles.modalStatusRow}>
-                <div className={styles.modalStatusItem}>
-                  <span className={styles.modalStatusLabel}>Payment</span>
-                  <Badge type="payment" value={txn.paymentStatus}/>
-                </div>
-                <div className={styles.modalStatusDivider}/>
-                <div className={styles.modalStatusItem}>
-                  <span className={styles.modalStatusLabel}>Payout</span>
-                  <Badge type="payout" value={txn.payoutStatus}/>
-                </div>
-              </div>
-
-              {/* Info tabs */}
-              <div className={styles.modalInfoTabs}>
-                <div className={styles.modalInfoTabNav}>
-                  {MODAL_TABS.map(tab => (
-                    <button
-                      key={tab}
-                      className={`${styles.modalInfoTabBtn} ${activeInfoTab === tab ? styles.modalInfoTabBtnActive : ''}`}
-                      onClick={() => setActiveInfoTab(tab)}
-                    >
-                      {tab}
-                    </button>
-                  ))}
-                </div>
-                <div className={styles.modalInfoTabPanel}>
-                  {activeInfoTab === 'Buyer' && (
-                    <div className={styles.modalInfoRows}>
-                      <div className={styles.modalInfoRow}><span>Name</span><strong>{txn.buyerName}</strong></div>
-                      <div className={styles.modalInfoRow}><span>Email</span><strong>{txn.buyerEmail}</strong></div>
-                      <div className={styles.modalInfoRow}><span>Phone</span><strong>{txn.buyerPhone}</strong></div>
-                    </div>
-                  )}
-                  {activeInfoTab === 'Seller' && (
-                    <div className={styles.modalInfoRows}>
-                      <div className={styles.modalInfoRow}><span>Business</span><strong>{txn.sellerName}</strong></div>
-                      <div className={styles.modalInfoRow}><span>Email</span><strong>{txn.sellerEmail}</strong></div>
-                      <div className={styles.modalInfoRow}><span>Phone</span><strong>{txn.sellerPhone}</strong></div>
-                    </div>
-                  )}
-                  {activeInfoTab === 'Service' && (
-                    <div className={styles.modalInfoRows}>
-                      <div className={styles.modalInfoRow}><span>Package</span><strong>{txn.service}</strong></div>
-                      <div className={styles.modalInfoRow}><span>Payment Method</span><strong>{txn.paymentMethod}</strong></div>
-                      <div className={styles.modalInfoRow}><span>Date</span><strong>{txn.date}</strong></div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Payout management trigger — desktop only */}
-              <button
-                className={`${styles.openPayoutBtn} ${showPayoutPanel ? styles.openPayoutBtnActive : ''}`}
-                onClick={() => setShowPayoutPanel(prev => !prev)}
-              >
-                <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
-                {showPayoutPanel ? 'Close Payout Panel' : 'Manage Payout'}
-                <svg className={styles.openPayoutChevron} viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </button>
-
-            </div>
-          </div>
-
-          {/* ── View: Manage Payout (mobile only — desktop uses payoutPanelWrap instead) ── */}
-          <div className={`${styles.modalContentPane} ${styles.modalContentPaneMobile} ${mobileMode === 'details' ? styles.mobileHidden : ''}`}>
-            <div className={styles.modalBody}>
-              <PayoutPanel
-                txn={txn}
-                settings={settings}
-                onClose={() => setMobileMode('details')}
-                onUpdatePayout={onUpdatePayout}
-                mobileInline
-              />
-            </div>
-          </div>
-
-        </div>{/* end modalScrollBody */}
+      <div className={styles.expandedPanelRight}>
+        <EscrowReleasePanel
+          t={t}
+          releaseOrder={releaseOrder}
+          holdOrder={holdOrder}
+          unholdOrder={unholdOrder}
+          compactUi={compactUi}
+        />
       </div>
     </div>
   )
@@ -635,13 +1057,14 @@ function RateGauge({ rate }) {
   )
 }
 
-function CommissionPanel({ settings, onUpdateSettings, transactions = [] }) {
+function CommissionPanel({ settings, onUpdateSettings, transactions = [], sellersList = [] }) {
   const [globalInput, setGlobalInput] = useState(String(settings.global))
   const [editingGlobal, setEditingGlobal] = useState(false)
   const [sellerInputs, setSellerInputs] = useState({})
   const [editingSeller, setEditingSeller] = useState(null)
   const [confirmReset, setConfirmReset] = useState(false)
-  const [changeLog, setChangeLog] = useState(() => generatePayoutsPageSampleChangeLog())
+  /** In-session edits to commission preview UI only (not persisted server-side yet). */
+  const [changeLog, setChangeLog] = useState([])
   const [showLog, setShowLog] = useState(false)
   const [activeSection, setActiveSection] = useState('global') // 'global' | 'sellers'
 
@@ -657,7 +1080,7 @@ function CommissionPanel({ settings, onUpdateSettings, transactions = [] }) {
   }
 
   const saveSeller = (sid) => {
-    const seller = SELLERS.find(s => s.id === sid)
+    const seller = sellersList.find(s => s.id === sid)
     const v = parseFloat(sellerInputs[sid])
     const prev = settings.sellers[sid] !== undefined ? settings.sellers[sid] : settings.global
     if (!isNaN(v) && v >= 0 && v <= 100) {
@@ -672,7 +1095,7 @@ function CommissionPanel({ settings, onUpdateSettings, transactions = [] }) {
   }
 
   const removeOverride = (sid) => {
-    const seller = SELLERS.find(s => s.id === sid)
+    const seller = sellersList.find(s => s.id === sid)
     setChangeLog(p => [{ id: Date.now(), type: 'remove', label: seller?.name || sid, from: settings.sellers[sid], to: settings.global, ts: Date.now() }, ...p.slice(0, 9)])
     const next = { ...settings.sellers }
     delete next[sid]
@@ -696,19 +1119,20 @@ function CommissionPanel({ settings, onUpdateSettings, transactions = [] }) {
   // Compute per-seller impact using transactions
   const sellerStats = useMemo(() => {
     const map = {}
-    SELLERS.forEach(s => { map[s.id] = { revenue: 0, txnCount: 0 } })
+    sellersList.forEach((s) => {
+      map[s.id] = { revenue: 0, txnCount: 0 }
+    })
     if (transactions) {
-      transactions.forEach(t => {
+      transactions.forEach((t) => {
         if (t.paymentStatus === 'paid' && map[t.sellerId]) {
-          const rate = getCommissionRate(t.sellerId, settings)
-          const { commission } = calcAmounts(t.amount, rate)
+          const { commission } = getTxnCommissionParts(t, settings)
           map[t.sellerId].revenue += commission
           map[t.sellerId].txnCount++
         }
       })
     }
     return map
-  }, [transactions, settings])
+  }, [transactions, settings, sellersList])
 
   return (
     <div className={styles.commissionPanel}>
@@ -717,7 +1141,9 @@ function CommissionPanel({ settings, onUpdateSettings, transactions = [] }) {
         <div className={styles.commissionPanelHeaderLeft}>
           <div className={styles.commissionPanelTitleWrap}>
             <p className={styles.commissionPanelTitle}>Commission Settings</p>
-            <p className={styles.commissionPanelSub}>Configure platform fee rates globally or per seller</p>
+            <p className={styles.commissionPanelSub}>
+              Global rate matches Platform billing · Per-seller overrides are preview-only until stored in DB
+            </p>
           </div>
         </div>
         <div className={styles.commissionPanelHeaderRight}>
@@ -747,7 +1173,7 @@ function CommissionPanel({ settings, onUpdateSettings, transactions = [] }) {
 
       {/* ── Section Tabs ── */}
       <div className={styles.commissionSectionTabs}>
-        {[{ key: 'global', label: 'Global Rate' }, { key: 'sellers', label: `Per-Seller Rates (${SELLERS.length})` }].map(tab => (
+        {[{ key: 'global', label: 'Global Rate' }, { key: 'sellers', label: `Per-Seller Rates (${sellersList.length})` }].map(tab => (
           <button
             key={tab.key}
             className={`${styles.commissionSectionTab} ${activeSection === tab.key ? styles.commissionSectionTabActive : ''}`}
@@ -801,7 +1227,11 @@ function CommissionPanel({ settings, onUpdateSettings, transactions = [] }) {
                     <span className={`${styles.gaugeRiskBadge} ${settings.global <= 8 ? styles.gaugeRiskLow : settings.global <= 15 ? styles.gaugeRiskMid : styles.gaugeRiskHigh}`}>
                       {settings.global <= 8 ? 'Low' : settings.global <= 15 ? 'Standard' : 'High'} rate
                     </span>
-                    <span className={styles.gaugeAffects}>Affects {SELLERS.length - customCount} seller{SELLERS.length - customCount !== 1 ? 's' : ''}</span>
+                    <span className={styles.gaugeAffects}>
+                      Affects{' '}
+                      {Math.max(0, sellersList.length - customCount)} seller
+                      {Math.max(0, sellersList.length - customCount) !== 1 ? 's' : ''}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -881,7 +1311,10 @@ function CommissionPanel({ settings, onUpdateSettings, transactions = [] }) {
             </div>
 
             <div className={styles.sellerOverrideList}>
-              {SELLERS.map(seller => {
+              {sellersList.length === 0 && (
+                <p className={styles.sellerOverrideDesc}>Load payout data to see sellers with escrows.</p>
+              )}
+              {sellersList.map(seller => {
                 const override = settings.sellers[seller.id]
                 const isEditing = editingSeller === seller.id
                 const effective = override !== undefined ? override : settings.global
@@ -977,37 +1410,52 @@ function CommissionPanel({ settings, onUpdateSettings, transactions = [] }) {
 
 // ─── Seller Earnings Panel ────────────────────────────────────────────────────
 
-function SellerEarningsPanel({ transactions, settings }) {
-  const earnings = useMemo(() => {
-    return SELLERS.map(seller => {
-      const sellerTxns = transactions.filter(t => t.sellerId === seller.id)
-      let available = 0, pending = 0, totalWithdrawn = 0
+function SellerEarningsPanel({ transactions }) {
+  const sellers = useMemo(() => {
+    const m = new Map()
+    for (const t of transactions ?? []) {
+      if (!t?.sellerId) continue
+      if (!m.has(t.sellerId)) {
+        m.set(t.sellerId, { id: t.sellerId, name: String(t.sellerName || 'Seller').trim() || 'Seller' })
+      }
+    }
+    return [...m.values()]
+  }, [transactions])
 
-      sellerTxns.forEach(t => {
-        const rate = getCommissionRate(t.sellerId, settings)
-        const { sellerEarnings } = calcAmounts(t.amount, rate)
-        if (t.payoutStatus === 'paid') totalWithdrawn += sellerEarnings
-        else if (t.payoutStatus === 'pending' || t.payoutStatus === 'processing') {
-          if (t.paymentStatus === 'paid') available += sellerEarnings
-          else pending += sellerEarnings
-        } else if (t.payoutStatus === 'on_hold') pending += sellerEarnings
+  const earnings = useMemo(() => {
+    return sellers.map((seller) => {
+      const sellerTxns = transactions.filter((t) => t.sellerId === seller.id)
+      let pendingRelease = 0
+      let onHold = 0
+      let released = 0
+
+      sellerTxns.forEach((t) => {
+        const net = Number(t.net_amount) || 0
+        if (t.payoutStatus === 'released') released += net
+        else if (t.payoutStatus === 'on_hold') onHold += net
+        else if (t.payoutStatus === 'escrowed') pendingRelease += net
       })
 
-      return { ...seller, available, pending, totalWithdrawn, txnCount: sellerTxns.length }
+      return { ...seller, pendingRelease, onHold, released, txnCount: sellerTxns.length }
     })
-  }, [transactions, settings])
+  }, [transactions, sellers])
+
+  const initial = (name) => (name?.trim()?.charAt(0) || '?').toUpperCase()
 
   return (
     <div className={styles.sellerEarningsPanel}>
       <div className={styles.sePanelHeader}>
         <p className={styles.sePanelTitle}>Seller Earnings Tracker</p>
-        <p className={styles.sePanelSub}>Live balances based on payout status</p>
+        <p className={styles.sePanelSub}>Totals from escrow snapshots on this payout list</p>
       </div>
       <div className={styles.seGrid}>
-        {earnings.map(s => (
+        {earnings.length === 0 && (
+          <p className={styles.emptyHint}>No escrow rows loaded yet.</p>
+        )}
+        {earnings.map((s) => (
           <div key={s.id} className={styles.seCard}>
             <div className={styles.seCardTop}>
-              <div className={styles.seAvatar}>{s.name[0]}</div>
+              <div className={styles.seAvatar}>{initial(s.name)}</div>
               <div>
                 <p className={styles.seName}>{s.name}</p>
                 <p className={styles.seTxnCount}>{s.txnCount} transactions</p>
@@ -1015,16 +1463,16 @@ function SellerEarningsPanel({ transactions, settings }) {
             </div>
             <div className={styles.seBalances}>
               <div className={styles.seBalanceItem}>
-                <span className={styles.seBalLabel}>Available</span>
-                <span className={`${styles.seBalVal} ${styles.seBalAvailable}`}>{formatPHP(s.available)}</span>
+                <span className={styles.seBalLabel}>Pending release</span>
+                <span className={`${styles.seBalVal} ${styles.seBalAvailable}`}>{formatPHP(s.pendingRelease)}</span>
               </div>
               <div className={styles.seBalanceItem}>
-                <span className={styles.seBalLabel}>Pending</span>
-                <span className={`${styles.seBalVal} ${styles.seBalPending}`}>{formatPHP(s.pending)}</span>
+                <span className={styles.seBalLabel}>On hold</span>
+                <span className={`${styles.seBalVal} ${styles.seBalPending}`}>{formatPHP(s.onHold)}</span>
               </div>
               <div className={styles.seBalanceItem}>
-                <span className={styles.seBalLabel}>Withdrawn</span>
-                <span className={`${styles.seBalVal} ${styles.seBalWithdrawn}`}>{formatPHP(s.totalWithdrawn)}</span>
+                <span className={styles.seBalLabel}>Released (net)</span>
+                <span className={`${styles.seBalVal} ${styles.seBalWithdrawn}`}>{formatPHP(s.released)}</span>
               </div>
             </div>
           </div>
@@ -1040,10 +1488,9 @@ export default function AdminPayoutsPage() {
   const {
     ROWS_PER_PAGE,
     transactions,
+    sellerOptions,
     commissionSettings,
     setCommissionSettings,
-    selectedTxn,
-    setSelectedTxn,
     activeTab,
     setActiveTab,
     search,
@@ -1067,10 +1514,17 @@ export default function AdminPayoutsPage() {
     currentPage,
     setCurrentPage,
     summary,
-    filtered,
+    summaryLoading,
+    listLoading,
+    listError,
     paginatedRows,
     totalPages,
-    updatePayout,
+    dateSortDesc,
+    toggleDateSort,
+    releaseOrder,
+    holdOrder,
+    unholdOrder,
+    updateOrderCommission,
     clearFilters,
     hasFilters,
     showTransactions,
@@ -1082,19 +1536,54 @@ export default function AdminPayoutsPage() {
     typeof window !== 'undefined' ? window.innerWidth <= 640 : false
   )
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
+  /** When set on mobile, order details open in a bottom sheet (not inline). */
+  const [mobileDetailModalId, setMobileDetailModalId] = useState(null)
+
   const activeFilterLabels = useMemo(() => {
     const labels = []
     if (filterPayout !== 'all') {
       labels.push(PAYOUT_STATUS_META[filterPayout]?.label || filterPayout)
     }
     if (filterSeller !== 'all') {
-      labels.push(SELLERS.find((s) => s.id === filterSeller)?.name || filterSeller)
+      labels.push(sellerOptions.find((s) => s.id === filterSeller)?.name || filterSeller)
     }
     if (filterPayment !== 'all') {
       labels.push(PAYMENT_STATUS_META[filterPayment]?.label || filterPayment)
     }
     return labels
-  }, [filterPayout, filterSeller, filterPayment])
+  }, [filterPayout, filterSeller, filterPayment, sellerOptions])
+
+  const mobileDetailTxn = useMemo(() => {
+    if (!mobileDetailModalId) return null
+    return transactions.find((x) => x.id === mobileDetailModalId) ?? null
+  }, [transactions, mobileDetailModalId])
+
+  useEffect(() => {
+    if (!mobileDetailModalId || !isMobile) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prevOverflow
+    }
+  }, [mobileDetailModalId, isMobile])
+
+  useEffect(() => {
+    if (!mobileDetailModalId) return
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setMobileDetailModalId(null)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [mobileDetailModalId])
+
+  useEffect(() => {
+    if (
+      mobileDetailModalId &&
+      !transactions.some((t) => t.id === mobileDetailModalId)
+    ) {
+      setMobileDetailModalId(null)
+    }
+  }, [transactions, mobileDetailModalId])
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 640px)')
@@ -1105,7 +1594,10 @@ export default function AdminPayoutsPage() {
   }, [])
 
   useEffect(() => {
-    if (!isMobile) setMobileFiltersOpen(false)
+    if (!isMobile) {
+      setMobileFiltersOpen(false)
+      setMobileDetailModalId(null)
+    }
   }, [isMobile])
 
   return (
@@ -1132,10 +1624,45 @@ export default function AdminPayoutsPage() {
       {/* Financial overview — only on "All" tab (not Transactions / Commission / Seller alone) */}
       {activeTab === 'all' && (
         <section className={styles.statsGrid}>
-          <StatCard label="Platform Revenue" shortLabel="Revenue" value={isMobile ? formatPHPMobile(summary.platformRevenue) : formatPHP(summary.platformRevenue)} percent={14} />
-          <StatCard label="Total Orders" shortLabel="Total Orders" value={formatCount(summary.total, { desktop: !isMobile })} percent={-17} />
-          <StatCard label="Pending Payouts" shortLabel="Pending Payouts" value={isMobile ? formatPHPMobile(summary.pendingAmt) : formatPHP(summary.pendingAmt)} percent={8} />
-          <StatCard label="Completed Payouts" shortLabel="Completed" value={isMobile ? formatPHPMobile(summary.completedAmt) : formatPHP(summary.completedAmt)} percent={23} className={styles.statCardMobileHide} />
+          <StatCard
+            label="Platform Revenue"
+            shortLabel="Revenue"
+            value={
+              summaryLoading
+                ? '…'
+                : isMobile
+                  ? formatPHPMobile(summary.platformRevenue)
+                  : formatPHP(summary.platformRevenue)
+            }
+            percent={14}
+          />
+          <StatCard
+            label="Escrow rows"
+            shortLabel="Escrows"
+            value={summaryLoading ? '…' : formatCount(summary.total, { desktop: !isMobile })}
+            percent={-17}
+          />
+          <StatCard
+            label="Pending release"
+            shortLabel="Pending"
+            value={
+              summaryLoading ? '…' : isMobile ? formatPHPMobile(summary.pendingAmt) : formatPHP(summary.pendingAmt)
+            }
+            percent={8}
+          />
+          <StatCard
+            label="Released (seller net)"
+            shortLabel="Released"
+            value={
+              summaryLoading
+                ? '…'
+                : isMobile
+                  ? formatPHPMobile(summary.completedAmt)
+                  : formatPHP(summary.completedAmt)
+            }
+            percent={23}
+            className={styles.statCardMobileHide}
+          />
         </section>
       )}
 
@@ -1147,6 +1674,7 @@ export default function AdminPayoutsPage() {
       {/* Tab: Transactions */}
       {showTransactions && (
         <div className={styles.tablePanel}>
+          {listLoading ? <PayoutsTransactionsLoadingLiveRegion /> : null}
           {/* Toolbar — single row: search, date range, status, seller, filters, clear */}
           <div className={styles.toolbar}>
             <div className={styles.toolbarRow}>
@@ -1179,7 +1707,13 @@ export default function AdminPayoutsPage() {
                       <button
                         type="button"
                         className={styles.mobileFilterBtn}
-                        onClick={() => setMobileFiltersOpen(v => !v)}
+                        onClick={() =>
+                          setMobileFiltersOpen((open) => {
+                            const next = !open
+                            if (next) setMobileDetailModalId(null)
+                            return next
+                          })
+                        }
                         aria-haspopup="dialog"
                         aria-expanded={mobileFiltersOpen}
                         aria-controls="payoutsMobileFilters"
@@ -1191,26 +1725,30 @@ export default function AdminPayoutsPage() {
                         />
                       </button>
                     </div>
-                    {activeFilterLabels.map((label) => (
-                      <div key={label} className={styles.mobileActivePill}>
-                        <span className={styles.mobileActivePillLabel}>{label}</span>
-                        <button
-                          type="button"
-                          className={styles.mobileActivePillClear}
-                          onClick={() => {
-                            const payoutLabel = PAYOUT_STATUS_META[filterPayout]?.label || filterPayout
-                            const sellerLabel = SELLERS.find((s) => s.id === filterSeller)?.name || filterSeller
-                            const paymentLabel = PAYMENT_STATUS_META[filterPayment]?.label || filterPayment
-                            if (label === payoutLabel) setFilterPayout('all')
-                            if (label === sellerLabel) setFilterSeller('all')
-                            if (label === paymentLabel) setFilterPayment('all')
-                          }}
-                          aria-label={`Clear ${label} filter`}
-                        >
-                          <TbX aria-hidden />
-                        </button>
+                    {activeFilterLabels.length > 0 && (
+                      <div className={styles.mobileActivePillsRow} aria-label="Active filters">
+                        {activeFilterLabels.map((label) => (
+                          <div key={label} className={styles.mobileActivePill}>
+                            <span className={styles.mobileActivePillLabel}>{label}</span>
+                            <button
+                              type="button"
+                              className={styles.mobileActivePillClear}
+                              onClick={() => {
+                                const payoutLabel = PAYOUT_STATUS_META[filterPayout]?.label || filterPayout
+                                const sellerLabel = sellerOptions.find((s) => s.id === filterSeller)?.name || filterSeller
+                                const paymentLabel = PAYMENT_STATUS_META[filterPayment]?.label || filterPayment
+                                if (label === payoutLabel) setFilterPayout('all')
+                                if (label === sellerLabel) setFilterSeller('all')
+                                if (label === paymentLabel) setFilterPayment('all')
+                              }}
+                              aria-label={`Clear ${label} filter`}
+                            >
+                              <TbX aria-hidden />
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
                 ) : (
                   <div className={styles.toolbarSearchWrap}>
@@ -1247,7 +1785,7 @@ export default function AdminPayoutsPage() {
                     <Dropdown
                       value={filterPayout}
                       onChange={setFilterPayout}
-                      ariaLabel="Payout status"
+                      ariaLabel="Escrow status"
                       options={[
                         DEFAULT_PAYOUT_OPTION,
                         ...Object.entries(PAYOUT_STATUS_META).map(([k, v]) => ({ value: k, label: v.label, color: v.color }))
@@ -1261,7 +1799,7 @@ export default function AdminPayoutsPage() {
                       ariaLabel="Seller"
                       options={[
                         DEFAULT_SELLER_OPTION,
-                        ...SELLERS.map(s => ({ value: s.id, label: s.name }))
+                        ...sellerOptions.map((s) => ({ value: s.id, label: s.name })),
                       ]}
                       placeholder="All"
                     />
@@ -1315,53 +1853,75 @@ export default function AdminPayoutsPage() {
 
           {/* Mobile Card List — hidden on desktop via CSS */}
           <div className={styles.mobileCardList}>
-            {paginatedRows.length === 0 ? (
+            {listLoading ? (
+              <PayoutsMobileTransactionSkeleton />
+            ) : listError ? (
+              <div className={styles.emptyState}>
+                <p className={styles.emptyTitle}>Could not load payouts</p>
+                <p className={styles.emptyHint}>{listError}</p>
+              </div>
+            ) : paginatedRows.length === 0 ? (
               <div className={styles.emptyState}>
                 <p className={styles.emptyTitle}>No transactions found</p>
                 <p className={styles.emptyHint}>Try adjusting your filters</p>
                 {hasFilters && <button className={styles.clearFiltersBtn} onClick={clearFilters}>Clear filters</button>}
               </div>
-            ) : paginatedRows.map(t => {
-              const rate = getCommissionRate(t.sellerId, commissionSettings)
-              const { commission, sellerEarnings } = calcAmounts(t.amount, rate)
-              return (
-                <div key={t.id} className={styles.mobileCard}>
-                  <div className={styles.mobileCardTop}>
-                    <div>
-                      <p className={styles.orderId}>{t.orderId}</p>
-                      <p className={styles.txnId}>{t.id}</p>
+            ) : (
+              paginatedRows.map((t) => {
+                const { rate, commission, sellerEarnings } = getTxnCommissionParts(t, commissionSettings)
+                return (
+                  <div key={t.id} className={styles.mobileCard}>
+                    <div className={styles.mobileCardTop}>
+                      <div>
+                        <p className={styles.orderId}>{t.orderId}</p>
+                      </div>
+                      <p className={styles.mobileCardAmount}>{formatPHP(t.amount)}</p>
                     </div>
-                    <p className={styles.mobileCardAmount}>{formatPHP(t.amount)}</p>
+                    <p className={styles.mobileCardService}>{t.service}</p>
+                    <div className={styles.mobileCardMeta}>
+                      <span className={styles.mobileCardBuyer}>{t.buyerName}</span>
+                      <span className={styles.mobileCardDate}>{t.date}</span>
+                    </div>
+                    <div className={styles.mobileCardStatuses}>
+                      <Badge type="payment" value={t.paymentStatus}/>
+                      <Badge type="payout" value={t.payoutStatus}/>
+                    </div>
+                    <div className={styles.mobileCardBreakdown}>
+                      <span className={styles.mobileCardBreakdownItem}>Platform <strong>{formatPHP(commission)}</strong></span>
+                      <span className={styles.mobileCardBreakdownDivider}>·</span>
+                      <span className={styles.mobileCardBreakdownItem}>Seller <strong className={styles.mobileCardEarnings}>{formatPHP(sellerEarnings)}</strong></span>
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.mobileCardDetailsBtn}
+                      onClick={() => {
+                        setMobileFiltersOpen(false)
+                        setMobileDetailModalId((cur) => (cur === t.id ? null : t.id))
+                      }}
+                      aria-haspopup="dialog"
+                      aria-expanded={mobileDetailModalId === t.id}
+                      aria-controls={
+                        mobileDetailModalId === t.id ? 'payoutsMobileTxnDetail' : undefined
+                      }
+                    >
+                      Details
+                    </button>
                   </div>
-                  <p className={styles.mobileCardService}>{t.service}</p>
-                  <div className={styles.mobileCardMeta}>
-                    <span className={styles.mobileCardBuyer}>{t.buyerName}</span>
-                    <span className={styles.mobileCardDate}>{t.date}</span>
-                  </div>
-                  <div className={styles.mobileCardStatuses}>
-                    <Badge type="payment" value={t.paymentStatus}/>
-                    <Badge type="payout" value={t.payoutStatus}/>
-                  </div>
-                  <div className={styles.mobileCardBreakdown}>
-                    <span className={styles.mobileCardBreakdownItem}>Platform <strong>{formatPHP(commission)}</strong></span>
-                    <span className={styles.mobileCardBreakdownDivider}>·</span>
-                    <span className={styles.mobileCardBreakdownItem}>Seller <strong className={styles.mobileCardEarnings}>{formatPHP(sellerEarnings)}</strong></span>
-                  </div>
-                  <button className={styles.mobileCardDetailsBtn} onClick={() => setSelectedTxn(t)}>View Details</button>
-                </div>
-              )
-            })}
+                )
+              })
+            )}
           </div>
 
           {/* Table — hidden on mobile via CSS */}
           <div className={styles.tableWrap}>
-            <table className={styles.table}>
+            <table className={styles.table} aria-busy={listLoading}>
               <thead>
                 <tr>
                   <th className={styles.checkboxCell}>
                     <input
                       type="checkbox"
                       className={styles.rowCheckbox}
+                      disabled={listLoading || paginatedRows.length === 0}
                       checked={paginatedRows.length > 0 && paginatedRows.every(t => selectedRows.has(t.id))}
                       onChange={e => {
                         setSelectedRows(prev => {
@@ -1377,20 +1937,53 @@ export default function AdminPayoutsPage() {
                   <th>Service</th>
                   <th>Buyer</th>
                   <th>Payment</th>
-                  <th>Payout</th>
-                  <th className={styles.thSortable}>Date</th>
+                  <th>Escrow</th>
+                  <th className={styles.thDateHead} aria-sort={dateSortDesc ? 'descending' : 'ascending'}>
+                    <button
+                      type="button"
+                      className={styles.dateSortHeaderBtn}
+                      onClick={toggleDateSort}
+                      disabled={listLoading}
+                      title={
+                        dateSortDesc
+                          ? 'Newest first · click for oldest first'
+                          : 'Oldest first · click for newest first'
+                      }
+                      aria-label={
+                        dateSortDesc
+                          ? 'Date column: sorted newest first. Activate to sort oldest first.'
+                          : 'Date column: sorted oldest first. Activate to sort newest first.'
+                      }
+                    >
+                      Date
+                      <span className={styles.dateSortHeaderIcon} aria-hidden>
+                        {dateSortDesc ? (
+                          <FiArrowDown className={styles.dateSortHeaderIconSvg} strokeWidth={2.25} />
+                        ) : (
+                          <FiArrowUp className={styles.dateSortHeaderIconSvg} strokeWidth={2.25} />
+                        )}
+                      </span>
+                    </button>
+                  </th>
                   <th>Amount</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
-                {paginatedRows.map(t => {
-                  const rate = getCommissionRate(t.sellerId, commissionSettings)
-                  const { commission, sellerEarnings } = calcAmounts(t.amount, rate)
+                {listLoading ? (
+                  <PayoutsTableSkeletonBody />
+                ) : listError ? (
+                  <tr>
+                    <td colSpan={9} className={styles.expandedTd}>
+                      <p className={styles.emptyTitle}>Could not load payouts</p>
+                      <p className={styles.emptyHint}>{listError}</p>
+                    </td>
+                  </tr>
+                ) : (
+                paginatedRows.map(t => {
                   const isExpanded = expandedRow === t.id
                   return (
                     <React.Fragment key={t.id}>
-                      {/* ── Primary row ── */}
                       <tr
                         key={t.id}
                         className={`${styles.primaryRow} ${isExpanded ? styles.primaryRowOpen : ''}`}
@@ -1412,7 +2005,6 @@ export default function AdminPayoutsPage() {
                         </td>
                         <td>
                           <p className={styles.orderId}>{t.orderId}</p>
-                          <p className={styles.txnId}>{t.id}</p>
                         </td>
                         <td className={styles.serviceCell}>{t.service}</td>
                         <td>
@@ -1428,15 +2020,11 @@ export default function AdminPayoutsPage() {
                         <td>
                           <div className={styles.rowActions}>
                             <button
-                              className={styles.viewBtn}
-                              onClick={() => setSelectedTxn(t)}
-                            >
-                              Details
-                            </button>
-                            <button
+                              type="button"
                               className={`${styles.expandBtn} ${isExpanded ? styles.expandBtnOpen : ''}`}
                               onClick={() => setExpandedRow(isExpanded ? null : t.id)}
-                              title={isExpanded ? 'Collapse' : 'View seller breakdown'}
+                              aria-expanded={isExpanded}
+                              title={isExpanded ? 'Collapse details' : 'Expand details & release payout'}
                             >
                               <svg viewBox="0 0 24 24" fill="none">
                                 <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1446,81 +2034,29 @@ export default function AdminPayoutsPage() {
                         </td>
                       </tr>
 
-                      {/* ── Seller breakdown collapsed panel ── */}
                       {isExpanded && (
                         <tr key={`${t.id}-detail`} className={styles.expandedRow}>
                           <td colSpan={9} className={styles.expandedTd}>
                             <div className={styles.expandedPanel}>
-
-                              {/* Seller info */}
-                              <div className={styles.expandedSection}>
-                                <p className={styles.expandedSectionLabel}>
-                                  <svg viewBox="0 0 24 24" fill="none"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5m14 0h2M5 21H3M9 7h1m-1 4h1m4-4h1m-1 4h1M9 21v-4a1 1 0 011-1h4a1 1 0 011 1v4H9z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                                  Seller
-                                </p>
-                                <p className={styles.expandedSellerName}>{t.sellerName}</p>
-                                <p className={styles.expandedSellerEmail}>{t.sellerEmail}</p>
-                                <p className={styles.expandedSellerPhone}>{t.sellerPhone}</p>
-                              </div>
-
-                              <div className={styles.expandedDivider}/>
-
-                              {/* Commission breakdown */}
-                              <div className={styles.expandedSection}>
-                                <p className={styles.expandedSectionLabel}>
-                                  <svg viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.93V18h-2v-1.07A4.004 4.004 0 018 13h2c0 1.1.9 2 2 2s2-.9 2-2c0-1.1-.9-2-2-2a4 4 0 01-4-4c0-1.86 1.28-3.41 3-3.86V2h2v1.14A4.004 4.004 0 0116 7h-2c0-1.1-.9-2-2-2s-2 .9-2 2 .9 2 2 2a4 4 0 014 4c0 1.86-1.28 3.41-3 3.93z" fill="currentColor"/></svg>
-                                  Commission Breakdown
-                                </p>
-                                <div className={styles.breakdownRows}>
-                                  <div className={styles.breakdownRow}>
-                                    <span>Total Collected</span>
-                                    <strong>{formatPHP(t.amount)}</strong>
-                                  </div>
-                                  <div className={`${styles.breakdownRow} ${styles.breakdownPlatform}`}>
-                                    <span>Platform Fee ({rate}%){commissionSettings.sellers[t.sellerId] !== undefined ? ' · custom' : ''}</span>
-                                    <strong>− {formatPHP(commission)}</strong>
-                                  </div>
-                                  <div className={`${styles.breakdownRow} ${styles.breakdownSeller}`}>
-                                    <span>Seller Earnings</span>
-                                    <strong>{formatPHP(sellerEarnings)}</strong>
-                                  </div>
-                                </div>
-                                {/* Visual split bar */}
-                                <div className={styles.splitBar}>
-                                  <div className={styles.splitBarSegment} style={{width:`${rate}%`, background:'#334155'}} title={`Platform ${rate}%`}/>
-                                  <div className={styles.splitBarSegment} style={{width:`${100-rate}%`, background:'#10b981'}} title={`Seller ${100-rate}%`}/>
-                                </div>
-                              </div>
-
-                              <div className={styles.expandedDivider}/>
-
-                              {/* Payout status */}
-                              <div className={styles.expandedSection}>
-                                <p className={styles.expandedSectionLabel}>
-                                  <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                                  Payout Status
-                                </p>
-                                <div className={styles.payoutStatusRow}>
-                                  <Badge type="payout" value={t.payoutStatus}/>
-                                  {t.payoutReference && (
-                                    <span className={styles.refChip}>Ref: {t.payoutReference}</span>
-                                  )}
-                                  {t.payoutDate && (
-                                    <span className={styles.dateChip}>{t.payoutDate}</span>
-                                  )}
-                                </div>
-                              </div>
-
+                              <ExpandedEscrowDetails
+                                t={t}
+                                commissionSettings={commissionSettings}
+                                releaseOrder={releaseOrder}
+                                holdOrder={holdOrder}
+                                unholdOrder={unholdOrder}
+                                updateOrderCommission={updateOrderCommission}
+                                compactUi={isMobile}
+                              />
                             </div>
                           </td>
                         </tr>
                       )}
                     </React.Fragment>
                   )
-                })}
+                }))}
               </tbody>
             </table>
-            {filtered.length === 0 && (
+            {!listLoading && !listError && transactions.length === 0 && (
               <div className={styles.emptyState}>
                 <p className={styles.emptyTitle}>No transactions found</p>
                 <p className={styles.emptyHint}>Try adjusting your filters or search query</p>
@@ -1530,7 +2066,7 @@ export default function AdminPayoutsPage() {
           </div>
 
           {/* Pagination */}
-          {filtered.length > 0 && (
+          {transactions.length > 0 && (
             <div className={styles.pagination}>
               <div className={styles.paginationControls}>
                 <button
@@ -1566,7 +2102,7 @@ export default function AdminPayoutsPage() {
                 </button>
               </div>
               <p className={styles.paginationInfo}>
-                Showing <strong>{(currentPage - 1) * ROWS_PER_PAGE + 1}–{Math.min(currentPage * ROWS_PER_PAGE, filtered.length)}</strong> of <strong>{filtered.length}</strong> entries
+                Showing <strong>{(currentPage - 1) * ROWS_PER_PAGE + 1}–{Math.min(currentPage * ROWS_PER_PAGE, transactions.length)}</strong> of <strong>{transactions.length}</strong> entries
               </p>
             </div>
           )}
@@ -1575,12 +2111,17 @@ export default function AdminPayoutsPage() {
 
       {/* Tab: Commission Settings */}
       {showCommissions && (
-        <CommissionPanel settings={commissionSettings} onUpdateSettings={setCommissionSettings} transactions={transactions} />
+        <CommissionPanel
+          settings={commissionSettings}
+          onUpdateSettings={setCommissionSettings}
+          transactions={transactions}
+          sellersList={sellerOptions}
+        />
       )}
 
       {/* Tab: Seller Earnings */}
       {showSellerEarnings && (
-        <SellerEarningsPanel transactions={transactions} settings={commissionSettings} />
+        <SellerEarningsPanel transactions={transactions} />
       )}
       </div>
 
@@ -1661,8 +2202,8 @@ export default function AdminPayoutsPage() {
               </div>
 
               <div className={styles.mobileFilterRow}>
-                <span className={styles.mobileFilterLabel}>Payout Status</span>
-                <div className={styles.mobileChoiceGrid} role="radiogroup" aria-label="Payout status">
+                <span className={styles.mobileFilterLabel}>Escrow status</span>
+                <div className={styles.mobileChoiceGrid} role="radiogroup" aria-label="Escrow status">
                   {[
                     { value: 'all', label: 'All', accent: 'slate' },
                     ...Object.entries(PAYOUT_STATUS_META).map(([k, v]) => ({ value: k, label: v.label, accent: v.color })),
@@ -1692,7 +2233,7 @@ export default function AdminPayoutsPage() {
               <div className={styles.mobileFilterRow}>
                 <span className={styles.mobileFilterLabel}>Seller</span>
                 <div className={styles.mobileChoiceGrid} role="radiogroup" aria-label="Seller">
-                  {[{ id: 'all', name: 'All' }, ...SELLERS].map((s) => {
+                  {[{ id: 'all', name: 'All' }, ...sellerOptions].map((s) => {
                     const value = s.id
                     const active = filterSeller === value
                     const isDefault = value === 'all'
@@ -1765,18 +2306,51 @@ export default function AdminPayoutsPage() {
               </button>
             </div>
           </div>
+
+          {mobileDetailTxn && (
+            <>
+              <div
+                className={styles.mobileTxnDetailBackdrop}
+                onClick={() => setMobileDetailModalId(null)}
+                aria-hidden
+              />
+              <div
+                id="payoutsMobileTxnDetail"
+                className={styles.mobileTxnDetailSheet}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="payouts-mobile-txn-detail-title"
+              >
+                <div className={styles.mobileTxnDetailHandle} aria-hidden />
+                <div className={styles.mobileTxnDetailHeader}>
+                  <h2 id="payouts-mobile-txn-detail-title" className={styles.mobileTxnDetailTitle}>
+                    {mobileDetailTxn.orderId || 'Order'}
+                  </h2>
+                  <button
+                    type="button"
+                    className={styles.mobileFilterClose}
+                    onClick={() => setMobileDetailModalId(null)}
+                    aria-label="Close order details"
+                  >
+                    <Icon.Close />
+                  </button>
+                </div>
+                <div className={styles.mobileTxnDetailBody}>
+                  <MobileTxnDetailSheetContent
+                    t={mobileDetailTxn}
+                    commissionSettings={commissionSettings}
+                    releaseOrder={releaseOrder}
+                    holdOrder={holdOrder}
+                    unholdOrder={unholdOrder}
+                    updateOrderCommission={updateOrderCommission}
+                  />
+                </div>
+              </div>
+            </>
+          )}
         </>
       )}
 
-      {/* Modal */}
-      {selectedTxn && (
-        <TransactionModal
-          txn={selectedTxn}
-          settings={commissionSettings}
-          onClose={() => setSelectedTxn(null)}
-          onUpdatePayout={updatePayout}
-        />
-      )}
     </div>
   )
 }

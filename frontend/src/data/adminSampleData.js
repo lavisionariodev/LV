@@ -1,8 +1,14 @@
-// Centralized admin mock data for the Lavisionario admin portal.
-// Pure data + small helper functions so we can swap this for API-backed data later
-// without changing UI components that still import from here.
-
-// Site content lives in `site_content` (see @/lib/siteContent/mapping.js for defaults).
+/**
+ * Centralized admin mock/sample data for the Lavisionario admin portal.
+ * Pure data + small helpers until corresponding screens are wired to the API.
+ *
+ * Does **not** include payouts / escrow / live dashboard metrics — use `/api/admin/payouts`,
+ * `/api/admin/metrics`, DB tables. Help center copy lives under `app/admin/help/helpContent.js`.
+ *
+ * Still here (mock): disputes list, seller commission preview helper, notifications sample rows.
+ *
+ * Site content defaults: `@/lib/siteContent/mapping.js`.
+ */
 
 // --- Commission (Kita ni LV) ---
 // One default rule for the whole platform + optional per-seller overrides.
@@ -158,55 +164,6 @@ export function countDisputesNeedingAdminAttention() {
   return disputes.filter((d) => d.status === 'open' || d.status === 'under_review').length
 }
 
-// --- Dashboard aggregates (mock stats + charts; admin dashboard may override with live data) ---
-
-export const dashboard = {
-  stats: {
-    totalSellers: 4,
-    totalBuyers: 4,
-    transactionsLast30Days: 4,
-    openDisputes: disputes.filter((d) => d.status === 'open').length,
-  },
-  revenueByDay: [
-    { date: '2025-02-18', total: 45000 },
-    { date: '2025-02-19', total: 52000 },
-    { date: '2025-02-20', total: 38000 },
-    { date: '2025-02-21', total: 61000 },
-    { date: '2025-02-22', total: 74000 },
-    { date: '2025-02-23', total: 55000 },
-    { date: '2025-02-24', total: 68000 },
-  ],
-  revenueByCategory: [
-    { name: 'Memorial Packages', value: 180000 },
-    { name: 'Flowers & Add-ons', value: 65000 },
-    { name: 'Transport & Logistics', value: 42000 },
-    { name: 'Documentation', value: 28000 },
-  ],
-  recentActivity: [
-    {
-      id: 'RA-001',
-      date: 'Today',
-      type: 'Seller registration',
-      detail: 'Peaceful Rest Funeral Home requested verification.',
-      status: 'Pending review',
-    },
-    {
-      id: 'RA-002',
-      date: 'Yesterday',
-      type: 'Transaction review',
-      detail: 'TXN-002 manually reviewed and approved.',
-      status: 'Resolved',
-    },
-    {
-      id: 'RA-003',
-      date: 'Feb 20',
-      type: 'Dispute opened',
-      detail: 'New dispute DSP-002 regarding refund request.',
-      status: 'Open',
-    },
-  ],
-}
-
 export function getDisputeById(id) {
   return disputes.find((d) => d.id === id) || null
 }
@@ -224,214 +181,6 @@ export function getEffectiveCommissionForSeller(sellerId) {
     ruleId: override ? override.id : commission.defaultRule.id,
   }
 }
-
-// --- Admin Payouts page (/admin/payouts) — mock listings + generator ---
-// Distinct from `commission` above (dashboard/settings model).
-
-export const PAYOUTS_PAGE_SELLERS = [
-  { id: 's1', name: 'Heaven Memorial Services', email: 'admin@heavenmemorial.ph', phone: '09171234567' },
-  { id: 's2', name: 'Grace Funeral Services', email: 'accounts@gracefuneral.ph', phone: '09281234567' },
-  { id: 's3', name: 'Eternal Rest Chapel', email: 'billing@eternalrest.ph', phone: '09391234567' },
-  { id: 's4', name: 'Serenity Funeral Home', email: 'finance@serenityfh.ph', phone: '09501234567' },
-]
-
-export const PAYOUTS_PAGE_BUYERS = [
-  { id: 'b1', name: 'Maria Santos', email: 'maria.santos@gmail.com', phone: '09171112222' },
-  { id: 'b2', name: 'Jose Reyes', email: 'jose.reyes@yahoo.com', phone: '09282223333' },
-  { id: 'b3', name: 'Ana Cruz', email: 'ana.cruz@outlook.com', phone: '09393334444' },
-  { id: 'b4', name: 'Pedro Dela Cruz', email: 'pedro.dc@gmail.com', phone: '09504445555' },
-  { id: 'b5', name: 'Lina Gomez', email: 'lina.gomez@gmail.com', phone: '09165556666' },
-  { id: 'b6', name: 'Ricardo Lim', email: 'r.lim@business.com', phone: '09276667777' },
-]
-
-export const PAYOUTS_PAGE_SERVICES = [
-  'Complete Funeral Package – Gold',
-  'Basic Cremation Package',
-  'Traditional Burial – Standard',
-  'Memorial Service Package',
-  'Embalming & Viewing Package',
-  'Premium Chapel Service',
-  'Eco-Friendly Green Burial',
-  'Full Service Cremation – Premium',
-]
-
-export const PAYOUTS_PAGE_PAYMENT_METHODS = ['GCash', 'Maya', 'Bank Transfer', 'Credit Card', 'Cash']
-
-export function generatePayoutsPageSampleTransactions() {
-  const txns = []
-  const now = new Date()
-  for (let i = 0; i < 32; i++) {
-    const seller = PAYOUTS_PAGE_SELLERS[i % PAYOUTS_PAGE_SELLERS.length]
-    const buyer = PAYOUTS_PAGE_BUYERS[i % PAYOUTS_PAGE_BUYERS.length]
-    const amount = [15000, 22500, 35000, 48000, 12000, 28000, 55000, 18500][i % 8]
-    const paymentStatuses = ['paid', 'paid', 'paid', 'pending', 'refunded']
-    const payoutStatuses = ['pending', 'processing', 'paid', 'on_hold', 'refunded']
-    const paymentStatus = paymentStatuses[i % paymentStatuses.length]
-    const payoutStatus = payoutStatuses[i % payoutStatuses.length]
-    const daysAgo = i * 3
-    const date = new Date(now)
-    date.setDate(date.getDate() - daysAgo)
-
-    txns.push({
-      id: `TXN-${String(10000 + i).padStart(5, '0')}`,
-      orderId: `ORD-${String(20000 + i).padStart(5, '0')}`,
-      sellerId: seller.id,
-      sellerName: seller.name,
-      sellerEmail: seller.email,
-      sellerPhone: seller.phone,
-      buyerId: buyer.id,
-      buyerName: buyer.name,
-      buyerEmail: buyer.email,
-      buyerPhone: buyer.phone,
-      service: PAYOUTS_PAGE_SERVICES[i % PAYOUTS_PAGE_SERVICES.length],
-      amount,
-      paymentMethod: PAYOUTS_PAGE_PAYMENT_METHODS[i % PAYOUTS_PAGE_PAYMENT_METHODS.length],
-      paymentStatus,
-      payoutStatus,
-      payoutReference: payoutStatus === 'paid' ? `REF-${String(30000 + i).padStart(6, '0')}` : '',
-      payoutDate: payoutStatus === 'paid' ? date.toISOString().split('T')[0] : '',
-      date: date.toISOString().split('T')[0],
-      dateObj: date,
-    })
-  }
-  return txns
-}
-
-export const PAYOUTS_PAGE_INITIAL_TRANSACTIONS = generatePayoutsPageSampleTransactions()
-
-export const PAYOUTS_PAGE_INITIAL_COMMISSION_SETTINGS = {
-  global: 10,
-  sellers: {
-    s1: 12,
-    s2: 8,
-  },
-}
-
-export function generatePayoutsPageSampleChangeLog(nowTs = Date.now()) {
-  return [
-    { id: 1, type: 'global', label: 'Global rate', from: 10, to: 10, ts: nowTs - 3600000 * 24 },
-    { id: 2, type: 'seller', label: 'Heaven Memorial Services', from: 10, to: 12, ts: nowTs - 3600000 * 12 },
-    { id: 3, type: 'seller', label: 'Grace Funeral Services', from: 10, to: 8, ts: nowTs - 3600000 * 2 },
-  ]
-}
-
-// --- Help center (/admin/help) — static copy + topic metadata (icons resolved in page) ---
-
-export const helpCenterTopics = [
-  {
-    iconKey: 'LuUserCheck',
-    title: 'Seller approvals',
-    desc: 'Verify sellers, approve or reject, and understand impact.',
-    bullets: [
-      'What to check before approval',
-      'What happens after approval or rejection',
-      'High-risk seller red flags',
-      'Submitted listings are listed under Admin → Listings for review',
-    ],
-  },
-  {
-    iconKey: 'LuScale',
-    title: 'Disputes and refunds',
-    desc: 'Resolve disputes, refunds, and fraud cases safely.',
-    bullets: [
-      'Dispute flow and statuses',
-      'When to freeze funds',
-      'When to escalate or ban',
-    ],
-  },
-  {
-    iconKey: 'LuShield',
-    title: 'Policy enforcement',
-    desc: 'Handle violations and prohibited items consistently.',
-    bullets: [
-      'Violation levels and penalties',
-      'Repeat offender handling',
-      'Content takedown guidelines',
-    ],
-  },
-  {
-    iconKey: 'LuChartBar',
-    title: 'Dashboard metrics',
-    desc: 'Know what to watch and what it means for the business.',
-    bullets: [
-      'GMV, conversion, refund rate',
-      'Seller health and retention',
-      'Fraud signals and spikes',
-    ],
-  },
-]
-
-export const helpCenterFaqs = [
-  {
-    q: 'Where can I see what sellers have listed on the shop?',
-    a: 'Open Listings in the admin sidebar (or Quick actions → View Listings on the dashboard). Active listings appear on the public shop; drafts do not. Ensure database migration 038 is applied so admins can read seller_listings.',
-  },
-  {
-    q: 'Why are changes not showing in the live platform?',
-    a: 'Most updates require approval or publishing. Check if there is a pending submission, scheduled publish time, or blocked content due to policy.',
-  },
-  {
-    q: 'When should I reject a seller application?',
-    a: 'Reject when identity or documents fail verification, the business profile is inconsistent, there are repeated compliance issues, or the category is high-risk without strong proof.',
-  },
-  {
-    q: 'When should I freeze funds during disputes?',
-    a: 'Freeze funds when fraud is suspected, there is a high-value claim, or multiple complaints indicate a pattern. Release only after resolution or verified evidence.',
-  },
-  {
-    q: 'When is a permanent ban appropriate?',
-    a: 'Use permanent bans for repeated fraud, prohibited items, chargeback abuse patterns, or serious policy violations that create customer harm.',
-  },
-  {
-    q: 'What should I do if disputes spike suddenly?',
-    a: 'Treat it as a risk event. Review top categories, top sellers involved, and refund rate trend. If fraud is suspected, freeze payouts for impacted sellers and escalate to operations or security.',
-  },
-]
-
-export const helpCenterPlaybooks = [
-  {
-    title: 'Approve high-risk sellers',
-    steps: [
-      'Require stronger documentation and proof of inventory source.',
-      'Limit category access initially, then expand after clean history.',
-      'Monitor refund and dispute rate for the first 14 days.',
-    ],
-  },
-  {
-    title: 'Handle viral complaints',
-    steps: [
-      'Confirm facts first: order IDs, timestamps, and evidence.',
-      'Pause risky actions: freeze payouts if fraud is possible.',
-      'Publish a clear internal resolution note for the support team.',
-    ],
-  },
-  {
-    title: 'Respond to security incidents',
-    steps: [
-      'Lock affected accounts and rotate admin credentials.',
-      'Review audit logs for access anomalies and bulk actions.',
-      'Escalate to security and document actions taken.',
-    ],
-  },
-]
-
-export const helpCenterEscalationContacts = [
-  {
-    title: 'Operations',
-    description: 'Policy cases, seller investigations, dispute escalation.',
-    email: 'ops@yourcompany.com',
-  },
-  {
-    title: 'Security',
-    description: 'Account breach, fraud spikes, suspicious admin actions.',
-    email: 'security@yourcompany.com',
-  },
-  {
-    title: 'Legal',
-    description: 'Chargebacks, regulatory concerns, sensitive takedowns.',
-    email: 'legal@yourcompany.com',
-  },
-]
 
 // --- Notifications (/admin/notifications) — mock rows (icons resolved in page via iconKey) ---
 
@@ -499,8 +248,8 @@ export const notificationsPageSampleRows = [
   {
     id: 7,
     type: 'alert',
-    title: 'Payout flagged',
-    message: 'Payout #PP-2041 has been flagged for manual review due to unusual activity.',
+    title: 'Escrow note',
+    message: 'An escrow row was flagged for manual review due to unusual activity.',
     time: '3 days ago',
     read: true,
     iconKey: 'TbAlertTriangle',

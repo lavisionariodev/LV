@@ -83,10 +83,11 @@
     transition: background 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
   }
 
+  /* Neutral active pill so it doesn't compete with approvals' green summary strip */
   .listingsMobileSwitchLinkActive {
-    background: #102820;
-    color: #ffffff;
-    box-shadow: 0 4px 14px rgba(2, 6, 23, 0.12);
+    background: #ffffff;
+    color: #0f172a;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.06);
   }
 
   .listingsMobileSwitchLink:active {
@@ -212,6 +213,14 @@
   gap: 8px;
 }
 
+.mobileActivePillsRow {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
 .mobileActivePill {
   display: inline-flex;
   align-items: center;
@@ -223,7 +232,7 @@
   font-size: 12px;
   font-weight: 600;
   color: #475569;
-  align-self: flex-start;
+  align-self: auto;
 }
 
 .mobileActivePillLabel {

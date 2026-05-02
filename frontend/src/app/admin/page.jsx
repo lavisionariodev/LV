@@ -1,17 +1,17 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import styles from './admin.module.css'
-import { dashboard, disputes, PAYOUTS_PAGE_INITIAL_TRANSACTIONS, PAYOUTS_PAGE_INITIAL_COMMISSION_SETTINGS } from '@/data/adminSampleData'
+import { countDisputesNeedingAdminAttention } from '@/data/adminSampleData'
 import { formatCount, formatPHPMobile } from '@/utils/formatCount'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
-import { listSellersForAdmin, searchSellersForAdmin } from '@/lib/sellers/client'
+import { searchSellersForAdmin } from '@/lib/sellers/client'
 import { listSellerListingsForAdmin } from '@/lib/seller-listings/client'
 import { hasPendingSellerChanges } from '@/lib/seller-listings/pendingChanges'
-import { calcAmounts, formatPHP, getCommissionRate } from '@/utils/adminPayouts'
+import { formatPHP } from '@/utils/adminPayouts'
 import {
   AreaChart,
   Area,
@@ -36,24 +36,24 @@ const NAV_ACTIONS = [
 
 const MOBILE_STAT_CARDS = [
   {
-    id: 'platformRevenue',
-    title: 'Revenue',
-    value: (metrics) => metrics.platformRevenue30d,
-    subtitle: 'Last 30 days',
-    icon: TbCreditCard,
-    href: '/admin/payouts',
-    actionLabel: 'View',
-    format: 'php',
-  },
-  {
     id: 'pendingPayouts',
-    title: 'Pending payouts',
+    title: 'Pending release',
     value: (metrics) => metrics.pendingPayoutAmt,
-    subtitle: 'Pending/processing/on-hold',
+    subtitle: 'Escrow pending release · on hold',
     icon: TbCreditCard,
     href: '/admin/payouts',
     actionLabel: 'Review',
     format: 'php',
+  },
+  {
+    id: 'activeSellers',
+    title: 'Sellers',
+    value: (metrics) => metrics.activeSellerCount,
+    subtitle: 'Active sellers',
+    icon: LuUserCheck,
+    href: '/admin/sellers',
+    actionLabel: 'View',
+    format: 'count',
   },
   {
     id: 'disputesAttention',
@@ -77,9 +77,20 @@ const MOBILE_STAT_CARDS = [
   },
 ]
 
+function utcLast7DaysSeriesZeros() {
+  const out = []
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date()
+    d.setUTCHours(0, 0, 0, 0)
+    d.setUTCDate(d.getUTCDate() - i)
+    out.push({ date: d.toISOString().slice(0, 10), total: 0 })
+  }
+  return out
+}
+
 function formatShortDate(dateStr) {
-  const d = new Date(dateStr)
-  return `${d.getMonth() + 1}/${d.getDate()}`
+  const d = new Date(`${String(dateStr)}T12:00:00Z`)
+  return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`
 }
 
 function getStatusDotColor(status) {
@@ -102,49 +113,51 @@ export default function AdminDashboardPage() {
   const [sellerResults, setSellerResults] = useState([])
   const [sellerLoading, setSellerLoading] = useState(false)
   const [sellerOpen, setSellerOpen] = useState(false)
-  const [activeSellerCount, setActiveSellerCount] = useState(dashboard.stats.totalSellers)
+  const [activeSellerCount, setActiveSellerCount] = useState(0)
   const [listingsPendingReviewCount, setListingsPendingReviewCount] = useState(0)
   const searchWrapRef = useRef(null)
   const searchInputRef = useRef(null)
 
-  const payoutMetrics = (() => {
-    // Use the same computation as /admin/payouts until a live API exists.
-    // Keeps the dashboard aligned with payouts UI and avoids duplicating a new data layer right now.
-    const now = Date.now()
-    const cutoff30d = now - 30 * 24 * 60 * 60 * 1000
-    let platformRevenue30d = 0
-    let pendingPayoutAmt = 0
+  const [payoutMetrics, setPayoutMetrics] = useState({
+    platformRevenue30d: 0,
+    pendingPayoutAmt: 0,
+  })
 
-    for (const t of PAYOUTS_PAGE_INITIAL_TRANSACTIONS) {
-      if (!t || t.paymentStatus !== 'paid') continue
+  /** Commission from released escrows by UTC day (7 days); filled from `/api/admin/metrics`. */
+  const [commissionChartSeries, setCommissionChartSeries] = useState(() => utcLast7DaysSeriesZeros())
+  const [recentActivityRows, setRecentActivityRows] = useState([])
 
-      const ts =
-        t.dateObj instanceof Date
-          ? t.dateObj.getTime()
-          : t.date
-            ? new Date(`${t.date}T12:00:00`).getTime()
-            : NaN
-
-      if (Number.isFinite(ts) && ts >= cutoff30d) {
-        const rate = getCommissionRate(t.sellerId, PAYOUTS_PAGE_INITIAL_COMMISSION_SETTINGS)
-        const { commission, sellerEarnings } = calcAmounts(t.amount, rate)
-        platformRevenue30d += commission
-
-        const ps = String(t.payoutStatus || '').toLowerCase()
-        if (ps === 'pending' || ps === 'processing' || ps === 'on_hold') {
-          pendingPayoutAmt += sellerEarnings
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      try {
+        const res = await fetch('/api/admin/metrics', { credentials: 'include' })
+        const body = await res.json().catch(() => null)
+        if (cancelled || !res.ok || !body?.payoutSummary) {
+          return
         }
+        setPayoutMetrics({
+          platformRevenue30d: Number(body.payoutSummary.platformRevenue30d) || 0,
+          pendingPayoutAmt: Number(body.payoutSummary.pendingPayoutAmt) || 0,
+        })
+        setActiveSellerCount(Number(body.sellersActive) || 0)
+        if (Array.isArray(body.dailyReleasedCommission) && body.dailyReleasedCommission.length > 0) {
+          setCommissionChartSeries(body.dailyReleasedCommission)
+        }
+        if (Array.isArray(body.recentActivity))
+          setRecentActivityRows(body.recentActivity.slice(0, 4))
+      } catch {
+        // keep defaults
       }
     }
-
-    return { platformRevenue30d, pendingPayoutAmt }
-  })()
-
-  const disputesNeedingAttention = useMemo(() => {
-    return (Array.isArray(disputes) ? disputes : []).filter(
-      (d) => d?.status === 'open' || d?.status === 'under_review',
-    ).length
+    load()
+    return () => {
+      cancelled = true
+    }
   }, [])
+
+  /** Mock dispute queue count (matches sidebar badge); swap for API later. */
+  const disputesNeedingAttention = countDisputesNeedingAdminAttention()
 
   useEffect(() => {
     let cancelled = false
@@ -160,26 +173,6 @@ export default function AdminDashboardPage() {
       }
     }
     load()
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  useEffect(() => {
-    let cancelled = false
-    const loadActiveSellers = async () => {
-      try {
-        const sellers = await listSellersForAdmin()
-        if (cancelled) return
-        const activeCount = Array.isArray(sellers)
-          ? sellers.filter((s) => String(s?.status || '').toLowerCase() === 'active').length
-          : dashboard.stats.totalSellers
-        setActiveSellerCount(activeCount)
-      } catch {
-        if (!cancelled) setActiveSellerCount(dashboard.stats.totalSellers)
-      }
-    }
-    loadActiveSellers()
     return () => {
       cancelled = true
     }
@@ -310,15 +303,15 @@ export default function AdminDashboardPage() {
           {/* Revenue by day — Area chart */}
           <div className={`${styles.panel} ${styles.revenueOverviewPanel}`} style={{ display: 'flex', flexDirection: 'column' }}>
             <div className={styles.panelHead}>
-              <p className={styles.panelTitle}>Revenue overview (sample data)</p>
+              <p className={styles.panelTitle}>Platform commission</p>
             </div>
             <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: 14, color: '#374151' }}>
-              Last 7 days
+              Last 7 days · released escrows (UTC day)
             </p>
             <div style={{ flex: 1, minHeight: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
-                data={dashboard.revenueByDay}
+                data={commissionChartSeries}
                 margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
               >
                 <defs>
@@ -339,7 +332,7 @@ export default function AdminDashboardPage() {
                   width={44}
                 />
                 <Tooltip
-                  formatter={(value) => [`₱ ${Number(value).toLocaleString()}`, 'Revenue']}
+                  formatter={(value) => [`₱ ${Number(value).toLocaleString()}`, 'Commission']}
                   labelFormatter={(label) => `Date: ${label}`}
                   contentStyle={{ fontSize: 12, borderRadius: 8 }}
                 />
@@ -361,7 +354,7 @@ export default function AdminDashboardPage() {
           <div className={styles.statCard}>
             <div className={styles.statCardTop}>
               <p className={styles.statLabel}>Platform revenue</p>
-              <Link href="/admin/analytics" className={styles.statCardArrow} aria-label="View platform revenue">
+              <Link href="/admin/payouts" className={styles.statCardArrow} aria-label="View platform revenue">
                 <MdArrowOutward />
               </Link>
             </div>
@@ -376,8 +369,8 @@ export default function AdminDashboardPage() {
 
           <div className={styles.statCard}>
             <div className={styles.statCardTop}>
-              <p className={styles.statLabel}>Pending payouts</p>
-              <Link href="/admin/payouts" className={styles.statCardArrow} aria-label="View pending payouts">
+              <p className={styles.statLabel}>Pending release</p>
+              <Link href="/admin/payouts?tab=transactions&payout=escrowed" className={styles.statCardArrow} aria-label="View escrows awaiting release">
                 <MdArrowOutward />
               </Link>
             </div>
@@ -385,7 +378,7 @@ export default function AdminDashboardPage() {
               <span className={styles.statCardIcon} aria-hidden="true"><TbCreditCard /></span>
               <div className={styles.statCardText}>
                 <p className={styles.statValue}>{formatPHP(payoutMetrics.pendingPayoutAmt)}</p>
-                <p className={styles.statHint}>Pending/processing/on-hold</p>
+                <p className={styles.statHint}>Escrow awaiting release · on hold</p>
               </div>
             </div>
           </div>
@@ -451,7 +444,7 @@ export default function AdminDashboardPage() {
               {greetingName ? `Welcome back, ${greetingName}` : 'Welcome back'}
             </p>
             <p className={styles.mobileHeroBalanceValue}>
-              {formatCount(activeSellerCount)} Sellers
+              {formatPHPMobile(payoutMetrics.platformRevenue30d)} Revenue
             </p>
             <p className={styles.mobileHeroBalanceSub}>
               <span className={styles.mobileHeroOnlineDot} />
@@ -578,12 +571,14 @@ export default function AdminDashboardPage() {
                 <p className={styles.mobileStatValue}>
                   {format === 'php'
                     ? formatPHPMobile(value({
+                        activeSellerCount,
                         platformRevenue30d: payoutMetrics.platformRevenue30d,
                         pendingPayoutAmt: payoutMetrics.pendingPayoutAmt,
                         disputesNeedingAttention,
                         listingsPendingReview: listingsPendingReviewCount,
                       }))
                     : formatCount(value({
+                        activeSellerCount,
                         platformRevenue30d: payoutMetrics.platformRevenue30d,
                         pendingPayoutAmt: payoutMetrics.pendingPayoutAmt,
                         disputesNeedingAttention,
@@ -607,9 +602,9 @@ export default function AdminDashboardPage() {
         <div className={styles.panel}>
           <div className={styles.panelHead}>
             <p className={styles.panelTitle}>Recent activity</p>
-            <button className={styles.smallBtn} type="button">
+            <Link href="/admin/analytics" className={styles.smallBtn}>
               View all
-            </button>
+            </Link>
           </div>
 
           <div className={styles.table}>
@@ -619,24 +614,32 @@ export default function AdminDashboardPage() {
               <span>Status</span>
             </div>
 
-            {dashboard.recentActivity.map((item) => (
-              <div className={styles.row} key={item.id}>
-                <span>{item.date}</span>
-                <span>{item.type}</span>
-                <span className={styles.statusLabel}>
-                  <span
-                    className={styles.statusDot}
-                    style={{ backgroundColor: getStatusDotColor(item.status) }}
-                  />
-                  {item.status}
+            {recentActivityRows.length === 0 ? (
+              <div className={styles.row}>
+                <span style={{ gridColumn: '1 / -1', color: '#64748b', fontSize: 13 }}>
+                  No recent paid orders yet.
                 </span>
               </div>
-            ))}
+            ) : (
+              recentActivityRows.map((item) => (
+                <div className={styles.row} key={item.id}>
+                  <span>{item.date}</span>
+                  <span>{item.type}</span>
+                  <span className={styles.statusLabel}>
+                    <span
+                      className={styles.statusDot}
+                      style={{ backgroundColor: getStatusDotColor(item.status) }}
+                    />
+                    {item.status}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
         <div className={styles.panel}>
-          <div className={styles.panelHead}>
+          <div className={`${styles.panelHead} ${styles.panelHeadQuickActions}`}>
             <p className={styles.panelTitle}>Quick actions</p>
           </div>
 
@@ -671,19 +674,27 @@ export default function AdminDashboardPage() {
               <span>Status</span>
             </div>
 
-            {dashboard.recentActivity.map((item) => (
-              <div className={styles.row} key={item.id}>
-                <span>{item.date}</span>
-                <span>{item.type}</span>
-                <span className={styles.statusLabel}>
-                  <span
-                    className={styles.statusDot}
-                    style={{ backgroundColor: getStatusDotColor(item.status) }}
-                  />
-                  {item.status}
+            {recentActivityRows.length === 0 ? (
+              <div className={styles.row}>
+                <span style={{ gridColumn: '1 / -1', color: '#64748b', fontSize: 13 }}>
+                  No recent paid orders yet.
                 </span>
               </div>
-            ))}
+            ) : (
+              recentActivityRows.map((item) => (
+                <div className={styles.row} key={item.id}>
+                  <span>{item.date}</span>
+                  <span>{item.type}</span>
+                  <span className={styles.statusLabel}>
+                    <span
+                      className={styles.statusDot}
+                      style={{ backgroundColor: getStatusDotColor(item.status) }}
+                    />
+                    {item.status}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </section>
