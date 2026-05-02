@@ -1169,6 +1169,20 @@ a.ctaPrimary {
   position: relative;
 }
 
+.finalCTA::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(16, 40, 32, 0.45);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.finalCTA > * {
+  position: relative;
+  z-index: 1;
+}
+
 .ctaContent {
   max-width: 800px;
   margin: 0 auto;
