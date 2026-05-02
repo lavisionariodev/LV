@@ -245,3 +245,77 @@
 .footerBtnPrimary:hover {
   opacity: 0.85;
 }
+
+/* ─── Mobile Scroll Hint ──────────────────────────────────── */
+.tableWrapper {
+  position: relative;
+}
+
+.scrollHint {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .scrollHint {
+    display: flex;
+    justify-content: flex-end;
+    padding: 7px 14px 0;
+    animation: fadeOutHint 3s ease 2s forwards;
+  }
+
+  .scrollHintInner {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-family: "Lato", sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    color: #BBBBBB;
+    text-transform: uppercase;
+  }
+
+  .scrollHintInner svg {
+    animation: nudgeArrow 1.2s ease-in-out infinite;
+  }
+}
+
+@keyframes nudgeArrow {
+  0%, 100% { transform: translateX(0); }
+  50%       { transform: translateX(4px); }
+}
+
+@keyframes fadeOutHint {
+  0%   { opacity: 1; }
+  100% { opacity: 0; pointer-events: none; }
+}
+
+/* ─── Mobile Highlights Fix ──────────────────────────────── */
+@media (max-width: 640px) {
+  .compareHighlights {
+    flex-direction: column;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .compareHighlights :global([class*="compareHighlight"]) {
+    border-right: none !important;
+    border-bottom: 1px solid #D8D8D8 !important;
+    padding: 10px 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .compareHighlights :global([class*="compareHighlight"]):last-child {
+    border-bottom: none !important;
+  }
+
+  .compareHighlights :global([class*="highlightLabel"]) {
+    margin: 0 !important;
+    white-space: nowrap;
+  }
+
+  .compareHighlights :global([class*="highlightValue"]) {
+    font-size: 13px !important;
+  }
+}
