@@ -299,7 +299,7 @@ function PayoutsTableSkeletonBody() {
   )
 }
 
-// ─── Escrow release (expanded row / mobile expanded) ─────────────────────────
+// ─── Escrow release (desktop expanded row + mobile sheet) ────────────────────
 
 function EscrowReleasePanel({
   t,

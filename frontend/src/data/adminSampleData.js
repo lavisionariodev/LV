@@ -1,8 +1,15 @@
-// Centralized admin mock data for the Lavisionario admin portal.
-// Pure data + small helper functions so we can swap this for API-backed data later
-// without changing UI components that still import from here.
-
-// Site content lives in `site_content` (see @/lib/siteContent/mapping.js for defaults).
+/**
+ * Centralized admin mock/sample data for the Lavisionario admin portal.
+ * Pure data + small helpers until corresponding screens are wired to the API.
+ *
+ * Does **not** include payouts / escrow / commission snapshots — those load from:
+ * `/api/admin/payouts`, `platform_billing`, and `order_escrows` (see payouts UI).
+ *
+ * Still here: disputes list, dashboard chart placeholders, seller commission overrides
+ * preview helper, notifications + help center copy.
+ *
+ * Site content defaults: `@/lib/siteContent/mapping.js`.
+ */
 
 // --- Commission (Kita ni LV) ---
 // One default rule for the whole platform + optional per-seller overrides.
@@ -409,8 +416,8 @@ export const notificationsPageSampleRows = [
   {
     id: 7,
     type: 'alert',
-    title: 'Payout flagged',
-    message: 'Payout #PP-2041 has been flagged for manual review due to unusual activity.',
+    title: 'Escrow note',
+    message: 'An escrow row was flagged for manual review due to unusual activity.',
     time: '3 days ago',
     read: true,
     iconKey: 'TbAlertTriangle',

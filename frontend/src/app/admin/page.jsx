@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import styles from './admin.module.css'
-import { dashboard, disputes } from '@/data/adminSampleData'
+import { dashboard, countDisputesNeedingAdminAttention } from '@/data/adminSampleData'
 import { formatCount, formatPHPMobile } from '@/utils/formatCount'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
 import { listSellersForAdmin, searchSellersForAdmin } from '@/lib/sellers/client'
@@ -133,11 +133,8 @@ export default function AdminDashboardPage() {
     }
   }, [])
 
-  const disputesNeedingAttention = useMemo(() => {
-    return (Array.isArray(disputes) ? disputes : []).filter(
-      (d) => d?.status === 'open' || d?.status === 'under_review',
-    ).length
-  }, [])
+  /** Mock dispute queue count (matches sidebar badge); swap for API later. */
+  const disputesNeedingAttention = countDisputesNeedingAdminAttention()
 
   useEffect(() => {
     let cancelled = false
