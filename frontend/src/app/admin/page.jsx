@@ -5,13 +5,13 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import styles from './admin.module.css'
-import { dashboard, disputes, PAYOUTS_PAGE_INITIAL_TRANSACTIONS, PAYOUTS_PAGE_INITIAL_COMMISSION_SETTINGS } from '@/data/adminSampleData'
+import { dashboard, disputes } from '@/data/adminSampleData'
 import { formatCount, formatPHPMobile } from '@/utils/formatCount'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
 import { listSellersForAdmin, searchSellersForAdmin } from '@/lib/sellers/client'
 import { listSellerListingsForAdmin } from '@/lib/seller-listings/client'
 import { hasPendingSellerChanges } from '@/lib/seller-listings/pendingChanges'
-import { calcAmounts, formatPHP, getCommissionRate } from '@/utils/adminPayouts'
+import { formatPHP } from '@/utils/adminPayouts'
 import {
   AreaChart,
   Area,
@@ -37,9 +37,9 @@ const NAV_ACTIONS = [
 const MOBILE_STAT_CARDS = [
   {
     id: 'pendingPayouts',
-    title: 'Pending payouts',
+    title: 'Pending release',
     value: (metrics) => metrics.pendingPayoutAmt,
-    subtitle: 'Pending/processing/on-hold',
+    subtitle: 'Escrow pending release · on hold',
     icon: TbCreditCard,
     href: '/admin/payouts',
     actionLabel: 'Review',
@@ -107,38 +107,31 @@ export default function AdminDashboardPage() {
   const searchWrapRef = useRef(null)
   const searchInputRef = useRef(null)
 
-  const payoutMetrics = (() => {
-    // Use the same computation as /admin/payouts until a live API exists.
-    // Keeps the dashboard aligned with payouts UI and avoids duplicating a new data layer right now.
-    const now = Date.now()
-    const cutoff30d = now - 30 * 24 * 60 * 60 * 1000
-    let platformRevenue30d = 0
-    let pendingPayoutAmt = 0
+  const [payoutMetrics, setPayoutMetrics] = useState({
+    platformRevenue30d: 0,
+    pendingPayoutAmt: 0,
+  })
 
-    for (const t of PAYOUTS_PAGE_INITIAL_TRANSACTIONS) {
-      if (!t || t.paymentStatus !== 'paid') continue
-
-      const ts =
-        t.dateObj instanceof Date
-          ? t.dateObj.getTime()
-          : t.date
-            ? new Date(`${t.date}T12:00:00`).getTime()
-            : NaN
-
-      if (Number.isFinite(ts) && ts >= cutoff30d) {
-        const rate = getCommissionRate(t.sellerId, PAYOUTS_PAGE_INITIAL_COMMISSION_SETTINGS)
-        const { commission, sellerEarnings } = calcAmounts(t.amount, rate)
-        platformRevenue30d += commission
-
-        const ps = String(t.payoutStatus || '').toLowerCase()
-        if (ps === 'pending' || ps === 'processing' || ps === 'on_hold') {
-          pendingPayoutAmt += sellerEarnings
-        }
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      try {
+        const res = await fetch('/api/admin/payouts?summary=1', { credentials: 'include' })
+        const body = await res.json().catch(() => null)
+        if (cancelled || !res.ok || !body?.summary) return
+        setPayoutMetrics({
+          platformRevenue30d: Number(body.summary.platformRevenue30d) || 0,
+          pendingPayoutAmt: Number(body.summary.pendingPayoutAmt) || 0,
+        })
+      } catch {
+        // keep zeros
       }
     }
-
-    return { platformRevenue30d, pendingPayoutAmt }
-  })()
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const disputesNeedingAttention = useMemo(() => {
     return (Array.isArray(disputes) ? disputes : []).filter(
@@ -361,7 +354,7 @@ export default function AdminDashboardPage() {
           <div className={styles.statCard}>
             <div className={styles.statCardTop}>
               <p className={styles.statLabel}>Platform revenue</p>
-              <Link href="/admin/analytics" className={styles.statCardArrow} aria-label="View platform revenue">
+              <Link href="/admin/payouts" className={styles.statCardArrow} aria-label="View platform revenue">
                 <MdArrowOutward />
               </Link>
             </div>
@@ -376,8 +369,8 @@ export default function AdminDashboardPage() {
 
           <div className={styles.statCard}>
             <div className={styles.statCardTop}>
-              <p className={styles.statLabel}>Pending payouts</p>
-              <Link href="/admin/payouts" className={styles.statCardArrow} aria-label="View pending payouts">
+              <p className={styles.statLabel}>Pending release</p>
+              <Link href="/admin/payouts?tab=transactions&payout=escrowed" className={styles.statCardArrow} aria-label="View escrows awaiting release">
                 <MdArrowOutward />
               </Link>
             </div>
@@ -385,7 +378,7 @@ export default function AdminDashboardPage() {
               <span className={styles.statCardIcon} aria-hidden="true"><TbCreditCard /></span>
               <div className={styles.statCardText}>
                 <p className={styles.statValue}>{formatPHP(payoutMetrics.pendingPayoutAmt)}</p>
-                <p className={styles.statHint}>Pending/processing/on-hold</p>
+                <p className={styles.statHint}>Escrow awaiting release · on hold</p>
               </div>
             </div>
           </div>

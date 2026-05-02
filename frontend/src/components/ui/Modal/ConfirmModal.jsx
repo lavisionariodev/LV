@@ -10,14 +10,23 @@ export default function ConfirmModal({
   cancelLabel = 'Cancel',
   onConfirm,
   onCancel,
+  /** When true, buttons are disabled and overlay click does not dismiss (e.g. async submit). */
+  disableActions = false,
+  /** `danger` — red (destructive / caution). `primary` — blue (affirmative proceed). */
+  variant = 'danger',
 }) {
   if (!open) return null
 
   const handleOverlayClick = () => {
+    if (disableActions) return
     onCancel?.()
   }
 
   const stop = (e) => e.stopPropagation()
+
+  const isPrimary = variant === 'primary'
+  const iconCircleClass = `${styles.iconCircle} ${isPrimary ? styles.iconCirclePrimary : styles.iconCircleDanger}`
+  const confirmBtnClass = `${styles.confirmBtn} ${isPrimary ? styles.confirmBtnPrimary : styles.confirmBtnDanger}`
 
   return (
     <div
@@ -28,7 +37,7 @@ export default function ConfirmModal({
     >
       <div className={styles.modal} onClick={stop}>
         <div className={styles.iconWrap} aria-hidden="true">
-          <div className={styles.iconCircle}>!</div>
+          <div className={iconCircleClass}>!</div>
         </div>
 
         <p className={styles.title}>{title}</p>
@@ -39,14 +48,16 @@ export default function ConfirmModal({
             type="button"
             className={styles.cancelBtn}
             onClick={onCancel}
+            disabled={disableActions}
           >
             {cancelLabel}
           </button>
 
           <button
             type="button"
-            className={styles.confirmBtn}
+            className={confirmBtnClass}
             onClick={onConfirm}
+            disabled={disableActions}
           >
             {confirmLabel}
           </button>

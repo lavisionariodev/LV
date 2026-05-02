@@ -21,12 +21,11 @@ export const PAYMENT_STATUS_META = {
   failed:   { label: 'Failed',   color: 'red'   },
 }
 
+/** Escrow / payout lifecycle shown on admin payouts (matches `order_escrows.status`). */
 export const PAYOUT_STATUS_META = {
-  pending:    { label: 'Pending',    color: 'amber'  },
-  processing: { label: 'Processing', color: 'blue'   },
-  paid:       { label: 'Paid',       color: 'green'  },
-  on_hold:    { label: 'On Hold',    color: 'slate'  },
-  refunded:   { label: 'Refunded',   color: 'red'    },
+  escrowed: { label: 'Escrowed', color: 'amber' },
+  on_hold: { label: 'On Hold', color: 'slate' },
+  released: { label: 'Released', color: 'green' },
 }
 
 export function getCommissionRate(sellerId, settings) {
@@ -40,11 +39,24 @@ export function calcAmounts(amount, rate) {
   return { commission, sellerEarnings: amount - commission }
 }
 
+/** Prefer API snapshot fields when present (live escrows). */
+export function getTxnCommissionParts(t, settings) {
+  if (t && t.commission_amount != null && t.net_amount != null && t.commission_rate_percent != null) {
+    return {
+      rate: Number(t.commission_rate_percent),
+      commission: Number(t.commission_amount),
+      sellerEarnings: Number(t.net_amount),
+    }
+  }
+  const rate = getCommissionRate(t.sellerId, settings)
+  const { commission, sellerEarnings } = calcAmounts(t.amount, rate)
+  return { rate, commission, sellerEarnings }
+}
+
 export function exportToCSV(transactions, settings) {
   const headers = ['Order ID','Txn ID','Date','Buyer','Buyer Email','Seller','Service','Total Amount','Commission %','Commission','Seller Earnings','Payment Status','Payout Status','Payout Reference','Payout Date']
   const rows = transactions.map(t => {
-    const rate = getCommissionRate(t.sellerId, settings)
-    const { commission, sellerEarnings } = calcAmounts(t.amount, rate)
+    const { rate, commission, sellerEarnings } = getTxnCommissionParts(t, settings)
     return [t.orderId, t.id, t.date, t.buyerName, t.buyerEmail, t.sellerName, t.service, t.amount, `${rate}%`, commission, sellerEarnings, t.paymentStatus, t.payoutStatus, t.payoutReference, t.payoutDate]
   })
   const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n')
