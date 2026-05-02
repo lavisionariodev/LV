@@ -1,15 +1,145 @@
 'use client'
 
-import Link from 'next/link'
-import Image from 'next/image'
 import { useState, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
-import { formatPhpAmount } from '@/lib/cart/formatPhp'
-import { useCart } from '@/contexts/CartContext'
-import { useAuth } from '@/contexts/AuthContext'
-import { useToast } from '@/contexts/ToastContext'
-import { buildCartPayloadFromListing } from '@/lib/cart/fromListing'
 import styles from './seller-profile.module.css'
+
+// ─── Sample Data ──────────────────────────────────────────────────────────────
+
+const SAMPLE_SELLER = {
+  id: 'seller-001',
+  name: 'Marigold Atelier',
+  handle: 'marigoldatelier',
+  location: 'Makati City, Metro Manila',
+  bio: 'Crafting heirloom-quality floral arrangements and event styling for weddings, celebrations, and intimate gatherings.',
+  avatarUrl: null,
+  bannerUrl: null,
+  badge: 'Top Seller',
+  rating: 4.8,
+  reviewCount: 124,
+  memberSince: 'Jan 2022',
+  responseRate: '98%',
+  turnaround: '2–3 days',
+  specialties: ['Wedding Florals', 'Centrepieces', 'Dried Arrangements', 'Event Styling', 'Bespoke Bouquets'],
+  extendedBio:
+    'Marigold Atelier was founded by florist Clarisse Santos with a vision of bringing garden-fresh beauty into life\'s most meaningful moments. Each arrangement is hand-crafted using sustainably sourced blooms from local Philippine farms. We believe that flowers are not just decoration — they are emotion made tangible.',
+}
+
+const SAMPLE_LISTINGS = [
+  {
+    id: 'lst-001',
+    serviceId: 'svc-florals',
+    name: 'Bridal Bouquet — Garden Style',
+    price: 3800,
+    rating: 4.9,
+    inStock: true,
+    imageUrl: null,
+    createdAt: '2024-11-10',
+  },
+  {
+    id: 'lst-002',
+    serviceId: 'svc-florals',
+    name: 'Reception Centrepiece (Round)',
+    price: 2200,
+    rating: 4.7,
+    inStock: true,
+    imageUrl: null,
+    createdAt: '2024-10-22',
+  },
+  {
+    id: 'lst-003',
+    serviceId: 'svc-florals',
+    name: 'Dried Pampas Arrangement',
+    price: 1500,
+    rating: 4.6,
+    inStock: true,
+    imageUrl: null,
+    createdAt: '2024-09-15',
+  },
+  {
+    id: 'lst-004',
+    serviceId: 'svc-florals',
+    name: 'Flower Crown — Fresh Blooms',
+    price: 950,
+    rating: 4.8,
+    inStock: false,
+    imageUrl: null,
+    createdAt: '2024-08-01',
+  },
+  {
+    id: 'lst-005',
+    serviceId: 'svc-florals',
+    name: 'Ceremony Arch Dressing',
+    price: 12000,
+    rating: 5.0,
+    inStock: true,
+    imageUrl: null,
+    createdAt: '2024-07-20',
+  },
+  {
+    id: 'lst-006',
+    serviceId: 'svc-florals',
+    name: 'Bud Vase Collection (Set of 5)',
+    price: 1800,
+    rating: 4.5,
+    inStock: true,
+    imageUrl: null,
+    createdAt: '2024-06-05',
+  },
+]
+
+const SAMPLE_REVIEWS = [
+  {
+    id: 'rev-001',
+    reviewerName: 'Angela Reyes',
+    reviewerInitials: 'AR',
+    rating: 5,
+    date: 'March 2025',
+    service: 'Bridal Bouquet — Garden Style',
+    text: 'Absolutely stunning work. Clarisse captured exactly the romantic, lush aesthetic I had in mind. My bouquet was the most-photographed part of the whole day!',
+  },
+  {
+    id: 'rev-002',
+    reviewerName: 'Marco dela Cruz',
+    reviewerInitials: 'MD',
+    rating: 5,
+    date: 'February 2025',
+    service: 'Ceremony Arch Dressing',
+    text: 'The arch was breathtaking. Every guest commented on it. Communication was smooth from inquiry to setup. Will definitely book again for our anniversary party.',
+  },
+  {
+    id: 'rev-003',
+    reviewerName: 'Sophia Tan',
+    reviewerInitials: 'ST',
+    rating: 4,
+    date: 'January 2025',
+    service: 'Reception Centrepiece (Round)',
+    text: 'Beautiful centrepieces and very good value. Delivery was slightly delayed but Clarisse kept me updated throughout. Happy with the final result.',
+  },
+  {
+    id: 'rev-004',
+    reviewerName: 'Jerome Villanueva',
+    reviewerInitials: 'JV',
+    rating: 5,
+    date: 'December 2024',
+    service: 'Dried Pampas Arrangement',
+    text: 'Ordered this as a gift and the recipient absolutely loved it. Packaging was secure and the arrangement arrived in perfect shape. 10/10.',
+  },
+  {
+    id: 'rev-005',
+    reviewerName: 'Carmela Bautista',
+    reviewerInitials: 'CB',
+    rating: 5,
+    date: 'November 2024',
+    service: 'Bud Vase Collection (Set of 5)',
+    text: 'Such a charming set! Each vase had its own little character. They look gorgeous on my dining table. Very fast response to all my questions too.',
+  },
+]
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatPhp(amount) {
+  return '₱' + Number(amount).toLocaleString('en-PH', { minimumFractionDigits: 0 })
+}
 
 // ─── Star Helper ──────────────────────────────────────────────────────────────
 
@@ -47,14 +177,16 @@ function PinIcon() {
 /**
  * SellerProfilePage
  *
- * Props:
- *   seller  – { id, name, handle, location, bio, avatarUrl, bannerUrl,
- *               badge, rating, reviewCount, memberSince, responseRate, turnaround,
- *               specialties: string[], extendedBio }
- *   listings – listing objects (same shape as Shop page)
- *   reviews  – [{ id, reviewerName, reviewerInitials, rating, date, service, text }]
+ * Props (all optional — falls back to SAMPLE_* constants when omitted):
+ *   seller   – seller object
+ *   listings – listing array
+ *   reviews  – review array
  */
-export default function SellerProfilePage({ seller, listings = [], reviews = [] }) {
+export default function SellerProfilePage({
+  seller   = SAMPLE_SELLER,
+  listings = SAMPLE_LISTINGS,
+  reviews  = SAMPLE_REVIEWS,
+}) {
   const [activeTab, setActiveTab] = useState('listings')
   const [sortBy, setSortBy] = useState('newest')
   const [currentPage, setCurrentPage] = useState(1)
@@ -65,9 +197,7 @@ export default function SellerProfilePage({ seller, listings = [], reviews = [] 
     if (sortBy === 'price-asc') list.sort((a, b) => a.price - b.price)
     else if (sortBy === 'price-desc') list.sort((a, b) => b.price - a.price)
     else if (sortBy === 'rating') list.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
-    else {
-      list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
-    }
+    else list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
     return list
   }, [listings, sortBy])
 
@@ -77,7 +207,6 @@ export default function SellerProfilePage({ seller, listings = [], reviews = [] 
     return sortedListings.slice(start, start + ITEMS_PER_PAGE)
   }, [sortedListings, currentPage])
 
-  // Review distribution (1–5 stars)
   const distribution = useMemo(() => {
     const dist = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }
     reviews.forEach((r) => { dist[Math.round(r.rating)] = (dist[Math.round(r.rating)] || 0) + 1 })
@@ -95,7 +224,7 @@ export default function SellerProfilePage({ seller, listings = [], reviews = [] 
       {/* ── Banner ── */}
       <div className={styles.banner}>
         {seller?.bannerUrl ? (
-          <Image src={seller.bannerUrl} alt={`${seller.name} banner`} fill className={styles.bannerImg} priority />
+          <img src={seller.bannerUrl} alt={`${seller.name} banner`} className={styles.bannerImg} />
         ) : null}
         <div className={styles.bannerOverlay} />
       </div>
@@ -107,7 +236,7 @@ export default function SellerProfilePage({ seller, listings = [], reviews = [] 
           <div className={styles.avatarWrap}>
             <div className={styles.avatar}>
               {seller?.avatarUrl ? (
-                <Image src={seller.avatarUrl} alt={seller.name} width={80} height={80} className={styles.avatarImg} />
+                <img src={seller.avatarUrl} alt={seller.name} width={80} height={80} className={styles.avatarImg} />
               ) : (
                 (seller?.name || 'S').charAt(0).toUpperCase()
               )}
@@ -125,7 +254,7 @@ export default function SellerProfilePage({ seller, listings = [], reviews = [] 
                 {seller?.badge && (
                   <span className={styles.badgeChip}>{seller.badge}</span>
                 )}
-                <span className={styles.badgeChip + ' ' + styles.verifiedChip}>Verified</span>
+                <span className={`${styles.badgeChip} ${styles.verifiedChip}`}>Verified</span>
               </div>
               <div className={styles.locationRow}>
                 <PinIcon />
@@ -245,7 +374,6 @@ export default function SellerProfilePage({ seller, listings = [], reviews = [] 
                     ))}
                   </div>
 
-                  {/* Pagination */}
                   {totalPages > 1 && (
                     <div className={styles.pagination}>
                       <button
@@ -292,7 +420,6 @@ export default function SellerProfilePage({ seller, listings = [], reviews = [] 
             <div className={styles.tabContent} role="tabpanel">
               {reviews.length > 0 ? (
                 <>
-                  {/* Summary */}
                   <div className={styles.reviewSummary}>
                     <div className={styles.reviewScore}>
                       <div className={styles.reviewScoreNum}>{seller?.rating ?? '—'}</div>
@@ -317,7 +444,6 @@ export default function SellerProfilePage({ seller, listings = [], reviews = [] 
                     </div>
                   </div>
 
-                  {/* Individual reviews */}
                   <div className={styles.reviewList}>
                     {reviews.map((review) => (
                       <div key={review.id} className={styles.reviewCard}>
@@ -352,7 +478,6 @@ export default function SellerProfilePage({ seller, listings = [], reviews = [] 
             <div className={styles.tabContent} role="tabpanel">
               <div className={styles.aboutGrid}>
 
-                {/* Bio */}
                 {seller?.extendedBio && (
                   <div className={`${styles.aboutSection} ${styles.aboutSectionFull}`}>
                     <h2 className={styles.aboutHeading}>About the Seller</h2>
@@ -360,7 +485,6 @@ export default function SellerProfilePage({ seller, listings = [], reviews = [] 
                   </div>
                 )}
 
-                {/* Details */}
                 <div className={styles.aboutSection}>
                   <h2 className={styles.aboutHeading}>Seller Details</h2>
                   <div className={styles.attrTable}>
@@ -387,7 +511,6 @@ export default function SellerProfilePage({ seller, listings = [], reviews = [] 
                   </div>
                 </div>
 
-                {/* Specialties */}
                 {seller?.specialties?.length > 0 && (
                   <div className={styles.aboutSection}>
                     <h2 className={styles.aboutHeading}>Specialties</h2>
@@ -417,58 +540,25 @@ export default function SellerProfilePage({ seller, listings = [], reviews = [] 
 // ─── ListingCard ──────────────────────────────────────────────────────────────
 
 function ListingCard({ listing, styles }) {
-  const { addItem } = useCart()
-  const { user, authLoading, isBuyer } = useAuth()
-  const router = useRouter()
-  const toast = useToast()
   const [adding, setAdding] = useState(false)
 
-  const handleAddToCart = async (e) => {
+  const handleAddToCart = (e) => {
     e.preventDefault()
     e.stopPropagation()
-
-    if (listing.inStock === false) {
-      toast.error('This listing is out of stock')
-      return
-    }
-
-    const pkgOpts = listing.sellerPackageOptions ?? []
-    const defaultPkg = pkgOpts.length > 0 ? pkgOpts[0] : ''
-    const { error: buildErr, payload } = buildCartPayloadFromListing(listing, {
-      quantity: 1,
-      buyerPackage: defaultPkg,
-    })
-
-    if (buildErr || !payload) {
-      toast.error(buildErr || 'Could not add to cart')
-      return
-    }
-
-    const redirectPath = `/shop/${listing.serviceId}?listing=${encodeURIComponent(listing.id)}`
-    if (!user || !isBuyer) {
-      router.push(`/buyer/login?redirect=${encodeURIComponent(redirectPath)}`)
-      return
-    }
-
+    if (listing.inStock === false) return
     setAdding(true)
-    try {
-      const { error } = await addItem(payload)
-      if (error) toast.error(error.message || 'Could not add to cart')
-      else toast.success('Added to cart')
-    } finally {
-      setAdding(false)
-    }
+    // Simulate async cart add
+    setTimeout(() => setAdding(false), 800)
   }
+
+  const href = `/shop/${listing.serviceId}?listing=${encodeURIComponent(listing.id)}`
 
   return (
     <div className={styles.card}>
-      <Link
-        href={`/shop/${listing.serviceId}?listing=${encodeURIComponent(listing.id)}`}
-        className={styles.cardLink}
-      >
+      <a href={href} className={styles.cardLink}>
         <div className={styles.cardImageWrap}>
           {listing.imageUrl || (listing.imageUrls && listing.imageUrls[0]) ? (
-            <Image
+            <img
               src={listing.imageUrl || listing.imageUrls[0]}
               alt={listing.name}
               width={400}
@@ -489,18 +579,18 @@ function ListingCard({ listing, styles }) {
             <h3 className={styles.cardTitle}>{listing.name}</h3>
             <div className={styles.priceBlock}>
               <span className={styles.priceLabel}>From</span>
-              <span className={styles.price}>{formatPhpAmount(listing.price)}</span>
+              <span className={styles.price}>{formatPhp(listing.price)}</span>
             </div>
           </div>
         </div>
-      </Link>
+      </a>
 
       <div className={styles.cardActions}>
         <button
           type="button"
           className={styles.ctaBtn}
           onClick={handleAddToCart}
-          disabled={authLoading || adding || listing.inStock === false}
+          disabled={adding || listing.inStock === false}
           aria-busy={adding}
         >
           <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 5, flexShrink: 0 }}>
