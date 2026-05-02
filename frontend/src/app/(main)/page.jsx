@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import styles from './homepage.module.css'
 
@@ -198,7 +198,7 @@ function HowItWorksSection() {
   )
 }
 
-/* ---------------- PARTNER HIGHLIGHT — infinite carousel ---------------- */
+/* ---------------- PARTNER HIGHLIGHT ---------------- */
 function PartnerHighlightSection() {
   const PARTNERS = [
     {
@@ -258,84 +258,20 @@ function PartnerHighlightSection() {
   ]
 
   const N = PARTNERS.length
-  // virtualIdx always lives in [N, 2N) — the "real" copy in the tripled track
-  // We triple so there's always a full set of cards on both sides for the infinite illusion
-  const [virtualIdx, setVirtualIdx] = useState(N)
-  const [animating, setAnimating] = useState(false)
-  const transitionRef = useRef(false)
-  const autoRef = useRef(null)
-  const pausedRef = useRef(false)
+  const [active, setActive] = useState(1) // start with index 1 so left=0, center=1, right=2
 
-  // activeReal: 0-based index into PARTNERS[]
-  const activeReal = virtualIdx % N
+  const prev = () => setActive(i => (i - 1 + N) % N)
+  const next = () => setActive(i => (i + 1) % N)
 
-  // Triple-cloned track
-  const track = [...PARTNERS, ...PARTNERS, ...PARTNERS]
+  // Returns the partner index for a given slot offset from active (-1, 0, +1)
+  const slotIndex = (offset) => (active + offset + N) % N
 
-  // Card dimensions — must match CSS
-  const CARD_W = 300
-  const CARD_W_CENTER = 320   // center card is rendered slightly wider via scale, but track uses same slot
-  const GAP = 28
-
-  // Pixel offset so the card at `idx` is centered in the viewport
-  // We use a CSS variable --carousel-center set on the viewport to avoid JS layout reads
-  const getTranslate = (idx) =>
-    `calc(50% - ${idx * (CARD_W + GAP) + CARD_W / 2}px)`
-
-  const advance = useCallback((dir) => {
-    if (transitionRef.current) return
-    transitionRef.current = true
-    setAnimating(true)
-    setVirtualIdx(v => v + dir)
-  }, [])
-
-  const handleTransitionEnd = useCallback(() => {
-    transitionRef.current = false
-    setAnimating(false)
-    // Silently snap back to middle copy to keep the illusion infinite
-    setVirtualIdx(v => {
-      if (v >= N * 2) return v - N
-      if (v < N)      return v + N
-      return v
-    })
-  }, [N])
-
-  // Two-phase auto: pause at center (PAUSE_MS), then slide (SLIDE_MS), repeat
-  const PAUSE_MS = 1800
-  const SLIDE_MS  = 650
-
-  const startAuto = useCallback(() => {
-    clearTimeout(autoRef.current)
-    const schedule = () => {
-      autoRef.current = setTimeout(() => {
-        if (!pausedRef.current) advance(1)
-        autoRef.current = setTimeout(schedule, SLIDE_MS)
-      }, PAUSE_MS)
-    }
-    schedule()
-  }, [advance])
-
-  useEffect(() => {
-    startAuto()
-    return () => clearTimeout(autoRef.current)
-  }, [startAuto])
-
-  const onPrev = () => { clearTimeout(autoRef.current); advance(-1); startAuto() }
-  const onNext = () => { clearTimeout(autoRef.current); advance(1);  startAuto() }
-
-  const handleDotClick = (realIdx) => {
-    if (transitionRef.current) return
-    const delta = ((realIdx - activeReal) % N + N) % N
-    if (delta === 0) return
-    // Always go forward to the nearest target for smooth UX
-    clearTimeout(autoRef.current)
-    advance(delta <= N / 2 ? delta : delta - N)
-    startAuto()
-  }
+  const slots = [-1, 0, 1] // left, center, right
 
   return (
     <section className={styles.partnerSection}>
       <div className={styles.inner}>
+
         <div className={styles.partnerHeader}>
           <span className={styles.partnerEyebrow}>Verified Providers</span>
           <h2 className={styles.partnerSectionTitle}>Funeral Homes &amp; Partnerships</h2>
@@ -345,110 +281,75 @@ function PartnerHighlightSection() {
           </p>
         </div>
 
-        {/* Carousel */}
-        <div className={styles.partnerCarouselOuter}>
-          <button
-            className={styles.partnerCarouselArrow}
-            onClick={onPrev}
-            aria-label="Previous partner"
-          >‹</button>
+        <div className={styles.partnerCarouselRow}>
+          {/* Prev Arrow */}
+          <button onClick={prev} aria-label="Previous partner" className={styles.partnerArrowBtn}>‹</button>
 
-          <div
-            className={styles.partnerCarouselViewport}
-            onMouseEnter={() => { pausedRef.current = true }}
-            onMouseLeave={() => { pausedRef.current = false }}
-          >
-            <div
-              className={styles.partnerCarouselTrack}
-              style={{
-                transform: `translateX(${getTranslate(virtualIdx)})`,
-                transition: animating ? `transform ${SLIDE_MS}ms cubic-bezier(0.33, 1, 0.68, 1)` : 'none',
-              }}
-              onTransitionEnd={handleTransitionEnd}
-            >
-              {track.map((partner, i) => {
-                const offset = i - virtualIdx
-                const isCenter   = offset === 0
-                const isAdjacent = Math.abs(offset) === 1
-                const isVisible  = Math.abs(offset) <= 1
-
-                return (
-                  <div
-                    key={i}
-                    className={`${styles.partnerCarouselCard} ${isCenter ? styles.partnerCarouselCardCenter : ''}`}
-                    style={{
-                      width: `${CARD_W}px`,
-                      opacity:   isCenter ? 1 : isAdjacent ? 0.78 : 0,
-                      transform: isCenter
-                        ? 'scale(1.07) translateZ(0)'
-                        : isAdjacent
-                          ? 'scale(0.92) translateZ(0)'
-                          : 'scale(0.88) translateZ(0)',
-                      pointerEvents: isVisible ? 'auto' : 'none',
-                      cursor: isCenter ? 'default' : 'pointer',
-                      visibility: Math.abs(offset) > 2 ? 'hidden' : 'visible',
-                    }}
-                    onClick={() => {
-                      if (isCenter) return
-                      if (offset < 0) onPrev()
-                      else onNext()
-                    }}
-                  >
-                    <div className={styles.partnerImageWrapper}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={partner.image} alt={partner.name} className={styles.partnerImage} />
-                      <div className={styles.partnerImageOverlay} />
-                      <div className={styles.partnerRatingBadge}>★ {partner.rating}</div>
-                    </div>
-
-                    <div className={styles.partnerContent}>
-                      <div className={styles.partnerMeta}>
-                        <span className={styles.partnerLocation}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                            <circle cx="12" cy="10" r="3" />
-                          </svg>
-                          {partner.location}
-                        </span>
-                        <span className={styles.partnerYears}>{partner.years}</span>
-                      </div>
-                      <h3 className={styles.partnerName}>{partner.name}</h3>
-                      <p className={styles.partnerSpecialty}>{partner.specialty}</p>
-                      <ul className={styles.partnerServices}>
-                        {partner.services.map((s, j) => (
-                          <li key={j} className={styles.partnerServiceTag}>{s}</li>
-                        ))}
-                      </ul>
-                      <Link href="/partners" className={styles.viewProviderBtn}>
-                        View Profile <span aria-hidden="true">›</span>
-                      </Link>
-                    </div>
+          {/* 3 visible cards */}
+          <div className={styles.partnerCarouselStage}>
+            {slots.map((offset) => {
+              const p = PARTNERS[slotIndex(offset)]
+              const isCenter = offset === 0
+              return (
+                <div
+                  key={slotIndex(offset)}
+                  className={`${styles.partnerCarouselItem} ${isCenter ? styles.partnerCarouselItemCenter : styles.partnerCarouselItemSide}`}
+                  onClick={() => !isCenter && setActive(slotIndex(offset))}
+                >
+                  <div className={styles.partnerImageWrapper}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={p.image} alt={p.name} className={styles.partnerImage} />
+                    <div className={styles.partnerImageOverlay} />
+                    <div className={styles.partnerRatingBadge}>★ {p.rating}</div>
                   </div>
-                )
-              })}
-            </div>
+
+                  <div className={styles.partnerContent}>
+                    <div className={styles.partnerMeta}>
+                      <span className={styles.partnerLocation}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                          <circle cx="12" cy="10" r="3" />
+                        </svg>
+                        {p.location}
+                      </span>
+                      <span className={styles.partnerYears}>{p.years}</span>
+                    </div>
+
+                    <h3 className={styles.partnerName}>{p.name}</h3>
+                    <p className={styles.partnerSpecialty}>{p.specialty}</p>
+
+                    {isCenter && (
+                      <>
+                        <ul className={styles.partnerServices}>
+                          {p.services.map((s, j) => (
+                            <li key={j} className={styles.partnerServiceTag}>{s}</li>
+                          ))}
+                        </ul>
+                        <Link href="/partners" className={styles.viewProviderBtn}>
+                          View Profile <span>›</span>
+                        </Link>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
           </div>
 
-          <button
-            className={styles.partnerCarouselArrow}
-            onClick={onNext}
-            aria-label="Next partner"
-          >›</button>
+          {/* Next Arrow */}
+          <button onClick={next} aria-label="Next partner" className={styles.partnerArrowBtn}>›</button>
         </div>
 
         {/* Dot indicators */}
-        <div className={styles.partnerDotsOuter}>
-          <div className={styles.partnerDotsTrack}>
-            {PARTNERS.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                className={`${styles.partnerDot} ${i === activeReal ? styles.partnerDotActive : ''}`}
-                onClick={() => handleDotClick(i)}
-                aria-label={`Go to ${PARTNERS[i].name}`}
-              />
-            ))}
-          </div>
+        <div className={styles.partnerDots}>
+          {PARTNERS.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setActive(i)}
+              aria-label={`Go to ${PARTNERS[i].name}`}
+              className={`${styles.partnerDot} ${i === active ? styles.partnerDotActive : ''}`}
+            />
+          ))}
         </div>
 
         <div className={styles.partnerCTA}>
@@ -460,6 +361,7 @@ function PartnerHighlightSection() {
             <span className={styles.partnerCTAArrow}>›</span>
           </Link>
         </div>
+
       </div>
     </section>
   )
