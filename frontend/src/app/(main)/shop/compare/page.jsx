@@ -92,9 +92,6 @@ export default function ComparePage() {
 
         {/* ── Header ── */}
         <header className={styles.header}>
-          <Link href="/shop" className={styles.backLink}>
-            ← Back to Shop
-          </Link>
           <div>
             <h1 className={styles.title}>Service Comparison</h1>
             <p className={styles.subtitle}>
