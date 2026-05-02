@@ -377,26 +377,19 @@ export default function SellerProfilePage({
                   )}
                 </div>
 
-                <div className={styles.toolbarRight}>
-                  <p className={styles.listingsCount}>
-                    <span className={styles.listingsCountNum}>{sortedListings.length}</span>
-                    &nbsp;listing{sortedListings.length !== 1 ? 's' : ''}
-                    {searchQuery && <span className={styles.searchResultHint}> for "{searchQuery}"</span>}
-                  </p>
-                  <div className={styles.sortWrap}>
-                    <span className={styles.sortLabel}>Sort by</span>
-                    <select
-                      className={styles.sortSelect}
-                      value={sortBy}
-                      onChange={(e) => { setSortBy(e.target.value); setCurrentPage(1) }}
-                      aria-label="Sort listings"
-                    >
-                      <option value="newest">Newest</option>
-                      <option value="price-asc">Price: Low to High</option>
-                      <option value="price-desc">Price: High to Low</option>
-                      <option value="rating">Top Rated</option>
-                    </select>
-                  </div>
+                <div className={styles.sortWrap}>
+                  <span className={styles.sortLabel}>Sort by</span>
+                  <select
+                    className={styles.sortSelect}
+                    value={sortBy}
+                    onChange={(e) => { setSortBy(e.target.value); setCurrentPage(1) }}
+                    aria-label="Sort listings"
+                  >
+                    <option value="newest">Newest</option>
+                    <option value="price-asc">Price: Low to High</option>
+                    <option value="price-desc">Price: High to Low</option>
+                    <option value="rating">Top Rated</option>
+                  </select>
                 </div>
               </div>
 

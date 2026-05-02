@@ -362,8 +362,8 @@
 
 .listingsToolbar {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
   margin-bottom: 24px;
 }
 
@@ -371,7 +371,8 @@
   position: relative;
   display: flex;
   align-items: center;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
 }
 
 .searchIcon {
@@ -429,18 +430,6 @@
   color: var(--color-green, #102820);
 }
 
-.toolbarRight {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.searchResultHint {
-  color: #aaa;
-  font-weight: 400;
-}
 
 .listingsCount {
   font-size: 13px;
@@ -532,7 +521,7 @@
 
 .cardImage {
   width: 100%;
-  aspect-ratio: 16 / 8;
+  aspect-ratio: 4 / 3;
   object-fit: cover;
   display: block;
   background: var(--color-cream, #F7F4EF);
@@ -540,7 +529,7 @@
 
 .cardImagePlaceholder {
   width: 100%;
-  aspect-ratio: 16 / 8;
+  aspect-ratio: 4 / 3;
   background: linear-gradient(145deg, #ece8e2 0%, #e2ddd6 100%);
 }
 
