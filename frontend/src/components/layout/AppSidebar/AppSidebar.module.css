@@ -20,6 +20,13 @@
   overflow: visible;
 }
 
+/* Desktop: overlapping collapse control must stack above sticky topbar (z-index 30 in AppTopbar). */
+@media (min-width: 861px) {
+  .sidebar.collapsed {
+    z-index: 35;
+  }
+}
+
 /* Logo Row – same height as topbar for alignment */
 .logoRow {
   height: var(--sidebar-header-height);
@@ -338,6 +345,108 @@
   justify-content: center;
   padding: 6px 0;
   gap: 0;
+}
+
+.collapsedGroupRoot {
+  width: 100%;
+}
+
+.collapsedGroupBtn {
+  position: relative;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  width: 100%;
+}
+
+.collapsedGroupChevron {
+  position: absolute;
+  right: 5px;
+  bottom: 2px;
+  display: flex;
+  align-items: center;
+  font-size: 11px;
+  color: #94a3b8;
+  pointer-events: none;
+  line-height: 1;
+}
+
+.collapsedFlyoutPanel {
+  position: fixed;
+  z-index: 60;
+  box-sizing: border-box;
+  min-width: 208px;
+  max-width: min(288px, calc(100vw - 24px));
+  max-height: min(420px, calc(100vh - 24px));
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px;
+  margin: 0;
+  border-radius: 12px;
+  border: 1px solid #eef0f4;
+  background: #ffffff;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12);
+}
+
+.collapsedFlyoutHeading {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  padding: 6px 10px 8px;
+}
+
+.collapsedFlyoutLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.collapsedFlyoutLink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 400;
+  color: #64748b;
+  text-decoration: none;
+}
+
+.collapsedFlyoutLink:hover {
+  background: #f7f9fc;
+  color: #0f172a;
+}
+
+.collapsedFlyoutIconWrap {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.collapsedFlyoutIcon {
+  font-size: 15px;
+  color: #94a3b8;
+}
+
+.collapsedFlyoutLink:hover .collapsedFlyoutIcon {
+  color: #64748b;
+}
+
+.collapsedFlyoutLinkLabel {
+  min-width: 0;
+}
+
+.collapsedFlyoutLinkActive,
+.collapsedFlyoutLinkActive .collapsedFlyoutIcon {
+  color: var(--color-green-700);
+  font-weight: 700;
 }
 
 /* Backdrop for mobile overlay */

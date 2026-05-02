@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useLayoutEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { usePathname, useSearchParams } from 'next/navigation'
 import {
   TbLayoutSidebarLeftCollapse,
@@ -26,8 +27,30 @@ import styles from './AppSidebar.module.css'
 import { useSiteContent } from '@/lib/siteContent/client'
 import { countDisputesNeedingAdminAttention } from '@/data/adminSampleData'
 
+/** Stable empty list when sidebar config is absent (avoid new [] each render). */
+const EMPTY_NAV_ITEMS = []
+
 function isLinkItem(item) {
   return 'href' in item && !('children' in item)
+}
+
+function collapsedFlyoutId(label) {
+  return label.replace(/\s+/g, '-').toLowerCase()
+}
+
+function isHrefActive(href, pathname, searchParams, basePath) {
+  if (!pathname) return false
+  if (href.includes('?')) {
+    const [path, query] = href.split('?')
+    if (pathname !== path) return false
+    const wanted = new URLSearchParams(query)
+    for (const [key, value] of wanted.entries()) {
+      if (searchParams.get(key) !== value) return false
+    }
+    return true
+  }
+  if (href === basePath) return pathname === basePath
+  return pathname === href || pathname.startsWith(`${href}/`)
 }
 
 /** For bottom nav: flatten to { href, label, icon } (groups use defaultHref). Optional limit for mobile (e.g. 4). */
@@ -120,32 +143,107 @@ export default function AppSidebar({
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [openGroups, setOpenGroups] = useState({})
+  const [collapsedFlyoutLabel, setCollapsedFlyoutLabel] = useState(null)
+  const [collapsedFlyoutPos, setCollapsedFlyoutPos] = useState({ top: 0, left: 0 })
+  const [mounted, setMounted] = useState(false)
+  const navRef = useRef(null)
+  const activeCollapsedTriggerRef = useRef(null)
+  const collapsedFlyoutPanelRef = useRef(null)
   const { data: siteContent } = useSiteContent()
 
   const showCollapsed = !isMobile && collapsed
   const showMobileOpen = Boolean(isMobile && mobileOpen)
   const handleNavClose = isMobile ? onMobileClose : undefined
 
+  useEffect(() => setMounted(true), [])
+
+  useEffect(() => {
+    if (!showCollapsed) setCollapsedFlyoutLabel(null)
+  }, [showCollapsed])
+
+  useLayoutEffect(() => {
+    if (!collapsedFlyoutLabel || !mounted || !showCollapsed) return
+
+    function updateFlyoutPosition() {
+      const el = activeCollapsedTriggerRef.current
+      if (!el) return
+      const r = el.getBoundingClientRect()
+      const gap = 8
+      let top = r.top
+      const panelMaxEstimate = 400
+      top = Math.max(12, Math.min(top, window.innerHeight - panelMaxEstimate - 12))
+      setCollapsedFlyoutPos({ top, left: r.right + gap })
+    }
+
+    updateFlyoutPosition()
+
+    const navEl = navRef.current
+    window.addEventListener('resize', updateFlyoutPosition)
+    window.addEventListener('scroll', updateFlyoutPosition, true)
+    navEl?.addEventListener('scroll', updateFlyoutPosition)
+    return () => {
+      window.removeEventListener('resize', updateFlyoutPosition)
+      window.removeEventListener('scroll', updateFlyoutPosition, true)
+      navEl?.removeEventListener('scroll', updateFlyoutPosition)
+    }
+  }, [collapsedFlyoutLabel, mounted, showCollapsed])
+
+  useEffect(() => {
+    if (!collapsedFlyoutLabel) return
+    const onKey = (e) => {
+      if (e.key === 'Escape') setCollapsedFlyoutLabel(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [collapsedFlyoutLabel])
+
+  useEffect(() => {
+    if (!collapsedFlyoutLabel || !mounted || !showCollapsed) return
+    const down = (e) => {
+      const t = e.target
+      if (
+        collapsedFlyoutPanelRef.current?.contains(t) ||
+        activeCollapsedTriggerRef.current?.contains(t)
+      ) {
+        return
+      }
+      setCollapsedFlyoutLabel(null)
+    }
+    document.addEventListener('pointerdown', down, true)
+    return () => document.removeEventListener('pointerdown', down, true)
+  }, [collapsedFlyoutLabel, mounted, showCollapsed])
+
   const config = SIDEBAR_CONFIG[variant]
+  const sidebarNavItems = config?.navItems ?? EMPTY_NAV_ITEMS
+  const hasGroups = sidebarNavItems.some((item) => !isLinkItem(item))
+
+  const expandedGroups = useMemo(() => {
+    if (!config || !hasGroups) return {}
+    const basePath = config.basePath
+    const out = {}
+    sidebarNavItems.forEach((item) => {
+      if (!isLinkItem(item) && item.children) {
+        const childActive = item.children.some((c) =>
+          isHrefActive(c.href, pathname, searchParams, basePath),
+        )
+        out[item.label] =
+          openGroups[item.label] !== undefined ? openGroups[item.label] : childActive
+      }
+    })
+    return out
+  }, [config, hasGroups, sidebarNavItems, pathname, searchParams, openGroups])
+
   if (!config) return null
 
-  const isActive = (href) => {
-    if (!pathname) return false
-    if (href.includes('?')) {
-      const [path, query] = href.split('?')
-      if (pathname !== path) return false
-      const wanted = new URLSearchParams(query)
-      for (const [key, value] of wanted.entries()) {
-        if (searchParams.get(key) !== value) return false
-      }
-      return true
-    }
-    if (href === config.basePath) return pathname === config.basePath
-    return pathname === href || pathname.startsWith(`${href}/`)
-  }
+  const basePath = config.basePath
+
+  const isActive = (href) => isHrefActive(href, pathname, searchParams, basePath)
 
   const isGroupActive = (item) => {
     if (!item.children) return false
+    if ('defaultHref' in item && item.defaultHref && isActive(item.defaultHref)) {
+      return true
+    }
     return item.children.some((c) => isActive(c.href))
   }
 
@@ -153,25 +251,14 @@ export default function AppSidebar({
     setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }))
   }
 
-  const sidebarNavItems = config.navItems
-  const hasGroups = sidebarNavItems.some((item) => !isLinkItem(item))
-
-  const expandedGroups = useMemo(() => {
-    if (!hasGroups) return {}
-    const out = {}
-    sidebarNavItems.forEach((item) => {
-      if (!isLinkItem(item) && item.children) {
-        const childActive = item.children.some((c) => isActive(c.href))
-        out[item.label] = openGroups[item.label] !== undefined ? openGroups[item.label] : childActive
-      }
-    })
-    return out
-  }, [hasGroups, sidebarNavItems, pathname, searchParams, openGroups])
-
   const showSidebar = !(isMobile && variant === 'seller')
 
   const showDisputeNewBadge =
     variant === 'admin' && countDisputesNeedingAdminAttention() > 0
+
+  const collapsedFlyoutGroup =
+    collapsedFlyoutLabel &&
+    config.navItems.find((i) => !isLinkItem(i) && i.label === collapsedFlyoutLabel)
 
   return (
     <>
@@ -222,7 +309,7 @@ export default function AppSidebar({
 
       {!showCollapsed && <p className={styles.sectionLabel}>MENU</p>}
 
-      <nav className={styles.nav}>
+      <nav ref={navRef} className={styles.nav}>
         {config.navItems.map((item) => {
           if (isLinkItem(item)) {
             const { href, label, icon: Icon } = item
@@ -263,23 +350,35 @@ export default function AppSidebar({
             )
           }
 
-          const { label, icon: Icon, defaultHref, children } = item
+          const { label, icon: Icon, children } = item
           const expanded = showCollapsed ? false : expandedGroups[label]
           const groupActive = isGroupActive(item)
 
           if (showCollapsed) {
+            const flyoutId = `nav-collapsed-flyout-${collapsedFlyoutId(label)}`
+            const flyoutOpen = collapsedFlyoutLabel === label
             return (
-              <Link
-                key={label}
-                href={defaultHref}
-                className={`${styles.link} ${groupActive ? styles.active : ''}`}
-                title={label}
-                onClick={handleNavClose}
-              >
-                <span className={styles.iconWrap}>
-                  <Icon className={styles.navIcon} />
-                </span>
-              </Link>
+              <div key={label} className={styles.collapsedGroupRoot}>
+                <button
+                  type="button"
+                  className={`${styles.link} ${groupActive ? styles.active : ''} ${styles.collapsedGroupBtn}`}
+                  aria-expanded={flyoutOpen}
+                  aria-haspopup="true"
+                  aria-controls={flyoutId}
+                  title={`${label}: open submenu`}
+                  onClick={(e) => {
+                    activeCollapsedTriggerRef.current = e.currentTarget
+                    setCollapsedFlyoutLabel((prev) => (prev === label ? null : label))
+                  }}
+                >
+                  <span className={styles.iconWrap}>
+                    <Icon className={styles.navIcon} />
+                  </span>
+                  <span className={styles.collapsedGroupChevron} aria-hidden>
+                    <TbChevronRight />
+                  </span>
+                </button>
+              </div>
             )
           }
 
@@ -326,6 +425,70 @@ export default function AppSidebar({
         })}
       </nav>
     </aside>
+          {mounted &&
+            typeof document !== 'undefined' &&
+            showCollapsed &&
+            collapsedFlyoutGroup &&
+            createPortal(
+              <div
+                ref={collapsedFlyoutPanelRef}
+                id={`nav-collapsed-flyout-${collapsedFlyoutId(collapsedFlyoutGroup.label)}`}
+                className={styles.collapsedFlyoutPanel}
+                style={{
+                  top: collapsedFlyoutPos.top,
+                  left: collapsedFlyoutPos.left,
+                }}
+                role="group"
+                aria-label={collapsedFlyoutGroup.label}
+              >
+                <div className={styles.collapsedFlyoutHeading}>
+                  {collapsedFlyoutGroup.label}
+                </div>
+                <div className={styles.collapsedFlyoutLinks}>
+                  {collapsedFlyoutGroup.defaultHref &&
+                    !collapsedFlyoutGroup.children.some(
+                      (c) => c.href === collapsedFlyoutGroup.defaultHref,
+                    ) && (
+                      <Link
+                        href={collapsedFlyoutGroup.defaultHref}
+                        className={`${styles.collapsedFlyoutLink} ${isActive(collapsedFlyoutGroup.defaultHref) ? styles.collapsedFlyoutLinkActive : ''}`}
+                        onClick={() => {
+                          setCollapsedFlyoutLabel(null)
+                          handleNavClose?.()
+                        }}
+                      >
+                        <span className={styles.collapsedFlyoutLinkLabel}>
+                          Overview
+                        </span>
+                      </Link>
+                    )}
+                  {collapsedFlyoutGroup.children.map((sub) => {
+                    const SubIcon = sub.icon
+                    return (
+                      <Link
+                        key={sub.href}
+                        href={sub.href}
+                        className={`${styles.collapsedFlyoutLink} ${isActive(sub.href) ? styles.collapsedFlyoutLinkActive : ''}`}
+                        onClick={() => {
+                          setCollapsedFlyoutLabel(null)
+                          handleNavClose?.()
+                        }}
+                      >
+                        {SubIcon ? (
+                          <span className={styles.collapsedFlyoutIconWrap} aria-hidden>
+                            <SubIcon className={styles.collapsedFlyoutIcon} />
+                          </span>
+                        ) : null}
+                        <span className={styles.collapsedFlyoutLinkLabel}>
+                          {sub.label}
+                        </span>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>,
+              document.body,
+            )}
         </>
       )}
 
