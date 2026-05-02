@@ -485,17 +485,18 @@ a.ctaPrimary {
   border-color: #102820;
 }
 
-/* Stage: always shows 3 cards aligned to center baseline */
+/* Stage: always shows 3 cards aligned to bottom */
 .partnerCarouselStage {
   flex: 1;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  gap: 0;
+  gap: 16px;
   overflow: visible;
+  padding: 24px 0 24px;
 }
 
-/* Side cards — smaller, dimmed */
+/* Base card */
 .partnerCarouselItem {
   flex-shrink: 0;
   background: #FFFFFF;
@@ -506,14 +507,15 @@ a.ctaPrimary {
   transition: all 0.45s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Side cards — naturally smaller, dimmed */
 .partnerCarouselItemSide {
-  width: 240px;
+  width: 220px;
   opacity: 0.55;
-  transform: scale(0.88);
   cursor: pointer;
   filter: grayscale(20%);
   z-index: 0;
   border-color: rgba(16, 40, 32, 0.08);
+  transform: none;
 }
 
 .partnerCarouselItemSide:hover {
@@ -521,15 +523,41 @@ a.ctaPrimary {
   filter: grayscale(0%);
 }
 
-/* Center card — zoomed, full opacity */
+/* Center card — larger width, full opacity, no scale() */
 .partnerCarouselItemCenter {
-  width: 340px;
+  width: 320px;
   opacity: 1;
-  transform: scale(1.12);
   z-index: 2;
   border-color: rgba(168, 137, 74, 0.45);
-  box-shadow: 0 32px 80px rgba(16, 40, 32, 0.18);
-  position: relative;
+  box-shadow: 0 24px 64px rgba(16, 40, 32, 0.16);
+  transform: none;
+}
+
+.partnerCarouselItemSide .partnerName {
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.partnerCarouselItemSide .partnerSpecialty {
+  font-size: 12px;
+  margin-bottom: 0;
+}
+
+.partnerCarouselItemSide .partnerMeta {
+  margin-bottom: 8px;
+}
+
+.partnerCarouselItemCenter .partnerName {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.partnerCarouselItemCenter .partnerSpecialty {
+  margin-bottom: 10px;
+}
+
+.partnerCarouselItemCenter .partnerServices {
+  margin-bottom: 14px;
 }
 
 /* Dot indicators */
@@ -584,12 +612,12 @@ a.ctaPrimary {
 .partnerImageWrapper {
   position: relative;
   width: 100%;
-  height: 200px;
+  height: 160px;
   overflow: hidden;
 }
 
 .partnerCarouselItemCenter .partnerImageWrapper {
-  height: 240px;
+  height: 185px;
 }
 
 .partnerImage {
@@ -623,6 +651,14 @@ a.ctaPrimary {
   letter-spacing: 0.5px;
   padding: 5px 12px;
   backdrop-filter: blur(4px);
+}
+
+.partnerCarouselItemSide .partnerContent {
+  padding: 16px 18px 20px;
+}
+
+.partnerCarouselItemCenter .partnerContent {
+  padding: 20px 22px 24px;
 }
 
 .partnerContent {
@@ -1220,11 +1256,59 @@ a.ctaPrimary {
   .partnerGrid {
     grid-template-columns: 1fr;
   }
+  /* Carousel */
+  .partnerCarouselRow {
+    gap: 10px;
+  }
+  .partnerArrowBtn {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+  .partnerCarouselStage {
+    gap: 10px;
+  }
   .partnerCarouselItemSide {
-    width: 180px;
+    width: 130px;
   }
   .partnerCarouselItemCenter {
-    width: 260px;
+    width: 220px;
+  }
+  .partnerCarouselItemSide .partnerImageWrapper {
+    height: 110px;
+  }
+  .partnerCarouselItemCenter .partnerImageWrapper {
+    height: 140px;
+  }
+  .partnerCarouselItemSide .partnerContent {
+    padding: 10px 12px 14px;
+  }
+  .partnerCarouselItemCenter .partnerContent {
+    padding: 14px 16px 18px;
+  }
+  .partnerCarouselItemSide .partnerName {
+    font-size: 13px;
+  }
+  .partnerCarouselItemSide .partnerSpecialty {
+    font-size: 11px;
+  }
+  .partnerCarouselItemCenter .partnerName {
+    font-size: 17px;
+  }
+  .partnerCarouselItemCenter .partnerSpecialty {
+    font-size: 12px;
+  }
+  .partnerCarouselItemCenter .partnerServices {
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+  .partnerServiceTag {
+    font-size: 9px;
+    padding: 4px 8px;
+  }
+  .viewProviderBtn {
+    padding: 8px 16px;
+    font-size: 10px;
   }
   .partnerCTA {
     flex-direction: column;
@@ -1298,9 +1382,6 @@ a.ctaPrimary {
     height: 35px;
     font-size: 22px;
   }
-  .partnerContent {
-    padding: 30px 24px;
-  }
   /* About */
   .aboutWhyGrid {
     padding-top: 40px;
@@ -1335,8 +1416,19 @@ a.ctaPrimary {
   .ctaTitle {
     font-size: 30px;
   }
-  .partnerContent {
-    padding: 24px 16px;
+  /* Carousel — single card on small screens */
+  .partnerCarouselItemSide {
+    display: none;
+  }
+  .partnerCarouselItemCenter {
+    width: calc(100vw - 120px);
+    max-width: 300px;
+  }
+  .partnerCarouselItemCenter .partnerImageWrapper {
+    height: 160px;
+  }
+  .partnerCarouselItemCenter .partnerContent {
+    padding: 16px 18px 20px;
   }
   /* About */
   .aboutSection {
@@ -1347,152 +1439,5 @@ a.ctaPrimary {
   }
   .aboutWhyCard {
     padding: 32px 24px;
-  }
-}
-/* =========================
-   PARTNER CAROUSEL — continuous infinite
-========================= */
-
-.partnerCarouselOuter {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 16px;
-  overflow: hidden;
-  /* Extra horizontal padding ensures the adjacent cards are always clipped cleanly */
-  padding: 0 60px;
-}
-
-/* The visible window — overflow visible so all 3 cards are always shown */
-.partnerCarouselViewport {
-  overflow: visible;
-  width: 100%;
-  padding: 48px 0 32px;
-  position: relative;
-}
-
-/* Arrows float over the carousel */
-.partnerCarouselOuter > .carouselArrow {
-  position: absolute !important;
-  top: 50% !important;
-  transform: translateY(-50%) !important;
-  z-index: 30 !important;
-  flex-shrink: 0;
-}
-
-.partnerCarouselOuter > .carouselArrowLeft {
-  left: 4px !important;
-}
-
-.partnerCarouselOuter > .carouselArrowRight {
-  right: 4px !important;
-}
-
-/* The sliding strip */
-.partnerCarouselTrack {
-  display: flex;
-  align-items: flex-start;
-  gap: 24px;
-  width: max-content;
-  will-change: transform;
-}
-
-/* Individual card */
-.partnerCarouselCard {
-  background: #FFFFFF;
-  border-radius: 20px;
-  overflow: hidden;
-  border: 1px solid rgba(16, 40, 32, 0.1);
-  transform-origin: center center;
-  transition:
-    transform 0.55s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity  0.55s ease,
-    box-shadow 0.55s ease,
-    border-color 0.55s ease;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Image block */
-.partnerCarouselCard .partnerImageWrapper {
-  position: relative;
-  width: 100%;
-  height: 200px;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-/* Name label on non-center cards */
-.partnerSideLabel {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 28px 14px 14px;
-  background: linear-gradient(to top, rgba(10, 28, 20, 0.88) 0%, transparent 100%);
-  color: #F7F4EF;
-  font-family: "Cormorant Garamond", serif;
-  font-size: 15px;
-  font-weight: 500;
-  line-height: 1.3;
-  letter-spacing: 0.2px;
-}
-
-/* Arrow buttons — overlaid on carousel (see .partnerCarouselOuter > .carouselArrow above) */
-
-/* =========================
-   DOT INDICATOR — sliding window
-========================= */
-
-.partnerDotsOuter {
-  display: flex;
-  justify-content: center;
-  margin: 0 auto 28px;
-  overflow: hidden;
-}
-
-.partnerDotsTrack {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
-.partnerDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  background: rgba(16, 40, 32, 0.22);
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.partnerDot:hover {
-  background: rgba(168, 137, 74, 0.55);
-}
-
-.partnerDotActive {
-  background: #A8894A;
-  width: 24px;
-  border-radius: 4px;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .partnerCarouselCard .partnerImageWrapper {
-    height: 170px;
-  }
-}
-
-@media (max-width: 480px) {
-  .partnerCarouselCard .partnerImageWrapper {
-    height: 150px;
-  }
-  .partnerSideLabel {
-    font-size: 12px;
   }
 }
