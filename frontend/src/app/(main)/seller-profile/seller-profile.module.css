@@ -950,6 +950,7 @@
 
 /* ─── Responsive ─────────────────────────────────────────────────────────────── */
 
+/* ── Tablet / large mobile (≤ 900px) ─────────────────────────────────────────── */
 @media (max-width: 900px) {
   .identityCard {
     padding: 0 20px 20px;
@@ -995,6 +996,7 @@
   }
 }
 
+/* ── Small mobile (≤ 640px) ──────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .content {
     padding: 0 16px 48px;
@@ -1002,36 +1004,278 @@
   .banner {
     height: 130px;
   }
+  .identityCard {
+    padding: 0 16px 18px;
+  }
+  .avatarWrap {
+    left: 16px;
+    top: -34px;
+  }
+  .avatar {
+    width: 64px;
+    height: 64px;
+    font-size: 23px;
+  }
+  .identityTop {
+    padding-top: 38px;
+  }
+  .storeName {
+    font-size: 20px;
+  }
+  .handle {
+    font-size: 12px;
+  }
+  .locationRow {
+    font-size: 12px;
+  }
+  .statValue {
+    font-size: 18px;
+  }
+  .statLabel {
+    font-size: 9px;
+    letter-spacing: 1px;
+  }
+  .statItem {
+    padding: 12px 6px 6px;
+    min-width: 68px;
+  }
+  .tabBtn {
+    padding: 11px 14px;
+    font-size: 10px;
+    letter-spacing: 1.2px;
+  }
   .tabContent {
-    padding: 20px 16px;
+    padding: 18px 14px;
   }
   .grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .btnMessage,
+  .btnInquire {
+    padding: 10px 14px;
+    font-size: 11px;
   }
   .reviewSummary {
     flex-direction: column;
     align-items: flex-start;
     gap: 20px;
   }
-  .storeName {
-    font-size: 21px;
-  }
-}
-
-@media (max-width: 480px) {
-  .content {
-    padding: 0 12px 40px;
+  .reviewScoreNum {
+    font-size: 42px;
   }
   .bioCard {
     padding: 16px 18px;
   }
+  .bioText {
+    font-size: 13px;
+  }
+  .pageBtn {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+  .pagination {
+    gap: 4px;
+    margin-top: 24px;
+  }
+}
+
+/* ── Compact mobile (≤ 480px) ────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .content {
+    padding: 0 12px 40px;
+  }
+  .banner {
+    height: 110px;
+  }
   .identityCard {
-    padding: 0 16px 16px;
+    padding: 0 14px 16px;
   }
   .avatarWrap {
-    left: 16px;
+    left: 14px;
+    top: -30px;
+  }
+  .avatar {
+    width: 58px;
+    height: 58px;
+    font-size: 21px;
+    border-width: 3px;
+  }
+  .identityTop {
+    padding-top: 34px;
+    gap: 10px;
+  }
+  .storeName {
+    font-size: 18px;
+  }
+  .handle {
+    font-size: 11.5px;
+  }
+  .badgeChip {
+    font-size: 9px;
+    padding: 2px 7px;
+  }
+  .statValue {
+    font-size: 16px;
+  }
+  .statLabel {
+    font-size: 8.5px;
+    letter-spacing: 0.8px;
+  }
+  .statItem {
+    padding: 10px 4px 5px;
+    min-width: 58px;
+  }
+  .tabBtn {
+    padding: 10px 11px;
+    font-size: 9.5px;
+    letter-spacing: 1px;
+    gap: 5px;
+  }
+  .tabCount {
+    font-size: 9px;
+    padding: 1px 5px;
   }
   .tabContent {
-    padding: 16px 14px;
+    padding: 14px 12px;
+  }
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .cardTitle {
+    font-size: 13px;
+  }
+  .price {
+    font-size: 13px;
+  }
+  .ctaBtn {
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+  .btnMessage,
+  .btnInquire {
+    padding: 9px 12px;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+  .bioCard {
+    padding: 14px 14px;
+  }
+  .bioText {
+    font-size: 13px;
+    line-height: 1.65;
+  }
+  .reviewCard {
+    padding: 14px 14px;
+  }
+  .reviewText {
+    font-size: 13px;
+  }
+  .reviewScoreNum {
+    font-size: 38px;
+  }
+  .attrLabel {
+    width: 110px;
+    font-size: 12px;
+  }
+  .attrValue {
+    font-size: 12px;
+  }
+  .specialtyPill {
+    font-size: 11.5px;
+    padding: 5px 11px;
+  }
+  .aboutHeading {
+    font-size: 15px;
+  }
+  .listingsCount {
+    font-size: 12px;
+  }
+  .sortLabel {
+    display: none;
+  }
+  .sortSelect {
+    font-size: 12px;
+    padding: 8px 28px 8px 10px;
+  }
+}
+
+/* ── Extra-small mobile (≤ 390px) ────────────────────────────────────────────── */
+@media (max-width: 390px) {
+  .content {
+    padding: 0 10px 36px;
+  }
+  .banner {
+    height: 95px;
+  }
+  .identityCard {
+    padding: 0 12px 14px;
+  }
+  .avatarWrap {
+    left: 12px;
+    top: -26px;
+  }
+  .avatar {
+    width: 52px;
+    height: 52px;
+    font-size: 18px;
+    border-width: 3px;
+  }
+  .identityTop {
+    padding-top: 30px;
+    gap: 8px;
+  }
+  .storeName {
+    font-size: 16.5px;
+  }
+  .handle,
+  .locationRow {
+    font-size: 11px;
+  }
+  .statValue {
+    font-size: 15px;
+  }
+  .statItem {
+    min-width: 52px;
+    padding: 8px 3px 4px;
+  }
+  .tabBtn {
+    padding: 9px 9px;
+    font-size: 9px;
+    letter-spacing: 0.8px;
+  }
+  .tabContent {
+    padding: 12px 10px;
+  }
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  .btnMessage,
+  .btnInquire {
+    padding: 8px 10px;
+    font-size: 10.5px;
+  }
+  .bioCard {
+    padding: 12px 12px;
+  }
+  .reviewCard {
+    padding: 12px 12px;
+  }
+  .reviewerAvatar {
+    width: 30px;
+    height: 30px;
+    font-size: 11px;
+  }
+  .sortSelect {
+    font-size: 11px;
+    padding: 7px 26px 7px 9px;
+  }
+  .pageBtn {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
   }
 }
