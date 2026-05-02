@@ -453,7 +453,112 @@ a.ctaPrimary {
   margin: 0;
 }
 
-/* 3-column card grid */
+/* Carousel row: arrow + stage + arrow */
+.partnerCarouselRow {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.partnerArrowBtn {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(16, 40, 32, 0.2);
+  background: #fff;
+  color: #102820;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.partnerArrowBtn:hover {
+  background: #102820;
+  color: #fff;
+  border-color: #102820;
+}
+
+/* Stage: always shows 3 cards aligned to center baseline */
+.partnerCarouselStage {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0;
+  overflow: visible;
+}
+
+/* Side cards — smaller, dimmed */
+.partnerCarouselItem {
+  flex-shrink: 0;
+  background: #FFFFFF;
+  border: 1px solid rgba(16, 40, 32, 0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.partnerCarouselItemSide {
+  width: 240px;
+  opacity: 0.55;
+  transform: scale(0.88);
+  cursor: pointer;
+  filter: grayscale(20%);
+  z-index: 0;
+  border-color: rgba(16, 40, 32, 0.08);
+}
+
+.partnerCarouselItemSide:hover {
+  opacity: 0.75;
+  filter: grayscale(0%);
+}
+
+/* Center card — zoomed, full opacity */
+.partnerCarouselItemCenter {
+  width: 340px;
+  opacity: 1;
+  transform: scale(1.12);
+  z-index: 2;
+  border-color: rgba(168, 137, 74, 0.45);
+  box-shadow: 0 32px 80px rgba(16, 40, 32, 0.18);
+  position: relative;
+}
+
+/* Dot indicators */
+.partnerDots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 52px;
+}
+
+.partnerDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  background: rgba(16, 40, 32, 0.2);
+  transition: all 0.35s ease;
+}
+
+.partnerDotActive {
+  background: #102820;
+  width: 24px;
+  border-radius: 4px;
+}
+
+/* 3-column card grid (kept for other uses) */
 .partnerGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -479,8 +584,12 @@ a.ctaPrimary {
 .partnerImageWrapper {
   position: relative;
   width: 100%;
-  height: 260px;
+  height: 200px;
   overflow: hidden;
+}
+
+.partnerCarouselItemCenter .partnerImageWrapper {
+  height: 240px;
 }
 
 .partnerImage {
@@ -671,12 +780,6 @@ a.ctaPrimary {
   transform: translateX(3px);
 }
 
-/* legacy — kept for backward compat */
-.partnerCarousel { display: none; }
-.carouselDots { display: none; }
-.dot { display: none; }
-.activeDot { display: none; }
-.partnerRating { display: none; }
 
 /* =========================
    ABOUT SECTION
@@ -1078,12 +1181,6 @@ a.ctaPrimary {
     height: 45px;
     font-size: 28px;
   }
-  .partnerCard {
-    grid-template-columns: 1fr;
-  }
-  .partnerImageWrapper {
-    height: 320px;
-  }
   .partnerGrid {
     grid-template-columns: 1fr 1fr;
   }
@@ -1122,6 +1219,12 @@ a.ctaPrimary {
   }
   .partnerGrid {
     grid-template-columns: 1fr;
+  }
+  .partnerCarouselItemSide {
+    width: 180px;
+  }
+  .partnerCarouselItemCenter {
+    width: 260px;
   }
   .partnerCTA {
     flex-direction: column;

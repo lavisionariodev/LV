@@ -257,11 +257,16 @@ function PartnerHighlightSection() {
     },
   ]
 
-  const [active, setActive] = useState(0)
   const N = PARTNERS.length
+  const [active, setActive] = useState(1) // start with index 1 so left=0, center=1, right=2
+
   const prev = () => setActive(i => (i - 1 + N) % N)
   const next = () => setActive(i => (i + 1) % N)
-  const p = PARTNERS[active]
+
+  // Returns the partner index for a given slot offset from active (-1, 0, +1)
+  const slotIndex = (offset) => (active + offset + N) % N
+
+  const slots = [-1, 0, 1] // left, center, right
 
   return (
     <section className={styles.partnerSection}>
@@ -276,88 +281,78 @@ function PartnerHighlightSection() {
           </p>
         </div>
 
-        {/* Card stage */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '24px', margin: '0 auto', maxWidth: '900px' }}>
+        <div className={styles.partnerCarouselRow}>
+          {/* Prev Arrow */}
+          <button onClick={prev} aria-label="Previous partner" className={styles.partnerArrowBtn}>‹</button>
 
-          {/* Prev button */}
-          <button onClick={prev} aria-label="Previous" style={{
-            flexShrink: 0, width: '48px', height: '48px', borderRadius: '50%',
-            border: '1px solid rgba(16,40,32,0.15)', background: '#fff',
-            fontSize: '22px', cursor: 'pointer', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', color: '#102820',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)', transition: 'background 0.2s',
-          }}>‹</button>
+          {/* 3 visible cards */}
+          <div className={styles.partnerCarouselStage}>
+            {slots.map((offset) => {
+              const p = PARTNERS[slotIndex(offset)]
+              const isCenter = offset === 0
+              return (
+                <div
+                  key={slotIndex(offset)}
+                  className={`${styles.partnerCarouselItem} ${isCenter ? styles.partnerCarouselItemCenter : styles.partnerCarouselItemSide}`}
+                  onClick={() => !isCenter && setActive(slotIndex(offset))}
+                >
+                  <div className={styles.partnerImageWrapper}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={p.image} alt={p.name} className={styles.partnerImage} />
+                    <div className={styles.partnerImageOverlay} />
+                    <div className={styles.partnerRatingBadge}>★ {p.rating}</div>
+                  </div>
 
-          {/* Active card */}
-          <div key={active} style={{
-            flex: '0 0 340px', borderRadius: '20px', overflow: 'hidden',
-            background: '#fff', border: '1px solid rgba(168,137,74,0.35)',
-            boxShadow: '0 24px 64px rgba(16,40,32,0.16)',
-            animation: 'partnerZoomIn 0.35s cubic-bezier(0.34,1.56,0.64,1)',
-          }}>
-            {/* Image */}
-            <div style={{ position: 'relative', height: '200px', overflow: 'hidden' }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p.image} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(16,40,32,0.55) 0%, transparent 55%)' }} />
-              <div style={{
-                position: 'absolute', top: '12px', right: '12px',
-                background: 'rgba(168,137,74,0.92)', color: '#fff',
-                borderRadius: '20px', padding: '4px 10px', fontSize: '12px', fontWeight: 600,
-              }}>★ {p.rating}</div>
-            </div>
+                  <div className={styles.partnerContent}>
+                    <div className={styles.partnerMeta}>
+                      <span className={styles.partnerLocation}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                          <circle cx="12" cy="10" r="3" />
+                        </svg>
+                        {p.location}
+                      </span>
+                      <span className={styles.partnerYears}>{p.years}</span>
+                    </div>
 
-            {/* Details */}
-            <div style={{ padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '12px', color: '#6b7c70', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                  {p.location}
-                </span>
-                <span style={{ fontSize: '12px', color: '#6b7c70', background: 'rgba(16,40,32,0.06)', borderRadius: '12px', padding: '2px 10px' }}>{p.years}</span>
-              </div>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#102820' }}>{p.name}</h3>
-              <p style={{ margin: 0, fontSize: '13px', color: '#6b7c70' }}>{p.specialty}</p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
-                {p.services.map((s, i) => (
-                  <span key={i} style={{
-                    fontSize: '11px', padding: '4px 10px', borderRadius: '20px',
-                    background: 'rgba(168,137,74,0.1)', color: '#8a6d3b', border: '1px solid rgba(168,137,74,0.2)',
-                  }}>{s}</span>
-                ))}
-              </div>
-              <Link href="/partners" style={{
-                marginTop: '8px', display: 'inline-flex', alignItems: 'center', gap: '6px',
-                background: '#102820', color: '#fff', borderRadius: '10px',
-                padding: '10px 20px', fontSize: '13px', fontWeight: 600,
-                textDecoration: 'none', alignSelf: 'flex-start',
-              }}>View Profile ›</Link>
-            </div>
+                    <h3 className={styles.partnerName}>{p.name}</h3>
+                    <p className={styles.partnerSpecialty}>{p.specialty}</p>
+
+                    {isCenter && (
+                      <>
+                        <ul className={styles.partnerServices}>
+                          {p.services.map((s, j) => (
+                            <li key={j} className={styles.partnerServiceTag}>{s}</li>
+                          ))}
+                        </ul>
+                        <Link href="/partners" className={styles.viewProviderBtn}>
+                          View Profile <span>›</span>
+                        </Link>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
           </div>
 
-          {/* Next button */}
-          <button onClick={next} aria-label="Next" style={{
-            flexShrink: 0, width: '48px', height: '48px', borderRadius: '50%',
-            border: '1px solid rgba(16,40,32,0.15)', background: '#fff',
-            fontSize: '22px', cursor: 'pointer', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', color: '#102820',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)', transition: 'background 0.2s',
-          }}>›</button>
+          {/* Next Arrow */}
+          <button onClick={next} aria-label="Next partner" className={styles.partnerArrowBtn}>›</button>
         </div>
 
-        {/* Dots */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '24px' }}>
+        {/* Dot indicators */}
+        <div className={styles.partnerDots}>
           {PARTNERS.map((_, i) => (
-            <button key={i} onClick={() => setActive(i)} aria-label={`Go to ${PARTNERS[i].name}`} style={{
-              width: i === active ? '24px' : '8px', height: '8px',
-              borderRadius: '4px', border: 'none', cursor: 'pointer', padding: 0,
-              background: i === active ? '#102820' : 'rgba(16,40,32,0.2)',
-              transition: 'all 0.3s ease',
-            }} />
+            <button
+              key={i}
+              onClick={() => setActive(i)}
+              aria-label={`Go to ${PARTNERS[i].name}`}
+              className={`${styles.partnerDot} ${i === active ? styles.partnerDotActive : ''}`}
+            />
           ))}
         </div>
 
-        <div className={styles.partnerCTA} style={{ marginTop: '40px' }}>
+        <div className={styles.partnerCTA}>
           <p className={styles.partnerCTAText}>
             Browse our full network of verified funeral homes across the Philippines.
           </p>
@@ -368,13 +363,6 @@ function PartnerHighlightSection() {
         </div>
 
       </div>
-
-      <style>{`
-        @keyframes partnerZoomIn {
-          from { opacity: 0; transform: scale(0.88); }
-          to   { opacity: 1; transform: scale(1); }
-        }
-      `}</style>
     </section>
   )
 }
