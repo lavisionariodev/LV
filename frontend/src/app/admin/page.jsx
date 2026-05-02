@@ -5,10 +5,10 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import styles from './admin.module.css'
-import { dashboard, countDisputesNeedingAdminAttention } from '@/data/adminSampleData'
+import { countDisputesNeedingAdminAttention } from '@/data/adminSampleData'
 import { formatCount, formatPHPMobile } from '@/utils/formatCount'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
-import { listSellersForAdmin, searchSellersForAdmin } from '@/lib/sellers/client'
+import { searchSellersForAdmin } from '@/lib/sellers/client'
 import { listSellerListingsForAdmin } from '@/lib/seller-listings/client'
 import { hasPendingSellerChanges } from '@/lib/seller-listings/pendingChanges'
 import { formatPHP } from '@/utils/adminPayouts'
@@ -77,9 +77,20 @@ const MOBILE_STAT_CARDS = [
   },
 ]
 
+function utcLast7DaysSeriesZeros() {
+  const out = []
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date()
+    d.setUTCHours(0, 0, 0, 0)
+    d.setUTCDate(d.getUTCDate() - i)
+    out.push({ date: d.toISOString().slice(0, 10), total: 0 })
+  }
+  return out
+}
+
 function formatShortDate(dateStr) {
-  const d = new Date(dateStr)
-  return `${d.getMonth() + 1}/${d.getDate()}`
+  const d = new Date(`${String(dateStr)}T12:00:00Z`)
+  return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`
 }
 
 function getStatusDotColor(status) {
@@ -102,7 +113,7 @@ export default function AdminDashboardPage() {
   const [sellerResults, setSellerResults] = useState([])
   const [sellerLoading, setSellerLoading] = useState(false)
   const [sellerOpen, setSellerOpen] = useState(false)
-  const [activeSellerCount, setActiveSellerCount] = useState(dashboard.stats.totalSellers)
+  const [activeSellerCount, setActiveSellerCount] = useState(0)
   const [listingsPendingReviewCount, setListingsPendingReviewCount] = useState(0)
   const searchWrapRef = useRef(null)
   const searchInputRef = useRef(null)
@@ -112,19 +123,31 @@ export default function AdminDashboardPage() {
     pendingPayoutAmt: 0,
   })
 
+  /** Commission from released escrows by UTC day (7 days); filled from `/api/admin/metrics`. */
+  const [commissionChartSeries, setCommissionChartSeries] = useState(() => utcLast7DaysSeriesZeros())
+  const [recentActivityRows, setRecentActivityRows] = useState([])
+
   useEffect(() => {
     let cancelled = false
     const load = async () => {
       try {
-        const res = await fetch('/api/admin/payouts?summary=1', { credentials: 'include' })
+        const res = await fetch('/api/admin/metrics', { credentials: 'include' })
         const body = await res.json().catch(() => null)
-        if (cancelled || !res.ok || !body?.summary) return
+        if (cancelled || !res.ok || !body?.payoutSummary) {
+          return
+        }
         setPayoutMetrics({
-          platformRevenue30d: Number(body.summary.platformRevenue30d) || 0,
-          pendingPayoutAmt: Number(body.summary.pendingPayoutAmt) || 0,
+          platformRevenue30d: Number(body.payoutSummary.platformRevenue30d) || 0,
+          pendingPayoutAmt: Number(body.payoutSummary.pendingPayoutAmt) || 0,
         })
+        setActiveSellerCount(Number(body.sellersActive) || 0)
+        if (Array.isArray(body.dailyReleasedCommission) && body.dailyReleasedCommission.length > 0) {
+          setCommissionChartSeries(body.dailyReleasedCommission)
+        }
+        if (Array.isArray(body.recentActivity))
+          setRecentActivityRows(body.recentActivity.slice(0, 4))
       } catch {
-        // keep zeros
+        // keep defaults
       }
     }
     load()
@@ -150,26 +173,6 @@ export default function AdminDashboardPage() {
       }
     }
     load()
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  useEffect(() => {
-    let cancelled = false
-    const loadActiveSellers = async () => {
-      try {
-        const sellers = await listSellersForAdmin()
-        if (cancelled) return
-        const activeCount = Array.isArray(sellers)
-          ? sellers.filter((s) => String(s?.status || '').toLowerCase() === 'active').length
-          : dashboard.stats.totalSellers
-        setActiveSellerCount(activeCount)
-      } catch {
-        if (!cancelled) setActiveSellerCount(dashboard.stats.totalSellers)
-      }
-    }
-    loadActiveSellers()
     return () => {
       cancelled = true
     }
@@ -300,15 +303,15 @@ export default function AdminDashboardPage() {
           {/* Revenue by day — Area chart */}
           <div className={`${styles.panel} ${styles.revenueOverviewPanel}`} style={{ display: 'flex', flexDirection: 'column' }}>
             <div className={styles.panelHead}>
-              <p className={styles.panelTitle}>Revenue overview (sample data)</p>
+              <p className={styles.panelTitle}>Platform commission</p>
             </div>
             <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: 14, color: '#374151' }}>
-              Last 7 days
+              Last 7 days · released escrows (UTC day)
             </p>
             <div style={{ flex: 1, minHeight: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
-                data={dashboard.revenueByDay}
+                data={commissionChartSeries}
                 margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
               >
                 <defs>
@@ -329,7 +332,7 @@ export default function AdminDashboardPage() {
                   width={44}
                 />
                 <Tooltip
-                  formatter={(value) => [`₱ ${Number(value).toLocaleString()}`, 'Revenue']}
+                  formatter={(value) => [`₱ ${Number(value).toLocaleString()}`, 'Commission']}
                   labelFormatter={(label) => `Date: ${label}`}
                   contentStyle={{ fontSize: 12, borderRadius: 8 }}
                 />
@@ -599,9 +602,9 @@ export default function AdminDashboardPage() {
         <div className={styles.panel}>
           <div className={styles.panelHead}>
             <p className={styles.panelTitle}>Recent activity</p>
-            <button className={styles.smallBtn} type="button">
+            <Link href="/admin/analytics" className={styles.smallBtn}>
               View all
-            </button>
+            </Link>
           </div>
 
           <div className={styles.table}>
@@ -611,24 +614,32 @@ export default function AdminDashboardPage() {
               <span>Status</span>
             </div>
 
-            {dashboard.recentActivity.map((item) => (
-              <div className={styles.row} key={item.id}>
-                <span>{item.date}</span>
-                <span>{item.type}</span>
-                <span className={styles.statusLabel}>
-                  <span
-                    className={styles.statusDot}
-                    style={{ backgroundColor: getStatusDotColor(item.status) }}
-                  />
-                  {item.status}
+            {recentActivityRows.length === 0 ? (
+              <div className={styles.row}>
+                <span style={{ gridColumn: '1 / -1', color: '#64748b', fontSize: 13 }}>
+                  No recent paid orders yet.
                 </span>
               </div>
-            ))}
+            ) : (
+              recentActivityRows.map((item) => (
+                <div className={styles.row} key={item.id}>
+                  <span>{item.date}</span>
+                  <span>{item.type}</span>
+                  <span className={styles.statusLabel}>
+                    <span
+                      className={styles.statusDot}
+                      style={{ backgroundColor: getStatusDotColor(item.status) }}
+                    />
+                    {item.status}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
         <div className={styles.panel}>
-          <div className={styles.panelHead}>
+          <div className={`${styles.panelHead} ${styles.panelHeadQuickActions}`}>
             <p className={styles.panelTitle}>Quick actions</p>
           </div>
 
@@ -663,19 +674,27 @@ export default function AdminDashboardPage() {
               <span>Status</span>
             </div>
 
-            {dashboard.recentActivity.map((item) => (
-              <div className={styles.row} key={item.id}>
-                <span>{item.date}</span>
-                <span>{item.type}</span>
-                <span className={styles.statusLabel}>
-                  <span
-                    className={styles.statusDot}
-                    style={{ backgroundColor: getStatusDotColor(item.status) }}
-                  />
-                  {item.status}
+            {recentActivityRows.length === 0 ? (
+              <div className={styles.row}>
+                <span style={{ gridColumn: '1 / -1', color: '#64748b', fontSize: 13 }}>
+                  No recent paid orders yet.
                 </span>
               </div>
-            ))}
+            ) : (
+              recentActivityRows.map((item) => (
+                <div className={styles.row} key={item.id}>
+                  <span>{item.date}</span>
+                  <span>{item.type}</span>
+                  <span className={styles.statusLabel}>
+                    <span
+                      className={styles.statusDot}
+                      style={{ backgroundColor: getStatusDotColor(item.status) }}
+                    />
+                    {item.status}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </section>

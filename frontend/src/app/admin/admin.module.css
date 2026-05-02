@@ -333,6 +333,11 @@
   margin-bottom: 10px;
 }
 
+/* Quick actions panel: extra air below the heading before the button stack */
+.panelHeadQuickActions {
+  margin-bottom: 18px;
+}
+
 .panelTitle {
   margin: 0;
   font-weight: 800;

@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireAdminApiUser } from '@/lib/auth/requireAdminRoute'
+import {
+  pickOrder,
+  utcDateKeysLastN,
+  summarizeEscrowsForPayoutStats,
+  fetchDailyReleasedCommissionSeries,
+} from '@/lib/admin/adminPortalMetrics'
 
 const MAX_ROWS = 500
-
-function pickOrder(oEmbed) {
-  if (!oEmbed) return null
-  return Array.isArray(oEmbed) ? oEmbed[0] ?? null : oEmbed
-}
 
 function buildServiceLabel(items) {
   if (!items?.length) return 'Booking'
@@ -89,35 +90,19 @@ export async function GET(request) {
   const rows = escrowRows ?? []
 
   if (summary === '1' || summary === 'true') {
-    const cutoffMs = Date.now() - 30 * 24 * 60 * 60 * 1000
-    let platformRevenue30d = 0
-    let pendingPayoutAmt = 0
-    let completedReleasedAmt = 0
-
-    for (const r of rows) {
-      const ord = pickOrder(r.orders)
-      if (!ord || ord.payment_status !== 'paid') continue
-
-      if (r.status === 'released' && r.released_at) {
-        const t = new Date(r.released_at).getTime()
-        if (Number.isFinite(t) && t >= cutoffMs) {
-          platformRevenue30d += Number(r.commission_amount) || 0
-        }
-        completedReleasedAmt += Number(r.net_amount) || 0
-      }
-      if (r.status === 'escrowed' || r.status === 'on_hold') {
-        pendingPayoutAmt += Number(r.net_amount) || 0
-      }
-    }
+    const agg = summarizeEscrowsForPayoutStats(rows)
+    const chartDayKeys = utcDateKeysLastN(7)
+    const dailyReleasedCommission = await fetchDailyReleasedCommissionSeries(supabaseAdmin, chartDayKeys)
 
     return NextResponse.json({
       defaultCommissionPercent,
       summary: {
-        platformRevenue30d,
-        pendingPayoutAmt,
-        completedReleasedAmt,
-        totalEscrows: rows.length,
+        platformRevenue30d: agg.platformRevenue30d,
+        pendingPayoutAmt: agg.pendingPayoutAmt,
+        completedReleasedAmt: agg.completedReleasedAmt,
+        totalEscrows: agg.totalEscrows,
       },
+      dailyReleasedCommission,
     })
   }
 
