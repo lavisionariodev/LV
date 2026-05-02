@@ -103,7 +103,7 @@
   border-radius: 8px 8px 0 0;
   overflow: hidden;
   border: 1px solid #D8D8D8;
-  border-bottom: none;
+  border-bottom: 1px solid #D8D8D8;
   flex-wrap: wrap;
 }
 
@@ -162,6 +162,7 @@
   border-top: none;
   background: #FFFFFF;
   -webkit-overflow-scrolling: touch;
+  margin-top: 0;
 }
 
 /* Override faint row borders from shop.module.css */
