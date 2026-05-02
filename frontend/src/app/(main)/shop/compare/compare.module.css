@@ -1,113 +1,109 @@
 /* ─── Page Shell ──────────────────────────────────────────── */
 .page {
   min-height: 100vh;
-  background: var(--color-light-gray, #F6F3EE);
+  background: #FFFFFF;
 }
 
 .content {
-  max-width: 1020px;
+  max-width: 1040px;
   margin: 0 auto;
-  padding: 40px 28px 64px;
+  padding: 48px 32px 80px;
 }
 
 /* ─── Empty State ─────────────────────────────────────────── */
 .empty {
-  background: #FFFFFF;
-  border-radius: 12px;
-  padding: 64px 40px;
+  padding: 80px 48px;
   text-align: center;
-  border: 1px solid rgba(16, 40, 32, 0.07);
 }
 
 .emptyTitle {
-  font-family: "Cormorant Garamond", serif;
-  font-size: 28px;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 26px;
   font-weight: 600;
   color: var(--color-green, #102820);
   margin: 0 0 10px;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
 }
 
 .emptyText {
   font-size: 14px;
-  color: #888;
+  color: #AAAAAA;
   font-family: "Lato", sans-serif;
-  margin: 0 0 28px;
-  line-height: 1.6;
-  max-width: 340px;
-  margin-left: auto;
-  margin-right: auto;
+  margin: 0 auto 28px;
+  line-height: 1.65;
+  max-width: 320px;
 }
 
 .backBtn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 11px 22px;
-  background: var(--color-green, #102820);
-  color: #FFFFFF;
-  border-radius: 7px;
+  padding: 10px 22px;
+  background: transparent;
+  color: var(--color-green, #102820);
+  border: 1px solid rgba(16, 40, 32, 0.2);
+  border-radius: 6px;
   font-size: 13px;
   font-weight: 600;
   font-family: "Lato", sans-serif;
   letter-spacing: 0.3px;
   text-decoration: none;
-  transition: opacity 0.18s ease;
+  transition: border-color 0.16s ease, opacity 0.16s ease;
 }
 
 .backBtn:hover {
-  opacity: 0.88;
+  border-color: rgba(16, 40, 32, 0.45);
+  opacity: 0.8;
 }
 
 /* ─── Page Header ─────────────────────────────────────────── */
 .header {
-  margin-bottom: 28px;
+  margin-bottom: 36px;
 }
 
 .backLink {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 13px;
-  color: #999;
+  gap: 4px;
+  font-size: 12px;
+  color: #C0C0C0;
   font-family: "Lato", sans-serif;
   text-decoration: none;
-  margin-bottom: 18px;
-  letter-spacing: 0.1px;
-  transition: color 0.15s ease;
+  margin-bottom: 20px;
+  letter-spacing: 0.2px;
+  transition: color 0.14s ease;
 }
 
 .backLink:hover {
-  color: var(--color-green, #102820);
+  color: #888;
 }
 
 .title {
-  font-family: "Cormorant Garamond", serif;
+  font-family: "Cormorant Garamond", Georgia, serif;
   font-size: 30px;
   font-weight: 600;
   color: var(--color-green, #102820);
-  margin: 0 0 5px;
-  letter-spacing: 0.4px;
-  line-height: 1.15;
+  margin: 0 0 4px;
+  letter-spacing: 0.3px;
+  line-height: 1.1;
 }
 
 .subtitle {
   font-size: 13px;
-  color: #aaa;
+  color: #BBBBBB;
   font-family: "Lato", sans-serif;
   margin: 0;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.15px;
 }
 
 /* ─── Highlights Strip ────────────────────────────────────── */
 .compareHighlights {
   display: flex;
   gap: 0;
-  border-radius: 10px 10px 0 0;
+  border-radius: 8px 8px 0 0;
   overflow: hidden;
-  background: #FFFFFF;
-  border: 1px solid rgba(16, 40, 32, 0.07);
-  border-bottom: none;
+  border: 1px solid #D8D8D8;
+  border-bottom: 1px solid #D8D8D8;
   flex-wrap: wrap;
 }
 
@@ -116,14 +112,86 @@
   min-width: 140px;
 }
 
+/* Override shopStyles solid green background + remove hover */
+.compareHighlights :global([class*="compareHighlight"]) {
+  background: #FFFFFF !important;
+  border-right: 1px solid #D8D8D8 !important;
+  padding: 14px 20px !important;
+  cursor: default !important;
+  pointer-events: none !important;
+  transition: none !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.compareHighlights :global([class*="compareHighlight"]):hover {
+  background: #FFFFFF !important;
+  transform: none !important;
+  box-shadow: none !important;
+  border-color: #D8D8D8 !important;
+}
+
+.compareHighlights > div:last-child :global([class*="compareHighlight"]),
+.compareHighlights > :last-child {
+  border-right: none !important;
+}
+
+.compareHighlights :global([class*="highlightLabel"]) {
+  font-size: 10px !important;
+  font-family: "Lato", sans-serif !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.8px !important;
+  text-transform: uppercase !important;
+  color: #CCCCCC !important;
+  margin: 0 0 3px !important;
+}
+
+.compareHighlights :global([class*="highlightValue"]) {
+  font-size: 13px !important;
+  font-family: "Lato", sans-serif !important;
+  font-weight: 600 !important;
+  color: var(--color-green, #102820) !important;
+  margin: 0 !important;
+}
+
 /* ─── Table Card ──────────────────────────────────────────── */
 .tableCard {
-  border-radius: 0 0 10px 10px;
+  border-radius: 0 0 8px 8px;
   overflow-x: auto;
-  border: 1px solid rgba(16, 40, 32, 0.07);
+  border: 1px solid #D8D8D8;
   border-top: none;
   background: #FFFFFF;
   -webkit-overflow-scrolling: touch;
+  margin-top: 0;
+}
+
+/* Override faint row borders from shop.module.css */
+.tableCard :global([class*="compareRow"]) td,
+.tableCard :global([class*="compareRow"]) th,
+.tableCard :global([class*="compareRowActions"]) td {
+  border-top: 1px solid #E0E0E0 !important;
+}
+
+.tableCard :global([class*="compareTable"]) {
+  border-collapse: collapse;
+}
+
+.tableCard :global([class*="compareTableHead"]),
+.tableCard :global([class*="compareTableLabel"]) {
+  border-bottom: 1px solid #D0D0D0 !important;
+}
+
+.tableCard :global([class*="compareRowCell"]),
+.tableCard :global([class*="compareRowLabel"]) {
+  border-right: 1px solid #E8E8E8 !important;
+}
+
+.tableCard :global([class*="compareRowCell"]):last-child {
+  border-right: none !important;
+}
+
+.tableCard :global([class*="compareTableLabel"]) {
+  border-right: 1px solid #D8D8D8 !important;
 }
 
 /* ─── Footer ──────────────────────────────────────────────── */
@@ -134,32 +202,36 @@
   gap: 10px;
   margin-top: 28px;
   padding-top: 22px;
-  border-top: 1px solid rgba(16, 40, 32, 0.07);
+  border-top: 1px solid #D8D8D8;
 }
 
+/* Both footer buttons match the "View Details" style in shop.module.css */
 .footerBtnSecondary {
   padding: 10px 20px;
-  border: 1px solid rgba(16, 40, 32, 0.14);
-  border-radius: 7px;
+  border: 1px solid #BBBBBB;
+  border-radius: 6px;
   background: transparent;
-  color: #888;
+  color: #777777;
   font-size: 13px;
   font-weight: 600;
   font-family: "Lato", sans-serif;
   letter-spacing: 0.2px;
   text-decoration: none;
-  transition: border-color 0.15s ease, color 0.15s ease;
+  transition: border-color 0.14s ease, color 0.14s ease;
 }
 
 .footerBtnSecondary:hover {
-  border-color: rgba(16, 40, 32, 0.28);
-  color: var(--color-green, #102820);
+  border-color: #888;
+  color: #444;
 }
 
 .footerBtnPrimary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 10px 20px;
-  border: none;
-  border-radius: 7px;
+  border: 1px solid var(--color-green, #102820);
+  border-radius: 6px;
   background: var(--color-green, #102820);
   color: #FFFFFF;
   font-size: 13px;
@@ -167,9 +239,83 @@
   font-family: "Lato", sans-serif;
   letter-spacing: 0.2px;
   text-decoration: none;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.16s ease;
 }
 
 .footerBtnPrimary:hover {
-  opacity: 0.88;
+  opacity: 0.85;
+}
+
+/* ─── Mobile Scroll Hint ──────────────────────────────────── */
+.tableWrapper {
+  position: relative;
+}
+
+.scrollHint {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .scrollHint {
+    display: flex;
+    justify-content: flex-end;
+    padding: 7px 14px 0;
+    animation: fadeOutHint 3s ease 2s forwards;
+  }
+
+  .scrollHintInner {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-family: "Lato", sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    color: #BBBBBB;
+    text-transform: uppercase;
+  }
+
+  .scrollHintInner svg {
+    animation: nudgeArrow 1.2s ease-in-out infinite;
+  }
+}
+
+@keyframes nudgeArrow {
+  0%, 100% { transform: translateX(0); }
+  50%       { transform: translateX(4px); }
+}
+
+@keyframes fadeOutHint {
+  0%   { opacity: 1; }
+  100% { opacity: 0; pointer-events: none; }
+}
+
+/* ─── Mobile Highlights Fix ──────────────────────────────── */
+@media (max-width: 640px) {
+  .compareHighlights {
+    flex-direction: column;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .compareHighlights :global([class*="compareHighlight"]) {
+    border-right: none !important;
+    border-bottom: 1px solid #D8D8D8 !important;
+    padding: 10px 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .compareHighlights :global([class*="compareHighlight"]):last-child {
+    border-bottom: none !important;
+  }
+
+  .compareHighlights :global([class*="highlightLabel"]) {
+    margin: 0 !important;
+    white-space: nowrap;
+  }
+
+  .compareHighlights :global([class*="highlightValue"]) {
+    font-size: 13px !important;
+  }
 }
