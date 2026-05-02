@@ -1232,13 +1232,508 @@
   font-weight: 700;
 }
 
-.mobileExpandedBelow {
-  padding: 0 0 12px;
+/* Mobile order details bottom sheet (z-index above filter sheet 999) */
+.mobileTxnDetailBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
 }
 
-.mobileExpandedBelow .expandedPanel {
+.mobileTxnDetailSheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1001;
+  max-height: min(92dvh, 920px);
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.14);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mobileTxnDetailHandle {
+  width: 36px;
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 99px;
+  margin: 10px auto 0;
+  flex-shrink: 0;
+}
+
+.mobileTxnDetailHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 16px 14px;
+  flex-shrink: 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.mobileTxnDetailTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobileTxnDetailBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 10px 12px max(28px, calc(20px + env(safe-area-inset-bottom, 0px)));
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #f1f5f9 0%, #e8eef3 52%, #eef2f6 100%);
+}
+
+/* ── Mobile order-details sheet (card stack, separate from desktop expand row) ─ */
+
+.msheetRoot {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+}
+
+.msheetCard {
+  background: #fff;
+  border: 1px solid #e2e8eb;
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.72) inset, 0 4px 16px rgba(15, 23, 42, 0.04);
+}
+
+.msheetEyebrow {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin: 0 0 8px;
+}
+
+.msheetSellerBiz {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.msheetSellerContact,
+.msheetSellerPhone {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #475569;
+  overflow-wrap: anywhere;
+}
+
+.msheetSellerPhone {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.msheetMoneyLines {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.msheetMoneyLine,
+.msheetMoneyLineMuted {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 13px;
+  color: #475569;
+}
+
+.msheetMoneyVal {
+  font-weight: 800;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.msheetMoneyLineMuted {
+  padding: 10px 12px;
   border-radius: 12px;
-  margin-top: 2px;
+  background: #f1f5f9;
+}
+
+.msheetMoneyDeduct {
+  font-weight: 700;
+  color: #475569;
+  font-variant-numeric: tabular-nums;
+}
+
+.msheetSellerNetBanner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  margin-bottom: 10px;
+}
+
+.msheetSellerNetLbl {
+  font-size: 11px;
+  font-weight: 700;
+  color: #047857;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.msheetSellerNetFig {
+  font-size: 22px;
+  font-weight: 800;
+  color: #065f46;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.msheetSplitTrack {
+  display: flex;
+  height: 6px;
+  border-radius: 99px;
+  overflow: hidden;
+  gap: 2px;
+  background: #e2e8f0;
+}
+
+.msheetSplitPlat {
+  flex: 0 0 auto;
+  min-width: 4px;
+  background: linear-gradient(90deg, #334155, #475569);
+  border-radius: 99px 0 0 99px;
+}
+
+.msheetSplitSeller {
+  flex: 1 1 0;
+  min-width: 12px;
+  background: linear-gradient(90deg, #10b981, #34d399);
+  border-radius: 0 99px 99px 0;
+}
+
+/* Commission editor — sheet variant */
+.msheetCommissionSection {
+  background: #fff;
+  border: 1px solid #e2e8eb;
+  border-radius: 16px;
+  padding: 12px 14px 14px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+}
+
+.msheetCommissionHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 12px;
+}
+
+.msheetCommissionHeadline {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.msheetCommissionSub {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.msheetCommissionRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.msheetRateControl {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px 0 10px;
+  min-height: 42px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.msheetRateInput {
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  width: 56px;
+  min-width: 0;
+  font-family: inherit;
+  padding: 6px 0;
+}
+
+.msheetRateInput:focus {
+  outline: none;
+}
+
+.msheetRateSuffix {
+  font-size: 15px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.msheetRateSaveBtn {
+  flex-shrink: 0;
+  padding: 0 18px;
+  min-height: 42px;
+  border-radius: 12px;
+  border: 1px solid #102820;
+  background: #102820;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.msheetRateSaveBtn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.msheetCommissionPreview {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #64748b;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.msheetCommissionPreviewSep {
+  color: #cbd5e1;
+  font-weight: 600;
+}
+
+.msheetCommissionErr {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #b91c1c;
+}
+
+.msheetCommissionLockedNote {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px dashed #e2e8f0;
+  border-radius: 14px;
+  line-height: 1.45;
+}
+
+/* Status card */
+.msheetStatusRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.msheetStatusKey {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.msheetStatusVal {
+  font-weight: 800;
+  color: #0f172a;
+  text-align: right;
+  text-transform: capitalize;
+}
+
+.msheetBadgeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.msheetRefRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.msheetRefChip,
+.msheetDateChip {
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 4px 8px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Release — sheet variant */
+.msheetReleaseCard {
+  background: #fff;
+  border: 1px solid #e2e8eb;
+  border-radius: 16px;
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+}
+
+.msheetReleaseTitle {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #94a3b8;
+}
+
+.msheetReleaseNetLine {
+  margin: 0;
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.msheetReleaseNetLine strong {
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.msheetReleasedLine {
+  margin: 0;
+  font-size: 12px;
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.msheetHoldNote {
+  margin: 0;
+  font-size: 12px;
+  color: #92400e;
+  background: #fffbeb;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #fde68a;
+  line-height: 1.4;
+  max-height: 4.5em;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.msheetBlockerRibbon {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.msheetInlineErr {
+  margin: 0;
+  font-size: 12px;
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.msheetReleaseBtns {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.msheetBtnRelease {
+  flex: 1.15;
+  min-height: 44px;
+  border-radius: 12px;
+  border: none;
+  background: #102820;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.msheetBtnRelease:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.msheetBtnHold {
+  flex: 1;
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.msheetBtnUnholdFull {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
 }
 
 .escrowActionCard {
@@ -1359,215 +1854,6 @@
   background: #f1f5f9;
 }
 
-/* Escrow hold — centered modal (matches admin settings / site content dialogs) */
-@keyframes escrowHoldBackdropIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes escrowHoldModalIn {
-  from {
-    transform: translateY(8px) scale(0.98);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
-}
-
-.escrowHoldModalRoot {
-  position: fixed;
-  inset: 0;
-  z-index: 1200;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 18px 28px;
-  box-sizing: border-box;
-}
-
-.escrowHoldModalBackdrop {
-  position: absolute;
-  inset: 0;
-  border: none;
-  padding: 0;
-  margin: 0;
-  background: rgba(15, 23, 42, 0.45);
-  cursor: pointer;
-  animation: escrowHoldBackdropIn 0.2s ease-out forwards;
-}
-
-.escrowHoldModal {
-  position: relative;
-  width: 100%;
-  max-width: 420px;
-  margin: 0;
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 18px 60px rgba(15, 23, 42, 0.28);
-  padding: 18px 28px 16px;
-  max-height: min(560px, 86vh);
-  overflow-y: auto;
-  animation: escrowHoldModalIn 0.16s ease-out forwards;
-}
-
-.escrowHoldModalTitle {
-  margin: 0 0 14px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #f1f5f9;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  text-align: left;
-}
-
-.escrowHoldModalTitleOrder {
-  font-size: 20px;
-  font-weight: 600;
-  color: #0f172a;
-  letter-spacing: -0.025em;
-  line-height: 1.25;
-  word-break: break-word;
-  max-width: 100%;
-}
-
-.escrowHoldModalTitleSub {
-  font-size: 14px;
-  font-weight: 600;
-  color: #64748b;
-  letter-spacing: -0.01em;
-}
-
-.escrowHoldModalDesc {
-  margin: 0 0 14px;
-  font-size: 13px;
-  line-height: 1.45;
-  color: #64748b;
-  text-align: left;
-}
-
-.escrowHoldModalDesc strong {
-  color: #0f172a;
-  font-weight: 600;
-}
-
-.escrowHoldModalLabel {
-  display: block;
-  margin: 0 0 6px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #0f172a;
-}
-
-.escrowHoldModalTextarea {
-  width: 100%;
-  min-height: 96px;
-  padding: 12px 14px;
-  margin: 0 0 10px;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  font-size: 14px;
-  font-family: inherit;
-  line-height: 1.45;
-  resize: none;
-  box-sizing: border-box;
-  color: #0f172a;
-  transition: border-color 0.12s, box-shadow 0.12s;
-}
-
-.escrowHoldModalTextarea:focus {
-  outline: none;
-  border-color: #0f172a;
-  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
-}
-
-.escrowHoldModalTextarea:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.escrowHoldModalErr {
-  margin: -4px 0 12px;
-  font-size: 13px;
-  color: #b91c1c;
-}
-
-.escrowHoldModalActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: flex-end;
-  align-items: center;
-  padding-top: 20px;
-}
-
-.escrowHoldModalBtnCancel {
-  padding: 10px 16px;
-  border-radius: 8px;
-  border: 1px solid #d6dce4;
-  background: #fff;
-  font-weight: 500;
-  font-size: 13px;
-  cursor: pointer;
-  color: #0f172a;
-  font-family: inherit;
-  transition: background 0.12s;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .escrowHoldModalBtnCancel:hover:not(:disabled) {
-    background: #f8fafc;
-  }
-}
-
-.escrowHoldModalBtnCancel:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.escrowHoldModalBtnConfirm {
-  padding: 10px 16px;
-  border-radius: 8px;
-  border: none;
-  background: #b45309;
-  font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
-  color: #fff;
-  font-family: inherit;
-  transition: background 0.12s;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .escrowHoldModalBtnConfirm:hover:not(:disabled) {
-    background: #92400e;
-  }
-}
-
-.escrowHoldModalBtnConfirm:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-@media (max-width: 520px) {
-  .escrowHoldModalActions {
-    flex-direction: column-reverse;
-    align-items: stretch;
-  }
-
-  .escrowHoldModalBtnCancel,
-  .escrowHoldModalBtnConfirm {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
 .expandedSection {
   flex: 1;
   padding: 14px 18px;
@@ -1653,6 +1939,97 @@
 .splitBarSegment {
   border-radius: 99px;
   transition: width 0.3s ease;
+}
+
+.expandedCommissionEdit {
+  margin-top: 12px;
+  padding: 10px 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.expandedCommissionEditLabel {
+  margin: 0 0 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.45px;
+}
+
+.expandedCommissionEditRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.expandedCommissionRateInput {
+  width: 92px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #0f172a;
+  background: #fff;
+}
+
+.expandedCommissionPercentSuffix {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.expandedCommissionSaveBtn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #102820;
+  background: #102820;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.expandedCommissionSaveBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.expandedCommissionHint {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.expandedCommissionErr {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: #b91c1c;
+}
+
+.expandedCommissionLocked {
+  margin: 10px 0 0;
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.expandedCommissionHintStack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.expandedCommissionHintNet {
+  font-size: 11px;
+  color: #64748b;
 }
 
 /* Payout status row */
@@ -5385,6 +5762,99 @@
     padding: 12px 14px;
   }
 
+  /* ── Expanded escrow / release / commission (mobile) ────────────────────── */
+  .expandedPanel .expandedSellerName {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    word-break: break-word;
+    line-clamp: 2;
+    white-space: normal;
+  }
+
+  .expandedPanel .expandedSellerEmail,
+  .expandedPanel .expandedSellerPhone {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .escrowActionCard {
+    padding: 12px 14px;
+  }
+
+  .escrowActionBtns {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .escrowActionBtns .releaseBtnArm,
+  .escrowActionBtns .holdEscrowBtn,
+  .escrowActionBtns .unholdEscrowBtn {
+    width: 100%;
+    flex: none;
+    min-height: 48px;
+    box-sizing: border-box;
+  }
+
+  .escrowHoldReason {
+    max-height: 4.8em;
+    overflow-y: auto;
+    word-break: break-word;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .expandedCommissionEdit {
+    margin-top: 10px;
+    padding: 10px 8px;
+  }
+
+  .expandedCommissionEditRow {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 8px 10px;
+  }
+
+  .expandedCommissionSaveBtn {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .expandedCommissionRateInput {
+    width: 100%;
+    min-height: 44px;
+    font-size: 16px;
+    box-sizing: border-box;
+  }
+
+  .payoutStatusRow .refChip,
+  .payoutStatusRow .dateChip {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  .payoutStatusRow {
+    gap: 6px;
+  }
+
+  .mobileCardTop > div:first-child {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .mobileCardTop .orderId {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   /* ── Confirm reset modal ─────────────────────────────────────────────────── */
   .confirmOverlay {
     align-items: flex-end;
@@ -5457,6 +5927,18 @@
     border-radius: 16px 16px 0 0;
   }
 
+  .breakdownRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .breakdownRow strong {
+    align-self: flex-end;
+    text-align: right;
+    width: 100%;
+  }
+
 }
 
 /* ── Tiny mobile (360px) ─────────────────────────────────────────────────── */
@@ -5487,6 +5969,28 @@
 
   .globalImpactGrid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .mobileCardBreakdown {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .mobileCardBreakdownDivider {
+    display: none;
+  }
+
+  .mobileCardMeta {
+    min-width: 0;
+  }
+
+  .mobileCardBuyer {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    flex: 1;
   }
 
   .modalHeader {

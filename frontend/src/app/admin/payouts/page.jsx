@@ -1,9 +1,8 @@
 'use client'
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
-import { createPortal } from 'react-dom'
 import { FiArrowUp, FiArrowDown, FiRotateCcw } from 'react-icons/fi'
-import { TbX } from 'react-icons/tb'
+import { TbCreditCardPay, TbPlayerPause, TbX } from 'react-icons/tb'
 import { LuSettings2 } from 'react-icons/lu'
 
 import { useAdminPayoutsPage } from '@/hooks'
@@ -14,10 +13,12 @@ import {
   PAYOUT_STATUS_META,
   getTxnCommissionParts,
 } from '@/utils/adminPayouts'
+import { computeCommissionSnapshot } from '@/utils/commissionSnapshot'
 import { formatCount, formatPHPMobile } from '@/utils/formatCount'
 
 import { Dropdown } from '@/components/ui'
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
+import confirmModalStyles from '@/components/ui/Modal/ConfirmModal.module.css'
 
 import styles from './payouts.module.css'
 
@@ -300,7 +301,17 @@ function PayoutsTableSkeletonBody() {
 
 // ─── Escrow release (expanded row / mobile expanded) ─────────────────────────
 
-function EscrowReleasePanel({ t, releaseOrder, holdOrder, unholdOrder }) {
+function EscrowReleasePanel({
+  t,
+  releaseOrder,
+  holdOrder,
+  unholdOrder,
+  compactUi = false,
+  /** `'sheet'` — mobile order-details modal layout (distinct from desktop expanded row). */
+  variant = 'default',
+}) {
+  const isSheet = variant === 'sheet'
+  const useCompactCopy = compactUi || isSheet
   const [releaseModalOpen, setReleaseModalOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(null)
@@ -329,25 +340,26 @@ function EscrowReleasePanel({ t, releaseOrder, holdOrder, unholdOrder }) {
     setHoldModalErr(null)
   }, [t.id])
 
-  useEffect(() => {
-    if (!holdModalOpen) return
-    const onKey = (e) => {
-      if (e.key === 'Escape' && !busy) closeHoldModal()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [holdModalOpen, busy, closeHoldModal])
-
   const canRelease =
     t.payoutStatus === 'escrowed' &&
     t.paymentStatus === 'paid' &&
     t.fulfillmentStatus === 'completed'
 
   const blockers = []
-  if (t.paymentStatus !== 'paid') blockers.push('Payment is not marked paid.')
-  if (t.fulfillmentStatus !== 'completed') blockers.push('Fulfillment is not completed.')
-  if (t.payoutStatus === 'on_hold') blockers.push('Escrow is on hold — remove hold before releasing.')
-  if (t.payoutStatus === 'released') blockers.push('Already released.')
+  if (t.paymentStatus !== 'paid') {
+    blockers.push(useCompactCopy ? 'Not paid.' : 'Payment is not marked paid.')
+  }
+  if (t.fulfillmentStatus !== 'completed') {
+    blockers.push(useCompactCopy ? 'Service not completed.' : 'Fulfillment is not completed.')
+  }
+  if (t.payoutStatus === 'on_hold') {
+    blockers.push(
+      useCompactCopy ? 'On hold — remove hold first.' : 'Escrow is on hold — remove hold before releasing.',
+    )
+  }
+  if (t.payoutStatus === 'released') {
+    blockers.push(useCompactCopy ? 'Released.' : 'Already released.')
+  }
 
   async function handleConfirmRelease() {
     if (busy) return
@@ -372,7 +384,9 @@ function EscrowReleasePanel({ t, releaseOrder, holdOrder, unholdOrder }) {
   async function submitHoldFromModal() {
     const reason = holdReasonInput.trim()
     if (!reason) {
-      setHoldModalErr('A reason is required before placing this order on hold.')
+      setHoldModalErr(
+        useCompactCopy ? 'Enter a hold reason.' : 'A reason is required before placing this order on hold.',
+      )
       return
     }
     setBusy(true)
@@ -402,115 +416,143 @@ function EscrowReleasePanel({ t, releaseOrder, holdOrder, unholdOrder }) {
     }
   }
 
-  const holdModal =
-    holdModalOpen && typeof document !== 'undefined'
-      ? createPortal(
-          <div className={styles.escrowHoldModalRoot}>
-            <button
-              type="button"
-              className={styles.escrowHoldModalBackdrop}
-              onClick={closeHoldModal}
-              aria-label="Close dialog"
-            />
-            <div
-              className={styles.escrowHoldModal}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="escrow-hold-modal-title"
-            >
-              <h2 id="escrow-hold-modal-title" className={styles.escrowHoldModalTitle}>
-                <span className={styles.escrowHoldModalTitleOrder}>{t.orderId || t.orderUuid || '—'}</span>
-                <span className={styles.escrowHoldModalTitleSub}>Place on hold</span>
-              </h2>
-              <p className={styles.escrowHoldModalDesc}>
-                Funds stay with the platform until you remove this hold; the seller will not be paid out until then.
-              </p>
-              <label htmlFor="escrow-hold-reason" className={styles.escrowHoldModalLabel}>
-                Reason
-              </label>
-              <textarea
-                id="escrow-hold-reason"
-                className={styles.escrowHoldModalTextarea}
-                rows={4}
-                value={holdReasonInput}
-                onChange={(e) => {
-                  setHoldReasonInput(e.target.value)
-                  if (holdModalErr) setHoldModalErr(null)
-                }}
-                placeholder="e.g. Dispute opened, compliance review, buyer request…"
-                disabled={busy}
-                autoFocus
-              />
-              {holdModalErr && <p className={styles.escrowHoldModalErr}>{holdModalErr}</p>}
-              <div className={styles.escrowHoldModalActions}>
-                <button
-                  type="button"
-                  className={styles.escrowHoldModalBtnCancel}
-                  onClick={closeHoldModal}
-                  disabled={busy}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className={styles.escrowHoldModalBtnConfirm}
-                  onClick={submitHoldFromModal}
-                  disabled={busy}
-                >
-                  {busy ? 'Placing hold…' : 'Place on hold'}
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body,
-        )
-      : null
-
   return (
     <>
-      {holdModal}
+      <ConfirmModal
+        open={holdModalOpen}
+        variant="warning"
+        icon={<TbPlayerPause size={22} strokeWidth={1.75} aria-hidden />}
+        title={
+          <span className={confirmModalStyles.modalTitleDivider}>
+            <span className={confirmModalStyles.titleCompound}>
+              <span className={confirmModalStyles.titleCompoundOrder}>
+                {t.orderId || t.orderUuid || '—'}
+              </span>
+              <span className={confirmModalStyles.titleCompoundSub}>Place on hold</span>
+            </span>
+          </span>
+        }
+        message={
+          useCompactCopy
+            ? 'Funds stay on hold until you remove it. Seller is not paid until then.'
+            : 'Funds stay with the platform until you remove this hold; the seller will not be paid out until then.'
+        }
+        subtitleAlign="left"
+        extra={
+          <>
+            <label htmlFor={`escrow-hold-reason-${t.id}`} className={confirmModalStyles.modalFieldLabel}>
+              Reason
+            </label>
+            <textarea
+              id={`escrow-hold-reason-${t.id}`}
+              className={confirmModalStyles.modalTextarea}
+              rows={4}
+              value={holdReasonInput}
+              onChange={(e) => {
+                setHoldReasonInput(e.target.value)
+                if (holdModalErr) setHoldModalErr(null)
+              }}
+              placeholder={
+                useCompactCopy
+                  ? 'e.g. Dispute, review, buyer request…'
+                  : 'e.g. Dispute opened, compliance review, buyer request…'
+              }
+              disabled={busy}
+              autoFocus
+            />
+            {holdModalErr ? <p className={confirmModalStyles.modalFieldError}>{holdModalErr}</p> : null}
+          </>
+        }
+        confirmLabel={
+          busy ? (useCompactCopy ? 'Holding…' : 'Placing hold…') : useCompactCopy ? 'Place hold' : 'Place on hold'
+        }
+        cancelLabel="Cancel"
+        onConfirm={submitHoldFromModal}
+        onCancel={closeHoldModal}
+        disableActions={busy}
+      />
       <ConfirmModal
         open={releaseModalOpen}
         variant="primary"
-        title="Release payout?"
-        message={`This will mark order ${t.orderId || t.orderUuid || '—'} as released. Net to seller after platform fee: ${formatPHP(Number(t.net_amount) || 0)}. This action should only be used when you intend to complete the payout release.`}
-        confirmLabel={busy ? 'Releasing…' : 'Release payout'}
+        icon={<TbCreditCardPay size={22} strokeWidth={1.75} aria-hidden />}
+        title={useCompactCopy ? 'Release payout' : 'Release payout?'}
+        message={
+          useCompactCopy ? (
+            <>
+              <strong>{t.orderId || t.orderUuid || '—'}</strong>
+              {' · '}
+              Net to seller{' '}
+              <strong className={confirmModalStyles.subtitleAccentGreen}>
+                {formatPHP(Number(t.net_amount) || 0)}
+              </strong>
+              . Continue only when the payout should be finalized.
+            </>
+          ) : (
+            <>
+              This will mark order{' '}
+              <strong>{t.orderId || t.orderUuid || '—'}</strong>
+              {' '}
+              as released. Net to seller after platform fee:{' '}
+              <strong className={confirmModalStyles.subtitleAccentGreen}>
+                {formatPHP(Number(t.net_amount) || 0)}
+              </strong>
+              . This action should only be used when you intend to complete the payout release.
+            </>
+          )
+        }
+        confirmLabel={busy ? 'Releasing…' : useCompactCopy ? 'Release' : 'Release payout'}
         cancelLabel="Cancel"
         onConfirm={handleConfirmRelease}
         onCancel={handleReleaseModalCancel}
         disableActions={busy}
       />
-    <div className={styles.escrowActionCard}>
-      <p className={styles.escrowActionTitle}>Release payout</p>
-      <p className={styles.escrowActionHint}>
-        Net to seller after platform fee:{' '}
-        <strong>{formatPHP(Number(t.net_amount) || 0)}</strong>
+    <div className={isSheet ? styles.msheetReleaseCard : styles.escrowActionCard}>
+      <p className={isSheet ? styles.msheetReleaseTitle : styles.escrowActionTitle}>
+        Release payout
+      </p>
+      <p className={isSheet ? styles.msheetReleaseNetLine : styles.escrowActionHint}>
+        {useCompactCopy ? (
+          <>
+            Net to seller <strong>{formatPHP(Number(t.net_amount) || 0)}</strong>
+          </>
+        ) : (
+          <>
+            Net to seller after platform fee:{' '}
+            <strong>{formatPHP(Number(t.net_amount) || 0)}</strong>
+          </>
+        )}
       </p>
       {t.payoutStatus === 'released' && (t.released_at || t.payoutDate) && (
-        <p className={styles.escrowActionReleased}>
+        <p className={isSheet ? styles.msheetReleasedLine : styles.escrowActionReleased}>
           Released {t.released_at ? String(t.released_at).slice(0, 10) : t.payoutDate}
           {t.payoutReference ? ` · Ref ${t.payoutReference}` : ''}
         </p>
       )}
       {t.hold_reason && (
-        <p className={styles.escrowHoldReason}>
-          Hold reason: {t.hold_reason}
+        <p className={isSheet ? styles.msheetHoldNote : styles.escrowHoldReason}>
+          Hold: {t.hold_reason}
         </p>
       )}
       {blockers.length > 0 && t.payoutStatus !== 'released' && (
-        <ul className={styles.escrowBlockers}>
-          {blockers.map((b) => (
-            <li key={b}>{b}</li>
-          ))}
-        </ul>
+        isSheet ? (
+          <div className={styles.msheetBlockerRibbon} role="status">
+            {blockers.join(' · ')}
+          </div>
+        ) : (
+          <ul className={styles.escrowBlockers}>
+            {blockers.map((b) => (
+              <li key={b}>{b}</li>
+            ))}
+          </ul>
+        )
       )}
-      {err && <p className={styles.escrowActionErr}>{err}</p>}
-      <div className={styles.escrowActionBtns}>
+      {err && <p className={isSheet ? styles.msheetInlineErr : styles.escrowActionErr}>{err}</p>}
+      <div className={isSheet ? styles.msheetReleaseBtns : styles.escrowActionBtns}>
         {t.payoutStatus === 'escrowed' && (
           <>
             <button
               type="button"
-              className={styles.releaseBtnArm}
+              className={isSheet ? styles.msheetBtnRelease : styles.releaseBtnArm}
               disabled={!canRelease || busy}
               onClick={() => canRelease && setReleaseModalOpen(true)}
             >
@@ -518,7 +560,7 @@ function EscrowReleasePanel({ t, releaseOrder, holdOrder, unholdOrder }) {
             </button>
             <button
               type="button"
-              className={styles.holdEscrowBtn}
+              className={isSheet ? styles.msheetBtnHold : styles.holdEscrowBtn}
               disabled={busy}
               onClick={openHoldModal}
             >
@@ -527,7 +569,12 @@ function EscrowReleasePanel({ t, releaseOrder, holdOrder, unholdOrder }) {
           </>
         )}
         {t.payoutStatus === 'on_hold' && (
-          <button type="button" className={styles.unholdEscrowBtn} disabled={busy} onClick={doUnhold}>
+          <button
+            type="button"
+            className={isSheet ? styles.msheetBtnUnholdFull : styles.unholdEscrowBtn}
+            disabled={busy}
+            onClick={doUnhold}
+          >
             Remove hold
           </button>
         )}
@@ -641,9 +688,266 @@ function StatCard({ label, shortLabel, value, percent, className }) {
   )
 }
 
-function ExpandedEscrowDetails({ t, commissionSettings, releaseOrder, holdOrder, unholdOrder }) {
+function EscrowCommissionRateEditor({
+  t,
+  updateOrderCommission,
+  compactUi = false,
+  variant = 'default',
+}) {
+  const isSheet = variant === 'sheet'
+  const useCompactCopy = compactUi || isSheet
+  const locked = t.payoutStatus === 'released'
+  const gross = Number(t.amount) || Number(t.gross_amount) || 0
+  const savedRate = Number(t.commission_rate_percent)
+
+  const [draft, setDraft] = useState(() => (Number.isFinite(savedRate) ? String(savedRate) : ''))
+  const [localErr, setLocalErr] = useState(null)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    const sr = Number(t.commission_rate_percent)
+    setDraft(Number.isFinite(sr) ? String(sr) : '')
+    setLocalErr(null)
+    setSaving(false)
+  }, [t.id, t.commission_rate_percent, t.payoutStatus])
+
+  const parsedDraft = useMemo(() => {
+    const s = draft.trim().replace(',', '.')
+    if (s === '') return null
+    const n = Number.parseFloat(s)
+    if (!Number.isFinite(n) || n < 0 || n > 100) return null
+    return Math.round(n * 100) / 100
+  }, [draft])
+
+  const unchanged =
+    parsedDraft != null &&
+    Math.round(parsedDraft * 100) === Math.round((Number.isFinite(savedRate) ? savedRate : 0) * 100)
+
+  const preview =
+    parsedDraft != null && !unchanged ? computeCommissionSnapshot(gross, parsedDraft) : null
+
+  async function handleSave() {
+    if (!parsedDraft) {
+      setLocalErr(useCompactCopy ? 'Enter 0–100.' : 'Rate must be a number from 0 through 100.')
+      return
+    }
+    setSaving(true)
+    setLocalErr(null)
+    try {
+      await updateOrderCommission(t.orderUuid, parsedDraft)
+    } catch (e) {
+      setLocalErr(e instanceof Error ? e.message : 'Update failed.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (locked) {
+    return (
+      <p
+        className={
+          isSheet ? styles.msheetCommissionLockedNote : styles.expandedCommissionLocked
+        }
+      >
+        {useCompactCopy
+          ? 'Commission is locked after release.'
+          : 'Commission rate cannot be changed after this order has been released.'}
+      </p>
+    )
+  }
+
+  if (isSheet) {
+    return (
+      <section className={styles.msheetCommissionSection} aria-label="Commission rate for this order">
+        <div className={styles.msheetCommissionHeader}>
+          <span className={styles.msheetCommissionHeadline}>Commission rate</span>
+          <span className={styles.msheetCommissionSub}>Applies only to this order</span>
+        </div>
+        <div className={styles.msheetCommissionRow}>
+          <div className={styles.msheetRateControl}>
+            <input
+              type="text"
+              inputMode="decimal"
+              className={styles.msheetRateInput}
+              value={draft}
+              onChange={(e) => {
+                setDraft(e.target.value)
+                setLocalErr(null)
+              }}
+              aria-invalid={Boolean(localErr)}
+              aria-label="Commission percent"
+            />
+            <span className={styles.msheetRateSuffix}>%</span>
+          </div>
+          <button
+            type="button"
+            className={styles.msheetRateSaveBtn}
+            disabled={saving || parsedDraft === null || unchanged}
+            onClick={handleSave}
+            aria-label={saving ? 'Saving commission rate' : 'Save commission rate'}
+          >
+            {saving ? '…' : 'Save'}
+          </button>
+        </div>
+        {preview && (
+          <div className={styles.msheetCommissionPreview}>
+            <span>{formatPHP(preview.commissionAmountPhp)} fee</span>
+            <span className={styles.msheetCommissionPreviewSep}>·</span>
+            <span>{formatPHP(preview.netAmountPhp)} net</span>
+          </div>
+        )}
+        {localErr && <p className={styles.msheetCommissionErr}>{localErr}</p>}
+      </section>
+    )
+  }
+
+  return (
+    <div className={styles.expandedCommissionEdit}>
+      <p className={styles.expandedCommissionEditLabel}>
+        {useCompactCopy ? 'Commission % (this order)' : 'Commission rate for this order'}
+      </p>
+      <div className={styles.expandedCommissionEditRow}>
+        <input
+          type="text"
+          inputMode="decimal"
+          className={styles.expandedCommissionRateInput}
+          value={draft}
+          onChange={(e) => {
+            setDraft(e.target.value)
+            setLocalErr(null)
+          }}
+          aria-invalid={Boolean(localErr)}
+        />
+        <span className={styles.expandedCommissionPercentSuffix}>%</span>
+        <button
+          type="button"
+          className={styles.expandedCommissionSaveBtn}
+          disabled={saving || parsedDraft === null || unchanged}
+          onClick={handleSave}
+        >
+          {saving ? 'Saving…' : 'Save'}
+        </button>
+      </div>
+      {preview && (
+        <p
+          className={`${styles.expandedCommissionHint}${
+            useCompactCopy ? ` ${styles.expandedCommissionHintStack}` : ''
+          }`}
+        >
+          {useCompactCopy ? (
+            <>
+              Fee {formatPHP(preview.commissionAmountPhp)}
+              <span className={styles.expandedCommissionHintNet}>
+                Net {formatPHP(preview.netAmountPhp)}
+              </span>
+            </>
+          ) : (
+            <>
+              Preview: platform fee {formatPHP(preview.commissionAmountPhp)} · seller net{' '}
+              {formatPHP(preview.netAmountPhp)}
+            </>
+          )}
+        </p>
+      )}
+      {localErr && <p className={styles.expandedCommissionErr}>{localErr}</p>}
+    </div>
+  )
+}
+
+/** Dedicated mobile bottom-sheet layout (not the desktop expanded row). */
+function MobileTxnDetailSheetContent({
+  t,
+  commissionSettings,
+  releaseOrder,
+  holdOrder,
+  unholdOrder,
+  updateOrderCommission,
+}) {
   const { rate, commission, sellerEarnings } = getTxnCommissionParts(t, commissionSettings)
-  const snapshot = t.commission_amount != null
+  const splitRate = Math.min(100, Math.max(0, Number(rate) || 0))
+
+  return (
+    <div className={styles.msheetRoot}>
+      <section className={styles.msheetCard} aria-label="Seller">
+        <div className={styles.msheetEyebrow}>Seller</div>
+        <div className={styles.msheetSellerBiz}>{t.sellerName}</div>
+        {(t.sellerEmail || '').trim().length > 0 && (
+          <div className={styles.msheetSellerContact}>{t.sellerEmail}</div>
+        )}
+        {(t.sellerPhone || '').trim().length > 0 && (
+          <div className={styles.msheetSellerPhone}>{t.sellerPhone}</div>
+        )}
+      </section>
+
+      <section className={styles.msheetCard} aria-label="Commission breakdown">
+        <div className={styles.msheetEyebrow}>Money split</div>
+        <div className={styles.msheetMoneyLines}>
+          <div className={styles.msheetMoneyLine}>
+            <span>Collected</span>
+            <span className={styles.msheetMoneyVal}>{formatPHP(t.amount)}</span>
+          </div>
+          <div className={styles.msheetMoneyLineMuted}>
+            <span>Fee ({rate}%)</span>
+            <span className={styles.msheetMoneyDeduct}>− {formatPHP(commission)}</span>
+          </div>
+        </div>
+        <div className={styles.msheetSellerNetBanner}>
+          <span className={styles.msheetSellerNetLbl}>Seller receives</span>
+          <span className={styles.msheetSellerNetFig}>{formatPHP(sellerEarnings)}</span>
+        </div>
+        <div className={styles.msheetSplitTrack} title={`Platform ${rate}% · Seller ${100 - rate}%`}>
+          <span className={styles.msheetSplitPlat} style={{ flex: `0 0 ${splitRate}%` }} />
+          <span className={styles.msheetSplitSeller} style={{ flex: '1 1 0', minWidth: 0 }} />
+        </div>
+      </section>
+
+      <EscrowCommissionRateEditor
+        t={t}
+        updateOrderCommission={updateOrderCommission}
+        variant="sheet"
+      />
+
+      <section className={styles.msheetCard} aria-label="Order status">
+        <div className={styles.msheetEyebrow}>Status</div>
+        <div className={styles.msheetStatusRow}>
+          <span className={styles.msheetStatusKey}>Service</span>
+          <span className={styles.msheetStatusVal}>{t.fulfillmentStatus || '—'}</span>
+        </div>
+        <div className={styles.msheetBadgeRow}>
+          <Badge type="payment" value={t.paymentStatus} />
+          <Badge type="payout" value={t.payoutStatus} />
+        </div>
+        {(t.payoutReference || t.payoutDate) && (
+          <div className={styles.msheetRefRow}>
+            {t.payoutReference && (
+              <span className={styles.msheetRefChip}>Ref {t.payoutReference}</span>
+            )}
+            {t.payoutDate && <span className={styles.msheetDateChip}>{t.payoutDate}</span>}
+          </div>
+        )}
+      </section>
+
+      <EscrowReleasePanel
+        t={t}
+        releaseOrder={releaseOrder}
+        holdOrder={holdOrder}
+        unholdOrder={unholdOrder}
+        variant="sheet"
+      />
+    </div>
+  )
+}
+
+function ExpandedEscrowDetails({
+  t,
+  commissionSettings,
+  releaseOrder,
+  holdOrder,
+  unholdOrder,
+  updateOrderCommission,
+  compactUi = false,
+}) {
+  const { rate, commission, sellerEarnings } = getTxnCommissionParts(t, commissionSettings)
 
   return (
     <div className={styles.expandedPanelRow}>
@@ -663,16 +967,16 @@ function ExpandedEscrowDetails({ t, commissionSettings, releaseOrder, holdOrder,
         <div className={styles.expandedSection}>
           <p className={styles.expandedSectionLabel}>
             <svg viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.93V18h-2v-1.07A4.004 4.004 0 018 13h2c0 1.1.9 2 2 2s2-.9 2-2c0-1.1-.9-2-2-2a4 4 0 01-4-4c0-1.86 1.28-3.41 3-3.86V2h2v1.14A4.004 4.004 0 0116 7h-2c0-1.1-.9-2-2-2s-2 .9-2 2 .9 2 2 2a4 4 0 014 4c0 1.86-1.28 3.41-3 3.93z" fill="currentColor"/></svg>
-            Commission breakdown
+            {compactUi ? 'Commission' : 'Commission breakdown'}
           </p>
           <div className={styles.breakdownRows}>
             <div className={styles.breakdownRow}>
-              <span>Total collected</span>
+              <span>{compactUi ? 'Collected' : 'Total collected'}</span>
               <strong>{formatPHP(t.amount)}</strong>
             </div>
             <div className={`${styles.breakdownRow} ${styles.breakdownPlatform}`}>
               <span>
-                Platform fee ({rate}%)
+                {compactUi ? `Fee (${rate}%)` : `Platform fee (${rate}%)`}
               </span>
               <strong>− {formatPHP(commission)}</strong>
             </div>
@@ -685,6 +989,11 @@ function ExpandedEscrowDetails({ t, commissionSettings, releaseOrder, holdOrder,
             <div className={styles.splitBarSegment} style={{ width: `${rate}%`, background: '#334155' }} title={`Platform ${rate}%`} />
             <div className={styles.splitBarSegment} style={{ width: `${100 - rate}%`, background: '#10b981' }} title={`Seller ${100 - rate}%`} />
           </div>
+          <EscrowCommissionRateEditor
+            t={t}
+            updateOrderCommission={updateOrderCommission}
+            compactUi={compactUi}
+          />
         </div>
 
         <div className={styles.expandedDivider}/>
@@ -695,7 +1004,8 @@ function ExpandedEscrowDetails({ t, commissionSettings, releaseOrder, holdOrder,
             Status
           </p>
           <p className={styles.expandedFulfillmentLine}>
-            Fulfillment: <strong>{t.fulfillmentStatus || '—'}</strong>
+            {compactUi ? 'Service: ' : 'Fulfillment: '}
+            <strong>{t.fulfillmentStatus || '—'}</strong>
           </p>
           <div className={styles.payoutStatusRow}>
             <Badge type="payment" value={t.paymentStatus} />
@@ -714,6 +1024,7 @@ function ExpandedEscrowDetails({ t, commissionSettings, releaseOrder, holdOrder,
           releaseOrder={releaseOrder}
           holdOrder={holdOrder}
           unholdOrder={unholdOrder}
+          compactUi={compactUi}
         />
       </div>
     </div>
@@ -1213,6 +1524,7 @@ export default function AdminPayoutsPage() {
     releaseOrder,
     holdOrder,
     unholdOrder,
+    updateOrderCommission,
     clearFilters,
     hasFilters,
     showTransactions,
@@ -1224,7 +1536,8 @@ export default function AdminPayoutsPage() {
     typeof window !== 'undefined' ? window.innerWidth <= 640 : false
   )
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
-  const [mobileExpandedRow, setMobileExpandedRow] = useState(null)
+  /** When set on mobile, order details open in a bottom sheet (not inline). */
+  const [mobileDetailModalId, setMobileDetailModalId] = useState(null)
 
   const activeFilterLabels = useMemo(() => {
     const labels = []
@@ -1240,6 +1553,38 @@ export default function AdminPayoutsPage() {
     return labels
   }, [filterPayout, filterSeller, filterPayment, sellerOptions])
 
+  const mobileDetailTxn = useMemo(() => {
+    if (!mobileDetailModalId) return null
+    return transactions.find((x) => x.id === mobileDetailModalId) ?? null
+  }, [transactions, mobileDetailModalId])
+
+  useEffect(() => {
+    if (!mobileDetailModalId || !isMobile) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prevOverflow
+    }
+  }, [mobileDetailModalId, isMobile])
+
+  useEffect(() => {
+    if (!mobileDetailModalId) return
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setMobileDetailModalId(null)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [mobileDetailModalId])
+
+  useEffect(() => {
+    if (
+      mobileDetailModalId &&
+      !transactions.some((t) => t.id === mobileDetailModalId)
+    ) {
+      setMobileDetailModalId(null)
+    }
+  }, [transactions, mobileDetailModalId])
+
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 640px)')
     const handler = (e) => setIsMobile(e.matches)
@@ -1249,7 +1594,10 @@ export default function AdminPayoutsPage() {
   }, [])
 
   useEffect(() => {
-    if (!isMobile) setMobileFiltersOpen(false)
+    if (!isMobile) {
+      setMobileFiltersOpen(false)
+      setMobileDetailModalId(null)
+    }
   }, [isMobile])
 
   return (
@@ -1359,7 +1707,13 @@ export default function AdminPayoutsPage() {
                       <button
                         type="button"
                         className={styles.mobileFilterBtn}
-                        onClick={() => setMobileFiltersOpen(v => !v)}
+                        onClick={() =>
+                          setMobileFiltersOpen((open) => {
+                            const next = !open
+                            if (next) setMobileDetailModalId(null)
+                            return next
+                          })
+                        }
                         aria-haspopup="dialog"
                         aria-expanded={mobileFiltersOpen}
                         aria-controls="payoutsMobileFilters"
@@ -1515,52 +1869,44 @@ export default function AdminPayoutsPage() {
             ) : (
               paginatedRows.map((t) => {
                 const { rate, commission, sellerEarnings } = getTxnCommissionParts(t, commissionSettings)
-                const mobileOpen = mobileExpandedRow === t.id
                 return (
-                  <React.Fragment key={t.id}>
-                    <div className={styles.mobileCard}>
-                      <div className={styles.mobileCardTop}>
-                        <div>
-                          <p className={styles.orderId}>{t.orderId}</p>
-                        </div>
-                        <p className={styles.mobileCardAmount}>{formatPHP(t.amount)}</p>
+                  <div key={t.id} className={styles.mobileCard}>
+                    <div className={styles.mobileCardTop}>
+                      <div>
+                        <p className={styles.orderId}>{t.orderId}</p>
                       </div>
-                      <p className={styles.mobileCardService}>{t.service}</p>
-                      <div className={styles.mobileCardMeta}>
-                        <span className={styles.mobileCardBuyer}>{t.buyerName}</span>
-                        <span className={styles.mobileCardDate}>{t.date}</span>
-                      </div>
-                      <div className={styles.mobileCardStatuses}>
-                        <Badge type="payment" value={t.paymentStatus}/>
-                        <Badge type="payout" value={t.payoutStatus}/>
-                      </div>
-                      <div className={styles.mobileCardBreakdown}>
-                        <span className={styles.mobileCardBreakdownItem}>Platform <strong>{formatPHP(commission)}</strong></span>
-                        <span className={styles.mobileCardBreakdownDivider}>·</span>
-                        <span className={styles.mobileCardBreakdownItem}>Seller <strong className={styles.mobileCardEarnings}>{formatPHP(sellerEarnings)}</strong></span>
-                      </div>
-                      <button
-                        type="button"
-                        className={styles.mobileCardDetailsBtn}
-                        onClick={() => setMobileExpandedRow(mobileOpen ? null : t.id)}
-                      >
-                        {mobileOpen ? 'Hide details' : 'Details & release'}
-                      </button>
+                      <p className={styles.mobileCardAmount}>{formatPHP(t.amount)}</p>
                     </div>
-                    {mobileOpen && (
-                      <div className={styles.mobileExpandedBelow}>
-                        <div className={styles.expandedPanel}>
-                          <ExpandedEscrowDetails
-                            t={t}
-                            commissionSettings={commissionSettings}
-                            releaseOrder={releaseOrder}
-                            holdOrder={holdOrder}
-                            unholdOrder={unholdOrder}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </React.Fragment>
+                    <p className={styles.mobileCardService}>{t.service}</p>
+                    <div className={styles.mobileCardMeta}>
+                      <span className={styles.mobileCardBuyer}>{t.buyerName}</span>
+                      <span className={styles.mobileCardDate}>{t.date}</span>
+                    </div>
+                    <div className={styles.mobileCardStatuses}>
+                      <Badge type="payment" value={t.paymentStatus}/>
+                      <Badge type="payout" value={t.payoutStatus}/>
+                    </div>
+                    <div className={styles.mobileCardBreakdown}>
+                      <span className={styles.mobileCardBreakdownItem}>Platform <strong>{formatPHP(commission)}</strong></span>
+                      <span className={styles.mobileCardBreakdownDivider}>·</span>
+                      <span className={styles.mobileCardBreakdownItem}>Seller <strong className={styles.mobileCardEarnings}>{formatPHP(sellerEarnings)}</strong></span>
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.mobileCardDetailsBtn}
+                      onClick={() => {
+                        setMobileFiltersOpen(false)
+                        setMobileDetailModalId((cur) => (cur === t.id ? null : t.id))
+                      }}
+                      aria-haspopup="dialog"
+                      aria-expanded={mobileDetailModalId === t.id}
+                      aria-controls={
+                        mobileDetailModalId === t.id ? 'payoutsMobileTxnDetail' : undefined
+                      }
+                    >
+                      Details
+                    </button>
+                  </div>
                 )
               })
             )}
@@ -1698,6 +2044,8 @@ export default function AdminPayoutsPage() {
                                 releaseOrder={releaseOrder}
                                 holdOrder={holdOrder}
                                 unholdOrder={unholdOrder}
+                                updateOrderCommission={updateOrderCommission}
+                                compactUi={isMobile}
                               />
                             </div>
                           </td>
@@ -1958,6 +2306,48 @@ export default function AdminPayoutsPage() {
               </button>
             </div>
           </div>
+
+          {mobileDetailTxn && (
+            <>
+              <div
+                className={styles.mobileTxnDetailBackdrop}
+                onClick={() => setMobileDetailModalId(null)}
+                aria-hidden
+              />
+              <div
+                id="payoutsMobileTxnDetail"
+                className={styles.mobileTxnDetailSheet}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="payouts-mobile-txn-detail-title"
+              >
+                <div className={styles.mobileTxnDetailHandle} aria-hidden />
+                <div className={styles.mobileTxnDetailHeader}>
+                  <h2 id="payouts-mobile-txn-detail-title" className={styles.mobileTxnDetailTitle}>
+                    {mobileDetailTxn.orderId || 'Order'}
+                  </h2>
+                  <button
+                    type="button"
+                    className={styles.mobileFilterClose}
+                    onClick={() => setMobileDetailModalId(null)}
+                    aria-label="Close order details"
+                  >
+                    <Icon.Close />
+                  </button>
+                </div>
+                <div className={styles.mobileTxnDetailBody}>
+                  <MobileTxnDetailSheetContent
+                    t={mobileDetailTxn}
+                    commissionSettings={commissionSettings}
+                    releaseOrder={releaseOrder}
+                    holdOrder={holdOrder}
+                    unholdOrder={unholdOrder}
+                    updateOrderCommission={updateOrderCommission}
+                  />
+                </div>
+              </div>
+            </>
+          )}
         </>
       )}
 

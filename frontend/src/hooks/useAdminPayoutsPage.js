@@ -330,6 +330,22 @@ export function useAdminPayoutsPage() {
     [refreshAll],
   )
 
+  const updateOrderCommission = useCallback(
+    async (orderUuid, commissionRatePercent) => {
+      const res = await fetch('/api/admin/payouts/commission', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ orderId: orderUuid, commissionRatePercent }),
+      })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(body?.error || 'Commission update failed.')
+      await refreshAll()
+      return body
+    },
+    [refreshAll],
+  )
+
   const clearFilters = () => {
     setSearch('')
     setFilterSeller('all')
@@ -391,6 +407,7 @@ export function useAdminPayoutsPage() {
     releaseOrder,
     holdOrder,
     unholdOrder,
+    updateOrderCommission,
     clearFilters,
     hasFilters,
     showTransactions,
