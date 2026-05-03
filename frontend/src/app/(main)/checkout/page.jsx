@@ -121,7 +121,7 @@ import { supabase } from "@/lib/supabase/client"
         </header>
         <section className={styles.content}>
           <div className={styles.centeredBox}>
-            <p className={styles.muted}>Loading your booking…</p>
+            <p className={styles.muted}>Loading your cart…</p>
           </div>
         </section>
       </main>
@@ -132,7 +132,7 @@ import { supabase } from "@/lib/supabase/client"
 
   const productIds = filteredItems.map((i) => String(i.id))
 
-  const submitCheckout = async () => {
+  const checkoutAndPay = async () => {
     setSubmitError("")
     if (submitting) return
     setSubmitting(true)
@@ -169,13 +169,43 @@ import { supabase } from "@/lib/supabase/client"
 
       const body = await res.json().catch(() => null)
       if (!res.ok) {
-        setSubmitError(body?.error || "Unable to start checkout. Please try again.")
+        setSubmitError(body?.error || "Could not proceed to checkout. Please try again.")
         return
       }
 
-      // New flow: booking request is created first and awaits seller confirmation.
+      const orderIds = Array.isArray(body?.order_ids)
+        ? body.order_ids.map((id) => String(id).trim()).filter(Boolean)
+        : []
+
+      if (orderIds.length === 0) {
+        setSubmitError("Checkout could not continue. Contact support if this persists.")
+        router.replace('/profile/purchases')
+        return
+      }
+
+      const payRes = await fetch('/api/checkout/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderIds }),
+      })
+
+      const payBody = await payRes.json().catch(() => null)
+      if (payRes.ok && payBody?.redirect_url) {
+        window.location.href = payBody.redirect_url
+        return
+      }
+
+      const payErrMsg =
+        typeof payBody?.error === 'string'
+          ? payBody.error
+          : 'Could not open secure payment. Add items again from cart to checkout and pay.'
+      try {
+        sessionStorage.setItem('lv_checkout_pay_error', payErrMsg)
+      } catch {
+        /* ignore quota / privacy mode */
+      }
       router.replace('/profile/purchases')
-    } catch (e) {
+    } catch {
       setSubmitError("Network error. Please try again.")
     } finally {
       setSubmitting(false)
@@ -207,7 +237,7 @@ import { supabase } from "@/lib/supabase/client"
                  <circle cx="32" cy="38" r="2.5" fill="currentColor" stroke="none" />
                </svg>
              </div>
-             <h2 className={styles.emptyTitle}>No items to book</h2>
+             <h2 className={styles.emptyTitle}>Nothing to checkout</h2>
              <p className={styles.emptyText}>
                Your cart is empty or the selected items are no longer available.
              </p>
@@ -218,9 +248,9 @@ import { supabase } from "@/lib/supabase/client"
          ) : (
            <div className={styles.layout}>
              <div className={styles.leftColumn}>
-               <h2 className={styles.sectionTitle}>Booking Details</h2>
+               <h2 className={styles.sectionTitle}>Your details</h2>
                <p className={styles.sectionHint}>
-                 A dedicated coordinator will contact you to confirm the schedule and specific arrangements.
+                 Review your order on the right, then use Checkout &amp; pay. Payment happens on the next secure PayMongo screen. Your provider confirms the booking afterward.
                </p>
 
                <div className={styles.formBody}>
@@ -327,7 +357,7 @@ import { supabase } from "@/lib/supabase/client"
                <div className={styles.noteBox}>
                  <h4 className={styles.noteTitle}>Note</h4>
                  <p className={styles.noteText}>
-                   All bookings are subject to verification. A representative may reach out to confirm your date, service details, and other arrangements prior to final confirmation.
+                   Completing Checkout &amp; pay places your paid order. Provider confirmation completes the arrangement; contact them or support for refunds if plans change.
                  </p>
                </div>
              </div>
@@ -371,10 +401,10 @@ import { supabase } from "@/lib/supabase/client"
                <button
                  type="button"
                  className={styles.primaryButton}
-                onClick={submitCheckout}
+                onClick={checkoutAndPay}
                 disabled={submitting}
                >
-                {submitting ? "Submitting request..." : "Submit booking request"}
+                {submitting ? "Opening secure payment…" : "Checkout & pay"}
                </button>
 
                <button
@@ -400,7 +430,7 @@ import { supabase } from "@/lib/supabase/client"
                      <path d="M5 2V1M11 2V1M2 6h12" />
                      <path d="M5 9h1M8 9h1M11 9h1M5 12h1M8 12h1" />
                    </svg>
-                   <span>Confirmation within 24 hours</span>
+                   <span>Provider confirms details after payment</span>
                  </div>
                  <div className={styles.trustItem}>
                    <svg className={styles.trustIcon} viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="var(--color-gold-base,#B8962E)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
