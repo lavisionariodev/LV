@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { fetchActiveShopListings, mergeShopListings } from '@/lib/shop-listings/client'
-import { normalizeSellerSpecialties } from '@/lib/sellers/client'
+import { fetchPublicSellerProfile, normalizeSellerSpecialties } from '@/lib/sellers/client'
 import { isUuidLike } from '@/lib/uuidLike'
 import styles from './seller-profile.module.css'
 
@@ -158,7 +158,57 @@ export const MOCK_SELLER_PROFILE_FIELDS = /** @type {const} */ ([
   'listing.rating — per-card sort placeholder (not persisted per listing)',
   'specialties — sellers.specialties via RPC (`seller_specialties`); fallback to dedup listing package-option labels when empty',
   'Real from RPC (migration 078+ includes avatar): name, location, listings, sellers.username (@handle), tagline (`seller_tagline`), business_info about (`seller_business_info`), member since (`seller_business_started_at`), specialties (`seller_specialties`), seller_avatar_url',
+  'No listings: same fields via `get_public_seller_profile` (active sellers only) when catalog has no rows for `?seller=`',
 ])
+
+/**
+ * Maps `get_public_seller_profile` row to the same `provider` shape as `mergeShopListings` uses
+ * so `buildSellerViewModel` can reuse one code path.
+ * @param {Record<string, unknown>|null|undefined} row
+ */
+function providerFromPublicSellerProfileRow(row) {
+  if (!row || typeof row !== 'object') return null
+  const id = row.seller_user_id ?? row.sellerUserId
+  if (id == null) return null
+  const loc = (typeof row.business_location === 'string' ? row.business_location : '').trim() || 'Philippines'
+  const handleRaw = row.seller_username ?? row.sellerUsername
+  const handle =
+    typeof handleRaw === 'string' && handleRaw.trim() ? handleRaw.trim().toLowerCase() : null
+  const bizInfoRaw = row.seller_business_info ?? row.sellerBusinessInfo
+  const businessInfo =
+    typeof bizInfoRaw === 'string' && bizInfoRaw.trim() ? bizInfoRaw.trim() : null
+  const taglineRaw = row.seller_tagline ?? row.sellerTagline
+  const tagline = typeof taglineRaw === 'string' && taglineRaw.trim() ? taglineRaw.trim() : null
+  const specialtiesRaw = row.seller_specialties ?? row.sellerSpecialties
+  const specialties =
+    Array.isArray(specialtiesRaw) && specialtiesRaw.length > 0
+      ? normalizeSellerSpecialties(specialtiesRaw)
+      : []
+  const avatarRaw = row.seller_avatar_url ?? row.sellerAvatarUrl
+  const sellerAvatarUrl =
+    typeof avatarRaw === 'string' && avatarRaw.trim() ? avatarRaw.trim() : null
+  const name =
+    typeof row.business_name === 'string' && row.business_name.trim()
+      ? row.business_name.trim()
+      : 'Verified seller'
+
+  return {
+    id: String(id),
+    name,
+    location: loc,
+    handle,
+    image: sellerAvatarUrl,
+    avatarUrl: sellerAvatarUrl,
+    rating: null,
+    reviews: null,
+    badge: null,
+    joinedDate: row.seller_registered_at ?? row.sellerRegisteredAt ?? null,
+    businessStartedAt: row.seller_business_started_at ?? row.sellerBusinessStartedAt ?? null,
+    businessInfo,
+    tagline,
+    specialties,
+  }
+}
 
 /** Short teaser for the bio card when business description is long; full text stays in About. */
 function teaserFromBusinessDescription(full) {
@@ -175,31 +225,42 @@ function teaserFromBusinessDescription(full) {
   return `${(sp > 200 ? cut.slice(0, sp) : cut).trim()}…`
 }
 
-function buildSellerViewModel(sellerUserId, shopRows) {
+function buildSellerViewModel(sellerUserId, shopRows, publicProfileRow) {
   const rows = shopRows ?? []
-  const prov = rows[0]?.provider
+  const prov = rows[0]?.provider ?? providerFromPublicSellerProfileRow(publicProfileRow)
   const name = prov?.name || 'Seller'
-  const avatarCandidates = [
-    ...new Set(
-      rows
-        .map((r) => {
-          const u = r?.provider?.avatarUrl ?? r?.provider?.image
-          return typeof u === 'string' ? u.trim() : ''
-        })
-        .filter(Boolean),
-    ),
-  ]
-  const avatarUrlResolved = avatarCandidates[0] ?? null
+  const rowAvatars = rows.flatMap((r) => {
+    const u = r?.provider?.avatarUrl ?? r?.provider?.image
+    return typeof u === 'string' && u.trim() ? [u.trim()] : []
+  })
+  const provAvatar =
+    typeof prov?.avatarUrl === 'string' && prov.avatarUrl.trim()
+      ? prov.avatarUrl.trim()
+      : typeof prov?.image === 'string' && prov.image.trim()
+        ? prov.image.trim()
+        : null
+  const avatarUrlResolved = [...new Set([...rowAvatars, provAvatar].filter(Boolean))][0] ?? null
   const location = (prov?.location || '').trim() || 'Philippines'
-  const handleCandidate = [...new Set(rows.map((r) => r.provider?.handle).filter(Boolean))][0]
+  const handleCandidate =
+    [...new Set(rows.map((r) => r.provider?.handle).filter(Boolean))][0] ?? prov?.handle
   const handle = typeof handleCandidate === 'string' && handleCandidate.trim()
     ? handleCandidate.trim().toLowerCase()
     : undefined
 
   let memberSince = '—'
-  const earliestBizStart = [...new Set(rows.map((r) => r.provider?.businessStartedAt).filter(Boolean))].sort()[0]
+  const earliestBizStart = [
+    ...new Set(rows.map((r) => r.provider?.businessStartedAt).filter(Boolean)),
+    prov?.businessStartedAt,
+  ]
+    .filter(Boolean)
+    .sort()[0]
   if (earliestBizStart) {
     const d = new Date(earliestBizStart)
+    if (!Number.isNaN(d.getTime())) {
+      memberSince = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+    }
+  } else if (prov?.joinedDate) {
+    const d = new Date(prov.joinedDate)
     if (!Number.isNaN(d.getTime())) {
       memberSince = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
     }
@@ -213,18 +274,20 @@ function buildSellerViewModel(sellerUserId, shopRows) {
   }
   const uniqSpecs = [...specSet].filter(Boolean)
 
-  const specialtiesFromSeller = normalizeSellerSpecialties(rows[0]?.provider?.specialties ?? [])
+  const specialtiesFromSeller = normalizeSellerSpecialties(prov?.specialties ?? [])
 
   const businessInfoCandidates = [
     ...new Set(rows.map((r) => (r.provider?.businessInfo ?? '').trim()).filter(Boolean)),
   ]
-  const businessInfoFull = businessInfoCandidates[0] ?? ''
+  const businessInfoFull =
+    (businessInfoCandidates[0] ?? String(prov?.businessInfo ?? '').trim()) || ''
 
   /** About tab — full sellers.business_info from shop RPC */
   const extendedBio = businessInfoFull ? businessInfoFull : undefined
 
   const taglineCandidates = [...new Set(rows.map((r) => (r.provider?.tagline ?? '').trim()).filter(Boolean))]
-  const taglineFromSeller = taglineCandidates[0] ?? ''
+  const taglineFromSeller =
+    (taglineCandidates[0] ?? (typeof prov?.tagline === 'string' ? prov.tagline.trim() : '')) || ''
   /** Card under stats: sellers.tagline, or excerpt of business_info when tagline unset and text is very long */
   const tagline =
     taglineFromSeller ||
@@ -802,6 +865,7 @@ function SellerProfileLoading() {
 /**
  * Loads `/seller-profile?seller=<uuid>` via `fetchActiveShopListings` → `get_active_shop_listings` (SECURITY DEFINER;
  * anon + authenticated). Sellers RLS stays closed to public reads; seller writes use `upsertSellerForUser` (settings/onboarding).
+ * When the seller has no listing rows in that RPC, `get_public_seller_profile` still supplies shop fields for active sellers.
  * No dedicated Next.js `/api/**` route is required for this page.
  */
 export default function SellerProfilePage() {
@@ -810,7 +874,9 @@ export default function SellerProfilePage() {
   const realSellerId = isUuidLike(sellerParam) ? sellerParam : null
 
   const [allShopListings, setAllShopListings] = useState([])
-  /** `user_id` the catalog fetch completed for (loading until this matches `realSellerId`). */
+  /** Row from `get_public_seller_profile` when catalog has no listings for this seller. */
+  const [publicSellerProfile, setPublicSellerProfile] = useState(null)
+  /** `user_id` the catalog + profile fetch completed for (loading until this matches `realSellerId`). */
   const [catalogLoadedSellerId, setCatalogLoadedSellerId] = useState(null)
 
   const loading = Boolean(realSellerId) && catalogLoadedSellerId !== realSellerId
@@ -820,16 +886,22 @@ export default function SellerProfilePage() {
     let cancelled = false
     /** Avoid flashing the previous seller’s listings while fetching for a new UUID. */
     setAllShopListings([])
+    setPublicSellerProfile(null)
     setCatalogLoadedSellerId(null)
-    fetchActiveShopListings({ bustCache: true })
-      .then((raw) => {
+    Promise.all([
+      fetchActiveShopListings({ bustCache: true }).then((raw) => mergeShopListings(raw)),
+      fetchPublicSellerProfile(realSellerId),
+    ])
+      .then(([listings, profile]) => {
         if (cancelled) return
-        setAllShopListings(mergeShopListings(raw))
+        setAllShopListings(listings)
+        setPublicSellerProfile(profile)
         setCatalogLoadedSellerId(realSellerId)
       })
       .catch(() => {
         if (cancelled) return
         setAllShopListings([])
+        setPublicSellerProfile(null)
         setCatalogLoadedSellerId(realSellerId)
       })
     return () => {
@@ -839,7 +911,8 @@ export default function SellerProfilePage() {
 
   const shopRowsForSeller = useMemo(() => {
     if (!realSellerId) return []
-    return allShopListings.filter((l) => String(l.providerId) === String(realSellerId))
+    const id = String(realSellerId).toLowerCase()
+    return allShopListings.filter((l) => String(l.providerId).toLowerCase() === id)
   }, [realSellerId, allShopListings])
 
   const resolved = useMemo(() => {
@@ -847,11 +920,11 @@ export default function SellerProfilePage() {
       return { seller: SAMPLE_SELLER, listings: SAMPLE_LISTINGS, reviews: SAMPLE_REVIEWS }
     }
     return {
-      seller: buildSellerViewModel(realSellerId, shopRowsForSeller),
+      seller: buildSellerViewModel(realSellerId, shopRowsForSeller, publicSellerProfile),
       listings: listingsFromShopRows(shopRowsForSeller),
       reviews: SAMPLE_REVIEWS,
     }
-  }, [realSellerId, shopRowsForSeller])
+  }, [realSellerId, shopRowsForSeller, publicSellerProfile])
 
   if (realSellerId && loading) {
     return <SellerProfileLoading />

@@ -403,6 +403,27 @@ export async function searchSellersForAdmin(query, limit = 6) {
   }));
 }
 
+/**
+ * Active seller storefront row when they have no rows in `get_active_shop_listings` (e.g. no listings yet).
+ * @param {string} sellerUserId
+ * @returns {Promise<object|null>} first RPC row or null
+ */
+export async function fetchPublicSellerProfile(sellerUserId) {
+  if (!sellerUserId) return null;
+
+  const { data, error } = await supabase.rpc('get_public_seller_profile', {
+    p_seller_user_id: sellerUserId,
+  });
+
+  if (error) {
+    console.warn('[seller-profile] get_public_seller_profile:', error.message, error);
+    return null;
+  }
+
+  const rows = Array.isArray(data) ? data : [];
+  return rows[0] ?? null;
+}
+
 export async function updateSellerStatus(sellerId, status) {
   if (!sellerId) {
     return { data: null, error: 'Missing seller id' };
