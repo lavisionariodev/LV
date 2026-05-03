@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { apiLog, errorMessage } from '@/lib/observability/apiLog'
+import { getClientIp, takeToken } from '@/lib/rate-limit/memoryRateLimit'
 
 function phpToCentavos(amount) {
   const num = Number(amount)
@@ -15,6 +17,16 @@ function getBasicAuthHeader(secretKey) {
 }
 
 export async function POST(request) {
+  const ip = getClientIp(request)
+  const rl = takeToken(`checkout:pay:${ip}`, { windowMs: 15 * 60_000, max: 25 })
+  if (!rl.ok) {
+    apiLog('checkout.pay.ratelimited', { retryAfterSec: rl.retryAfterSec })
+    return NextResponse.json(
+      { error: 'Too many checkout attempts. Try again later.' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSec ?? 60) } },
+    )
+  }
+
   const supabaseAdmin = getSupabaseAdmin()
   const supabase = await createClient()
 
@@ -24,7 +36,19 @@ export async function POST(request) {
   } = await supabase.auth.getUser()
 
   if (userErr || !user) {
+    apiLog('checkout.pay.unauthorized', {})
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { data: userRow, error: roleErr } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (roleErr || !userRow || userRow.role !== 'buyer') {
+    apiLog('checkout.pay.not_buyer', {})
+    return NextResponse.json({ error: 'Only buyers can pay for orders.' }, { status: 403 })
   }
 
   const body = await request.json().catch(() => ({}))
@@ -35,9 +59,11 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Missing orderIds.' }, { status: 400 })
   }
 
+  apiLog('checkout.pay.start', { orderCount: orderIds.length })
+
   const { data: orders, error: ordersErr } = await supabaseAdmin
     .from('orders')
-    .select('id,buyer_id,fulfillment_status,payment_status,subtotal,currency')
+    .select('id,buyer_id,fulfillment_status,payment_status,status,subtotal,currency')
     .in('id', orderIds)
 
   if (ordersErr || !orders || orders.length === 0) {
@@ -49,15 +75,33 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Not allowed.' }, { status: 403 })
   }
 
-  const notConfirmed = orders.some((o) => o.fulfillment_status !== 'confirmed')
-  if (notConfirmed) {
+  // Pay at checkout: fulfillment stays `pending` until the seller confirms post-payment.
+  const notPayable = orders.some((o) => {
+    const f = o.fulfillment_status || 'pending'
+    return f !== 'pending'
+  })
+  if (notPayable) {
     return NextResponse.json(
-      { error: 'Order must be confirmed by the seller before payment.' },
+      { error: 'One or more orders are not open for payment.' },
       { status: 400 },
     )
   }
 
-  const alreadyPaid = orders.some((o) => o.payment_status === 'paid')
+  const checkoutAlreadyOpen = orders.some((o) => o.payment_status === 'pending')
+  if (checkoutAlreadyOpen) {
+    apiLog('checkout.pay.duplicate_session', {})
+    return NextResponse.json(
+      {
+        error:
+          'Payment is already in progress for this booking. Finish or close the PayMongo window, wait if it expires, then try Pay again.',
+      },
+      { status: 409 },
+    )
+  }
+
+  const alreadyPaid = orders.some(
+    (o) => o.payment_status === 'paid' || String(o.status || '') === 'paid',
+  )
   if (alreadyPaid) {
     return NextResponse.json({ error: 'Order is already paid.' }, { status: 400 })
   }
@@ -71,6 +115,7 @@ export async function POST(request) {
 
   const secretKey = process.env.PAYMONGO_SECRET_KEY
   if (!secretKey) {
+    apiLog('checkout.pay.env_missing_paymongo_secret', {})
     return NextResponse.json({ error: 'Missing PAYMONGO_SECRET_KEY on server.' }, { status: 500 })
   }
 
@@ -92,6 +137,7 @@ export async function POST(request) {
     .single()
 
   if (paymentErr) {
+    apiLog('checkout.pay.payment_insert_failed', { err: errorMessage(paymentErr) })
     return NextResponse.json(
       { error: paymentErr.message ?? 'Failed to create payment record.' },
       { status: 500 },
@@ -148,6 +194,7 @@ export async function POST(request) {
   const paymongoBody = await paymongoRes.json().catch(() => null)
 
   if (!paymongoRes.ok) {
+    apiLog('checkout.pay.paymongo_session_failed', { statusCode: paymongoRes.status })
     await supabaseAdmin
       .from('payments')
       .update({
@@ -171,6 +218,7 @@ export async function POST(request) {
   const checkoutUrl = paymongoBody?.data?.attributes?.checkout_url ?? null
 
   if (!checkoutId || !checkoutUrl) {
+    apiLog('checkout.pay.paymongo_bad_response_shape', {})
     return NextResponse.json({ error: 'PayMongo response missing checkout_url.' }, { status: 502 })
   }
 
@@ -181,6 +229,8 @@ export async function POST(request) {
       metadata: { ...(paymentRow.metadata ?? {}), paymongo_checkout_id: checkoutId },
     })
     .eq('id', paymentRow.id)
+
+  apiLog('checkout.pay.checkout_created', {})
 
   return NextResponse.json({ redirect_url: checkoutUrl }, { status: 200 })
 }

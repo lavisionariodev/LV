@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Prevent eslint-plugin-react from running on this file (ESLint 10 + flat config).
+    "eslint.config.mjs",
   ]),
 ]);
 

@@ -24,7 +24,7 @@ export async function POST(request) {
   // Ensure order belongs to this seller.
   const { data: order, error: orderErr } = await supabaseAdmin
     .from('orders')
-    .select('id,seller_user_id,fulfillment_status')
+    .select('id,seller_user_id,fulfillment_status,payment_status,status')
     .eq('id', orderId)
     .maybeSingle()
 
@@ -38,6 +38,14 @@ export async function POST(request) {
 
   if (order.fulfillment_status === 'cancelled') {
     return NextResponse.json({ error: 'Order is cancelled.' }, { status: 400 })
+  }
+
+  const paid = order.payment_status === 'paid' || order.status === 'paid'
+  if (!paid) {
+    return NextResponse.json(
+      { error: 'Confirm is available after the buyer has paid.' },
+      { status: 400 },
+    )
   }
 
   if (order.fulfillment_status !== 'confirmed') {

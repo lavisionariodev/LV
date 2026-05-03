@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   TbSearch,
@@ -40,128 +40,11 @@ const ORDER_STATUSES = [
 ]
 
 const TIMELINE_STEPS = [
-  { id: 'received', label: 'Order Received', icon: TbPackage, description: 'Order was placed and is awaiting confirmation.' },
-  { id: 'confirmed', label: 'Confirmed', icon: TbCheck, description: 'Order has been accepted. Preparation will begin soon.' },
+  { id: 'received', label: 'Order Received', icon: TbPackage, description: 'Buyer placed the order and completed payment.' },
+  { id: 'confirmed', label: 'Confirmed', icon: TbCheck, description: 'You confirmed the booking. Preparation can begin.' },
   { id: 'preparation', label: 'Preparation', icon: TbTools, description: 'Service is being prepared according to your request.' },
   { id: 'ongoing', label: 'Service Ongoing', icon: TbTruck, description: 'Service is in progress.' },
   { id: 'completed', label: 'Completed', icon: TbCircleCheck, description: 'Service has been completed.' },
-]
-
-const MOCK_ORDERS = [
-  {
-    id: 'LV-2024-0847',
-    customerName: 'Maria Santos',
-    servicePackage: 'Traditional Full Service',
-    dateOfService: '2025-03-10',
-    location: 'Manila Memorial Chapel',
-    totalPrice: 185000,
-    paymentStatus: 'paid',
-    orderStatus: 'pending',
-    isUrgent: true,
-    customerPhone: '+63 912 345 6789',
-    customerEmail: 'maria.santos@email.com',
-    deceasedName: 'Roberto Santos',
-    dateOfDeath: '2025-03-08',
-    religion: 'Roman Catholic',
-    specialRequests: 'Floral tributes only; no photography during service.',
-    addOns: ['Flowers', 'Chapel (4 hrs)', 'Transportation'],
-    wakeDuration: '3 days',
-    burialLocation: 'Manila Memorial Park',
-    paymentMethod: 'Bank Transfer',
-    refundRequested: true,
-    refundReason: 'Family requested a full refund due to scheduling conflict.',
-    refundAttachments: [
-      { type: 'receipt', label: 'Official receipt #A-1023 (PDF)' },
-      { type: 'photo', label: 'Payment screenshot.png' },
-    ],
-  },
-  {
-    id: 'LV-2024-0843',
-    customerName: 'Luis Ramirez',
-    servicePackage: 'Cremation Package',
-    dateOfService: '2025-02-28',
-    location: 'San Juan Crematorium',
-    totalPrice: 88000,
-    paymentStatus: 'paid',
-    orderStatus: 'refunded',
-    isUrgent: false,
-    customerPhone: '+63 917 555 8899',
-    customerEmail: 'luis.ramirez@email.com',
-    deceasedName: 'Andrea Ramirez',
-    dateOfDeath: '2025-02-26',
-    religion: 'Catholic',
-    specialRequests: 'Small, private ceremony only.',
-    addOns: ['Urn (premium)', 'Memorial service'],
-    wakeDuration: '1 day',
-    burialLocation: 'N/A – Cremation',
-    paymentMethod: 'Credit Card',
-    refundRequested: false,
-    refundReason: 'Approved refund after customer requested schedule change.',
-    refundAttachments: [{ type: 'receipt', label: 'Original receipt (PDF)' }],
-  },
-  {
-    id: 'LV-2024-0846',
-    customerName: 'Juan Dela Cruz',
-    servicePackage: 'Cremation Package',
-    dateOfService: '2025-03-12',
-    location: 'Quezon City Crematorium',
-    totalPrice: 95000,
-    paymentStatus: 'paid',
-    orderStatus: 'confirmed',
-    isUrgent: false,
-    customerPhone: '+63 917 876 5432',
-    customerEmail: 'juan.dc@email.com',
-    deceasedName: 'Rosa Dela Cruz',
-    dateOfDeath: '2025-03-09',
-    religion: null,
-    specialRequests: null,
-    addOns: ['Urn (standard)', 'Memorial service'],
-    wakeDuration: '1 day',
-    burialLocation: 'N/A – Cremation',
-    paymentMethod: 'Credit Card',
-  },
-  {
-    id: 'LV-2024-0845',
-    customerName: 'Ana Reyes',
-    servicePackage: 'Simple Wake & Burial',
-    dateOfService: '2025-03-15',
-    location: 'St. Peter Chapel',
-    totalPrice: 120000,
-    paymentStatus: 'pending',
-    orderStatus: 'pending',
-    isUrgent: false,
-    customerPhone: '+63 918 111 2233',
-    customerEmail: 'ana.reyes@email.com',
-    deceasedName: 'Pedro Reyes',
-    dateOfDeath: '2025-03-11',
-    religion: 'Christian',
-    specialRequests: 'Quiet ceremony; family only.',
-    addOns: ['Basic flowers', 'Chapel (2 hrs)'],
-    wakeDuration: '2 days',
-    burialLocation: 'Loyola Memorial Park',
-    paymentMethod: 'Bank Transfer',
-  },
-  {
-    id: 'LV-2024-0844',
-    customerName: 'Carlos Mendoza',
-    servicePackage: 'Traditional Full Service',
-    dateOfService: '2025-03-05',
-    location: 'Manila Memorial Chapel',
-    totalPrice: 195000,
-    paymentStatus: 'paid',
-    orderStatus: 'completed',
-    isUrgent: false,
-    customerPhone: '+63 919 444 5566',
-    customerEmail: 'carlos.m@email.com',
-    deceasedName: 'Elena Mendoza',
-    dateOfDeath: '2025-03-01',
-    religion: 'Roman Catholic',
-    specialRequests: null,
-    addOns: ['Premium flowers', 'Chapel (6 hrs)', 'Transportation', 'Catering'],
-    wakeDuration: '4 days',
-    burialLocation: 'Manila Memorial Park',
-    paymentMethod: 'Credit Card',
-  },
 ]
 
 function getStatusBadgeClass(status) {
@@ -183,6 +66,15 @@ function formatPrice(n) {
 function formatDate(s) {
   if (!s) return '—'
   return new Date(s + 'T00:00:00').toLocaleDateString('en-PH', { dateStyle: 'medium' })
+}
+
+function sellerPaymentBadge(paymentStatus) {
+  const ps = String(paymentStatus ?? 'unpaid')
+  if (ps === 'refund_pending')
+    return { label: 'Refund pending', badgeClass: styles.badgePending }
+  if (ps === 'refunded') return { label: 'Refunded', badgeClass: styles.badgeRefunded }
+  if (ps === 'paid') return { label: 'Paid', badgeClass: styles.badgePaid }
+  return { label: 'Pending', badgeClass: styles.badgePending }
 }
 
 /**
@@ -226,7 +118,7 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { user, authLoading, isSeller } = useAuth()
-  const allowedTabs = ORDER_STATUSES.map((t) => t.id)
+  const allowedTabs = useMemo(() => ORDER_STATUSES.map((t) => t.id), [])
   /** Route-level default only (from path segments like /orders/pending). Do not derive from URL ?tab= here — that caused omitIf / defaultTab to flip when the URL changed and made params flicker. */
   const routeDefaultTab = initialTab && allowedTabs.includes(initialTab) ? initialTab : 'all'
   const [activeTab, setActiveTab] = useState(() =>
@@ -241,12 +133,12 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
   const [previewAttachment, setPreviewAttachment] = useState(null)
   const filterDropdownRef = useRef(null)
 
-  const loadOrders = async ({ signal } = {}) => {
+  const loadOrders = useCallback(async ({ signal } = {}) => {
     if (!user?.id || !isSeller) return
     const { data, error } = await supabase
       .from('orders')
       .select(
-        'id,order_number,status,fulfillment_status,payment_status,subtotal,created_at,preferred_date,contact_name,contact_email,contact_phone,notes,service_location,deceased_name,date_of_death,wake_duration_days,order_items(name,quantity)',
+        'id,order_number,status,fulfillment_status,payment_status,subtotal,created_at,preferred_date,refund_status,refund_requested_at,contact_name,contact_email,contact_phone,notes,service_location,deceased_name,date_of_death,wake_duration_days,order_items(name,quantity)',
       )
       .eq('seller_user_id', user.id)
       .order('created_at', { ascending: false })
@@ -284,6 +176,19 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                   ? 'cancelled'
                   : 'pending'
 
+        const rs = o.refund_status ? String(o.refund_status) : ''
+        const refundStage =
+          rs === 'requested' || rs === 'processing'
+            ? /** @type {'requested' | 'processing'} */ (rs)
+            : null
+        const refundRequested = Boolean(refundStage)
+        const refundReason =
+          refundStage === 'processing'
+            ? 'Buyer cancelled before you confirmed this booking. Refund approved — mark completed once the buyer has received the refund (typically about 5–15 business days).'
+            : refundStage === 'requested'
+              ? 'Buyer cancelled before you confirmed this booking. Approve to start processing the refund, or decline to reopen the booking as paid.'
+              : null
+
         return {
           id: o.id,
           displayId: o.order_number || o.id,
@@ -308,19 +213,24 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
               : '—',
           burialLocation: o.service_location || '—',
           paymentMethod: 'PayMongo',
-          refundRequested: false,
-          refundReason: null,
+          refundRequested,
+          refundStage,
+          refundRequestedAt: o.refund_requested_at ? String(o.refund_requested_at) : null,
+          refundReason,
           refundAttachments: [],
         }
       })
 
     setOrders(mapped)
-  }
+  }, [user, isSeller])
 
   useEffect(() => {
     if (authLoading) return
     const controller = new AbortController()
-    loadOrders({ signal: controller.signal })
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) loadOrders({ signal: controller.signal })
+    })
 
     // Keep payment status in sync after PayMongo webhooks update the DB.
     const onFocus = () => loadOrders({ signal: controller.signal })
@@ -333,25 +243,29 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
     }, 12_000)
 
     return () => {
+      cancelled = true
       controller.abort()
       window.removeEventListener('focus', onFocus)
       window.clearInterval(interval)
     }
-  }, [user?.id, authLoading, isSeller])
+  }, [authLoading, loadOrders, isSeller])
 
   useEffect(() => {
     // Back-compat: if parent route supplies initialTab, respect it.
-    if (initialTab && ORDER_STATUSES.some((t) => t.id === initialTab)) setActiveTab(initialTab)
+    if (initialTab && ORDER_STATUSES.some((t) => t.id === initialTab)) {
+      queueMicrotask(() => setActiveTab(initialTab))
+    }
   }, [initialTab])
 
   // Sync state <- URL (back/forward, shared links)
   useEffect(() => {
     const nextTab = readEnum(searchParams, 'tab', allowedTabs, routeDefaultTab)
     const nextQ = readString(searchParams, 'q', '')
-    if (nextTab !== activeTab) setActiveTab(nextTab)
-    if (nextQ !== searchQuery) setSearchQuery(nextQ)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams])
+    queueMicrotask(() => {
+      setActiveTab((prev) => (nextTab !== prev ? nextTab : prev))
+      setSearchQuery((prev) => (nextQ !== prev ? nextQ : prev))
+    })
+  }, [allowedTabs, routeDefaultTab, searchParams])
 
   // Sync URL <- state (debounce typing; keep tab in URL too).
   // omitIf uses routeDefaultTab (stable per route). Main /seller/orders must not pass URL-derived initialTab — that flipped omitIf whenever ?tab= was omitted and caused param flicker.
@@ -367,12 +281,14 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
     const matchedOrder = orders.find((order) => order.id === initialOrderId)
     if (!matchedOrder) return
 
-    setSelectedOrder(matchedOrder)
-    if (initialAction === 'process') {
-      setOrderForUpdateStatus(matchedOrder)
-      setShowUpdateStatus(true)
-    }
-  }, [initialOrderId, initialAction, orders])
+    queueMicrotask(() => {
+      setSelectedOrder(matchedOrder)
+      if (initialAction === 'process') {
+        setOrderForUpdateStatus(matchedOrder)
+        setShowUpdateStatus(true)
+      }
+    })
+  }, [initialAction, initialOrderId, orders])
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -444,30 +360,23 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
     }
   }
 
-  const handleMarkCompleted = (order) => {
-    handleUpdateStatus(order, 'completed')
-  }
-
-  const handleApproveRefund = (order) => {
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === order.id ? { ...o, orderStatus: 'refunded', refundRequested: false } : o
-      )
-    )
-    setSelectedOrder((prev) =>
-      prev?.id === order.id ? { ...prev, orderStatus: 'refunded', refundRequested: false } : prev
-    )
-  }
-
-  const handleDeclineRefund = (order) => {
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === order.id ? { ...o, refundRequested: false } : o
-      )
-    )
-    setSelectedOrder((prev) =>
-      prev?.id === order.id ? { ...prev, refundRequested: false } : prev
-    )
+  const handleRefundDecision = async (order, decision) => {
+    try {
+      const res = await fetch('/api/seller/orders/refund', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id, decision }),
+      })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) {
+        window.alert(typeof body?.error === 'string' ? body.error : 'Could not update refund.')
+        return
+      }
+      await loadOrders()
+      setSelectedOrder(null)
+    } catch {
+      window.alert('Network error.')
+    }
   }
 
   const getTimelineProgress = (order) => {
@@ -487,6 +396,9 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
   const getStepTime = (stepIndex) => STEP_TIMES[stepIndex] ?? '—'
 
   const timelineProgress = selectedOrder ? getTimelineProgress(selectedOrder) : {}
+  const selectedPaymentBadge = selectedOrder
+    ? sellerPaymentBadge(selectedOrder.paymentStatus)
+    : null
 
   return (
     <div className={styles.pageWrap}>
@@ -563,7 +475,7 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
           <div className={styles.statCardValue}>
             {formatCount(orders.filter((o) => o.orderStatus === 'pending').length)}
           </div>
-          <div className={styles.statCardDesc}>Waiting for your confirmation</div>
+          <div className={styles.statCardDesc}>Unpaid declines · paid awaits your confirmation</div>
         </div>
         <div className={`${styles.statCard} ${styles.statCardInProgress}`}>
           <div className={styles.statCardTitle}>In progress</div>
@@ -654,20 +566,33 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                     Review details
                   </button>
                   <div className={styles.refundQuickActions}>
-                    <button
-                      type="button"
-                      className={`${styles.btnText} ${styles.btnAccept}`}
-                      onClick={() => handleApproveRefund(order)}
-                    >
-                      Approve refund
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.btnText} ${styles.btnDecline}`}
-                      onClick={() => handleDeclineRefund(order)}
-                    >
-                      Decline
-                    </button>
+                    {order.refundStage === 'requested' && (
+                      <>
+                        <button
+                          type="button"
+                          className={`${styles.btnText} ${styles.btnAccept}`}
+                          onClick={() => handleRefundDecision(order, 'approve')}
+                        >
+                          Approve refund
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.btnText} ${styles.btnDecline}`}
+                          onClick={() => handleRefundDecision(order, 'decline')}
+                        >
+                          Decline
+                        </button>
+                      </>
+                    )}
+                    {order.refundStage === 'processing' && (
+                      <button
+                        type="button"
+                        className={`${styles.btnText} ${styles.btnAccept}`}
+                        onClick={() => handleRefundDecision(order, 'complete')}
+                      >
+                        Mark refund completed
+                      </button>
+                    )}
                   </div>
                 </footer>
               </article>
@@ -702,7 +627,9 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                 </td>
               </tr>
             ) : (
-              filteredOrders.map((order) => (
+              filteredOrders.map((order) => {
+                const paymentBadge = sellerPaymentBadge(order.paymentStatus)
+                return (
                 <tr key={order.id} className={styles.orderRow}>
                   <td className={styles.cellOrderId} data-label="Order ID">
                     <span className={styles.orderId}>{order.displayId || order.id}</span>
@@ -714,9 +641,7 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                   <td data-label="Location">{order.location}</td>
                   <td data-label="Total">{formatPrice(order.totalPrice)}</td>
                   <td data-label="Payment">
-                    <span className={`${styles.badge} ${order.paymentStatus === 'paid' ? styles.badgePaid : styles.badgePending}`}>
-                      {order.paymentStatus === 'paid' ? 'Paid' : 'Pending'}
-                    </span>
+                    <span className={`${styles.badge} ${paymentBadge.badgeClass}`}>{paymentBadge.label}</span>
                   </td>
                   <td data-label="Status">
                     <span className={`${styles.badge} ${getStatusBadgeClass(order.orderStatus)}`}>
@@ -733,25 +658,25 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                       >
                         <TbEye size={16} />
                       </button>
-                      {order.orderStatus === 'pending' && (
-                        <>
-                          <button
-                            type="button"
-                            className={`${styles.btnIcon} ${styles.btnIconAccept} ${styles.hideOnMobile}`}
-                            onClick={() => handleAcceptOrder(order)}
-                            title="Accept Order"
-                          >
-                            <TbCheck size={16} />
-                          </button>
-                          <button
-                            type="button"
-                            className={`${styles.btnIcon} ${styles.btnIconDecline} ${styles.hideOnMobile}`}
-                            onClick={() => handleDeclineOrder(order)}
-                            title="Decline Order"
-                          >
-                            <TbCircleX size={16} />
-                          </button>
-                        </>
+                      {order.orderStatus === 'pending' && order.paymentStatus === 'paid' && (
+                        <button
+                          type="button"
+                          className={`${styles.btnIcon} ${styles.btnIconAccept} ${styles.hideOnMobile}`}
+                          onClick={() => handleAcceptOrder(order)}
+                          title="Confirm booking"
+                        >
+                          <TbCheck size={16} />
+                        </button>
+                      )}
+                      {order.orderStatus === 'pending' && order.paymentStatus !== 'paid' && (
+                        <button
+                          type="button"
+                          className={`${styles.btnIcon} ${styles.btnIconDecline} ${styles.hideOnMobile}`}
+                          onClick={() => handleDeclineOrder(order)}
+                          title="Decline unpaid order"
+                        >
+                          <TbCircleX size={16} />
+                        </button>
                       )}
                       <button
                         type="button"
@@ -767,7 +692,8 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                     </div>
                   </td>
                 </tr>
-              ))
+                )
+              })
             )}
           </tbody>
         </table>
@@ -939,16 +865,20 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                   <div className={styles.detailItem}>
                     <span className={styles.detailLabel}>Status</span>
                     <span className={styles.detailValue}>
-                      <span className={`${styles.badge} ${selectedOrder.paymentStatus === 'paid' ? styles.badgePaid : styles.badgePending}`}>
-                        {selectedOrder.paymentStatus === 'paid' ? 'Paid' : 'Pending'}
-                      </span>
+                      {selectedPaymentBadge && (
+                        <span
+                          className={`${styles.badge} ${selectedPaymentBadge.badgeClass}`}
+                        >
+                          {selectedPaymentBadge.label}
+                        </span>
+                      )}
                     </span>
                   </div>
                 </div>
                 </div>
               </div>
 
-              {selectedOrder.refundRequested && selectedOrder.orderStatus !== 'refunded' && (
+              {selectedOrder.refundRequested && (
                 <div className={styles.section}>
                   <h3 className={styles.sectionTitle}>Refund request</h3>
                   <div className={styles.sectionBlock}>
@@ -961,20 +891,33 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                       </div>
                     </div>
                     <div className={styles.refundActions}>
-                      <button
-                        type="button"
-                        className={`${styles.btnText} ${styles.btnAccept}`}
-                        onClick={() => handleApproveRefund(selectedOrder)}
-                      >
-                        Approve refund
-                      </button>
-                      <button
-                        type="button"
-                        className={`${styles.btnText} ${styles.btnDecline}`}
-                        onClick={() => handleDeclineRefund(selectedOrder)}
-                      >
-                        Decline refund
-                      </button>
+                      {selectedOrder.refundStage === 'requested' && (
+                        <>
+                          <button
+                            type="button"
+                            className={`${styles.btnText} ${styles.btnAccept}`}
+                            onClick={() => handleRefundDecision(selectedOrder, 'approve')}
+                          >
+                            Approve refund
+                          </button>
+                          <button
+                            type="button"
+                            className={`${styles.btnText} ${styles.btnDecline}`}
+                            onClick={() => handleRefundDecision(selectedOrder, 'decline')}
+                          >
+                            Decline refund
+                          </button>
+                        </>
+                      )}
+                      {selectedOrder.refundStage === 'processing' && (
+                        <button
+                          type="button"
+                          className={`${styles.btnText} ${styles.btnAccept}`}
+                          onClick={() => handleRefundDecision(selectedOrder, 'complete')}
+                        >
+                          Mark refund completed
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { computeCommissionSnapshot } from '@/utils/commissionSnapshot'
+import { apiLog } from '@/lib/observability/apiLog'
 
 function parseSignatureHeader(headerValue) {
   // Example: t=1496734173,te=...,li=...
@@ -141,11 +142,13 @@ export async function POST(request) {
 
   const verified = verifyPaymongoSignature({ rawBody, signatureHeader, webhookSecret })
   if (!verified.ok) {
+    apiLog('paymongo.webhook.signature_failed', {})
     return NextResponse.json({ error: verified.error }, { status: 400 })
   }
 
   const payload = JSON.parse(rawBody || '{}')
   const eventType = getEventType(payload)
+  apiLog('paymongo.webhook.received', { eventKind: typeof eventType === 'string' ? eventType : 'unknown' })
 
   const checkoutSessionId = extractCheckoutSessionId(payload)
   const referenceNumber = extractReferenceNumber(payload)
@@ -213,6 +216,7 @@ export async function POST(request) {
       paymentId: paymentRow.id,
       orderIds: orderIdsPaid,
     })
+    apiLog('paymongo.webhook.mark_paid', {})
   } else if (markFailed) {
     if (paymentRow.status === 'pending') {
       await supabaseAdmin
@@ -232,6 +236,7 @@ export async function POST(request) {
           .update({ payment_status: 'failed', status: 'failed' })
           .in('id', orderIds)
       }
+      apiLog('paymongo.webhook.mark_failed_applied', {})
     }
   }
 

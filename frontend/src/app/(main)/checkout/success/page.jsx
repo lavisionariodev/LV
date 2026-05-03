@@ -1,12 +1,18 @@
 "use client"
 
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
+import { useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import styles from "../checkout.module.css"
 
 export default function CheckoutSuccessPage() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const paymentId = searchParams.get("payment")
+
+  useEffect(() => {
+    router.refresh()
+  }, [router])
 
   return (
     <main className={styles.checkoutPage}>
@@ -40,9 +46,9 @@ export default function CheckoutSuccessPage() {
             )}
 
             <div className={styles.successSteps}>
-              {[
+                {[
                 { title: "Provider notified", desc: "We’ll forward your booking details to the provider(s)." },
-                { title: "Schedule confirmation", desc: "We’ll confirm your preferred date and service specifics." },
+                { title: "Provider confirmation", desc: "They’ll confirm your booking next; scheduling and specifics follow from there." },
                 { title: "Ready to manage", desc: "Track everything anytime from your purchases page." },
               ].map((s) => (
                 <div key={s.title} className={styles.successStep}>

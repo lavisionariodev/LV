@@ -140,101 +140,156 @@ function KindPill({ kind }) {
   )
 }
 
-function ListingApprovalActionsMenu({ row, isUpdating, onApprove, onReject }) {
-  const [open, setOpen] = useState(false)
-  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 })
-  const wrapRef = useRef(null)
-  const triggerRef = useRef(null)
-
-  function placeMenu() {
-    const el = triggerRef.current
-    if (!el) return
-    const r = el.getBoundingClientRect()
-    setMenuPos({ top: r.bottom + 6, right: window.innerWidth - r.right })
-  }
-
-  useLayoutEffect(() => {
-    if (!open) return
-    placeMenu()
-  }, [open])
-
-  useEffect(() => {
-    if (!open) return
-    function handle(e) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handle)
-    window.addEventListener('scroll', placeMenu, true)
-    window.addEventListener('resize', placeMenu)
-    return () => {
-      document.removeEventListener('mousedown', handle)
-      window.removeEventListener('scroll', placeMenu, true)
-      window.removeEventListener('resize', placeMenu)
-    }
-  }, [open])
-
-  const close = () => setOpen(false)
+function RowActions({ row, isUpdating, onApprove, onReject, onViewDetails }) {
   const canModerate =
     String(row?.approval_status || 'draft').toLowerCase() === 'pending' || hasPendingSellerChanges(row)
 
   return (
-    <div className={styles.actionMenuWrap} ref={wrapRef}>
-      <button
-        ref={triggerRef}
-        type="button"
-        className={styles.actionMenuTrigger}
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        aria-haspopup="menu"
-        aria-label={`Actions for ${row?.listing_name || 'listing'}`}
-      >
-        <BsThreeDots className={styles.actionMenuTriggerIcon} aria-hidden size={16} />
+    <div className={styles.rowActions}>
+      <button type="button" className={styles.rowActionView} onClick={onViewDetails}>
+        View
       </button>
-      {open && (
-        <div
-          className={styles.actionMenu}
-          role="menu"
-          style={{ top: menuPos.top, right: menuPos.right }}
-        >
+      {canModerate && (
+        <>
+          <span className={styles.rowActionDivider} />
           <button
             type="button"
-            role="menuitem"
-            className={styles.actionMenuItem}
-            onClick={() => close()}
+            className={styles.rowActionApprove}
+            disabled={isUpdating}
+            onClick={onApprove}
           >
-            Close
+            {isUpdating ? '…' : 'Approve'}
           </button>
-
-          {canModerate ? (
-            <>
-              <button
-                type="button"
-                role="menuitem"
-                className={`${styles.actionMenuItem} ${styles.actionMenuItemPrimary}`}
-                disabled={isUpdating}
-                onClick={() => {
-                  onApprove()
-                  close()
-                }}
-              >
-                {isUpdating ? 'Approving…' : '✓ Approve'}
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                className={`${styles.actionMenuItem} ${styles.actionMenuItemWarn}`}
-                disabled={isUpdating}
-                onClick={() => {
-                  onReject()
-                  close()
-                }}
-              >
-                {isUpdating ? 'Updating…' : '✕ Reject'}
-              </button>
-            </>
-          ) : null}
-        </div>
+          <span className={styles.rowActionDivider} />
+          <button
+            type="button"
+            className={styles.rowActionReject}
+            disabled={isUpdating}
+            onClick={onReject}
+          >
+            Reject
+          </button>
+        </>
       )}
+    </div>
+  )
+}
+
+function ViewDetailsModal({ row, onClose }) {
+  if (!row) return null
+
+  const isStaged = hasPendingSellerChanges(row)
+  const lines = isStaged ? summarizeStagedChanges(row) : []
+  const sellerLine =
+    row.seller_business_name?.trim()
+      ? row.seller_email?.trim()
+        ? `${row.seller_business_name.trim()} · ${row.seller_email.trim()}`
+        : row.seller_business_name.trim()
+      : row.seller_email?.trim() || '—'
+
+  return (
+    <div
+      className={styles.detailsOverlay}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Listing details"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className={styles.detailsCard} onClick={(e) => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className={styles.detailsHeader}>
+          <div className={styles.detailsHeaderLeft}>
+            <span className={styles.detailsKicker}>
+              {isStaged ? 'Staged update' : 'Pending approval'}
+            </span>
+            <p className={styles.detailsTitle}>{row.listing_name || 'Untitled'}</p>
+            <p className={styles.detailsSeller}>{sellerLine}</p>
+          </div>
+          <button
+            type="button"
+            className={styles.detailsClose}
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        {/* Meta row */}
+        <div className={styles.detailsMeta}>
+          <div className={styles.detailsMetaItem}>
+            <span className={styles.detailsMetaLabel}>Kind</span>
+            <KindPill kind={kindLabelFromRow(row)} />
+          </div>
+          <div className={styles.detailsMetaItem}>
+            <span className={styles.detailsMetaLabel}>Price</span>
+            <span className={styles.detailsMetaValue}>{formatPhpAmount(row.base_price)}</span>
+          </div>
+          <div className={styles.detailsMetaItem}>
+            <span className={styles.detailsMetaLabel}>Status</span>
+            <StatusBadge status={row.status} />
+          </div>
+          <div className={styles.detailsMetaItem}>
+            <span className={styles.detailsMetaLabel}>Approval</span>
+            <ApprovalBadge approvalStatus={row.approval_status} />
+          </div>
+          {row.submitted_at && (
+            <div className={styles.detailsMetaItem}>
+              <span className={styles.detailsMetaLabel}>Submitted</span>
+              <span className={styles.detailsMetaValue}>{formatDateTime(row.submitted_at)}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Changes table (staged) or listing fields (pending) */}
+        {isStaged ? (
+          <>
+            <p className={styles.detailsSectionLabel}>Submitted Changes</p>
+            <table className={styles.detailsDiffTable}>
+              <thead>
+                <tr>
+                  <th>Field</th>
+                  <th>Current</th>
+                  <th>Submitted Update</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lines.map(({ label, before, after }, idx) => (
+                  <tr key={idx} className={styles.detailsDiffRow}>
+                    <td className={styles.detailsDiffField}>{label}</td>
+                    <td className={styles.detailsDiffBefore}>{before}</td>
+                    <td className={styles.detailsDiffAfter}>{after}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        ) : (
+          <>
+            <p className={styles.detailsSectionLabel}>Listing Information</p>
+            <table className={styles.detailsDiffTable}>
+              <tbody>
+                {[
+                  { label: 'Title', value: row.listing_name || '—' },
+                  { label: 'Kind', value: kindLabelFromRow(row) },
+                  { label: 'Price', value: formatPhpAmount(row.base_price) },
+                  { label: 'Category', value: row.category || '—' },
+                  { label: 'Location', value: row.location || '—' },
+                  { label: 'Description', value: row.description || '—' },
+                ].map(({ label, value }) => (
+                  <tr key={label} className={styles.detailsDiffRow}>
+                    <td className={styles.detailsDiffField}>{label}</td>
+                    <td className={styles.detailsDiffAfter} colSpan={2}>{value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
+      </div>
     </div>
   )
 }
@@ -400,6 +455,7 @@ function StagedUpdatesSection({
   moderationBusyId,
   onApprove,
   onReject,
+  onViewDetails,
   accentClass,
 }) {
   return (
@@ -416,7 +472,7 @@ function StagedUpdatesSection({
         </div>
       </div>
 
-      <div className={styles.stagedUpdatesBody}>
+      <div className={styles.tableWrap}>
         {isLoading ? (
           <div className={styles.loadingState}>
             <div className={styles.spinner} />
@@ -433,59 +489,70 @@ function StagedUpdatesSection({
             <p className={styles.reviewEmptyText}>{emptyText}</p>
           </div>
         ) : (
-          <ul className={styles.stagedCardsList}>
-            {rows.map((row) => {
-              const busy = moderationBusyId === row.id
-              const shop =
-                row.seller_business_name?.trim() || row.seller_email?.trim() || '—'
-              const merged = mergePendingChangesIntoListingRow(row)
-              const listingTitle = merged.listing_name || 'Untitled'
-              const lines = summarizeStagedChanges(row)
-              return (
-                <li key={row.id} className={styles.stagedCompactCard}>
-                  <p className={styles.stagedCompactShop}>{shop}</p>
-                  <p className={styles.stagedCompactListing}>
-                    <span className={styles.stagedCompactMetaLabel}>Listing</span>{' '}
-                    {listingTitle}
-                  </p>
-                  <p className={styles.stagedChangesHeading}>Changes</p>
-                  <ul className={styles.stagedChangesLines}>
-                    {lines.map(({ label, before, after }, idx) => (
-                      <li key={`${row.id}-${label}-${idx}`} className={styles.stagedChangeBlock}>
-                        <p className={styles.stagedChangeFieldName}>{label}</p>
-                        <div className={styles.stagedDiffRow}>
-                          <span className={styles.stagedDiffLabel}>Current</span>
-                          <span className={styles.stagedDiffValueMuted}>{before}</span>
-                        </div>
-                        <div className={styles.stagedDiffRow}>
-                          <span className={styles.stagedDiffLabel}>Submitted update</span>
-                          <span className={styles.stagedDiffValueNew}>{after}</span>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className={styles.stagedCardActions}>
-                    <button
-                      type="button"
-                      className={styles.stagedApproveBtn}
-                      disabled={busy}
-                      onClick={() => !busy && onApprove(row)}
-                    >
-                      {busy ? '…' : 'Approve'}
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.stagedRejectBtn}
-                      disabled={busy}
-                      onClick={() => !busy && onReject(row)}
-                    >
-                      Reject
-                    </button>
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
+          <table className={styles.table}>
+            <colgroup>
+              <col className={styles.colSeller} />
+              <col className={styles.colListing} />
+              <col className={styles.colChangedFields} />
+              <col className={styles.colActions} />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Seller</th>
+                <th>Listing</th>
+                <th>Changed Fields</th>
+                <th className={styles.actionsTh}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => {
+                const busy = moderationBusyId === row.id
+                const shop =
+                  row.seller_business_name?.trim() || row.seller_email?.trim() || '—'
+                const merged = mergePendingChangesIntoListingRow(row)
+                const listingTitle = merged.listing_name || 'Untitled'
+                const lines = summarizeStagedChanges(row)
+                return (
+                  <tr key={row.id} className={styles.primaryRow}>
+                    <td>
+                      <div className={styles.sellerCell}>
+                        <span className={styles.sellerAvatar}>
+                          {(row.seller_business_name || row.seller_email || '?')[0].toUpperCase()}
+                        </span>
+                        <p className={styles.reviewSellerText}>{shop}</p>
+                      </div>
+                    </td>
+                    <td>
+                      <div className={styles.reviewListingCell}>
+                        <p className={styles.reviewListingName}>{listingTitle}</p>
+                        <span className={styles.stagedTag}>Staged update</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className={styles.stagedFieldPills}>
+                        {lines.map(({ label, before, after }, idx) => (
+                          <span key={`${row.id}-${label}-${idx}`} className={styles.stagedFieldPill}>
+                            <span className={styles.stagedFieldName}>{label}</span>
+                            <span className={styles.stagedFieldArrow}>→</span>
+                            <span className={styles.stagedFieldNew}>{after}</span>
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className={styles.actionsCell}>
+                      <RowActions
+                        row={row}
+                        isUpdating={busy}
+                        onApprove={() => onApprove(row)}
+                        onReject={() => onReject(row)}
+                        onViewDetails={() => onViewDetails(row)}
+                      />
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         )}
       </div>
     </section>
@@ -503,6 +570,7 @@ function ApprovalsTableSection({
   moderationBusyId,
   onApprove,
   onReject,
+  onViewDetails,
   accentClass,
 }) {
   return (
@@ -600,11 +668,12 @@ function ApprovalsTableSection({
                         </span>
                       </td>
                       <td className={styles.actionsCell}>
-                        <ListingApprovalActionsMenu
+                        <RowActions
                           row={row}
                           isUpdating={busy}
-                          onApprove={() => (busy ? null : onApprove(row))}
-                          onReject={() => (busy ? null : onReject(row))}
+                          onApprove={() => onApprove(row)}
+                          onReject={() => onReject(row)}
+                          onViewDetails={() => onViewDetails(row)}
                         />
                       </td>
                     </tr>
@@ -641,6 +710,7 @@ export default function AdminListingsApprovalsPage() {
   const [rejectingRow, setRejectingRow] = useState(null)
   const [rejectReason, setRejectReason] = useState('')
   const [rejectError, setRejectError] = useState(null)
+  const [viewingRow, setViewingRow] = useState(null)
 
   const stagedRows = useMemo(
     () => approvedApproved.filter((row) => hasPendingSellerChanges(row)),
@@ -839,6 +909,7 @@ export default function AdminListingsApprovalsPage() {
             moderationBusyId={moderationBusyId}
             onApprove={handleApprove}
             onReject={handleStartReject}
+            onViewDetails={setViewingRow}
             accentClass={pendingRows.length > 0 ? styles.reviewPanelAccentNew : ''}
           />
 
@@ -853,6 +924,7 @@ export default function AdminListingsApprovalsPage() {
             moderationBusyId={moderationBusyId}
             onApprove={handleApprove}
             onReject={handleStartReject}
+            onViewDetails={setViewingRow}
             accentClass={stagedRows.length > 0 ? styles.reviewPanelAccentStaged : ''}
           />
         </>
@@ -866,6 +938,11 @@ export default function AdminListingsApprovalsPage() {
         moderationBusyId={moderationBusyId}
         onClose={() => setRejectingRow(null)}
         onConfirmReject={handleConfirmReject}
+      />
+
+      <ViewDetailsModal
+        row={viewingRow}
+        onClose={() => setViewingRow(null)}
       />
     </div>
   )
