@@ -11,6 +11,7 @@ import {
   FALLBACK_IMAGE,
   findFirstMissingRequiredField,
   listingRowToFormValues,
+  normalizePackageOptionsFromDb,
   resolvePersistedImageUrls,
   SellerListingFileInput,
   SellerListingFormFields,
@@ -118,12 +119,6 @@ function viewModalCategoryLine(p) {
   return det || VIEW_MODAL_EMPTY
 }
 
-function parsePackageOptionsColumn(raw) {
-  if (raw == null) return []
-  if (Array.isArray(raw)) return raw.map((x) => String(x).trim()).filter(Boolean)
-  return []
-}
-
 function normalizeListingRowToProduct(row) {
   const effective = mergePendingChangesIntoListingRow(row)
   const imageUrls = Array.isArray(effective?.image_urls) ? effective.image_urls : []
@@ -135,7 +130,10 @@ function normalizeListingRowToProduct(row) {
   const location = areaRaw || 'N/A'
   const basePrice = effective.base_price != null ? roundPhpAmount(effective.base_price) : 0
   const status = effective.status || 'draft'
-  const kind = effective.listing_kind || 'service'
+  const kind =
+    String(effective.listing_kind == null || effective.listing_kind === '' ? 'service' : effective.listing_kind)
+      .trim()
+      .toLowerCase() || 'service'
   const stock = effective.stock_status
   const availability =
     stock === 'Out of Stock' ? 'Out of Stock' : stock === 'In Stock' ? 'Available' : 'Available'
@@ -178,7 +176,7 @@ function normalizeListingRowToProduct(row) {
     whoThisIsFor: coerceDisplayString(effective.who_this_is_for),
     importantNotes: coerceDisplayString(effective.important_notes),
     funeralCategory: funeralCategoryRaw,
-    packageOptions: parsePackageOptionsColumn(effective.package_options),
+    packageOptions: normalizePackageOptionsFromDb(effective.package_options),
     stockStatus: effective.stock_status ?? null,
     hasPendingUpdate: hasPendingSellerChanges(row),
     stagedRejectionReason: row?.staged_rejection_reason ?? row?.stagedRejectionReason ?? null,

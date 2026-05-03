@@ -101,6 +101,27 @@ export function normalizeStringListValue(raw) {
   return []
 }
 
+export function normalizePackageOptionsFromDb(raw) {
+  if (raw == null) return []
+  if (Array.isArray(raw)) {
+    return raw.map((x) => String(x ?? '').trim()).filter(Boolean)
+  }
+  if (typeof raw === 'string') {
+    const t = raw.trim()
+    if (!t) return []
+    try {
+      const parsed = JSON.parse(t)
+      if (Array.isArray(parsed)) {
+        return parsed.map((x) => String(x ?? '').trim()).filter(Boolean)
+      }
+    } catch {
+      return []
+    }
+    return []
+  }
+  return []
+}
+
 export function listingGalleryHasUserImages(gallery) {
   if (!Array.isArray(gallery) || gallery.length === 0) return false
   return gallery.some((entry) => {
@@ -175,13 +196,9 @@ export function listingRowToFormValues(source) {
   const empty = getEmptyListingFormValues()
   if (!source) return empty
 
-  const pkgRaw = source.package_options ?? source.packageOptions
-  let package_options = []
-  if (Array.isArray(pkgRaw)) {
-    package_options = pkgRaw.map((x) => String(x ?? ''))
-  } else if (pkgRaw && typeof pkgRaw === 'object') {
-    package_options = []
-  }
+  const package_options = normalizePackageOptionsFromDb(source.package_options ?? source.packageOptions).map((x) =>
+    String(x ?? ''),
+  )
 
   const inc = source.inclusions
   let inclusionsText = ''

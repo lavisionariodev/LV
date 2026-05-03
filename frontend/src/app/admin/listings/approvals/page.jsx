@@ -519,7 +519,7 @@ function ApprovalsTableSection({
         </div>
       </div>
 
-      <div className={styles.reviewTableWrap}>
+      <div className={styles.tableWrap}>
         {isLoading ? (
           <div className={styles.loadingState}>
             <div className={styles.spinner} />
@@ -537,8 +537,8 @@ function ApprovalsTableSection({
           </div>
         ) : (
           <>
-            {/* Desktop table */}
-            <table className={`${styles.reviewTable} ${styles.desktopOnly}`}>
+            {/* Desktop table — same shell as admin sellers / payouts */}
+            <table className={`${styles.table} ${styles.desktopOnly}`}>
               <colgroup>
                 <col className={styles.colListing} />
                 <col className={styles.colSeller} />
@@ -567,7 +567,7 @@ function ApprovalsTableSection({
                       : row.seller_email?.trim() || '—'
                   const busy = moderationBusyId === row.id
                   return (
-                    <tr key={row.id} className={styles.reviewRow}>
+                    <tr key={row.id} className={styles.primaryRow}>
                       <td>
                         <div className={styles.reviewListingCell}>
                           <p className={styles.reviewListingName}>{row.listing_name || 'Untitled'}</p>
@@ -693,6 +693,7 @@ export default function AdminListingsApprovalsPage() {
         setError(approveErr || 'Failed to approve listing.')
         return
       }
+      setError(null)
       const wasPendingNewListing = String(row.approval_status || '').toLowerCase() === 'pending'
       setPendingRows((prev) => prev.filter((r) => r.id !== row.id))
       const nextApproved =

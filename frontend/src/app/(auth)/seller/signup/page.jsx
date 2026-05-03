@@ -677,6 +677,15 @@ const Page = () => {
         return;
       }
 
+      const { error: pendingMetaErr } = await supabase.auth.updateUser({
+        data: { seller_password_pending: true },
+      });
+      if (pendingMetaErr) {
+        console.error('seller_password_pending metadata:', pendingMetaErr);
+        toast.error('Could not continue signup. Please try verifying your code again.');
+        return;
+      }
+
       setIsEmailVerified(true);
       toast.success('Email verified. Now create your password.');
       setStep(5);
@@ -741,23 +750,22 @@ const Page = () => {
         return;
       }
 
-      const { error: updateError } = await supabase.auth.updateUser({
-        password,
-        data: {
-          full_name: trimmedName,
-          role: 'seller',
-        },
+      const res = await fetch('/api/auth/seller/complete-signup-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          password,
+          confirmPassword,
+          fullName: trimmedName,
+        }),
       });
 
-      if (updateError) {
-        toast.error(updateError.message || 'Failed to finalize your account. Please try again.');
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(json.error || 'Failed to finalize your account. Please try again.');
         return;
       }
-
-      await supabase
-        .from('profiles')
-        .update({ full_name: trimmedName })
-        .eq('id', user.id);
 
       toast.success('Seller Centre account created! Please complete your shop onboarding.');
       router.replace('/seller/onboarding');
