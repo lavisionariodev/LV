@@ -14,7 +14,7 @@ import {
 import { getSellerByUserId } from '@/lib/sellers/client'
 import { supabase } from '@/lib/supabase/client'
 import styles from './products.module.css'
-import NewListingLoadingState from '@/components/ui/Load/NewListingLoadingState'
+import loadingStyles from '@/components/ui/Load/NewListingLoadingState.module.css'
 import { useMediaQuery } from '@/hooks'
 import { normalizeStockStatusValue } from '@/lib/shop-listings/client'
 import { formatPhpInputString, parsePhpAmountInputString } from '@/lib/cart/formatPhp'
@@ -24,6 +24,51 @@ export const MAX_LISTING_IMAGES = 10
 
 export const FALLBACK_IMAGE =
   'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 640 420%22%3E%3Crect width=%22640%22 height=%22420%22 fill=%22%23d1d5db%22/%3E%3Cpath d=%22M230 160h180a22 22 0 0 1 22 22v56a22 22 0 0 1-22 22H230a22 22 0 0 1-22-22v-56a22 22 0 0 1 22-22Zm18 28a16 16 0 1 0 0.1 0Zm-8 56 38-34 35 30 44-40 55 44H240Z%22 fill=%22%239ca3af%22/%3E%3C/svg%3E'
+
+function NewListingLoadingState() {
+  return (
+    <div
+      className={loadingStyles.loadingRoot}
+      role="status"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <p className={loadingStyles.srOnly}>Preparing the listing form</p>
+      <div className={loadingStyles.loadingStack} aria-hidden="true">
+        <aside className={loadingStyles.loadingAside}>
+          <div className={`${loadingStyles.skeletonCard} ${loadingStyles.skeletonCardStepper}`}>
+            <div className={loadingStyles.skeletonStepperTrack}>
+              <span className={loadingStyles.skeletonStepDot} />
+              <span className={loadingStyles.skeletonStepLine} />
+              <span className={loadingStyles.skeletonStepDot} />
+              <span className={loadingStyles.skeletonStepLine} />
+              <span className={loadingStyles.skeletonStepDot} />
+            </div>
+          </div>
+          <div className={loadingStyles.skeletonCard}>
+            <div className={`${loadingStyles.skeletonLine} ${loadingStyles.skeletonShort}`} />
+            <div className={`${loadingStyles.skeletonLine} ${loadingStyles.skeletonNarrow}`} />
+            <div className={`${loadingStyles.skeletonLine} ${loadingStyles.skeletonNarrow}`} />
+          </div>
+        </aside>
+        <div className={loadingStyles.loadingMain}>
+          <div className={`${loadingStyles.skeletonCard} ${loadingStyles.skeletonCardSection}`}>
+            <div className={`${loadingStyles.skeletonLine} ${loadingStyles.skeletonTitle}`} />
+            <div className={`${loadingStyles.skeletonLine} ${loadingStyles.skeletonMedium}`} />
+            <div className={loadingStyles.skeletonBlock} />
+            <div className={loadingStyles.skeletonBlock} />
+            <div className={`${loadingStyles.skeletonLine} ${loadingStyles.skeletonShort}`} />
+            <div className={loadingStyles.skeletonFooter}>
+              <div className={loadingStyles.skeletonBtnGhost} />
+              <div className={loadingStyles.skeletonBtnGhostWide} />
+              <div className={loadingStyles.skeletonBtnPrimary} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 const LISTING_KIND_OPTIONS = [
   { value: 'service', label: 'Service' },

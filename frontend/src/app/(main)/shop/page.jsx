@@ -3,8 +3,10 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useMemo, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { SERVICES, CATEGORIES, PROVIDERS } from './data'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { SERVICES, CATEGORIES, PROVIDERS, getServiceById } from './data'
+import { useDebouncedEffect } from '@/hooks'
+import { readString, replaceUrlQuery } from '@/lib/url/queryParams'
 import { fetchActiveShopListings, mergeShopListings } from '@/lib/shop-listings/client'
 import { buildCartPayloadFromListing } from '@/lib/cart/fromListing'
 import { useCart } from '@/contexts/CartContext'
@@ -13,13 +15,38 @@ import { useToast } from '@/contexts/ToastContext'
 import { formatPhpAmount } from '@/lib/cart/formatPhp'
 import styles from './shop.module.css'
 
+function listingMatchesSearch(listing, needle) {
+  if (!needle) return true
+  const n = needle.toLowerCase()
+  const service = getServiceById(listing.serviceId)
+  const chunks = [
+    listing.name,
+    listing.description,
+    listing.whoThisIsFor,
+    listing.importantNotes,
+    listing.categoryLabel,
+    listing.listingKindLabel,
+    listing.coverage,
+    listing.duration,
+    listing.provider?.name,
+    listing.provider?.location,
+    service?.name,
+    service?.description,
+    ...(Array.isArray(listing.inclusions) ? listing.inclusions : []),
+    ...(Array.isArray(listing.sellerPackageOptions) ? listing.sellerPackageOptions : []),
+  ]
+  return chunks.some((s) => typeof s === 'string' && s.toLowerCase().includes(n))
+}
+
 export default function ShopPage() {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [listings, setListings] = useState(() => mergeShopListings([]))
   const [activeCategory, setActiveCategory] = useState('all')
   const [sortBy, setSortBy] = useState('newest')
   const [compareIds, setCompareIds] = useState([])
-  const [locationQuery, setLocationQuery] = useState('')
+  const [locationQuery, setLocationQuery] = useState(() => readString(searchParams, 'q', ''))
   const [locationFocused, setLocationFocused] = useState(false)
   const [selectedProvider, setSelectedProvider] = useState(null)
   const [showFiltersModal, setShowFiltersModal] = useState(false)
@@ -63,6 +90,18 @@ export default function ShopPage() {
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [])
 
+  // Sync state ← URL (back/forward, navbar search, shared links)
+  useEffect(() => {
+    const nextQ = readString(searchParams, 'q', '')
+    if (nextQ !== locationQuery) setLocationQuery(nextQ)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
+  // Sync URL ← state (debounced typing in location/search fields)
+  useDebouncedEffect(() => {
+    replaceUrlQuery(router, pathname, searchParams, { q: locationQuery })
+  }, [locationQuery, router, pathname, searchParams], 300)
+
   const allProviders = useMemo(() => {
     const byId = new Map()
     listings.forEach((l) => {
@@ -80,6 +119,11 @@ export default function ShopPage() {
 
     if (selectedProvider) {
       list = list.filter((l) => l.providerId === selectedProvider)
+    }
+
+    const needle = locationQuery.trim().toLowerCase()
+    if (needle) {
+      list = list.filter((l) => listingMatchesSearch(l, needle))
     }
 
     if (sortBy === 'price-asc') list.sort((a, b) => a.price - b.price)
@@ -107,7 +151,7 @@ export default function ShopPage() {
     }
 
     return list
-  }, [listings, activeCategory, sortBy, selectedProvider])
+  }, [listings, activeCategory, sortBy, selectedProvider, locationQuery])
 
   const totalPages = Math.ceil(filteredListings.length / ITEMS_PER_PAGE)
   const paginatedListings = useMemo(() => {

@@ -9,7 +9,9 @@ export default function PublicLayout({ children }) {
   return (
     <CartProvider>
     <FavoritesProvider>
-    <PublicNavbar />
+    <Suspense fallback={null}>
+      <PublicNavbar />
+    </Suspense>
       <main className={styles.main}>
         <Suspense fallback={null}>
           {children}
