@@ -13,7 +13,7 @@ import { supabase } from "@/lib/supabase/client"
  export default function CheckoutPage() {
    const router = useRouter()
    const searchParams = useSearchParams()
-   const { items: cartItems } = useCart()
+   const { items: cartItems, loading: cartLoading } = useCart()
   const [loadingUser, setLoadingUser] = useState(true)
   const [user, setUser] = useState(null)
   const [isBuyerRole, setIsBuyerRole] = useState(false)
@@ -97,12 +97,38 @@ import { supabase } from "@/lib/supabase/client"
      return null
    }
 
-  const isEmpty = filteredItems.length === 0
-
   if (user && !isBuyerRole) {
     router.replace('/buyer/login?redirect=/checkout')
     return null
   }
+
+  const hasScopedItemsParam = Boolean(searchParams.get("items")?.trim())
+
+  if (hasScopedItemsParam && cartLoading) {
+    return (
+      <main className={styles.checkoutPage}>
+        <header className={styles.hero}>
+          <div className={styles.heroInner}>
+            <nav className={styles.breadcrumb} aria-label="Breadcrumb">
+              <Link href="/" className={styles.crumb}>Home</Link>
+              <span className={styles.slash}>/</span>
+              <Link href="/cart" className={styles.crumb}>Cart</Link>
+              <span className={styles.slash}>/</span>
+              <span className={styles.crumbActive}>Checkout</span>
+            </nav>
+            <h1 className={styles.heroTitle}>Checkout</h1>
+          </div>
+        </header>
+        <section className={styles.content}>
+          <div className={styles.centeredBox}>
+            <p className={styles.muted}>Loading your booking…</p>
+          </div>
+        </section>
+      </main>
+    )
+  }
+
+  const isEmpty = filteredItems.length === 0
 
   const productIds = filteredItems.map((i) => String(i.id))
 
