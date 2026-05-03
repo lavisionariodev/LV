@@ -65,6 +65,7 @@ function coerceDisplayString(v) {
 function buildListingSearchHaystack(p) {
   if (!p) return ''
   const inc = Array.isArray(p.inclusions) ? p.inclusions.join(' ') : ''
+  const pkg = Array.isArray(p.packageOptions) ? p.packageOptions.join(' ') : ''
   const parts = [
     p.name,
     p.category,
@@ -72,13 +73,17 @@ function buildListingSearchHaystack(p) {
     p.coverage,
     p.duration,
     p.detailCategory,
+    p.funeralCategory,
     p.description,
     p.longDescription,
     p.availability,
     p.listingKindLabel,
     p.kind,
     p.status,
+    p.approvalStatus,
+    p.stockStatus,
     inc,
+    pkg,
     p.whoThisIsFor,
     p.importantNotes,
   ]
@@ -504,10 +509,17 @@ export default function ProductsContent({ initialKind = 'all' }) {
         </div>
       ) : null}
       <section className={styles.filtersRow} aria-label="Search products">
-        <div className={styles.searchWrap}>
+        <form
+          className={styles.searchWrap}
+          role="search"
+          onSubmit={(e) => {
+            e.preventDefault()
+          }}
+        >
           <TbSearch className={styles.searchIcon} size={18} aria-hidden />
           <input
             type="search"
+            name="q"
             className={styles.searchBox}
             placeholder="Search by name, category, area, description, duration…"
             value={searchQuery}
@@ -516,7 +528,7 @@ export default function ProductsContent({ initialKind = 'all' }) {
             autoComplete="off"
             spellCheck={false}
           />
-        </div>
+        </form>
         <Link href="/seller/products/new-listing" className={styles.addListingMobile}>
           <TbPlus size={18} aria-hidden />
           Add New Listing

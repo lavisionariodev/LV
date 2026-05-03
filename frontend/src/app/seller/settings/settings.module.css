@@ -364,14 +364,6 @@
   grid-column: 1 / -1;
 }
 
-.textarea {
-  min-height: 100px;
-  height: auto;
-  padding: 10px 12px;
-  resize: vertical;
-  line-height: 1.45;
-}
-
 .shopHelper {
   margin: 6px 0 0;
   font-size: 11px;
@@ -488,6 +480,15 @@
   background: color-mix(in srgb, var(--color-cream) 55%, #ffffff 45%);
   color: var(--color-text-primary);
   cursor: default;
+}
+
+/* After .input: shop fields use both .input and .textarea — base .input uses padding: 0 12px and fixed height, which must not apply here */
+.textarea {
+  min-height: 100px;
+  height: auto;
+  padding: 12px 14px;
+  resize: vertical;
+  line-height: 1.45;
 }
 
 .fileInput {
@@ -638,6 +639,41 @@
     justify-content: space-between;
   }
 
+  .passwordHeadRow .headActions {
+    width: auto;
+    display: inline-flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  .passwordHeadRowEditing {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .passwordHeadRowEditing .headActions {
+    width: auto;
+    display: inline-flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  .passwordHeadRow .headActions .primaryBtn,
+  .passwordHeadRow .headActions .secondaryBtn {
+    width: auto;
+  }
+
+  .passwordHeadRowEditing .headActions .primaryBtn,
+  .passwordHeadRowEditing .headActions .secondaryBtn {
+    width: auto;
+    justify-content: center;
+    padding: 7px 10px;
+    font-size: 11px;
+    min-height: 34px;
+  }
+
   .personalHeadRow .headActions {
     width: auto;
     display: inline-flex;
@@ -674,10 +710,6 @@
     min-height: 34px;
   }
 
-  .passwordHeadRow > .primaryBtn {
-    width: auto;
-  }
-
   .passwordHeadRow .cardTitle {
     white-space: nowrap;
     font-size: 13px;
@@ -691,7 +723,8 @@
     justify-content: center;
   }
 
-  .passwordHeadRow > .primaryBtn {
+  .passwordHeadRow .headActions .primaryBtn,
+  .passwordHeadRow .headActions .secondaryBtn {
     width: auto;
     padding: 8px 12px;
     font-size: 12px;

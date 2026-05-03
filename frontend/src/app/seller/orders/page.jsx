@@ -1,14 +1,25 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import OrdersContent from './OrdersContent'
+import OrdersContent, { SellerOrdersLoadingFallback } from './OrdersContent'
 
-export default function SellerOrdersPage() {
+function SellerOrdersPageInner() {
   const searchParams = useSearchParams()
-  const initialTab = searchParams?.get('tab') ?? undefined
   const initialOrderId = searchParams?.get('orderId') ?? undefined
   const initialAction = searchParams?.get('action') ?? undefined
   return (
-    <OrdersContent initialTab={initialTab} initialOrderId={initialOrderId} initialAction={initialAction} />
+    <OrdersContent
+      initialOrderId={initialOrderId}
+      initialAction={initialAction}
+    />
+  )
+}
+
+export default function SellerOrdersPage() {
+  return (
+    <Suspense fallback={<SellerOrdersLoadingFallback />}>
+      <SellerOrdersPageInner />
+    </Suspense>
   )
 }

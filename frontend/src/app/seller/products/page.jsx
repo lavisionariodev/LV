@@ -1,7 +1,5 @@
-'use client'
-
-import ProductsContent from './ProductsContent'
+import { redirect } from 'next/navigation'
 
 export default function SellerProductsPage() {
-  return <ProductsContent initialKind="all" />
+  redirect('/seller/products/catalog')
 }

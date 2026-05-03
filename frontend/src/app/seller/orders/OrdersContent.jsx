@@ -185,14 +185,53 @@ function formatDate(s) {
   return new Date(s + 'T00:00:00').toLocaleDateString('en-PH', { dateStyle: 'medium' })
 }
 
+/**
+ * Token-based AND search across buyer-facing order fields (aligned with seller customers/products).
+ */
+function orderMatchesSearchQuery(order, rawQuery) {
+  const trimmed = String(rawQuery ?? '').trim()
+  if (!trimmed) return true
+  const tokens = trimmed.toLowerCase().split(/\s+/).filter(Boolean)
+  if (!tokens.length) return true
+
+  const addOnText = Array.isArray(order.addOns) ? order.addOns.join(' ') : ''
+  const priceFormatted = formatPrice(Number(order.totalPrice) || 0)
+  const parts = [
+    order.customerName,
+    order.displayId,
+    order.id,
+    order.servicePackage,
+    order.location,
+    order.customerPhone,
+    order.customerEmail,
+    order.deceasedName,
+    order.dateOfService,
+    order.dateOfDeath,
+    order.specialRequests,
+    order.wakeDuration,
+    order.burialLocation,
+    addOnText,
+    order.paymentStatus,
+    order.paymentMethod,
+    order.orderStatus,
+    priceFormatted,
+    String(order.totalPrice ?? ''),
+  ]
+  const hay = parts.map((x) => String(x ?? '').toLowerCase()).join(' ')
+  return tokens.every((t) => hay.includes(t))
+}
+
 export default function OrdersContent({ initialTab, initialOrderId, initialAction }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { user, authLoading, isSeller } = useAuth()
   const allowedTabs = ORDER_STATUSES.map((t) => t.id)
-  const defaultTab = initialTab && allowedTabs.includes(initialTab) ? initialTab : 'all'
-  const [activeTab, setActiveTab] = useState(() => readEnum(searchParams, 'tab', allowedTabs, defaultTab))
+  /** Route-level default only (from path segments like /orders/pending). Do not derive from URL ?tab= here — that caused omitIf / defaultTab to flip when the URL changed and made params flicker. */
+  const routeDefaultTab = initialTab && allowedTabs.includes(initialTab) ? initialTab : 'all'
+  const [activeTab, setActiveTab] = useState(() =>
+    readEnum(searchParams, 'tab', allowedTabs, routeDefaultTab),
+  )
   const [searchQuery, setSearchQuery] = useState(() => readString(searchParams, 'q', ''))
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [orderForUpdateStatus, setOrderForUpdateStatus] = useState(null)
@@ -307,20 +346,21 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
 
   // Sync state <- URL (back/forward, shared links)
   useEffect(() => {
-    const nextTab = readEnum(searchParams, 'tab', allowedTabs, defaultTab)
+    const nextTab = readEnum(searchParams, 'tab', allowedTabs, routeDefaultTab)
     const nextQ = readString(searchParams, 'q', '')
     if (nextTab !== activeTab) setActiveTab(nextTab)
     if (nextQ !== searchQuery) setSearchQuery(nextQ)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
-  // Sync URL <- state (debounce typing; keep tab in URL too)
+  // Sync URL <- state (debounce typing; keep tab in URL too).
+  // omitIf uses routeDefaultTab (stable per route). Main /seller/orders must not pass URL-derived initialTab — that flipped omitIf whenever ?tab= was omitted and caused param flicker.
   useDebouncedEffect(() => {
     replaceUrlQuery(router, pathname, searchParams, {
-      tab: { value: activeTab, omitIf: defaultTab },
+      tab: { value: activeTab, omitIf: routeDefaultTab },
       q: searchQuery,
     })
-  }, [activeTab, searchQuery, router, pathname, searchParams], 300)
+  }, [activeTab, searchQuery, router, pathname, searchParams, routeDefaultTab], 300)
 
   useEffect(() => {
     if (!initialOrderId) return
@@ -352,12 +392,7 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
       list = list.filter((o) => o.orderStatus === activeTab)
     }
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase()
-      list = list.filter(
-        (o) =>
-          o.customerName.toLowerCase().includes(q) ||
-          String(o.displayId || o.id).toLowerCase().includes(q),
-      )
+      list = list.filter((o) => orderMatchesSearchQuery(o, searchQuery))
     }
     return list
   }, [orders, activeTab, searchQuery])
@@ -456,17 +491,26 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
   return (
     <div className={styles.pageWrap}>
       <div className={styles.filtersRow}>
-        <div className={styles.searchWrap}>
-          <TbSearch className={styles.searchIcon} size={18} />
+        <form
+          className={styles.searchWrap}
+          role="search"
+          onSubmit={(e) => {
+            e.preventDefault()
+          }}
+        >
+          <TbSearch className={styles.searchIcon} size={18} aria-hidden />
           <input
             type="search"
+            name="q"
             className={styles.searchBox}
-            placeholder="Search by name or order ID"
+            placeholder="Search name, order #, package, location, contact, notes…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             aria-label="Search orders"
+            autoComplete="off"
+            spellCheck={false}
           />
-        </div>
+        </form>
         <div className={`${styles.filterDropdownWrap} ${filterDropdownOpen ? styles.filterDropdownOpen : ''}`} ref={filterDropdownRef}>
           <button
             type="button"
@@ -1059,6 +1103,14 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+export function SellerOrdersLoadingFallback() {
+  return (
+    <div className={styles.pageWrap} role="status" aria-live="polite">
+      <p style={{ margin: 0, color: '#64748b', fontSize: '0.95rem' }}>Loading orders…</p>
     </div>
   )
 }

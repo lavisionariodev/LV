@@ -105,7 +105,7 @@ const SIDEBAR_CONFIG = {
       {
         label: 'Products',
         icon: TbPackage,
-        defaultHref: '/seller/products',
+        defaultHref: '/seller/products/catalog',
         children: [
           { href: '/seller/products/services', label: 'Services' },
           { href: '/seller/products/packages', label: 'Packages' },

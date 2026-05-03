@@ -1,7 +1,6 @@
 import { Suspense } from 'react'
 import NewListingClient from '../SellerListingForm'
 import styles from '../products.module.css'
-import loadingStyles from '@/components/ui/Load/NewListingLoadingState.module.css'
 
 export const metadata = {
   title: 'Add New Listing',
@@ -10,40 +9,40 @@ export const metadata = {
 function NewListingLoadingState() {
   return (
     <div
-      className={loadingStyles.loadingRoot}
+      className={styles.loadingRoot}
       role="status"
       aria-busy="true"
       aria-live="polite"
     >
-      <p className={loadingStyles.srOnly}>Preparing the listing form</p>
-      <div className={loadingStyles.loadingStack} aria-hidden="true">
-        <aside className={loadingStyles.loadingAside}>
-          <div className={`${loadingStyles.skeletonCard} ${loadingStyles.skeletonCardStepper}`}>
-            <div className={loadingStyles.skeletonStepperTrack}>
-              <span className={loadingStyles.skeletonStepDot} />
-              <span className={loadingStyles.skeletonStepLine} />
-              <span className={loadingStyles.skeletonStepDot} />
-              <span className={loadingStyles.skeletonStepLine} />
-              <span className={loadingStyles.skeletonStepDot} />
+      <p className={styles.srOnly}>Preparing the listing form</p>
+      <div className={styles.loadingStack} aria-hidden="true">
+        <aside className={styles.loadingAside}>
+          <div className={`${styles.skeletonCard} ${styles.skeletonCardStepper}`}>
+            <div className={styles.skeletonStepperTrack}>
+              <span className={styles.skeletonStepDot} />
+              <span className={styles.skeletonStepLine} />
+              <span className={styles.skeletonStepDot} />
+              <span className={styles.skeletonStepLine} />
+              <span className={styles.skeletonStepDot} />
             </div>
           </div>
-          <div className={loadingStyles.skeletonCard}>
-            <div className={`${loadingStyles.skeletonLine} ${loadingStyles.skeletonShort}`} />
-            <div className={`${loadingStyles.skeletonLine} ${loadingStyles.skeletonNarrow}`} />
-            <div className={`${loadingStyles.skeletonLine} ${loadingStyles.skeletonNarrow}`} />
+          <div className={styles.skeletonCard}>
+            <div className={`${styles.skeletonLine} ${styles.skeletonShort}`} />
+            <div className={`${styles.skeletonLine} ${styles.skeletonNarrow}`} />
+            <div className={`${styles.skeletonLine} ${styles.skeletonNarrow}`} />
           </div>
         </aside>
-        <div className={loadingStyles.loadingMain}>
-          <div className={`${loadingStyles.skeletonCard} ${loadingStyles.skeletonCardSection}`}>
-            <div className={`${loadingStyles.skeletonLine} ${loadingStyles.skeletonTitle}`} />
-            <div className={`${loadingStyles.skeletonLine} ${loadingStyles.skeletonMedium}`} />
-            <div className={loadingStyles.skeletonBlock} />
-            <div className={loadingStyles.skeletonBlock} />
-            <div className={`${loadingStyles.skeletonLine} ${loadingStyles.skeletonShort}`} />
-            <div className={loadingStyles.skeletonFooter}>
-              <div className={loadingStyles.skeletonBtnGhost} />
-              <div className={loadingStyles.skeletonBtnGhostWide} />
-              <div className={loadingStyles.skeletonBtnPrimary} />
+        <div className={styles.loadingMain}>
+          <div className={`${styles.skeletonCard} ${styles.skeletonCardSection}`}>
+            <div className={`${styles.skeletonLine} ${styles.skeletonTitle}`} />
+            <div className={`${styles.skeletonLine} ${styles.skeletonMedium}`} />
+            <div className={styles.skeletonBlock} />
+            <div className={styles.skeletonBlock} />
+            <div className={`${styles.skeletonLine} ${styles.skeletonShort}`} />
+            <div className={styles.skeletonFooter}>
+              <div className={styles.skeletonBtnGhost} />
+              <div className={styles.skeletonBtnGhostWide} />
+              <div className={styles.skeletonBtnPrimary} />
             </div>
           </div>
         </div>
