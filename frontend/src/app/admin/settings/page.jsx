@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import AdminSettingsClient from './AdminSettingsClient'
-import AdminLoadingState from '@/components/ui/Load/AdminLoadingState'
+import loadingStyles from '../admin-loading.module.css'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -26,7 +26,19 @@ export default async function SettingsPage() {
   }
 
   return (
-    <Suspense fallback={<AdminLoadingState variant="page" label="Loading settings" />}>
+    <Suspense
+      fallback={
+        <div
+          className={`${loadingStyles.root} ${loadingStyles.variantPage}`}
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <span className={loadingStyles.spinner} aria-hidden />
+          <span className={loadingStyles.label}>Loading settings</span>
+        </div>
+      }
+    >
       <AdminSettingsClient />
     </Suspense>
   )

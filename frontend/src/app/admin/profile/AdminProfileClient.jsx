@@ -17,7 +17,7 @@ import { HiOutlineNewspaper } from 'react-icons/hi'
 import { validateNewPassword } from '@/lib/validators/authSchemas'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
 import { useMediaQuery } from '@/hooks'
-import AdminLoadingState from '@/components/ui/Load/AdminLoadingState'
+import loadingStyles from '../admin-loading.module.css'
 import { normalizeSettingsTab } from '../settings/adminSettingsTabs'
 const AVATARS_BUCKET = 'avatars'
 const MAX_MB = 2
@@ -451,7 +451,15 @@ export default function AdminProfileClient() {
       <div className={styles.page}>
         <div className={`${styles.contentArea} ${styles.grid}`}>
           <section className={`${styles.card} ${styles.full}`}>
-            <AdminLoadingState variant="card" label="Opening settings" />
+            <div
+              className={`${loadingStyles.root} ${loadingStyles.variantCard}`}
+              role="status"
+              aria-live="polite"
+              aria-busy="true"
+            >
+              <span className={loadingStyles.spinner} aria-hidden />
+              <span className={loadingStyles.label}>Opening settings</span>
+            </div>
           </section>
         </div>
       </div>
@@ -463,7 +471,15 @@ export default function AdminProfileClient() {
       <div className={styles.page}>
         <div className={`${styles.contentArea} ${styles.grid}`}>
           <section className={`${styles.card} ${styles.full}`}>
-            <AdminLoadingState variant="card" label="Loading your profile" />
+            <div
+              className={`${loadingStyles.root} ${loadingStyles.variantCard}`}
+              role="status"
+              aria-live="polite"
+              aria-busy="true"
+            >
+              <span className={loadingStyles.spinner} aria-hidden />
+              <span className={loadingStyles.label}>Loading your profile</span>
+            </div>
           </section>
         </div>
       </div>

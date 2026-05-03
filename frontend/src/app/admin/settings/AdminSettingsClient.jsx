@@ -23,7 +23,7 @@ import { useMediaQuery } from '@/hooks'
 import { commission } from '@/data/adminSampleData'
 import { useSiteContent, upsertSiteContent } from '@/lib/siteContent/client'
 import { useToast } from '@/contexts/ToastContext'
-import AdminLoadingState from '@/components/ui/Load/AdminLoadingState'
+import loadingStyles from '../admin-loading.module.css'
 import { normalizeSettingsTab } from './adminSettingsTabs'
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -365,7 +365,15 @@ export const AdminNotificationPreferencesPanel = forwardRef(function AdminNotifi
   if (loading) {
     return (
       <section className={wrapClass}>
-        <AdminLoadingState variant="card" label="Loading notification settings" />
+        <div
+          className={`${loadingStyles.root} ${loadingStyles.variantCard}`}
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <span className={loadingStyles.spinner} aria-hidden />
+          <span className={loadingStyles.label}>Loading notification settings</span>
+        </div>
       </section>
     )
   }
@@ -874,7 +882,15 @@ export function AdminSiteContentPanel({
 
       <div className={styles.settingsProgramBody} ref={contentRefs}>
         {isLoading ? (
-          <AdminLoadingState variant="embed" label="Loading site content" />
+          <div
+            className={`${loadingStyles.root} ${loadingStyles.variantEmbed}`}
+            role="status"
+            aria-live="polite"
+            aria-busy="true"
+          >
+            <span className={loadingStyles.spinner} aria-hidden />
+            <span className={loadingStyles.label}>Loading site content</span>
+          </div>
         ) : (
           <>
             {error && (
@@ -1339,7 +1355,15 @@ export default function AdminSettingsClient() {
       <div className={styles.page}>
         <div className={`${styles.contentArea} ${styles.grid}`}>
           <section className={`${styles.card} ${styles.full}`}>
-            <AdminLoadingState variant="card" label="Loading your profile" />
+            <div
+              className={`${loadingStyles.root} ${loadingStyles.variantCard}`}
+              role="status"
+              aria-live="polite"
+              aria-busy="true"
+            >
+              <span className={loadingStyles.spinner} aria-hidden />
+              <span className={loadingStyles.label}>Loading your profile</span>
+            </div>
           </section>
         </div>
       </div>
