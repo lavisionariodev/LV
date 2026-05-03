@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
-import Image from 'next/image'
+import { useEffect, useMemo, useState } from 'react'
+import { fetchActivePartnersDirectory } from '@/lib/partners/client'
 import styles from './partners.module.css'
 
 export default function PartnershipsPage() {
@@ -106,78 +106,68 @@ function FeaturedPartnersSection() {
 }
 
 /* ---------------- ALL PARTNERS GRID ---------------- */
+function partnerInitials(name) {
+  const parts = String(name || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+  if (parts.length >= 2) {
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
+  }
+  return (parts[0]?.charAt(0) || 'P').toUpperCase()
+}
+
 function AllPartnersSection() {
   const [filter, setFilter] = useState('All')
+  const [partners, setPartners] = useState([])
+  const [loadState, setLoadState] = useState('idle')
+  const [loadErrorDetail, setLoadErrorDetail] = useState(null)
 
-  const categories = ['All', 'Funeral', 'Cremation', 'Chapels', 'Florals', 'Transport', 'Products']
+  useEffect(() => {
+    let cancelled = false
+    setLoadState('loading')
+    setLoadErrorDetail(null)
+    fetchActivePartnersDirectory({ bustCache: true })
+      .then((rows) => {
+        if (cancelled) return
+        setPartners(rows)
+        setLoadState('ready')
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          const msg =
+            typeof err?.message === 'string' ? err.message : 'Failed to load partners.'
+          setPartners([])
+          setLoadErrorDetail(msg)
+          setLoadState('error')
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
-  const partners = [
-    {
-      name: 'Serenity Memorial Services',
-      description: 'Providing complete funeral arrangements with compassion and care.',
-      category: 'Funeral',
-      image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=200&h=200&fit=crop&auto=format',
-      tag: 'Full Service',
-    },
-    {
-      name: 'Eternal Peace Chapels',
-      description: 'Modern chapel spaces designed for peaceful and respectful services.',
-      category: 'Chapels',
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&auto=format',
-      tag: 'Facilities',
-    },
-    {
-      name: 'Golden Life Caskets',
-      description: 'High-quality and customizable caskets crafted with dignity.',
-      category: 'Products',
-      image: 'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?w=200&h=200&fit=crop&auto=format',
-      tag: 'Products',
-    },
-    {
-      name: 'Divine Flower Arrangements',
-      description: 'Elegant floral setups for memorials and funeral services.',
-      category: 'Florals',
-      image: 'https://images.unsplash.com/photo-1490750967868-88df5691cc9a?w=200&h=200&fit=crop&auto=format',
-      tag: 'Florals',
-    },
-    {
-      name: 'Guardian Cremation Services',
-      description: 'Affordable and respectful cremation service providers.',
-      category: 'Cremation',
-      image: 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=200&h=200&fit=crop&auto=format',
-      tag: 'Cremation',
-    },
-    {
-      name: 'Heavenly Transport Services',
-      description: 'Reliable funeral transport and logistics solutions.',
-      category: 'Transport',
-      image: 'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=200&h=200&fit=crop&auto=format',
-      tag: 'Transport',
-    },
-    {
-      name: 'Sacred Grounds Memorial Park',
-      description: 'Beautifully maintained memorial parks for peaceful eternal rest.',
-      category: 'Funeral',
-      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=200&h=200&fit=crop&auto=format',
-      tag: 'Memorial Park',
-    },
-    {
-      name: 'Pure Lily Florals',
-      description: 'Handcrafted funeral wreaths and sympathy arrangements.',
-      category: 'Florals',
-      image: 'https://images.unsplash.com/photo-1487530811015-780f37cbe7a7?w=200&h=200&fit=crop&auto=format',
-      tag: 'Florals',
-    },
-    {
-      name: 'Dove Cremation & Urns',
-      description: 'Dignified cremation services with custom urn selection.',
-      category: 'Cremation',
-      image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=200&h=200&fit=crop&auto=format',
-      tag: 'Cremation',
-    },
-  ]
+  const categories = useMemo(() => {
+    const labels = [
+      ...new Set(
+        partners.map((p) => (p.businessTypeLabel || '').trim()).filter(Boolean),
+      ),
+    ].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+    return ['All', ...labels]
+  }, [partners])
 
-  const filtered = filter === 'All' ? partners : partners.filter(p => p.category === filter)
+  useEffect(() => {
+    if (filter !== 'All' && !categories.includes(filter)) {
+      setFilter('All')
+    }
+  }, [categories, filter])
+
+  const filtered = useMemo(() => {
+    if (filter === 'All') return partners
+    return partners.filter(
+      (p) => (p.businessTypeLabel || '').trim().toLowerCase() === filter.toLowerCase(),
+    )
+  }, [filter, partners])
 
   return (
     <section className={styles.allPartnersSection}>
@@ -191,37 +181,87 @@ function AllPartnersSection() {
           </p>
         </div>
 
-        {/* Filter Tabs */}
-        <div className={styles.filterBar}>
-          {categories.map(cat => (
-            <button
-              key={cat}
-              className={`${styles.filterBtn} ${filter === cat ? styles.filterBtnActive : ''}`}
-              onClick={() => setFilter(cat)}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
+        {/* Filter Tabs — labels from sellers’ business_type_label */}
+        {categories.length > 1 && (
+          <div className={styles.filterBar}>
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                className={`${styles.filterBtn} ${filter === cat ? styles.filterBtnActive : ''}`}
+                onClick={() => setFilter(cat)}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Partner Cards Grid */}
         <div className={styles.partnersGrid}>
-          {filtered.map((partner, i) => (
-            <div key={i} className={styles.partnerCard}>
+          {loadState === 'loading' && (
+            <p className={styles.partnersGridStatus} role="status">
+              Loading partners…
+            </p>
+          )}
+          {loadState === 'error' && (
+            <div className={styles.partnersGridStatus} role="alert">
+              <p className={styles.partnersGridErrorMain}>
+                We couldn&apos;t load the partner list. Please try again later.
+              </p>
+              {loadErrorDetail ? (
+                <p className={styles.partnersGridErrorDetail}>{loadErrorDetail}</p>
+              ) : null}
+              <p className={styles.partnersGridErrorHint}>
+                Typical fix: apply migrations that define{' '}
+                <code className={styles.partnersInlineCode}>get_active_partners_directory</code>{' '}
+                in Supabase, then reload this page (or reload the Schema in the Dashboard API
+                settings if the function existed but RPC still 404’d).
+              </p>
+            </div>
+          )}
+          {loadState === 'ready' && partners.length === 0 && (
+            <p className={styles.partnersGridStatus}>
+              No registered sellers to show yet. When sellers join La Visionario, they will appear here.
+            </p>
+          )}
+          {loadState === 'ready' && partners.length > 0 && filtered.length === 0 && (
+            <p className={styles.partnersGridStatus}>No partners match this filter.</p>
+          )}
+          {filtered.map((partner) => (
+            <div key={partner.sellerUserId} className={styles.partnerCard}>
               <div className={styles.partnerImageWrap}>
-                <img
-                  src={partner.image}
-                  alt={partner.name}
-                  className={styles.partnerCircleImage}
-                />
+                {partner.avatarUrl ? (
+                  <img
+                    src={partner.avatarUrl}
+                    alt={partner.businessName}
+                    className={styles.partnerCircleImage}
+                  />
+                ) : (
+                  <span
+                    className={styles.partnerAvatarInitials}
+                    aria-hidden
+                  >
+                    {partnerInitials(partner.businessName)}
+                  </span>
+                )}
               </div>
               <div className={styles.partnerCardBody}>
-                <span className={styles.partnerTag}>{partner.tag}</span>
-                <h3 className={styles.partnerName}>{partner.name}</h3>
-                <p className={styles.partnerDesc}>{partner.description}</p>
+                <span className={styles.partnerTag}>
+                  {(partner.businessTypeLabel || 'Partner').toUpperCase()}
+                </span>
+                <h3 className={styles.partnerName}>{partner.businessName}</h3>
+                <p className={styles.partnerDesc}>
+                  {partner.tagline || '\u2014'}
+                </p>
               </div>
               <div className={styles.partnerCardFooter}>
-                <button className={styles.partnerViewBtn}>View Partner</button>
+                <Link
+                  href={`/seller-profile?seller=${encodeURIComponent(partner.sellerUserId)}`}
+                  className={styles.partnerViewBtn}
+                >
+                  View Partner
+                </Link>
               </div>
             </div>
           ))}
@@ -256,8 +296,12 @@ function BecomeAPartnerSection() {
           </div>
 
           <div className={styles.ctaButtons}>
-            <button className={styles.ctaPrimary}>Apply as Seller</button>
-            <button className={styles.ctaSecondary}>Become a Service Provider</button>
+            <Link href="/seller/signup" className={styles.ctaPrimary}>
+              Apply as Seller
+            </Link>
+            <Link href="/seller/login" className={styles.ctaSecondary}>
+              Become a Service Provider
+            </Link>
           </div>
         </div>
       </div>

@@ -1,6 +1,10 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { fetchActiveShopListings, mergeShopListings } from '@/lib/shop-listings/client'
+import { normalizeSellerSpecialties } from '@/lib/sellers/client'
+import { isUuidLike } from '@/lib/uuidLike'
 import styles from './seller-profile.module.css'
 
 // ─── Sample Data ──────────────────────────────────────────────────────────────
@@ -10,7 +14,8 @@ const SAMPLE_SELLER = {
   name: 'Sereno Memorial Services',
   handle: 'serenomemorial',
   location: 'Quezon City, Metro Manila',
-  bio: 'Providing compassionate and dignified funeral services to grieving families across Metro Manila for over 20 years. We handle every detail with care so you can focus on remembering your loved one.',
+  tagline:
+    'Providing compassionate and dignified funeral services to grieving families across Metro Manila for over 20 years. We handle every detail with care so you can focus on remembering your loved one.',
   avatarUrl: null,
   bannerUrl: 'https://getwallpapers.com/wallpaper/full/4/c/f/289455.jpg',
   badge: 'Top Provider',
@@ -27,7 +32,7 @@ const SAMPLE_SELLER = {
 const SAMPLE_LISTINGS = [
   {
     id: 'lst-001',
-    serviceId: 'svc-funeral',
+    serviceId: 'memorial-planning',
     name: 'Full Funeral Package — Traditional',
     price: 45000,
     rating: 5.0,
@@ -37,7 +42,7 @@ const SAMPLE_LISTINGS = [
   },
   {
     id: 'lst-002',
-    serviceId: 'svc-funeral',
+    serviceId: 'memorial-planning',
     name: 'Cremation Package (with Urn)',
     price: 28000,
     rating: 4.9,
@@ -47,7 +52,7 @@ const SAMPLE_LISTINGS = [
   },
   {
     id: 'lst-003',
-    serviceId: 'svc-funeral',
+    serviceId: 'memorial-planning',
     name: 'Memorial Flower Arrangement',
     price: 3500,
     rating: 4.8,
@@ -57,7 +62,7 @@ const SAMPLE_LISTINGS = [
   },
   {
     id: 'lst-004',
-    serviceId: 'svc-funeral',
+    serviceId: 'memorial-planning',
     name: 'Lifestream / Online Wake Setup',
     price: 5000,
     rating: 4.7,
@@ -67,7 +72,7 @@ const SAMPLE_LISTINGS = [
   },
   {
     id: 'lst-005',
-    serviceId: 'svc-funeral',
+    serviceId: 'memorial-planning',
     name: 'Premium Hardwood Casket',
     price: 18000,
     rating: 4.9,
@@ -77,7 +82,7 @@ const SAMPLE_LISTINGS = [
   },
   {
     id: 'lst-006',
-    serviceId: 'svc-funeral',
+    serviceId: 'memorial-planning',
     name: 'Embalming & Preparation Service',
     price: 8500,
     rating: 5.0,
@@ -135,6 +140,135 @@ const SAMPLE_REVIEWS = [
   },
 ]
 
+/**
+ * When `?seller=<uuid>` loads a real storefront, UI fields backed only by SAMPLE_* /
+ * seeded reviews (nothing in DB yet — see docs below).
+ */
+/** Fields still SAMPLE_* / mock for `?seller=<uuid>` (real data comes via Supabase `get_active_shop_listings` only — no Next.js API route). */
+export const MOCK_SELLER_PROFILE_FIELDS = /** @type {const} */ ([
+  'bannerUrl',
+  'badge',
+  'rating',
+  'reviewCount',
+  'responseRate',
+  'turnaround',
+  'avatarUrl — profiles.avatar_url via `get_active_shop_listings.seller_avatar_url` (SECURITY DEFINER)',
+  'Verified chip — always shown; not wired to sellers row',
+  'reviews tab — SAMPLE_REVIEWS until order reviews ship',
+  'listing.rating — per-card sort placeholder (not persisted per listing)',
+  'specialties — sellers.specialties via RPC (`seller_specialties`); fallback to dedup listing package-option labels when empty',
+  'Real from RPC (migration 078+ includes avatar): name, location, listings, sellers.username (@handle), tagline (`seller_tagline`), business_info about (`seller_business_info`), member since (`seller_business_started_at`), specialties (`seller_specialties`), seller_avatar_url',
+])
+
+/** Short teaser for the bio card when business description is long; full text stays in About. */
+function teaserFromBusinessDescription(full) {
+  const t = String(full || '').trim()
+  if (!t) return undefined
+  if (t.length <= 380) return undefined
+  const paras = t.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean)
+  const block = paras[0] || t
+  const oneLine = block.replace(/\s*\n\s*/g, ' ').trim()
+  const max = 360
+  if (oneLine.length <= max) return oneLine
+  const cut = oneLine.slice(0, max)
+  const sp = cut.lastIndexOf(' ')
+  return `${(sp > 200 ? cut.slice(0, sp) : cut).trim()}…`
+}
+
+function buildSellerViewModel(sellerUserId, shopRows) {
+  const rows = shopRows ?? []
+  const prov = rows[0]?.provider
+  const name = prov?.name || 'Seller'
+  const avatarCandidates = [
+    ...new Set(
+      rows
+        .map((r) => {
+          const u = r?.provider?.avatarUrl ?? r?.provider?.image
+          return typeof u === 'string' ? u.trim() : ''
+        })
+        .filter(Boolean),
+    ),
+  ]
+  const avatarUrlResolved = avatarCandidates[0] ?? null
+  const location = (prov?.location || '').trim() || 'Philippines'
+  const handleCandidate = [...new Set(rows.map((r) => r.provider?.handle).filter(Boolean))][0]
+  const handle = typeof handleCandidate === 'string' && handleCandidate.trim()
+    ? handleCandidate.trim().toLowerCase()
+    : undefined
+
+  let memberSince = '—'
+  const earliestBizStart = [...new Set(rows.map((r) => r.provider?.businessStartedAt).filter(Boolean))].sort()[0]
+  if (earliestBizStart) {
+    const d = new Date(earliestBizStart)
+    if (!Number.isNaN(d.getTime())) {
+      memberSince = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+    }
+  }
+
+  const specSet = new Set()
+  for (const r of rows) {
+    for (const o of r.sellerPackageOptions ?? []) {
+      specSet.add(String(o).trim())
+    }
+  }
+  const uniqSpecs = [...specSet].filter(Boolean)
+
+  const specialtiesFromSeller = normalizeSellerSpecialties(rows[0]?.provider?.specialties ?? [])
+
+  const businessInfoCandidates = [
+    ...new Set(rows.map((r) => (r.provider?.businessInfo ?? '').trim()).filter(Boolean)),
+  ]
+  const businessInfoFull = businessInfoCandidates[0] ?? ''
+
+  /** About tab — full sellers.business_info from shop RPC */
+  const extendedBio = businessInfoFull ? businessInfoFull : undefined
+
+  const taglineCandidates = [...new Set(rows.map((r) => (r.provider?.tagline ?? '').trim()).filter(Boolean))]
+  const taglineFromSeller = taglineCandidates[0] ?? ''
+  /** Card under stats: sellers.tagline, or excerpt of business_info when tagline unset and text is very long */
+  const tagline =
+    taglineFromSeller ||
+    (businessInfoFull ? teaserFromBusinessDescription(businessInfoFull) : undefined)
+
+  return {
+    id: sellerUserId,
+    name,
+    handle,
+    location,
+    avatarUrl: avatarUrlResolved,
+    bannerUrl: SAMPLE_SELLER.bannerUrl,
+    badge: SAMPLE_SELLER.badge,
+    rating: SAMPLE_SELLER.rating,
+    reviewCount: SAMPLE_SELLER.reviewCount,
+    memberSince,
+    responseRate: SAMPLE_SELLER.responseRate,
+    turnaround: SAMPLE_SELLER.turnaround,
+    specialties:
+      specialtiesFromSeller.length > 0
+        ? specialtiesFromSeller
+        : uniqSpecs.length > 0
+          ? uniqSpecs
+          : [],
+    tagline,
+    extendedBio,
+  }
+}
+
+function listingsFromShopRows(shopRows) {
+  const fallbackRating = SAMPLE_SELLER.rating
+  return (shopRows ?? []).map((row) => ({
+    id: row.id,
+    serviceId: row.serviceId,
+    name: row.name,
+    price: row.price,
+    rating: fallbackRating,
+    inStock: row.inStock,
+    imageUrl: row.imageUrl,
+    imageUrls: row.imageUrls,
+    createdAt: row.createdAt,
+  }))
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatPhp(amount) {
@@ -175,14 +309,14 @@ function PinIcon() {
 // ─── Seller Profile Page ──────────────────────────────────────────────────────
 
 /**
- * SellerProfilePage
+ * Presentational seller profile (tabs, listings grid, reviews, about).
  *
  * Props (all optional — falls back to SAMPLE_* constants when omitted):
  *   seller   – seller object
  *   listings – listing array
  *   reviews  – review array
  */
-export default function SellerProfilePage({
+function SellerProfileView({
   seller   = SAMPLE_SELLER,
   listings = SAMPLE_LISTINGS,
   reviews  = SAMPLE_REVIEWS,
@@ -314,9 +448,9 @@ export default function SellerProfilePage({
         </div>
 
         {/* ── Bio ── */}
-        {seller?.bio && (
+        {seller?.tagline && (
           <div className={styles.bioCard}>
-            <p className={styles.bioText}>{seller.bio}</p>
+            <p className={styles.bioText}>{seller.tagline}</p>
           </div>
         )}
 
@@ -568,6 +702,164 @@ export default function SellerProfilePage({
   )
 }
 
+const SKELETON_CARD_KEYS = ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9']
+
+/**
+ * Skeleton layout mirroring banner → identity → tagline → listings tab (toolbar + grid).
+ */
+function SellerProfileLoading() {
+  return (
+    <section className={styles.profilePage} aria-busy="true" aria-describedby="seller-profile-loading-hint">
+      <p id="seller-profile-loading-hint" role="status" className={styles.visuallyHidden}>
+        Loading seller profile. Banner, shop details, and listings will appear in a moment.
+      </p>
+      <div className={styles.banner} aria-hidden>
+        <div className={`${styles.skeletonBlock} ${styles.skeletonBannerPulse}`} />
+        <div className={styles.bannerOverlay} />
+      </div>
+
+      <div className={styles.content}>
+        <div className={styles.identityCard}>
+          <div className={styles.avatarWrap}>
+            <div className={`${styles.avatar} ${styles.skeletonAvatar}`} aria-hidden />
+          </div>
+
+          <div className={styles.identityTop}>
+            <div className={styles.identityLeft}>
+              <div className={`${styles.skeletonBlock} ${styles.skeletonTitle}`} />
+              <div className={styles.handleRow} aria-hidden>
+                <span className={`${styles.skeletonBlock} ${styles.skeletonChip}`} />
+                <span className={`${styles.skeletonBlock} ${styles.skeletonChip} ${styles.skeletonChipWide}`} />
+                <span className={`${styles.skeletonBlock} ${styles.skeletonChip}`} />
+              </div>
+              <div className={`${styles.skeletonBlock} ${styles.skeletonLocation}`} />
+            </div>
+            <div className={styles.actionButtons} aria-hidden>
+              <div className={`${styles.skeletonBlock} ${styles.skeletonBtn}`} />
+              <div className={`${styles.skeletonBlock} ${styles.skeletonBtn} ${styles.skeletonBtnWide}`} />
+            </div>
+          </div>
+
+          <div className={styles.statsRow} aria-hidden>
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div key={i} className={styles.statItem}>
+                <div className={`${styles.skeletonBlock} ${styles.skeletonStatBar}`} />
+                <div className={`${styles.skeletonBlock} ${styles.skeletonStatLabel}`} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className={styles.bioCard} aria-hidden>
+          <div className={`${styles.skeletonBlock} ${styles.skeletonBioLine}`} />
+          <div className={`${styles.skeletonBlock} ${styles.skeletonBioLine} ${styles.skeletonBioLineShort}`} />
+        </div>
+
+        <div className={styles.tabShell}>
+          <div className={styles.skeletonTabNav}>
+            <div className={`${styles.skeletonBlock} ${styles.skeletonTabPill}`} />
+            <div className={`${styles.skeletonBlock} ${styles.skeletonTabPill}`} />
+            <div className={`${styles.skeletonBlock} ${styles.skeletonTabPill}`} />
+          </div>
+
+          <div className={styles.tabContent}>
+            <div className={styles.listingsToolbar} aria-hidden>
+              <div className={styles.skeletonToolbarLeft}>
+                <div className={`${styles.skeletonBlock} ${styles.skeletonSearch}`} />
+              </div>
+              <div className={styles.skeletonToolbarRight}>
+                <div className={`${styles.skeletonBlock} ${styles.skeletonSortLabel}`} />
+                <div className={`${styles.skeletonBlock} ${styles.skeletonSortSelect}`} />
+              </div>
+            </div>
+
+            <div className={styles.grid}>
+              {SKELETON_CARD_KEYS.map((k) => (
+                <div key={k} className={`${styles.card} ${styles.skeletonCard}`}>
+                  <div className={styles.cardImageWrap}>
+                    <div className={styles.skeletonThumb} aria-hidden />
+                  </div>
+                  <div className={styles.skeletonCardBody}>
+                    <hr className={styles.listingDivider} aria-hidden />
+                    <div className={styles.skeletonCardTitleRow}>
+                      <div className={`${styles.skeletonBlock} ${styles.skeletonCardLineTitle}`} />
+                      <div className={`${styles.skeletonBlock} ${styles.skeletonCardLinePrice}`} />
+                    </div>
+                  </div>
+                  <div className={styles.cardActions}>
+                    <div className={`${styles.skeletonBlock} ${styles.skeletonCtaBar}`} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/**
+ * Loads `/seller-profile?seller=<uuid>` via `fetchActiveShopListings` → `get_active_shop_listings` (SECURITY DEFINER;
+ * anon + authenticated). Sellers RLS stays closed to public reads; seller writes use `upsertSellerForUser` (settings/onboarding).
+ * No dedicated Next.js `/api/**` route is required for this page.
+ */
+export default function SellerProfilePage() {
+  const searchParams = useSearchParams()
+  const sellerParam = searchParams.get('seller')?.trim()
+  const realSellerId = isUuidLike(sellerParam) ? sellerParam : null
+
+  const [allShopListings, setAllShopListings] = useState([])
+  /** `user_id` the catalog fetch completed for (loading until this matches `realSellerId`). */
+  const [catalogLoadedSellerId, setCatalogLoadedSellerId] = useState(null)
+
+  const loading = Boolean(realSellerId) && catalogLoadedSellerId !== realSellerId
+
+  useEffect(() => {
+    if (!realSellerId) return
+    let cancelled = false
+    /** Avoid flashing the previous seller’s listings while fetching for a new UUID. */
+    setAllShopListings([])
+    setCatalogLoadedSellerId(null)
+    fetchActiveShopListings({ bustCache: true })
+      .then((raw) => {
+        if (cancelled) return
+        setAllShopListings(mergeShopListings(raw))
+        setCatalogLoadedSellerId(realSellerId)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setAllShopListings([])
+        setCatalogLoadedSellerId(realSellerId)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [realSellerId])
+
+  const shopRowsForSeller = useMemo(() => {
+    if (!realSellerId) return []
+    return allShopListings.filter((l) => String(l.providerId) === String(realSellerId))
+  }, [realSellerId, allShopListings])
+
+  const resolved = useMemo(() => {
+    if (!realSellerId) {
+      return { seller: SAMPLE_SELLER, listings: SAMPLE_LISTINGS, reviews: SAMPLE_REVIEWS }
+    }
+    return {
+      seller: buildSellerViewModel(realSellerId, shopRowsForSeller),
+      listings: listingsFromShopRows(shopRowsForSeller),
+      reviews: SAMPLE_REVIEWS,
+    }
+  }, [realSellerId, shopRowsForSeller])
+
+  if (realSellerId && loading) {
+    return <SellerProfileLoading />
+  }
+
+  return <SellerProfileView seller={resolved.seller} listings={resolved.listings} reviews={resolved.reviews} />
+}
+
 // ─── ListingCard ──────────────────────────────────────────────────────────────
 
 function ListingCard({ listing, styles }) {
@@ -592,9 +884,8 @@ function ListingCard({ listing, styles }) {
             <img
               src={listing.imageUrl || listing.imageUrls[0]}
               alt={listing.name}
-              width={400}
-              height={200}
               className={styles.cardImage}
+              decoding="async"
             />
           ) : (
             <div className={styles.cardImagePlaceholder} aria-hidden />

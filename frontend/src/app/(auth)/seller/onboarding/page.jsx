@@ -1,10 +1,21 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import styles from './onboarding.module.css'
 import { useAuth } from '@/contexts/AuthContext'
-import { getSellerByUserId, upsertSellerForUser } from '@/lib/sellers/client'
+import {
+  SELLER_BUSINESS_TYPE_OTHER,
+  SELLER_BUSINESS_TYPE_PRESETS,
+  businessTypeLabelFromFormState,
+  businessTypeLabelToFormState,
+  getSellerByUserId,
+  upsertSellerForUser,
+  validateSellerBusinessTypeForm,
+  validateSellerShopUsername,
+  validateSellerSpecialtiesInput,
+  validateSellerTagline,
+} from '@/lib/sellers/client'
 import { getUserRole, ROLE_SELLER } from '@/lib/auth/roles'
 import { useToast } from '@/contexts/ToastContext'
 
@@ -52,11 +63,20 @@ export default function SellerOnboardingPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [sellerStatus, setSellerStatus] = useState(null)
+  const [rejectionReasonShown, setRejectionReasonShown] = useState(null)
+  /** Rejected sellers see reviewer note first; they tap a button before the onboarding form opens. */
+  const [rejectedFormUnlocked, setRejectedFormUnlocked] = useState(false)
+  const formCardRef = useRef(null)
   const [form, setForm] = useState({
     businessName: '',
+    shopUsername: '',
+    shopBusinessTypeChoice: '',
+    shopBusinessTypeOtherSpecify: '',
     contactName: '',
     email: '',
     phone: '',
+    tagline: '',
+    specialtiesLines: '',
     businessInfo: '',
     address: '',
     businessStartedAt: '',
@@ -88,13 +108,36 @@ export default function SellerOnboardingPage() {
           return
         }
 
-        setSellerStatus(existing?.status || null)
+        const statusRaw = existing?.status || null
+        setSellerStatus(statusRaw)
 
+        /* Rejected: keep the reviewer note but clear the prior submission so shop details start fresh */
+        const isRejected = statusRaw === 'rejected'
+        setRejectionReasonShown(
+          isRejected && typeof existing.rejection_reason === 'string'
+            ? existing.rejection_reason.trim()
+            : null,
+        )
+
+        if (isRejected) {
+          setRejectedFormUnlocked(false)
+          return
+        }
+
+        const bizType = businessTypeLabelToFormState(existing?.business_type_label)
         setForm((prev) => ({
           businessName: existing?.business_name || prev.businessName || '',
+          shopUsername: existing?.username || prev.shopUsername || '',
+          shopBusinessTypeChoice: bizType.choice || prev.shopBusinessTypeChoice || '',
+          shopBusinessTypeOtherSpecify:
+            bizType.otherSpecify || prev.shopBusinessTypeOtherSpecify || '',
           contactName: existing?.contact_name || prev.contactName || (user.user_metadata?.full_name || ''),
           email: existing?.email || prev.email || user.email || '',
           phone: existing?.phone || prev.phone || '',
+          tagline: existing?.tagline || prev.tagline || '',
+          specialtiesLines: Array.isArray(existing?.specialties)
+            ? existing.specialties.map((x) => String(x)).filter(Boolean).join('\n')
+            : prev.specialtiesLines || '',
           businessInfo: existing?.business_info || prev.businessInfo || '',
           address: existing?.address || prev.address || '',
           businessStartedAt: existing?.business_started_at
@@ -112,16 +155,57 @@ export default function SellerOnboardingPage() {
     return () => { cancelled = true }
   }, [user])
 
+  const buildFreshRejectedFormDraft = useCallback(() => ({
+    businessName: '',
+    shopUsername: '',
+    shopBusinessTypeChoice: '',
+    shopBusinessTypeOtherSpecify: '',
+    contactName: String(user?.user_metadata?.full_name ?? '').trim(),
+    email: String(user?.email ?? '').trim(),
+    phone: '',
+    tagline: '',
+    specialtiesLines: '',
+    businessInfo: '',
+    address: '',
+    businessStartedAt: '',
+  }), [user])
+
+  const handleStartNewApplicationAfterRejection = useCallback(() => {
+    setForm(buildFreshRejectedFormDraft())
+    setRejectedFormUnlocked(true)
+    requestAnimationFrame(() => {
+      formCardRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+    })
+  }, [buildFreshRejectedFormDraft])
+
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const onBusinessTypeChoiceChange = (value) => {
+    setForm((prev) => ({
+      ...prev,
+      shopBusinessTypeChoice: value,
+      shopBusinessTypeOtherSpecify:
+        value === SELLER_BUSINESS_TYPE_OTHER ? prev.shopBusinessTypeOtherSpecify : '',
+    }))
   }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
     if (!user || saving || sellerStatus === 'pending') return
 
+    if (sellerStatus === 'rejected' && !rejectedFormUnlocked) {
+      toast.info('Tap “Submit new application” below the reviewer feedback to begin a fresh onboarding form.')
+      return
+    }
+
     if (!form.businessName.trim() || !form.contactName.trim() || !form.email.trim()) {
-      toast.error('Please fill in at least business name, contact name, and email.')
+      toast.error('Please fill in business name, contact name, and email.')
+      return
+    }
+    if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) {
+      toast.error('Please enter a valid business email address.')
       return
     }
 
@@ -130,13 +214,73 @@ export default function SellerOnboardingPage() {
       return
     }
 
+    if (!String(form.shopUsername ?? '').trim()) {
+      toast.error('Please enter a shop username (public @handle).')
+      return
+    }
+    const uErr = validateSellerShopUsername(form.shopUsername)
+    if (uErr) {
+      toast.error(uErr)
+      return
+    }
+
+    if (!String(form.shopBusinessTypeChoice ?? '').trim()) {
+      toast.error('Please select a business type label.')
+      return
+    }
+    const bizErr = validateSellerBusinessTypeForm(
+      form.shopBusinessTypeChoice,
+      form.shopBusinessTypeOtherSpecify,
+    )
+    if (bizErr) {
+      toast.error(bizErr)
+      return
+    }
+
+    if (!String(form.tagline ?? '').trim()) {
+      toast.error('Please enter a shop tagline (short summary for your public profile).')
+      return
+    }
+    const tagErr = validateSellerTagline(form.tagline)
+    if (tagErr) {
+      toast.error(tagErr)
+      return
+    }
+
+    const specLines =
+      typeof form.specialtiesLines === 'string'
+        ? form.specialtiesLines
+            .split(/[\n,]+/)
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : []
+    if (specLines.length === 0) {
+      toast.error('Please enter at least one specialty (one per line).')
+      return
+    }
+    const specErr = validateSellerSpecialtiesInput(form.specialtiesLines ?? '')
+    if (specErr) {
+      toast.error(specErr)
+      return
+    }
+
     setSaving(true)
     try {
+      const bizLabel =
+        businessTypeLabelFromFormState(
+          form.shopBusinessTypeChoice,
+          form.shopBusinessTypeOtherSpecify,
+        ) ?? ''
+
       const { error } = await upsertSellerForUser(user, {
         businessName: form.businessName.trim(),
+        username: form.shopUsername.trim(),
+        tagline: form.tagline.trim(),
+        businessTypeLabel: bizLabel,
         contactName: form.contactName.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
+        specialties: form.specialtiesLines ?? '',
         businessInfo: form.businessInfo.trim(),
         address: form.address.trim(),
         businessStartedAt: form.businessStartedAt.trim(),
@@ -148,8 +292,14 @@ export default function SellerOnboardingPage() {
         return
       }
 
-      toast.success('Shop information submitted! Your seller account is now pending review.')
+      toast.success(
+        sellerStatus === 'rejected'
+          ? 'Your updated application has been resubmitted and is pending review.'
+          : 'Shop information submitted! Your seller account is now pending review.',
+      )
       setSellerStatus('pending')
+      setRejectionReasonShown(null)
+      setRejectedFormUnlocked(false)
     } catch (err) {
       console.error('Failed to save seller onboarding info:', err)
       toast.error('An error occurred while saving your details. Please try again.')
@@ -195,7 +345,11 @@ export default function SellerOnboardingPage() {
           <p className={styles.subtitle}>
             {sellerStatus === 'pending'
               ? 'Your business information has been submitted and is being reviewed by our team.'
-              : 'Fill in your business details so we can verify your account and get your services listed.'}
+              : sellerStatus === 'rejected'
+                ? rejectedFormUnlocked
+                  ? 'You’re submitting a fresh application with new shop details. Complete every section below, then send it for review again.'
+                  : 'Your previous application wasn’t approved. Read the reviewer’s feedback, then tap Submit new application to open a blank form and try again.'
+                : 'Fill in your business details so we can verify your account and get your services listed.'}
           </p>
         </div>
 
@@ -208,8 +362,41 @@ export default function SellerOnboardingPage() {
           </div>
         )}
 
-        {/* Form card */}
-        <div className={styles.card}>
+        {sellerStatus === 'rejected' && (
+          <div className={styles.rejectedBanner} role="alert">
+            <span className={styles.rejectedBadge}>Not Approved</span>
+            <div className={styles.rejectedBannerBody}>
+              <p className={styles.rejectedBannerLead}>
+                {rejectedFormUnlocked
+                  ? 'Reviewer feedback (for reference while you refill the form below).'
+                  : 'This onboarding submission could not be approved. Please read the reviewer’s comments carefully before starting a new application.'}
+              </p>
+              {rejectionReasonShown ? (
+                <pre className={styles.rejectedReason}>{rejectionReasonShown}</pre>
+              ) : (
+                <p className={styles.rejectedBannerText}>Please follow the emailed instructions before applying again.</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {sellerStatus === 'rejected' && !rejectedFormUnlocked && (
+          <div className={styles.rejectedGate}>
+            <button
+              type="button"
+              className={styles.rejectedGateButton}
+              onClick={handleStartNewApplicationAfterRejection}
+            >
+              Submit new application
+            </button>
+            <p className={styles.rejectedGateHint}>
+              Opens a clean onboarding form. Your old answers stay in our records until you submit this new application.
+            </p>
+          </div>
+        )}
+
+        {(sellerStatus !== 'rejected' || rejectedFormUnlocked) && (
+          <div className={styles.card} ref={formCardRef}>
           <form className={styles.form} onSubmit={handleSubmit}>
 
             {/* ── Section 1: Shop info ── */}
@@ -231,6 +418,66 @@ export default function SellerOnboardingPage() {
                     placeholder="e.g. Peaceful Rest Funeral Home"
                     disabled={sellerStatus === 'pending' || saving}
                   />
+                </div>
+
+                <div className={styles.field}>
+                  <label className={styles.label}>
+                    Shop username <span className={styles.required}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className={styles.input}
+                    value={form.shopUsername}
+                    onChange={(e) => handleChange('shopUsername', e.target.value)}
+                    placeholder="your_shop_handle"
+                    autoComplete="nickname"
+                    spellCheck={false}
+                    disabled={sellerStatus === 'pending' || saving}
+                  />
+                  <p className={styles.helperInline}>
+                    Shows as @handle on your public profile. Letters, numbers, underscores; 3–30 characters.
+                  </p>
+                </div>
+
+                <div className={`${styles.field} ${styles.fullWidth}`}>
+                  <label htmlFor="onboarding-biz-type" className={styles.label}>
+                    Business type label <span className={styles.required}>*</span>
+                  </label>
+                  <select
+                    id="onboarding-biz-type"
+                    className={`${styles.input} ${styles.selectInput}`}
+                    value={form.shopBusinessTypeChoice}
+                    onChange={(e) => onBusinessTypeChoiceChange(e.target.value)}
+                    disabled={sellerStatus === 'pending' || saving}
+                  >
+                    <option value="">Select a type…</option>
+                    {SELLER_BUSINESS_TYPE_PRESETS.map((label) => (
+                      <option key={label} value={label}>
+                        {label}
+                      </option>
+                    ))}
+                    <option value={SELLER_BUSINESS_TYPE_OTHER}>Others, please specify</option>
+                  </select>
+                  {form.shopBusinessTypeChoice === SELLER_BUSINESS_TYPE_OTHER && (
+                    <div className={styles.businessTypeOtherWrap}>
+                      <input
+                        type="text"
+                        className={styles.input}
+                        aria-label="Specify your business type"
+                        value={form.shopBusinessTypeOtherSpecify}
+                        onChange={(e) =>
+                          handleChange('shopBusinessTypeOtherSpecify', e.target.value)
+                        }
+                        placeholder="Describe your business type"
+                        maxLength={80}
+                        disabled={sellerStatus === 'pending' || saving}
+                        autoComplete="off"
+                      />
+                    </div>
+                  )}
+                  <p className={styles.helperInline}>
+                    Used on the Partners directory and filters (80 characters max for custom text).
+                  </p>
                 </div>
 
                 <div className={styles.field}>
@@ -314,6 +561,42 @@ export default function SellerOnboardingPage() {
                 </div>
 
                 <div className={`${styles.field} ${styles.fullWidth}`}>
+                  <label className={styles.label}>
+                    Shop tagline <span className={styles.required}>*</span>
+                  </label>
+                  <textarea
+                    className={`${styles.input} ${styles.textarea}`}
+                    rows={3}
+                    value={form.tagline}
+                    onChange={(e) => handleChange('tagline', e.target.value)}
+                    placeholder="One or two short sentences for your public profile (below your stats)."
+                    disabled={sellerStatus === 'pending' || saving}
+                    maxLength={500}
+                  />
+                  <p className={styles.helperText} style={{ marginTop: 6 }}>
+                    Shown on your storefront as a quick summary. Full story optional in &quot;Business description&quot; below (max 500 characters).
+                  </p>
+                </div>
+
+                <div className={`${styles.field} ${styles.fullWidth}`}>
+                  <label className={styles.label}>
+                    Specialties <span className={styles.required}>*</span>
+                  </label>
+                  <textarea
+                    className={`${styles.input} ${styles.textarea}`}
+                    rows={4}
+                    value={form.specialtiesLines}
+                    onChange={(e) => handleChange('specialtiesLines', e.target.value)}
+                    placeholder={'One specialty per line.\nShown as badges on your public profile.'}
+                    disabled={sellerStatus === 'pending' || saving}
+                    spellCheck={true}
+                  />
+                  <p className={styles.helperText} style={{ marginTop: 6 }}>
+                    At least one line required. Up to 24 lines, up to 120 characters each — e.g. services your shop offers.
+                  </p>
+                </div>
+
+                <div className={`${styles.field} ${styles.fullWidth}`}>
                   <label className={styles.label}>Business description</label>
                   <textarea
                     className={`${styles.input} ${styles.textarea}`}
@@ -366,7 +649,8 @@ export default function SellerOnboardingPage() {
             </div>
 
           </form>
-        </div>
+          </div>
+        )}
 
       </main>
     </div>

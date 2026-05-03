@@ -2,15 +2,22 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { BsThreeDots } from 'react-icons/bs';
+import { FaRegStar, FaStar } from 'react-icons/fa';
 import { FiRotateCcw } from 'react-icons/fi';
 import { TbX } from 'react-icons/tb';
 import { LuSettings2 } from 'react-icons/lu';
 import styles from './sellers.module.css';
 import { getEffectiveCommissionForSeller } from '@/data/adminSampleData';
-import { listSellersForAdmin, updateSellerStatus } from '@/lib/sellers/client';
+import {
+  listSellersForAdmin,
+  rejectSellerApplication,
+  updateSellerPartnersFeatured,
+  updateSellerStatus,
+} from '@/lib/sellers/client';
 import { useToast } from '@/contexts/ToastContext';
 import { useMediaQuery } from '@/hooks';
 import { Dropdown } from '@/components/ui';
+import ConfirmModal from '@/components/ui/Modal/ConfirmModal';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDebouncedEffect } from '@/hooks';
 import { readEnum, readString, replaceUrlQuery } from '@/lib/url/queryParams';
@@ -19,8 +26,11 @@ const STATUS_FILTER_OPTIONS = [
   { value: 'all', label: 'All statuses', color: 'slate' },
   { value: 'active', label: 'Active', color: 'green' },
   { value: 'pending', label: 'Pending', color: 'amber' },
+  { value: 'rejected', label: 'Rejected', color: 'rose' },
   { value: 'suspended', label: 'Suspended', color: 'red' },
 ];
+
+const MIN_REJECTION_REASON_LENGTH = 12;
 
 const Icon = {
   Search: () => (
@@ -75,7 +85,14 @@ function CommissionBadge({ percentage, isOverride }) {
   );
 }
 
-function SellerActionsMenu({ seller, sellerId, isUpdating, onViewDetails, onStatusChange }) {
+function SellerActionsMenu({
+  seller,
+  sellerId,
+  isUpdating,
+  onViewDetails,
+  onStatusChange,
+  onRejectRequest,
+}) {
   const [open, setOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
   const wrapRef = useRef(null);
@@ -141,6 +158,34 @@ function SellerActionsMenu({ seller, sellerId, isUpdating, onViewDetails, onStat
             View details
           </button>
           {seller.status === 'pending' && (
+            <>
+              <button
+                type="button"
+                role="menuitem"
+                className={`${styles.actionMenuItem} ${styles.actionMenuItemPrimary}`}
+                disabled={isUpdating}
+                onClick={() => {
+                  onStatusChange(sellerId, 'active');
+                  close();
+                }}
+              >
+                {isUpdating ? 'Approving…' : 'Approve'}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className={`${styles.actionMenuItem} ${styles.actionMenuItemDanger}`}
+                disabled={isUpdating}
+                onClick={() => {
+                  onRejectRequest?.(seller);
+                  close();
+                }}
+              >
+                Reject application
+              </button>
+            </>
+          )}
+          {seller.status === 'rejected' && (
             <button
               type="button"
               role="menuitem"
@@ -151,7 +196,7 @@ function SellerActionsMenu({ seller, sellerId, isUpdating, onViewDetails, onStat
                 close();
               }}
             >
-              {isUpdating ? 'Approving…' : 'Approve'}
+              {isUpdating ? 'Approving…' : 'Approve seller'}
             </button>
           )}
           {seller.status === 'active' && (
@@ -212,9 +257,33 @@ function DetailRow({ label, value, isLink, href }) {
 function SellerDetailModal({ seller, onClose }) {
   if (!seller) return null;
 
+  const sellerUuid = seller.user_id || seller.id;
+  const shopUsername = typeof seller.username === 'string' ? seller.username.trim() : '';
+  const publicProfileHref =
+    sellerUuid && shopUsername
+      ? `/seller-profile?seller=${encodeURIComponent(sellerUuid)}`
+      : sellerUuid
+        ? `/seller-profile?seller=${encodeURIComponent(sellerUuid)}`
+        : null;
+  const specialtiesList = Array.isArray(seller.specialties)
+    ? seller.specialties.map((s) => String(s).trim()).filter(Boolean)
+    : [];
+
   const hasContact = seller.contact_name || seller.email || seller.phone;
+  const hasShopProfile =
+    shopUsername ||
+    (seller.tagline && String(seller.tagline).trim()) ||
+    (seller.business_type_label && String(seller.business_type_label).trim()) ||
+    specialtiesList.length > 0;
   const hasBusiness = seller.address || seller.business_info;
-  const hasAccount = seller.registered_at || seller.listing_count != null;
+  const hasAccount =
+    seller.registered_at ||
+    seller.business_started_at ||
+    seller.approved_at ||
+    seller.listing_count != null;
+  const hasDecision =
+    seller.status === 'rejected' ||
+    (typeof seller.rejection_reason === 'string' && seller.rejection_reason.trim().length > 0);
 
   return (
     <div className={styles.detailModalOverlay} role="presentation" onClick={onClose}>
@@ -233,7 +302,14 @@ function SellerDetailModal({ seller, onClose }) {
               <h2 id="seller-detail-title" className={styles.detailModalTitle}>
                 {seller.business_name || 'Seller details'}
               </h2>
-              {seller.status && <StatusBadge status={seller.status} />}
+              <div className={styles.detailModalBadges}>
+                {seller.status && <StatusBadge status={seller.status} />}
+                {seller.partners_featured ? (
+                  <span className={styles.detailSpotlightBadge} title="Shown in partners spotlight when enabled">
+                    Spotlight
+                  </span>
+                ) : null}
+              </div>
             </div>
           </div>
           <button type="button" className={styles.detailModalClose} onClick={onClose} aria-label="Close">
@@ -253,11 +329,56 @@ function SellerDetailModal({ seller, onClose }) {
             </div>
           )}
 
+          {hasShopProfile && (
+            <div className={styles.detailGroup}>
+              <p className={styles.detailGroupTitle}>Shop &amp; directory</p>
+              {shopUsername ? (
+                publicProfileHref ? (
+                  <DetailRow
+                    label="Shop username"
+                    value={`@${shopUsername.replace(/^@/, '')}`}
+                    isLink
+                    href={publicProfileHref}
+                  />
+                ) : (
+                  <DetailRow
+                    label="Shop username"
+                    value={`@${shopUsername.replace(/^@/, '')}`}
+                  />
+                )
+              ) : null}
+              {seller.tagline && (
+                <DetailRow label="Tagline" value={String(seller.tagline).trim()} />
+              )}
+              {seller.business_type_label && (
+                <DetailRow
+                  label="Directory type"
+                  value={String(seller.business_type_label).trim()}
+                />
+              )}
+              {specialtiesList.length > 0 && (
+                <DetailRow label="Specialties" value={specialtiesList.join(', ')} />
+              )}
+            </div>
+          )}
+
           {hasBusiness && (
             <div className={styles.detailGroup}>
-              <p className={styles.detailGroupTitle}>Business Information</p>
+              <p className={styles.detailGroupTitle}>Business information</p>
               {seller.address && <DetailRow label="Address" value={seller.address} />}
               {seller.business_info && <DetailRow label="About" value={seller.business_info} />}
+            </div>
+          )}
+
+          {hasDecision && (
+            <div className={styles.detailGroup}>
+              <p className={styles.detailGroupTitle}>Application decision</p>
+              {seller.rejected_at && (
+                <DetailRow label="Rejected on" value={formatDate(seller.rejected_at)} />
+              )}
+              {seller.rejection_reason && (
+                <DetailRow label="Reason" value={String(seller.rejection_reason).trim()} />
+              )}
             </div>
           )}
 
@@ -265,11 +386,25 @@ function SellerDetailModal({ seller, onClose }) {
             <div className={styles.detailGroup}>
               <p className={styles.detailGroupTitle}>Account</p>
               {seller.registered_at && <DetailRow label="Registered" value={formatDate(seller.registered_at)} />}
-              {seller.listing_count != null && <DetailRow label="Listings" value={seller.listing_count} />}
+              {seller.business_started_at && (
+                <DetailRow label="Business started" value={formatDate(seller.business_started_at)} />
+              )}
+              {seller.approved_at && (
+                <DetailRow label="Approved" value={formatDate(seller.approved_at)} />
+              )}
+              {(seller.partners_featured === true || seller.partners_featured === false) && (
+                <DetailRow
+                  label="Partners spotlight"
+                  value={seller.partners_featured ? 'Featured' : 'Not featured'}
+                />
+              )}
+              {seller.listing_count != null && (
+                <DetailRow label="Listings" value={String(seller.listing_count)} />
+              )}
             </div>
           )}
 
-          {!hasContact && !hasBusiness && !hasAccount && (
+          {!hasContact && !hasShopProfile && !hasBusiness && !hasDecision && !hasAccount && (
             <p className={styles.detailEmpty}>No details on file for this seller.</p>
           )}
 
@@ -296,6 +431,11 @@ export default function AdminSellersPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedRows, setSelectedRows] = useState(() => new Set());
   const [detailSeller, setDetailSeller] = useState(null);
+  const [featuredConfirm, setFeaturedConfirm] = useState(null);
+  const [featuredSubmitting, setFeaturedSubmitting] = useState(false);
+  const [rejectDraft, setRejectDraft] = useState(null);
+  const [rejectReasonInput, setRejectReasonInput] = useState('');
+  const [rejectSubmitting, setRejectSubmitting] = useState(false);
 
   // Sync state <- URL (back/forward, shared links)
   useEffect(() => {
@@ -399,20 +539,100 @@ export default function AdminSellersPage() {
       setSellers((prev) =>
         prev.map((s) => {
           const currentId = s?.user_id || s?.id
-          return currentId === sellerId ? { ...s, status: data.status } : s
+          return currentId === sellerId ? { ...s, ...data } : s
         })
       );
       toast.success(`Seller status updated to ${nextStatus}.`);
       setDetailSeller((cur) => {
         if (!cur) return cur;
         const curId = cur.user_id || cur.id;
-        return curId === sellerId ? { ...cur, status: data.status } : cur;
+        return curId === sellerId ? { ...cur, ...data } : cur;
       });
     } catch (err) {
       console.error('Failed to update seller status:', err);
       toast.error('Failed to update seller status. Please try again.');
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const handleConfirmRejectApplication = async () => {
+    if (!rejectDraft) return;
+    const reason = rejectReasonInput.trim();
+    if (reason.length < MIN_REJECTION_REASON_LENGTH) {
+      toast.error(
+        `Please enter at least ${MIN_REJECTION_REASON_LENGTH} characters so the seller receives a clear explanation.`,
+      );
+      return;
+    }
+    setRejectSubmitting(true);
+    try {
+      const { data, error } = await rejectSellerApplication(rejectDraft.sellerId, reason);
+      if (error) {
+        toast.error(error);
+        return;
+      }
+      if (!data?.user_id) {
+        toast.error('Rejected record is invalid.');
+        return;
+      }
+      setSellers((prev) =>
+        prev.map((s) => {
+          const id = s?.user_id || s?.id;
+          return id === rejectDraft.sellerId ? { ...s, ...data } : s;
+        }),
+      );
+      setDetailSeller((cur) => {
+        if (!cur) return cur;
+        const id = cur.user_id || cur.id;
+        return id === rejectDraft.sellerId ? { ...cur, ...data } : cur;
+      });
+      toast.success('Application rejected. The seller was emailed with your note.');
+      setRejectDraft(null);
+      setRejectReasonInput('');
+    } catch (err) {
+      console.error('Failed to reject seller application:', err);
+      toast.error('Failed to reject application. Please try again.');
+    } finally {
+      setRejectSubmitting(false);
+    }
+  };
+
+  const handleConfirmPartnersFeatured = async () => {
+    if (!featuredConfirm) return;
+    setFeaturedSubmitting(true);
+    try {
+      const { data, error } = await updateSellerPartnersFeatured(
+        featuredConfirm.sellerId,
+        featuredConfirm.nextFeatured,
+      );
+      if (error) {
+        toast.error(error);
+        return;
+      }
+      const nextVal = data?.partners_featured ?? featuredConfirm.nextFeatured;
+      setSellers((prev) =>
+        prev.map((s) => {
+          const id = s?.user_id || s?.id;
+          return id === featuredConfirm.sellerId ? { ...s, partners_featured: nextVal } : s;
+        }),
+      );
+      setDetailSeller((cur) => {
+        if (!cur) return cur;
+        const id = cur.user_id || cur.id;
+        return id === featuredConfirm.sellerId ? { ...cur, partners_featured: nextVal } : cur;
+      });
+      toast.success(
+        featuredConfirm.nextFeatured
+          ? 'Seller added to partners spotlight.'
+          : 'Seller removed from partners spotlight.',
+      );
+      setFeaturedConfirm(null);
+    } catch (err) {
+      console.error('Failed to update partners spotlight:', err);
+      toast.error('Failed to update spotlight. Please try again.');
+    } finally {
+      setFeaturedSubmitting(false);
     }
   };
 
@@ -712,13 +932,50 @@ export default function AdminSellersPage() {
                       </td>
 
                       <td className={styles.actionsCell}>
-                        <SellerActionsMenu
-                          seller={seller}
-                          sellerId={sellerId}
-                          isUpdating={isUpdating}
-                          onViewDetails={() => setDetailSeller(seller)}
-                          onStatusChange={handleStatusChange}
-                        />
+                        <div className={styles.actionsCellInner}>
+                          <button
+                            type="button"
+                            className={`${styles.featureStarBtn} ${seller.partners_featured ? styles.featureStarBtnActive : ''}`}
+                            disabled={featuredSubmitting || rejectSubmitting || isUpdating}
+                            aria-pressed={Boolean(seller.partners_featured)}
+                            aria-label={
+                              seller.partners_featured
+                                ? `Remove partners spotlight for ${seller.business_name || 'seller'}`
+                                : `Feature ${seller.business_name || 'seller'} on the partners page`
+                            }
+                            onClick={() =>
+                              setFeaturedConfirm({
+                                sellerId,
+                                nextFeatured: !seller.partners_featured,
+                                name: seller.business_name || 'this seller',
+                              })
+                            }
+                          >
+                            {seller.partners_featured ? (
+                              <FaStar className={styles.featureStarIcon} aria-hidden size={18} />
+                            ) : (
+                              <FaRegStar className={styles.featureStarIcon} aria-hidden size={18} />
+                            )}
+                          </button>
+                          <SellerActionsMenu
+                            seller={seller}
+                            sellerId={sellerId}
+                            isUpdating={isUpdating || rejectSubmitting}
+                            onViewDetails={() => setDetailSeller(seller)}
+                            onStatusChange={handleStatusChange}
+                            onRejectRequest={(target) => {
+                              setRejectDraft({
+                                sellerId: target?.user_id || target?.id,
+                                name:
+                                  typeof target?.business_name === 'string' &&
+                                  target.business_name.trim()
+                                    ? target.business_name.trim()
+                                    : 'Seller',
+                              });
+                              setRejectReasonInput('');
+                            }}
+                          />
+                        </div>
                       </td>
                     </tr>
                   );
@@ -756,6 +1013,81 @@ export default function AdminSellersPage() {
       {detailSeller && (
         <SellerDetailModal seller={detailSeller} onClose={() => setDetailSeller(null)} />
       )}
+
+      <ConfirmModal
+        open={featuredConfirm != null}
+        title={
+          featuredConfirm?.nextFeatured
+            ? 'Feature on partners page?'
+            : 'Remove from spotlight?'
+        }
+        message={
+          featuredConfirm?.nextFeatured
+            ? `"${featuredConfirm.name}" will be highlighted in the partners spotlight. Continue?`
+            : `Remove "${featuredConfirm?.name ?? ''}" from the partners spotlight?`
+        }
+        confirmLabel={featuredConfirm?.nextFeatured ? 'Feature' : 'Remove'}
+        cancelLabel="Cancel"
+        variant={featuredConfirm?.nextFeatured ? 'primary' : 'warning'}
+        disableActions={featuredSubmitting}
+        onCancel={() => {
+          if (!featuredSubmitting) setFeaturedConfirm(null);
+        }}
+        onConfirm={handleConfirmPartnersFeatured}
+        icon={
+          featuredConfirm?.nextFeatured ? (
+            <FaRegStar size={18} aria-hidden />
+          ) : featuredConfirm ? (
+            <FaStar size={18} aria-hidden />
+          ) : null
+        }
+      />
+
+      <ConfirmModal
+        open={rejectDraft != null}
+        title="Reject seller application?"
+        message={
+          rejectDraft
+            ? `${rejectDraft.name} will receive an email explaining why their onboarding was not approved.`
+            : ''
+        }
+        subtitleAlign="left"
+        variant="danger"
+        confirmLabel="Reject and send email"
+        cancelLabel="Cancel"
+        disableActions={rejectSubmitting}
+        onCancel={() => {
+          if (!rejectSubmitting) {
+            setRejectDraft(null);
+            setRejectReasonInput('');
+          }
+        }}
+        onConfirm={handleConfirmRejectApplication}
+        extra={
+          rejectDraft ? (
+            <div className={styles.rejectModalWrap}>
+              <label htmlFor="admin-reject-application-reason" className={styles.rejectModalLabel}>
+                Reason for rejection <span aria-hidden>(required)</span>
+              </label>
+              <textarea
+                id="admin-reject-application-reason"
+                className={styles.rejectReasonTextarea}
+                value={rejectReasonInput}
+                onChange={(e) => setRejectReasonInput(e.target.value)}
+                placeholder="Explain clearly what issues were found or what documents or details are missing."
+                disabled={rejectSubmitting}
+                maxLength={8000}
+                rows={6}
+                autoComplete="off"
+              />
+              <p className={styles.rejectModalHint}>
+                At least {MIN_REJECTION_REASON_LENGTH} characters ({rejectReasonInput.trim().length}/8000). This exact
+                note is emailed to the seller.
+              </p>
+            </div>
+          ) : null
+        }
+      />
     </div>
   );
 }

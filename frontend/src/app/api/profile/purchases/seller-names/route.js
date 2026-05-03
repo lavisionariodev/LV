@@ -3,14 +3,9 @@ import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
 import { getClientIp, takeToken } from '@/lib/rate-limit/memoryRateLimit'
+import { isUuidLike } from '@/lib/uuidLike'
 
 const MAX_IDS = 50
-
-function isUuidLike(s) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-    String(s).trim(),
-  )
-}
 
 /** POST — batch resolve seller display names for the authenticated buyer only. */
 export async function POST(request) {

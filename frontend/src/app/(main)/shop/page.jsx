@@ -7,7 +7,11 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { SERVICES, CATEGORIES, PROVIDERS, getServiceById } from './data'
 import { useDebouncedEffect } from '@/hooks'
 import { readString, replaceUrlQuery } from '@/lib/url/queryParams'
-import { fetchActiveShopListings, mergeShopListings } from '@/lib/shop-listings/client'
+import {
+  fetchActiveShopListings,
+  getListingProviderLogoUrl,
+  mergeShopListings,
+} from '@/lib/shop-listings/client'
 import { buildCartPayloadFromListing } from '@/lib/cart/fromListing'
 import { assertListingReadyForCart } from '@/lib/cart/bookNow'
 import { useCart } from '@/contexts/CartContext'
@@ -45,6 +49,20 @@ function listingMatchesLocation(listing, needle) {
   const provider =
     listing.provider ?? PROVIDERS.find((p) => String(p.id) === String(listing.providerId))
   return typeof provider?.location === 'string' && provider.location.toLowerCase().includes(n)
+}
+
+function ShopProviderCircleThumb({ provider, wrapClassName, imgClassName }) {
+  const url = getListingProviderLogoUrl(provider)
+  return (
+    <div className={wrapClassName}>
+      {url ? (
+        // eslint-disable-next-line @next/next/no-img-element -- Supabase/storage URL from RPC
+        <img src={url} alt="" className={imgClassName} />
+      ) : (
+        (provider?.name || '?').charAt(0)
+      )}
+    </div>
+  )
 }
 
 export default function ShopPage() {
@@ -393,7 +411,11 @@ export default function ShopPage() {
                           className={`${styles.providerItem}${selectedProvider === provider.id ? ` ${styles.providerItemActive}` : ''}`}
                           onClick={() => setSelectedProvider(selectedProvider === provider.id ? null : provider.id)}
                         >
-                          <div className={styles.providerItemAvatar}>{(provider.name || '?').charAt(0)}</div>
+                          <ShopProviderCircleThumb
+                            provider={provider}
+                            wrapClassName={styles.providerItemAvatar}
+                            imgClassName={styles.providerItemAvatarImg}
+                          />
                           <div className={styles.providerItemInfo}>
                             <span className={styles.providerItemName}>{provider.name}</span>
                             <span className={styles.providerItemLocation}>
@@ -519,9 +541,11 @@ export default function ShopPage() {
                       className={`${styles.providerItem}${selectedProvider === provider.id ? ` ${styles.providerItemActive}` : ''}`}
                       onClick={() => setSelectedProvider(selectedProvider === provider.id ? null : provider.id)}
                     >
-                      <div className={styles.providerItemAvatar}>
-                        {(provider.name || '?').charAt(0)}
-                      </div>
+                      <ShopProviderCircleThumb
+                        provider={provider}
+                        wrapClassName={styles.providerItemAvatar}
+                        imgClassName={styles.providerItemAvatarImg}
+                      />
                       <div className={styles.providerItemInfo}>
                         <span className={styles.providerItemName}>{provider.name}</span>
                         <span className={styles.providerItemLocation}>
@@ -897,7 +921,11 @@ function ListingCard({ listing, styles, inCompare, onToggleCompare, compareDisab
 
         <div className={`${styles.cardBody} ${styles.listingBody}`}>
           <div className={styles.providerRow}>
-            <div className={styles.providerAvatar}>{(provider?.name || '?').charAt(0)}</div>
+            <ShopProviderCircleThumb
+              provider={provider}
+              wrapClassName={styles.providerAvatar}
+              imgClassName={styles.providerAvatarImg}
+            />
             <div className={styles.providerInfo}>
               <p className={styles.providerName}>{provider?.name}</p>
               <p className={styles.providerLocation}>
