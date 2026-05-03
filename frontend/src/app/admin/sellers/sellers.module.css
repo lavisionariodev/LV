@@ -674,6 +674,57 @@
   vertical-align: middle;
 }
 
+.actionsCellInner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.featureStarBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  line-height: 0;
+  transition: color 0.12s ease;
+}
+
+.featureStarBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.featureStarBtnActive {
+  color: #b45309;
+}
+
+.featureStarIcon {
+  display: block;
+  flex-shrink: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .featureStarBtn:hover:not(:disabled) {
+    color: #0f172a;
+  }
+
+  .featureStarBtnActive:hover:not(:disabled) {
+    color: #92400e;
+  }
+}
+
+.featureStarBtn:focus-visible {
+  outline: 2px solid #94a3b8;
+  outline-offset: 2px;
+}
+
 .primaryRow {
   border-bottom: 1px solid #f1f5f9;
   transition: background 0.1s;
@@ -907,6 +958,7 @@
 
 .status_active    { border-color: #bbf7d0; color: #15803d; }
 .status_pending   { border-color: #fef08a; color: #854d0e; }
+.status_rejected  { border-color: #fbcfe8; color: #9d174d; }
 .status_suspended { border-color: #fecaca; color: #b91c1c; }
 
 /* ── Row actions menu (kebab) ──────────────────────────────────────────── */
@@ -1012,6 +1064,64 @@
   }
 }
 
+.actionMenuItemDanger {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .actionMenuItemDanger:hover:not(:disabled) {
+    background: #fef2f2;
+  }
+}
+
+/* ── Reject onboarding modal ── */
+.rejectModalWrap {
+  text-align: left;
+  margin-top: 4px;
+}
+
+.rejectModalLabel {
+  display: block;
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.rejectReasonTextarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 120px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.45;
+  font-family: inherit;
+  resize: vertical;
+  color: #0f172a;
+  background: #fff;
+}
+
+.rejectReasonTextarea:focus {
+  outline: none;
+  border-color: #94a3b8;
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.25);
+}
+
+.rejectReasonTextarea:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.rejectModalHint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.35;
+}
+
 /* ── Seller detail modal ────────────────────────────────────────────────── */
 
 .detailModalOverlay {
@@ -1027,10 +1137,12 @@
 
 .detailModal {
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  max-width: 460px;
+  max-width: 680px;
   max-height: min(90vh, 640px);
-  overflow-y: auto;
+  overflow: hidden;
   background: #fff;
   border-radius: 12px;
   border: 1px solid #e9e9ef;
@@ -1039,12 +1151,16 @@
 
 /* Header */
 .detailModalHeader {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 12px;
   /* Reserve space for absolutely positioned close (does not use header/body padding) */
   padding: 16px 52px 16px 24px;
   border-bottom: 1px solid #f1f5f9;
+  background: #fff;
 }
 
 .detailModalHeaderInner {
@@ -1071,6 +1187,25 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.detailModalBadges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.detailSpotlightBadge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+  background: #fffbeb;
 }
 
 .detailModalClose {
@@ -1100,9 +1235,38 @@
   }
 }
 
-/* Body */
+/* Body — scrolls inside modal; header stays fixed */
 .detailModalBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0 24px 20px;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+.detailModalBody::-webkit-scrollbar {
+  width: 8px;
+}
+
+.detailModalBody::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.detailModalBody::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .detailModalBody::-webkit-scrollbar-thumb:hover {
+    background-color: #94a3b8;
+  }
 }
 
 /* Field groups */
@@ -1641,6 +1805,12 @@
     justify-content: center;
   }
 
+  .featureStarBtn {
+    padding: 8px;
+    min-width: 36px;
+    min-height: 36px;
+  }
+
   .actionMenu { min-width: 200px; }
 
   .actionMenuItem {
@@ -1657,9 +1827,12 @@
   }
 
   .detailModal {
+    display: flex;
+    flex-direction: column;
     max-width: 100%;
     width: 100%;
     max-height: 90vh;
+    overflow: hidden;
     border-radius: 20px 20px 0 0;
     border-left: none;
     border-right: none;
@@ -1669,6 +1842,7 @@
   .detailModal::before {
     content: '';
     display: block;
+    flex-shrink: 0;
     width: 40px;
     height: 4px;
     background: #e2e8f0;
@@ -1676,7 +1850,9 @@
     margin: 10px auto 0;
   }
 
-  .detailModalHeader { padding: 14px 52px 14px 20px; }
+  .detailModalHeader {
+    padding: 14px 52px 14px 20px;
+  }
 
   .detailModalClose {
     top: 16px;

@@ -17,6 +17,26 @@ import {
 } from '@/lib/seller-listings/pendingChanges'
 import { formatCount } from '@/utils/formatCount'
 
+/** `seller_avatar_url` comes from listSellerListingsForAdmin (batch `profiles.avatar_url`). */
+function SellerAvatarMark({ src, initialsSource, listingStyles: styleMod }) {
+  const [failed, setFailed] = useState(false)
+  const label = String(initialsSource ?? '?').trim() || '?'
+  const url = typeof src === 'string' ? src.trim() : ''
+  const showImg = url.length > 0 && !failed
+  return (
+    <span
+      className={`${styleMod.sellerAvatar}${showImg ? ` ${styleMod.sellerAvatarHasImage}` : ''}`}
+      title={label}
+    >
+      {showImg ? (
+        <img src={url} alt="" className={styleMod.sellerAvatarImg} onError={() => setFailed(true)} />
+      ) : (
+        label.charAt(0).toUpperCase()
+      )}
+    </span>
+  )
+}
+
 const PENDING_FIELD_LABELS = {
   listing_name: 'Title',
   category: 'Category',
@@ -396,7 +416,14 @@ function MobileListingCard({ row, moderationBusyId, onApprove, onReject }) {
       <div className={styles.mobileCardTop}>
         <div className={styles.mobileCardInfo}>
           <p className={styles.mobileCardName}>{row.listing_name || 'Untitled'}</p>
-          <p className={styles.mobileCardSeller}>{sellerLine}</p>
+          <div className={styles.mobileCardSellerRow}>
+            <SellerAvatarMark
+              src={row.seller_avatar_url}
+              initialsSource={row.seller_business_name || row.seller_email}
+              listingStyles={styles}
+            />
+            <p className={styles.mobileCardSeller}>{sellerLine}</p>
+          </div>
         </div>
         <div className={styles.mobileCardMeta}>
           <span className={styles.reviewPrice}>{formatPhpAmount(row.base_price)}</span>
@@ -516,9 +543,11 @@ function StagedUpdatesSection({
                   <tr key={row.id} className={styles.primaryRow}>
                     <td>
                       <div className={styles.sellerCell}>
-                        <span className={styles.sellerAvatar}>
-                          {(row.seller_business_name || row.seller_email || '?')[0].toUpperCase()}
-                        </span>
+                        <SellerAvatarMark
+                          src={row.seller_avatar_url}
+                          initialsSource={row.seller_business_name || row.seller_email}
+                          listingStyles={styles}
+                        />
                         <p className={styles.reviewSellerText}>{shop}</p>
                       </div>
                     </td>
@@ -650,9 +679,11 @@ function ApprovalsTableSection({
                       </td>
                       <td>
                         <div className={styles.sellerCell}>
-                          <span className={styles.sellerAvatar}>
-                            {(row.seller_business_name || row.seller_email || '?')[0].toUpperCase()}
-                          </span>
+                          <SellerAvatarMark
+                            src={row.seller_avatar_url}
+                            initialsSource={row.seller_business_name || row.seller_email}
+                            listingStyles={styles}
+                          />
                           <p className={styles.reviewSellerText}>{sellerLine}</p>
                         </div>
                       </td>

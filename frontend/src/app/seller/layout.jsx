@@ -36,7 +36,7 @@ export default function SellerLayout({ children }) {
         return
       }
 
-      if (status === 'pending') {
+      if (status === 'pending' || status === 'rejected') {
         router.replace('/seller/onboarding')
         setAuthStatus('pending')
         return

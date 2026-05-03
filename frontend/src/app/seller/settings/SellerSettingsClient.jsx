@@ -11,15 +11,34 @@ import { FiEdit, FiSave } from 'react-icons/fi'
 import { MdCheckCircle, MdErrorOutline } from 'react-icons/md'
 import { validateNewPassword } from '@/lib/validators/authSchemas'
 import { fetchCurrentSellerProfile } from '@/features/seller/settings/getSellerProfile'
-import { getSellerByUserId, upsertSellerForUser } from '@/lib/sellers/client'
+import {
+  SELLER_BUSINESS_TYPE_OTHER,
+  SELLER_BUSINESS_TYPE_PRESETS,
+  businessTypeLabelFromFormState,
+  businessTypeLabelToFormState,
+  getSellerByUserId,
+  upsertSellerForUser,
+  validateSellerBusinessTypeForm,
+  validateSellerShopUsername,
+  validateSellerSpecialtiesInput,
+  validateSellerTagline,
+} from '@/lib/sellers/client'
 
 function mapSellerToShopForm(sellerRow, profile, sessionEmail) {
+  const bizType = businessTypeLabelToFormState(sellerRow?.business_type_label)
   return {
     businessName: sellerRow?.business_name ?? '',
+    shopUsername: sellerRow?.username ?? '',
+    shopTagline: sellerRow?.tagline ?? '',
+    shopBusinessTypeChoice: bizType.choice,
+    shopBusinessTypeOtherSpecify: bizType.otherSpecify,
     contactName: sellerRow?.contact_name ?? profile?.fullName ?? '',
     email: sellerRow?.email ?? profile?.email ?? sessionEmail ?? '',
     phone: sellerRow?.phone ?? '',
     businessInfo: sellerRow?.business_info ?? '',
+    shopSpecialties: Array.isArray(sellerRow?.specialties)
+      ? sellerRow.specialties.map((x) => String(x)).filter(Boolean).join('\n')
+      : '',
     address: sellerRow?.address ?? '',
     businessStartedAt: sellerRow?.business_started_at
       ? String(sellerRow.business_started_at).slice(0, 10)
@@ -29,6 +48,17 @@ function mapSellerToShopForm(sellerRow, profile, sessionEmail) {
 
 function validateShopForm(form) {
   if (!form.businessName.trim()) return 'Please enter your business or shop name.'
+  const uErr = validateSellerShopUsername(form.shopUsername)
+  if (uErr) return uErr
+  const tagErr = validateSellerTagline(form.shopTagline)
+  if (tagErr) return tagErr
+  const bizTypeErr = validateSellerBusinessTypeForm(
+    form.shopBusinessTypeChoice,
+    form.shopBusinessTypeOtherSpecify,
+  )
+  if (bizTypeErr) return bizTypeErr
+  const specErr = validateSellerSpecialtiesInput(form.shopSpecialties ?? '')
+  if (specErr) return specErr
   if (!form.contactName.trim()) return 'Please enter the primary contact person.'
   if (!form.email.trim()) return 'Please enter a business email.'
   if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) return 'Please enter a valid email format.'
@@ -173,6 +203,15 @@ export default function SellerSettingsClient() {
     setShopForm((prev) => ({ ...prev, [field]: value }))
   }
 
+  const onBusinessTypeChoiceChange = (value) => {
+    setShopForm((prev) => ({
+      ...prev,
+      shopBusinessTypeChoice: value,
+      shopBusinessTypeOtherSpecify:
+        value === SELLER_BUSINESS_TYPE_OTHER ? prev.shopBusinessTypeOtherSpecify : '',
+    }))
+  }
+
   const onCancelShopEdit = () => {
     setShopError('')
     if (profile) {
@@ -203,10 +242,18 @@ export default function SellerSettingsClient() {
       setShopSaving(true)
       const { data: saved, error } = await upsertSellerForUser(user, {
         businessName: shopForm.businessName.trim(),
+        username: shopForm.shopUsername?.trim() ? shopForm.shopUsername : '',
+        tagline: shopForm.shopTagline?.trim() ? shopForm.shopTagline : '',
+        businessTypeLabel:
+          businessTypeLabelFromFormState(
+            shopForm.shopBusinessTypeChoice,
+            shopForm.shopBusinessTypeOtherSpecify,
+          ) ?? '',
         contactName: shopForm.contactName.trim(),
         email: shopForm.email.trim(),
         phone: shopForm.phone.trim(),
         businessInfo: shopForm.businessInfo.trim(),
+        specialties: shopForm.shopSpecialties ?? '',
         address: shopForm.address.trim(),
         businessStartedAt: shopForm.businessStartedAt.trim(),
         status: seller?.status ?? 'pending',
@@ -582,6 +629,143 @@ export default function SellerSettingsClient() {
                 />
               </div>
               <div className={styles.field}>
+                <label htmlFor={shopId('username')} className={styles.label}>
+                  Shop username
+                </label>
+                <input
+                  id={shopId('username')}
+                  value={shopForm.shopUsername}
+                  onChange={(e) => onShopFieldChange('shopUsername', e.target.value)}
+                  className={`${styles.input} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
+                  disabled={!isEditingShop || !canEditShop}
+                  placeholder="your_shop_handle"
+                  autoComplete="nickname"
+                  spellCheck={false}
+                />
+                <p className={styles.shopHelper}>
+                  Shows as <strong>@handle</strong> on your public shop profile. Letters, numbers, underscores; 3–30 characters. Leave blank if you prefer not to set one yet.
+                </p>
+              </div>
+              <div className={`${styles.field} ${styles.shopFieldFull}`}>
+                <label htmlFor={shopId('tagline')} className={styles.label}>Shop tagline</label>
+                <textarea
+                  id={shopId('tagline')}
+                  rows={3}
+                  value={shopForm.shopTagline}
+                  onChange={(e) => onShopFieldChange('shopTagline', e.target.value)}
+                  className={`${styles.input} ${styles.textarea} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
+                  disabled={!isEditingShop || !canEditShop}
+                  placeholder="A short sentence or two visitors see below your ratings (optional)."
+                  maxLength={500}
+                />
+                <p className={styles.shopHelper}>
+                  Short summary under your stats — separate from the full &quot;Business description&quot; (About tab). Maximum 500 characters.
+                </p>
+              </div>
+              <div className={`${styles.field} ${styles.shopFieldFull}`}>
+                <label htmlFor={shopId('biz-type')} className={styles.label}>
+                  Business type label
+                </label>
+                <select
+                  id={shopId('biz-type')}
+                  value={shopForm.shopBusinessTypeChoice}
+                  onChange={(e) => onBusinessTypeChoiceChange(e.target.value)}
+                  className={`${styles.input} ${styles.selectInput} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
+                  disabled={!isEditingShop || !canEditShop}
+                >
+                  <option value="">Not set (optional)</option>
+                  {SELLER_BUSINESS_TYPE_PRESETS.map((label) => (
+                    <option key={label} value={label}>
+                      {label}
+                    </option>
+                  ))}
+                  <option value={SELLER_BUSINESS_TYPE_OTHER}>Others, please specify</option>
+                </select>
+                {shopForm.shopBusinessTypeChoice === SELLER_BUSINESS_TYPE_OTHER && (
+                  <div className={styles.businessTypeOtherWrap}>
+                    <input
+                      id={shopId('biz-type-other')}
+                      aria-label="Specify your business type"
+                      value={shopForm.shopBusinessTypeOtherSpecify}
+                      onChange={(e) =>
+                        onShopFieldChange('shopBusinessTypeOtherSpecify', e.target.value)
+                      }
+                      className={`${styles.input} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
+                      disabled={!isEditingShop || !canEditShop}
+                      placeholder="Describe your business type"
+                      maxLength={80}
+                      autoComplete="off"
+                    />
+                  </div>
+                )}
+                <p className={styles.shopHelper}>
+                  Shown on the public Partners directory and filters. Preset options keep the list consistent; use Others for anything else (80 characters max).
+                </p>
+              </div>
+              <div className={`${styles.field} ${styles.shopFieldFull}`}>
+                <label htmlFor={shopId('specialties')} className={styles.label}>Specialties</label>
+                <textarea
+                  id={shopId('specialties')}
+                  rows={4}
+                  value={shopForm.shopSpecialties}
+                  onChange={(e) => onShopFieldChange('shopSpecialties', e.target.value)}
+                  className={`${styles.input} ${styles.textarea} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
+                  disabled={!isEditingShop || !canEditShop}
+                  placeholder={'One specialty per line, e.g.\nTraditional Catholic rites\nCremation packages'}
+                  spellCheck={true}
+                />
+                <p className={styles.shopHelper}>
+                  Shown as badges on your public seller profile (up to 24 lines, 120 characters each). Leave blank if you prefer not to list any.
+                </p>
+              </div>
+              <div className={styles.field}>
+                <label htmlFor={shopId('started')} className={styles.label}>
+                  Business operating since <span className={styles.requiredMark}>*</span>
+                </label>
+                <input
+                  id={shopId('started')}
+                  type="date"
+                  value={shopForm.businessStartedAt}
+                  max={new Date().toISOString().slice(0, 10)}
+                  onChange={(e) => onShopFieldChange('businessStartedAt', e.target.value)}
+                  className={`${styles.input} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
+                  disabled={!isEditingShop || !canEditShop}
+                />
+                <p className={styles.shopHelper}>
+                  Shown as &quot;In service&quot; / member timeline on your public profile. Separate from when you joined this site.
+                </p>
+              </div>
+              <div className={`${styles.field} ${styles.shopFieldFull}`}>
+                <label htmlFor={shopId('address')} className={styles.label}>Business address</label>
+                <input
+                  id={shopId('address')}
+                  value={shopForm.address}
+                  onChange={(e) => onShopFieldChange('address', e.target.value)}
+                  className={`${styles.input} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
+                  disabled={!isEditingShop || !canEditShop}
+                  placeholder="Street, city, province"
+                />
+                <p className={styles.shopHelper}>
+                  Helps buyers see where you operate; displayed as your storefront location where applicable.
+                </p>
+              </div>
+              <div className={`${styles.field} ${styles.shopFieldFull}`}>
+                <label htmlFor={shopId('info')} className={styles.label}>
+                  Business description (About)
+                </label>
+                <textarea
+                  id={shopId('info')}
+                  rows={4}
+                  value={shopForm.businessInfo}
+                  onChange={(e) => onShopFieldChange('businessInfo', e.target.value)}
+                  className={`${styles.input} ${styles.textarea} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
+                  disabled={!isEditingShop || !canEditShop}
+                  placeholder="Your full story, services, coverage areas, and differentiators."
+                />
+                <p className={styles.shopHelper}>Shown on your public seller profile under the About tab.</p>
+              </div>
+
+              <div className={styles.field}>
                 <label htmlFor={shopId('contact')} className={styles.label}>
                   Primary contact person <span className={styles.requiredMark}>*</span>
                 </label>
@@ -618,46 +802,6 @@ export default function SellerSettingsClient() {
                   className={`${styles.input} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
                   disabled={!isEditingShop || !canEditShop}
                   placeholder="+63 9XX XXX XXXX"
-                />
-              </div>
-              <div className={styles.field}>
-                <label htmlFor={shopId('started')} className={styles.label}>
-                  Business operating since <span className={styles.requiredMark}>*</span>
-                </label>
-                <input
-                  id={shopId('started')}
-                  type="date"
-                  value={shopForm.businessStartedAt}
-                  max={new Date().toISOString().slice(0, 10)}
-                  onChange={(e) => onShopFieldChange('businessStartedAt', e.target.value)}
-                  className={`${styles.input} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
-                  disabled={!isEditingShop || !canEditShop}
-                />
-                <p className={styles.shopHelper}>
-                  When your business first began serving families (&quot;In service&quot; on your public shop). Separate from when you joined this site.
-                </p>
-              </div>
-              <div className={`${styles.field} ${styles.shopFieldFull}`}>
-                <label htmlFor={shopId('address')} className={styles.label}>Business address</label>
-                <input
-                  id={shopId('address')}
-                  value={shopForm.address}
-                  onChange={(e) => onShopFieldChange('address', e.target.value)}
-                  className={`${styles.input} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
-                  disabled={!isEditingShop || !canEditShop}
-                  placeholder="Street, city, province"
-                />
-              </div>
-              <div className={`${styles.field} ${styles.shopFieldFull}`}>
-                <label htmlFor={shopId('info')} className={styles.label}>Business description</label>
-                <textarea
-                  id={shopId('info')}
-                  rows={4}
-                  value={shopForm.businessInfo}
-                  onChange={(e) => onShopFieldChange('businessInfo', e.target.value)}
-                  className={`${styles.input} ${styles.textarea} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
-                  disabled={!isEditingShop || !canEditShop}
-                  placeholder="Services you offer, coverage areas, specializations."
                 />
               </div>
             </div>

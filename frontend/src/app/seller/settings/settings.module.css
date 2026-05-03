@@ -491,6 +491,14 @@
   line-height: 1.45;
 }
 
+.selectInput:not(:disabled) {
+  cursor: pointer;
+}
+
+.businessTypeOtherWrap {
+  margin-top: 10px;
+}
+
 .fileInput {
   display: none;
 }
