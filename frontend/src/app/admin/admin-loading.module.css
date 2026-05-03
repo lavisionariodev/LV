@@ -36,11 +36,11 @@
   border: 2px solid #e2e8f0;
   border-top-color: var(--color-main-accent, #0ea5e9);
   border-radius: 50%;
-  animation: adminLoadingStateSpin 0.65s linear infinite;
+  animation: adminLoadingSpin 0.65s linear infinite;
   flex-shrink: 0;
 }
 
-@keyframes adminLoadingStateSpin {
+@keyframes adminLoadingSpin {
   to {
     transform: rotate(360deg);
   }

@@ -1404,14 +1404,14 @@
   margin-top: 0;
   background: #fff;
   border: 1px solid #e9e9ef;
-  border-radius: 16px;
+  border-radius: 14px;
   overflow: hidden;
 }
 
-/* Section header */
+/* Section header — aligned with sellers / payouts table panel toolbar split */
 .reviewHeader {
-  padding: 18px 22px 14px;
-  border-bottom: 0.5px solid #f1f5f9;
+  padding: 14px 18px;
+  border-bottom: 1px solid #f1f5f9;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1474,34 +1474,18 @@
   }
 }
 
-/* Column header row */
-.reviewTable thead tr {
-  background: #f8fafc;
-  border-bottom: 0.5px solid #e9e9ef;
-}
+/* ── Table (matches admin sellers / payouts transactions table) ─────────── */
 
-.reviewTable th {
-  font-size: 11px;
-  font-weight: 600;
-  color: #94a3b8;
-  padding: 9px 14px;
-  text-align: left;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  white-space: nowrap;
-}
-
-/* Table layout */
-.reviewTableWrap {
+.tableWrap {
   overflow-x: auto;
-  padding: 0;
+  padding: 0 18px;
 }
 
-.reviewTable {
+.table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
   font-size: 13px;
+  table-layout: fixed;
 }
 
 .colListing  { width: 30%; }
@@ -1511,28 +1495,42 @@
 .colSubmitted{ width: 16%; }
 .colActions  { width: 8%; }
 
-/* Data rows */
-.reviewTable td {
-  padding: 13px 14px;
+.table thead tr {
+  background: #f8fafc;
+  border-bottom: 1px solid #e9e9ef;
+}
+
+.table th {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  padding: 11px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e9e9ef;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.table td {
+  padding: 12px 12px;
   vertical-align: middle;
   color: #0f172a;
   font-size: 13px;
 }
 
-.reviewRow {
-  border-top: 0.5px solid #f1f5f9;
+.primaryRow {
+  border-bottom: 1px solid #f1f5f9;
   transition: background 0.1s;
-  cursor: pointer;
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .reviewRow:hover {
+  .primaryRow:hover {
     background: #f8fafc;
   }
 }
 
-.reviewRow:first-child {
-  border-top: none;
+.primaryRow:last-child {
+  border-bottom: none;
 }
 
 /* Listing cell */
@@ -1543,8 +1541,8 @@
 .reviewListingName {
   margin: 0 0 5px;
   font-size: 13px;
-  font-weight: 500;
-  color: #0f172a;
+  font-weight: 600;
+  color: #1e293b;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1560,8 +1558,9 @@
 /* Seller cell */
 .reviewSellerText {
   margin: 0;
-  color: #64748b;
-  font-size: 12px;
+  color: #1e293b;
+  font-size: 13px;
+  font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1582,12 +1581,11 @@
   white-space: nowrap;
 }
 
-/* Chevron actions cell */
-.reviewTable th.actionsTh,
-.reviewTable td.actionsCell {
-  text-align: right;
+.table th.actionsTh,
+.table td.actionsCell {
+  text-align: center;
   padding-left: 8px;
-  padding-right: 16px;
+  padding-right: 8px;
 }
 
 .actionsCell {
@@ -1645,24 +1643,21 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  padding: 0;
+  padding: 4px;
   margin: 0;
-  border: 1px solid transparent;
-  border-radius: 8px;
+  border: none;
+  border-radius: 0;
   background: transparent;
-  color: #94a3b8;
+  color: #64748b;
   cursor: pointer;
   line-height: 0;
-  transition: color 0.12s, background 0.12s, border-color 0.12s;
+  transition: color 0.12s;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .actionMenuTrigger:hover {
     color: #0f172a;
-    background: #f1f5f9;
-    border-color: #e2e8f0;
+    background: transparent;
   }
 }
 
@@ -2188,18 +2183,19 @@
 }
 
 .sellerAvatar {
-  width: 26px;
-  height: 26px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: #dcfce7;
-  color: #166534;
-  font-size: 11px;
-  font-weight: 600;
+  background: #e2e8f0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border: 1px solid #bbf7d0;
+  letter-spacing: 0.3px;
+  border: none;
   text-transform: uppercase;
 }
 
@@ -2505,7 +2501,7 @@
   }
 
   .reviewHeader { padding: 14px 18px 12px; }
-  .reviewTableWrap { padding: 0; }
+  .tableWrap { padding: 0; }
 }
 
 @media (max-width: 480px) {

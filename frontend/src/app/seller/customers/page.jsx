@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { TbSearch, TbUser, TbPhone, TbMail, TbX, TbReceipt } from 'react-icons/tb'
 import styles from './customers.module.css'
@@ -114,7 +114,35 @@ function aggregateCustomers(rows) {
   return out
 }
 
-export default function SellerCustomersPage() {
+/**
+ * Token-based AND search (same idea as seller products): name, contact, booking IDs, packages, locations.
+ */
+function customerMatchesSearchQuery(customer, rawQuery) {
+  const trimmed = String(rawQuery ?? '').trim()
+  if (!trimmed) return true
+  const tokens = trimmed.toLowerCase().split(/\s+/).filter(Boolean)
+  if (tokens.length === 0) return true
+
+  const bookingBits = (customer.bookings ?? []).flatMap((b) => [
+    b.displayId,
+    b.servicePackage,
+    b.location,
+    b.status,
+    b.dateOfService,
+  ])
+  const parts = [
+    customer.name,
+    customer.email,
+    customer.phone,
+    customer.firstServiceDate,
+    customer.lastServiceDate,
+    ...bookingBits,
+  ]
+  const hay = parts.map((x) => String(x ?? '').toLowerCase()).join(' ')
+  return tokens.every((t) => hay.includes(t))
+}
+
+function SellerCustomersPageContent() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -215,13 +243,7 @@ export default function SellerCustomersPage() {
 
   const filteredCustomers = useMemo(() => {
     if (!trimmedQuery) return customers
-    const q = trimmedQuery.toLowerCase()
-    return customers.filter((c) => {
-      const name = c.name?.toLowerCase() ?? ''
-      const email = c.email?.toLowerCase() ?? ''
-      const phone = c.phone?.toLowerCase() ?? ''
-      return name.includes(q) || email.includes(q) || phone.includes(q)
-    })
+    return customers.filter((c) => customerMatchesSearchQuery(c, trimmedQuery))
   }, [customers, trimmedQuery])
 
   const { totalCustomers, returningCustomers, newCustomersThisMonth, activeClients } = useMemo(() => {
@@ -270,17 +292,26 @@ export default function SellerCustomersPage() {
   return (
     <div className={styles.pageWrap}>
       <section className={styles.filtersRow} aria-label="Search customers">
-        <div className={styles.searchWrap}>
+        <form
+          className={styles.searchWrap}
+          role="search"
+          onSubmit={(e) => {
+            e.preventDefault()
+          }}
+        >
           <TbSearch className={styles.searchIcon} size={18} aria-hidden />
           <input
             type="search"
+            name="q"
             className={styles.searchBox}
-            placeholder="Search by name, email, or contact number"
+            placeholder="Search by name, email, phone, order ID, booking, or location"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             aria-label="Search customers"
+            autoComplete="off"
+            spellCheck={false}
           />
-        </div>
+        </form>
       </section>
 
       <section className={styles.statsStrip} aria-label="Customer overview">
@@ -589,5 +620,21 @@ export default function SellerCustomersPage() {
         </div>
       )}
     </div>
+  )
+}
+
+function SellerCustomersPageFallback() {
+  return (
+    <div className={styles.pageWrap} role="status" aria-live="polite">
+      <p style={{ margin: 0, color: '#64748b', fontSize: '0.95rem' }}>Loading customers…</p>
+    </div>
+  )
+}
+
+export default function SellerCustomersPage() {
+  return (
+    <Suspense fallback={<SellerCustomersPageFallback />}>
+      <SellerCustomersPageContent />
+    </Suspense>
   )
 }

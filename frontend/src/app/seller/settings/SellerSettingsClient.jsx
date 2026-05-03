@@ -66,6 +66,7 @@ export default function SellerSettingsClient() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passStatus, setPassStatus] = useState('')
   const [passError, setPassError] = useState('')
+  const [isEditingPassword, setIsEditingPassword] = useState(false)
   const [toast, setToast] = useState(null)
   const [avatarModalOpen, setAvatarModalOpen] = useState(false)
 
@@ -371,6 +372,7 @@ export default function SellerSettingsClient() {
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault()
+    if (!isEditingPassword) return
     setPassError('')
     setPassStatus('')
     if (!currentPassword) {
@@ -392,9 +394,25 @@ export default function SellerSettingsClient() {
       setNewPassword('')
       setConfirmPassword('')
       setPassStatus('Password updated successfully.')
+      setIsEditingPassword(false)
     } catch (err) {
       setPassError(err.message || 'Failed to update password.')
     }
+  }
+
+  const onStartPasswordEdit = () => {
+    setPassError('')
+    setPassStatus('')
+    setIsEditingPassword(true)
+  }
+
+  const onCancelPasswordEdit = () => {
+    setPassError('')
+    setPassStatus('')
+    setCurrentPassword('')
+    setNewPassword('')
+    setConfirmPassword('')
+    setIsEditingPassword(false)
   }
 
   const shownAvatar = avatarPreview || profile?.avatarUrl || ''
@@ -793,11 +811,28 @@ export default function SellerSettingsClient() {
         </section>
 
         <section className={styles.card}>
-          <div className={`${styles.cardHeadRow} ${styles.passwordHeadRow}`}>
+          <div
+            className={`${styles.cardHeadRow} ${styles.passwordHeadRow} ${
+              isEditingPassword ? styles.passwordHeadRowEditing : ''
+            }`}
+          >
             <p className={styles.cardTitle}>Change Password</p>
-            <button form={formId} type="submit" className={styles.primaryBtn}>
-              <FiSave /> Save Changes
-            </button>
+            <div className={styles.headActions}>
+              {isEditingPassword ? (
+                <>
+                  <button type="button" className={styles.secondaryBtn} onClick={onCancelPasswordEdit}>
+                    Cancel
+                  </button>
+                  <button form={formId} type="submit" className={styles.primaryBtn}>
+                    <FiSave /> Save Changes
+                  </button>
+                </>
+              ) : (
+                <button type="button" className={styles.primaryBtn} onClick={onStartPasswordEdit}>
+                  Change Password
+                </button>
+              )}
+            </div>
           </div>
           <form id={formId} onSubmit={handlePasswordSubmit} className={styles.form}>
             <div className={styles.passGrid}>
@@ -811,7 +846,8 @@ export default function SellerSettingsClient() {
                   placeholder="Enter current password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
-                  className={styles.input}
+                  className={`${styles.input} ${!isEditingPassword ? styles.inputReadOnly : ''}`}
+                  disabled={!isEditingPassword}
                 />
               </div>
               <div className={styles.passField}>
@@ -824,7 +860,8 @@ export default function SellerSettingsClient() {
                   placeholder="Enter new password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className={styles.input}
+                  className={`${styles.input} ${!isEditingPassword ? styles.inputReadOnly : ''}`}
+                  disabled={!isEditingPassword}
                 />
               </div>
               <div className={styles.passField}>
@@ -837,7 +874,8 @@ export default function SellerSettingsClient() {
                   placeholder="Re-enter new password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={styles.input}
+                  className={`${styles.input} ${!isEditingPassword ? styles.inputReadOnly : ''}`}
+                  disabled={!isEditingPassword}
                 />
               </div>
             </div>

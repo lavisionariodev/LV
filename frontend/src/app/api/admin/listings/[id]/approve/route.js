@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 export async function POST(_request, { params }) {
-  const listingId = params?.id
+  const { id: listingId } = await params
   if (!listingId) {
     return NextResponse.json({ error: 'Missing listing id.' }, { status: 400 })
   }

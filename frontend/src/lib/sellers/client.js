@@ -195,23 +195,18 @@ export async function updateSellerStatus(sellerId, status) {
     return { data: null, error: 'Missing seller id' };
   }
 
-  const updateData = { status };
-  // Note: approved_at column may not exist yet - will be added when migration is properly applied
-  // if (status === 'active') {
-  //   updateData.approved_at = new Date().toISOString();
-  // }
+  const res = await fetch(`/api/admin/sellers/${encodeURIComponent(sellerId)}/status`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+    credentials: 'same-origin',
+  });
 
-  const { data, error } = await supabase
-    .from('sellers')
-    .update(updateData)
-    .eq('user_id', sellerId)
-    .select()
-    .maybeSingle();
-
-  if (error) {
-    return { data: null, error: error.message || 'Failed to update seller status.' };
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    return { data: null, error: json.error || 'Failed to update seller status.' };
   }
 
-  return { data, error: null };
+  return { data: json.data ?? null, error: null };
 }
 
