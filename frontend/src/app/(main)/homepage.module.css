@@ -370,6 +370,46 @@ a.ctaPrimary {
   letter-spacing: 0.2px;
 }
 
+.howItWorksCTA {
+  display: flex;
+  justify-content: center;
+  margin-top: 56px;
+}
+
+.howItWorksBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 44px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-decoration: none;
+  font-family: "Lato", sans-serif;
+  color: #102820;
+  background: #F7F4EF;
+  border: 2px solid #F7F4EF;
+  transition: all 0.3s ease;
+}
+
+.howItWorksBtn:hover {
+  background: transparent;
+  color: #F7F4EF;
+  border-color: rgba(247, 244, 239, 0.6);
+  transform: translateY(-2px);
+}
+
+.howItWorksBtnArrow {
+  font-size: 18px;
+  line-height: 1;
+  transition: transform 0.3s ease;
+}
+
+.howItWorksBtn:hover .howItWorksBtnArrow {
+  transform: translateX(4px);
+}
+
 @media (max-width: 768px) {
   .howItWorksSection {
     padding: 80px var(--page-padding, 24px);

@@ -21,9 +21,17 @@ export default function PublicNavbar() {
   const [logoutOpen, setLogoutOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [desktopSearchOpen, setDesktopSearchOpen] = useState(false)
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [notifications, setNotifications] = useState([
+    { id: 1, message: 'Your order #1042 has been confirmed.', timestamp: '2 min ago', read: false },
+    { id: 2, message: 'New service available: Premium Floral Package.', timestamp: '1 hr ago', read: false },
+    { id: 3, message: 'Your payment for order #1039 was received.', timestamp: 'Yesterday', read: true },
+    { id: 4, message: 'Reminder: Review your recent purchase.', timestamp: '2 days ago', read: true },
+  ])
   const router = useRouter()
   const pathname = usePathname()
   const profileRef = useRef(null)
+  const notificationsRef = useRef(null)
   const mobileSearchInputRef = useRef(null)
   const desktopSearchRef = useRef(null)
   const desktopSearchInputRef = useRef(null)
@@ -51,16 +59,19 @@ export default function PublicNavbar() {
       if (desktopSearchRef.current && !desktopSearchRef.current.contains(event.target)) {
         setDesktopSearchOpen(false)
       }
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+        setNotificationsOpen(false)
+      }
     }
 
-    if (profileMenuOpen || desktopSearchOpen) {
+    if (profileMenuOpen || desktopSearchOpen || notificationsOpen) {
       document.addEventListener('mousedown', handleClickOutside)
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [profileMenuOpen, desktopSearchOpen])
+  }, [profileMenuOpen, desktopSearchOpen, notificationsOpen])
 
   // Only buyers count as authenticated on the main site; seller/admin have their own portals.
   const isAuthenticated = !!user && isBuyer
@@ -93,6 +104,16 @@ export default function PublicNavbar() {
       : isPurchasesPage
         ? 'My Purchases'
         : ''
+
+  const unreadCount = notifications.filter(n => !n.read).length
+
+  const markAllRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+  }
+
+  const markOneRead = (id) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
+  }
 
   const openLogoutModal = () => {
     setProfileMenuOpen(false)
@@ -228,26 +249,85 @@ export default function PublicNavbar() {
                 </Link>
               </div>
             ) : (
-              <button
-                type="button"
-                className={styles.userLink}
-                aria-label="Notifications"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+              <div className={styles.notificationsWrap} ref={notificationsRef}>
+                <button
+                  type="button"
+                  className={styles.userLink}
+                  aria-label="Notifications"
+                  aria-expanded={notificationsOpen}
+                  onClick={() => setNotificationsOpen(open => !open)}
                 >
-                  <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                </svg>
-              </button>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                  </svg>
+                  {unreadCount > 0 && (
+                    <span className={styles.notificationBadge} aria-label={`${unreadCount} unread notifications`}>
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {notificationsOpen && (
+                  <div className={styles.notificationsDropdown} role="dialog" aria-label="Notifications">
+                    <div className={styles.notificationsHeader}>
+                      <span className={styles.notificationsTitle}>Notifications</span>
+                      {unreadCount > 0 && (
+                        <button
+                          type="button"
+                          className={styles.markAllReadBtn}
+                          onClick={markAllRead}
+                        >
+                          Mark all as read
+                        </button>
+                      )}
+                    </div>
+
+                    <ul className={styles.notificationsList}>
+                      {notifications.length === 0 ? (
+                        <li className={styles.notificationsEmpty}>No notifications yet.</li>
+                      ) : (
+                        notifications.map(n => (
+                          <li
+                            key={n.id}
+                            className={`${styles.notificationItem} ${!n.read ? styles.notificationItemUnread : ''}`}
+                            onClick={() => markOneRead(n.id)}
+                          >
+                            <span className={styles.notificationDot} aria-hidden="true" />
+                            <div className={styles.notificationContent}>
+                              <p className={styles.notificationMessage}>{n.message}</p>
+                              <span className={styles.notificationTime}>{n.timestamp}</span>
+                            </div>
+                          </li>
+                        ))
+                      )}
+                    </ul>
+
+                    <div className={styles.notificationsFooter}>
+                      <button
+                        type="button"
+                        className={styles.viewAllBtn}
+                        onClick={() => {
+                          setNotificationsOpen(false)
+                          router.push('/profile/notifications')
+                        }}
+                      >
+                        View all notifications
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
