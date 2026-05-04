@@ -193,6 +193,13 @@ function HowItWorksSection() {
             </div>
           ))}
         </div>
+
+        <div className={styles.howItWorksCTA}>
+          <Link href="/how-it-works" className={styles.howItWorksBtn}>
+            Learn How It Works
+            <span className={styles.howItWorksBtnArrow}>›</span>
+          </Link>
+        </div>
       </div>
     </section>
   )
