@@ -4,7 +4,12 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useMemo, useState, useEffect } from 'react'
 import { PROVIDERS, SERVICES } from '../data'
-import { fetchActiveShopListings, mergeShopListings, stockAvailabilityLabel } from '@/lib/shop-listings/client'
+import {
+  fetchActiveShopListings,
+  getListingProviderLogoUrl,
+  mergeShopListings,
+  stockAvailabilityLabel,
+} from '@/lib/shop-listings/client'
 import { formatPhpAmount } from '@/lib/cart/formatPhp'
 import shopStyles from '../shop.module.css'
 import styles from './compare.module.css'
@@ -146,11 +151,22 @@ export default function ComparePage() {
                   {/* Empty label column */}
                   <th className={shopStyles.compareTableLabel} />
 
-                  {compareListings.map(({ listing, provider }) => (
+                  {compareListings.map(({ listing, provider }) => {
+                    const listingLogoUrl = getListingProviderLogoUrl(provider)
+                    return (
                     <th key={listing.id} className={shopStyles.compareTableHead}>
                       <div className={shopStyles.compareColHeader}>
                         <div className={shopStyles.compareColAvatar}>
-                          {(provider?.name || '?').charAt(0)}
+                          {listingLogoUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- storage URL from shop RPC
+                            <img
+                              src={listingLogoUrl}
+                              alt=""
+                              className={shopStyles.compareColAvatarImg}
+                            />
+                          ) : (
+                            (provider?.name || '?').charAt(0)
+                          )}
                         </div>
                         <p className={shopStyles.compareColName}>{listing.name}</p>
                         <p className={shopStyles.compareColProvider}>{provider?.name}</p>
@@ -159,7 +175,8 @@ export default function ComparePage() {
                         )}
                       </div>
                     </th>
-                  ))}
+                    )
+                  })}
                 </tr>
               </thead>
 

@@ -36,6 +36,26 @@ const SORT_OPTIONS = [
   { value: 'name', label: 'Sort: Name' },
 ]
 
+/** `seller_avatar_url` from listSellerListingsForAdmin (batch `profiles.avatar_url`). */
+function SellerAvatarMark({ src, initialsSource, listingStyles: styleMod }) {
+  const [failed, setFailed] = useState(false)
+  const label = String(initialsSource ?? '?').trim() || '?'
+  const url = typeof src === 'string' ? src.trim() : ''
+  const showImg = url.length > 0 && !failed
+  return (
+    <span
+      className={`${styleMod.sellerAvatar}${showImg ? ` ${styleMod.sellerAvatarHasImage}` : ''}`}
+      title={label}
+    >
+      {showImg ? (
+        <img src={url} alt="" className={styleMod.sellerAvatarImg} onError={() => setFailed(true)} />
+      ) : (
+        label.charAt(0).toUpperCase()
+      )}
+    </span>
+  )
+}
+
 const Icon = {
   Search: () => (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -164,7 +184,14 @@ function ListingCard({ row }) {
           <div className={styles.cardTitleRow}>
             <p className={styles.cardTitle}>{row.listing_name || 'Untitled'}</p>
           </div>
-          <p className={styles.cardSub}>{sellerSubline}</p>
+          <div className={styles.cardSellerRow}>
+            <SellerAvatarMark
+              src={row.seller_avatar_url}
+              initialsSource={business || email || '?'}
+              listingStyles={styles}
+            />
+            <p className={styles.cardSub}>{sellerSubline}</p>
+          </div>
           <div className={styles.cardTags}>
             <span className={styles.cardTag}>{kindLabelFromRow(row)}</span>
             <span className={styles.cardTag} style={{ fontWeight: 700, color: '#0f172a' }}>
@@ -434,24 +461,28 @@ export default function AdminListingsBrowsePage() {
                 />
               </button>
             </div>
-            {activeFilterLabels.map((label) => (
-              <div key={label} className={styles.mobileActivePill}>
-                <span className={styles.mobileActivePillLabel}>{label}</span>
-                <button
-                  type="button"
-                  className={styles.mobileActivePillClear}
-                  onClick={() => {
-                    const sortLabel = (SORT_OPTIONS.find((o) => o.value === sortKey)?.label || sortKey).replace(/^Sort:\s*/i, '')
-                    const kindLabel = KIND_FILTER_OPTIONS.find((o) => o.value === kindFilter)?.label || kindFilter
-                    if (label === sortLabel) setSortKey('updated')
-                    if (label === kindLabel) setKindFilter('all')
-                  }}
-                  aria-label={`Clear ${label} filter`}
-                >
-                  <TbX aria-hidden />
-                </button>
+            {activeFilterLabels.length > 0 && (
+              <div className={styles.mobileActivePillsRow} aria-label="Active filters">
+                {activeFilterLabels.map((label) => (
+                  <div key={label} className={styles.mobileActivePill}>
+                    <span className={styles.mobileActivePillLabel}>{label}</span>
+                    <button
+                      type="button"
+                      className={styles.mobileActivePillClear}
+                      onClick={() => {
+                        const sortLabel = (SORT_OPTIONS.find((o) => o.value === sortKey)?.label || sortKey).replace(/^Sort:\s*/i, '')
+                        const kindLabel = KIND_FILTER_OPTIONS.find((o) => o.value === kindFilter)?.label || kindFilter
+                        if (label === sortLabel) setSortKey('updated')
+                        if (label === kindLabel) setKindFilter('all')
+                      }}
+                      aria-label={`Clear ${label} filter`}
+                    >
+                      <TbX aria-hidden />
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         ) : (
           <div className={styles.filterRow}>

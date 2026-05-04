@@ -11,6 +11,7 @@ import ForgotPasswordModal from '@/components/ui/Modal/ForgotPasswordModal';
 import { isAdmin } from '@/lib/auth/admin';
 import { getUser } from '@/lib/auth/session';
 import { getUserRole, ROLE_SELLER } from '@/lib/auth/roles';
+import { getSellerStatusForUser } from '@/lib/sellers/client';
 import { useToast } from '@/contexts/ToastContext';
 import { useSiteContent } from '@/lib/siteContent/client';
 
@@ -58,7 +59,11 @@ function SellerLoginPageInner() {
       if (showForgotPasswordModalRef.current) return;
       const role = await getUserRole(currentUser.id);
       if (role === ROLE_SELLER) {
-        const target = !redirect || redirect === '/' ? '/seller' : redirect;
+        let target = !redirect || redirect === '/' ? '/seller' : redirect;
+        const sellerStatus = await getSellerStatusForUser(currentUser.id);
+        if (sellerStatus === 'pending' || sellerStatus === 'rejected') {
+          target = '/seller/onboarding';
+        }
         router.replace(target);
       }
     });
@@ -109,7 +114,11 @@ function SellerLoginPageInner() {
       }
 
       toast.success('Welcome back to Seller Centre!');
-      const target = !redirect || redirect === '/' ? '/seller' : redirect;
+      let target = !redirect || redirect === '/' ? '/seller' : redirect;
+      const sellerStatus = await getSellerStatusForUser(user.id);
+      if (sellerStatus === 'pending' || sellerStatus === 'rejected') {
+        target = '/seller/onboarding';
+      }
       router.replace(target);
     } catch (err) {
       console.error('Seller login error:', err);

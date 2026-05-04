@@ -1,7 +1,12 @@
 'use client'
 
-import OrdersContent from '../OrdersContent'
+import { Suspense } from 'react'
+import OrdersContent, { SellerOrdersLoadingFallback } from '../OrdersContent'
 
 export default function SellerOrdersCompletedPage() {
-  return <OrdersContent initialTab="completed" />
+  return (
+    <Suspense fallback={<SellerOrdersLoadingFallback />}>
+      <OrdersContent initialTab="completed" />
+    </Suspense>
+  )
 }

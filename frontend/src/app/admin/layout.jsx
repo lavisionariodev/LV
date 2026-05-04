@@ -7,7 +7,7 @@ import { useMediaQuery } from '@/hooks'
 import { requireAdmin } from '@/lib/auth/guards'
 import { signOut } from '@/lib/auth/session'
 import styles from './admin.module.css'
-import AdminLoadingState from '@/components/ui/Load/AdminLoadingState'
+import loadingStyles from './admin-loading.module.css'
 import { Poppins } from 'next/font/google'
 
 const poppins = Poppins({ weight: ['400', '600', '700'], subsets: ['latin'] })
@@ -51,7 +51,15 @@ export default function AdminLayout({ children }) {
   if (authStatus === 'loading' || authStatus === 'denied') {
     return (
       <div className={`${styles.authLoading} ${poppins.className}`}>
-        <AdminLoadingState variant="gate" label="Loading" />
+        <div
+          className={`${loadingStyles.root} ${loadingStyles.variantGate}`}
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <span className={loadingStyles.spinner} aria-hidden />
+          <span className={loadingStyles.label}>Loading</span>
+        </div>
       </div>
     )
   }

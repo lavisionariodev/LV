@@ -309,11 +309,13 @@ function FavoriteCard({ item, isRemoving, onRemove, styles }) {
             <div className={styles.providerInfo}>
               <p className={styles.providerName}>{provider.name}</p>
               <p className={styles.providerLocation}>
-                <svg viewBox="0 0 12 14" width="9" height="9" fill="var(--color-gold-base, #B8962E)" style={{ marginRight: 3, flexShrink: 0, display: 'inline-block', verticalAlign: 'middle' }}>
+                <svg viewBox="0 0 12 14" width="9" height="9" fill="var(--color-gold-base, #B8962E)" style={{ marginRight: 3, flexShrink: 0, display: 'inline-block', verticalAlign: 'middle' }} aria-hidden>
                   <path d="M6 0a5 5 0 0 1 5 5c0 4.5-5 9-5 9S1 9.5 1 5a5 5 0 0 1 5-5z" />
                   <circle cx="6" cy="5" r="1.8" fill="white" />
                 </svg>
-                {provider.location}
+                <span className={styles.providerLocationText} title={provider.location || undefined}>
+                  {provider.location}
+                </span>
               </p>
             </div>
             <div className={styles.ratingGroup}>

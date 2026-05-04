@@ -2,6 +2,12 @@ import { supabase } from '@/lib/supabase/client'
 
 const LISTING_IMAGES_BUCKET = 'listing-images'
 
+function normalizeAvatarUrl(url) {
+  if (url == null || typeof url !== 'string') return null
+  const t = url.trim()
+  return t.length ? t : null
+}
+
 function normalizeListingRow(row) {
   const imageUrls = Array.isArray(row.image_urls) ? row.image_urls : []
   return {
@@ -263,5 +269,25 @@ export async function listSellerListingsForAdmin(options = {}) {
     })
   })
 
-  return { data: rows, error: null }
+  const sellerIds = [...new Set(rows.map((r) => r.seller_user_id).filter(Boolean))]
+  const avatarByUserId = new Map()
+  if (sellerIds.length > 0) {
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, avatar_url')
+      .in('id', sellerIds)
+
+    if (!profilesError && profiles) {
+      for (const p of profiles) {
+        avatarByUserId.set(p.id, normalizeAvatarUrl(p.avatar_url))
+      }
+    }
+  }
+
+  const enriched = rows.map((r) => ({
+    ...r,
+    seller_avatar_url: avatarByUserId.get(r.seller_user_id) ?? null,
+  }))
+
+  return { data: enriched, error: null }
 }

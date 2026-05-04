@@ -290,9 +290,14 @@
   display: flex;
   align-items: center;
   line-height: 1.3;
-  white-space: nowrap;
+  min-width: 0;
+}
+
+.providerLocationText {
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 /* ─── Rating — identical to shop ────────────────────────────────────────────── */

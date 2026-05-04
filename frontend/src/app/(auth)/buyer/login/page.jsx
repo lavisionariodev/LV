@@ -30,7 +30,6 @@ function BuyerLoginPageInner() {
   const showForgotPasswordModalRef = useRef(false);
   showForgotPasswordModalRef.current = showForgotPasswordModal;
 
-  // Redirect recovery link to shared reset-password page (preserve hash)
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
     const hash = window.location.hash || "";

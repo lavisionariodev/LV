@@ -171,6 +171,22 @@
 }
 
 /* ── Status badge ────────────────────────────────────── */
+.badgeColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.paymentSubline {
+  font-family: 'Lato', sans-serif;
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--muted, #6B6B6B);
+  letter-spacing: 0.03em;
+  margin: 0 0 8px;
+}
+
 .statusBadge {
   flex-shrink: 0;
   font-family: 'Lato', sans-serif;
@@ -181,6 +197,17 @@
   padding: 4px 11px;
   border-radius: 0;
   white-space: nowrap;
+}
+
+.statusDetail {
+  font-family: 'Lato', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted, #6b6b6b);
+  letter-spacing: 0.02em;
+  text-align: right;
+  max-width: 11rem;
+  line-height: 1.35;
 }
 
 /* ── Meta row ────────────────────────────────────────── */
@@ -255,6 +282,211 @@
   color: var(--ink, #1A1A1A);
   font-weight: 400;
   line-height: 1.55;
+}
+
+.itemPrice {
+  color: var(--forest-mid, #204F38);
+  font-weight: 600;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 120px) 1fr;
+  gap: 4px 12px;
+  margin: 0 0 12px;
+  font-family: 'Lato', sans-serif;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.detailGrid dt {
+  margin: 0;
+  color: var(--subtle, #b0a898);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-size: 0.66rem;
+}
+
+.detailGrid dd {
+  margin: 0;
+  color: var(--ink, #1A1A1A);
+}
+
+.detailNotes {
+  margin: 0 0 4px;
+  font-family: 'Lato', sans-serif;
+  font-size: 0.84rem;
+  line-height: 1.55;
+  color: var(--ink, #1A1A1A);
+  white-space: pre-wrap;
+}
+
+.payErrorBanner {
+  padding: 8px 20px;
+  border-top: 1px solid rgba(220, 38, 38, 0.25);
+  background: rgba(220, 38, 38, 0.08);
+  font-family: 'Lato', sans-serif;
+  font-size: 0.78rem;
+  color: #b91c1c;
+}
+
+.payErrorBannerDismissRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.payErrorDismiss {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 0.74rem;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.awaitingSellerBanner {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-left: 3px solid rgba(168, 137, 74, 0.75);
+  background: rgba(168, 137, 74, 0.1);
+  font-family: 'Lato', sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--muted, #554b3f);
+}
+
+.awaitingSellerBanner p {
+  margin: 0;
+}
+
+.paymentProgressBanner {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-left: 3px solid rgba(37, 99, 235, 0.55);
+  background: rgba(37, 99, 235, 0.08);
+  font-family: 'Lato', sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--muted, #4b5563);
+}
+
+.paymentProgressBanner p {
+  margin: 0 0 6px;
+}
+
+.paymentProgressLink {
+  display: inline-block;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--forest-mid, #204F38);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.paymentProgressLink:hover {
+  color: var(--forest, #102820);
+}
+
+@media (max-width: 600px) {
+  .paymentProgressBanner {
+    margin: 12px 0 0;
+  }
+}
+
+.actionLink:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.actionLink:disabled:hover {
+  background: transparent;
+  color: inherit;
+}
+
+/* ── Confirm modal ───────────────────────────────────── */
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 24, 20, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 80;
+  padding: 24px;
+}
+
+.modalPanel {
+  background: var(--white, #ffffff);
+  border: 1px solid rgba(168, 137, 74, 0.22);
+  max-width: 400px;
+  width: 100%;
+  padding: 22px 22px 18px;
+  box-shadow: 0 14px 40px rgba(16, 40, 32, 0.14);
+}
+
+.modalTitle {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--forest, #102820);
+  margin: 0 0 8px;
+}
+
+.modalBody {
+  font-family: 'Lato', sans-serif;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--muted, #6B6B6B);
+  margin: 0 0 18px;
+}
+
+.modalActions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.modalGhostBtn {
+  padding: 7px 14px;
+  border: 1px solid rgba(168, 137, 74, 0.35);
+  background: transparent;
+  font-family: 'Lato', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--forest-mid, #204F38);
+  cursor: pointer;
+}
+
+.modalGhostBtn:hover {
+  background: rgba(16, 40, 32, 0.06);
+}
+
+.modalDangerBtn {
+  padding: 7px 14px;
+  border: none;
+  background: #dc2626;
+  font-family: 'Lato', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+}
+
+.modalDangerBtn:hover {
+  background: #b91c1c;
+}
+
+.modalDangerBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* ── Card actions ────────────────────────────────────── */

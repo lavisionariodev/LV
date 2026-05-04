@@ -8,11 +8,13 @@ import { getServiceById, PROVIDERS, SERVICES, REVIEWS, getReviewsByServiceId, CA
 import { getRecommendedSimilarServices } from '../similarServices'
 import { fetchActiveShopListings, mergeShopListings, stockAvailabilityLabel } from '@/lib/shop-listings/client'
 import { buildCartPayloadFromListing } from '@/lib/cart/fromListing'
+import { assertListingReadyForCart, persistCartPayload } from '@/lib/cart/bookNow'
 import { useCart } from '@/contexts/CartContext'
 import { useFavorites } from '@/contexts/FavoritesContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/contexts/ToastContext'
 import { formatPhpAmount } from '@/lib/cart/formatPhp'
+import { isUuidLike } from '@/lib/uuidLike'
 import styles from './detail.module.css'
 
 export default function ServiceDetailPage({ params }) {
@@ -53,6 +55,7 @@ export default function ServiceDetailPage({ params }) {
   const [buyerPackage, setBuyerPackage] = useState('')
   const [quantity, setQuantity] = useState(1)
   const [addBusy, setAddBusy] = useState(false)
+  const [bookBusy, setBookBusy] = useState(false)
   const [addError, setAddError] = useState(null)
   const [saveBusy, setSaveBusy] = useState(false)
   const [saveError, setSaveError] = useState(null)
@@ -162,26 +165,16 @@ export default function ServiceDetailPage({ params }) {
 
   const handleAddToCart = async () => {
     if (!selectedListing || !service) return
-    if (addBusy) return
+    if (addBusy || bookBusy) return
     setAddError(null)
 
-    if (selectedListing.inStock === false) {
-      setAddError('This listing is out of stock.')
-      return
-    }
-
-    const pkgOpts = selectedListing.sellerPackageOptions ?? []
-    if (pkgOpts.length > 0 && !String(buyerPackage || '').trim()) {
-      setAddError('Please select a package.')
-      return
-    }
-
-    if (!user) {
-      redirectToLogin()
-      return
-    }
-    if (!isBuyer) {
-      redirectToLogin()
+    const gate = assertListingReadyForCart(selectedListing, buyerPackage, { user, isBuyer })
+    if (!gate.ok) {
+      if (gate.needLogin) {
+        redirectToLogin()
+        return
+      }
+      setAddError(gate.message)
       return
     }
 
@@ -197,11 +190,12 @@ export default function ServiceDetailPage({ params }) {
 
     setAddBusy(true)
     try {
-      const { error } = await addItem(payload)
-      if (error) {
-        const msg = error.message || 'Could not add to cart'
-        setAddError(msg)
-        toast.error(msg)
+      const result = await persistCartPayload(addItem, payload, {
+        fallbackMessage: 'Could not add to cart',
+      })
+      if (!result.ok) {
+        setAddError(result.message)
+        toast.error(result.message)
         return
       }
       toast.success('Added to cart')
@@ -209,6 +203,55 @@ export default function ServiceDetailPage({ params }) {
       setAddBusy(false)
     }
   }
+
+  const handleBookNow = async () => {
+    if (!selectedListing || !service) return
+    if (addBusy || bookBusy) return
+    setAddError(null)
+
+    const gate = assertListingReadyForCart(selectedListing, buyerPackage, { user, isBuyer })
+    if (!gate.ok) {
+      if (gate.needLogin) {
+        redirectToLogin()
+        return
+      }
+      setAddError(gate.message)
+      return
+    }
+
+    const { error: buildErr, payload } = buildCartPayloadFromListing(selectedListing, {
+      quantity,
+      buyerPackage,
+      heroImage: mainGallerySrc || listingGalleryUrls[0] || '',
+    })
+    if (buildErr || !payload) {
+      setAddError(buildErr || 'Could not start booking')
+      return
+    }
+
+    setBookBusy(true)
+    try {
+      const result = await persistCartPayload(addItem, payload, {
+        router,
+        next: 'checkout',
+        fallbackMessage: 'Could not start booking',
+      })
+      if (!result.ok) {
+        setAddError(result.message)
+        toast.error(result.message)
+      }
+    } finally {
+      setBookBusy(false)
+    }
+  }
+
+  const cartActionsDisabled =
+    !selectedListing ||
+    authLoading ||
+    addBusy ||
+    bookBusy ||
+    selectedListing.inStock === false ||
+    (buyerPackageOptions.length > 0 && !String(buyerPackage || '').trim())
 
   if (!service) {
     return (
@@ -492,18 +535,21 @@ export default function ServiceDetailPage({ params }) {
 
             {/* Action buttons */}
             <div className={styles.actions}>
-              <button className={styles.btnBookNow}>Book Now</button>
+              <button
+                type="button"
+                className={styles.btnBookNow}
+                onClick={handleBookNow}
+                disabled={cartActionsDisabled}
+                aria-busy={bookBusy}
+              >
+                {bookBusy ? 'Booking…' : selectedListing?.inStock === false ? 'Out of Stock' : 'Book Now'}
+              </button>
               <div className={styles.cartSaveRow}>
                 <button
+                  type="button"
                   className={styles.btnAddToCart}
                   onClick={handleAddToCart}
-                  disabled={
-                    !selectedListing ||
-                    authLoading ||
-                    addBusy ||
-                    selectedListing.inStock === false ||
-                    (buyerPackageOptions.length > 0 && !String(buyerPackage || '').trim())
-                  }
+                  disabled={cartActionsDisabled}
                 >
                   {addBusy ? 'Adding…' : selectedListing?.inStock === false ? 'Out of Stock' : 'Add to Cart'}
                 </button>
@@ -543,27 +589,28 @@ export default function ServiceDetailPage({ params }) {
       {/* ── MOBILE STICKY ACTION BAR ── */}
       <div className={styles.mobileActionBar}>
         {/* Chat Now — opens provider chat if provider exists */}
-        <button className={styles.mobileActionBarChat} aria-label="Chat Now">
+        <button type="button" className={styles.mobileActionBarChat} aria-label="Chat Now">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
           </svg>
           Chat
         </button>
         <button
+          type="button"
+          className={styles.mobileActionBarBook}
+          onClick={handleBookNow}
+          disabled={cartActionsDisabled}
+          aria-busy={bookBusy}
+        >
+          {bookBusy ? 'Booking…' : selectedListing?.inStock === false ? 'Out of Stock' : 'Book Now'}
+        </button>
+        <button
+          type="button"
           className={styles.mobileActionBarCart}
           onClick={handleAddToCart}
-          disabled={
-            !selectedListing ||
-            authLoading ||
-            addBusy ||
-            selectedListing.inStock === false ||
-            (buyerPackageOptions.length > 0 && !String(buyerPackage || '').trim())
-          }
+          disabled={cartActionsDisabled}
         >
           {addBusy ? 'Adding…' : selectedListing?.inStock === false ? 'Out of Stock' : 'Add to Cart'}
-        </button>
-        <button className={styles.mobileActionBarBook}>
-          Book Now
         </button>
       </div>
     </section>
@@ -1305,7 +1352,14 @@ function ProviderCard({ provider, styles, allListings = [] }) {
             )}
           </div>
           {/* Visit Shop */}
-          <Link href={`/providers/${provider.id}`} className={styles.btnVisitShop}>
+          <Link
+            href={
+              isUuidLike(String(provider.id))
+                ? `/seller-profile?seller=${encodeURIComponent(String(provider.id))}`
+                : `/providers/${String(provider.id)}`
+            }
+            className={styles.btnVisitShop}
+          >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
               <polyline points="9 22 9 12 15 12 15 22"/>

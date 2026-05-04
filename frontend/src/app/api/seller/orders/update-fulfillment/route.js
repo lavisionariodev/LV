@@ -28,7 +28,7 @@ export async function POST(request) {
 
   const { data: order, error: orderErr } = await supabaseAdmin
     .from('orders')
-    .select('id,seller_user_id,fulfillment_status')
+    .select('id,seller_user_id,fulfillment_status,payment_status,status')
     .eq('id', orderId)
     .maybeSingle()
 
@@ -38,6 +38,22 @@ export async function POST(request) {
 
   if (order.seller_user_id !== user.id) {
     return NextResponse.json({ error: 'Not allowed.' }, { status: 403 })
+  }
+
+  const paid = order.payment_status === 'paid' || order.status === 'paid'
+
+  if (fulfillmentStatus === 'confirmed' && !paid) {
+    return NextResponse.json(
+      { error: 'Order must be paid before it can be confirmed.' },
+      { status: 400 },
+    )
+  }
+
+  if (fulfillmentStatus === 'cancelled' && paid) {
+    return NextResponse.json(
+      { error: 'Paid orders cannot be cancelled here. Handle refunds separately.' },
+      { status: 400 },
+    )
   }
 
   const { error: updErr } = await supabaseAdmin

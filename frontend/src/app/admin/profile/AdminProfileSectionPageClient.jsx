@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useMediaQuery } from '@/hooks'
 import styles from '../settings/settings.module.css'
 import profileStyles from './profile.module.css'
-import AdminLoadingState from '@/components/ui/Load/AdminLoadingState'
+import loadingStyles from '../admin-loading.module.css'
 import {
   AdminNotificationPreferencesPanel,
   AdminBillingSettingsPanel,
@@ -32,7 +32,15 @@ export default function AdminProfileSectionPageClient({ section }) {
       <div className={styles.page}>
         <div className={`${styles.contentArea} ${styles.grid}`}>
           <section className={`${styles.card} ${styles.full}`}>
-            <AdminLoadingState variant="card" label="Opening settings" />
+            <div
+              className={`${loadingStyles.root} ${loadingStyles.variantCard}`}
+              role="status"
+              aria-live="polite"
+              aria-busy="true"
+            >
+              <span className={loadingStyles.spinner} aria-hidden />
+              <span className={loadingStyles.label}>Opening settings</span>
+            </div>
           </section>
         </div>
       </div>

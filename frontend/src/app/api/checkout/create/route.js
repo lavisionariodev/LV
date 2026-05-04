@@ -84,9 +84,7 @@ export async function POST(request) {
 
   const origin = new URL(request.url).origin
   const secretKey = process.env.PAYMONGO_SECRET_KEY
-  // NOTE: Payment is no longer created during checkout creation.
-  // New flow: buyer submits booking request -> seller confirms -> buyer pays.
-  // PAYMONGO_SECRET_KEY is used later in /api/checkout/pay.
+  // Orders are created here; the client calls /api/checkout/pay next for immediate PayMongo checkout.
   if (!secretKey) {
     // Keep this as a soft failure only if buyer attempts to pay; for now, checkout creation can proceed.
   }
@@ -98,7 +96,7 @@ export async function POST(request) {
       amount: amountPhp,
       currency,
       line_items: lineItems,
-      next_step: 'await_seller_confirmation',
+      next_step: 'pay',
     },
     { status: 200 },
   )

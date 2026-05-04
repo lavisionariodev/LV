@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { computeCommissionSnapshot } from '@/utils/commissionSnapshot'
+import { apiLog } from '@/lib/observability/apiLog'
 
 function parseSignatureHeader(headerValue) {
   // Example: t=1496734173,te=...,li=...
@@ -75,6 +77,63 @@ function extractReferenceNumber(payload) {
   return resource?.attributes?.reference_number ?? null
 }
 
+/**
+ * Create order_escrows for paid orders tied to this payment (idempotent; skips existing rows).
+ */
+async function ensureOrderEscrowsForPayment({ supabaseAdmin, paymentId, orderIds }) {
+  if (!orderIds?.length) return
+
+  const { data: ordersRows, error: ordersErr } = await supabaseAdmin
+    .from('orders')
+    .select('id,seller_user_id,subtotal,currency,payment_status')
+    .in('id', orderIds)
+
+  if (ordersErr || !ordersRows?.length) return
+
+  const paidOrders = ordersRows.filter((o) => o.payment_status === 'paid')
+  if (!paidOrders.length) return
+
+  const { data: billing } = await supabaseAdmin
+    .from('platform_billing')
+    .select('default_commission_percent')
+    .eq('id', 1)
+    .maybeSingle()
+
+  const ratePercent =
+    billing?.default_commission_percent != null ? Number(billing.default_commission_percent) : 10
+
+  const { data: existingRows } = await supabaseAdmin
+    .from('order_escrows')
+    .select('order_id')
+    .in(
+      'order_id',
+      paidOrders.map((o) => o.id),
+    )
+
+  const existingIds = new Set((existingRows ?? []).map((r) => r.order_id))
+
+  const inserts = []
+  for (const o of paidOrders) {
+    if (existingIds.has(o.id)) continue
+    const snap = computeCommissionSnapshot(Number(o.subtotal), ratePercent)
+    inserts.push({
+      order_id: o.id,
+      seller_user_id: o.seller_user_id,
+      payment_id: paymentId,
+      gross_amount: snap.grossAmountPhp,
+      commission_rate_percent: snap.commissionRatePercent,
+      commission_amount: snap.commissionAmountPhp,
+      net_amount: snap.netAmountPhp,
+      currency: o.currency?.trim?.() ? o.currency.trim() : 'PHP',
+      status: 'escrowed',
+    })
+  }
+
+  if (inserts.length > 0) {
+    await supabaseAdmin.from('order_escrows').insert(inserts)
+  }
+}
+
 export async function POST(request) {
   const supabaseAdmin = getSupabaseAdmin()
   const rawBody = await request.text()
@@ -83,11 +142,13 @@ export async function POST(request) {
 
   const verified = verifyPaymongoSignature({ rawBody, signatureHeader, webhookSecret })
   if (!verified.ok) {
+    apiLog('paymongo.webhook.signature_failed', {})
     return NextResponse.json({ error: verified.error }, { status: 400 })
   }
 
   const payload = JSON.parse(rawBody || '{}')
   const eventType = getEventType(payload)
+  apiLog('paymongo.webhook.received', { eventKind: typeof eventType === 'string' ? eventType : 'unknown' })
 
   const checkoutSessionId = extractCheckoutSessionId(payload)
   const referenceNumber = extractReferenceNumber(payload)
@@ -143,6 +204,19 @@ export async function POST(request) {
           .in('id', orderIds)
       }
     }
+
+    const { data: joinRowsPaid } = await supabaseAdmin
+      .from('payment_orders')
+      .select('order_id')
+      .eq('payment_id', paymentRow.id)
+
+    const orderIdsPaid = (joinRowsPaid ?? []).map((r) => r.order_id)
+    await ensureOrderEscrowsForPayment({
+      supabaseAdmin,
+      paymentId: paymentRow.id,
+      orderIds: orderIdsPaid,
+    })
+    apiLog('paymongo.webhook.mark_paid', {})
   } else if (markFailed) {
     if (paymentRow.status === 'pending') {
       await supabaseAdmin
@@ -162,6 +236,7 @@ export async function POST(request) {
           .update({ payment_status: 'failed', status: 'failed' })
           .in('id', orderIds)
       }
+      apiLog('paymongo.webhook.mark_failed_applied', {})
     }
   }
 

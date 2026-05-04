@@ -3,23 +3,78 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useMemo, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { SERVICES, CATEGORIES, PROVIDERS } from './data'
-import { fetchActiveShopListings, mergeShopListings } from '@/lib/shop-listings/client'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { SERVICES, CATEGORIES, PROVIDERS, getServiceById } from './data'
+import { useDebouncedEffect } from '@/hooks'
+import { readString, replaceUrlQuery } from '@/lib/url/queryParams'
+import {
+  fetchActiveShopListings,
+  getListingProviderLogoUrl,
+  mergeShopListings,
+} from '@/lib/shop-listings/client'
 import { buildCartPayloadFromListing } from '@/lib/cart/fromListing'
+import { assertListingReadyForCart } from '@/lib/cart/bookNow'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/contexts/ToastContext'
 import { formatPhpAmount } from '@/lib/cart/formatPhp'
 import styles from './shop.module.css'
 
+function listingMatchesSearch(listing, needle) {
+  if (!needle) return true
+  const n = needle.toLowerCase()
+  const service = getServiceById(listing.serviceId)
+  const chunks = [
+    listing.name,
+    listing.description,
+    listing.whoThisIsFor,
+    listing.importantNotes,
+    listing.categoryLabel,
+    listing.listingKindLabel,
+    listing.coverage,
+    listing.duration,
+    listing.provider?.name,
+    listing.provider?.location,
+    service?.name,
+    service?.description,
+    ...(Array.isArray(listing.inclusions) ? listing.inclusions : []),
+    ...(Array.isArray(listing.sellerPackageOptions) ? listing.sellerPackageOptions : []),
+  ]
+  return chunks.some((s) => typeof s === 'string' && s.toLowerCase().includes(n))
+}
+
+function listingMatchesLocation(listing, needle) {
+  if (!needle) return true
+  const n = needle.toLowerCase()
+  const provider =
+    listing.provider ?? PROVIDERS.find((p) => String(p.id) === String(listing.providerId))
+  return typeof provider?.location === 'string' && provider.location.toLowerCase().includes(n)
+}
+
+function ShopProviderCircleThumb({ provider, wrapClassName, imgClassName }) {
+  const url = getListingProviderLogoUrl(provider)
+  return (
+    <div className={wrapClassName}>
+      {url ? (
+        // eslint-disable-next-line @next/next/no-img-element -- Supabase/storage URL from RPC
+        <img src={url} alt="" className={imgClassName} />
+      ) : (
+        (provider?.name || '?').charAt(0)
+      )}
+    </div>
+  )
+}
+
 export default function ShopPage() {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [listings, setListings] = useState(() => mergeShopListings([]))
   const [activeCategory, setActiveCategory] = useState('all')
   const [sortBy, setSortBy] = useState('newest')
   const [compareIds, setCompareIds] = useState([])
-  const [locationQuery, setLocationQuery] = useState('')
+  /** City/area filter — separate from navbar keyword search (`q`). */
+  const [locationQuery, setLocationQuery] = useState(() => readString(searchParams, 'loc', ''))
   const [locationFocused, setLocationFocused] = useState(false)
   const [selectedProvider, setSelectedProvider] = useState(null)
   const [showFiltersModal, setShowFiltersModal] = useState(false)
@@ -63,6 +118,18 @@ export default function ShopPage() {
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [])
 
+  // Sync state ← URL (back/forward, shared links)
+  useEffect(() => {
+    const nextLoc = readString(searchParams, 'loc', '')
+    if (nextLoc !== locationQuery) setLocationQuery(nextLoc)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
+  // Sync URL ← state (debounced typing in location fields — preserves `q` from navbar search)
+  useDebouncedEffect(() => {
+    replaceUrlQuery(router, pathname, searchParams, { loc: locationQuery })
+  }, [locationQuery, router, pathname, searchParams], 300)
+
   const allProviders = useMemo(() => {
     const byId = new Map()
     listings.forEach((l) => {
@@ -80,6 +147,16 @@ export default function ShopPage() {
 
     if (selectedProvider) {
       list = list.filter((l) => l.providerId === selectedProvider)
+    }
+
+    const keywordNeedle = readString(searchParams, 'q', '').trim().toLowerCase()
+    if (keywordNeedle) {
+      list = list.filter((l) => listingMatchesSearch(l, keywordNeedle))
+    }
+
+    const locationNeedle = locationQuery.trim().toLowerCase()
+    if (locationNeedle) {
+      list = list.filter((l) => listingMatchesLocation(l, locationNeedle))
     }
 
     if (sortBy === 'price-asc') list.sort((a, b) => a.price - b.price)
@@ -107,7 +184,7 @@ export default function ShopPage() {
     }
 
     return list
-  }, [listings, activeCategory, sortBy, selectedProvider])
+  }, [listings, activeCategory, sortBy, selectedProvider, locationQuery, searchParams])
 
   const totalPages = Math.ceil(filteredListings.length / ITEMS_PER_PAGE)
   const paginatedListings = useMemo(() => {
@@ -334,7 +411,11 @@ export default function ShopPage() {
                           className={`${styles.providerItem}${selectedProvider === provider.id ? ` ${styles.providerItemActive}` : ''}`}
                           onClick={() => setSelectedProvider(selectedProvider === provider.id ? null : provider.id)}
                         >
-                          <div className={styles.providerItemAvatar}>{(provider.name || '?').charAt(0)}</div>
+                          <ShopProviderCircleThumb
+                            provider={provider}
+                            wrapClassName={styles.providerItemAvatar}
+                            imgClassName={styles.providerItemAvatarImg}
+                          />
                           <div className={styles.providerItemInfo}>
                             <span className={styles.providerItemName}>{provider.name}</span>
                             <span className={styles.providerItemLocation}>
@@ -460,9 +541,11 @@ export default function ShopPage() {
                       className={`${styles.providerItem}${selectedProvider === provider.id ? ` ${styles.providerItemActive}` : ''}`}
                       onClick={() => setSelectedProvider(selectedProvider === provider.id ? null : provider.id)}
                     >
-                      <div className={styles.providerItemAvatar}>
-                        {(provider.name || '?').charAt(0)}
-                      </div>
+                      <ShopProviderCircleThumb
+                        provider={provider}
+                        wrapClassName={styles.providerItemAvatar}
+                        imgClassName={styles.providerItemAvatarImg}
+                      />
                       <div className={styles.providerItemInfo}>
                         <span className={styles.providerItemName}>{provider.name}</span>
                         <span className={styles.providerItemLocation}>
@@ -765,15 +848,25 @@ function ListingCard({ listing, styles, inCompare, onToggleCompare, compareDisab
   const toast = useToast()
   const [adding, setAdding] = useState(false)
 
+  const redirectLoginPath = `/shop/${listing.serviceId}?listing=${encodeURIComponent(listing.id)}`
+  const pkgOpts = listing.sellerPackageOptions ?? []
+  const defaultPkg = pkgOpts.length > 0 ? pkgOpts[0] : ''
+
   const handleAddToCart = async (e) => {
     e.preventDefault()
     e.stopPropagation()
-    if (listing.inStock === false) {
-      toast.error('This listing is out of stock')
+    if (adding) return
+
+    const gate = assertListingReadyForCart(listing, defaultPkg, { user, isBuyer })
+    if (!gate.ok) {
+      if (gate.needLogin) {
+        router.push(`/buyer/login?redirect=${encodeURIComponent(redirectLoginPath)}`)
+        return
+      }
+      toast.error(gate.message)
       return
     }
-    const pkgOpts = listing.sellerPackageOptions ?? []
-    const defaultPkg = pkgOpts.length > 0 ? pkgOpts[0] : ''
+
     const { error: buildErr, payload } = buildCartPayloadFromListing(listing, {
       quantity: 1,
       buyerPackage: defaultPkg,
@@ -782,15 +875,7 @@ function ListingCard({ listing, styles, inCompare, onToggleCompare, compareDisab
       toast.error(buildErr || 'Could not add to cart')
       return
     }
-    const redirectPath = `/shop/${listing.serviceId}?listing=${encodeURIComponent(listing.id)}`
-    if (!user) {
-      router.push(`/buyer/login?redirect=${encodeURIComponent(redirectPath)}`)
-      return
-    }
-    if (!isBuyer) {
-      router.push(`/buyer/login?redirect=${encodeURIComponent(redirectPath)}`)
-      return
-    }
+
     setAdding(true)
     try {
       const { error } = await addItem(payload)
@@ -836,15 +921,21 @@ function ListingCard({ listing, styles, inCompare, onToggleCompare, compareDisab
 
         <div className={`${styles.cardBody} ${styles.listingBody}`}>
           <div className={styles.providerRow}>
-            <div className={styles.providerAvatar}>{(provider?.name || '?').charAt(0)}</div>
+            <ShopProviderCircleThumb
+              provider={provider}
+              wrapClassName={styles.providerAvatar}
+              imgClassName={styles.providerAvatarImg}
+            />
             <div className={styles.providerInfo}>
               <p className={styles.providerName}>{provider?.name}</p>
               <p className={styles.providerLocation}>
-                <svg viewBox="0 0 12 14" width="9" height="9" fill="var(--color-gold-base, #B8962E)" style={{ marginRight: 3, flexShrink: 0, display: 'inline-block', verticalAlign: 'middle' }}>
+                <svg viewBox="0 0 12 14" width="9" height="9" fill="var(--color-gold-base, #B8962E)" style={{ marginRight: 3, flexShrink: 0, display: 'inline-block', verticalAlign: 'middle' }} aria-hidden>
                   <path d="M6 0a5 5 0 0 1 5 5c0 4.5-5 9-5 9S1 9.5 1 5a5 5 0 0 1 5-5z" />
                   <circle cx="6" cy="5" r="1.8" fill="white" />
                 </svg>
-                {provider?.location}
+                <span className={styles.providerLocationText} title={provider?.location || undefined}>
+                  {provider?.location}
+                </span>
             </p>
           </div>
           <div className={styles.ratingGroup}>
@@ -878,29 +969,30 @@ function ListingCard({ listing, styles, inCompare, onToggleCompare, compareDisab
           disabled={authLoading || adding || listing.inStock === false}
           aria-busy={adding}
         >
-            <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, flexShrink: 0 }}>
-              <path d="M1 1h2l1.5 7.5h8l1.5-5H4.5" />
-              <circle cx="7" cy="13.5" r="1" fill="currentColor" stroke="none" />
-              <circle cx="12" cy="13.5" r="1" fill="currentColor" stroke="none" />
-            </svg>
-            {listing.inStock === false ? 'Out of Stock' : adding ? 'Adding…' : 'Add to Cart'}
-          </button>
-          <button
-            className={`${styles.compareBtn}${inCompare ? ` ${styles.compareBtnActive}` : ''}${compareDisabled ? ` ${styles.compareBtnDisabled}` : ''}`}
-            onClick={() => onToggleCompare(listing.id)}
-            disabled={compareDisabled}
-            title={compareDisabled ? 'Maximum 3 services can be compared at once' : inCompare ? 'Remove from comparison' : 'Add to comparison'}
-          >
-            {inCompare ? (
-              <>
-                <svg viewBox="0 0 10 10" width="9" height="9" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ marginRight: 4 }}>
-                  <path d="M2 5l2 2 4-4" />
-                </svg>
-                Added
-              </>
-            ) : '+ Compare'}
-          </button>
-        </div>
+          <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 6, flexShrink: 0 }}>
+            <path d="M1 1h2l1.5 7.5h8l1.5-5H4.5" />
+            <circle cx="7" cy="13.5" r="1" fill="currentColor" stroke="none" />
+            <circle cx="12" cy="13.5" r="1" fill="currentColor" stroke="none" />
+          </svg>
+          {listing.inStock === false ? 'Out of Stock' : adding ? 'Adding…' : 'Add to Cart'}
+        </button>
+        <button
+          type="button"
+          className={`${styles.compareBtn}${inCompare ? ` ${styles.compareBtnActive}` : ''}${compareDisabled ? ` ${styles.compareBtnDisabled}` : ''}`}
+          onClick={() => onToggleCompare(listing.id)}
+          disabled={compareDisabled}
+          title={compareDisabled ? 'Maximum 3 services can be compared at once' : inCompare ? 'Remove from comparison' : 'Add to comparison'}
+        >
+          {inCompare ? (
+            <>
+              <svg viewBox="0 0 10 10" width="9" height="9" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ marginRight: 4 }}>
+                <path d="M2 5l2 2 4-4" />
+              </svg>
+              Added
+            </>
+          ) : '+ Compare'}
+        </button>
+      </div>
       </div>
   )
 }

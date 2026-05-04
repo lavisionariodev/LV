@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/client'
 import { roundPhpAmount } from '@/lib/cart/formatPhp'
+import { normalizeSellerSpecialties } from '@/lib/sellers/client'
 
 const ALLOWED_SERVICE_IDS = new Set(['cremation', 'traditional-burial', 'memorial-planning'])
 
@@ -25,6 +26,13 @@ export function getShopHrefForSellerListingRow(row) {
   const raw = row.funeral_category ?? row.category ?? ''
   const serviceId = normalizeServiceId(raw)
   return `/shop/${serviceId}?listing=${encodeURIComponent(String(row.id))}`
+}
+
+/** Business logo URL from merged listing (`profiles.avatar_url` via RPC → `provider.image`). */
+export function getListingProviderLogoUrl(provider) {
+  if (!provider || typeof provider !== 'object') return ''
+  const raw = provider.image ?? provider.avatarUrl
+  return typeof raw === 'string' && raw.trim() ? raw.trim() : ''
 }
 
 function parseInclusions(description, inclusionsText) {
@@ -147,6 +155,30 @@ function mapRpcRowToListing(row) {
   const coverage =
     (typeof row.listing_location === 'string' && row.listing_location.trim()) || ''
 
+  const shopHandleRaw = row.seller_username ?? row.sellerUsername
+  const shopHandle =
+    typeof shopHandleRaw === 'string' && shopHandleRaw.trim()
+      ? shopHandleRaw.trim().toLowerCase()
+      : null
+
+  const bizInfoRaw = row.seller_business_info ?? row.sellerBusinessInfo
+  const businessInfo =
+    typeof bizInfoRaw === 'string' && bizInfoRaw.trim() ? bizInfoRaw.trim() : null
+
+  const taglineRaw = row.seller_tagline ?? row.sellerTagline
+  const tagline =
+    typeof taglineRaw === 'string' && taglineRaw.trim() ? taglineRaw.trim() : null
+
+  const specialtiesRaw = row.seller_specialties ?? row.sellerSpecialties
+  const specialties =
+    Array.isArray(specialtiesRaw) && specialtiesRaw.length > 0
+      ? normalizeSellerSpecialties(specialtiesRaw)
+      : []
+
+  const avatarRaw = row.seller_avatar_url ?? row.sellerAvatarUrl
+  const sellerAvatarUrl =
+    typeof avatarRaw === 'string' && avatarRaw.trim() ? avatarRaw.trim() : null
+
   return {
     id: String(row.listing_id),
     serviceId,
@@ -169,11 +201,18 @@ function mapRpcRowToListing(row) {
       id: String(sellerId),
       name: row.business_name || 'Verified seller',
       location: loc,
+      handle: shopHandle,
+      /** Business logo: `profiles.avatar_url` via shop RPC (`seller_avatar_url`). */
+      image: sellerAvatarUrl,
+      avatarUrl: sellerAvatarUrl,
       rating: PLACEHOLDER_PROVIDER_RATING,
       reviews: PLACEHOLDER_REVIEW_COUNT,
       badge: null,
       joinedDate: sellerRegisteredAt ?? null,
       businessStartedAt: businessStartedAt ?? null,
+      businessInfo,
+      tagline,
+      specialties,
     },
     createdAt: row.created_at || new Date().toISOString(),
     source: 'database',

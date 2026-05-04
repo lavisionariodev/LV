@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import AdminProfileSectionPageClient from '../AdminProfileSectionPageClient'
-import AdminLoadingState from '@/components/ui/Load/AdminLoadingState'
+import loadingStyles from '../../admin-loading.module.css'
 
 const VALID_SECTIONS = new Set(['notifications', 'billing', 'content'])
 
@@ -29,7 +29,19 @@ export default async function AdminProfileSectionPage({ params }) {
   }
 
   return (
-    <Suspense fallback={<AdminLoadingState variant="page" label="Loading settings" />}>
+    <Suspense
+      fallback={
+        <div
+          className={`${loadingStyles.root} ${loadingStyles.variantPage}`}
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <span className={loadingStyles.spinner} aria-hidden />
+          <span className={loadingStyles.label}>Loading settings</span>
+        </div>
+      }
+    >
       <AdminProfileSectionPageClient section={section} />
     </Suspense>
   )

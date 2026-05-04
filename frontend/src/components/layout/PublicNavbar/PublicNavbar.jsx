@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useCart } from '@/contexts/CartContext'
 import { useFavorites } from '@/contexts/FavoritesContext'
@@ -10,6 +10,7 @@ import LogoutModal from '@/components/ui/Modal/Logout'
 import styles from './PublicNavbar.module.css'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSiteContent } from '@/lib/siteContent/client'
+import { readString, replaceUrlQuery } from '@/lib/url/queryParams'
 
 export default function PublicNavbar() {
   const { cartCount } = useCart()
@@ -30,12 +31,24 @@ export default function PublicNavbar() {
   ])
   const router = useRouter()
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const profileRef = useRef(null)
   const notificationsRef = useRef(null)
   const mobileSearchInputRef = useRef(null)
   const desktopSearchRef = useRef(null)
   const desktopSearchInputRef = useRef(null)
   const { data: siteContent } = useSiteContent()
+
+  const qFromShopUrl = readString(searchParams, 'q', '')
+  /** While `/shop` has a `q` query param, keep the desktop search UI expanded (ignore outside click). */
+  const shopUrlHasQParam = pathname?.startsWith('/shop') && searchParams.has('q')
+  const desktopSearchExpanded = desktopSearchOpen || shopUrlHasQParam
+
+  useEffect(() => {
+    if (pathname?.startsWith('/shop')) {
+      setSearchQuery(qFromShopUrl)
+    }
+  }, [pathname, qFromShopUrl])
 
   const howItWorksItems = [
     { label: 'Step-by-Step Process', sectionId: 'step-by-step-process' },
@@ -57,7 +70,9 @@ export default function PublicNavbar() {
         setProfileMenuOpen(false)
       }
       if (desktopSearchRef.current && !desktopSearchRef.current.contains(event.target)) {
-        setDesktopSearchOpen(false)
+        if (!shopUrlHasQParam) {
+          setDesktopSearchOpen(false)
+        }
       }
       if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
         setNotificationsOpen(false)
@@ -139,7 +154,8 @@ export default function PublicNavbar() {
     } else {
       router.push('/shop')
     }
-    setDesktopSearchOpen(false)
+    // Keep desktop search expanded after submit (underline + input stay visible).
+    requestAnimationFrame(() => desktopSearchInputRef.current?.focus())
   }
 
   const openDesktopSearch = () => {
@@ -443,8 +459,8 @@ export default function PublicNavbar() {
                   className={styles.desktopSearchIconBtn}
                   onClick={openDesktopSearch}
                   aria-label="Open search"
-                  aria-expanded={desktopSearchOpen}
-                  style={{ display: desktopSearchOpen ? 'none' : 'flex' }}
+                  aria-expanded={desktopSearchExpanded}
+                  style={{ display: desktopSearchExpanded ? 'none' : 'flex' }}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="11" cy="11" r="8"></circle>
@@ -452,7 +468,7 @@ export default function PublicNavbar() {
                   </svg>
                 </button>
                 <form
-                  className={`${styles.desktopSearchForm} ${desktopSearchOpen ? styles.desktopSearchFormOpen : ''}`}
+                  className={`${styles.desktopSearchForm} ${desktopSearchExpanded ? styles.desktopSearchFormOpen : ''}`}
                   onSubmit={handleSearchSubmit}
                   role="search"
                 >
@@ -468,7 +484,13 @@ export default function PublicNavbar() {
                   <button
                     type="button"
                     className={styles.desktopSearchCloseBtn}
-                    onClick={() => { setSearchQuery(''); setDesktopSearchOpen(false) }}
+                    onClick={() => {
+                      setSearchQuery('')
+                      setDesktopSearchOpen(false)
+                      if (pathname?.startsWith('/shop')) {
+                        replaceUrlQuery(router, pathname, searchParams, { q: '' })
+                      }
+                    }}
                     aria-label="Close search"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

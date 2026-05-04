@@ -14,7 +14,6 @@ import {
 import { getSellerByUserId } from '@/lib/sellers/client'
 import { supabase } from '@/lib/supabase/client'
 import styles from './products.module.css'
-import NewListingLoadingState from '@/components/ui/Load/NewListingLoadingState'
 import { useMediaQuery } from '@/hooks'
 import { normalizeStockStatusValue } from '@/lib/shop-listings/client'
 import { formatPhpInputString, parsePhpAmountInputString } from '@/lib/cart/formatPhp'
@@ -24,6 +23,51 @@ export const MAX_LISTING_IMAGES = 10
 
 export const FALLBACK_IMAGE =
   'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 640 420%22%3E%3Crect width=%22640%22 height=%22420%22 fill=%22%23d1d5db%22/%3E%3Cpath d=%22M230 160h180a22 22 0 0 1 22 22v56a22 22 0 0 1-22 22H230a22 22 0 0 1-22-22v-56a22 22 0 0 1 22-22Zm18 28a16 16 0 1 0 0.1 0Zm-8 56 38-34 35 30 44-40 55 44H240Z%22 fill=%22%239ca3af%22/%3E%3C/svg%3E'
+
+function NewListingLoadingState() {
+  return (
+    <div
+      className={styles.loadingRoot}
+      role="status"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <p className={styles.srOnly}>Preparing the listing form</p>
+      <div className={styles.loadingStack} aria-hidden="true">
+        <aside className={styles.loadingAside}>
+          <div className={`${styles.skeletonCard} ${styles.skeletonCardStepper}`}>
+            <div className={styles.skeletonStepperTrack}>
+              <span className={styles.skeletonStepDot} />
+              <span className={styles.skeletonStepLine} />
+              <span className={styles.skeletonStepDot} />
+              <span className={styles.skeletonStepLine} />
+              <span className={styles.skeletonStepDot} />
+            </div>
+          </div>
+          <div className={styles.skeletonCard}>
+            <div className={`${styles.skeletonLine} ${styles.skeletonShort}`} />
+            <div className={`${styles.skeletonLine} ${styles.skeletonNarrow}`} />
+            <div className={`${styles.skeletonLine} ${styles.skeletonNarrow}`} />
+          </div>
+        </aside>
+        <div className={styles.loadingMain}>
+          <div className={`${styles.skeletonCard} ${styles.skeletonCardSection}`}>
+            <div className={`${styles.skeletonLine} ${styles.skeletonTitle}`} />
+            <div className={`${styles.skeletonLine} ${styles.skeletonMedium}`} />
+            <div className={styles.skeletonBlock} />
+            <div className={styles.skeletonBlock} />
+            <div className={`${styles.skeletonLine} ${styles.skeletonShort}`} />
+            <div className={styles.skeletonFooter}>
+              <div className={styles.skeletonBtnGhost} />
+              <div className={styles.skeletonBtnGhostWide} />
+              <div className={styles.skeletonBtnPrimary} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 const LISTING_KIND_OPTIONS = [
   { value: 'service', label: 'Service' },
@@ -53,6 +97,27 @@ export function normalizeStringListValue(raw) {
   if (Array.isArray(raw)) return raw.map((x) => String(x ?? ''))
   if (typeof raw === 'string') {
     return raw.split(/\n/).map((s) => s)
+  }
+  return []
+}
+
+export function normalizePackageOptionsFromDb(raw) {
+  if (raw == null) return []
+  if (Array.isArray(raw)) {
+    return raw.map((x) => String(x ?? '').trim()).filter(Boolean)
+  }
+  if (typeof raw === 'string') {
+    const t = raw.trim()
+    if (!t) return []
+    try {
+      const parsed = JSON.parse(t)
+      if (Array.isArray(parsed)) {
+        return parsed.map((x) => String(x ?? '').trim()).filter(Boolean)
+      }
+    } catch {
+      return []
+    }
+    return []
   }
   return []
 }
@@ -131,13 +196,9 @@ export function listingRowToFormValues(source) {
   const empty = getEmptyListingFormValues()
   if (!source) return empty
 
-  const pkgRaw = source.package_options ?? source.packageOptions
-  let package_options = []
-  if (Array.isArray(pkgRaw)) {
-    package_options = pkgRaw.map((x) => String(x ?? ''))
-  } else if (pkgRaw && typeof pkgRaw === 'object') {
-    package_options = []
-  }
+  const package_options = normalizePackageOptionsFromDb(source.package_options ?? source.packageOptions).map((x) =>
+    String(x ?? ''),
+  )
 
   const inc = source.inclusions
   let inclusionsText = ''
@@ -1212,7 +1273,7 @@ export default function NewListingClient() {
       intent === 'submit' ? 'Listing submitted for review.' : 'Draft saved successfully.',
     )
     await new Promise((resolve) => window.setTimeout(resolve, 950))
-    router.push('/seller/products')
+    router.push('/seller/products/catalog')
   }
 
   const handleSubmit = async (e) => {
@@ -1288,7 +1349,7 @@ export default function NewListingClient() {
 
               <div className={styles.newListingFooter}>
                 <Link
-                  href="/seller/products"
+                  href="/seller/products/catalog"
                   className={`${styles.productModalSecondary} ${styles.newListingFooterLink} ${styles.newListingFooterCancel}`}
                 >
                   Cancel
