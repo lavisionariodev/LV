@@ -9,6 +9,11 @@ export const metadata = {
     template: '%s | Lavisionario',
   },
   description: 'No description yet',
+  manifest: '/manifest.webmanifest',
+}
+
+export const viewport = {
+  themeColor: '#102820',
 }
 
 export default function RootLayout({ children }) {

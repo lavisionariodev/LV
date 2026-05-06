@@ -11,6 +11,7 @@ import styles from './PublicNavbar.module.css'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSiteContent } from '@/lib/siteContent/client'
 import { readString, replaceUrlQuery } from '@/lib/url/queryParams'
+import InstallAppControl from '@/components/pwa/InstallAppControl'
 
 export default function PublicNavbar() {
   const { cartCount } = useCart()
@@ -215,6 +216,7 @@ export default function PublicNavbar() {
           </div>
 
           <div className={styles.topRight}>
+            <InstallAppControl />
             {!isAuthenticated ? (
               <div className={styles.authLinks}>
                 <button
@@ -641,6 +643,7 @@ export default function PublicNavbar() {
                 </form>
               </div>
               <div className={styles.navActionsMobileButtons}>
+                <InstallAppControl variant="light" />
                 {isAuthenticated && (
                   <span className={styles.cartBtnWrap}>
                     <button
