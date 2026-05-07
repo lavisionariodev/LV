@@ -80,6 +80,7 @@
 .topRight {
   display: flex;
   align-items: center;
+  gap: 10px;
 }
 
 .authLinks {
@@ -914,6 +915,29 @@ a.userLink {
     align-items: center;
     justify-content: flex-end;
     gap: 4px;
+  }
+
+  .installAppFloatMobile {
+    display: inline-flex;
+    position: fixed;
+    right: 16px;
+    bottom: calc(62px + 14px + env(safe-area-inset-bottom, 0px));
+    z-index: 110;
+  }
+
+  .installAppFloatMobile button {
+    background: #204F38;
+    border-color: transparent;
+    color: #fff;
+  }
+
+  .installAppFloatMobile button:hover {
+    background: #1c4b33;
+    border-color: transparent;
+  }
+
+  .installAppFloatMobile .btnText {
+    display: inline !important;
   }
 
   .navbarSearchWrap {
