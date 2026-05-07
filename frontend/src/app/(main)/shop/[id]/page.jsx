@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { use, useState, useEffect, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getServiceById, PROVIDERS, REVIEWS, getReviewsByServiceId, CATEGORIES } from '@/data/shopSampleData'
+import ContactSellerModal from '@/components/ui/Modal/ContactSellerModal'
 import { getRecommendedSimilarServices, getDynamicServicesFromListings } from '@/lib/shop/similarServices'
 import { fetchActiveShopListings, mergeShopListings, stockAvailabilityLabel } from '@/lib/shop-listings/client'
 import { buildCartPayloadFromListing } from '@/lib/cart/fromListing'
@@ -62,6 +63,19 @@ export default function ServiceDetailPage({ params }) {
   const [saveBusy, setSaveBusy] = useState(false)
   const [saveError, setSaveError] = useState(null)
   const [chatOpen, setChatOpen] = useState(false)
+  const [isMobileView, setIsMobileView] = useState(false)
+
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 860px)')
+    const update = () => setIsMobileView(mql.matches)
+    update()
+    if (typeof mql.addEventListener === 'function') {
+      mql.addEventListener('change', update)
+      return () => mql.removeEventListener('change', update)
+    }
+    mql.addListener(update)
+    return () => mql.removeListener(update)
+  }, [])
 
   useEffect(() => {
     const ids = new Set(listingsForService.map((l) => String(l.id)))
@@ -617,6 +631,13 @@ export default function ServiceDetailPage({ params }) {
           {addBusy ? 'Adding…' : selectedListing?.inStock === false ? 'Out of Stock' : 'Add to Cart'}
         </button>
       </div>
+      <ContactSellerModal
+        open={Boolean(chatOpen && isMobileView && provider)}
+        onClose={() => setChatOpen(false)}
+        sellerName={provider?.name ?? ''}
+        sellerAvatarUrl={provider?.image ?? ''}
+        socialLinks={provider?.socialLinks ?? {}}
+      />
     </section>
   )
 }

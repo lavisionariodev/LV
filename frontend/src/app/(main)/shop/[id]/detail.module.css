@@ -936,6 +936,11 @@
     display: none;
   }
 
+  /* Hide the provider chat button on mobile, since mobile uses the bottom chat action bar */
+  .chatWrap {
+    display: none;
+  }
+
   .featureGrid {
     grid-template-columns: 1fr;
   }
