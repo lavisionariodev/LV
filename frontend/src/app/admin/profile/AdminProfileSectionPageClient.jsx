@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useMediaQuery } from '@/hooks'
+import { useMediaQuery } from '@/shared/hooks'
 import styles from '../settings/settings.module.css'
 import profileStyles from './profile.module.css'
 import loadingStyles from '../admin-loading.module.css'

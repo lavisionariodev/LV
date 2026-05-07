@@ -18,14 +18,17 @@ import {
   businessTypeLabelToFormState,
   getSellerByUserId,
   upsertSellerForUser,
+  // social links live under sellers.social_links; normalized in lib/sellers/socialLinks
   validateSellerBusinessTypeForm,
   validateSellerShopUsername,
   validateSellerSpecialtiesInput,
   validateSellerTagline,
 } from '@/lib/sellers/client'
+import { normalizeSellerSocialLinks, validateSellerSocialLinks } from '@/lib/sellers/socialLinks'
 
 function mapSellerToShopForm(sellerRow, profile, sessionEmail) {
   const bizType = businessTypeLabelToFormState(sellerRow?.business_type_label)
+  const socials = normalizeSellerSocialLinks(sellerRow?.social_links ?? {})
   return {
     businessName: sellerRow?.business_name ?? '',
     shopUsername: sellerRow?.username ?? '',
@@ -43,6 +46,16 @@ function mapSellerToShopForm(sellerRow, profile, sessionEmail) {
     businessStartedAt: sellerRow?.business_started_at
       ? String(sellerRow.business_started_at).slice(0, 10)
       : '',
+    socialPhoneEnabled: Boolean(socials.phone),
+    socialPhone: socials.phone,
+    socialWhatsappEnabled: Boolean(socials.whatsapp),
+    socialWhatsapp: socials.whatsapp,
+    socialEmailEnabled: Boolean(socials.email),
+    socialEmail: socials.email,
+    socialFacebookEnabled: Boolean(socials.facebook),
+    socialFacebook: socials.facebook,
+    socialMessengerEnabled: Boolean(socials.messenger),
+    socialMessenger: socials.messenger,
   }
 }
 
@@ -63,6 +76,19 @@ function validateShopForm(form) {
   if (!form.email.trim()) return 'Please enter a business email.'
   if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) return 'Please enter a valid email format.'
   if (!form.businessStartedAt?.trim()) return 'Please select when your business began operations.'
+
+  const socialLinks = normalizeSellerSocialLinks({
+    phone: form.socialPhoneEnabled ? form.socialPhone : '',
+    whatsapp: form.socialWhatsappEnabled ? form.socialWhatsapp : '',
+    email: form.socialEmailEnabled ? form.socialEmail : '',
+    facebook: form.socialFacebookEnabled ? form.socialFacebook : '',
+    messenger: form.socialMessengerEnabled ? form.socialMessenger : '',
+  })
+  const socialErrs = validateSellerSocialLinks(socialLinks)
+  if (Object.keys(socialErrs).length > 0) {
+    return Object.values(socialErrs)[0] || 'Please check your social links.'
+  }
+
   return ''
 }
 
@@ -240,6 +266,13 @@ export default function SellerSettingsClient() {
         return
       }
       setShopSaving(true)
+      const socialLinks = normalizeSellerSocialLinks({
+        phone: shopForm.socialPhoneEnabled ? shopForm.socialPhone : '',
+        whatsapp: shopForm.socialWhatsappEnabled ? shopForm.socialWhatsapp : '',
+        email: shopForm.socialEmailEnabled ? shopForm.socialEmail : '',
+        facebook: shopForm.socialFacebookEnabled ? shopForm.socialFacebook : '',
+        messenger: shopForm.socialMessengerEnabled ? shopForm.socialMessenger : '',
+      })
       const { data: saved, error } = await upsertSellerForUser(user, {
         businessName: shopForm.businessName.trim(),
         username: shopForm.shopUsername?.trim() ? shopForm.shopUsername : '',
@@ -258,6 +291,7 @@ export default function SellerSettingsClient() {
         businessStartedAt: shopForm.businessStartedAt.trim(),
         status: seller?.status ?? 'pending',
         registeredAt: seller?.registered_at,
+        socialLinks,
       })
       if (error) {
         setShopError(typeof error === 'string' ? error : error.message || 'Failed to save shop information.')
@@ -803,6 +837,129 @@ export default function SellerSettingsClient() {
                   disabled={!isEditingShop || !canEditShop}
                   placeholder="+63 9XX XXX XXXX"
                 />
+              </div>
+
+              <div className={`${styles.field} ${styles.shopFieldFull}`}>
+                <label className={styles.label}>Contact methods (shown on your public profile)</label>
+                <div className={styles.shopHelper} style={{ marginTop: 6 }}>
+                  Enable the channels you want buyers to use when they click <strong>Message</strong> / <strong>Chat now</strong>.
+                </div>
+
+                {/* Phone */}
+                <div style={{ marginTop: 10 }}>
+                  <label style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(shopForm.socialPhoneEnabled)}
+                      onChange={(e) => onShopFieldChange('socialPhoneEnabled', e.target.checked)}
+                      disabled={!isEditingShop || !canEditShop}
+                    />
+                    <span>Phone (Call / SMS)</span>
+                  </label>
+                  {shopForm.socialPhoneEnabled && (
+                    <input
+                      value={shopForm.socialPhone}
+                      onChange={(e) => onShopFieldChange('socialPhone', e.target.value)}
+                      className={`${styles.input} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
+                      disabled={!isEditingShop || !canEditShop}
+                      placeholder="e.g. +63 917 123 4567"
+                      style={{ marginTop: 8 }}
+                    />
+                  )}
+                </div>
+
+                {/* WhatsApp */}
+                <div style={{ marginTop: 12 }}>
+                  <label style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(shopForm.socialWhatsappEnabled)}
+                      onChange={(e) => onShopFieldChange('socialWhatsappEnabled', e.target.checked)}
+                      disabled={!isEditingShop || !canEditShop}
+                    />
+                    <span>WhatsApp</span>
+                  </label>
+                  {shopForm.socialWhatsappEnabled && (
+                    <input
+                      value={shopForm.socialWhatsapp}
+                      onChange={(e) => onShopFieldChange('socialWhatsapp', e.target.value)}
+                      className={`${styles.input} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
+                      disabled={!isEditingShop || !canEditShop}
+                      placeholder="Phone number for WhatsApp (digits or +63…)"
+                      style={{ marginTop: 8 }}
+                    />
+                  )}
+                </div>
+
+                {/* Email */}
+                <div style={{ marginTop: 12 }}>
+                  <label style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(shopForm.socialEmailEnabled)}
+                      onChange={(e) => onShopFieldChange('socialEmailEnabled', e.target.checked)}
+                      disabled={!isEditingShop || !canEditShop}
+                    />
+                    <span>Email</span>
+                  </label>
+                  {shopForm.socialEmailEnabled && (
+                    <input
+                      type="email"
+                      value={shopForm.socialEmail}
+                      onChange={(e) => onShopFieldChange('socialEmail', e.target.value)}
+                      className={`${styles.input} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
+                      disabled={!isEditingShop || !canEditShop}
+                      placeholder="e.g. inquiries@yourshop.com"
+                      style={{ marginTop: 8 }}
+                    />
+                  )}
+                </div>
+
+                {/* Facebook */}
+                <div style={{ marginTop: 12 }}>
+                  <label style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(shopForm.socialFacebookEnabled)}
+                      onChange={(e) => onShopFieldChange('socialFacebookEnabled', e.target.checked)}
+                      disabled={!isEditingShop || !canEditShop}
+                    />
+                    <span>Facebook</span>
+                  </label>
+                  {shopForm.socialFacebookEnabled && (
+                    <input
+                      value={shopForm.socialFacebook}
+                      onChange={(e) => onShopFieldChange('socialFacebook', e.target.value)}
+                      className={`${styles.input} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
+                      disabled={!isEditingShop || !canEditShop}
+                      placeholder="https://facebook.com/yourpage"
+                      style={{ marginTop: 8 }}
+                    />
+                  )}
+                </div>
+
+                {/* Messenger */}
+                <div style={{ marginTop: 12 }}>
+                  <label style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(shopForm.socialMessengerEnabled)}
+                      onChange={(e) => onShopFieldChange('socialMessengerEnabled', e.target.checked)}
+                      disabled={!isEditingShop || !canEditShop}
+                    />
+                    <span>Messenger</span>
+                  </label>
+                  {shopForm.socialMessengerEnabled && (
+                    <input
+                      value={shopForm.socialMessenger}
+                      onChange={(e) => onShopFieldChange('socialMessenger', e.target.value)}
+                      className={`${styles.input} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
+                      disabled={!isEditingShop || !canEditShop}
+                      placeholder="m.me/yourpage or yourpage"
+                      style={{ marginTop: 8 }}
+                    />
+                  )}
+                </div>
               </div>
             </div>
           </div>

@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { readEnum, readInt, readString, replaceUrlQuery } from '@/lib/url/queryParams'
-import { useDebouncedEffect } from '@/hooks/useDebouncedEffect'
+import { useDebouncedEffect } from '@/shared/hooks/useDebouncedEffect'
 
 const ROWS_PER_PAGE = 10
 
@@ -415,3 +415,4 @@ export function useAdminPayoutsPage() {
     showSellerEarnings,
   }
 }
+

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import layoutStyles from '../admin.module.css'
 import { disputes } from '@/data/adminSampleData'
-import { formatCount } from '@/utils/formatCount'
+import { formatCount } from '@/shared/utils/formatCount'
 import {
   AreaChart,
   Area,

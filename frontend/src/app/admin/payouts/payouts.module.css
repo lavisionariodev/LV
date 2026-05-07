@@ -1295,7 +1295,7 @@
   -webkit-overflow-scrolling: touch;
   padding: 10px 12px max(28px, calc(20px + env(safe-area-inset-bottom, 0px)));
   box-sizing: border-box;
-  background: linear-gradient(180deg, #f1f5f9 0%, #e8eef3 52%, #eef2f6 100%);
+  background: #fff;
 }
 
 /* ── Mobile order-details sheet (card stack, separate from desktop expand row) ─ */
@@ -1309,7 +1309,7 @@
 
 .msheetCard {
   background: #fff;
-  border: 1px solid #e2e8eb;
+  border: 1px solid #e5e7eb;
   border-radius: 16px;
   padding: 14px 16px;
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.72) inset, 0 4px 16px rgba(15, 23, 42, 0.04);
@@ -1377,6 +1377,7 @@
   padding: 10px 12px;
   border-radius: 12px;
   background: #f1f5f9;
+  border: 1px solid #e5e7eb;
 }
 
 .msheetMoneyDeduct {
@@ -1393,7 +1394,7 @@
   padding: 12px 14px;
   border-radius: 14px;
   background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-  border: 1px solid rgba(16, 185, 129, 0.25);
+  border: 1px solid #e5e7eb;
   margin-bottom: 10px;
 }
 
@@ -1421,6 +1422,7 @@
   overflow: hidden;
   gap: 2px;
   background: #e2e8f0;
+  border: 1px solid #e5e7eb;
 }
 
 .msheetSplitPlat {
@@ -1440,7 +1442,7 @@
 /* Commission editor — sheet variant */
 .msheetCommissionSection {
   background: #fff;
-  border: 1px solid #e2e8eb;
+  border: 1px solid #e5e7eb;
   border-radius: 16px;
   padding: 12px 14px 14px;
   box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
@@ -1615,7 +1617,7 @@
 /* Release — sheet variant */
 .msheetReleaseCard {
   background: #fff;
-  border: 1px solid #e2e8eb;
+  border: 1px solid #e5e7eb;
   border-radius: 16px;
   padding: 14px 16px 16px;
   display: flex;

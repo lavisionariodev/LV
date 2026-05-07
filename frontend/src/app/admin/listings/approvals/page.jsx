@@ -15,7 +15,7 @@ import {
   mergePendingChangesIntoListingRow,
   PENDING_CHANGE_KEYS,
 } from '@/lib/seller-listings/pendingChanges'
-import { formatCount } from '@/utils/formatCount'
+import { formatCount } from '@/shared/utils/formatCount'
 
 /** `seller_avatar_url` comes from listSellerListingsForAdmin (batch `profiles.avatar_url`). */
 function SellerAvatarMark({ src, initialsSource, listingStyles: styleMod }) {

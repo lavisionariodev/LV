@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { fetchActiveShopListings, mergeShopListings } from '@/lib/shop-listings/client'
 import { fetchPublicSellerProfile, normalizeSellerSpecialties } from '@/lib/sellers/client'
 import { isUuidLike } from '@/lib/uuidLike'
+import ContactSellerModal from '@/components/ui/Modal/ContactSellerModal'
 import styles from './seller-profile.module.css'
 
 // ─── Sample Data ──────────────────────────────────────────────────────────────
@@ -22,7 +23,6 @@ const SAMPLE_SELLER = {
   rating: 4.9,
   reviewCount: 87,
   memberSince: 'Mar 2020',
-  responseRate: '100%',
   turnaround: '24 hours',
   specialties: ['Traditional Funeral Rites', 'Memorial Planning', 'Casket & Urn Selection', 'Embalming Services', 'Cremation', 'Lifestream / Online Wake'],
   extendedBio:
@@ -150,7 +150,6 @@ export const MOCK_SELLER_PROFILE_FIELDS = /** @type {const} */ ([
   'badge',
   'rating',
   'reviewCount',
-  'responseRate',
   'turnaround',
   'avatarUrl — profiles.avatar_url via `get_active_shop_listings.seller_avatar_url` (SECURITY DEFINER)',
   'Verified chip — always shown; not wired to sellers row',
@@ -187,6 +186,7 @@ function providerFromPublicSellerProfileRow(row) {
   const avatarRaw = row.seller_avatar_url ?? row.sellerAvatarUrl
   const sellerAvatarUrl =
     typeof avatarRaw === 'string' && avatarRaw.trim() ? avatarRaw.trim() : null
+  const socialLinks = row.seller_social_links ?? row.sellerSocialLinks ?? {}
   const name =
     typeof row.business_name === 'string' && row.business_name.trim()
       ? row.business_name.trim()
@@ -207,6 +207,7 @@ function providerFromPublicSellerProfileRow(row) {
     businessInfo,
     tagline,
     specialties,
+    socialLinks,
   }
 }
 
@@ -304,7 +305,6 @@ function buildSellerViewModel(sellerUserId, shopRows, publicProfileRow) {
     rating: SAMPLE_SELLER.rating,
     reviewCount: SAMPLE_SELLER.reviewCount,
     memberSince,
-    responseRate: SAMPLE_SELLER.responseRate,
     turnaround: SAMPLE_SELLER.turnaround,
     specialties:
       specialtiesFromSeller.length > 0
@@ -314,6 +314,7 @@ function buildSellerViewModel(sellerUserId, shopRows, publicProfileRow) {
           : [],
     tagline,
     extendedBio,
+    socialLinks: prov?.socialLinks ?? {},
   }
 }
 
@@ -388,6 +389,7 @@ function SellerProfileView({
   const [sortBy, setSortBy] = useState('newest')
   const [currentPage, setCurrentPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState('')
+  const [contactOpen, setContactOpen] = useState(false)
   const ITEMS_PER_PAGE = 9
 
   const sortedListings = useMemo(() => {
@@ -421,6 +423,13 @@ function SellerProfileView({
 
   return (
     <section className={styles.profilePage}>
+      <ContactSellerModal
+        open={contactOpen}
+        onClose={() => setContactOpen(false)}
+        sellerName={seller?.name || 'Seller'}
+        sellerAvatarUrl={seller?.avatarUrl || ''}
+        socialLinks={seller?.socialLinks}
+      />
 
       {/* ── Banner ── */}
       <div className={styles.banner}>
@@ -465,7 +474,12 @@ function SellerProfileView({
 
             {/* Right — action buttons */}
             <div className={styles.actionButtons}>
-              <button className={styles.btnMessage} type="button">
+              <button
+                className={styles.btnMessage}
+                type="button"
+                onClick={() => setContactOpen(true)}
+                aria-haspopup="dialog"
+              >
                 <svg viewBox="0 0 16 14" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M14 1H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3l3 3 3-3h3a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1z" />
                 </svg>
@@ -498,10 +512,6 @@ function SellerProfileView({
             <div className={styles.statItem}>
               <div className={styles.statValue}>{listings.length}</div>
               <div className={styles.statLabel}>Listings</div>
-            </div>
-            <div className={styles.statItem}>
-              <div className={styles.statValue}>{seller?.responseRate ?? '—'}</div>
-              <div className={styles.statLabel}>Response Rate</div>
             </div>
             <div className={styles.statItem}>
               <div className={styles.statValue}>{seller?.memberSince ?? '—'}</div>
@@ -723,10 +733,6 @@ function SellerProfileView({
                     <div className={styles.attrRow}>
                       <span className={styles.attrLabel}>Member Since</span>
                       <span className={styles.attrValue}>{seller?.memberSince || '—'}</span>
-                    </div>
-                    <div className={styles.attrRow}>
-                      <span className={styles.attrLabel}>Response Rate</span>
-                      <span className={styles.attrValue}>{seller?.responseRate || '—'}</span>
                     </div>
                     <div className={styles.attrRow}>
                       <span className={styles.attrLabel}>Avg. Turnaround</span>

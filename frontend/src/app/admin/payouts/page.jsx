@@ -5,16 +5,16 @@ import { FiArrowUp, FiArrowDown, FiRotateCcw } from 'react-icons/fi'
 import { TbCreditCardPay, TbPlayerPause, TbX } from 'react-icons/tb'
 import { LuSettings2 } from 'react-icons/lu'
 
-import { useAdminPayoutsPage } from '@/hooks'
+import { useAdminPayoutsPage } from './useAdminPayoutsPage'
 import {
   formatPHP,
   formatDateRangeLabel,
   PAYMENT_STATUS_META,
   PAYOUT_STATUS_META,
   getTxnCommissionParts,
-} from '@/utils/adminPayouts'
-import { computeCommissionSnapshot } from '@/utils/commissionSnapshot'
-import { formatCount, formatPHPMobile } from '@/utils/formatCount'
+} from '@/shared/utils/adminPayouts'
+import { computeCommissionSnapshot } from '@/shared/utils/commissionSnapshot'
+import { formatCount, formatPHPMobile } from '@/shared/utils/formatCount'
 
 import { Dropdown } from '@/components/ui'
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal'

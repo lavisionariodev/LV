@@ -7,7 +7,7 @@ import { disputes as initialDisputes } from '@/data/adminSampleData'
 import { TbX } from 'react-icons/tb'
 import { LuSettings2 } from 'react-icons/lu'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { useDebouncedEffect } from '@/hooks'
+import { useDebouncedEffect } from '@/shared/hooks'
 import { readEnum, readString, replaceUrlQuery } from '@/lib/url/queryParams'
 
 const STATUS_OPTIONS = [

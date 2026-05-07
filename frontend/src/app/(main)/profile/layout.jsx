@@ -17,7 +17,7 @@ import {
   PROFILE_DOB_MONTHS,
   dobPartsFromIso,
   isoFromDobParts,
-} from '@/utils/profileDob';
+} from '@/shared/utils/profileDob';
 
 /* ─────────────────────────────────────────
    Hook — detect mobile viewport

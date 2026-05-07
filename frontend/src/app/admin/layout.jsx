@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { AppSidebar, AppTopbar } from '@/components/layout'
-import { useMediaQuery } from '@/hooks'
+import { useMediaQuery } from '@/shared/hooks'
 import { requireAdmin } from '@/lib/auth/guards'
 import { signOut } from '@/lib/auth/session'
 import styles from './admin.module.css'

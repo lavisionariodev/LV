@@ -14,7 +14,7 @@ import {
 import { getSellerByUserId } from '@/lib/sellers/client'
 import { supabase } from '@/lib/supabase/client'
 import styles from './products.module.css'
-import { useMediaQuery } from '@/hooks'
+import { useMediaQuery } from '@/shared/hooks'
 import { normalizeStockStatusValue } from '@/lib/shop-listings/client'
 import { formatPhpInputString, parsePhpAmountInputString } from '@/lib/cart/formatPhp'
 

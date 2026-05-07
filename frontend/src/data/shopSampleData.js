@@ -46,7 +46,7 @@ export const PROVIDERS = [
     rating: 4.9,
     reviews: 124,
     badge: 'Top Rated',
-    lastActive: new Date(Date.now() - 8 * 60 * 1000).toISOString(),       // 8 mins ago
+    lastActive: new Date(Date.now() - 8 * 60 * 1000).toISOString(), // 8 mins ago
     joinedDate: '2019-03-15',
     businessStartedAt: '2005-01-10',
   },
@@ -57,7 +57,7 @@ export const PROVIDERS = [
     rating: 4.7,
     reviews: 89,
     badge: null,
-    lastActive: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),  // 3 hours ago
+    lastActive: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), // 3 hours ago
     joinedDate: '2021-08-01',
     businessStartedAt: '2012-04-20',
   },
@@ -133,7 +133,7 @@ export const REVIEWS = [
     rating: 4,
     date: '2024-09-18',
     title: 'Good value, smooth process',
-    body: 'We chose the Direct Cremation for its simplicity and affordability. The paperwork was handled quickly and the staff were respectful throughout. Only minor issue was a slight delay in the permit release.',
+    body: "We chose the Direct Cremation for its simplicity and affordability. The paperwork was handled quickly and the staff were respectful throughout. Only minor issue was a slight delay in the permit release.",
   },
   {
     id: 'r4',
@@ -168,7 +168,7 @@ export const REVIEWS = [
     rating: 4,
     date: '2024-11-20',
     title: 'Caring and thorough',
-    body: 'Staff were very attentive to our family\'s needs. The five-day viewing allowed relatives from the province to attend. Flower arrangements were stunning.',
+    body: "Staff were very attentive to our family's needs. The five-day viewing allowed relatives from the province to attend. Flower arrangements were stunning.",
   },
   {
     id: 'r7',
@@ -203,7 +203,7 @@ export const REVIEWS = [
     rating: 5,
     date: '2024-11-28',
     title: 'The AV tribute was perfect',
-    body: 'Eternal Rest put together a custom tribute video that captured my father\'s life beautifully. The live music added so much warmth to the service. We couldn\'t have asked for more.',
+    body: "Eternal Rest put together a custom tribute video that captured my father's life beautifully. The live music added so much warmth to the service. We couldn't have asked for more.",
   },
   {
     id: 'r10',

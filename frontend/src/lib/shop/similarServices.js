@@ -5,6 +5,9 @@
  * 1. Prefer other verticals that are commonly paired with the current one (funeral journey).
  * 2. Among those, prefer categories whose lowest listing price is closest to the selected
  *    package price (budget alignment). If price is unknown, fall back to relatedness only.
+ *
+ * All service data is derived dynamically from available listings only.
+ * Services with no listings will not appear.
  */
 
 /** Order of "related" service ids when the user is viewing `currentServiceId` (first = most related). */
@@ -12,6 +15,29 @@ export const RELATED_SERVICE_ORDER = {
   cremation: ['memorial-planning', 'traditional-burial'],
   'traditional-burial': ['memorial-planning', 'cremation'],
   'memorial-planning': ['cremation', 'traditional-burial'],
+}
+
+/**
+ * Derive dynamic service objects from available listings only.
+ * Each service gets a name derived from its serviceId, and the image/description come from the first listing.
+ * Services with no listings in the database will not be included.
+ */
+export function getDynamicServicesFromListings(allListings) {
+  const serviceMap = new Map()
+
+  allListings.forEach((listing) => {
+    if (listing.serviceId && !serviceMap.has(listing.serviceId)) {
+      // Create service from the first listing of this type
+      serviceMap.set(listing.serviceId, {
+        id: listing.serviceId,
+        name: listing.serviceId.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
+        description: listing.description || `Professional ${listing.serviceId.replace(/-/g, ' ')} services.`,
+        image: listing.imageUrl || '/sample/services/default.jpg',
+      })
+    }
+  })
+
+  return Array.from(serviceMap.values())
 }
 
 function minListingPriceForService(serviceId, allListings) {
@@ -60,8 +86,8 @@ export function getRecommendedSimilarServices({
   })
 
   scored.sort((a, b) => {
-    if (a.priceDistance !== b.priceDistance) return a.priceDistance - b.priceDistance
-    return a.prefRank - b.prefRank
+    if (a.prefRank !== b.prefRank) return a.prefRank - b.prefRank
+    return a.priceDistance - b.priceDistance
   })
 
   return scored.slice(0, limit).map((x) => x.service)

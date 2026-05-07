@@ -15,11 +15,11 @@ import {
   updateSellerStatus,
 } from '@/lib/sellers/client';
 import { useToast } from '@/contexts/ToastContext';
-import { useMediaQuery } from '@/hooks';
+import { useMediaQuery } from '@/shared/hooks';
 import { Dropdown } from '@/components/ui';
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useDebouncedEffect } from '@/hooks';
+import { useDebouncedEffect } from '@/shared/hooks';
 import { readEnum, readString, replaceUrlQuery } from '@/lib/url/queryParams';
 
 const STATUS_FILTER_OPTIONS = [
