@@ -112,7 +112,7 @@ export function paymentSummaryLine(pd) {
 
 /**
  * @param {Record<string, unknown>} o orders row from Supabase
- * @param {Array<{ order_id: string; name: string; quantity?: number; price?: number }>} orderItems
+ * @param {Array<{ id?: string; order_id: string; product_id?: string; name: string; quantity?: number; price?: number }>} orderItems
  * @param {string} [providerDisplayName] from seller-names API
  */
 export function mapBuyerOrderCard(o, orderItems, providerDisplayName) {
@@ -170,6 +170,11 @@ export function mapBuyerOrderCard(o, orderItems, providerDisplayName) {
     itemsDetailed = [{ line: 'No items recorded', subtotal: null }]
   }
 
+  const orderItemsForReview = orderItems.map((it) => ({
+    orderItemId: it.id ?? null,
+    label: it.name,
+  }))
+
   /** PayMongo checkout session opened (`payment_status` set to pending by `/api/checkout/pay`). Not the same as legacy `status: pending_payment` on new unpaid orders. */
   const paymongoCheckoutActive = o.payment_status === 'pending'
 
@@ -221,6 +226,7 @@ export function mapBuyerOrderCard(o, orderItems, providerDisplayName) {
     price,
     formattedTotal: formatMoney(price, currency),
     itemsDetailed,
+    orderItemsForReview,
     canDownloadReceipt,
     showCancelPurchase,
     canSubmitCancelPurchase,

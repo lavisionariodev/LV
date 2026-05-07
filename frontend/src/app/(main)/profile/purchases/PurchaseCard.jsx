@@ -171,7 +171,7 @@ export function PurchaseCard({ purchase, cancellingOrderId }) {
         </button>
 
         {purchase.status === 'Completed' ? (
-          <button type="button" className={purchaseStyles.actionLink} disabled title="Coming soon">
+          <button type="button" className={purchaseStyles.actionLink} onClick={() => purchase.onLeaveReview?.(purchase)}>
             Leave a review
           </button>
         ) : null}

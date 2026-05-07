@@ -4,9 +4,8 @@ import { normalizeSellerSpecialties } from '@/lib/sellers/client'
 
 const ALLOWED_SERVICE_IDS = new Set(['cremation', 'traditional-burial', 'memorial-planning'])
 
-/** Placeholders until reviews/aggregates exist in the database. */
-const PLACEHOLDER_PROVIDER_RATING = 4.8
-const PLACEHOLDER_REVIEW_COUNT = 0
+// Reviews/ratings aggregates are fetched per-page (e.g. provider-aggregates endpoint).
+// Provider objects loaded from `get_active_shop_listings` do not include real rating aggregates yet.
 
 function normalizeServiceId(raw) {
   if (raw == null) return 'memorial-planning'
@@ -207,8 +206,8 @@ function mapRpcRowToListing(row) {
       /** Business logo: `profiles.avatar_url` via shop RPC (`seller_avatar_url`). */
       image: sellerAvatarUrl,
       avatarUrl: sellerAvatarUrl,
-      rating: PLACEHOLDER_PROVIDER_RATING,
-      reviews: PLACEHOLDER_REVIEW_COUNT,
+      rating: null,
+      reviews: 0,
       badge: null,
       joinedDate: sellerRegisteredAt ?? null,
       businessStartedAt: businessStartedAt ?? null,
