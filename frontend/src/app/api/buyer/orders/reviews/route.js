@@ -54,10 +54,36 @@ export async function POST(request) {
   }
 
   const body = await request.json().catch(() => ({}))
-  const orderId = String(body?.orderId ?? '').trim()
+  const orderId = String(body?.orderId ?? '').trim().replace(/^#/, '')
   const reviewsPayload = Array.isArray(body?.reviews) ? body.reviews : null
 
-  if (!isUuidLike(orderId)) {
+  let actualOrderId = null
+
+  if (orderId) {
+    if (isUuidLike(orderId)) {
+      const { data: order } = await supabaseAdmin
+        .from('orders')
+        .select('id')
+        .eq('id', orderId)
+        .maybeSingle()
+      if (order) {
+        actualOrderId = order.id
+      }
+    }
+  }
+
+  if (!actualOrderId && orderId) {
+    const { data: order } = await supabaseAdmin
+      .from('orders')
+      .select('id')
+      .ilike('order_number', orderId)
+      .maybeSingle()
+    if (order) {
+      actualOrderId = order.id
+    }
+  }
+
+  if (!actualOrderId) {
     return NextResponse.json({ error: 'Invalid orderId.' }, { status: 400 })
   }
   if (!reviewsPayload) {
@@ -68,7 +94,7 @@ export async function POST(request) {
   const { data: order, error: orderErr } = await supabaseAdmin
     .from('orders')
     .select('id,buyer_id,seller_user_id,fulfillment_status,payment_status,status,refund_status')
-    .eq('id', orderId)
+    .eq('id', actualOrderId)
     .maybeSingle()
 
   if (orderErr || !order) {
@@ -95,7 +121,7 @@ export async function POST(request) {
   const { data: orderItems, error: itemsErr } = await supabaseAdmin
     .from('order_items')
     .select('id,product_id,name,seller_user_id')
-    .eq('order_id', orderId)
+    .eq('order_id', actualOrderId)
     .in('id', orderItemsIds)
 
   if (itemsErr || !orderItems || orderItems.length === 0) {
@@ -163,7 +189,7 @@ export async function POST(request) {
 
     toUpsert.push({
       buyer_id: user.id,
-      order_id: orderId,
+      order_id: actualOrderId,
       order_item_id: item.id,
       seller_user_id: item.seller_user_id ?? order.seller_user_id,
       service_id: serviceId,
@@ -186,7 +212,7 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Failed to save reviews.' }, { status: 500 })
   }
 
-  apiLog('buyer.reviews.ok', { orderId, reviewCount: toUpsert.length })
+  apiLog('buyer.reviews.ok', { orderId: actualOrderId, reviewCount: toUpsert.length })
   return NextResponse.json({ ok: true }, { status: 200 })
 }
 
