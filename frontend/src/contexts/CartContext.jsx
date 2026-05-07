@@ -25,35 +25,30 @@ export function CartProvider({ children }) {
   // Only buyers get cart on the main site; seller/admin auth does not grant cart access.
   const cartUser = isBuyer ? user : null
 
-  const loadCart = useCallback(async (nextUser) => {
-    if (nextUser?.id) {
-      setUserId(nextUser.id)
-      const { items: fetched, error } = await fetchCart(supabase, nextUser.id)
-      if (!error) setItems(fetched)
-      else setItems([])
-    } else {
-      setUserId(null)
-      setItems([])
-    }
-  }, [])
-
   useEffect(() => {
     let mounted = true
+    if (authLoading) return
 
-    if (authLoading) {
-      return
+    const run = async () => {
+      if (cartUser?.id) {
+        const { items: fetched, error } = await fetchCart(supabase, cartUser.id)
+        if (!mounted) return
+        setUserId(cartUser.id)
+        setItems(error ? [] : fetched)
+      } else {
+        if (!mounted) return
+        setUserId(null)
+        setItems([])
+      }
+      setLoading(false)
     }
 
-    loadCart(cartUser).finally(() => {
-      if (mounted) {
-        setLoading(false)
-      }
-    })
+    run()
 
     return () => {
       mounted = false
     }
-  }, [authLoading, cartUser, loadCart])
+  }, [authLoading, cartUser])
 
   const addItem = useCallback(
     async (item) => {

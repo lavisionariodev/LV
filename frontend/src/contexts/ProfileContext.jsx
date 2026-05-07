@@ -21,19 +21,31 @@ export function ProfileProvider({ children }) {
   const { user, profile: authProfile, authLoading, refreshProfile } = useAuth();
   const toast = useToast();
 
-  const [localProfile, setLocalProfile] = useState(() => mapProfileRow(null));
+  // Derive the authoritative base profile from auth state.
+  // When auth changes (login, logout, refreshProfile), this recomputes.
+  const baseProfile = useMemo(
+    () => mapProfileRow(user ? authProfile : null),
+    [user, authProfile],
+  );
+
+  // Local profile state — holds in-progress edits on top of the auth baseline.
+  const [localProfile, setLocalProfile] = useState(baseProfile);
+  const prevBaseRef = useRef(baseProfile);
+
+  // Re-sync local state when the auth baseline actually changes
+  // (e.g. after refreshProfile resolves or the user logs out/in).
+  // The ref guard prevents re-syncing on every render when baseProfile
+  // is referentially stable.
+  useEffect(() => {
+    if (prevBaseRef.current === baseProfile) return;
+    prevBaseRef.current = baseProfile;
+    setLocalProfile(baseProfile);
+  }, [baseProfile]);
+
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
   const [confirmRemoveOpen, setConfirmRemoveOpen] = useState(false);
-
-  useEffect(() => {
-    if (!user) {
-      setLocalProfile(mapProfileRow(null));
-      return;
-    }
-    setLocalProfile(mapProfileRow(authProfile));
-  }, [user, authProfile]);
 
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
