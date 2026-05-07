@@ -22,7 +22,6 @@ const SAMPLE_SELLER = {
   rating: 4.9,
   reviewCount: 87,
   memberSince: 'Mar 2020',
-  responseRate: '100%',
   turnaround: '24 hours',
   specialties: ['Traditional Funeral Rites', 'Memorial Planning', 'Casket & Urn Selection', 'Embalming Services', 'Cremation', 'Lifestream / Online Wake'],
   extendedBio:
@@ -150,7 +149,6 @@ export const MOCK_SELLER_PROFILE_FIELDS = /** @type {const} */ ([
   'badge',
   'rating',
   'reviewCount',
-  'responseRate',
   'turnaround',
   'avatarUrl — profiles.avatar_url via `get_active_shop_listings.seller_avatar_url` (SECURITY DEFINER)',
   'Verified chip — always shown; not wired to sellers row',
@@ -304,7 +302,6 @@ function buildSellerViewModel(sellerUserId, shopRows, publicProfileRow) {
     rating: SAMPLE_SELLER.rating,
     reviewCount: SAMPLE_SELLER.reviewCount,
     memberSince,
-    responseRate: SAMPLE_SELLER.responseRate,
     turnaround: SAMPLE_SELLER.turnaround,
     specialties:
       specialtiesFromSeller.length > 0
@@ -498,10 +495,6 @@ function SellerProfileView({
             <div className={styles.statItem}>
               <div className={styles.statValue}>{listings.length}</div>
               <div className={styles.statLabel}>Listings</div>
-            </div>
-            <div className={styles.statItem}>
-              <div className={styles.statValue}>{seller?.responseRate ?? '—'}</div>
-              <div className={styles.statLabel}>Response Rate</div>
             </div>
             <div className={styles.statItem}>
               <div className={styles.statValue}>{seller?.memberSince ?? '—'}</div>
@@ -723,10 +716,6 @@ function SellerProfileView({
                     <div className={styles.attrRow}>
                       <span className={styles.attrLabel}>Member Since</span>
                       <span className={styles.attrValue}>{seller?.memberSince || '—'}</span>
-                    </div>
-                    <div className={styles.attrRow}>
-                      <span className={styles.attrLabel}>Response Rate</span>
-                      <span className={styles.attrValue}>{seller?.responseRate || '—'}</span>
                     </div>
                     <div className={styles.attrRow}>
                       <span className={styles.attrLabel}>Avg. Turnaround</span>

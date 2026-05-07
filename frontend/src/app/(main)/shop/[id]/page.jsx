@@ -4,8 +4,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { use, useState, useEffect, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { getServiceById, PROVIDERS, SERVICES, REVIEWS, getReviewsByServiceId, CATEGORIES } from '../data'
-import { getRecommendedSimilarServices } from '../similarServices'
+import { getServiceById, PROVIDERS, REVIEWS, getReviewsByServiceId, CATEGORIES } from '../data'
+import { getRecommendedSimilarServices, getDynamicServicesFromListings } from '../similarServices'
 import { fetchActiveShopListings, mergeShopListings, stockAvailabilityLabel } from '@/lib/shop-listings/client'
 import { buildCartPayloadFromListing } from '@/lib/cart/fromListing'
 import { assertListingReadyForCart, persistCartPayload } from '@/lib/cart/bookNow'
@@ -578,7 +578,6 @@ export default function ServiceDetailPage({ params }) {
           service={service}
           selectedListing={selectedListing}
           styles={styles}
-          allServices={SERVICES}
           allListings={catalogForChildren}
         />
 
@@ -683,50 +682,59 @@ function formatTenureLength(joinedDate, now = new Date()) {
   return `${y} year${y !== 1 ? 's' : ''}`
 }
 
-const FALLBACK_DESC_LEAD =
-  'This package includes full coordination of the memorial ceremony, a dedicated funeral director to guide your family, preparation and dignified care of the deceased, use of our chapel or designated venue, floral arrangement selections, printed memorial programs, and post-service assistance with documentation.'
 
-const FALLBACK_WHO =
-  'This service is for families who wish to arrange a traditional or contemporary funeral ceremony for a recently departed loved one. Suitable for individuals of any faith or cultural background — our team is experienced in accommodating religious rites, cultural customs, and personal preferences to ensure the service truly honors the individual.'
 
-const FALLBACK_NOTES =
-  'Prices are indicative and may vary depending on specific requests, chosen add-ons, or venue requirements outside our standard facilities. Out-of-town transport, embalming beyond 5 days, and premium casket upgrades are billed separately. All arrangements are subject to availability. A dedicated coordinator will be assigned upon booking.'
-
-const FALLBACK_BULLETS = [
-  'Full ceremony coordination',
-  'Dedicated funeral director',
-  'Chapel / venue use',
-  'Floral arrangements',
-  'Memorial programs printed',
-  'Metro Manila transport',
-  'Administrative assistance',
-  'Post-service documentation',
-]
-
-function FullDescriptionSection({ service, selectedListing, styles, allServices = [], allListings = [] }) {
+function FullDescriptionSection({ service, selectedListing, styles, allListings = [] }) {
   const [activeTab, setActiveTab] = useState('description')
   const [expanded, setExpanded] = useState(false)
+
+  const dynamicServices = useMemo(() => getDynamicServicesFromListings(allListings), [allListings])
+
+  const cheapestListingByServiceId = useMemo(() => {
+    const map = new Map()
+    for (const l of allListings || []) {
+      const sid = l?.serviceId
+      if (!sid) continue
+      const priceNum = Number(l.price)
+      if (!Number.isFinite(priceNum) || priceNum < 0) continue
+      const existing = map.get(sid)
+      if (!existing || priceNum < existing.priceNum) {
+        map.set(sid, { listing: l, priceNum })
+      }
+    }
+    return map
+  }, [allListings])
 
   const similarServices = useMemo(
     () =>
       getRecommendedSimilarServices({
         currentServiceId: service.id,
         selectedListing,
-        allServices,
+        allServices: dynamicServices,
         allListings,
         limit: 3,
       }),
-    [service.id, selectedListing?.id, selectedListing?.price, allServices, allListings],
+    [service.id, selectedListing?.id, selectedListing?.price, dynamicServices, allListings],
   )
 
-  const tabs = [
+  const allTabs = [
     { id: 'description', label: "What's Included" },
     { id: 'who',         label: 'Who This Is For' },
     { id: 'notes',       label: 'Important Notes' },
-    { id: 'similar',     label: 'Similar Services' },
   ]
 
+  const tabs = similarServices.length > 0 
+    ? [...allTabs, { id: 'similar', label: 'Similar Services' }]
+    : allTabs
+
   const isSimilarTab = activeTab === 'similar'
+
+  // Reset to first tab if current tab is hidden
+  useEffect(() => {
+    if (!tabs.find(t => t.id === activeTab)) {
+      setActiveTab('description')
+    }
+  }, [tabs, activeTab])
 
   return (
     <div className={styles.fullDesc}>
@@ -751,37 +759,25 @@ function FullDescriptionSection({ service, selectedListing, styles, allServices 
               {activeTab === 'description' && (
                 <>
                   <p className={styles.tabText}>
-                    {selectedListing?.description?.trim() || service.longDescription || FALLBACK_DESC_LEAD}
+                    {selectedListing?.description?.trim() ? selectedListing.description.trim() : 'No description available.'}
                   </p>
-                  <ul className={styles.featureGrid}>
-                    {(selectedListing?.inclusions?.length ? selectedListing.inclusions : FALLBACK_BULLETS).map(
-                      (item, idx) => (
+                  {selectedListing?.inclusions?.length > 0 && (
+                    <ul className={styles.featureGrid}>
+                      {selectedListing.inclusions.map((item, idx) => (
                         <li key={idx}>{item}</li>
-                      ),
-                    )}
-                  </ul>
-                  {!selectedListing?.inclusions?.length ? (
-                    <table className={styles.specsTable}>
-                      <tbody>
-                        <tr><td>Display</td><td>Full chapel setup, candle lighting</td></tr>
-                        <tr><td>Transportation</td><td>Within Metro Manila (included)</td></tr>
-                        <tr><td>Embalming</td><td>Up to 5 days standard</td></tr>
-                        <tr><td>Coordinator</td><td>1 dedicated family coordinator</td></tr>
-                        <tr><td>Programs</td><td>50 printed memorial booklets</td></tr>
-                        <tr><td>Venue Capacity</td><td>Up to 120 guests</td></tr>
-                      </tbody>
-                    </table>
-                  ) : null}
+                      ))}
+                    </ul>
+                  )}
                 </>
               )}
               {activeTab === 'who' && (
                 <p className={styles.tabText}>
-                  {selectedListing?.whoThisIsFor?.trim() || FALLBACK_WHO}
+                  {selectedListing?.whoThisIsFor?.trim() || 'Information not provided.'}
                 </p>
               )}
               {activeTab === 'notes' && (
                 <p className={styles.tabText}>
-                  {selectedListing?.importantNotes?.trim() || FALLBACK_NOTES}
+                  {selectedListing?.importantNotes?.trim() || 'No additional notes.'}
                 </p>
               )}
               {!expanded && <div className={styles.tabFade} />}
@@ -803,9 +799,7 @@ function FullDescriptionSection({ service, selectedListing, styles, allServices 
               <>
                 <div className={styles.similarGrid}>
                   {similarServices.map((s) => {
-                    const lowestListing = allListings
-                      .filter((l) => l.serviceId === s.id)
-                      .sort((a, b) => a.price - b.price)[0]
+                    const lowestListing = cheapestListingByServiceId.get(s.id)?.listing ?? null
                     const similarHref =
                       lowestListing != null
                         ? `/shop/${s.id}?listing=${encodeURIComponent(lowestListing.id)}`
@@ -1403,12 +1397,7 @@ function ProviderCard({ provider, styles, allListings = [] }) {
             <span className={styles.providerStatValueNeutral}>{yearsInService}</span>
           </div>
         )}
-        {provider.responseRate != null && (
-          <div className={styles.providerStat}>
-            <span className={styles.providerStatLabel}>Response Rate</span>
-            <span className={styles.providerStatValueNeutral}>{provider.responseRate}</span>
-          </div>
-        )}
+        {/* Response Rate removed from UI */}
       </div>
     </div>
   )
