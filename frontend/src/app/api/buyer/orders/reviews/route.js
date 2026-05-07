@@ -59,13 +59,16 @@ export async function POST(request) {
 
   let actualOrderId = null
 
+  apiLog('buyer.reviews.post.param', { orderId, isUuid: isUuidLike(orderId) })
+
   if (orderId) {
     if (isUuidLike(orderId)) {
-      const { data: order } = await supabaseAdmin
+      const { data: order, error: err1 } = await supabaseAdmin
         .from('orders')
         .select('id')
         .eq('id', orderId)
         .maybeSingle()
+      apiLog('buyer.reviews.post.uuid_lookup', { found: !!order, error: errorMessage(err1) })
       if (order) {
         actualOrderId = order.id
       }
@@ -73,18 +76,23 @@ export async function POST(request) {
   }
 
   if (!actualOrderId && orderId) {
-    const { data: order } = await supabaseAdmin
+    const { data: order, error: err2 } = await supabaseAdmin
       .from('orders')
       .select('id')
       .ilike('order_number', orderId)
       .maybeSingle()
+    apiLog('buyer.reviews.post.number_lookup', { found: !!order, error: errorMessage(err2) })
     if (order) {
       actualOrderId = order.id
     }
   }
 
   if (!actualOrderId) {
-    return NextResponse.json({ error: 'Invalid orderId.' }, { status: 400 })
+    apiLog('buyer.reviews.post.invalid_id', { orderId, orderIdLength: orderId?.length })
+    return NextResponse.json(
+      { error: 'Invalid orderId.', debug: { received: orderId, length: orderId?.length } },
+      { status: 400 }
+    )
   }
   if (!reviewsPayload) {
     return NextResponse.json({ error: 'Missing reviews payload.' }, { status: 400 })
