@@ -17,14 +17,38 @@ export async function GET(request, { params }) {
   }
 
   const orderIdParam = params?.orderId
-  const orderId = String(orderIdParam ?? '').trim()
-  if (!isUuidLike(orderId)) {
-    return NextResponse.json({ error: 'Invalid orderId.' }, { status: 400 })
-  }
-
+  const orderId = String(orderIdParam ?? '').trim().replace(/^#/, '')
   const supabase = await createClient()
   const supabaseAdmin = getSupabaseAdmin()
+  let actualOrderId = null
 
+  if (orderId) {
+    if (isUuidLike(orderId)) {
+      const { data: order } = await supabaseAdmin
+        .from('orders')
+        .select('id')
+        .eq('id', orderId)
+        .maybeSingle()
+      if (order) {
+        actualOrderId = order.id
+      }
+    }
+  }
+
+  if (!actualOrderId && orderId) {
+    const { data: order } = await supabaseAdmin
+      .from('orders')
+      .select('id')
+      .ilike('order_number', orderId)
+      .maybeSingle()
+    if (order) {
+      actualOrderId = order.id
+    }
+  }
+
+  if (!actualOrderId) {
+    return NextResponse.json({ error: 'Invalid orderId.' }, { status: 400 })
+  }
   const {
     data: { user },
     error: userErr,
@@ -39,7 +63,7 @@ export async function GET(request, { params }) {
   const { data: order, error: orderErr } = await supabaseAdmin
     .from('orders')
     .select('id,buyer_id,fulfillment_status')
-    .eq('id', orderId)
+    .eq('id', actualOrderId)
     .maybeSingle()
 
   if (orderErr || !order) {
@@ -54,7 +78,7 @@ export async function GET(request, { params }) {
   const { data: rows, error: reviewsErr } = await supabaseAdmin
     .from('order_item_reviews')
     .select('order_item_id,rating,review_text,updated_at,created_at')
-    .eq('order_id', orderId)
+    .eq('order_id', actualOrderId)
     .eq('buyer_id', user.id)
 
   if (reviewsErr) {
