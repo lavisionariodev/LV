@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
-import { computeCommissionSnapshot } from '@/utils/commissionSnapshot'
+import { computeCommissionSnapshot } from '@/shared/utils/commissionSnapshot'
 import { apiLog } from '@/lib/observability/apiLog'
 
 function parseSignatureHeader(headerValue) {

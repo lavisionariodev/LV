@@ -24,13 +24,13 @@ export const RELATED_SERVICE_ORDER = {
  */
 export function getDynamicServicesFromListings(allListings) {
   const serviceMap = new Map()
-  
-  allListings.forEach(listing => {
+
+  allListings.forEach((listing) => {
     if (listing.serviceId && !serviceMap.has(listing.serviceId)) {
       // Create service from the first listing of this type
       serviceMap.set(listing.serviceId, {
         id: listing.serviceId,
-        name: listing.serviceId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        name: listing.serviceId.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
         description: listing.description || `Professional ${listing.serviceId.replace(/-/g, ' ')} services.`,
         image: listing.imageUrl || '/sample/services/default.jpg',
       })

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireAdminApiUser } from '@/lib/auth/requireAdminRoute'
-import { computeCommissionSnapshot } from '@/utils/commissionSnapshot'
+import { computeCommissionSnapshot } from '@/shared/utils/commissionSnapshot'
 
 /**
  * PATCH — update per-order escrow commission rate and recalculated fee / net (admin only).

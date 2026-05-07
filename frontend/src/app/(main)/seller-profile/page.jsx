@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { fetchActiveShopListings, mergeShopListings } from '@/lib/shop-listings/client'
 import { fetchPublicSellerProfile, normalizeSellerSpecialties } from '@/lib/sellers/client'
 import { isUuidLike } from '@/lib/uuidLike'
+import ContactSellerModal from '@/components/ui/Modal/ContactSellerModal'
 import styles from './seller-profile.module.css'
 
 // ─── Sample Data ──────────────────────────────────────────────────────────────
@@ -185,6 +186,7 @@ function providerFromPublicSellerProfileRow(row) {
   const avatarRaw = row.seller_avatar_url ?? row.sellerAvatarUrl
   const sellerAvatarUrl =
     typeof avatarRaw === 'string' && avatarRaw.trim() ? avatarRaw.trim() : null
+  const socialLinks = row.seller_social_links ?? row.sellerSocialLinks ?? {}
   const name =
     typeof row.business_name === 'string' && row.business_name.trim()
       ? row.business_name.trim()
@@ -205,6 +207,7 @@ function providerFromPublicSellerProfileRow(row) {
     businessInfo,
     tagline,
     specialties,
+    socialLinks,
   }
 }
 
@@ -311,6 +314,7 @@ function buildSellerViewModel(sellerUserId, shopRows, publicProfileRow) {
           : [],
     tagline,
     extendedBio,
+    socialLinks: prov?.socialLinks ?? {},
   }
 }
 
@@ -385,6 +389,7 @@ function SellerProfileView({
   const [sortBy, setSortBy] = useState('newest')
   const [currentPage, setCurrentPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState('')
+  const [contactOpen, setContactOpen] = useState(false)
   const ITEMS_PER_PAGE = 9
 
   const sortedListings = useMemo(() => {
@@ -418,6 +423,13 @@ function SellerProfileView({
 
   return (
     <section className={styles.profilePage}>
+      <ContactSellerModal
+        open={contactOpen}
+        onClose={() => setContactOpen(false)}
+        sellerName={seller?.name || 'Seller'}
+        sellerAvatarUrl={seller?.avatarUrl || ''}
+        socialLinks={seller?.socialLinks}
+      />
 
       {/* ── Banner ── */}
       <div className={styles.banner}>
@@ -462,7 +474,12 @@ function SellerProfileView({
 
             {/* Right — action buttons */}
             <div className={styles.actionButtons}>
-              <button className={styles.btnMessage} type="button">
+              <button
+                className={styles.btnMessage}
+                type="button"
+                onClick={() => setContactOpen(true)}
+                aria-haspopup="dialog"
+              >
                 <svg viewBox="0 0 16 14" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M14 1H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3l3 3 3-3h3a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1z" />
                 </svg>

@@ -7,7 +7,7 @@ import {
   PROFILE_DOB_MONTHS,
   dobPartsFromIso,
   isoFromDobParts,
-} from '@/utils/profileDob';
+} from '@/shared/utils/profileDob';
 import styles from '../profile.module.css';
 
 const GENDER_OPTIONS = ['Male', 'Female', 'Other'];

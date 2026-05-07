@@ -25,8 +25,8 @@ import {
 import styles from './orders.module.css'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase/client'
-import { formatCount } from '@/utils/formatCount'
-import { useDebouncedEffect } from '@/hooks'
+import { formatCount } from '@/shared/utils/formatCount'
+import { useDebouncedEffect } from '@/shared/hooks'
 import { readEnum, readString, replaceUrlQuery } from '@/lib/url/queryParams'
 
 const ORDER_STATUSES = [

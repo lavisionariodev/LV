@@ -12,7 +12,14 @@ import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase/client';
 import { isAdmin } from '@/lib/auth/admin';
 import { getUserRole, ROLE_BUYER } from '@/lib/auth/roles';
-import { getSafeRedirect } from '@/utils/safeRedirect';
+
+function getSafeRedirect(path) {
+  if (path == null || typeof path !== 'string') return '/';
+  const trimmed = path.trim();
+  if (trimmed === '' || trimmed === '/') return '/';
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) return trimmed;
+  return '/';
+}
 
 function BuyerLoginPageInner() {
   const searchParams = useSearchParams();

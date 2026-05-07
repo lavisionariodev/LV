@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useMemo, useState, useEffect } from 'react'
-import { PROVIDERS, SERVICES } from '../data'
+import { PROVIDERS, SERVICES } from '@/data/shopSampleData'
 import {
   fetchActiveShopListings,
   getListingProviderLogoUrl,

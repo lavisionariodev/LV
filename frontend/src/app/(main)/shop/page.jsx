@@ -4,8 +4,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useMemo, useEffect } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { SERVICES, CATEGORIES, PROVIDERS, getServiceById } from './data'
-import { useDebouncedEffect } from '@/hooks'
+import { SERVICES, CATEGORIES, PROVIDERS, getServiceById } from '@/data/shopSampleData'
+import { useDebouncedEffect } from '@/shared/hooks'
 import { readString, replaceUrlQuery } from '@/lib/url/queryParams'
 import {
   fetchActiveShopListings,

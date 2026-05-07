@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client';
+import { normalizeSellerSocialLinks } from '@/lib/sellers/socialLinks';
 
 /** Stored without `@`; lowercase; used in public storefront. */
 export function normalizeSellerShopUsername(raw) {
@@ -250,6 +251,11 @@ export async function upsertSellerForUser(user, payload) {
       ? normalizeSellerSpecialties(payload.specialties)
       : normalizeSellerSpecialties(existing?.specialties ?? []);
 
+  const socialLinks =
+    payload.socialLinks !== undefined
+      ? normalizeSellerSocialLinks(payload.socialLinks)
+      : normalizeSellerSocialLinks(existing?.social_links ?? {});
+
   const sellerData = {
     user_id: user.id,
     email: payload.email || user.email || null,
@@ -268,6 +274,7 @@ export async function upsertSellerForUser(user, payload) {
     package_options: Array.isArray(packageOptions)
       ? packageOptions.map((x) => String(x).trim()).filter(Boolean)
       : [],
+    social_links: socialLinks,
     // documents field is not yet in schema (future update)
     // documents: payload.documents || null,
   };

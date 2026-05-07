@@ -6,12 +6,12 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import styles from './admin.module.css'
 import { countDisputesNeedingAdminAttention } from '@/data/adminSampleData'
-import { formatCount, formatPHPMobile } from '@/utils/formatCount'
+import { formatCount, formatPHPMobile } from '@/shared/utils/formatCount'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
 import { searchSellersForAdmin } from '@/lib/sellers/client'
 import { listSellerListingsForAdmin } from '@/lib/seller-listings/client'
 import { hasPendingSellerChanges } from '@/lib/seller-listings/pendingChanges'
-import { formatPHP } from '@/utils/adminPayouts'
+import { formatPHP } from '@/shared/utils/adminPayouts'
 import {
   AreaChart,
   Area,

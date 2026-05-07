@@ -179,6 +179,8 @@ function mapRpcRowToListing(row) {
   const sellerAvatarUrl =
     typeof avatarRaw === 'string' && avatarRaw.trim() ? avatarRaw.trim() : null
 
+  const sellerSocialLinks = row.seller_social_links ?? row.sellerSocialLinks ?? {}
+
   return {
     id: String(row.listing_id),
     serviceId,
@@ -213,6 +215,7 @@ function mapRpcRowToListing(row) {
       businessInfo,
       tagline,
       specialties,
+      socialLinks: sellerSocialLinks,
     },
     createdAt: row.created_at || new Date().toISOString(),
     source: 'database',
