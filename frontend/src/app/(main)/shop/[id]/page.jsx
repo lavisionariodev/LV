@@ -4,7 +4,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { use, useState, useEffect, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { getServiceById, PROVIDERS, REVIEWS, getReviewsByServiceId, CATEGORIES } from '@/data/shopSampleData'
+import { getServiceById, CATEGORIES } from '@/data/shopSampleData'
+import ContactSellerModal from '@/components/ui/Modal/ContactSellerModal'
 import { getRecommendedSimilarServices, getDynamicServicesFromListings } from '@/lib/shop/similarServices'
 import { fetchActiveShopListings, mergeShopListings, stockAvailabilityLabel } from '@/lib/shop-listings/client'
 import { buildCartPayloadFromListing } from '@/lib/cart/fromListing'
@@ -62,11 +63,25 @@ export default function ServiceDetailPage({ params }) {
   const [saveBusy, setSaveBusy] = useState(false)
   const [saveError, setSaveError] = useState(null)
   const [chatOpen, setChatOpen] = useState(false)
+  const [isMobileView, setIsMobileView] = useState(false)
+
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 860px)')
+    const update = () => setIsMobileView(mql.matches)
+    update()
+    if (typeof mql.addEventListener === 'function') {
+      mql.addEventListener('change', update)
+      return () => mql.removeEventListener('change', update)
+    }
+    mql.addListener(update)
+    return () => mql.removeListener(update)
+  }, [])
 
   useEffect(() => {
     const ids = new Set(listingsForService.map((l) => String(l.id)))
     const q = listingQuery ? String(listingQuery) : ''
     if (q && ids.has(q)) {
+      // eslint-disable-next-line
       setSelectedListingId(q)
       return
     }
@@ -74,6 +89,32 @@ export default function ServiceDetailPage({ params }) {
   }, [id, listingsForService, listingQuery])
 
   const selectedListing = listingsForService.find((l) => l.id === selectedListingId)
+
+  const [serviceReviews, setServiceReviews] = useState([])
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadServiceReviews() {
+      if (!service?.id) return
+      try {
+        const res = await fetch(`/api/services/${encodeURIComponent(service.id)}/reviews`)
+        const body = await res.json().catch(() => null)
+        if (!res.ok) {
+          throw new Error(typeof body?.error === 'string' ? body.error : 'Failed to load reviews.')
+        }
+        if (cancelled) return
+        setServiceReviews(Array.isArray(body?.reviews) ? body.reviews : [])
+      } catch {
+        if (cancelled) return
+        setServiceReviews([])
+      }
+    }
+
+    loadServiceReviews()
+    return () => {
+      cancelled = true
+    }
+  }, [service?.id])
 
   /** Uploaded listing images only (no service/sample assets). */
   const listingGalleryUrls = useMemo(() => {
@@ -89,10 +130,12 @@ export default function ServiceDetailPage({ params }) {
   const galleryKey = listingGalleryUrls.join('\0')
   const [galleryIndex, setGalleryIndex] = useState(0)
   useEffect(() => {
+    // eslint-disable-next-line
     setGalleryIndex(0)
   }, [selectedListingId, galleryKey])
 
   useEffect(() => {
+    // eslint-disable-next-line
     setQuantity(1)
   }, [selectedListingId])
 
@@ -115,13 +158,47 @@ export default function ServiceDetailPage({ params }) {
     const listing = listingsForService.find((l) => l.id === selectedListingId)
     const opts = listing?.sellerPackageOptions ?? []
     if (opts.length === 0) {
+      // eslint-disable-next-line
       setBuyerPackage('')
       return
     }
     setBuyerPackage((prev) => (prev && opts.includes(prev) ? prev : opts[0]))
   }, [selectedListingId, listingsForService])
-  const provider = selectedListing
-    ? (selectedListing.provider ?? PROVIDERS.find((p) => p.id === selectedListing.providerId))
+  const provider = selectedListing ? selectedListing.provider ?? null : null
+
+  const [providerAggregates, setProviderAggregates] = useState(null)
+  useEffect(() => {
+    let cancelled = false
+    async function loadProviderAgg() {
+      if (!provider?.id) {
+        setProviderAggregates(null)
+        return
+      }
+      try {
+        const res = await fetch(
+          `/api/ratings/provider-aggregates?ids=${encodeURIComponent(String(provider.id))}`,
+        )
+        const body = await res.json().catch(() => null)
+        if (cancelled) return
+        const agg = body?.aggregatesBySellerId?.[String(provider.id)] ?? null
+        setProviderAggregates(agg)
+      } catch {
+        if (cancelled) return
+        setProviderAggregates(null)
+      }
+    }
+    loadProviderAgg()
+    return () => {
+      cancelled = true
+    }
+  }, [provider?.id])
+
+  const providerWithAggregates = provider
+    ? {
+        ...provider,
+        rating: providerAggregates ? providerAggregates.avgRating : null,
+        reviews: providerAggregates ? providerAggregates.reviewCount : 0,
+      }
     : null
 
   const pkgOptsForSave = selectedListing?.sellerPackageOptions ?? []
@@ -445,8 +522,14 @@ export default function ServiceDetailPage({ params }) {
             {/* Ratings row */}
             <div className={styles.ratingsRow}>
               <span className={styles.stars}>★★★★★</span>
-              <span className={styles.ratingScore}>4.9</span>
-              <span className={styles.ratingCount}>· 42 reviews</span>
+              <span className={styles.ratingScore}>
+                {providerWithAggregates?.rating != null
+                  ? Number(providerWithAggregates.rating).toFixed(1)
+                  : '—'}
+              </span>
+              <span className={styles.ratingCount}>
+                · {providerWithAggregates?.reviews ?? 0} reviews
+              </span>
               <span
                 className={`${styles.stockBadge}${stockInfo && !stockInfo.inStock ? ` ${styles.stockBadgeOut}` : ''}`}
               >
@@ -567,10 +650,10 @@ export default function ServiceDetailPage({ params }) {
         </article>
 
         {/* ── PROVIDER CARD ── */}
-        {provider && (
+        {providerWithAggregates && (
           <ProviderCard
-            key={String(provider.id)}
-            provider={provider}
+            key={String(providerWithAggregates.id)}
+            provider={providerWithAggregates}
             styles={styles}
             allListings={catalogForChildren}
             chatOpen={chatOpen}
@@ -587,7 +670,7 @@ export default function ServiceDetailPage({ params }) {
         />
 
         {/* ── REVIEWS: Separate box ── */}
-        <ReviewsSection reviews={getReviewsByServiceId(service.id)} styles={styles} />
+        <ReviewsSection reviews={serviceReviews} styles={styles} />
       </div>
 
       {/* ── MOBILE STICKY ACTION BAR ── */}
@@ -617,6 +700,13 @@ export default function ServiceDetailPage({ params }) {
           {addBusy ? 'Adding…' : selectedListing?.inStock === false ? 'Out of Stock' : 'Add to Cart'}
         </button>
       </div>
+      <ContactSellerModal
+        open={Boolean(chatOpen && isMobileView && provider)}
+        onClose={() => setChatOpen(false)}
+        sellerName={provider?.name ?? ''}
+        sellerAvatarUrl={provider?.image ?? ''}
+        socialLinks={provider?.socialLinks ?? {}}
+      />
     </section>
   )
 }
@@ -719,24 +809,24 @@ function FullDescriptionSection({ service, selectedListing, styles, allListings 
         allListings,
         limit: 3,
       }),
-    [service.id, selectedListing?.id, selectedListing?.price, dynamicServices, allListings],
+    [service.id, selectedListing, dynamicServices, allListings],
   )
 
-  const allTabs = [
-    { id: 'description', label: "What's Included" },
-    { id: 'who',         label: 'Who This Is For' },
-    { id: 'notes',       label: 'Important Notes' },
-  ]
-
-  const tabs = similarServices.length > 0 
-    ? [...allTabs, { id: 'similar', label: 'Similar Services' }]
-    : allTabs
+  const tabs = useMemo(() => {
+    const allTabs = [
+      { id: 'description', label: "What's Included" },
+      { id: 'who', label: 'Who This Is For' },
+      { id: 'notes', label: 'Important Notes' },
+    ]
+    return similarServices.length > 0 ? [...allTabs, { id: 'similar', label: 'Similar Services' }] : allTabs
+  }, [similarServices.length])
 
   const isSimilarTab = activeTab === 'similar'
 
   // Reset to first tab if current tab is hidden
   useEffect(() => {
     if (!tabs.find(t => t.id === activeTab)) {
+      // eslint-disable-next-line
       setActiveTab('description')
     }
   }, [tabs, activeTab])
@@ -1214,13 +1304,9 @@ function ProviderCard({ provider, styles, allListings = [], chatOpen, setChatOpe
 
   // ── Computed stats from real data ──
   const providerListings = allListings.filter((l) => String(l.providerId) === String(provider.id))
-  const providerReviews  = REVIEWS.filter((r)  => r.providerId === provider.id)
+  const avgRating = provider.rating != null ? Number(provider.rating).toFixed(1) : null
 
-  const avgRating = providerReviews.length
-    ? (providerReviews.reduce((sum, r) => sum + r.rating, 0) / providerReviews.length).toFixed(1)
-    : provider.rating != null ? provider.rating.toFixed(1) : null
-
-  const reviewCount = providerReviews.length || provider.reviews || 0
+  const reviewCount = provider.reviews != null ? Number(provider.reviews) : 0
   const serviceCount = providerListings.length || provider.products || 0
 
   // ── Time-dependent values: computed client-side only to avoid SSR hydration mismatch ──
@@ -1233,6 +1319,7 @@ function ProviderCard({ provider, styles, allListings = [], chatOpen, setChatOpe
 
     // Active status
     if (provider.lastActive) {
+      // eslint-disable-next-line
       setActiveStatus(timeAgo(provider.lastActive))
     } else if (provider.activeStatus) {
       setActiveStatus({ text: provider.activeStatus, isActive: false })

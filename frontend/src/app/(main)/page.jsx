@@ -1,9 +1,32 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect, useRef } from 'react'
+import { useCallback, useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import styles from './homepage.module.css'
+
+const ABOUT_PARTNERS_SLIDES = [
+  {
+    image:
+      'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80',
+    caption: 'Building trusted partnerships with verified funeral service providers',
+  },
+  {
+    image:
+      'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&q=80',
+    caption: 'Negotiating fair, transparent pricing for every family we serve',
+  },
+  {
+    image:
+      'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800&q=80',
+    caption: 'Connecting families with the right providers across the Philippines',
+  },
+  {
+    image:
+      'https://images.unsplash.com/photo-1573497491765-dccce02b29df?w=800&q=80',
+    caption: 'Our team ensures every partner meets our standards of dignity and care',
+  },
+]
 
 export default function LandingPage() {
   useEffect(() => {
@@ -379,35 +402,16 @@ function PartnershipSlideshow() {
   const [activeSlide, setActiveSlide] = useState(0)
   const intervalRef = useRef(null)
 
-  const slides = [
-    {
-      image: 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80',
-      caption: 'Building trusted partnerships with verified funeral service providers',
-    },
-    {
-      image: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&q=80',
-      caption: 'Negotiating fair, transparent pricing for every family we serve',
-    },
-    {
-      image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800&q=80',
-      caption: 'Connecting families with the right providers across the Philippines',
-    },
-    {
-      image: 'https://images.unsplash.com/photo-1573497491765-dccce02b29df?w=800&q=80',
-      caption: 'Our team ensures every partner meets our standards of dignity and care',
-    },
-  ]
-
-  const startAutoplay = () => {
+  const startAutoplay = useCallback(() => {
     intervalRef.current = setInterval(() => {
-      setActiveSlide((prev) => (prev + 1) % slides.length)
+      setActiveSlide((prev) => (prev + 1) % ABOUT_PARTNERS_SLIDES.length)
     }, 3500)
-  }
+  }, [setActiveSlide])
 
   useEffect(() => {
     startAutoplay()
     return () => clearInterval(intervalRef.current)
-  }, [])
+  }, [startAutoplay])
 
   const goTo = (index) => {
     setActiveSlide(index)
@@ -418,7 +422,7 @@ function PartnershipSlideshow() {
   return (
     <div className={styles.partnerSlideshow}>
       <div className={styles.slideshowTrack}>
-        {slides.map((slide, i) => (
+        {ABOUT_PARTNERS_SLIDES.map((slide, i) => (
           <div
             key={i}
             className={`${styles.slide} ${i === activeSlide ? styles.slideActive : ''}`}
@@ -432,7 +436,7 @@ function PartnershipSlideshow() {
         ))}
       </div>
       <div className={styles.slideshowDots}>
-        {slides.map((_, i) => (
+        {ABOUT_PARTNERS_SLIDES.map((_, i) => (
           <button
             key={i}
             className={`${styles.slideDot} ${i === activeSlide ? styles.slideDotActive : ''}`}

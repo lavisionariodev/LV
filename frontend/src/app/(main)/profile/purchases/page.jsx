@@ -10,6 +10,7 @@ import styles from '../profile.module.css';
 import purchaseStyles from './purchases.module.css';
 import { PurchaseCard } from './PurchaseCard';
 import { CancelBookingModal } from './CancelBookingModal';
+import { LeaveReviewModal } from './LeaveReviewModal';
 
 /** Purchases toolbar tabs — match buyer-facing `purchase.status`. */
 const PURCHASE_FILTER_TABS = [
@@ -62,6 +63,9 @@ export default function PurchasesPage() {
   const [cancelConfirmRawOrderId, setCancelConfirmRawOrderId] = useState(null);
   const [cancelShowsRefundDisclaimer, setCancelShowsRefundDisclaimer] = useState(false);
   const [checkoutPayBanner, setCheckoutPayBanner] = useState('');
+
+  const [leaveReviewOpen, setLeaveReviewOpen] = useState(false)
+  const [leaveReviewOrder, setLeaveReviewOrder] = useState(null)
 
   const bumpRefresh = useCallback(() => {
     setRefreshNonce((n) => n + 1);
@@ -136,7 +140,7 @@ export default function PurchasesPage() {
         const { data: items } = orderIds.length
           ? await supabase
               .from('order_items')
-              .select('order_id,name,quantity,price')
+              .select('id,order_id,product_id,name,quantity,price')
               .in('order_id', orderIds)
           : { data: [] };
 
@@ -228,6 +232,16 @@ export default function PurchasesPage() {
       window.alert('Could not download receipt.');
     }
   }, []);
+
+  const openLeaveReview = useCallback((purchase) => {
+    if (!purchase?.rawOrderId || !Array.isArray(purchase.orderItemsForReview)) return
+    setLeaveReviewOrder({
+      rawOrderId: purchase.rawOrderId,
+      displayOrderId: purchase.id,
+      orderItems: purchase.orderItemsForReview,
+    })
+    setLeaveReviewOpen(true)
+  }, [])
 
   const confirmCancelBooking = useCallback(async () => {
     if (!cancelConfirmRawOrderId) return;
@@ -347,6 +361,7 @@ export default function PurchasesPage() {
                       setCancelConfirmRawOrderId(id);
                       setCancelShowsRefundDisclaimer(Boolean(showsRefundDisclaimer));
                     },
+                    onLeaveReview: openLeaveReview,
                   }}
                 />
               ))}
@@ -367,6 +382,24 @@ export default function PurchasesPage() {
         }}
         onConfirm={confirmCancelBooking}
         confirming={Boolean(cancellingOrderId)}
+      />
+
+      <LeaveReviewModal
+        open={leaveReviewOpen}
+        orderId={leaveReviewOrder?.rawOrderId ?? ''}
+        orderLabel={leaveReviewOrder?.displayOrderId ? `#${leaveReviewOrder.displayOrderId}` : ''}
+        orderItems={leaveReviewOrder?.orderItems ?? []}
+        onClose={() => {
+          if (leaveReviewOpen) {
+            setLeaveReviewOpen(false)
+            setLeaveReviewOrder(null)
+          }
+        }}
+        onSubmitted={() => {
+          setLeaveReviewOpen(false)
+          setLeaveReviewOrder(null)
+          bumpRefresh()
+        }}
       />
     </div>
   );

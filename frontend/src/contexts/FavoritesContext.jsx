@@ -42,8 +42,8 @@ export function FavoritesProvider({ children }) {
 
   const loadFavorites = useCallback(async (nextUser) => {
     if (nextUser?.id) {
-      setUserId(nextUser.id)
       const { items: fetched, error } = await supabaseFetchFavorites(supabase, nextUser.id)
+      setUserId(nextUser.id)
       if (!error) setItems(fetched)
       else setItems([])
     } else {
@@ -55,13 +55,27 @@ export function FavoritesProvider({ children }) {
   useEffect(() => {
     let mounted = true
     if (authLoading) return
-    loadFavorites(favoritesUser).finally(() => {
-      if (mounted) setLoading(false)
-    })
+
+    const run = async () => {
+      if (favoritesUser?.id) {
+        const { items: fetched, error } = await supabaseFetchFavorites(supabase, favoritesUser.id)
+        if (!mounted) return
+        setUserId(favoritesUser.id)
+        setItems(error ? [] : fetched)
+      } else {
+        if (!mounted) return
+        setUserId(null)
+        setItems([])
+      }
+      setLoading(false)
+    }
+
+    run()
+
     return () => {
       mounted = false
     }
-  }, [authLoading, favoritesUser, loadFavorites])
+  }, [authLoading, favoritesUser])
 
   const isFavorite = useCallback(
     (listingId, packageOption = '') => {

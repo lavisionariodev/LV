@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { SERVICES, CATEGORIES, PROVIDERS, getServiceById } from '@/data/shopSampleData'
 import { useDebouncedEffect } from '@/shared/hooks'
@@ -86,15 +86,58 @@ export default function ShopPage() {
   const [mobileCurrentPage, setMobileCurrentPage] = useState(1)
   const MOBILE_ITEMS_PER_PAGE = 10
 
+  const resetPagination = useCallback(() => {
+    setCurrentPage(1)
+    setMobileCurrentPage(1)
+  }, [])
+
+  const setSortAndReset = useCallback((value) => {
+    setSortBy(value)
+    resetPagination()
+  }, [resetPagination])
+
+  const setCategoryAndReset = useCallback((value) => {
+    setActiveCategory(value)
+    resetPagination()
+  }, [resetPagination])
+
+  const setProviderAndReset = useCallback((value) => {
+    setSelectedProvider(value)
+    resetPagination()
+  }, [resetPagination])
+
+  const setLocationQueryAndReset = useCallback((value) => {
+    setLocationQuery(value)
+    setSelectedProvider(null)
+    resetPagination()
+  }, [resetPagination])
+
+  const normalizeListings = useCallback(
+    (rows) => {
+      const normalizedListings = mergeShopListings(rows)
+      setListings(normalizedListings)
+
+      if (activeCategory !== 'all') {
+        const activeServiceIds = new Set(
+          normalizedListings.map((listing) => String(listing.serviceId).trim()).filter(Boolean),
+        )
+        if (!activeServiceIds.has(activeCategory)) {
+          setCategoryAndReset('all')
+        }
+      }
+    },
+    [activeCategory, setCategoryAndReset],
+  )
+
   useEffect(() => {
     let cancelled = false
     fetchActiveShopListings({ bustCache: true })
       .then((rows) => {
         if (cancelled) return
-        setListings(mergeShopListings(rows))
+        normalizeListings(rows)
       })
       .catch(() => {
-        if (!cancelled) setListings(mergeShopListings([]))
+        if (!cancelled) normalizeListings([])
       })
       .finally(() => {
         if (!cancelled) setListingsLoading(false)
@@ -102,7 +145,7 @@ export default function ShopPage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [normalizeListings])
 
   // After creating a listing in another tab, refetch so the grid is not stuck on a 45s cache.
   useEffect(() => {
@@ -110,20 +153,24 @@ export default function ShopPage() {
       if (document.visibilityState !== 'visible') return
       fetchActiveShopListings({ bustCache: true })
         .then((rows) => {
-          setListings(mergeShopListings(rows))
+          normalizeListings(rows)
         })
-        .catch(() => {})
+        .catch(() => {
+          normalizeListings([])
+        })
     }
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
-  }, [])
+  }, [normalizeListings])
 
   // Sync state ← URL (back/forward, shared links)
+  // Keep the location filter in sync with the `loc` query param.
   useEffect(() => {
     const nextLoc = readString(searchParams, 'loc', '')
-    if (nextLoc !== locationQuery) setLocationQuery(nextLoc)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams])
+    if (nextLoc !== locationQuery) {
+      queueMicrotask(() => setLocationQuery(nextLoc))
+    }
+  }, [searchParams, locationQuery])
 
   // Sync URL ← state (debounced typing in location fields — preserves `q` from navbar search)
   useDebouncedEffect(() => {
@@ -213,12 +260,6 @@ export default function ShopPage() {
     return () => window.removeEventListener('resize', applyNavbarHeight)
   }, [])
 
-  // Reset to page 1 whenever filters/search/sort change
-  useEffect(() => {
-    setCurrentPage(1)
-    setMobileCurrentPage(1)
-  }, [activeCategory, sortBy, selectedProvider, locationQuery])
-
   // Derive unique locations from all providers
   const allLocations = useMemo(() => {
     const locs = allProviders.map((p) => p.location).filter(Boolean)
@@ -246,6 +287,27 @@ export default function ShopPage() {
 
     return providers
   }, [listings, activeCategory, locationQuery, allProviders])
+
+  const availableCategories = useMemo(() => {
+    const activeServiceIds = new Set(
+      listings.map((l) => String(l.serviceId).trim()).filter(Boolean),
+    )
+
+    const categories = [
+      { id: 'all', label: 'All Services' },
+      ...CATEGORIES.filter((cat) => cat.id !== 'all' && activeServiceIds.has(cat.id)),
+    ]
+
+    const extraCategoryIds = [...activeServiceIds].filter(
+      (id) => !categories.some((cat) => cat.id === id),
+    )
+    extraCategoryIds.forEach((id) => {
+      const service = SERVICES.find((s) => s.id === id)
+      categories.push({ id, label: service?.name ?? id.replace(/-/g, ' ') })
+    })
+
+    return categories
+  }, [listings])
 
   function toggleCompare(id) {
     setCompareIds((prev) => {
@@ -306,7 +368,7 @@ export default function ShopPage() {
             <button
               key={opt.value}
               className={`${styles.mobileSortPill}${sortBy === opt.value ? ` ${styles.mobileSortPillActive}` : ''}`}
-              onClick={() => setSortBy(opt.value)}
+              onClick={() => setSortAndReset(opt.value)}
             >
               {opt.label}
             </button>
@@ -317,8 +379,8 @@ export default function ShopPage() {
         {activeCategory !== 'all' && (
           <div className={styles.mobileActiveCatRow}>
             <span className={styles.mobileActiveCat}>
-              {CATEGORIES.find(c => c.id === activeCategory)?.label}
-              <button className={styles.mobileActiveCatClear} onClick={() => setActiveCategory('all')} aria-label="Clear category">
+              {availableCategories.find((c) => c.id === activeCategory)?.label}
+              <button className={styles.mobileActiveCatClear} onClick={() => setCategoryAndReset('all')} aria-label="Clear category">
                 <svg viewBox="0 0 10 10" width="8" height="8" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                   <path d="M2 2l6 6M8 2l-6 6" />
                 </svg>
@@ -345,11 +407,11 @@ export default function ShopPage() {
                 <div className={styles.filtersModalSection}>
                   <p className={styles.filtersModalSectionTitle}>Categories</p>
                   <div className={styles.filtersModalCatList}>
-                    {CATEGORIES.map((cat) => (
+                    {availableCategories.map((cat) => (
                       <button
                         key={cat.id}
                         className={`${styles.filtersModalCatBtn}${activeCategory === cat.id ? ` ${styles.filtersModalCatBtnActive}` : ''}`}
-                        onClick={() => setActiveCategory(cat.id)}
+                        onClick={() => setCategoryAndReset(cat.id)}
                       >
                         <span>{cat.label}</span>
                         {activeCategory === cat.id && (
@@ -375,13 +437,13 @@ export default function ShopPage() {
                       type="text"
                       placeholder="City or area…"
                       value={locationQuery}
-                      onChange={(e) => { setLocationQuery(e.target.value); setSelectedProvider(null) }}
+                      onChange={(e) => setLocationQueryAndReset(e.target.value)}
                       onFocus={() => setLocationFocused(true)}
                       onBlur={() => setLocationFocused(false)}
                       list="location-suggestions-modal"
                     />
                     {locationQuery && (
-                      <button className={styles.locationClear} onClick={() => { setLocationQuery(''); setSelectedProvider(null) }} aria-label="Clear location">
+                      <button className={styles.locationClear} onClick={() => setLocationQueryAndReset('')} aria-label="Clear location">
                         <svg viewBox="0 0 10 10" width="9" height="9" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                           <path d="M2 2l6 6M8 2l-6 6" />
                         </svg>
@@ -409,7 +471,7 @@ export default function ShopPage() {
                         <button
                           key={provider.id}
                           className={`${styles.providerItem}${selectedProvider === provider.id ? ` ${styles.providerItemActive}` : ''}`}
-                          onClick={() => setSelectedProvider(selectedProvider === provider.id ? null : provider.id)}
+                          onClick={() => setProviderAndReset(selectedProvider === provider.id ? null : provider.id)}
                         >
                           <ShopProviderCircleThumb
                             provider={provider}
@@ -443,7 +505,7 @@ export default function ShopPage() {
               </div>
 
               <div className={styles.filtersModalFooter}>
-                <button className={styles.filtersModalClear} onClick={() => { setActiveCategory('all'); setLocationQuery(''); setSelectedProvider(null) }}>
+                <button className={styles.filtersModalClear} onClick={() => { setCategoryAndReset('all'); setLocationQueryAndReset('') }}>
                   Clear all
                 </button>
                 <button className={styles.filtersModalApply} onClick={() => setShowFiltersModal(false)}>
@@ -464,11 +526,11 @@ export default function ShopPage() {
             </div>
             <div className={styles.sideNavScroll}>
             <nav className={styles.sideNavList}>
-              {CATEGORIES.map((cat) => (
+              {availableCategories.map((cat) => (
                 <button
                   key={cat.id}
                   className={`${styles.sideNavItem}${activeCategory === cat.id ? ` ${styles.sideNavItemActive}` : ''}`}
-                  onClick={() => setActiveCategory(cat.id)}
+                  onClick={() => setCategoryAndReset(cat.id)}
                 >
                   <span className={styles.sideNavLabel}>{cat.label}</span>
                   {activeCategory === cat.id && (
@@ -496,7 +558,7 @@ export default function ShopPage() {
                     type="text"
                     placeholder="City or area…"
                     value={locationQuery}
-                    onChange={(e) => { setLocationQuery(e.target.value); setSelectedProvider(null) }}
+                    onChange={(e) => setLocationQueryAndReset(e.target.value)}
                     onFocus={() => setLocationFocused(true)}
                     onBlur={() => setLocationFocused(false)}
                     list="location-suggestions"
@@ -504,7 +566,7 @@ export default function ShopPage() {
                   {locationQuery && (
                     <button
                       className={styles.locationClear}
-                      onClick={() => { setLocationQuery(''); setSelectedProvider(null) }}
+                      onClick={() => setLocationQueryAndReset('')}
                       aria-label="Clear location"
                     >
                       <svg viewBox="0 0 10 10" width="9" height="9" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -539,7 +601,7 @@ export default function ShopPage() {
                     <button
                       key={provider.id}
                       className={`${styles.providerItem}${selectedProvider === provider.id ? ` ${styles.providerItemActive}` : ''}`}
-                      onClick={() => setSelectedProvider(selectedProvider === provider.id ? null : provider.id)}
+                      onClick={() => setProviderAndReset(selectedProvider === provider.id ? null : provider.id)}
                     >
                       <ShopProviderCircleThumb
                         provider={provider}
@@ -589,7 +651,7 @@ export default function ShopPage() {
             </div>
               <div className={styles.sortWrap}>
                 <span className={styles.sortLabel}>Sort by</span>
-                <select className={styles.sortSelect} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                <select className={styles.sortSelect} value={sortBy} onChange={(e) => setSortAndReset(e.target.value)}>
                   <option value="stock-desc">Availability (in stock first)</option>
                   <option value="price-asc">Price: Low to High</option>
                   <option value="price-desc">Price: High to Low</option>
@@ -626,7 +688,7 @@ export default function ShopPage() {
                 </div>
                 <p className={styles.emptyTitle}>No services found</p>
                 <p className={styles.emptyText}>Try adjusting your search or browsing a different category.</p>
-                <button className={styles.emptyReset} onClick={() => { setActiveCategory('all'); setSelectedProvider(null); setLocationQuery('') }}>
+                <button className={styles.emptyReset} onClick={() => { setCategoryAndReset('all'); setLocationQueryAndReset('') }}>
                   Reset all filters
                 </button>
               </div>

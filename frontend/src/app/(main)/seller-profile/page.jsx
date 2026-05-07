@@ -882,6 +882,8 @@ export default function SellerProfilePage() {
   const [allShopListings, setAllShopListings] = useState([])
   /** Row from `get_public_seller_profile` when catalog has no listings for this seller. */
   const [publicSellerProfile, setPublicSellerProfile] = useState(null)
+  /** Buyer order-item reviews + aggregates for the Reviews tab + seller rating. */
+  const [sellerReviewsPayload, setSellerReviewsPayload] = useState(null)
   /** `user_id` the catalog + profile fetch completed for (loading until this matches `realSellerId`). */
   const [catalogLoadedSellerId, setCatalogLoadedSellerId] = useState(null)
 
@@ -893,21 +895,25 @@ export default function SellerProfilePage() {
     /** Avoid flashing the previous seller’s listings while fetching for a new UUID. */
     setAllShopListings([])
     setPublicSellerProfile(null)
+    setSellerReviewsPayload(null)
     setCatalogLoadedSellerId(null)
     Promise.all([
       fetchActiveShopListings({ bustCache: true }).then((raw) => mergeShopListings(raw)),
       fetchPublicSellerProfile(realSellerId),
+      fetch(`/api/seller/${encodeURIComponent(realSellerId)}/reviews`).then((r) => r.json()).catch(() => null),
     ])
-      .then(([listings, profile]) => {
+      .then(([listings, profile, reviewsPayload]) => {
         if (cancelled) return
         setAllShopListings(listings)
         setPublicSellerProfile(profile)
+        setSellerReviewsPayload(reviewsPayload)
         setCatalogLoadedSellerId(realSellerId)
       })
       .catch(() => {
         if (cancelled) return
         setAllShopListings([])
         setPublicSellerProfile(null)
+        setSellerReviewsPayload(null)
         setCatalogLoadedSellerId(realSellerId)
       })
     return () => {
@@ -925,12 +931,19 @@ export default function SellerProfilePage() {
     if (!realSellerId) {
       return { seller: SAMPLE_SELLER, listings: SAMPLE_LISTINGS, reviews: SAMPLE_REVIEWS }
     }
+    const aggregates = sellerReviewsPayload?.aggregates ?? {}
+    const avgRating = aggregates?.avgRating ?? null
+    const reviewCount = Number(aggregates?.reviewCount ?? 0) || 0
     return {
-      seller: buildSellerViewModel(realSellerId, shopRowsForSeller, publicSellerProfile),
+      seller: {
+        ...buildSellerViewModel(realSellerId, shopRowsForSeller, publicSellerProfile),
+        rating: avgRating,
+        reviewCount,
+      },
       listings: listingsFromShopRows(shopRowsForSeller),
-      reviews: SAMPLE_REVIEWS,
+      reviews: Array.isArray(sellerReviewsPayload?.reviews) ? sellerReviewsPayload.reviews : [],
     }
-  }, [realSellerId, shopRowsForSeller, publicSellerProfile])
+  }, [realSellerId, shopRowsForSeller, publicSellerProfile, sellerReviewsPayload])
 
   if (realSellerId && loading) {
     return <SellerProfileLoading />
