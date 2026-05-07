@@ -22,32 +22,62 @@ export async function GET(request, { params }) {
   const supabaseAdmin = getSupabaseAdmin()
   let actualOrderId = null
 
+  apiLog('buyer.reviews.get.param', { orderId, isUuid: isUuidLike(orderId) })
+
   if (orderId) {
     if (isUuidLike(orderId)) {
-      const { data: order } = await supabaseAdmin
-        .from('orders')
-        .select('id')
-        .eq('id', orderId)
-        .maybeSingle()
-      if (order) {
-        actualOrderId = order.id
+      try {
+        const { data: order, error: err1 } = await supabaseAdmin
+          .from('orders')
+          .select('id')
+          .eq('id', orderId)
+          .maybeSingle()
+        apiLog('buyer.reviews.get.uuid_lookup', { found: !!order, orderId, error: errorMessage(err1) })
+        if (order) {
+          actualOrderId = order.id
+        }
+      } catch (e) {
+        apiLog('buyer.reviews.get.uuid_lookup_exception', { error: String(e) })
       }
     }
   }
 
   if (!actualOrderId && orderId) {
-    const { data: order } = await supabaseAdmin
-      .from('orders')
-      .select('id')
-      .ilike('order_number', orderId)
-      .maybeSingle()
-    if (order) {
-      actualOrderId = order.id
+    try {
+      const { data: order, error: err2 } = await supabaseAdmin
+        .from('orders')
+        .select('id')
+        .ilike('order_number', orderId)
+        .maybeSingle()
+      apiLog('buyer.reviews.get.number_lookup', { found: !!order, orderId, error: errorMessage(err2) })
+      if (order) {
+        actualOrderId = order.id
+      }
+    } catch (e) {
+      apiLog('buyer.reviews.get.number_lookup_exception', { error: String(e) })
     }
   }
 
   if (!actualOrderId) {
-    return NextResponse.json({ error: 'Invalid orderId.' }, { status: 400 })
+    // Debug: check if order exists at all
+    try {
+      const { data: allOrders, error: debugErr } = await supabaseAdmin
+        .from('orders')
+        .select('id, order_number')
+        .limit(5)
+      apiLog('buyer.reviews.get.sample_orders', { 
+        sampleOrders: allOrders?.map(o => ({ id: o.id, order_number: o.order_number })),
+        error: errorMessage(debugErr)
+      })
+    } catch (e) {
+      apiLog('buyer.reviews.get.sample_orders_exception', { error: String(e) })
+    }
+    
+    apiLog('buyer.reviews.get.invalid_id', { orderId, orderIdLength: orderId?.length })
+    return NextResponse.json(
+      { error: 'Invalid orderId.', debug: { received: orderId, length: orderId?.length } },
+      { status: 400 }
+    )
   }
   const {
     data: { user },

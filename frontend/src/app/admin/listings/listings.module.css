@@ -2368,12 +2368,12 @@
 }
 
 .sellerAvatar {
-  width: 34px;
-  height: 34px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: #e2e8f0;
   color: #64748b;
-  font-size: 12px;
+  font-size: 8px;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -2412,7 +2412,7 @@
 .cardSellerRow {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   margin-top: 6px;
   min-width: 0;
 }
@@ -2726,6 +2726,13 @@
 
   .reviewHeader { padding: 14px 18px 12px; }
   .tableWrap { padding: 0; }
+
+  /* Seller avatar — smaller on mobile */
+  .sellerAvatar {
+    width: 16px;
+    height: 16px;
+    font-size: 8px;
+  }
 }
 
 @media (max-width: 480px) {

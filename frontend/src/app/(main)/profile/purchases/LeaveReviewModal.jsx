@@ -45,6 +45,11 @@ export function LeaveReviewModal({
   const safeOrderId = String(orderId ?? '').trim()
   const safeItems = Array.isArray(orderItems) ? orderItems : []
 
+  // Debug logging
+  if (open && safeOrderId) {
+    console.log('[LeaveReviewModal] orderId prop:', orderId, 'safeOrderId:', safeOrderId, 'length:', safeOrderId.length)
+  }
+
   const reviewItems = useMemo(
     () => safeItems.filter((x) => x?.orderItemId && x?.label),
     [safeItems],

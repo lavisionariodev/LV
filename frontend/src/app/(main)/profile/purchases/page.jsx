@@ -137,12 +137,18 @@ export default function PurchasesPage() {
         }
 
         const orderIds = (orders ?? []).map((o) => o.id);
-        const { data: items } = orderIds.length
+        const { data: items, error: itemsErr } = orderIds.length
           ? await supabase
               .from('order_items')
               .select('id,order_id,product_id,name,quantity,price')
               .in('order_id', orderIds)
-          : { data: [] };
+          : { data: [], error: null };
+
+        // Debug: if items are empty, RLS policy on order_items may be missing.
+        // Fix: run the buyer_select_own_order_items RLS policy in Supabase SQL editor.
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[purchases] order_items fetched:', items?.length ?? 0, itemsErr ?? 'no error');
+        }
 
         const itemsByOrder = new Map();
         for (const it of items ?? []) {
@@ -234,7 +240,26 @@ export default function PurchasesPage() {
   }, []);
 
   const openLeaveReview = useCallback((purchase) => {
+    // Debug: log what we received so missing fields are easy to spot.
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[openLeaveReview]', {
+        rawOrderId: purchase?.rawOrderId,
+        orderItemsForReview: purchase?.orderItemsForReview,
+      });
+    }
+
     if (!purchase?.rawOrderId || !Array.isArray(purchase.orderItemsForReview)) return
+
+    // Guard: if items are present but all have null orderItemId, RLS is still blocking order_items.
+    const validItems = purchase.orderItemsForReview.filter((x) => x?.orderItemId && x?.label)
+    if (validItems.length === 0) {
+      console.warn(
+        '[openLeaveReview] No valid orderItemsForReview — ensure the buyer_select_own_order_items ' +
+        'RLS policy exists on public.order_items in Supabase.',
+      )
+      return
+    }
+
     setLeaveReviewOrder({
       rawOrderId: purchase.rawOrderId,
       displayOrderId: purchase.id,

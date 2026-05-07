@@ -1,10 +1,15 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { fetchActiveShopListings, mergeShopListings } from '@/lib/shop-listings/client'
 import { fetchPublicSellerProfile, normalizeSellerSpecialties } from '@/lib/sellers/client'
 import { isUuidLike } from '@/lib/uuidLike'
+import { buildCartPayloadFromListing } from '@/lib/cart/fromListing'
+import { assertListingReadyForCart } from '@/lib/cart/bookNow'
+import { useCart } from '@/contexts/CartContext'
+import { useAuth } from '@/contexts/AuthContext'
+import { useToast } from '@/contexts/ToastContext'
 import ContactSellerModal from '@/components/ui/Modal/ContactSellerModal'
 import styles from './seller-profile.module.css'
 
@@ -879,24 +884,33 @@ export default function SellerProfilePage() {
   const sellerParam = searchParams.get('seller')?.trim()
   const realSellerId = isUuidLike(sellerParam) ? sellerParam : null
 
-  const [allShopListings, setAllShopListings] = useState([])
-  /** Row from `get_public_seller_profile` when catalog has no listings for this seller. */
-  const [publicSellerProfile, setPublicSellerProfile] = useState(null)
-  /** Buyer order-item reviews + aggregates for the Reviews tab + seller rating. */
-  const [sellerReviewsPayload, setSellerReviewsPayload] = useState(null)
-  /** `user_id` the catalog + profile fetch completed for (loading until this matches `realSellerId`). */
-  const [catalogLoadedSellerId, setCatalogLoadedSellerId] = useState(null)
+  /** All seller fetch state in one object so a single setState resets/updates atomically.
+   *  This avoids calling multiple setStates synchronously in an effect body
+   *  (react-hooks/set-state-in-effect). */
+  const [sellerFetchState, setSellerFetchState] = useState({
+    allShopListings: [],
+    publicSellerProfile: null,
+    sellerReviewsPayload: null,
+    /** `user_id` the catalog + profile fetch completed for (loading until this matches `realSellerId`). */
+    catalogLoadedSellerId: null,
+  })
+
+  const { allShopListings, publicSellerProfile, sellerReviewsPayload, catalogLoadedSellerId } =
+    sellerFetchState
 
   const loading = Boolean(realSellerId) && catalogLoadedSellerId !== realSellerId
 
   useEffect(() => {
     if (!realSellerId) return
     let cancelled = false
-    /** Avoid flashing the previous seller’s listings while fetching for a new UUID. */
-    setAllShopListings([])
-    setPublicSellerProfile(null)
-    setSellerReviewsPayload(null)
-    setCatalogLoadedSellerId(null)
+    /** Avoid flashing the previous seller's listings while fetching for a new UUID.
+     *  Single setState keeps this lint-clean (react-hooks/set-state-in-effect). */
+    setSellerFetchState({
+      allShopListings: [],
+      publicSellerProfile: null,
+      sellerReviewsPayload: null,
+      catalogLoadedSellerId: null,
+    })
     Promise.all([
       fetchActiveShopListings({ bustCache: true }).then((raw) => mergeShopListings(raw)),
       fetchPublicSellerProfile(realSellerId),
@@ -904,17 +918,21 @@ export default function SellerProfilePage() {
     ])
       .then(([listings, profile, reviewsPayload]) => {
         if (cancelled) return
-        setAllShopListings(listings)
-        setPublicSellerProfile(profile)
-        setSellerReviewsPayload(reviewsPayload)
-        setCatalogLoadedSellerId(realSellerId)
+        setSellerFetchState({
+          allShopListings: listings,
+          publicSellerProfile: profile,
+          sellerReviewsPayload: reviewsPayload,
+          catalogLoadedSellerId: realSellerId,
+        })
       })
       .catch(() => {
         if (cancelled) return
-        setAllShopListings([])
-        setPublicSellerProfile(null)
-        setSellerReviewsPayload(null)
-        setCatalogLoadedSellerId(realSellerId)
+        setSellerFetchState({
+          allShopListings: [],
+          publicSellerProfile: null,
+          sellerReviewsPayload: null,
+          catalogLoadedSellerId: realSellerId,
+        })
       })
     return () => {
       cancelled = true
@@ -955,15 +973,48 @@ export default function SellerProfilePage() {
 // ─── ListingCard ──────────────────────────────────────────────────────────────
 
 function ListingCard({ listing, styles }) {
+  const { addItem } = useCart()
+  const { user, authLoading, isBuyer } = useAuth()
+  const router = useRouter()
+  const toast = useToast()
   const [adding, setAdding] = useState(false)
 
-  const handleAddToCart = (e) => {
+  const redirectLoginPath = `/shop/${listing.serviceId}?listing=${encodeURIComponent(listing.id)}`
+  const pkgOpts = listing.sellerPackageOptions ?? []
+  const defaultPkg = pkgOpts.length > 0 ? pkgOpts[0] : ''
+
+  const handleAddToCart = async (e) => {
     e.preventDefault()
     e.stopPropagation()
-    if (listing.inStock === false) return
+    if (adding) return
+
+    const gate = assertListingReadyForCart(listing, defaultPkg, { user, isBuyer })
+    if (!gate.ok) {
+      if (gate.needLogin) {
+        router.push(`/buyer/login?redirect=${encodeURIComponent(redirectLoginPath)}`)
+        return
+      }
+      toast.error(gate.message)
+      return
+    }
+
+    const { error: buildErr, payload } = buildCartPayloadFromListing(listing, {
+      quantity: 1,
+      buyerPackage: defaultPkg,
+    })
+    if (buildErr || !payload) {
+      toast.error(buildErr || 'Could not add to cart')
+      return
+    }
+
     setAdding(true)
-    // Simulate async cart add
-    setTimeout(() => setAdding(false), 800)
+    try {
+      const { error } = await addItem(payload)
+      if (error) toast.error(error.message || 'Could not add to cart')
+      else toast.success('Added to cart')
+    } finally {
+      setAdding(false)
+    }
   }
 
   const href = `/shop/${listing.serviceId}?listing=${encodeURIComponent(listing.id)}`
@@ -1004,7 +1055,7 @@ function ListingCard({ listing, styles }) {
           type="button"
           className={styles.ctaBtn}
           onClick={handleAddToCart}
-          disabled={adding || listing.inStock === false}
+          disabled={authLoading || adding || listing.inStock === false}
           aria-busy={adding}
         >
           <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 5, flexShrink: 0 }}>
