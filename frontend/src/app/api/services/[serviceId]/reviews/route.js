@@ -11,7 +11,7 @@ function formatISODate(dateIso) {
 }
 
 export async function GET(request, { params }) {
-  const serviceIdRaw = params?.serviceId
+  const { serviceId: serviceIdRaw } = await params
   const serviceId = String(serviceIdRaw ?? '').trim()
   if (!SERVICE_ID_ALLOWED.has(serviceId)) {
     return NextResponse.json({ error: 'Invalid serviceId.' }, { status: 400 })
