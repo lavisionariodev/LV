@@ -84,9 +84,4 @@
   opacity: 0.92;
 }
 
-@media (max-width: 480px) {
-  .btnText {
-    display: none;
-  }
-}
 

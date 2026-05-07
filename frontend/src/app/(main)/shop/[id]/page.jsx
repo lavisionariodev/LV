@@ -15,6 +15,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/contexts/ToastContext'
 import { formatPhpAmount } from '@/lib/cart/formatPhp'
 import { isUuidLike } from '@/lib/uuidLike'
+import { buildSellerContactOptions } from '@/lib/sellers/socialLinks'
+import { FaFacebook, FaFacebookMessenger, FaWhatsapp, FaPhoneAlt, FaEnvelope } from 'react-icons/fa'
 import styles from './detail.module.css'
 
 export default function ServiceDetailPage({ params }) {
@@ -59,6 +61,7 @@ export default function ServiceDetailPage({ params }) {
   const [addError, setAddError] = useState(null)
   const [saveBusy, setSaveBusy] = useState(false)
   const [saveError, setSaveError] = useState(null)
+  const [chatOpen, setChatOpen] = useState(false)
 
   useEffect(() => {
     const ids = new Set(listingsForService.map((l) => String(l.id)))
@@ -570,6 +573,8 @@ export default function ServiceDetailPage({ params }) {
             provider={provider}
             styles={styles}
             allListings={catalogForChildren}
+            chatOpen={chatOpen}
+            setChatOpen={setChatOpen}
           />
         )}
 
@@ -588,7 +593,7 @@ export default function ServiceDetailPage({ params }) {
       {/* ── MOBILE STICKY ACTION BAR ── */}
       <div className={styles.mobileActionBar}>
         {/* Chat Now — opens provider chat if provider exists */}
-        <button type="button" className={styles.mobileActionBarChat} aria-label="Chat Now">
+        <button type="button" className={styles.mobileActionBarChat} aria-label="Chat Now" onClick={() => setChatOpen((o) => !o)}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
           </svg>
@@ -1191,8 +1196,21 @@ function StarRow({ rating, styles, size = 14 }) {
   )
 }
 /* ─── Provider card with chat options ─── */
-function ProviderCard({ provider, styles, allListings = [] }) {
-  const [chatOpen, setChatOpen] = useState(false)
+function iconForPlatform(platform) {
+  if (platform === 'messenger') return <FaFacebookMessenger />
+  if (platform === 'facebook') return <FaFacebook />
+  if (platform === 'whatsapp') return <FaWhatsapp />
+  if (platform === 'phone') return <FaPhoneAlt />
+  if (platform === 'email') return <FaEnvelope />
+  return null
+}
+
+function ProviderCard({ provider, styles, allListings = [], chatOpen, setChatOpen }) {
+  const [chatOpenInternal, setChatOpenInternal] = useState(false)
+
+  // Use external state if provided, otherwise use internal
+  const effectiveChatOpen = chatOpen !== undefined ? chatOpen : chatOpenInternal
+  const effectiveSetChatOpen = setChatOpen || setChatOpenInternal
 
   // ── Computed stats from real data ──
   const providerListings = allListings.filter((l) => String(l.providerId) === String(provider.id))
@@ -1248,39 +1266,7 @@ function ProviderCard({ provider, styles, allListings = [] }) {
     provider.id,
   ])
 
-  const phoneSvg = (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.35 2 2 0 0 1 3.58 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.56a16 16 0 0 0 6.29 6.29l1.62-1.62a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-  )
-  const whatsappSvg = (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-  )
-  const facebookSvg = (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
-  )
-  const instagramSvg = (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
-  )
-  const emailSvg = (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-  )
-
-  const contacts = []
-  if (provider.phone) {
-    contacts.push({ label: 'Call / SMS', svgIcon: phoneSvg, href: `tel:${provider.phone}` })
-    contacts.push({ label: 'WhatsApp', svgIcon: whatsappSvg, href: `https://wa.me/${provider.phone.replace(/\D/g, '')}` })
-  }
-  if (provider.facebook) {
-    contacts.push({ label: 'Facebook', svgIcon: facebookSvg, href: provider.facebook })
-  }
-  if (provider.instagram) {
-    contacts.push({ label: 'Instagram', svgIcon: instagramSvg, href: provider.instagram })
-  }
-  if (provider.email) {
-    contacts.push({ label: 'Email', svgIcon: emailSvg, href: `mailto:${provider.email}` })
-  }
-  if (contacts.length === 0) {
-    contacts.push({ label: 'Contact Provider', svgIcon: emailSvg, href: '#' })
-  }
+  const contacts = buildSellerContactOptions({ sellerName: provider.name, socialLinks: provider.socialLinks })
 
   return (
     <div className={styles.providerCard}>
@@ -1315,29 +1301,29 @@ function ProviderCard({ provider, styles, allListings = [] }) {
           <div className={styles.chatWrap}>
             <button
               className={styles.btnChatNow}
-              onClick={() => setChatOpen((o) => !o)}
-              aria-expanded={chatOpen}
+              onClick={() => effectiveSetChatOpen((o) => !o)}
+              aria-expanded={effectiveChatOpen}
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
               </svg>
               Chat Now
             </button>
-            {chatOpen && (
+            {effectiveChatOpen && (
               <>
-                <div className={styles.chatBackdrop} onClick={() => setChatOpen(false)} />
+                <div className={styles.chatBackdrop} onClick={() => effectiveSetChatOpen(false)} />
                 <div className={styles.chatDropdown}>
                   <p className={styles.chatDropdownLabel}>Contact via</p>
                   {contacts.map((c) => (
                     <a
-                      key={c.label}
+                      key={c.platform}
                       href={c.href}
                       target="_blank"
                       rel="noopener noreferrer"
                       className={styles.chatOption}
-                      onClick={() => setChatOpen(false)}
+                      onClick={() => effectiveSetChatOpen(false)}
                     >
-                      <span className={styles.chatOptionIcon}>{c.svgIcon}</span>
+                      <span className={styles.chatOptionIcon}>{iconForPlatform(c.platform)}</span>
                       {c.label}
                     </a>
                   ))}

@@ -643,7 +643,9 @@ export default function PublicNavbar() {
                 </form>
               </div>
               <div className={styles.navActionsMobileButtons}>
-                <InstallAppControl variant="light" />
+                <div className={styles.installAppFloatMobile}>
+                  <InstallAppControl />
+                </div>
                 {isAuthenticated && (
                   <span className={styles.cartBtnWrap}>
                     <button
