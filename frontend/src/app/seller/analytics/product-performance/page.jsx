@@ -1,55 +1,92 @@
 'use client'
 
+import { useMemo } from 'react'
 import { TbAdjustmentsHorizontal } from 'react-icons/tb'
 import styles from '../analytics.module.css'
+import { useSellerAnalyticsData } from '@/lib/seller/useSellerAnalyticsData'
+import {
+  averagePaidBookingValueLastNMonths,
+  bestMonthLabelLastNMonths,
+  packageBookingCountsLastNMonths,
+  packagesNeedingAttentionCount,
+  returningBuyerRate,
+  topPackagesByPaidRevenue,
+} from '@/lib/seller/sellerOrderAnalytics'
+
+function formatPhp(n) {
+  return new Intl.NumberFormat('en-PH', {
+    style: 'currency',
+    currency: 'PHP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(n)
+}
 
 export default function SellerAnalyticsProductPerformancePage() {
-  const packageBookings = [
-    { label: 'Traditional full', confirmed: 18, pending: 6 },
-    { label: 'Cremation', confirmed: 12, pending: 6 },
-    { label: 'Simple wake', confirmed: 10, pending: 5 },
-    { label: 'Memorial only', confirmed: 5, pending: 3 },
-    { label: 'Transport add-on', confirmed: 7, pending: 2 },
-    { label: 'Documentation', confirmed: 6, pending: 1 },
-  ]
+  const { orders, loading, error } = useSellerAnalyticsData()
 
+  const orders12m = useMemo(() => {
+    if (!orders.length) return []
+    const newest = Math.max(...orders.map((o) => new Date(o.created_at).getTime()))
+    const start = newest - 365 * 24 * 60 * 60 * 1000
+    return orders.filter((o) => new Date(o.created_at).getTime() >= start)
+  }, [orders])
+
+  const packageBookings = useMemo(() => packageBookingCountsLastNMonths(orders, 6), [orders])
   const totals = packageBookings.map((pkg) => pkg.confirmed + pkg.pending)
   const maxTotal = Math.max(...totals, 1)
 
+  const topPaid = topPackagesByPaidRevenue(orders12m, 1)[0]
+  const topRevenue = topPaid?.revenue ?? 0
+  const topName = topPaid?.name ?? '—'
+
+  const best = bestMonthLabelLastNMonths(orders, 12)
+  const attention = packagesNeedingAttentionCount(orders)
+  const repeatRate = returningBuyerRate(orders)
+  const avg12 = averagePaidBookingValueLastNMonths(orders, 12)
+
   return (
     <div className={styles.pageWrap}>
+      {error ? <p className={styles.pageError}>{error}</p> : null}
+      {loading ? <p className={styles.pageLoading}>Loading analytics…</p> : null}
+
       <section aria-label="Product summary" className={styles.summaryStrip}>
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftGreen}`}>
-          <p className={styles.summaryLabel}>Revenue from top package</p>
+          <p className={styles.summaryLabel}>Revenue from top line item</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>₱142,500</p>
-            <span className={`${styles.summaryDelta} ${styles.summaryDeltaPositive}`}>+9.2%</span>
+            <p className={styles.summaryValue}>{formatPhp(topRevenue)}</p>
           </div>
-          <p className={styles.summaryHint}>Traditional full service, this month</p>
+          <p className={styles.summaryHint}>
+            {topPaid ? `${topName} · last 12 months, paid orders` : 'No paid bookings in the last year'}
+          </p>
         </article>
 
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftBlue}`}>
-          <p className={styles.summaryLabel}>Net conversion rate</p>
+          <p className={styles.summaryLabel}>Returning families</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>82%</p>
+            <p className={styles.summaryValue}>{repeatRate}%</p>
           </div>
-          <p className={styles.summaryHint}>From package view to booking</p>
+          <p className={styles.summaryHint}>Buyers with more than one order (all time)</p>
         </article>
 
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftIndigo}`}>
-          <p className={styles.summaryLabel}>Best performing month</p>
+          <p className={styles.summaryLabel}>Best revenue month</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>January</p>
+            <p className={styles.summaryValue}>{best.label}</p>
           </div>
-          <p className={styles.summaryHint}>Highest package revenue in 12 months</p>
+          <p className={styles.summaryHint}>
+            {best.amount > 0 ? `${formatPhp(best.amount)} paid in that month` : '—'}
+          </p>
         </article>
 
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftAmber}`}>
-          <p className={styles.summaryLabel}>Packages needing attention</p>
+          <p className={styles.summaryLabel}>Low-activity packages</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>3</p>
+            <p className={styles.summaryValue}>{attention}</p>
           </div>
-          <p className={styles.summaryHint}>Low-activity services to review</p>
+          <p className={styles.summaryHint}>
+            Line items with under 2 bookings in the last 6 months · avg paid ticket {formatPhp(avg12)}
+          </p>
         </article>
       </section>
 
@@ -73,44 +110,47 @@ export default function SellerAnalyticsProductPerformancePage() {
           <div className={styles.chartBody}>
             <div className={styles.chartWithYAxis}>
               <div className={styles.chartYAxisLabels} aria-hidden>
-                <span>30</span>
-                <span>24</span>
-                <span>18</span>
-                <span>12</span>
-                <span>6</span>
+                <span>{maxTotal}</span>
+                <span>{Math.round(maxTotal * 0.75)}</span>
+                <span>{Math.round(maxTotal * 0.5)}</span>
+                <span>{Math.round(maxTotal * 0.25)}</span>
                 <span>0</span>
               </div>
 
               <div>
                 <div className={styles.chartScrollX}>
                   <div className={styles.barChartRow} aria-hidden>
-                    {packageBookings.map((pkg) => {
-                      const total = pkg.confirmed + pkg.pending
-                      const totalPct = (total / maxTotal) * 100
-                      const confirmedPct = (pkg.confirmed / maxTotal) * 100
-                      const pendingPct = (pkg.pending / maxTotal) * 100
+                    {packageBookings.length === 0 ? (
+                      <p className={styles.chartEmpty}>No bookings in this window yet.</p>
+                    ) : (
+                      packageBookings.map((pkg) => {
+                        const total = pkg.confirmed + pkg.pending
+                        const totalPct = (total / maxTotal) * 100
+                        const confirmedPct = (pkg.confirmed / maxTotal) * 100
+                        const pendingPct = (pkg.pending / maxTotal) * 100
 
-                      return (
-                        <div
-                          key={pkg.label}
-                          className={styles.barGroup}
-                          title={`${total} bookings – ${pkg.label}`}
-                        >
-                          <div className={styles.pillStackOuter}>
-                            <div
-                              className={styles.pillStackSegmentPrimary}
-                              style={{ height: `${confirmedPct}%` }}
-                            />
-                            <div
-                              className={styles.pillStackSegmentSecondary}
-                              style={{ height: `${pendingPct}%` }}
-                            />
-                            <div style={{ height: `${Math.max(0, 100 - totalPct)}%` }} />
+                        return (
+                          <div
+                            key={pkg.label}
+                            className={styles.barGroup}
+                            title={`${total} bookings – ${pkg.label}`}
+                          >
+                            <div className={styles.pillStackOuter}>
+                              <div
+                                className={styles.pillStackSegmentPrimary}
+                                style={{ height: `${confirmedPct}%` }}
+                              />
+                              <div
+                                className={styles.pillStackSegmentSecondary}
+                                style={{ height: `${pendingPct}%` }}
+                              />
+                              <div style={{ height: `${Math.max(0, 100 - totalPct)}%` }} />
+                            </div>
+                            <span className={styles.barLabel}>{pkg.label}</span>
                           </div>
-                          <span className={styles.barLabel}>{pkg.label}</span>
-                        </div>
-                      )
-                    })}
+                        )
+                      })
+                    )}
                   </div>
 
                   <div className={styles.pillLegendRow} aria-hidden>

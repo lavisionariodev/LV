@@ -22,6 +22,52 @@ const COMPARE_SKELETON_ROW_LABELS = [
   'Availability',
 ]
 
+/** Normalized 0–1 for best-value score; unrated listings get a fixed discount vs rated. */
+function compareRatingNormForValue(rating) {
+  if (typeof rating !== 'number' || Number.isNaN(rating) || rating <= 0) return 0.5
+  return Math.min(5, Math.max(0, rating)) / 5
+}
+
+function compareListingIdsWithLowestPrice(rows) {
+  if (rows.length < 2) return []
+  const min = Math.min(...rows.map((x) => x.listing.price))
+  return rows.filter((x) => x.listing.price === min).map((x) => x.listing.id)
+}
+
+function compareListingIdsWithHighestRating(rows) {
+  if (rows.length < 2) return []
+  const ratings = rows.map((x) => {
+    const r = x.provider?.rating
+    return typeof r === 'number' && !Number.isNaN(r) && r > 0 ? r : null
+  })
+  if (!ratings.some((r) => r !== null)) return []
+  const max = Math.max(...ratings.filter((r) => r !== null))
+  return rows.filter((_, i) => ratings[i] === max).map((x) => x.listing.id)
+}
+
+function compareListingIdsBestValue(rows) {
+  if (rows.length < 2) return []
+  const scores = rows.map((x) => {
+    const price = Math.max(Number(x.listing.price) || 0, 1)
+    const incCount = Array.isArray(x.listing.inclusions) ? x.listing.inclusions.length : 0
+    const mult = compareRatingNormForValue(x.provider?.rating)
+    return { id: x.listing.id, score: (incCount / price) * mult }
+  })
+  const max = Math.max(...scores.map((s) => s.score))
+  const eps = 1e-9
+  return scores.filter((s) => s.score >= max - eps).map((s) => s.id)
+}
+
+function formatCompareHighlightNames(rows, ids) {
+  if (!ids.length) return ''
+  const names = ids
+    .map((id) => rows.find((x) => x.listing.id === id)?.listing.name)
+    .filter(Boolean)
+  if (names.length === 1) return names[0]
+  if (names.length === 2) return `${names[0]} & ${names[1]}`
+  return `${names.length} services tied`
+}
+
 /**
  * Skeleton layout mirroring header → highlights strip → comparison table.
  */
@@ -196,26 +242,18 @@ export default function ComparePage() {
   const catalogLoading = catalog === null
   const compareSkeletonColumns = Math.min(Math.max(compareIds.length, 2), 3)
 
-  const lowestPriceId = useMemo(() => {
-    if (compareListings.length < 2) return null
-    return compareListings.reduce((a, b) => (a.listing.price <= b.listing.price ? a : b)).listing?.id
-  }, [compareListings])
-
-  const highestRatedId = useMemo(() => {
-    if (compareListings.length < 2) return null
-    return compareListings.reduce((a, b) => ((a.provider?.rating ?? 0) >= (b.provider?.rating ?? 0) ? a : b)).listing?.id
-  }, [compareListings])
-
-  const bestValueId = useMemo(() => {
-    if (compareListings.length < 2) return null
-    return compareListings
-      .reduce((a, b) => {
-        const aScore = (a.listing.inclusions.length / a.listing.price) * (a.provider?.rating ?? 1)
-        const bScore = (b.listing.inclusions.length / b.listing.price) * (b.provider?.rating ?? 1)
-        return aScore >= bScore ? a : b
-      })
-      .listing?.id
-  }, [compareListings])
+  const lowestPriceIds = useMemo(
+    () => compareListingIdsWithLowestPrice(compareListings),
+    [compareListings]
+  )
+  const highestRatedIds = useMemo(
+    () => compareListingIdsWithHighestRating(compareListings),
+    [compareListings]
+  )
+  const bestValueIds = useMemo(
+    () => compareListingIdsBestValue(compareListings),
+    [compareListings]
+  )
 
   if (catalogLoading && compareIds.length >= 2) {
     return <ComparePageLoading columnCount={compareSkeletonColumns} />
@@ -255,27 +293,27 @@ export default function ComparePage() {
 
         {/* ── Highlights strip ── */}
         <div className={styles.compareHighlights}>
-          {lowestPriceId && (
+          {lowestPriceIds.length > 0 && (
             <div className={shopStyles.compareHighlight}>
               <p className={shopStyles.highlightLabel}>Lowest Price</p>
               <p className={shopStyles.highlightValue}>
-                {compareListings.find((x) => x.listing.id === lowestPriceId)?.listing.name}
+                {formatCompareHighlightNames(compareListings, lowestPriceIds)}
               </p>
             </div>
           )}
-          {highestRatedId && (
+          {highestRatedIds.length > 0 && (
             <div className={shopStyles.compareHighlight}>
               <p className={shopStyles.highlightLabel}>Highest Rated</p>
               <p className={shopStyles.highlightValue}>
-                {compareListings.find((x) => x.listing.id === highestRatedId)?.listing.name}
+                {formatCompareHighlightNames(compareListings, highestRatedIds)}
               </p>
             </div>
           )}
-          {bestValueId && (
+          {bestValueIds.length > 0 && (
             <div className={shopStyles.compareHighlight}>
               <p className={shopStyles.highlightLabel}>Best Value</p>
               <p className={shopStyles.highlightValue}>
-                {compareListings.find((x) => x.listing.id === bestValueId)?.listing.name}
+                {formatCompareHighlightNames(compareListings, bestValueIds)}
               </p>
             </div>
           )}
@@ -318,7 +356,7 @@ export default function ComparePage() {
                         </div>
                         <p className={shopStyles.compareColName}>{listing.name}</p>
                         <p className={shopStyles.compareColProvider}>{provider?.name}</p>
-                        {listing.id === bestValueId && (
+                        {bestValueIds.includes(listing.id) && (
                           <span className={shopStyles.compareColBestBadge}>Best Value</span>
                         )}
                       </div>
@@ -336,13 +374,13 @@ export default function ComparePage() {
                     <td
                       key={listing.id}
                       className={`${shopStyles.compareRowCell}${
-                        listing.id === lowestPriceId ? ` ${shopStyles.compareCellHighlight}` : ''
+                        lowestPriceIds.includes(listing.id) ? ` ${shopStyles.compareCellHighlight}` : ''
                       }`}
                     >
                       <span className={shopStyles.comparePriceVal}>
                         {formatPhpAmount(listing.price)}
                       </span>
-                      {listing.id === lowestPriceId && (
+                      {lowestPriceIds.includes(listing.id) && (
                         <span className={shopStyles.compareCellTag}>Lowest</span>
                       )}
                     </td>
@@ -356,7 +394,7 @@ export default function ComparePage() {
                     <td
                       key={listing.id}
                       className={`${shopStyles.compareRowCell}${
-                        listing.id === highestRatedId ? ` ${shopStyles.compareCellHighlight}` : ''
+                        highestRatedIds.includes(listing.id) ? ` ${shopStyles.compareCellHighlight}` : ''
                       }`}
                     >
                       <div className={shopStyles.compareRating}>
@@ -366,7 +404,7 @@ export default function ComparePage() {
                           ({provider?.reviews} reviews)
                         </span>
                       </div>
-                      {listing.id === highestRatedId && (
+                      {highestRatedIds.includes(listing.id) && (
                         <span className={shopStyles.compareCellTag}>Top Rated</span>
                       )}
                     </td>

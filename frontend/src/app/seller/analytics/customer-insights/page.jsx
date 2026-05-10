@@ -1,64 +1,84 @@
 'use client'
 
+import { useMemo } from 'react'
 import { useSiteContent } from '@/lib/siteContent/client'
 import { TbUsers } from 'react-icons/tb'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import styles from '../analytics.module.css'
+import { useSellerAnalyticsData } from '@/lib/seller/useSellerAnalyticsData'
+import {
+  averageMonthsBetweenRepeatBookings,
+  familiesSupportedLast12Months,
+  newBuyersThisMonthCount,
+  newVsReturningByMonth,
+  paidOrderCountLast12Months,
+  returningBuyerRate,
+} from '@/lib/seller/sellerOrderAnalytics'
 
 const CUSTOMER_BAR_COLORS = {
   returning: '#1f312b',
   fresh: '#9ca3af',
 }
 
-const CUSTOMER_DATA = [
-  { label: 'Oct', returning: 26, fresh: 48 },
-  { label: 'Nov', returning: 24, fresh: 52 },
-  { label: 'Dec', returning: 30, fresh: 46 },
-  { label: 'Jan', returning: 32, fresh: 50 },
-  { label: 'Feb', returning: 25, fresh: 47 },
-  { label: 'Mar', returning: 28, fresh: 49 },
-]
-
 export default function SellerAnalyticsCustomerInsightsPage() {
   const { data: siteContent } = useSiteContent()
   const systemName = siteContent?.systemName || 'La Visionario'
+  const { orders, loading, error } = useSellerAnalyticsData()
+
+  const chartData = useMemo(() => newVsReturningByMonth(orders, 6), [orders])
+  const maxStack = useMemo(
+    () => Math.max(...chartData.map((d) => d.fresh + d.returning), 1),
+    [chartData],
+  )
+
+  const families12 = familiesSupportedLast12Months(orders)
+  const newThis = newBuyersThisMonthCount(orders)
+
+  const returning = returningBuyerRate(orders)
+  const avgBetween = averageMonthsBetweenRepeatBookings(orders)
+  const paid12 = paidOrderCountLast12Months(orders)
 
   return (
     <div className={styles.pageWrap}>
+      {error ? <p className={styles.pageError}>{error}</p> : null}
+      {loading ? <p className={styles.pageLoading}>Loading analytics…</p> : null}
+
       <section aria-label="Customer summary" className={styles.summaryStrip}>
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftGreen}`}>
           <p className={styles.summaryLabel}>Families supported (12 months)</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>72</p>
+            <p className={styles.summaryValue}>{families12}</p>
             <span className={`${styles.summaryDelta} ${styles.summaryDeltaPositive}`}>
-              +6 this month
+              {newThis > 0 ? `${newThis} new this month` : 'No new families yet this month'}
             </span>
           </div>
-          <p className={styles.summaryHint}>Unique families you&apos;ve helped</p>
+          <p className={styles.summaryHint}>Unique buyers with any order in the last 12 months</p>
         </article>
 
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftBlue}`}>
           <p className={styles.summaryLabel}>Returning rate</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>28%</p>
+            <p className={styles.summaryValue}>{returning}%</p>
           </div>
-          <p className={styles.summaryHint}>Families with more than one booking</p>
+          <p className={styles.summaryHint}>Families with more than one booking (all time)</p>
         </article>
 
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftIndigo}`}>
-          <p className={styles.summaryLabel}>Average time between visits</p>
+          <p className={styles.summaryLabel}>Avg time between repeat bookings</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>11.4 months</p>
+            <p className={styles.summaryValue}>
+              {avgBetween != null ? `${avgBetween} mo` : '—'}
+            </p>
           </div>
-          <p className={styles.summaryHint}>Measured across returning families</p>
+          <p className={styles.summaryHint}>Across buyers with 2+ orders</p>
         </article>
 
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftAmber}`}>
-          <p className={styles.summaryLabel}>In‑app engagement</p>
+          <p className={styles.summaryLabel}>Paid orders (12 months)</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>63%</p>
+            <p className={styles.summaryValue}>{paid12}</p>
           </div>
-          <p className={styles.summaryHint}>Families who read messages in {systemName}</p>
+          <p className={styles.summaryHint}>Completed payments on your shop in {systemName}</p>
         </article>
       </section>
 
@@ -68,7 +88,7 @@ export default function SellerAnalyticsCustomerInsightsPage() {
             <div className={styles.chartTitleGroup}>
               <h2 className={styles.chartTitle}>New vs returning customers</h2>
               <p className={styles.chartSubtitle}>
-                Stacked bars showing the mix of new and returning families each month.
+                Unique buyers with an order in each month — new vs returning (last 6 months).
               </p>
             </div>
             <span className={styles.chartBadge}>
@@ -79,11 +99,7 @@ export default function SellerAnalyticsCustomerInsightsPage() {
 
           <div className={styles.chartBody}>
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart
-                data={CUSTOMER_DATA}
-                margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
-                barSize={26}
-              >
+              <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barSize={26}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                 <XAxis
                   dataKey="label"
@@ -92,14 +108,16 @@ export default function SellerAnalyticsCustomerInsightsPage() {
                   axisLine={false}
                 />
                 <YAxis
-                  tickFormatter={(v) => `${v}%`}
+                  allowDecimals={false}
+                  domain={[0, maxStack]}
                   tick={{ fontSize: 11, fill: '#64748b' }}
                   width={36}
                 />
                 <Tooltip
-                  formatter={(value, name) =>
-                    [`${value}%`, name === 'returning' ? 'Returning families' : 'New families']
-                  }
+                  formatter={(value, name) => [
+                    `${value}`,
+                    name === 'returning' ? 'Returning families' : 'New families',
+                  ]}
                   labelFormatter={(label) => `Month: ${label}`}
                   contentStyle={{ fontSize: 12, borderRadius: 8 }}
                 />

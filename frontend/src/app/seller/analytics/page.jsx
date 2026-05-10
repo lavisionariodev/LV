@@ -1,18 +1,59 @@
 'use client'
 
 import Link from 'next/link'
+import { useMemo } from 'react'
 import { TbChartLine, TbCurrencyPeso, TbUsers, TbChartBar } from 'react-icons/tb'
 import styles from './analytics.module.css'
+import { useSellerAnalyticsData } from '@/lib/seller/useSellerAnalyticsData'
+import {
+  listingsApprovedCount,
+  totalPaidRevenueAllTime,
+  uniqueBuyerCount,
+} from '@/lib/seller/sellerOrderAnalytics'
+
+function formatPhp(n) {
+  return new Intl.NumberFormat('en-PH', {
+    style: 'currency',
+    currency: 'PHP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(n)
+}
 
 export default function SellerAnalyticsPage() {
-  // Static illustrative metrics for now – these can be wired to real data later.
-  const totalOrders = 128
-  const totalRevenue = '₱845,230'
-  const activeServices = 18
-  const totalCustomers = 72
+  const { orders, listings, loading, error } = useSellerAnalyticsData()
+
+  const totalOrders = orders.length
+  const totalRevenue = formatPhp(totalPaidRevenueAllTime(orders))
+  const activeServices = listingsApprovedCount(listings)
+  const totalCustomers = uniqueBuyerCount(orders)
+
+  const summary = useMemo(
+    () => [
+      { label: 'Total orders', value: String(totalOrders) },
+      { label: 'Paid revenue (all time)', value: totalRevenue },
+      { label: 'Approved listings', value: String(activeServices) },
+      { label: 'Unique buyers', value: String(totalCustomers) },
+    ],
+    [totalOrders, totalRevenue, activeServices, totalCustomers],
+  )
 
   return (
     <div className={styles.pageWrap}>
+      {error ? <p className={styles.pageError}>{error}</p> : null}
+      {loading ? <p className={styles.pageLoading}>Loading summary…</p> : null}
+
+      <section aria-label="Analytics summary" className={styles.summaryStrip}>
+        {summary.map((s) => (
+          <article key={s.label} className={`${styles.summaryCard} ${styles.summaryCardSoftGreen}`}>
+            <p className={styles.summaryLabel}>{s.label}</p>
+            <div className={styles.summaryValueRow}>
+              <p className={styles.summaryValue}>{s.value}</p>
+            </div>
+          </article>
+        ))}
+      </section>
+
       <section aria-label="Analytics areas" className={styles.navGrid}>
         <Link href="/seller/analytics/sales-overview" className={styles.navCard}>
           <div className={styles.navCardHeader}>
