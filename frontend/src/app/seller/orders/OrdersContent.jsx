@@ -346,7 +346,11 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ orderId: order.id, fulfillment_status: newStatus }),
         })
-        if (!res.ok) return
+        if (!res.ok) {
+          const body = await res.json().catch(() => null)
+          window.alert(typeof body?.error === 'string' ? body.error : 'Could not update order status.')
+          return
+        }
         await loadOrders()
       } else {
         setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, orderStatus: newStatus } : o)))

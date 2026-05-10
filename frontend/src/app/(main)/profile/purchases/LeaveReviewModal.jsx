@@ -136,7 +136,8 @@ export function LeaveReviewModal({
     if (e.target === backdropRef.current && !submitting) onClose()
   }
 
-  const allFilled = draft.length === reviewItems.length && draft.every((d) => d.rating >= 1 && d.rating <= 5)
+  const ratedDraft = draft.filter((d) => d.rating >= 1 && d.rating <= 5)
+  const hasAtLeastOneRating = ratedDraft.length > 0
 
   return (
     <div
@@ -196,7 +197,7 @@ export function LeaveReviewModal({
                 <p style={{ margin: '8px 0 0', color: '#b91c1c', fontWeight: 600 }}>{submitError}</p>
               ) : null}
               <p style={{ margin: '10px 0 0', color: '#6B6B6B', fontSize: '0.82rem' }}>
-                Ratings are required to submit. You can update them later.
+                You can rate one or more services now, then update or add the rest later.
               </p>
             </>
           )}
@@ -217,8 +218,8 @@ export function LeaveReviewModal({
             className={purchaseStyles.modalDangerBtn}
             onClick={async () => {
               setSubmitError('')
-              if (!allFilled) {
-                setSubmitError('Please select a rating (1–5 stars) for each service.')
+              if (!hasAtLeastOneRating) {
+                setSubmitError('Please select a rating (1–5 stars) for at least one service.')
                 return
               }
 
@@ -226,7 +227,7 @@ export function LeaveReviewModal({
               try {
                 const payload = {
                   orderId: safeOrderId,
-                  reviews: draft.map((d) => ({
+                  reviews: ratedDraft.map((d) => ({
                     orderItemId: d.orderItemId,
                     rating: d.rating,
                     reviewText: d.reviewText,

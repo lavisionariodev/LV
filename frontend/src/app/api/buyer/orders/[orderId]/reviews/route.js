@@ -59,25 +59,8 @@ export async function GET(request, { params }) {
   }
 
   if (!actualOrderId) {
-    // Debug: check if order exists at all
-    try {
-      const { data: allOrders, error: debugErr } = await supabaseAdmin
-        .from('orders')
-        .select('id, order_number')
-        .limit(5)
-      apiLog('buyer.reviews.get.sample_orders', { 
-        sampleOrders: allOrders?.map(o => ({ id: o.id, order_number: o.order_number })),
-        error: errorMessage(debugErr)
-      })
-    } catch (e) {
-      apiLog('buyer.reviews.get.sample_orders_exception', { error: String(e) })
-    }
-    
     apiLog('buyer.reviews.get.invalid_id', { orderId, orderIdLength: orderId?.length })
-    return NextResponse.json(
-      { error: 'Invalid orderId.', debug: { received: orderId, length: orderId?.length } },
-      { status: 400 }
-    )
+    return NextResponse.json({ error: 'Invalid orderId.' }, { status: 400 })
   }
   const {
     data: { user },
