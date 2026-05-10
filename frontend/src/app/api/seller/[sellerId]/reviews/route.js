@@ -21,7 +21,8 @@ function formatMonthYear(dateIso) {
 }
 
 export async function GET(request, { params }) {
-  const sellerIdRaw = params?.sellerId
+  const resolvedParams = await params
+  const sellerIdRaw = resolvedParams?.sellerId
   const sellerId = String(sellerIdRaw ?? '').trim()
   if (!isUuidLike(sellerId)) {
     return NextResponse.json({ error: 'Invalid sellerId.' }, { status: 400 })

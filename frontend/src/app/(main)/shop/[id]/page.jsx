@@ -97,7 +97,9 @@ export default function ServiceDetailPage({ params }) {
     async function loadServiceReviews() {
       if (!service?.id) return
       try {
-        const res = await fetch(`/api/services/${encodeURIComponent(service.id)}/reviews`)
+        const res = await fetch(`/api/services/${encodeURIComponent(service.id)}/reviews`, {
+          cache: 'no-store',
+        })
         const body = await res.json().catch(() => null)
         if (!res.ok) {
           throw new Error(typeof body?.error === 'string' ? body.error : 'Failed to load reviews.')
@@ -177,6 +179,7 @@ export default function ServiceDetailPage({ params }) {
       try {
         const res = await fetch(
           `/api/ratings/provider-aggregates?ids=${encodeURIComponent(String(provider.id))}`,
+          { cache: 'no-store' },
         )
         const body = await res.json().catch(() => null)
         if (cancelled) return
@@ -192,6 +195,35 @@ export default function ServiceDetailPage({ params }) {
       cancelled = true
     }
   }, [provider?.id])
+
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState !== 'visible') return
+      if (!service?.id) return
+      fetch(`/api/services/${encodeURIComponent(service.id)}/reviews`, { cache: 'no-store' })
+        .then((res) => res.json().catch(() => null))
+        .then((body) => {
+          setServiceReviews(Array.isArray(body?.reviews) ? body.reviews : [])
+        })
+        .catch(() => {
+          setServiceReviews([])
+        })
+      if (!provider?.id) return
+      fetch(`/api/ratings/provider-aggregates?ids=${encodeURIComponent(String(provider.id))}`, {
+        cache: 'no-store',
+      })
+        .then((res) => res.json().catch(() => null))
+        .then((body) => {
+          const agg = body?.aggregatesBySellerId?.[String(provider.id)] ?? null
+          setProviderAggregates(agg)
+        })
+        .catch(() => {
+          setProviderAggregates(null)
+        })
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [service?.id, provider?.id])
 
   const providerWithAggregates = provider
     ? {
@@ -521,14 +553,18 @@ export default function ServiceDetailPage({ params }) {
 
             {/* Ratings row */}
             <div className={styles.ratingsRow}>
-              <span className={styles.stars}>★★★★★</span>
+              <StarRow
+                rating={providerWithAggregates?.rating != null ? Number(providerWithAggregates.rating) : 0}
+                styles={styles}
+                size={14}
+              />
               <span className={styles.ratingScore}>
                 {providerWithAggregates?.rating != null
                   ? Number(providerWithAggregates.rating).toFixed(1)
                   : '—'}
               </span>
               <span className={styles.ratingCount}>
-                · {providerWithAggregates?.reviews ?? 0} reviews
+                · {providerWithAggregates?.reviews ?? 0} seller reviews
               </span>
               <span
                 className={`${styles.stockBadge}${stockInfo && !stockInfo.inStock ? ` ${styles.stockBadgeOut}` : ''}`}
@@ -1000,7 +1036,9 @@ function ReviewsSection({ reviews = [], styles }) {
             <span className={styles.reviewsScoreNum}>{avgRating}</span>
             <div className={styles.reviewsScoreMeta}>
               <StarRow rating={parseFloat(avgRating)} styles={styles} size={15} />
-              <span className={styles.reviewsScoreCount}>{reviews.length} review{reviews.length !== 1 ? 's' : ''}</span>
+              <span className={styles.reviewsScoreCount}>
+                {reviews.length} service review{reviews.length !== 1 ? 's' : ''}
+              </span>
             </div>
           </div>
         )}
@@ -1192,7 +1230,7 @@ function ReviewsSection({ reviews = [], styles }) {
                   return (
                     <div key={review.id} className={styles.reviewCard}>
                       <div className={styles.reviewHeader}>
-                        <div className={styles.reviewAvatar}>{review.author[0].toUpperCase()}</div>
+                        <div className={styles.reviewAvatar}>{(review.author?.[0] || 'B').toUpperCase()}</div>
                         <div className={styles.reviewMeta}>
                           <span className={styles.reviewAuthor}>
                             {review.author}

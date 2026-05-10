@@ -16,7 +16,8 @@ export async function GET(request, { params }) {
     )
   }
 
-  const orderIdParam = params?.orderId
+  const resolvedParams = await params
+  const orderIdParam = resolvedParams?.orderId
   const orderId = String(orderIdParam ?? '').trim().replace(/^#/, '')
   const supabase = await createClient()
   const supabaseAdmin = getSupabaseAdmin()

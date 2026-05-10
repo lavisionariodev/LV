@@ -914,7 +914,9 @@ export default function SellerProfilePage() {
     Promise.all([
       fetchActiveShopListings({ bustCache: true }).then((raw) => mergeShopListings(raw)),
       fetchPublicSellerProfile(realSellerId),
-      fetch(`/api/seller/${encodeURIComponent(realSellerId)}/reviews`).then((r) => r.json()).catch(() => null),
+      fetch(`/api/seller/${encodeURIComponent(realSellerId)}/reviews`, { cache: 'no-store' })
+        .then((r) => r.json())
+        .catch(() => null),
     ])
       .then(([listings, profile, reviewsPayload]) => {
         if (cancelled) return

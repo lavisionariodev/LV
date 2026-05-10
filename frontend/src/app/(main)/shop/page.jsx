@@ -79,6 +79,8 @@ export default function ShopPage() {
   const [selectedProvider, setSelectedProvider] = useState(null)
   const [showFiltersModal, setShowFiltersModal] = useState(false)
   const [listingsLoading, setListingsLoading] = useState(true)
+  const [providerAggregatesById, setProviderAggregatesById] = useState({})
+  const [providerServiceAggregatesByPair, setProviderServiceAggregatesByPair] = useState({})
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 15 // 3 columns × 5 rows
 
@@ -185,6 +187,70 @@ export default function ShopPage() {
     return Array.from(byId.values())
   }, [listings])
 
+  useEffect(() => {
+    let cancelled = false
+    async function loadProviderAggregates() {
+      const ids = [...new Set(allProviders.map((p) => String(p?.id ?? '').trim()).filter(Boolean))]
+      if (ids.length === 0) {
+        if (!cancelled) setProviderAggregatesById({})
+        return
+      }
+      try {
+        const res = await fetch(
+          `/api/ratings/provider-aggregates?ids=${encodeURIComponent(ids.join(','))}`,
+          { cache: 'no-store' },
+        )
+        const body = await res.json().catch(() => null)
+        if (cancelled) return
+        setProviderAggregatesById(body?.aggregatesBySellerId && typeof body.aggregatesBySellerId === 'object' ? body.aggregatesBySellerId : {})
+      } catch {
+        if (cancelled) return
+        setProviderAggregatesById({})
+      }
+    }
+    loadProviderAggregates()
+    return () => {
+      cancelled = true
+    }
+  }, [allProviders])
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadProviderServiceAggregates() {
+      const pairs = [...new Set(
+        listings
+          .map((l) => {
+            const sellerId = String(l?.providerId ?? '').trim()
+            const serviceId = String(l?.serviceId ?? '').trim()
+            return sellerId && serviceId ? `${sellerId}|${serviceId}` : ''
+          })
+          .filter(Boolean),
+      )]
+      if (pairs.length === 0) {
+        if (!cancelled) setProviderServiceAggregatesByPair({})
+        return
+      }
+      try {
+        const res = await fetch(
+          `/api/ratings/provider-service-aggregates?pairs=${encodeURIComponent(pairs.join(','))}`,
+          { cache: 'no-store' },
+        )
+        const body = await res.json().catch(() => null)
+        if (cancelled) return
+        setProviderServiceAggregatesByPair(
+          body?.aggregatesByPair && typeof body.aggregatesByPair === 'object' ? body.aggregatesByPair : {},
+        )
+      } catch {
+        if (cancelled) return
+        setProviderServiceAggregatesByPair({})
+      }
+    }
+    loadProviderServiceAggregates()
+    return () => {
+      cancelled = true
+    }
+  }, [listings])
+
   const filteredListings = useMemo(() => {
     let list = [...listings]
 
@@ -210,9 +276,17 @@ export default function ShopPage() {
     else if (sortBy === 'price-desc') list.sort((a, b) => b.price - a.price)
     else if (sortBy === 'rating') {
       list.sort((a, b) => {
+        const aPairKey = `${String(a?.providerId ?? '').trim()}::${String(a?.serviceId ?? '').trim()}`
+        const bPairKey = `${String(b?.providerId ?? '').trim()}::${String(b?.serviceId ?? '').trim()}`
+        const aPairAgg = providerServiceAggregatesByPair[aPairKey]
+        const bPairAgg = providerServiceAggregatesByPair[bPairKey]
         const pa = a.provider ?? PROVIDERS.find((p) => p.id === a.providerId)
         const pb = b.provider ?? PROVIDERS.find((p) => p.id === b.providerId)
-        return (pb?.rating ?? 0) - (pa?.rating ?? 0)
+        const aProviderAgg = providerAggregatesById[String(pa?.id ?? '')]
+        const bProviderAgg = providerAggregatesById[String(pb?.id ?? '')]
+        const aRating = Number(aPairAgg?.avgRating ?? aProviderAgg?.avgRating ?? pa?.rating ?? 0) || 0
+        const bRating = Number(bPairAgg?.avgRating ?? bProviderAgg?.avgRating ?? pb?.rating ?? 0) || 0
+        return bRating - aRating
       })
     } else if (sortBy === 'newest') {
       list.sort((a, b) => {
@@ -231,7 +305,7 @@ export default function ShopPage() {
     }
 
     return list
-  }, [listings, activeCategory, sortBy, selectedProvider, locationQuery, searchParams])
+  }, [listings, activeCategory, sortBy, selectedProvider, locationQuery, searchParams, providerAggregatesById, providerServiceAggregatesByPair])
 
   const totalPages = Math.ceil(filteredListings.length / ITEMS_PER_PAGE)
   const paginatedListings = useMemo(() => {
@@ -287,6 +361,17 @@ export default function ShopPage() {
 
     return providers
   }, [listings, activeCategory, locationQuery, allProviders])
+
+  const getProviderMetrics = useCallback(
+    (provider) => {
+      const agg = providerAggregatesById[String(provider?.id ?? '')] ?? null
+      return {
+        rating: agg?.avgRating != null ? Number(agg.avgRating).toFixed(1) : provider?.rating,
+        reviews: agg?.reviewCount != null ? Number(agg.reviewCount) : provider?.reviews,
+      }
+    },
+    [providerAggregatesById],
+  )
 
   const availableCategories = useMemo(() => {
     const activeServiceIds = new Set(
@@ -493,8 +578,13 @@ export default function ShopPage() {
                               <svg width="9" height="9" viewBox="0 0 12 12" fill="var(--color-gold-base,#B8962E)">
                                 <path d="M6 1l1.35 2.73L10.5 4.2l-2.25 2.19.53 3.1L6 7.9l-2.78 1.6.53-3.1L1.5 4.2l3.15-.47z" />
                               </svg>
-                              {provider.rating}
+                              {getProviderMetrics(provider).rating}
                             </span>
+                            {getProviderMetrics(provider).reviews != null ? (
+                              <span className={styles.providerItemRatingCount}>
+                                ({getProviderMetrics(provider).reviews} seller reviews)
+                              </span>
+                            ) : null}
                             {provider.badge && <span className={styles.providerItemBadge}>{provider.badge}</span>}
                           </div>
                         </button>
@@ -623,8 +713,13 @@ export default function ShopPage() {
                           <svg width="9" height="9" viewBox="0 0 12 12" fill="var(--color-gold-base,#B8962E)">
                             <path d="M6 1l1.35 2.73L10.5 4.2l-2.25 2.19.53 3.1L6 7.9l-2.78 1.6.53-3.1L1.5 4.2l3.15-.47z" />
                           </svg>
-                          {provider.rating}
+                          {getProviderMetrics(provider).rating}
                         </span>
+                        {getProviderMetrics(provider).reviews != null ? (
+                          <span className={styles.providerItemRatingCount}>
+                            ({getProviderMetrics(provider).reviews} seller reviews)
+                          </span>
+                        ) : null}
                         {provider.badge && (
                           <span className={styles.providerItemBadge}>{provider.badge}</span>
                         )}
@@ -705,6 +800,8 @@ export default function ShopPage() {
                         key={listing.id}
                         listing={listing}
                         styles={styles}
+                        providerAggregatesById={providerAggregatesById}
+                        providerServiceAggregatesByPair={providerServiceAggregatesByPair}
                         inCompare={compareIds.includes(listing.id)}
                         onToggleCompare={toggleCompare}
                         compareDisabled={compareIds.length >= 3 && !compareIds.includes(listing.id)}
@@ -772,6 +869,8 @@ export default function ShopPage() {
                         key={listing.id}
                         listing={listing}
                         styles={styles}
+                        providerAggregatesById={providerAggregatesById}
+                        providerServiceAggregatesByPair={providerServiceAggregatesByPair}
                         inCompare={compareIds.includes(listing.id)}
                         onToggleCompare={toggleCompare}
                         compareDisabled={compareIds.length >= 3 && !compareIds.includes(listing.id)}
@@ -902,8 +1001,31 @@ export default function ShopPage() {
 
 // ─── ListingCard ──────────────────────────────────────────────────────────────
 
-function ListingCard({ listing, styles, inCompare, onToggleCompare, compareDisabled }) {
+function ListingCard({
+  listing,
+  styles,
+  inCompare,
+  onToggleCompare,
+  compareDisabled,
+  providerAggregatesById = {},
+  providerServiceAggregatesByPair = {},
+}) {
   const provider = listing.provider ?? PROVIDERS.find((p) => p.id === listing.providerId)
+  const providerAgg = providerAggregatesById[String(provider?.id ?? '')] ?? null
+  const pairKey = `${String(listing?.providerId ?? '').trim()}::${String(listing?.serviceId ?? '').trim()}`
+  const providerServiceAgg = providerServiceAggregatesByPair[pairKey] ?? null
+  const providerRating =
+    providerServiceAgg?.avgRating != null
+      ? Number(providerServiceAgg.avgRating).toFixed(1)
+      : providerAgg?.avgRating != null
+        ? Number(providerAgg.avgRating).toFixed(1)
+        : provider?.rating
+  const providerReviews =
+    providerServiceAgg?.reviewCount != null
+      ? Number(providerServiceAgg.reviewCount)
+      : providerAgg?.reviewCount != null
+        ? Number(providerAgg.reviewCount)
+        : provider?.reviews
   const { addItem } = useCart()
   const { user, authLoading, isBuyer } = useAuth()
   const router = useRouter()
@@ -1006,8 +1128,10 @@ function ListingCard({ listing, styles, inCompare, onToggleCompare, compareDisab
                 <path d="M6 1l1.35 2.73L10.5 4.2l-2.25 2.19.53 3.1L6 7.9l-2.78 1.6.53-3.1L1.5 4.2l3.15-.47z" />
               </svg>
             </span>
-            <span className={styles.ratingNum}>{provider?.rating}</span>
-            <span className={styles.ratingReviews}>({provider?.reviews})</span>
+            <span className={styles.ratingNum}>{providerRating}</span>
+            <span className={styles.ratingReviews}>
+              ({providerReviews ?? 0})
+            </span>
           </div>
         </div>
 
