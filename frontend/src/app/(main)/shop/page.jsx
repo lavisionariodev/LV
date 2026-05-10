@@ -18,7 +18,18 @@ import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/contexts/ToastContext'
 import { formatPhpAmount } from '@/lib/cart/formatPhp'
+import { isUuidLike } from '@/lib/uuidLike'
 import styles from './shop.module.css'
+
+/** API `pairs` segment and `aggregatesByPair` lookup key for listing-scoped ratings. */
+function providerServiceAggPairSegments(listing) {
+  const sellerId = String(listing?.providerId ?? '').trim()
+  const serviceId = String(listing?.serviceId ?? '').trim()
+  const lid = String(listing?.id ?? '').trim()
+  if (!sellerId || !serviceId) return null
+  if (isUuidLike(lid)) return { api: `${sellerId}|${serviceId}|${lid}`, lookup: `${sellerId}::${serviceId}::${lid}` }
+  return { api: `${sellerId}|${serviceId}`, lookup: `${sellerId}::${serviceId}` }
+}
 
 function listingMatchesSearch(listing, needle) {
   if (!needle) return true
@@ -321,67 +332,48 @@ export default function ShopPage() {
 
   useEffect(() => {
     let cancelled = false
-    async function loadProviderAggregates() {
+    async function loadRatingsAggregates() {
       const ids = [...new Set(allProviders.map((p) => String(p?.id ?? '').trim()).filter(Boolean))]
-      if (ids.length === 0) {
-        if (!cancelled) setProviderAggregatesById({})
+      const pairs = [
+        ...new Set(
+          listings
+            .map((l) => providerServiceAggPairSegments(l)?.api ?? '')
+            .filter(Boolean),
+        ),
+      ]
+      if (ids.length === 0 && pairs.length === 0) {
+        if (!cancelled) {
+          setProviderAggregatesById({})
+          setProviderServiceAggregatesByPair({})
+        }
         return
       }
       try {
-        const res = await fetch(
-          `/api/ratings/provider-aggregates?ids=${encodeURIComponent(ids.join(','))}`,
-          { cache: 'no-store' },
-        )
+        const qs = new URLSearchParams()
+        if (ids.length > 0) qs.set('ids', ids.join(','))
+        if (pairs.length > 0) qs.set('pairs', pairs.join(','))
+        const res = await fetch(`/api/ratings/aggregates?${qs.toString()}`, { cache: 'no-store' })
         const body = await res.json().catch(() => null)
         if (cancelled) return
-        setProviderAggregatesById(body?.aggregatesBySellerId && typeof body.aggregatesBySellerId === 'object' ? body.aggregatesBySellerId : {})
-      } catch {
-        if (cancelled) return
-        setProviderAggregatesById({})
-      }
-    }
-    loadProviderAggregates()
-    return () => {
-      cancelled = true
-    }
-  }, [allProviders])
-
-  useEffect(() => {
-    let cancelled = false
-    async function loadProviderServiceAggregates() {
-      const pairs = [...new Set(
-        listings
-          .map((l) => {
-            const sellerId = String(l?.providerId ?? '').trim()
-            const serviceId = String(l?.serviceId ?? '').trim()
-            return sellerId && serviceId ? `${sellerId}|${serviceId}` : ''
-          })
-          .filter(Boolean),
-      )]
-      if (pairs.length === 0) {
-        if (!cancelled) setProviderServiceAggregatesByPair({})
-        return
-      }
-      try {
-        const res = await fetch(
-          `/api/ratings/provider-service-aggregates?pairs=${encodeURIComponent(pairs.join(','))}`,
-          { cache: 'no-store' },
+        setProviderAggregatesById(
+          body?.aggregatesBySellerId && typeof body.aggregatesBySellerId === 'object'
+            ? body.aggregatesBySellerId
+            : {},
         )
-        const body = await res.json().catch(() => null)
-        if (cancelled) return
         setProviderServiceAggregatesByPair(
           body?.aggregatesByPair && typeof body.aggregatesByPair === 'object' ? body.aggregatesByPair : {},
         )
       } catch {
         if (cancelled) return
+        setProviderAggregatesById({})
         setProviderServiceAggregatesByPair({})
       }
     }
-    loadProviderServiceAggregates()
+    loadRatingsAggregates()
     return () => {
       cancelled = true
     }
-  }, [listings])
+  }, [allProviders, listings])
 
   const filteredListings = useMemo(() => {
     let list = [...listings]
@@ -408,8 +400,8 @@ export default function ShopPage() {
     else if (sortBy === 'price-desc') list.sort((a, b) => b.price - a.price)
     else if (sortBy === 'rating') {
       list.sort((a, b) => {
-        const aPairKey = `${String(a?.providerId ?? '').trim()}::${String(a?.serviceId ?? '').trim()}`
-        const bPairKey = `${String(b?.providerId ?? '').trim()}::${String(b?.serviceId ?? '').trim()}`
+        const aPairKey = providerServiceAggPairSegments(a)?.lookup ?? ''
+        const bPairKey = providerServiceAggPairSegments(b)?.lookup ?? ''
         const aPairAgg = providerServiceAggregatesByPair[aPairKey]
         const bPairAgg = providerServiceAggregatesByPair[bPairKey]
         const aRating = Number(aPairAgg?.avgRating ?? 0) || 0
@@ -1118,8 +1110,8 @@ function ListingCard({
   providerServiceAggregatesByPair = {},
 }) {
   const provider = listing.provider ?? PROVIDERS.find((p) => p.id === listing.providerId)
-  const pairKey = `${String(listing?.providerId ?? '').trim()}::${String(listing?.serviceId ?? '').trim()}`
-  const providerServiceAgg = providerServiceAggregatesByPair[pairKey] ?? null
+  const pairKey = providerServiceAggPairSegments(listing)?.lookup ?? ''
+  const providerServiceAgg = pairKey ? providerServiceAggregatesByPair[pairKey] ?? null : null
   const providerRating =
     providerServiceAgg?.avgRating != null
       ? Number(providerServiceAgg.avgRating).toFixed(1)

@@ -4,7 +4,7 @@ import { normalizeSellerSpecialties } from '@/lib/sellers/client'
 
 const ALLOWED_SERVICE_IDS = new Set(['cremation', 'traditional-burial', 'memorial-planning'])
 
-// Reviews/ratings aggregates are fetched per-page (e.g. provider-aggregates endpoint).
+// Reviews/ratings aggregates are fetched per-page (`/api/ratings/aggregates`).
 // Provider objects loaded from `get_active_shop_listings` do not include real rating aggregates yet.
 
 function normalizeServiceId(raw) {

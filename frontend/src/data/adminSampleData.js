@@ -3,7 +3,7 @@
  * Pure data + small helpers until corresponding screens are wired to the API.
  *
  * Does **not** include payouts / escrow / live dashboard metrics — use `/api/admin/payouts`,
- * `/api/admin/metrics`, DB tables. Help center copy lives under `app/admin/help/helpContent.js`.
+ * `/api/admin/metrics`, DB tables. Help center copy lives in `app/admin/help/page.jsx`.
  *
  * Still here (mock): disputes list, seller commission preview helper, notifications sample rows.
  *

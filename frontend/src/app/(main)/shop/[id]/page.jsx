@@ -91,6 +91,8 @@ export default function ServiceDetailPage({ params }) {
   const selectedProviderId = String(
     selectedListing?.provider?.id ?? selectedListing?.providerId ?? '',
   ).trim()
+  const listingIdForScopedReviews =
+    selectedListingId && isUuidLike(String(selectedListingId)) ? String(selectedListingId).trim() : ''
 
   const [serviceReviews, setServiceReviews] = useState([])
 
@@ -102,8 +104,11 @@ export default function ServiceDetailPage({ params }) {
         return
       }
       try {
+        const listingQs = listingIdForScopedReviews
+          ? `&listingId=${encodeURIComponent(listingIdForScopedReviews)}`
+          : ''
         const res = await fetch(
-          `/api/services/${encodeURIComponent(service.id)}/reviews?sellerId=${encodeURIComponent(selectedProviderId)}`,
+          `/api/services/${encodeURIComponent(service.id)}/reviews?sellerId=${encodeURIComponent(selectedProviderId)}${listingQs}`,
           { cache: 'no-store' },
         )
         const body = await res.json().catch(() => null)
@@ -122,7 +127,7 @@ export default function ServiceDetailPage({ params }) {
     return () => {
       cancelled = true
     }
-  }, [service?.id, selectedProviderId])
+  }, [service?.id, selectedProviderId, listingIdForScopedReviews])
 
   /** Uploaded listing images only (no service/sample assets). */
   const listingGalleryUrls = useMemo(() => {
@@ -176,6 +181,19 @@ export default function ServiceDetailPage({ params }) {
 
   const [providerAggregates, setProviderAggregates] = useState(null)
   const [providerAggLoaded, setProviderAggLoaded] = useState(false)
+  const providerAggPairParam =
+    provider?.id && service?.id
+      ? listingIdForScopedReviews
+        ? `${String(provider.id)}|${String(service.id)}|${listingIdForScopedReviews}`
+        : `${String(provider.id)}|${String(service.id)}`
+      : ''
+  const providerAggLookupKey =
+    provider?.id && service?.id
+      ? listingIdForScopedReviews
+        ? `${String(provider.id)}::${String(service.id)}::${listingIdForScopedReviews}`
+        : `${String(provider.id)}::${String(service.id)}`
+      : ''
+
   useEffect(() => {
     let cancelled = false
     async function loadProviderAgg() {
@@ -187,12 +205,12 @@ export default function ServiceDetailPage({ params }) {
       setProviderAggLoaded(false)
       try {
         const res = await fetch(
-          `/api/ratings/provider-service-aggregates?pairs=${encodeURIComponent(`${String(provider.id)}|${String(service.id)}`)}`,
+          `/api/ratings/aggregates?pairs=${encodeURIComponent(providerAggPairParam)}`,
           { cache: 'no-store' },
         )
         const body = await res.json().catch(() => null)
         if (cancelled) return
-        const agg = body?.aggregatesByPair?.[`${String(provider.id)}::${String(service.id)}`] ?? null
+        const agg = body?.aggregatesByPair?.[providerAggLookupKey] ?? null
         setProviderAggregates(agg)
       } catch {
         if (cancelled) return
@@ -205,14 +223,17 @@ export default function ServiceDetailPage({ params }) {
     return () => {
       cancelled = true
     }
-  }, [provider?.id, service?.id])
+  }, [provider?.id, service?.id, providerAggPairParam, providerAggLookupKey])
 
   useEffect(() => {
     function onVisible() {
       if (document.visibilityState !== 'visible') return
       if (!service?.id || !provider?.id) return
+      const listingQs = listingIdForScopedReviews
+        ? `&listingId=${encodeURIComponent(listingIdForScopedReviews)}`
+        : ''
       fetch(
-        `/api/services/${encodeURIComponent(service.id)}/reviews?sellerId=${encodeURIComponent(String(provider.id))}`,
+        `/api/services/${encodeURIComponent(service.id)}/reviews?sellerId=${encodeURIComponent(String(provider.id))}${listingQs}`,
         { cache: 'no-store' },
       )
         .then((res) => res.json().catch(() => null))
@@ -222,12 +243,15 @@ export default function ServiceDetailPage({ params }) {
         .catch(() => {
           setServiceReviews([])
         })
-      fetch(`/api/ratings/provider-service-aggregates?pairs=${encodeURIComponent(`${String(provider.id)}|${String(service.id)}`)}`, {
+      fetch(
+        `/api/ratings/aggregates?pairs=${encodeURIComponent(providerAggPairParam)}`,
+        {
         cache: 'no-store',
-      })
+      },
+      )
         .then((res) => res.json().catch(() => null))
         .then((body) => {
-          const agg = body?.aggregatesByPair?.[`${String(provider.id)}::${String(service.id)}`] ?? null
+          const agg = body?.aggregatesByPair?.[providerAggLookupKey] ?? null
           setProviderAggregates(agg)
         })
         .catch(() => {
@@ -236,7 +260,7 @@ export default function ServiceDetailPage({ params }) {
     }
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
-  }, [service?.id, provider?.id])
+  }, [service?.id, provider?.id, listingIdForScopedReviews, providerAggPairParam, providerAggLookupKey])
 
   const providerWithAggregates = provider
     ? {
