@@ -136,6 +136,30 @@
   border-right: none !important;
 }
 
+/* Loading skeleton — same chrome as loaded compare highlights */
+.compareHighlightsSkeleton {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+  border: 1px solid #D8D8D8;
+  border-bottom: 1px solid #D8D8D8;
+}
+
+.compareHighlightsSkeleton > div {
+  flex: 1;
+  min-width: 140px;
+  border-right: 1px solid #D8D8D8;
+  padding: 14px 16px;
+  box-sizing: border-box;
+  background: #faf9f7;
+}
+
+.compareHighlightsSkeleton > div:last-child {
+  border-right: none;
+}
+
 .compareHighlights :global([class*="highlightLabel"]) {
   font-size: 10px !important;
   font-family: "Lato", sans-serif !important;

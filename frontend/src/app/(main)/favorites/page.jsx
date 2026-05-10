@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useFavorites } from '@/contexts/FavoritesContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { useToast } from '@/contexts/ToastContext'
 import { formatPhpAmount } from '@/lib/cart/formatPhp'
 import styles from './favorites.module.css'
 
@@ -22,18 +23,12 @@ const SORT_OPTIONS = [
 export default function FavoritesPage() {
   const { user, authLoading, isBuyer } = useAuth()
   const { items: favorites, loading, removeFavorite, restoreFavorite } = useFavorites()
+  const toast = useToast()
   const [sortBy, setSortBy] = useState('newest')
   const [removingId, setRemovingId] = useState(null)
-  const [undoItem, setUndoItem] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
 
   const ITEMS_PER_PAGE = 15 // 3 columns × 5 rows
-
-  useEffect(() => {
-    if (!undoItem) return undefined
-    const t = setTimeout(() => setUndoItem(null), 5000)
-    return () => clearTimeout(t)
-  }, [undoItem])
 
   const sorted = useMemo(() => {
     const list = [...favorites]
@@ -63,13 +58,25 @@ export default function FavoritesPage() {
     setRemovingId(id)
     const { error } = await removeFavorite(id)
     setRemovingId(null)
-    if (!error && item) setUndoItem(item)
-  }
-
-  async function handleUndo() {
-    if (!undoItem) return
-    await restoreFavorite(undoItem)
-    setUndoItem(null)
+    if (error) {
+      toast.error(error.message || 'Could not remove from favorites.')
+      return
+    }
+    if (item) {
+      toast.success(
+        `${item.name} removed from favorites.`,
+        6000,
+        {
+          actionLabel: 'Undo',
+          onAction: async () => {
+            const { error: undoErr } = await restoreFavorite(item)
+            if (undoErr) {
+              toast.error(undoErr.message || 'Could not restore favorite.')
+            }
+          },
+        },
+      )
+    }
   }
 
   const isEmpty = favorites.length === 0
@@ -225,19 +232,6 @@ export default function FavoritesPage() {
           </>
         )}
       </div>
-
-      {/* ── Undo Toast ── */}
-      {undoItem && (
-        <div className={styles.undoToast} role="status">
-          <span className={styles.undoToastText}>
-            <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" stroke="none" style={{ marginRight: 6, flexShrink: 0, opacity: 0.6 }}>
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-            </svg>
-            <strong>{undoItem.name}</strong> removed from favorites
-          </span>
-          <button className={styles.undoBtn} onClick={handleUndo}>Undo</button>
-        </div>
-      )}
     </section>
   )
 }

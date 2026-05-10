@@ -61,7 +61,6 @@ export default function ServiceDetailPage({ params }) {
   const [bookBusy, setBookBusy] = useState(false)
   const [addError, setAddError] = useState(null)
   const [saveBusy, setSaveBusy] = useState(false)
-  const [saveError, setSaveError] = useState(null)
   const [chatOpen, setChatOpen] = useState(false)
   const [isMobileView, setIsMobileView] = useState(false)
 
@@ -89,17 +88,24 @@ export default function ServiceDetailPage({ params }) {
   }, [id, listingsForService, listingQuery])
 
   const selectedListing = listingsForService.find((l) => l.id === selectedListingId)
+  const selectedProviderId = String(
+    selectedListing?.provider?.id ?? selectedListing?.providerId ?? '',
+  ).trim()
 
   const [serviceReviews, setServiceReviews] = useState([])
 
   useEffect(() => {
     let cancelled = false
     async function loadServiceReviews() {
-      if (!service?.id) return
+      if (!service?.id || !selectedProviderId) {
+        setServiceReviews([])
+        return
+      }
       try {
-        const res = await fetch(`/api/services/${encodeURIComponent(service.id)}/reviews`, {
-          cache: 'no-store',
-        })
+        const res = await fetch(
+          `/api/services/${encodeURIComponent(service.id)}/reviews?sellerId=${encodeURIComponent(selectedProviderId)}`,
+          { cache: 'no-store' },
+        )
         const body = await res.json().catch(() => null)
         if (!res.ok) {
           throw new Error(typeof body?.error === 'string' ? body.error : 'Failed to load reviews.')
@@ -116,7 +122,7 @@ export default function ServiceDetailPage({ params }) {
     return () => {
       cancelled = true
     }
-  }, [service?.id])
+  }, [service?.id, selectedProviderId])
 
   /** Uploaded listing images only (no service/sample assets). */
   const listingGalleryUrls = useMemo(() => {
@@ -169,38 +175,46 @@ export default function ServiceDetailPage({ params }) {
   const provider = selectedListing ? selectedListing.provider ?? null : null
 
   const [providerAggregates, setProviderAggregates] = useState(null)
+  const [providerAggLoaded, setProviderAggLoaded] = useState(false)
   useEffect(() => {
     let cancelled = false
     async function loadProviderAgg() {
-      if (!provider?.id) {
+      if (!provider?.id || !service?.id) {
         setProviderAggregates(null)
+        setProviderAggLoaded(true)
         return
       }
+      setProviderAggLoaded(false)
       try {
         const res = await fetch(
-          `/api/ratings/provider-aggregates?ids=${encodeURIComponent(String(provider.id))}`,
+          `/api/ratings/provider-service-aggregates?pairs=${encodeURIComponent(`${String(provider.id)}|${String(service.id)}`)}`,
           { cache: 'no-store' },
         )
         const body = await res.json().catch(() => null)
         if (cancelled) return
-        const agg = body?.aggregatesBySellerId?.[String(provider.id)] ?? null
+        const agg = body?.aggregatesByPair?.[`${String(provider.id)}::${String(service.id)}`] ?? null
         setProviderAggregates(agg)
       } catch {
         if (cancelled) return
         setProviderAggregates(null)
+      } finally {
+        if (!cancelled) setProviderAggLoaded(true)
       }
     }
     loadProviderAgg()
     return () => {
       cancelled = true
     }
-  }, [provider?.id])
+  }, [provider?.id, service?.id])
 
   useEffect(() => {
     function onVisible() {
       if (document.visibilityState !== 'visible') return
-      if (!service?.id) return
-      fetch(`/api/services/${encodeURIComponent(service.id)}/reviews`, { cache: 'no-store' })
+      if (!service?.id || !provider?.id) return
+      fetch(
+        `/api/services/${encodeURIComponent(service.id)}/reviews?sellerId=${encodeURIComponent(String(provider.id))}`,
+        { cache: 'no-store' },
+      )
         .then((res) => res.json().catch(() => null))
         .then((body) => {
           setServiceReviews(Array.isArray(body?.reviews) ? body.reviews : [])
@@ -208,13 +222,12 @@ export default function ServiceDetailPage({ params }) {
         .catch(() => {
           setServiceReviews([])
         })
-      if (!provider?.id) return
-      fetch(`/api/ratings/provider-aggregates?ids=${encodeURIComponent(String(provider.id))}`, {
+      fetch(`/api/ratings/provider-service-aggregates?pairs=${encodeURIComponent(`${String(provider.id)}|${String(service.id)}`)}`, {
         cache: 'no-store',
       })
         .then((res) => res.json().catch(() => null))
         .then((body) => {
-          const agg = body?.aggregatesBySellerId?.[String(provider.id)] ?? null
+          const agg = body?.aggregatesByPair?.[`${String(provider.id)}::${String(service.id)}`] ?? null
           setProviderAggregates(agg)
         })
         .catch(() => {
@@ -233,6 +246,11 @@ export default function ServiceDetailPage({ params }) {
       }
     : null
 
+  const pairReviewCount = Number(providerAggregates?.reviewCount ?? 0) || 0
+  const pairAvgRating =
+    providerAggregates?.avgRating != null ? Number(providerAggregates.avgRating) : null
+  const hasPairReviews = providerAggLoaded && pairReviewCount > 0
+
   const pkgOptsForSave = selectedListing?.sellerPackageOptions ?? []
   const effectiveFavoritePkg = pkgOptsForSave.length > 0 ? String(buyerPackage || '').trim() : ''
   const savedToWishlist =
@@ -248,7 +266,6 @@ export default function ServiceDetailPage({ params }) {
 
   const handleSaveToggle = async () => {
     if (!selectedListing || !service) return
-    setSaveError(null)
     if (!user) {
       redirectToLogin()
       return
@@ -259,9 +276,10 @@ export default function ServiceDetailPage({ params }) {
     }
     const pkgOpts = selectedListing.sellerPackageOptions ?? []
     if (pkgOpts.length > 0 && !String(buyerPackage || '').trim()) {
-      setSaveError('Please select a package before saving.')
+      toast.error('Please select a package before saving.')
       return
     }
+    const wasSaved = savedToWishlist
     setSaveBusy(true)
     try {
       const { error } = await toggleFavorite(selectedListing, {
@@ -269,7 +287,15 @@ export default function ServiceDetailPage({ params }) {
         serviceLabel: service.name,
         packageOption: effectiveFavoritePkg,
       })
-      if (error) setSaveError(error.message || 'Could not update favorites')
+      if (error) {
+        toast.error(error.message || 'Could not update favorites.')
+        return
+      }
+      if (wasSaved) {
+        toast.success('Removed from favorites.')
+      } else {
+        toast.success('Saved to favorites.')
+      }
     } finally {
       setSaveBusy(false)
     }
@@ -385,27 +411,29 @@ export default function ServiceDetailPage({ params }) {
 
   if (fullCatalog === null) {
     return (
-      <section className={styles.detailPage}>
+      <section
+        className={styles.detailPage}
+        aria-busy="true"
+        aria-describedby="shop-detail-loading-hint"
+      >
         <div className={styles.content}>
-          <article
-            className={`${styles.card} ${styles.detailSkeletonCard}`}
-            role="status"
-            aria-busy="true"
-            aria-live="polite"
-          >
-            <span className={styles.detailSkeletonSrOnly}>Loading listing</span>
-            <div className={styles.galleryCol}>
+          <p id="shop-detail-loading-hint" role="status" className={styles.visuallyHidden}>
+            Loading service listing. Gallery, pricing and actions, provider card, description tabs,
+            and reviews will appear shortly.
+          </p>
+          <article className={`${styles.card} ${styles.detailSkeletonCard}`}>
+            <div className={styles.galleryCol} aria-hidden="true">
               <div className={styles.mainImageWrap}>
-                <div className={styles.detailSkeletonHero} aria-hidden="true" />
+                <div className={styles.detailSkeletonHero} />
               </div>
-              <div className={styles.thumbStrip} aria-hidden="true">
+              <div className={styles.thumbStrip}>
                 {[0, 1, 2, 3].map((i) => (
                   <div key={i} className={styles.detailSkeletonThumb} />
                 ))}
               </div>
               <div className={styles.galleryMeta}>
-                <div className={styles.detailSkeletonPill} aria-hidden="true" />
-                <div className={styles.detailSkeletonShareRow} aria-hidden="true">
+                <div className={styles.detailSkeletonPill} />
+                <div className={styles.detailSkeletonShareRow}>
                   <div className={styles.detailSkeletonDot} />
                   <div className={styles.detailSkeletonDot} />
                   <div className={styles.detailSkeletonDot} />
@@ -413,14 +441,14 @@ export default function ServiceDetailPage({ params }) {
                 </div>
               </div>
             </div>
-            <div className={styles.body}>
-              <div className={styles.detailSkeletonTitle} aria-hidden="true" />
-              <div className={styles.detailSkeletonRatings} aria-hidden="true" />
-              <div className={styles.detailSkeletonPrice} aria-hidden="true" />
-              <div className={styles.detailSkeletonText} aria-hidden="true" />
-              <div className={styles.detailSkeletonTextShort} aria-hidden="true" />
+            <div className={styles.body} aria-hidden="true">
+              <div className={styles.detailSkeletonTitle} />
+              <div className={styles.detailSkeletonRatings} />
+              <div className={styles.detailSkeletonPrice} />
+              <div className={styles.detailSkeletonText} />
+              <div className={styles.detailSkeletonTextShort} />
               <hr className={styles.divider} />
-              <div className={styles.attributes} aria-hidden="true">
+              <div className={styles.attributes}>
                 {[0, 1, 2, 3].map((i) => (
                   <div key={i} className={styles.attrRow}>
                     <div className={styles.detailSkeletonAttrLabel} />
@@ -428,7 +456,7 @@ export default function ServiceDetailPage({ params }) {
                   </div>
                 ))}
               </div>
-              <div className={styles.selectors} aria-hidden="true">
+              <div className={styles.selectors}>
                 <div className={styles.detailSkeletonSelect} />
                 <div className={styles.detailSkeletonQty} />
               </div>
@@ -438,6 +466,55 @@ export default function ServiceDetailPage({ params }) {
               </div>
             </div>
           </article>
+
+          <div className={styles.providerCard} aria-hidden="true">
+            <div className={styles.providerInfo}>
+              <div className={styles.detailSkeletonProviderAvatar} />
+              <div className={styles.providerMeta}>
+                <div className={styles.detailSkeletonProviderNameBar} />
+                <div className={styles.detailSkeletonProviderStatusBar} />
+              </div>
+              <div className={styles.providerActions}>
+                <div className={styles.detailSkeletonProviderBtn} />
+                <div
+                  className={`${styles.detailSkeletonProviderBtn} ${styles.detailSkeletonProviderBtnWide}`}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.fullDesc} aria-hidden="true">
+            <div className={`${styles.tabNav} ${styles.detailSkeletonTabNavRow}`}>
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className={styles.detailSkeletonTabPill} />
+              ))}
+            </div>
+            <div className={styles.tabContent}>
+              <div className={`${styles.tabBody} ${styles.detailSkeletonTabBodyOpen}`}>
+                <div className={styles.detailSkeletonText} />
+                <div className={styles.detailSkeletonText} />
+                <div className={styles.detailSkeletonText} />
+                <div className={styles.detailSkeletonTextShort} />
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.reviewsBox} aria-hidden="true">
+            <div className={styles.detailSkeletonReviewsHeader}>
+              <div className={styles.detailSkeletonReviewsTitle} />
+              <div className={styles.detailSkeletonReviewsChip} />
+            </div>
+            {[0, 1, 2].map((i) => (
+              <div key={i} className={styles.detailSkeletonReviewsRow}>
+                <div className={styles.detailSkeletonReviewsAvatar} />
+                <div className={styles.detailSkeletonReviewsBody}>
+                  <div className={styles.detailSkeletonText} />
+                  <div className={styles.detailSkeletonTextShort} />
+                  <div className={styles.detailSkeletonReviewsMetaBar} />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
     )
@@ -536,14 +613,6 @@ export default function ServiceDetailPage({ params }) {
                 </button>
               </div>
             </div>
-            {saveError && (
-              <p
-                className={styles.tabText}
-                style={{ color: 'var(--color-error, #b91c1c)', marginTop: 8, fontSize: 12 }}
-              >
-                {saveError}
-              </p>
-            )}
           </div>
 
           {/* ── RIGHT: Product details ── */}
@@ -553,19 +622,25 @@ export default function ServiceDetailPage({ params }) {
 
             {/* Ratings row */}
             <div className={styles.ratingsRow}>
-              <StarRow
-                rating={providerWithAggregates?.rating != null ? Number(providerWithAggregates.rating) : 0}
-                styles={styles}
-                size={14}
-              />
-              <span className={styles.ratingScore}>
-                {providerWithAggregates?.rating != null
-                  ? Number(providerWithAggregates.rating).toFixed(1)
-                  : '—'}
-              </span>
-              <span className={styles.ratingCount}>
-                · {providerWithAggregates?.reviews ?? 0} seller reviews
-              </span>
+              {!hasPairReviews ? (
+                <span className={styles.ratingCount}>No reviews yet</span>
+              ) : (
+                <>
+                  <StarRow
+                    rating={pairAvgRating != null && Number.isFinite(pairAvgRating) ? pairAvgRating : 0}
+                    styles={styles}
+                    size={14}
+                  />
+                  <span className={styles.ratingScore}>
+                    {pairAvgRating != null && Number.isFinite(pairAvgRating)
+                      ? pairAvgRating.toFixed(1)
+                      : '0.0'}
+                  </span>
+                  <span className={styles.ratingCount}>
+                    · {pairReviewCount} seller reviews
+                  </span>
+                </>
+              )}
               <span
                 className={`${styles.stockBadge}${stockInfo && !stockInfo.inStock ? ` ${styles.stockBadgeOut}` : ''}`}
               >

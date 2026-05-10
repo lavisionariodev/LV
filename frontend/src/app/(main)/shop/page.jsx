@@ -65,6 +65,138 @@ function ShopProviderCircleThumb({ provider, wrapClassName, imgClassName }) {
   )
 }
 
+const SHOP_PAGE_SKELETON_CARD_KEYS = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9']
+
+/**
+ * Skeleton layout mirroring sidebar filters + toolbar + listing card grid (seller-profile style).
+ */
+function ShopPageLoading() {
+  return (
+    <div className={styles.shopLayout} aria-busy="true" aria-describedby="shop-page-loading-hint">
+      <p id="shop-page-loading-hint" role="status" className={styles.visuallyHidden}>
+        Loading shop. Categories, location search, service providers, and service cards will appear
+        shortly.
+      </p>
+
+      <div className={styles.sideNavCol} aria-hidden="true">
+        <aside className={styles.sideNav}>
+          <div className={styles.sideNavHeader}>
+            <span className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonSideHeader}`} />
+          </div>
+          <div className={styles.sideNavScroll}>
+            <nav className={styles.sideNavList}>
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <div
+                  key={`cat-${i}`}
+                  className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonNavLine}`}
+                />
+              ))}
+            </nav>
+            <div className={styles.sideNavSection}>
+              <div className={styles.sideNavHeader}>
+                <span className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonSideHeader}`} />
+              </div>
+              <div className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonLocationBox}`} />
+            </div>
+            <div className={styles.sideNavSection}>
+              <div className={styles.sideNavHeader}>
+                <span className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonSideHeader}`} />
+              </div>
+              {[0, 1, 2, 3, 4].map((i) => (
+                <div key={`p-${i}`} className={styles.shopSkeletonProviderRow}>
+                  <div
+                    className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonProviderAvatar}`}
+                  />
+                  <div className={styles.shopSkeletonProviderLines}>
+                    <div
+                      className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonProviderLine1}`}
+                    />
+                    <div
+                      className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonProviderLine2}`}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div className={styles.shopMain} aria-hidden="true">
+        <div className={styles.shopSkeletonToolbar}>
+          <div className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonResultsBar}`} />
+          <div className={styles.shopSkeletonSortRow}>
+            <div className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonSortLabel}`} />
+            <div className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonSortField}`} />
+          </div>
+        </div>
+
+        <div className={styles.grid}>
+          {SHOP_PAGE_SKELETON_CARD_KEYS.map((k) => (
+            <div key={k} className={`${styles.card} ${styles.listingCard}`}>
+              <div className={styles.listingImageWrap}>
+                <div className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardImage}`} />
+              </div>
+              <div className={styles.shopSkeletonCardBody}>
+                <div className={styles.shopSkeletonCardMetaRow}>
+                  <div
+                    className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardAvatar}`}
+                  />
+                  <div className={styles.shopSkeletonCardMetaText}>
+                    <div
+                      className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardLineA}`}
+                    />
+                    <div
+                      className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardLineB}`}
+                    />
+                  </div>
+                </div>
+              </div>
+              <hr className={styles.shopSkeletonCardDivider} />
+              <div className={styles.shopSkeletonTitlePriceRow}>
+                <div className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardTitle}`} />
+                <div className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardPrice}`} />
+              </div>
+              <div className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardCta}`} />
+            </div>
+          ))}
+        </div>
+
+        <div className={styles.mobileGrid}>
+          {SHOP_PAGE_SKELETON_CARD_KEYS.slice(0, 6).map((k) => (
+            <div key={`m-${k}`} className={`${styles.card} ${styles.listingCard}`}>
+              <div className={styles.listingImageWrap}>
+                <div className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardImage}`} />
+              </div>
+              <div className={styles.shopSkeletonCardBody}>
+                <div className={styles.shopSkeletonCardMetaRow}>
+                  <div
+                    className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardAvatar}`}
+                  />
+                  <div className={styles.shopSkeletonCardMetaText}>
+                    <div
+                      className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardLineA}`}
+                    />
+                    <div
+                      className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardLineB}`}
+                    />
+                  </div>
+                </div>
+              </div>
+              <hr className={styles.shopSkeletonCardDivider} />
+              <div className={styles.shopSkeletonTitlePriceRow}>
+                <div className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardTitle}`} />
+                <div className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardPrice}`} />
+              </div>
+              <div className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardCta}`} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function ShopPage() {
   const router = useRouter()
   const pathname = usePathname()
@@ -280,12 +412,8 @@ export default function ShopPage() {
         const bPairKey = `${String(b?.providerId ?? '').trim()}::${String(b?.serviceId ?? '').trim()}`
         const aPairAgg = providerServiceAggregatesByPair[aPairKey]
         const bPairAgg = providerServiceAggregatesByPair[bPairKey]
-        const pa = a.provider ?? PROVIDERS.find((p) => p.id === a.providerId)
-        const pb = b.provider ?? PROVIDERS.find((p) => p.id === b.providerId)
-        const aProviderAgg = providerAggregatesById[String(pa?.id ?? '')]
-        const bProviderAgg = providerAggregatesById[String(pb?.id ?? '')]
-        const aRating = Number(aPairAgg?.avgRating ?? aProviderAgg?.avgRating ?? pa?.rating ?? 0) || 0
-        const bRating = Number(bPairAgg?.avgRating ?? bProviderAgg?.avgRating ?? pb?.rating ?? 0) || 0
+        const aRating = Number(aPairAgg?.avgRating ?? 0) || 0
+        const bRating = Number(bPairAgg?.avgRating ?? 0) || 0
         return bRating - aRating
       })
     } else if (sortBy === 'newest') {
@@ -305,7 +433,7 @@ export default function ShopPage() {
     }
 
     return list
-  }, [listings, activeCategory, sortBy, selectedProvider, locationQuery, searchParams, providerAggregatesById, providerServiceAggregatesByPair])
+  }, [listings, activeCategory, sortBy, selectedProvider, locationQuery, searchParams, providerServiceAggregatesByPair])
 
   const totalPages = Math.ceil(filteredListings.length / ITEMS_PER_PAGE)
   const paginatedListings = useMemo(() => {
@@ -413,15 +541,7 @@ export default function ShopPage() {
 
       <div className={styles.content}>
         {listingsLoading ? (
-          <div
-            className={styles.shopPageLoading}
-            role="status"
-            aria-live="polite"
-            aria-busy="true"
-          >
-            <span className={styles.shopLoadingSpinner} aria-hidden="true" />
-            <span className={styles.shopLoadingSrOnly}>Loading shop listings</span>
-          </div>
+          <ShopPageLoading />
         ) : (
         <>
         {/* ── Mobile Sort + Filter Row ── */}
@@ -580,11 +700,6 @@ export default function ShopPage() {
                               </svg>
                               {getProviderMetrics(provider).rating}
                             </span>
-                            {getProviderMetrics(provider).reviews != null ? (
-                              <span className={styles.providerItemRatingCount}>
-                                ({getProviderMetrics(provider).reviews} seller reviews)
-                              </span>
-                            ) : null}
                             {provider.badge && <span className={styles.providerItemBadge}>{provider.badge}</span>}
                           </div>
                         </button>
@@ -715,11 +830,6 @@ export default function ShopPage() {
                           </svg>
                           {getProviderMetrics(provider).rating}
                         </span>
-                        {getProviderMetrics(provider).reviews != null ? (
-                          <span className={styles.providerItemRatingCount}>
-                            ({getProviderMetrics(provider).reviews} seller reviews)
-                          </span>
-                        ) : null}
                         {provider.badge && (
                           <span className={styles.providerItemBadge}>{provider.badge}</span>
                         )}
@@ -800,7 +910,6 @@ export default function ShopPage() {
                         key={listing.id}
                         listing={listing}
                         styles={styles}
-                        providerAggregatesById={providerAggregatesById}
                         providerServiceAggregatesByPair={providerServiceAggregatesByPair}
                         inCompare={compareIds.includes(listing.id)}
                         onToggleCompare={toggleCompare}
@@ -869,7 +978,6 @@ export default function ShopPage() {
                         key={listing.id}
                         listing={listing}
                         styles={styles}
-                        providerAggregatesById={providerAggregatesById}
                         providerServiceAggregatesByPair={providerServiceAggregatesByPair}
                         inCompare={compareIds.includes(listing.id)}
                         onToggleCompare={toggleCompare}
@@ -1007,25 +1115,19 @@ function ListingCard({
   inCompare,
   onToggleCompare,
   compareDisabled,
-  providerAggregatesById = {},
   providerServiceAggregatesByPair = {},
 }) {
   const provider = listing.provider ?? PROVIDERS.find((p) => p.id === listing.providerId)
-  const providerAgg = providerAggregatesById[String(provider?.id ?? '')] ?? null
   const pairKey = `${String(listing?.providerId ?? '').trim()}::${String(listing?.serviceId ?? '').trim()}`
   const providerServiceAgg = providerServiceAggregatesByPair[pairKey] ?? null
   const providerRating =
     providerServiceAgg?.avgRating != null
       ? Number(providerServiceAgg.avgRating).toFixed(1)
-      : providerAgg?.avgRating != null
-        ? Number(providerAgg.avgRating).toFixed(1)
-        : provider?.rating
+      : null
   const providerReviews =
     providerServiceAgg?.reviewCount != null
       ? Number(providerServiceAgg.reviewCount)
-      : providerAgg?.reviewCount != null
-        ? Number(providerAgg.reviewCount)
-        : provider?.reviews
+      : 0
   const { addItem } = useCart()
   const { user, authLoading, isBuyer } = useAuth()
   const router = useRouter()
@@ -1128,7 +1230,7 @@ function ListingCard({
                 <path d="M6 1l1.35 2.73L10.5 4.2l-2.25 2.19.53 3.1L6 7.9l-2.78 1.6.53-3.1L1.5 4.2l3.15-.47z" />
               </svg>
             </span>
-            <span className={styles.ratingNum}>{providerRating}</span>
+            {providerRating ? <span className={styles.ratingNum}>{providerRating}</span> : null}
             <span className={styles.ratingReviews}>
               ({providerReviews ?? 0})
             </span>

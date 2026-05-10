@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
+import { isUuidLike } from '@/lib/uuidLike'
 
 const SERVICE_ID_ALLOWED = new Set(['cremation', 'traditional-burial', 'memorial-planning'])
 
@@ -11,22 +12,26 @@ function formatISODate(dateIso) {
 }
 
 export async function GET(request, { params }) {
+  const { searchParams } = new URL(request.url)
   const { serviceId: serviceIdRaw } = await params
   const serviceId = String(serviceIdRaw ?? '').trim()
+  const sellerIdParam = String(searchParams.get('sellerId') ?? '').trim()
+  const sellerId = sellerIdParam && isUuidLike(sellerIdParam) ? sellerIdParam : ''
   if (!SERVICE_ID_ALLOWED.has(serviceId)) {
     return NextResponse.json({ error: 'Invalid serviceId.' }, { status: 400 })
   }
 
   const supabaseAdmin = getSupabaseAdmin()
 
-  const { data: reviewRows, error: reviewsErr } = await supabaseAdmin
+  let reviewsQuery = supabaseAdmin
     .from('order_item_reviews')
     .select('order_item_id,buyer_id,rating,review_text,listing_label,created_at')
     .eq('service_id', serviceId)
-    .order('created_at', { ascending: false })
+  if (sellerId) reviewsQuery = reviewsQuery.eq('seller_user_id', sellerId)
+  const { data: reviewRows, error: reviewsErr } = await reviewsQuery.order('created_at', { ascending: false })
 
   if (reviewsErr) {
-    apiLog('service.reviews.list.failed', { err: errorMessage(reviewsErr), serviceId })
+    apiLog('service.reviews.list.failed', { err: errorMessage(reviewsErr), serviceId, sellerId })
     return NextResponse.json({ error: 'Failed to load service reviews.' }, { status: 500 })
   }
 
@@ -43,7 +48,7 @@ export async function GET(request, { params }) {
     : { data: [], error: null }
 
   if (profilesErr) {
-    apiLog('service.reviews.profiles_load_failed', { err: errorMessage(profilesErr), serviceId })
+    apiLog('service.reviews.profiles_load_failed', { err: errorMessage(profilesErr), serviceId, sellerId })
   }
 
   const nameByBuyerId = new Map((profileRows ?? []).map((p) => [p.id, p.full_name]))
@@ -63,6 +68,7 @@ export async function GET(request, { params }) {
     {
       ok: true,
       serviceId,
+      sellerId: sellerId || null,
       aggregates: { avgRating, reviewCount },
       reviews: mapped,
     },

@@ -14,9 +14,149 @@ import { formatPhpAmount } from '@/lib/cart/formatPhp'
 import shopStyles from '../shop.module.css'
 import styles from './compare.module.css'
 
+const COMPARE_SKELETON_ROW_LABELS = [
+  'Starting Price',
+  'Provider Rating',
+  'Location',
+  'Inclusions',
+  'Availability',
+]
+
+/**
+ * Skeleton layout mirroring header → highlights strip → comparison table.
+ */
+function ComparePageLoading({ columnCount }) {
+  const cols = Math.min(Math.max(columnCount, 2), 3)
+  return (
+    <section
+      className={styles.page}
+      aria-busy="true"
+      aria-describedby="compare-page-loading-hint"
+    >
+      <div className={styles.content}>
+        <p id="compare-page-loading-hint" role="status" className={shopStyles.visuallyHidden}>
+          Loading comparison. Highlight summaries and a side-by-side table for your selected
+          services will appear shortly.
+        </p>
+
+        <header className={styles.header} aria-hidden="true">
+          <div className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonHeaderLine}`} />
+          <div className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonSubtitle}`} />
+        </header>
+
+        <div className={styles.compareHighlightsSkeleton} aria-hidden="true">
+          {[0, 1, 2].map((i) => (
+            <div key={i}>
+              <div
+                className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonHighlightLine1}`}
+              />
+              <div
+                className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonHighlightLine2}`}
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className={styles.tableWrapper}>
+          <div className={styles.scrollHint}>
+            <span className={styles.scrollHintInner}>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                style={{ display: 'inline', verticalAlign: 'middle', marginRight: 5 }}
+              >
+                <path
+                  d="M3 8h10M9 4l4 4-4 4"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              Slide to compare
+            </span>
+          </div>
+          <div className={styles.tableCard}>
+            <div className={shopStyles.compareTableWrap}>
+              <table className={shopStyles.compareTable}>
+                <thead>
+                  <tr>
+                    <th className={shopStyles.compareTableLabel} />
+                    {Array.from({ length: cols }, (_, i) => (
+                      <th key={i} className={shopStyles.compareTableHead}>
+                        <div className={shopStyles.compareColHeader}>
+                          <div
+                            className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonThAvatar}`}
+                          />
+                          <div
+                            className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonThTitle}`}
+                          />
+                          <div
+                            className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonThSub}`}
+                          />
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {COMPARE_SKELETON_ROW_LABELS.map((label) => (
+                    <tr key={label} className={shopStyles.compareRow}>
+                      <td className={shopStyles.compareRowLabel}>{label}</td>
+                      {Array.from({ length: cols }, (_, i) => (
+                        <td key={i} className={shopStyles.compareRowCell}>
+                          {label === 'Inclusions' ? (
+                            <div className={shopStyles.compareSkeletonInclusionStack}>
+                              <div
+                                className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonCellWide}`}
+                              />
+                              <div
+                                className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonCellWide}`}
+                              />
+                              <div
+                                className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonCell}`}
+                              />
+                            </div>
+                          ) : (
+                            <div
+                              className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonCell}`}
+                            />
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                  <tr className={shopStyles.compareRowActions}>
+                    <td className={shopStyles.compareRowLabel} />
+                    {Array.from({ length: cols }, (_, i) => (
+                      <td key={i} className={shopStyles.compareRowCell}>
+                        <div
+                          className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonCtaBar}`}
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <footer className={styles.footer} aria-hidden="true">
+          <div className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonFooterBtn}`} />
+          <div className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonFooterBtnPrimary}`} />
+        </footer>
+      </div>
+    </section>
+  )
+}
+
 export default function ComparePage() {
   const searchParams = useSearchParams()
-  const [catalog, setCatalog] = useState(() => mergeShopListings([]))
+  const [catalog, setCatalog] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -40,6 +180,7 @@ export default function ComparePage() {
   }, [idsParam])
 
   const compareListings = useMemo(() => {
+    if (!catalog) return []
     return compareIds
       .map((id) => {
         const listing = catalog.find((l) => String(l.id) === String(id))
@@ -51,6 +192,9 @@ export default function ComparePage() {
       })
       .filter((x) => x.listing)
   }, [compareIds, catalog])
+
+  const catalogLoading = catalog === null
+  const compareSkeletonColumns = Math.min(Math.max(compareIds.length, 2), 3)
 
   const lowestPriceId = useMemo(() => {
     if (compareListings.length < 2) return null
@@ -72,6 +216,10 @@ export default function ComparePage() {
       })
       .listing?.id
   }, [compareListings])
+
+  if (catalogLoading && compareIds.length >= 2) {
+    return <ComparePageLoading columnCount={compareSkeletonColumns} />
+  }
 
   if (compareListings.length < 2) {
     return (

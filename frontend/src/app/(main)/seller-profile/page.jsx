@@ -815,7 +815,7 @@ function SellerProfileLoading() {
           </div>
 
           <div className={styles.statsRow} aria-hidden>
-            {[0, 1, 2, 3, 4].map((i) => (
+            {[0, 1, 2, 3].map((i) => (
               <div key={i} className={styles.statItem}>
                 <div className={`${styles.skeletonBlock} ${styles.skeletonStatBar}`} />
                 <div className={`${styles.skeletonBlock} ${styles.skeletonStatLabel}`} />
