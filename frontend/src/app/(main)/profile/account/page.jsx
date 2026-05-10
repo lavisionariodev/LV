@@ -9,6 +9,7 @@ import {
   isoFromDobParts,
 } from '@/shared/utils/profileDob';
 import styles from '../profile.module.css';
+import { AccountTabSkeleton } from '../components/ProfileTabSkeletons';
 
 const GENDER_OPTIONS = ['Male', 'Female', 'Other'];
 const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
@@ -19,6 +20,7 @@ export default function AccountPage() {
   const {
     user,
     profile,
+    loading,
     saving,
     uploading,
     handleChange,
@@ -49,6 +51,10 @@ export default function AccountPage() {
     const iso = isoFromDobParts(dob.day, dob.month, dob.year);
     void handleSave({ date_of_birth: iso });
   };
+
+  if (loading) {
+    return <AccountTabSkeleton />;
+  }
 
   return (
     <div className={styles.profileCard}>

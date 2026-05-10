@@ -13,6 +13,7 @@ import { useProfile } from '@/contexts/ProfileContext';
 import BottomSheet from './components/BottomSheet';
 import { signOut as signOutSession } from '@/lib/auth/session';
 import LogoutModal from '@/components/ui/Modal/Logout';
+import { ProfileAuthLayoutSkeleton } from './components/ProfileTabSkeletons';
 import {
   PROFILE_DOB_MONTHS,
   dobPartsFromIso,
@@ -391,25 +392,7 @@ export default function ProfileLayout({ children }) {
   }, [isMobile, openSheet]);
 
   if (authLoading && !user) {
-    return (
-      <main className={styles.profilePage}>
-        <div className={styles.profileLayout}>
-          <aside className={styles.profileSidebar}>
-            <div className={styles.sidebarIdentity}>
-              <div className={styles.sidebarAvatarBtn} style={{ background: 'var(--forest-light)' }} />
-              <div className={styles.sidebarUserMeta}>
-                <span className={styles.sidebarUsername} style={{ opacity: 0.3 }}>Loading…</span>
-              </div>
-            </div>
-          </aside>
-          <div className={styles.profileMain}>
-            <div className={styles.profileCard}>
-              <p className={styles.mutedText} style={{ padding: '24px' }}>Loading profile…</p>
-            </div>
-          </div>
-        </div>
-      </main>
-    );
+    return <ProfileAuthLayoutSkeleton />;
   }
 
   if (!user) return null;

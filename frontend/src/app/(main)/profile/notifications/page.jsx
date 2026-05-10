@@ -3,6 +3,7 @@
 import { useProfile } from '@/contexts/ProfileContext';
 import styles from '../profile.module.css';
 import notifStyles from './notifications.module.css';
+import { NotificationsTabSkeleton } from '../components/ProfileTabSkeletons';
 import { useState, useMemo } from 'react';
 
 const FILTERS = [
@@ -106,7 +107,7 @@ const SAMPLE_NOTIFICATIONS = [
 const PAGE_SIZE = 7;
 
 export default function NotificationsPage() {
-  useProfile();
+  const { loading } = useProfile();
   const [notifications, setNotifications] = useState(SAMPLE_NOTIFICATIONS);
   const [activeFilter, setActiveFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -147,6 +148,10 @@ export default function NotificationsPage() {
   function handleFilterChange(filterId) {
     setActiveFilter(filterId);
     setCurrentPage(1);
+  }
+
+  if (loading) {
+    return <NotificationsTabSkeleton />;
   }
 
   return (
