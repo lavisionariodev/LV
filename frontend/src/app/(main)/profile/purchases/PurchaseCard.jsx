@@ -36,6 +36,12 @@ export function PurchaseCard({ purchase, cancellingOrderId }) {
             <span className={purchaseStyles.orderId}>{purchase.id}</span>
             <h3 className={purchaseStyles.serviceName}>{purchase.service}</h3>
             <span className={purchaseStyles.providerName}>{purchase.provider}</span>
+            {purchase.isMultiItemCheckout && purchase.checkoutSiblingCount > 0 ? (
+              <span className={purchaseStyles.checkoutBundleHint}>
+                Paid in one checkout with {purchase.checkoutSiblingCount} other listing
+                {purchase.checkoutSiblingCount === 1 ? '' : 's'}
+              </span>
+            ) : null}
           </div>
           <div className={purchaseStyles.badgeColumn}>
             <span
@@ -172,7 +178,7 @@ export function PurchaseCard({ purchase, cancellingOrderId }) {
 
         {purchase.status === 'Completed' ? (
           <button type="button" className={purchaseStyles.actionLink} onClick={() => purchase.onLeaveReview?.(purchase)}>
-            Leave a review
+            {purchase.hasExistingReview ? 'Edit review' : 'Leave a review'}
           </button>
         ) : null}
 

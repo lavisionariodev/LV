@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getUserRole, ROLE_SELLER } from '@/lib/auth/roles';
 import { supabase } from '@/lib/supabase/client';
-import { mapBuyerOrderCard } from '@/lib/profile/mapBuyerOrderCard';
+import { expandPurchaseCardsByLineItem, mapBuyerOrderCard } from '@/lib/profile/mapBuyerOrderCard';
 import styles from '../profile.module.css';
 import purchaseStyles from './purchases.module.css';
 import { PurchaseCard } from './PurchaseCard';
 import { CancelBookingModal } from './CancelBookingModal';
+import { InfoModal } from './InfoModal';
 import { LeaveReviewModal } from './LeaveReviewModal';
 
 /** Purchases toolbar tabs — match buyer-facing `purchase.status`. */
@@ -62,6 +63,8 @@ export default function PurchasesPage() {
   const [cancellingOrderId, setCancellingOrderId] = useState(null);
   const [cancelConfirmRawOrderId, setCancelConfirmRawOrderId] = useState(null);
   const [cancelShowsRefundDisclaimer, setCancelShowsRefundDisclaimer] = useState(false);
+  const [cancelResultMessage, setCancelResultMessage] = useState('');
+  const [cancelResultOpen, setCancelResultOpen] = useState(false);
   const [checkoutPayBanner, setCheckoutPayBanner] = useState('');
 
   const [leaveReviewOpen, setLeaveReviewOpen] = useState(false)
@@ -144,6 +147,14 @@ export default function PurchasesPage() {
               .in('order_id', orderIds)
           : { data: [], error: null };
 
+        const { data: reviewRows } = orderIds.length
+          ? await supabase
+              .from('order_item_reviews')
+              .select('order_id,order_item_id')
+              .eq('buyer_id', user.id)
+              .in('order_id', orderIds)
+          : { data: [], error: null };
+
         // Debug: if items are empty, RLS policy on order_items may be missing.
         // Fix: run the buyer_select_own_order_items RLS policy in Supabase SQL editor.
         if (process.env.NODE_ENV !== 'production') {
@@ -155,6 +166,16 @@ export default function PurchasesPage() {
           const list = itemsByOrder.get(it.order_id) ?? [];
           list.push(it);
           itemsByOrder.set(it.order_id, list);
+        }
+
+        const reviewedItemIdsByOrder = new Map();
+        for (const row of reviewRows ?? []) {
+          const oid = String(row?.order_id ?? '').trim();
+          const itemId = String(row?.order_item_id ?? '').trim();
+          if (!oid || !itemId) continue;
+          const set = reviewedItemIdsByOrder.get(oid) ?? new Set();
+          set.add(itemId);
+          reviewedItemIdsByOrder.set(oid, set);
         }
 
         /** @type {Record<string, string | null>} */
@@ -179,14 +200,17 @@ export default function PurchasesPage() {
 
         if (cancelled) return;
 
-        const mapped = (orders ?? []).map((o) => {
+        const flattened = [];
+        for (const o of orders ?? []) {
           const orderItems = itemsByOrder.get(o.id) ?? [];
           const dn = nameMap[o.seller_user_id];
-          return mapBuyerOrderCard(o, orderItems, dn ?? undefined);
-        });
+          const card = mapBuyerOrderCard(o, orderItems, dn ?? undefined);
+          const reviewedSet = reviewedItemIdsByOrder.get(String(o.id)) ?? new Set();
+          flattened.push(...expandPurchaseCardsByLineItem(card, orderItems, reviewedSet));
+        }
 
         if (!cancelled) {
-          setPurchases(mapped);
+          setPurchases(flattened);
         }
       } finally {
         if (!cancelled) setLoadingPurchases(false);
@@ -282,8 +306,12 @@ export default function PurchasesPage() {
         window.alert(typeof body?.error === 'string' ? body.error : 'Could not cancel purchase.');
         return;
       }
-      if (body?.mode === 'refund_requested' && typeof body?.message === 'string') {
-        window.alert(body.message);
+      if (body?.mode === 'refund_requested') {
+        setCancelResultMessage(
+          (typeof body?.message === 'string' ? String(body.message) : '') ||
+            'Purchase cancelled and refund requested. After the provider approves, refunds usually arrive in about 5-15 business days, depending on your bank or e-wallet.',
+        );
+        setCancelResultOpen(true);
       }
       setCancelConfirmRawOrderId(null);
       setCancelShowsRefundDisclaimer(false);
@@ -347,7 +375,7 @@ export default function PurchasesPage() {
               <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.6" />
               <path d="M14 14l3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
-            <input type="text" className={purchaseStyles.searchInput} placeholder="Search by service, provider, or order ID…" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <input type="text" className={purchaseStyles.searchInput} placeholder="Search by listing, provider, or order ID…" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           <div className={purchaseStyles.filters}>
             {PURCHASE_FILTER_TABS.map((s) => (
@@ -373,11 +401,11 @@ export default function PurchasesPage() {
           </div>
         ) : (
           <>
-            <div className={purchaseStyles.paginationMeta}>Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length} {filtered.length === 1 ? 'order' : 'orders'}</div>
+            <div className={purchaseStyles.paginationMeta}>Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length} {filtered.length === 1 ? 'listing' : 'listings'}</div>
             <div className={purchaseStyles.cardList}>
               {paginated.map((p) => (
                 <PurchaseCard
-                  key={p.rawOrderId}
+                  key={p.listRowKey ?? p.rawOrderId}
                   cancellingOrderId={cancellingOrderId}
                   purchase={{
                     ...p,
@@ -424,6 +452,17 @@ export default function PurchasesPage() {
           setLeaveReviewOpen(false)
           setLeaveReviewOrder(null)
           bumpRefresh()
+        }}
+      />
+
+      <InfoModal
+        open={cancelResultOpen}
+        title="Refund requested"
+        message={cancelResultMessage}
+        buttonLabel="Got it"
+        onClose={() => {
+          setCancelResultOpen(false);
+          setCancelResultMessage('');
         }}
       />
     </div>
