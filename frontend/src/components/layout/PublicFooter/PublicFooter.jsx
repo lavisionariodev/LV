@@ -72,7 +72,7 @@ export default function PublicFooter() {
             <Link href="/how-it-works" className={styles.link}>
               How It Works
             </Link>
-            <Link href="/providers" className={styles.link}>
+            <Link href="/seller/signup" className={styles.link}>
               Become a Provider
             </Link>
             <Link href="/contact" className={styles.link}>
