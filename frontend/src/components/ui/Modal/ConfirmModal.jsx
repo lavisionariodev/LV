@@ -16,6 +16,10 @@ export default function ConfirmModal({
   onCancel,
   /** When true, buttons are disabled and overlay click does not dismiss (e.g. async submit). */
   disableActions = false,
+  /** When true, same as disabling actions; confirm shows `confirmLoadingLabel` (or `confirmLabel` + "..."). */
+  loading = false,
+  /** Confirm button text while `loading` (present tense + "...", e.g. "Saving..."). */
+  confirmLoadingLabel,
   /** `danger` — red · `primary` — green · `warning` — amber (caution). */
   variant = 'danger',
   /** Optional node shown inside the header circle instead of "!". */
@@ -23,23 +27,32 @@ export default function ConfirmModal({
   /** `center` — default; `left` — for multi-line explanations + extra content. */
   subtitleAlign = 'center',
 }) {
+  const actionsDisabled = disableActions || loading
+
   useEffect(() => {
     if (!open) return
     const onKey = (e) => {
       if (e.key !== 'Escape') return
-      if (disableActions) return
+      if (actionsDisabled) return
       onCancel?.()
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [open, disableActions, onCancel])
+  }, [open, actionsDisabled, onCancel])
 
   if (!open) return null
 
   const handleOverlayClick = () => {
-    if (disableActions) return
+    if (actionsDisabled) return
     onCancel?.()
   }
+
+  const confirmButtonLabel =
+    loading && confirmLoadingLabel != null && String(confirmLoadingLabel).length > 0
+      ? confirmLoadingLabel
+      : loading && typeof confirmLabel === 'string' && confirmLabel.length > 0
+        ? `${confirmLabel}...`
+        : confirmLabel
 
   const stop = (e) => e.stopPropagation()
 
@@ -76,7 +89,7 @@ export default function ConfirmModal({
             type="button"
             className={styles.cancelBtn}
             onClick={onCancel}
-            disabled={disableActions}
+            disabled={actionsDisabled}
           >
             {cancelLabel}
           </button>
@@ -85,9 +98,10 @@ export default function ConfirmModal({
             type="button"
             className={confirmBtnClass}
             onClick={onConfirm}
-            disabled={disableActions}
+            disabled={actionsDisabled}
+            aria-busy={loading}
           >
-            {confirmLabel}
+            {confirmButtonLabel}
           </button>
         </div>
       </div>

@@ -44,6 +44,7 @@ export function ProfileProvider({ children }) {
 
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [removingAvatar, setRemovingAvatar] = useState(false);
   const fileInputRef = useRef(null);
   const [confirmRemoveOpen, setConfirmRemoveOpen] = useState(false);
 
@@ -143,26 +144,30 @@ export function ProfileProvider({ children }) {
     if (!user) return;
 
     setUploading(true);
+    setRemovingAvatar(true);
+    try {
+      const merged = { ...localProfile, avatar_url: '' };
+      const payload = buildProfileUpsert(merged, user, authProfile);
 
-    const merged = { ...localProfile, avatar_url: '' };
-    const payload = buildProfileUpsert(merged, user, authProfile);
+      const { error } = await supabase.from('profiles').upsert({
+        ...payload,
+        avatar_url: null,
+      });
 
-    const { error } = await supabase.from('profiles').upsert({
-      ...payload,
-      avatar_url: null,
-    });
+      setUploading(false);
 
-    setUploading(false);
+      if (error) {
+        toast.error(error.message || 'Failed to remove avatar');
+        return;
+      }
 
-    if (error) {
-      toast.error(error.message || 'Failed to remove avatar');
-      return;
+      setLocalProfile(merged);
+      toast.success('Avatar removed');
+      await refreshProfile().catch(() => {});
+      setConfirmRemoveOpen(false);
+    } finally {
+      setRemovingAvatar(false);
     }
-
-    setLocalProfile(merged);
-    toast.success('Avatar removed');
-    await refreshProfile().catch(() => {});
-    setConfirmRemoveOpen(false);
   };
 
   const handleRemoveAvatar = () => {
@@ -209,9 +214,13 @@ export function ProfileProvider({ children }) {
         title="Remove profile photo?"
         message="Are you sure you want to remove your profile photo?"
         confirmLabel="Remove"
+        confirmLoadingLabel="Removing..."
         cancelLabel="Cancel"
+        loading={removingAvatar}
         onConfirm={performRemoveAvatar}
-        onCancel={() => setConfirmRemoveOpen(false)}
+        onCancel={() => {
+          if (!removingAvatar) setConfirmRemoveOpen(false);
+        }}
       />
     </ProfileContext.Provider>
   );

@@ -873,13 +873,12 @@ function EscrowReleasePanel({
             {holdModalErr ? <p className={confirmModalStyles.modalFieldError}>{holdModalErr}</p> : null}
           </>
         }
-        confirmLabel={
-          busy ? (useCompactCopy ? 'Holding…' : 'Placing hold…') : useCompactCopy ? 'Place hold' : 'Place on hold'
-        }
+        confirmLabel={useCompactCopy ? 'Place hold' : 'Place on hold'}
+        confirmLoadingLabel={useCompactCopy ? 'Holding...' : 'Placing hold...'}
         cancelLabel="Cancel"
         onConfirm={submitHoldFromModal}
         onCancel={closeHoldModal}
-        disableActions={busy}
+        loading={busy}
       />
       <ConfirmModal
         open={releaseModalOpen}
@@ -910,11 +909,12 @@ function EscrowReleasePanel({
             </>
           )
         }
-        confirmLabel={busy ? 'Releasing…' : useCompactCopy ? 'Release' : 'Release payout'}
+        confirmLabel={useCompactCopy ? 'Release' : 'Release payout'}
+        confirmLoadingLabel="Releasing..."
         cancelLabel="Cancel"
         onConfirm={handleConfirmRelease}
         onCancel={handleReleaseModalCancel}
-        disableActions={busy}
+        loading={busy}
       />
     <div className={isSheet ? styles.msheetReleaseCard : styles.escrowActionCard}>
       <p className={isSheet ? styles.msheetReleaseTitle : styles.escrowActionTitle}>

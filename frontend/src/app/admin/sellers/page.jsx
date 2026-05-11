@@ -1027,9 +1027,10 @@ export default function AdminSellersPage() {
             : `Remove "${featuredConfirm?.name ?? ''}" from the partners spotlight?`
         }
         confirmLabel={featuredConfirm?.nextFeatured ? 'Feature' : 'Remove'}
+        confirmLoadingLabel={featuredConfirm?.nextFeatured ? 'Featuring...' : 'Removing...'}
         cancelLabel="Cancel"
         variant={featuredConfirm?.nextFeatured ? 'primary' : 'warning'}
-        disableActions={featuredSubmitting}
+        loading={featuredSubmitting}
         onCancel={() => {
           if (!featuredSubmitting) setFeaturedConfirm(null);
         }}
@@ -1054,8 +1055,9 @@ export default function AdminSellersPage() {
         subtitleAlign="left"
         variant="danger"
         confirmLabel="Reject and send email"
+        confirmLoadingLabel="Rejecting..."
         cancelLabel="Cancel"
-        disableActions={rejectSubmitting}
+        loading={rejectSubmitting}
         onCancel={() => {
           if (!rejectSubmitting) {
             setRejectDraft(null);
