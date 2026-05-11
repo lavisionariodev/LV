@@ -7,6 +7,12 @@
 
 .page {
   width: 100%;
+  min-height: 100%;
+}
+
+.contentArea {
+  width: 100%;
+  max-width: none;
 }
 
 .tabBar {
@@ -14,11 +20,11 @@
   align-items: center;
   flex-wrap: nowrap;
   gap: 2px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   padding: 8px;
   background: #ffffff;
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: 6px;
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
@@ -34,13 +40,13 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  padding: 8px 14px;
+  padding: 4px 12px;
   margin: 0;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-text-secondary);
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   cursor: pointer;
   white-space: nowrap;
@@ -51,9 +57,11 @@
   font-family: inherit;
 }
 
-.tabItem:hover:not(.tabItemActive) {
-  color: var(--color-text-primary);
-  background: color-mix(in srgb, var(--color-cream) 40%, #ffffff 60%);
+@media (hover: hover) and (pointer: fine) {
+  .tabItem:hover:not(.tabItemActive) {
+    color: var(--color-text-primary);
+    background: color-mix(in srgb, var(--color-cream) 40%, #ffffff 60%);
+  }
 }
 
 .tabItem:focus-visible {
@@ -68,24 +76,21 @@
   border-color: color-mix(in srgb, var(--color-primary) 22%, var(--color-border) 78%);
 }
 
+.tabLabel {
+  position: relative;
+  display: inline-block;
+}
+
 .tabItem:disabled {
   opacity: 0.65;
   cursor: not-allowed;
 }
 
-.profileTabContent {
+.grid {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  width: 100%;
+  gap: 20px;
   align-items: stretch;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-  align-items: start;
 }
 
 .full {
@@ -95,8 +100,103 @@
 .card {
   background: #ffffff;
   border: 1px solid var(--color-border);
-  border-radius: 10px;
-  padding: 18px 22px 22px;
+  border-radius: 12px;
+  padding: 22px 26px 26px;
+}
+
+.tabDetailHead {
+  margin: 0 0 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tabDetailHeadRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.tabDetailHeadText {
+  min-width: 0;
+  flex: 1;
+}
+
+.tabDetailTitle {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.tabDetailSubtitle {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.profileDetails {
+  display: flex;
+  flex-direction: column;
+}
+
+.profileControl {
+  max-width: 520px;
+}
+
+.profilePhotoControl {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.settingsRow {
+  display: grid;
+  grid-template-columns: minmax(0, 0.4fr) minmax(0, 0.6fr);
+  gap: 24px 32px;
+  align-items: flex-start;
+  padding: 22px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 65%, #ffffff 35%);
+}
+
+.settingsRow:last-child {
+  border-bottom: none;
+}
+
+.settingsRowMeta {
+  min-width: 0;
+}
+
+.settingsRowTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.settingsRowTitle {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  min-width: 0;
+}
+
+.settingsRowDesc {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.settingsRowControl {
+  min-width: 0;
+  width: 100%;
 }
 
 .cardHeadRow {
@@ -118,6 +218,8 @@
   display: inline-flex;
   gap: 10px;
   flex-wrap: wrap;
+  flex-shrink: 0;
+  align-items: center;
 }
 
 .cardTitle {
@@ -158,7 +260,7 @@
   flex-shrink: 0;
 }
 
-.primaryBtn:hover {
+.primaryBtn:hover:not(:disabled) {
   background: #163a29;
 }
 
@@ -182,9 +284,14 @@
   border-color: #204F38;
 }
 
-.secondaryBtn:hover {
+.secondaryBtn:hover:not(:disabled) {
   background: #6f2c2a;
   border-color: #6f2c2a;
+}
+
+.secondaryBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .changeBtn:hover {
@@ -197,7 +304,7 @@
   border-color: #8B3835;
 }
 
-.dangerBtn:hover {
+.dangerBtn:hover:not(:disabled) {
   background: #6f2c2a;
   border-color: #6f2c2a;
 }
@@ -327,6 +434,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 1px solid var(--color-border);
+  box-sizing: border-box;
+}
+
+.avatarSettings {
+  width: 96px;
+  height: 96px;
+}
+
+.avatarSettings .avatarFallback {
+  width: 100%;
+  height: 100%;
+  font-size: 28px;
 }
 
 .avatarImg {
@@ -487,7 +607,7 @@
   min-height: 100px;
   height: auto;
   padding: 12px 14px;
-  resize: vertical;
+  resize: none;
   line-height: 1.45;
 }
 
@@ -614,6 +734,26 @@
 @media (max-width: 900px) {
   .piGrid {
     grid-template-columns: 1fr;
+  }
+
+  .shopFieldGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .settingsRow {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 18px 0;
+  }
+
+  .tabDetailHeadRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .headActions {
+    width: 100%;
+    justify-content: flex-end;
   }
 }
 
@@ -753,6 +893,27 @@
     margin-top: 0;
     font-size: 11px;
   }
+
+  .shopSubTabsShell {
+    margin-left: -14px;
+    margin-right: -14px;
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .shopSubTabBar {
+    margin: 0 -14px;
+    padding: 0 10px;
+  }
+
+  .shopBody {
+    margin-left: -14px;
+    margin-right: -14px;
+    margin-bottom: -14px;
+    padding-left: 14px;
+    padding-right: 14px;
+    padding-bottom: 14px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -773,3 +934,258 @@
     max-width: none;
   }
 }
+
+/* ─── Shop information: sub-tabs + card grid (reference layout) ─── */
+
+.shopSubTabsShell {
+  margin: 12px -26px 0;
+  padding: 0 26px;
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+}
+
+.shopSubTabBar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--color-border);
+  margin: 0 -26px;
+  padding: 0 22px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.shopSubTabBar::-webkit-scrollbar {
+  display: none;
+}
+
+.shopSubTab {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 12px 14px 10px;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.shopSubTab:hover {
+  color: var(--color-text-primary);
+}
+
+.shopSubTab:focus-visible {
+  outline: 2px solid var(--color-main-accent);
+  outline-offset: -2px;
+}
+
+.shopSubTabActive {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.shopBody {
+  margin: 0 -26px -26px;
+  padding: 20px 26px 26px;
+  background: color-mix(in srgb, var(--color-cream) 45%, #f4f4f2 55%);
+  border-radius: 0 0 11px 11px;
+}
+
+.shopInfoCard {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(16, 40, 32, 0.07);
+  padding: 18px 20px 20px;
+  margin-bottom: 16px;
+}
+
+.shopInfoCard:last-child {
+  margin-bottom: 0;
+}
+
+.shopInfoCardTitle {
+  margin: 0 0 16px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.shopFieldGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px 20px;
+  align-items: start;
+}
+
+.shopFieldGridFull {
+  grid-column: 1 / -1;
+}
+
+.shopGridField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.shopGridField .input,
+.shopGridField .textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.shopGridLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  line-height: 1.35;
+}
+
+.shopGridHint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+}
+
+.shopCoverPreview {
+  margin-top: 8px;
+  margin-bottom: 4px;
+  max-width: 520px;
+}
+
+.shopCoverImg {
+  width: 100%;
+  max-height: 180px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  display: block;
+}
+
+.shopCoverToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.shopCoverToolbar .primaryBtn,
+.shopCoverToolbar .dangerBtn {
+  min-height: 38px;
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+.shopSocialRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.shopSocialRow input[type='checkbox'] {
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.shopSocialLabel {
+  flex: 1;
+  min-width: 0;
+}
+
+.shopSpecialtyList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.shopSpecialtyGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 12px;
+  align-items: start;
+}
+
+.shopSpecialtyCell {
+  min-width: 0;
+}
+
+.shopSpecialtyRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.shopSpecialtyRow .input {
+  height: 38px;
+  min-height: 38px;
+}
+
+.shopSpecialtyRemoveBtn {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  padding: 0;
+  margin: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-cream) 35%, #ffffff 65%);
+  color: var(--color-secondary-accent);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.shopSpecialtyRemoveBtn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-secondary-accent) 10%, #ffffff 90%);
+  border-color: color-mix(in srgb, var(--color-secondary-accent) 35%, var(--color-border) 65%);
+}
+
+.shopSpecialtyRemoveBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.shopSpecialtyRemoveBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.shopSpecialtyAddBtn {
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+@media (max-width: 900px) {
+  .shopSpecialtyGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .shopSpecialtyGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
