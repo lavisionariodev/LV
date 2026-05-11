@@ -30,8 +30,13 @@ function compareRatingNormForValue(rating) {
 
 function compareListingIdsWithLowestPrice(rows) {
   if (rows.length < 2) return []
-  const min = Math.min(...rows.map((x) => x.listing.price))
-  return rows.filter((x) => x.listing.price === min).map((x) => x.listing.id)
+  const prices = rows.map((x) => Number(x.listing.price))
+  if (prices.some((p) => Number.isNaN(p))) return []
+  const min = Math.min(...prices)
+  const atMin = rows.filter((_, i) => prices[i] === min)
+  // No tag when multiple listings tie for lowest — equal prices are not a unique "lowest"
+  if (atMin.length !== 1) return []
+  return [atMin[0].listing.id]
 }
 
 function compareListingIdsWithHighestRating(rows) {

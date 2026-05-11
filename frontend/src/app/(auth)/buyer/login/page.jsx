@@ -8,7 +8,7 @@ import styles from './login.module.css';
 import { loginWithEmailPassword, signInWithOAuth, getOAuthRedirectUrl } from '@/lib/auth/client';
 import { getUser } from "@/lib/auth/session";
 import ForgotPasswordModal from '@/components/ui/Modal/ForgotPasswordModal';
-import { useToast } from '@/contexts/ToastContext';
+import { useAuthToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase/client';
 import { isAdmin } from '@/lib/auth/admin';
 import { getUserRole, ROLE_BUYER } from '@/lib/auth/roles';
@@ -25,7 +25,7 @@ function BuyerLoginPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const redirect = getSafeRedirect(searchParams.get("redirect"));
-  const toast = useToast();
+  const toast = useAuthToast();
 
   const [signInData, setSignInData] = useState({
     email: '',

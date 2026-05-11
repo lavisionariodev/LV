@@ -12,7 +12,7 @@ import PublicFooter from '@/components/layout/PublicFooter/PublicFooter';
 import { validateNewPassword } from '@/lib/validators/authSchemas';
 import { sendEmailOtpForSignup, verifyEmailOtpForSignup, signInWithOAuth, getOAuthRedirectUrl } from '@/lib/auth/client';
 import { supabase } from '@/lib/supabase/client';
-import { useToast } from '@/contexts/ToastContext';
+import { useAuthToast } from '@/contexts/ToastContext';
 import { useSiteContent } from '@/lib/siteContent/client';
 
 const StepIndicator = ({ currentStep }) => (
@@ -561,7 +561,7 @@ const Page = () => {
   const [isCompleting, setIsCompleting] = useState(false);
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const router = useRouter();
-  const toast = useToast();
+  const toast = useAuthToast();
   
   useEffect(() => {
     if (countdown > 0) {

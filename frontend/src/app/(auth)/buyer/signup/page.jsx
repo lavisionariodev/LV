@@ -8,7 +8,7 @@ import Link from "next/link";
 import { signUpWithEmailPassword, signInWithOAuth, getOAuthRedirectUrl } from "@/lib/auth/client";
 import AuthLayout, { setBuyerAuthSwitch } from "../AuthLayout";
 import styles from "./signup.module.css";
-import { useToast } from "@/contexts/ToastContext";
+import { useAuthToast } from "@/contexts/ToastContext";
 
 export default function SignUpPage() {
   const [signUpData, setSignUpData] = useState({
@@ -19,7 +19,7 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const router = useRouter();
-  const toast = useToast();
+  const toast = useAuthToast();
 
   useEffect(() => {
     let mounted = true;
