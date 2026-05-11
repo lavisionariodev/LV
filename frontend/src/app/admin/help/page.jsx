@@ -1,127 +1,133 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import styles from './help.module.css'
 import {
-  LuShield,
   LuScale,
   LuUserCheck,
-  LuChartBar,
   LuChevronDown,
-  LuExternalLink,
   LuLifeBuoy,
+  LuWallet,
+  LuClipboardList,
 } from 'react-icons/lu'
 
-/** Admin help center static copy (colocated with the page). */
+/** Admin help — plain-language guidance for the people running the marketplace. */
 const helpCenterTopics = [
   {
     iconKey: 'LuUserCheck',
-    title: 'Seller approvals',
-    desc: 'Verify sellers, approve or reject, and understand impact.',
+    title: 'Sellers',
+    desc: 'Review provider applications and manage their status.',
     bullets: [
-      'What to check before approval',
-      'What happens after approval or rejection',
-      'High-risk seller red flags',
-      'Submitted listings are listed under Admin → Listings for review',
+      'See who is Pending, Active, Rejected, or Suspended',
+      'Approve providers whose details and documents check out',
+      'Reject with a short reason so the provider knows what to fix',
+      'Suspend an active provider if something serious comes up',
+    ],
+  },
+  {
+    iconKey: 'LuClipboardList',
+    title: 'Listings',
+    desc: 'Decide which service packages appear in the public Shop.',
+    bullets: [
+      'Browse everything providers have submitted',
+      'Approve listings that follow our rules and look complete',
+      'Reject listings with unclear details, prices, or wording',
+      'Only approved listings show up to families on the public site',
     ],
   },
   {
     iconKey: 'LuScale',
-    title: 'Disputes and refunds',
-    desc: 'Resolve disputes, refunds, and fraud cases safely.',
-    bullets: ['Dispute flow and statuses', 'When to freeze funds', 'When to escalate or ban'],
+    title: 'Disputes',
+    desc: 'Help when a family and a provider don’t see eye to eye.',
+    bullets: [
+      'Statuses: Open, Under Review, Resolved, Closed',
+      'Read both sides before you decide—messages, dates, evidence',
+      'Mark Under Review while you are still gathering information',
+      'Close the case when the family and provider have an outcome',
+    ],
   },
   {
-    iconKey: 'LuShield',
-    title: 'Policy enforcement',
-    desc: 'Handle violations and prohibited items consistently.',
-    bullets: ['Violation levels and penalties', 'Repeat offender handling', 'Content takedown guidelines'],
-  },
-  {
-    iconKey: 'LuChartBar',
-    title: 'Dashboard metrics',
-    desc: 'Know what to watch and what it means for the business.',
-    bullets: ['GMV, conversion, refund rate', 'Seller health and retention', 'Fraud signals and spikes'],
+    iconKey: 'LuWallet',
+    title: 'Payouts',
+    desc: 'Track money held in escrow and what goes to each provider.',
+    bullets: [
+      'Escrow states: Escrowed, On hold, Released',
+      'Hold a payout when a dispute or refund is still being reviewed',
+      'Release it once the service is complete and there are no issues',
+      'Commission can be set as a default or as a per-provider override',
+    ],
   },
 ]
 
 const helpCenterFaqs = [
   {
-    q: 'Where can I see what sellers have listed on the shop?',
-    a: 'Open Listings in the admin sidebar (or Quick actions → View Listings on the dashboard). Active listings appear on the public shop; drafts do not. Ensure database migration 038 is applied so admins can read seller_listings.',
+    q: 'Where do I see all the services on the public shop?',
+    a: 'Open Listings → Browse from the sidebar. Anything marked Approved is visible to families on the public Shop. Drafts and rejected items stay hidden.',
   },
   {
-    q: 'Why are changes not showing in the live platform?',
-    a: 'Most updates require approval or publishing. Check if there is a pending submission, scheduled publish time, or blocked content due to policy.',
+    q: 'A provider says their changes aren’t showing—what should I check?',
+    a: 'Most provider edits go through approval before they appear live. Open Listings → Approvals and look for a pending submission on that provider. If you don’t see one, the change may still be a draft on their side.',
   },
   {
-    q: 'When should I reject a seller application?',
-    a: 'Reject when identity or documents fail verification, the business profile is inconsistent, there are repeated compliance issues, or the category is high-risk without strong proof.',
+    q: 'When should I reject a provider application?',
+    a: 'Reject if the documents don’t match, the business details look inconsistent, or the provider can’t back up what they claim to offer. Add a short, specific reason so they can fix it and try again.',
   },
   {
-    q: 'When should I freeze funds during disputes?',
-    a: 'Freeze funds when fraud is suspected, there is a high-value claim, or multiple complaints indicate a pattern. Release only after resolution or verified evidence.',
+    q: 'When should I put a payout on hold?',
+    a: 'Put it on hold when there is an open dispute about that booking, a refund is still being worked out, or something doesn’t feel right and you need a colleague to take a second look. Release it once the case is resolved.',
   },
   {
-    q: 'When is a permanent ban appropriate?',
-    a: 'Use permanent bans for repeated fraud, prohibited items, chargeback abuse patterns, or serious policy violations that create customer harm.',
+    q: 'When should I suspend a provider?',
+    a: 'Suspend a provider when there are repeated complaints, signs of dishonest behavior, or anything that could hurt the families they serve. Suspended providers can be reactivated later if things are resolved.',
   },
   {
-    q: 'What should I do if disputes spike suddenly?',
-    a: 'Treat it as a risk event. Review top categories, top sellers involved, and refund rate trend. If fraud is suspected, freeze payouts for impacted sellers and escalate to operations or security.',
+    q: 'What does the Analytics page actually show?',
+    a: 'It shows day-to-day signals you can trust: how many providers and buyers are on the platform, how many paid bookings happened in the last 30 days, the daily collected sales (GMV) chart, the top booked services, and recent activity. It is meant as a quick health check, not a deep report.',
   },
 ]
 
 const helpCenterPlaybooks = [
   {
-    title: 'Approve high-risk sellers',
+    title: 'Reviewing a new provider',
     steps: [
-      'Require stronger documentation and proof of inventory source.',
-      'Limit category access initially, then expand after clean history.',
-      'Monitor refund and dispute rate for the first 14 days.',
+      'Open Sellers and filter by Pending.',
+      'Click the provider to see their business details and documents.',
+      'Approve if everything matches—or reject with a short reason if it does not.',
     ],
   },
   {
-    title: 'Handle viral complaints',
+    title: 'Working through a dispute',
     steps: [
-      'Confirm facts first: order IDs, timestamps, and evidence.',
-      'Pause risky actions: freeze payouts if fraud is possible.',
-      'Publish a clear internal resolution note for the support team.',
+      'Open the case from Disputes and read both sides first.',
+      'Set the case to Under Review while you collect more information.',
+      'Once you have an outcome, mark it Resolved and close the case.',
     ],
   },
   {
-    title: 'Respond to security incidents',
+    title: 'Handling a payout that needs a closer look',
     steps: [
-      'Lock affected accounts and rotate admin credentials.',
-      'Review audit logs for access anomalies and bulk actions.',
-      'Escalate to security and document actions taken.',
+      'Open Payouts and find the booking in question.',
+      'Put the payout on hold so the money stays in escrow.',
+      'Release it once the booking is complete and any disputes are settled.',
     ],
   },
 ]
 
-const helpCenterEscalationContacts = [
-  {
-    title: 'Operations',
-    description: 'Policy cases, seller investigations, dispute escalation.',
-    email: 'ops@yourcompany.com',
-  },
-  {
-    title: 'Security',
-    description: 'Account breach, fraud spikes, suspicious admin actions.',
-    email: 'security@yourcompany.com',
-  },
-  {
-    title: 'Legal',
-    description: 'Chargebacks, regulatory concerns, sensitive takedowns.',
-    email: 'legal@yourcompany.com',
-  },
+const helpCenterQuickLinks = [
+  { title: 'Sellers', description: 'Review applications, change status, manage commission.', href: '/admin/sellers' },
+  { title: 'Listings', description: 'Approve, reject, and browse what families can book.', href: '/admin/listings/approvals' },
+  { title: 'Disputes', description: 'Handle cases between families and providers.', href: '/admin/disputes' },
+  { title: 'Payouts', description: 'Track escrow, releases, and commission.', href: '/admin/payouts' },
+  { title: 'Analytics', description: 'A quick read on platform activity.', href: '/admin/analytics' },
+  { title: 'Notifications', description: 'Internal alerts and support messages from sellers.', href: '/admin/notifications' },
 ]
 
 const HELP_TOPIC_ICON_MAP = {
   LuUserCheck,
+  LuClipboardList,
   LuScale,
-  LuShield,
-  LuChartBar,
+  LuWallet,
 }
 
 export default function AdminHelpCenterPage() {
@@ -158,8 +164,8 @@ export default function AdminHelpCenterPage() {
         <article className={styles.panel}>
           <div className={styles.panelHead}>
             <div>
-              <p className={styles.panelTitle}>Key FAQs</p>
-              <p className={styles.panelSub}>Fast answers for common CEO decisions.</p>
+              <p className={styles.panelTitle}>Common questions</p>
+              <p className={styles.panelSub}>Quick answers for the things admins ask most often.</p>
             </div>
           </div>
 
@@ -197,8 +203,8 @@ export default function AdminHelpCenterPage() {
         <article className={styles.panel}>
           <div className={styles.panelHead}>
             <div>
-              <p className={styles.panelTitle}>Decision playbooks</p>
-              <p className={styles.panelSub}>Short, safe actions you can follow.</p>
+              <p className={styles.panelTitle}>How-to steps</p>
+              <p className={styles.panelSub}>Simple, safe steps you can follow when you’re not sure where to start.</p>
             </div>
           </div>
 
@@ -219,18 +225,18 @@ export default function AdminHelpCenterPage() {
         <article className={styles.panel}>
           <div className={styles.panelHead}>
             <div>
-              <p className={styles.panelTitle}>Escalation contacts</p>
-              <p className={styles.panelSub}>Use when the case is high risk.</p>
+              <p className={styles.panelTitle}>Where things live</p>
+              <p className={styles.panelSub}>Jump straight to the page you need.</p>
             </div>
           </div>
 
           <div className={styles.contactGrid}>
-            {helpCenterEscalationContacts.map((c) => (
-              <div className={styles.contactCard} key={c.title}>
-                <p className={styles.contactTitle}>{c.title}</p>
-                <p className={styles.contactDesc}>{c.description}</p>
-                <div className={styles.contactMeta}>{c.email}</div>
-              </div>
+            {helpCenterQuickLinks.map((link) => (
+              <Link className={styles.contactCard} key={link.title} href={link.href}>
+                <p className={styles.contactTitle}>{link.title}</p>
+                <p className={styles.contactDesc}>{link.description}</p>
+                <div className={styles.contactMeta}>Open {link.title} →</div>
+              </Link>
             ))}
           </div>
 
@@ -240,16 +246,17 @@ export default function AdminHelpCenterPage() {
                 <LuLifeBuoy />
               </span>
               <div>
-                <p className={styles.supportTitle}>Need help now?</p>
+                <p className={styles.supportTitle}>If something feels off</p>
                 <p className={styles.supportSub}>
-                  For urgent incidents, escalate first, then document the case.
+                  Pause before deciding. Put payouts on hold, set the dispute to Under Review,
+                  and check with a teammate. It’s better to slow down than to act on incomplete information.
                 </p>
               </div>
             </div>
 
-            <button type="button" className={styles.primaryBtn}>
-              Open support ticket <LuExternalLink />
-            </button>
+            <Link href="/admin/notifications" className={styles.primaryBtn}>
+              View notifications
+            </Link>
           </div>
         </article>
       </section>
