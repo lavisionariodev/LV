@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -135,15 +135,11 @@ export default function SellerSettingsClient() {
   const [draftName, setDraftName] = useState('')
   const [draftEmail, setDraftEmail] = useState('')
   const [avatarPreview, setAvatarPreview] = useState('')
-  const [personalStatus, setPersonalStatus] = useState('')
-  const [personalError, setPersonalError] = useState('')
   const [avatarLoading, setAvatarLoading] = useState(false)
 
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [passStatus, setPassStatus] = useState('')
-  const [passError, setPassError] = useState('')
   const [isEditingPassword, setIsEditingPassword] = useState(false)
   const [toast, setToast] = useState(null)
   const [avatarModalOpen, setAvatarModalOpen] = useState(false)
@@ -153,7 +149,6 @@ export default function SellerSettingsClient() {
   const [shopForm, setShopForm] = useState(() => mapSellerToShopForm(null, null, ''))
   const [isEditingShop, setIsEditingShop] = useState(false)
   const [shopSaving, setShopSaving] = useState(false)
-  const [shopError, setShopError] = useState('')
   const [coverLoading, setCoverLoading] = useState(false)
   const [shopSubTab, setShopSubTab] = useState('storefront')
 
@@ -162,13 +157,17 @@ export default function SellerSettingsClient() {
     router.replace(`/seller/settings?tab=${next}`, { scroll: false })
   }
 
+  const notifyToast = useCallback((type, message) => {
+    const msg = typeof message === 'string' ? message.trim() : String(message ?? '').trim()
+    if (!msg) return
+    setToast({ id: Date.now(), type, message: msg })
+  }, [])
+
   useEffect(() => {
     let cancelled = false
     async function loadProfile() {
       setLoading(true)
-      setPersonalError('')
-      setPersonalStatus('')
-      setShopError('')
+      setToast(null)
       try {
         const data = await fetchCurrentSellerProfile()
         if (cancelled) return
@@ -186,7 +185,7 @@ export default function SellerSettingsClient() {
         setShopForm(mapSellerToShopForm(sellerRow, data, email))
         setIsEditingShop(false)
       } catch (err) {
-        if (!cancelled) setPersonalError(err.message || 'Failed to load profile.')
+        if (!cancelled) notifyToast('error', err.message || 'Failed to load profile.')
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -196,32 +195,7 @@ export default function SellerSettingsClient() {
       cancelled = true
       if (avatarPreviewRef.current) URL.revokeObjectURL(avatarPreviewRef.current)
     }
-  }, [])
-
-  useEffect(() => {
-    if (!personalError) return
-    setToast({ id: Date.now(), type: 'error', message: personalError })
-  }, [personalError])
-
-  useEffect(() => {
-    if (!personalStatus) return
-    setToast({ id: Date.now(), type: 'success', message: personalStatus })
-  }, [personalStatus])
-
-  useEffect(() => {
-    if (!passError) return
-    setToast({ id: Date.now(), type: 'error', message: passError })
-  }, [passError])
-
-  useEffect(() => {
-    if (!passStatus) return
-    setToast({ id: Date.now(), type: 'success', message: passStatus })
-  }, [passStatus])
-
-  useEffect(() => {
-    if (!shopError) return
-    setToast({ id: Date.now(), type: 'error', message: shopError })
-  }, [shopError])
+  }, [notifyToast])
 
   useEffect(() => {
     if (!toast) return
@@ -267,7 +241,7 @@ export default function SellerSettingsClient() {
   }
 
   const onCancelShopEdit = () => {
-    setShopError('')
+    setToast(null)
     if (coverFileRef.current) coverFileRef.current.value = ''
     if (profile) {
       setShopForm(mapSellerToShopForm(seller, profile, sessionEmail))
@@ -276,12 +250,12 @@ export default function SellerSettingsClient() {
   }
 
   const onPickShopCover = async (e) => {
-    setShopError('')
+    setToast(null)
     const file = e.target.files?.[0]
     if (!file) return
     const imgErr = validateImage(file)
     if (imgErr) {
-      setShopError(imgErr)
+      notifyToast('error', imgErr)
       return
     }
     if (!canEditShop) return
@@ -289,7 +263,7 @@ export default function SellerSettingsClient() {
       const { data: auth } = await supabase.auth.getUser()
       const user = auth?.user
       if (!user?.id) {
-        setShopError('You must be signed in to update your shop cover.')
+        notifyToast('error', 'You must be signed in to update your shop cover.')
         return
       }
       setCoverLoading(true)
@@ -319,9 +293,9 @@ export default function SellerSettingsClient() {
       }
       const refreshed = await getSellerByUserId(user.id)
       setSeller(refreshed)
-      setToast({ id: Date.now(), type: 'success', message: 'Shop cover photo updated.' })
+      notifyToast('success', 'Shop cover photo updated.')
     } catch (err) {
-      setShopError(err.message || 'Failed to upload shop cover.')
+      notifyToast('error', err.message || 'Failed to upload shop cover.')
     } finally {
       setCoverLoading(false)
       if (coverFileRef.current) coverFileRef.current.value = ''
@@ -329,13 +303,13 @@ export default function SellerSettingsClient() {
   }
 
   const onRemoveShopCover = async () => {
-    setShopError('')
+    setToast(null)
     if (!seller?.cover_photo_url || !canEditShop) return
     try {
       const { data: auth } = await supabase.auth.getUser()
       const user = auth?.user
       if (!user?.id) {
-        setShopError('You must be signed in to remove your shop cover.')
+        notifyToast('error', 'You must be signed in to remove your shop cover.')
         return
       }
       setCoverLoading(true)
@@ -350,16 +324,16 @@ export default function SellerSettingsClient() {
       }
       const refreshed = await getSellerByUserId(user.id)
       setSeller(refreshed)
-      setToast({ id: Date.now(), type: 'success', message: 'Shop cover photo removed.' })
+      notifyToast('success', 'Shop cover photo removed.')
     } catch (err) {
-      setShopError(err.message || 'Failed to remove shop cover.')
+      notifyToast('error', err.message || 'Failed to remove shop cover.')
     } finally {
       setCoverLoading(false)
     }
   }
 
   const onClickEditSaveShop = async () => {
-    setShopError('')
+    setToast(null)
     if (!canEditShop) return
     if (!isEditingShop) {
       setIsEditingShop(true)
@@ -367,14 +341,14 @@ export default function SellerSettingsClient() {
     }
     const err = validateShopForm(shopForm)
     if (err) {
-      setShopError(err)
+      notifyToast('error', err)
       return
     }
     try {
       const { data: auth } = await supabase.auth.getUser()
       const user = auth?.user
       if (!user) {
-        setShopError('You must be signed in to save shop information.')
+        notifyToast('error', 'You must be signed in to save shop information.')
         return
       }
       setShopSaving(true)
@@ -406,7 +380,10 @@ export default function SellerSettingsClient() {
         socialLinks,
       })
       if (error) {
-        setShopError(typeof error === 'string' ? error : error.message || 'Failed to save shop information.')
+        notifyToast(
+          'error',
+          typeof error === 'string' ? error : error.message || 'Failed to save shop information.',
+        )
         return
       }
       if (saved) {
@@ -414,26 +391,25 @@ export default function SellerSettingsClient() {
         setShopForm(mapSellerToShopForm(saved, profile, sessionEmail))
       }
       setIsEditingShop(false)
-      setToast({ id: Date.now(), type: 'success', message: 'Shop information saved.' })
+      notifyToast('success', 'Shop information saved.')
     } catch (err) {
-      setShopError(err.message || 'Failed to save shop information.')
+      notifyToast('error', err.message || 'Failed to save shop information.')
     } finally {
       setShopSaving(false)
     }
   }
 
   const onPickAvatar = async (e) => {
-    setPersonalError('')
-    setPersonalStatus('')
+    setToast(null)
     const file = e.target.files?.[0]
     if (!file) return
     const error = validateImage(file)
     if (error) {
-      setPersonalError(error)
+      notifyToast('error', error)
       return
     }
     if (!profile) {
-      setPersonalError('Profile is not loaded yet.')
+      notifyToast('error', 'Profile is not loaded yet.')
       return
     }
     if (avatarPreviewRef.current) URL.revokeObjectURL(avatarPreviewRef.current)
@@ -459,18 +435,16 @@ export default function SellerSettingsClient() {
         .eq('id', profile.id)
       if (updateError) throw updateError
       setProfile((prev) => (prev ? { ...prev, avatarPath: filePath, avatarUrl: publicUrl } : prev))
-      setPersonalStatus('Avatar updated successfully.')
-      setTimeout(() => setPersonalStatus(''), 5000)
+      notifyToast('success', 'Avatar updated successfully.')
     } catch (err) {
-      setPersonalError(err.message || 'Failed to upload avatar.')
+      notifyToast('error', err.message || 'Failed to upload avatar.')
     } finally {
       setAvatarLoading(false)
     }
   }
 
   const onRemoveAvatar = async () => {
-    setPersonalError('')
-    setPersonalStatus('')
+    setToast(null)
     if (!profile || (!profile.avatarPath && !profile.avatarUrl)) return
     if (avatarPreviewRef.current) {
       URL.revokeObjectURL(avatarPreviewRef.current)
@@ -489,18 +463,16 @@ export default function SellerSettingsClient() {
         .eq('id', profile.id)
       if (error) throw error
       setProfile((prev) => (prev ? { ...prev, avatarPath: null, avatarUrl: null } : prev))
-      setPersonalStatus('Avatar removed.')
-      setTimeout(() => setPersonalStatus(''), 5000)
+      notifyToast('success', 'Avatar removed.')
     } catch (err) {
-      setPersonalError(err.message || 'Failed to remove avatar.')
+      notifyToast('error', err.message || 'Failed to remove avatar.')
     } finally {
       setAvatarLoading(false)
     }
   }
 
   const onClickEditSavePersonal = async () => {
-    setPersonalError('')
-    setPersonalStatus('')
+    setToast(null)
     if (!isEditingPersonal) {
       if (profile) {
         setDraftName(profile.fullName || '')
@@ -511,16 +483,16 @@ export default function SellerSettingsClient() {
     }
     const nameErr = validateName(draftName)
     if (nameErr) {
-      setPersonalError(nameErr)
+      notifyToast('error', nameErr)
       return
     }
     const emailErr = validateEmail(draftEmail)
     if (emailErr) {
-      setPersonalError(emailErr)
+      notifyToast('error', emailErr)
       return
     }
     if (!profile) {
-      setPersonalError('Profile is not loaded yet.')
+      notifyToast('error', 'Profile is not loaded yet.')
       return
     }
     const trimmedName = draftName.trim()
@@ -539,16 +511,14 @@ export default function SellerSettingsClient() {
       if (error) throw error
       setProfile((prev) => (prev ? { ...prev, fullName: trimmedName, email: trimmedEmail } : prev))
       setIsEditingPersonal(false)
-      setPersonalStatus('Personal information updated successfully.')
-      setTimeout(() => setPersonalStatus(''), 5000)
+      notifyToast('success', 'Personal information updated successfully.')
     } catch (err) {
-      setPersonalError(err.message || 'Failed to update personal information.')
+      notifyToast('error', err.message || 'Failed to update personal information.')
     }
   }
 
   const onCancelPersonalEdit = () => {
-    setPersonalError('')
-    setPersonalStatus('')
+    setToast(null)
     if (profile) {
       setDraftName(profile.fullName || '')
       setDraftEmail(profile.email || '')
@@ -566,42 +536,39 @@ export default function SellerSettingsClient() {
   const handlePasswordSubmit = async (e) => {
     e.preventDefault()
     if (!isEditingPassword) return
-    setPassError('')
-    setPassStatus('')
+    setToast(null)
     if (!currentPassword) {
-      setPassError('Please enter your current password.')
+      notifyToast('error', 'Please enter your current password.')
       return
     }
     const validation = validateNewPassword(newPassword, confirmPassword)
     if (!validation.valid) {
-      setPassError(validation.message)
+      notifyToast('error', validation.message)
       return
     }
     try {
       const { error } = await supabase.auth.updateUser({ password: newPassword })
       if (error) {
-        setPassError(error.message || 'Failed to update password.')
+        notifyToast('error', error.message || 'Failed to update password.')
         return
       }
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
-      setPassStatus('Password updated successfully.')
+      notifyToast('success', 'Password updated successfully.')
       setIsEditingPassword(false)
     } catch (err) {
-      setPassError(err.message || 'Failed to update password.')
+      notifyToast('error', err.message || 'Failed to update password.')
     }
   }
 
   const onStartPasswordEdit = () => {
-    setPassError('')
-    setPassStatus('')
+    setToast(null)
     setIsEditingPassword(true)
   }
 
   const onCancelPasswordEdit = () => {
-    setPassError('')
-    setPassStatus('')
+    setToast(null)
     setCurrentPassword('')
     setNewPassword('')
     setConfirmPassword('')
