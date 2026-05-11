@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { notifyUser } from '@/lib/notifications/inAppServer'
 
 export async function POST(request) {
   const supabase = await createClient()
@@ -24,7 +25,7 @@ export async function POST(request) {
   // Ensure order belongs to this seller.
   const { data: order, error: orderErr } = await supabaseAdmin
     .from('orders')
-    .select('id,seller_user_id,fulfillment_status,payment_status,status')
+    .select('id,buyer_id,seller_user_id,fulfillment_status,payment_status,status,order_number')
     .eq('id', orderId)
     .maybeSingle()
 
@@ -56,6 +57,18 @@ export async function POST(request) {
 
     if (updErr) {
       return NextResponse.json({ error: 'Failed to confirm order.' }, { status: 500 })
+    }
+
+    if (order.buyer_id) {
+      const ref = order.order_number || String(orderId).slice(0, 8)
+      await notifyUser(supabaseAdmin, {
+        userId: order.buyer_id,
+        type: 'service_confirmed',
+        title: 'Booking confirmed',
+        body: `Your provider confirmed booking ${ref}. They may update progress as your service moves forward.`,
+        metadata: { orderId },
+        dedupeKey: `order_confirmed:${orderId}`,
+      })
     }
   }
 

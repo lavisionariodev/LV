@@ -313,7 +313,19 @@ export default function SellerNotificationsPage() {
 
     if (activeTab === 'unread') data = data.filter((n) => !n.read)
     if (activeTab === 'alerts' || activeTab === 'system' || activeTab === 'marketing') {
-      data = data.filter((n) => n.type === activeTab)
+      if (activeTab === 'alerts') {
+        data = data.filter(
+          (n) =>
+            n.type === 'alerts' ||
+            String(n.type).startsWith('service') ||
+            n.type === 'reminder' ||
+            n.type === 'listing_approval' ||
+            n.type === 'listing_rejected' ||
+            n.type === 'payment_refund',
+        )
+      } else {
+        data = data.filter((n) => n.type === activeTab)
+      }
     }
 
     if (statusFilter === 'read') data = data.filter((n) => n.read)
@@ -345,7 +357,7 @@ export default function SellerNotificationsPage() {
 
     async function refreshFromApi() {
       try {
-        const res = await fetch('/api/notifications', { cache: 'no-store' })
+        const res = await fetch('/api/notifications?limit=100', { cache: 'no-store' })
         const body = await res.json().catch(() => null)
         if (!res.ok) throw new Error(typeof body?.error === 'string' ? body.error : 'Failed to load')
         if (!cancelled) {
@@ -708,8 +720,13 @@ export default function SellerNotificationsPage() {
 }
 
 function getTypeIcon(type) {
-  if (type === 'alerts') return TbAlertTriangle
-  if (type === 'marketing') return TbSpeakerphone
+  const t = String(type || '')
+  if (t === 'alerts' || t === 'service_alert') return TbAlertTriangle
+  if (t === 'marketing') return TbSpeakerphone
+  if (t.startsWith('payment')) return TbBell
+  if (t.startsWith('service')) return TbBell
+  if (t === 'listing_approval' || t === 'listing_rejected') return TbBell
+  if (t === 'reminder') return TbBell
   return TbBell
 }
 

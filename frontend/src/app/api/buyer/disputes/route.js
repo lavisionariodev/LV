@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
+import { notifyUser, notifyAllAdmins } from '@/lib/notifications/inAppServer'
 
 /**
  * Buyer opens a dispute when self-serve cancel is not available (e.g. provider already confirmed).
@@ -128,14 +129,32 @@ export async function POST(request) {
     .eq('status', 'escrowed')
 
   if (order.seller_user_id) {
-    await supabaseAdmin.from('user_notifications').insert({
-      user_id: order.seller_user_id,
+    await notifyUser(supabaseAdmin, {
+      userId: order.seller_user_id,
       type: 'alerts',
       title: 'Buyer request received',
       body: `A buyer has submitted a request for review on order ${orderId.slice(0, 8)}. Reason: ${reason}. Please review and respond.`,
       metadata: { orderId, disputeId: inserted.id },
+      dedupeKey: `seller_buyer_dispute:${inserted.id}`,
     })
   }
+
+  await notifyAllAdmins(supabaseAdmin, {
+    type: 'alerts',
+    title: 'Buyer help request opened',
+    body: `Order ${orderId.slice(0, 8)} — ${reason}. Review in Admin disputes.`,
+    metadata: { orderId, disputeId: inserted.id },
+    dedupeKey: `admin_dispute_opened:${inserted.id}`,
+  })
+
+  await notifyUser(supabaseAdmin, {
+    userId: user.id,
+    type: 'reminder',
+    title: 'Request submitted',
+    body: 'We notified your provider and the platform team. You will see updates here.',
+    metadata: { orderId, disputeId: inserted.id },
+    dedupeKey: `buyer_dispute_submitted:${inserted.id}`,
+  })
 
   apiLog('buyer.dispute.created', { disputeId: inserted.id })
   return NextResponse.json({ ok: true, disputeId: inserted.id }, { status: 201 })

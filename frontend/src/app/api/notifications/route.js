@@ -14,11 +14,19 @@ function mapRow(row) {
   }
 }
 
+function parseLimit(searchParams) {
+  const raw = searchParams.get('limit')
+  const n = raw != null ? parseInt(String(raw), 10) : 100
+  if (!Number.isFinite(n)) return 100
+  return Math.min(100, Math.max(1, n))
+}
+
 /**
- * GET — current user's in-app notifications (newest first).
+ * GET — current user's in-app notifications (newest first). Query: `limit` (1–100, default 100).
  * PATCH — body `{ id }` marks one read, or `{ markAllRead: true }`.
+ * DELETE — query `?id=<uuid>` deletes one row, or JSON body `{ clearAll: true }` deletes all for the user.
  */
-export async function GET() {
+export async function GET(request) {
   const supabase = await createClient()
   const {
     data: { user },
@@ -29,12 +37,14 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const limit = parseLimit(new URL(request.url).searchParams)
+
   const { data, error } = await supabase
     .from('user_notifications')
     .select('id,type,title,body,read_at,created_at,metadata')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
-    .limit(100)
+    .limit(limit)
 
   if (error) {
     return NextResponse.json({ error: error.message ?? 'Failed to load notifications.' }, { status: 500 })
@@ -85,6 +95,46 @@ export async function PATCH(request) {
 
   if (error) {
     return NextResponse.json({ error: error.message ?? 'Update failed.' }, { status: 500 })
+  }
+
+  return NextResponse.json({ ok: true }, { status: 200 })
+}
+
+export async function DELETE(request) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+    error: userErr,
+  } = await supabase.auth.getUser()
+
+  if (userErr || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const url = new URL(request.url)
+  let id = url.searchParams.get('id')?.trim() || ''
+  let clearAll = url.searchParams.get('clearAll') === '1' || url.searchParams.get('clearAll') === 'true'
+
+  const body = await request.json().catch(() => ({}))
+  if (!id && body?.id != null) id = String(body.id).trim()
+  if (!clearAll) clearAll = Boolean(body?.clearAll)
+
+  if (clearAll) {
+    const { error } = await supabase.from('user_notifications').delete().eq('user_id', user.id)
+    if (error) {
+      return NextResponse.json({ error: error.message ?? 'Delete failed.' }, { status: 500 })
+    }
+    return NextResponse.json({ ok: true }, { status: 200 })
+  }
+
+  if (!id) {
+    return NextResponse.json({ error: 'Missing id or clearAll.' }, { status: 400 })
+  }
+
+  const { error } = await supabase.from('user_notifications').delete().eq('user_id', user.id).eq('id', id)
+
+  if (error) {
+    return NextResponse.json({ error: error.message ?? 'Delete failed.' }, { status: 500 })
   }
 
   return NextResponse.json({ ok: true }, { status: 200 })

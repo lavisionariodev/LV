@@ -1,26 +1,24 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { TbBellOff, TbBellRinging, TbCheck, TbTrash, TbAlertTriangle, TbDots } from 'react-icons/tb'
 import { LuShoppingBag, LuUserCheck, LuMegaphone } from 'react-icons/lu'
 import styles from './notifications.module.css'
-import {
-  notificationsPageSampleRows,
-  notificationsPageFilterTabs,
-} from '@/data/adminSampleData'
+import { useInAppNotificationFeed, relativeNotificationTime } from '@/lib/notifications/useInAppNotificationFeed'
+import { adminNotificationFilterBucket, ADMIN_NOTIFICATION_FILTER_TABS } from '@/lib/notifications/types'
 
-const NOTIFICATION_ICON_BY_KEY = {
-  LuShoppingBag,
-  LuUserCheck,
-  TbAlertTriangle,
-  LuMegaphone,
+const ICON_BY_BUCKET = {
+  order: LuShoppingBag,
+  approval: LuUserCheck,
+  alert: TbAlertTriangle,
+  announcement: LuMegaphone,
 }
 
-function hydrateNotificationSamples(rows) {
-  return rows.map((n) => ({
-    ...n,
-    icon: NOTIFICATION_ICON_BY_KEY[n.iconKey] || TbAlertTriangle,
-  }))
+const COLOR_BY_BUCKET = {
+  order: 'blue',
+  approval: 'green',
+  alert: 'red',
+  announcement: 'gold',
 }
 
 function useClickOutside(ref, onClose) {
@@ -122,29 +120,52 @@ function NotifMenu({ notifId, isRead, onMarkRead, onDelete }) {
 }
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState(() => hydrateNotificationSamples(notificationsPageSampleRows))
+  const {
+    notifications: apiRows,
+    loading,
+    unreadCount,
+    markRead: markReadApi,
+    markAllRead,
+    deleteOne,
+    clearAll,
+  } = useInAppNotificationFeed({ limit: 100, enabled: true })
+
   const [activeFilter, setActiveFilter] = useState('all')
 
-  const unreadCount = notifications.filter((n) => !n.read).length
+  const notifications = useMemo(
+    () =>
+      apiRows.map((row) => {
+        const bucket = adminNotificationFilterBucket(row.type)
+        const Icon = ICON_BY_BUCKET[bucket] || TbAlertTriangle
+        return {
+          id: row.id,
+          filterBucket: bucket,
+          title: row.title,
+          message: row.body || '',
+          time: relativeNotificationTime(row.createdAt),
+          read: Boolean(row.readAt),
+          icon: Icon,
+          iconColor: COLOR_BY_BUCKET[bucket] || 'red',
+        }
+      }),
+    [apiRows],
+  )
 
-  const filtered = notifications.filter((n) => {
-    if (activeFilter === 'all') return true
-    if (activeFilter === 'unread') return !n.read
-    return n.type === activeFilter
-  })
+  const filtered = useMemo(() => {
+    return notifications.filter((n) => {
+      if (activeFilter === 'all') return true
+      if (activeFilter === 'unread') return !n.read
+      return n.filterBucket === activeFilter
+    })
+  }, [notifications, activeFilter])
 
-  const markAllRead = () =>
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+  const markRead = (id) => {
+    markReadApi(id)
+  }
 
-  const markRead = (id) =>
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    )
-
-  const deleteNotification = (id) =>
-    setNotifications((prev) => prev.filter((n) => n.id !== id))
-
-  const clearAll = () => setNotifications([])
+  const deleteNotification = (id) => {
+    deleteOne(id)
+  }
 
   return (
     <div className={styles.page}>
@@ -172,7 +193,7 @@ export default function NotificationsPage() {
         </div>
 
         <div className={styles.filterRow}>
-          {notificationsPageFilterTabs.map((tab) => (
+          {ADMIN_NOTIFICATION_FILTER_TABS.map((tab) => (
             <button
               key={tab.id}
               className={`${styles.filterTab} ${activeFilter === tab.id ? styles.filterTabActive : ''}`}
@@ -184,7 +205,11 @@ export default function NotificationsPage() {
         </div>
 
         <div className={styles.card}>
-          {filtered.length === 0 ? (
+          {loading && notifications.length === 0 ? (
+            <div className={styles.emptyState}>
+              <p className={styles.emptyTitle}>Loading notifications…</p>
+            </div>
+          ) : filtered.length === 0 ? (
             <div className={styles.emptyState}>
               <TbBellOff className={styles.emptyIcon} />
               <p className={styles.emptyTitle}>No notifications</p>
@@ -249,7 +274,7 @@ export default function NotificationsPage() {
         </div>
 
         <div className={styles.mobileFilterScroll}>
-          {notificationsPageFilterTabs.map((tab) => (
+          {ADMIN_NOTIFICATION_FILTER_TABS.map((tab) => (
             <button
               key={tab.id}
               className={`${styles.mobileFilterChip} ${activeFilter === tab.id ? styles.mobileFilterChipActive : ''}`}
@@ -260,7 +285,11 @@ export default function NotificationsPage() {
           ))}
         </div>
 
-        {filtered.length === 0 ? (
+        {loading && notifications.length === 0 ? (
+          <div className={styles.emptyState}>
+            <p className={styles.emptyTitle}>Loading notifications…</p>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className={styles.emptyState}>
             <TbBellOff className={styles.emptyIcon} />
             <p className={styles.emptyTitle}>No notifications</p>

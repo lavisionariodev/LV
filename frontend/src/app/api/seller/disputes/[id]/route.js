@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { notifyUser } from '@/lib/notifications/inAppServer'
 
 export async function PATCH(request, context) {
   const supabase = await createClient()
@@ -32,7 +33,7 @@ export async function PATCH(request, context) {
 
   const { data: dispute, error: disputeErr } = await supabaseAdmin
     .from('disputes')
-    .select('id,order_id,seller_user_id,status,resolution_notes')
+    .select('id,order_id,buyer_id,seller_user_id,status,resolution_notes')
     .eq('id', id)
     .maybeSingle()
 
@@ -75,6 +76,21 @@ export async function PATCH(request, context) {
       .eq('order_id', dispute.order_id)
       .eq('status', 'on_hold')
       .like('hold_reason', 'Buyer request opened%')
+  }
+
+  if (dispute.buyer_id) {
+    const ordRef = String(dispute.order_id || '').slice(0, 8)
+    const isResolved = status === 'resolved'
+    await notifyUser(supabaseAdmin, {
+      userId: dispute.buyer_id,
+      type: 'alerts',
+      title: isResolved ? 'Help request resolved' : 'Help request update',
+      body: isResolved
+        ? `Your provider resolved your request for order ${ordRef}.`
+        : `Your provider marked your request for order ${ordRef} as under review.`,
+      metadata: { orderId: dispute.order_id, disputeId: dispute.id },
+      dedupeKey: `dispute_seller_status:${id}:${status}`,
+    })
   }
 
   return NextResponse.json({ ok: true }, { status: 200 })

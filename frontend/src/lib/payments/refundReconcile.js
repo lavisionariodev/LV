@@ -1,21 +1,7 @@
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
+import { insertUserNotification } from '@/lib/notifications/inAppServer'
 
-/**
- * @param {import('@supabase/supabase-js').SupabaseClient} supabaseAdmin
- * @param {{ userId: string, type: string, title: string, body?: string, metadata?: Record<string, unknown> }} p
- */
-export async function insertUserNotification(supabaseAdmin, p) {
-  const { error } = await supabaseAdmin.from('user_notifications').insert({
-    user_id: p.userId,
-    type: p.type,
-    title: p.title,
-    body: p.body ?? null,
-    metadata: p.metadata ?? {},
-  })
-  if (error) {
-    apiLog('user_notification.insert_failed', { err: errorMessage(error) })
-  }
-}
+export { insertUserNotification }
 
 /**
  * @param {import('@supabase/supabase-js').SupabaseClient} supabaseAdmin
@@ -91,13 +77,28 @@ export async function applyTerminalRefundToOrder(supabaseAdmin, p) {
     payload: { amount_php: p.amountPhp },
   })
 
+  const amountLabel = `\u20B1${Number(p.amountPhp).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
+  const ordRef = String(p.orderId || '').slice(0, 8)
+
   if (order.buyer_id) {
     await insertUserNotification(supabaseAdmin, {
       userId: order.buyer_id,
       type: 'payment_refund',
       title: 'Refund completed',
-      body: `Your refund of \u20B1${Number(p.amountPhp).toLocaleString('en-PH', { minimumFractionDigits: 2 })} has been issued to your original payment method. It may take a few business days to reflect on your statement, depending on your bank or e-wallet.`,
+      body: `Your refund of ${amountLabel} has been issued to your original payment method. It may take a few business days to reflect on your statement, depending on your bank or e-wallet.`,
       metadata: { orderId: p.orderId, paymongoRefundId: p.paymongoRefundId },
+      dedupeKey: `refund_completed:${p.orderId}:${p.paymongoRefundId}`,
+    })
+  }
+
+  if (order.seller_user_id) {
+    await insertUserNotification(supabaseAdmin, {
+      userId: order.seller_user_id,
+      type: 'payment_refund',
+      title: 'Refund completed for your booking',
+      body: `Order ${ordRef}: the buyer’s refund (${amountLabel}) has been completed. This booking is closed and will not receive a payout.`,
+      metadata: { orderId: p.orderId, paymongoRefundId: p.paymongoRefundId },
+      dedupeKey: `refund_completed_seller:${p.orderId}:${p.paymongoRefundId}`,
     })
   }
 }

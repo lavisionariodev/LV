@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { computeCommissionSnapshot } from '@/shared/utils/commissionSnapshot'
 import { apiLog } from '@/lib/observability/apiLog'
 import { reconcilePaymongoRefundEvent } from '@/lib/payments/refundReconcile'
+import { notifyUser, notifyAllAdmins } from '@/lib/notifications/inAppServer'
 
 function parseSignatureHeader(headerValue) {
   const out = {}
@@ -263,6 +264,7 @@ export async function POST(request) {
   }
 
   if (markPaid) {
+    const wasAlreadyPaid = paymentRow.status === 'paid'
     const resource = getResource(payload)
     const payId = resource?.type === 'payment' && resource?.id ? String(resource.id) : null
 
@@ -300,6 +302,47 @@ export async function POST(request) {
       paymentId: paymentRow.id,
       orderIds: orderIdsPaid,
     })
+
+    if (!wasAlreadyPaid && orderIdsPaid.length > 0) {
+      const { data: ordRows } = await supabaseAdmin
+        .from('orders')
+        .select('id,buyer_id,seller_user_id,order_number')
+        .in('id', orderIdsPaid)
+
+      for (const o of ordRows ?? []) {
+        const ref = o.order_number || String(o.id).slice(0, 8)
+        if (o.buyer_id) {
+          await notifyUser(supabaseAdmin, {
+            userId: o.buyer_id,
+            type: 'payment_success',
+            title: 'Payment received',
+            body: `Your payment for booking ${ref} was successful. Your provider will confirm your schedule soon.`,
+            metadata: { orderId: o.id, paymentId: paymentRow.id },
+            dedupeKey: `payment_success:${o.id}`,
+          })
+        }
+        if (o.seller_user_id) {
+          await notifyUser(supabaseAdmin, {
+            userId: o.seller_user_id,
+            type: 'alerts',
+            title: 'New paid booking',
+            body: `Order ${ref} is paid and awaiting your confirmation.`,
+            metadata: { orderId: o.id, paymentId: paymentRow.id },
+            dedupeKey: `seller_new_paid_order:${o.id}`,
+          })
+        }
+        if (process.env.ADMIN_NOTIFY_EVERY_PAID_ORDER === 'true') {
+          await notifyAllAdmins(supabaseAdmin, {
+            type: 'system',
+            title: 'Order paid',
+            body: `Order ${ref} was marked paid.`,
+            metadata: { orderId: o.id, paymentId: paymentRow.id },
+            dedupeKey: `admin_order_paid:${o.id}`,
+          })
+        }
+      }
+    }
+
     apiLog('paymongo.webhook.mark_paid', {})
   } else if (markFailed) {
     if (paymentRow.status === 'pending') {
@@ -316,6 +359,24 @@ export async function POST(request) {
           .from('orders')
           .update({ payment_status: 'failed', status: 'failed' })
           .in('id', orderIds)
+
+        const { data: failedOrders } = await supabaseAdmin
+          .from('orders')
+          .select('id,buyer_id,order_number')
+          .in('id', orderIds)
+
+        for (const o of failedOrders ?? []) {
+          if (!o.buyer_id) continue
+          const ref = o.order_number || String(o.id).slice(0, 8)
+          await notifyUser(supabaseAdmin, {
+            userId: o.buyer_id,
+            type: 'payment_failed',
+            title: 'Payment did not go through',
+            body: `We could not complete payment for booking ${ref}. You can try again from your cart or checkout.`,
+            metadata: { orderId: o.id, paymentId: paymentRow.id },
+            dedupeKey: `payment_failed:${paymentRow.id}:${o.id}`,
+          })
+        }
       }
       apiLog('paymongo.webhook.mark_failed_applied', {})
     }

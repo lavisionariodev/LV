@@ -4,6 +4,7 @@ import { requireAdminApiUser } from '@/lib/auth/requireAdminRoute'
 import { apiLog } from '@/lib/observability/apiLog'
 import { createPaymongoRefund, phpToCentavos } from '@/lib/paymongo/client'
 import { insertOrderRefundEvent } from '@/lib/payments/refundReconcile'
+import { insertUserNotification } from '@/lib/notifications/inAppServer'
 
 /**
  * Admin refund actions: stuck queue visibility uses GET /api/admin/refunds/stuck.
@@ -66,6 +67,17 @@ export async function POST(request) {
       action: 'force_complete_manual',
       payload: { adminUserId: user.id },
     })
+
+    if (order.buyer_id) {
+      await insertUserNotification(supabaseAdmin, {
+        userId: order.buyer_id,
+        type: 'payment_refund',
+        title: 'Refund completed',
+        body: 'Your refund has been marked complete by platform support. If you do not see funds after a few business days, contact your bank or e-wallet provider.',
+        metadata: { orderId },
+        dedupeKey: `admin_refund_force_complete:${orderId}`,
+      })
+    }
 
     apiLog('admin.refund.force_complete', { orderId })
     return NextResponse.json({ ok: true }, { status: 200 })

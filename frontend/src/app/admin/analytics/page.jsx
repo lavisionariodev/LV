@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import layoutStyles from '../admin.module.css'
-import { disputes } from '@/data/adminSampleData'
 import { formatCount } from '@/shared/utils/formatCount'
 import {
   AreaChart,
@@ -38,8 +37,6 @@ function formatShortDate(dateStr) {
 }
 
 export default function AdminAnalyticsPage() {
-  const openDisputesMock = disputes.filter((d) => d.status === 'open').length
-
   const [loading, setLoading] = useState(true)
   const [sellersTotal, setSellersTotal] = useState(0)
   const [buyersTotal, setBuyersTotal] = useState(0)
@@ -47,6 +44,7 @@ export default function AdminAnalyticsPage() {
   const [dailyCollectedGmv, setDailyCollectedGmv] = useState(() => utcLast7DaysSeriesZeros())
   const [topLineItems, setTopLineItems] = useState([])
   const [recentActivity, setRecentActivity] = useState([])
+  const [disputesNeedingAttention, setDisputesNeedingAttention] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -64,6 +62,7 @@ export default function AdminAnalyticsPage() {
         }
         if (Array.isArray(body.topLineItems)) setTopLineItems(body.topLineItems)
         if (Array.isArray(body.recentActivity)) setRecentActivity(body.recentActivity)
+        setDisputesNeedingAttention(Number(body.disputesNeedingAttention) || 0)
       } catch {
         // keep defaults / zeros
       } finally {
@@ -96,9 +95,9 @@ export default function AdminAnalyticsPage() {
           <p className={layoutStyles.statHint}>Last 30 days (count)</p>
         </div>
         <div className={layoutStyles.statCard}>
-          <p className={layoutStyles.statLabel}>Open Disputes</p>
-          <p className={layoutStyles.statValue}>{formatCount(openDisputesMock)}</p>
-          <p className={layoutStyles.statHint}>Needs review</p>
+          <p className={layoutStyles.statLabel}>Disputes to review</p>
+          <p className={layoutStyles.statValue}>{formatCount(disputesNeedingAttention)}</p>
+          <p className={layoutStyles.statHint}>Open or under review</p>
         </div>
       </section>
 

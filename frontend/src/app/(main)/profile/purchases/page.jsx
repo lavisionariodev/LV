@@ -269,44 +269,35 @@ function CancelBookingModal({
       onMouseDown={backdropMouseDown}
     >
       <div
-        className={purchaseStyles.modalPanel}
+        className={purchaseStyles.cancelConfirmPanel}
         role="dialog"
         aria-modal="true"
         aria-labelledby="cancel-booking-title"
         aria-describedby="cancel-booking-desc"
       >
-        <h2 id="cancel-booking-title" className={purchaseStyles.modalTitle}>
+        <h2 id="cancel-booking-title" className={purchaseStyles.cancelConfirmTitle}>
           Cancel purchase?
         </h2>
-        <div id="cancel-booking-desc" className={purchaseStyles.modalBody}>
+        <div id="cancel-booking-desc" className={purchaseStyles.cancelConfirmBody}>
           {showsPaidRefundDisclaimer ? (
             <>
               {orderLabel ? (
-                <p style={{ margin: '0 0 12px' }}>
+                <p>
                   This will cancel order <strong>{orderLabel}</strong> and submit a refund request to your
                   provider for approval.
                 </p>
               ) : (
-                <p style={{ margin: '0 0 12px' }}>
+                <p>
                   This will cancel your paid booking and submit a refund request to your provider for approval.
                 </p>
               )}
-              <p
-                style={{
-                  margin: 0,
-                  padding: '10px 12px',
-                  borderRadius: 8,
-                  background: 'rgba(180,83,9,0.09)',
-                  fontSize: '0.92em',
-                  lineHeight: 1.5,
-                }}
-              >
+              <p className={purchaseStyles.cancelConfirmNote}>
                 <strong>Refund timeline:</strong> once approved, refunds typically arrive within
                 <strong> 5 to 15 business days</strong>, depending on your bank or e-wallet.
               </p>
             </>
           ) : (
-            <p style={{ margin: 0 }}>
+            <p>
               {orderLabel
                 ? `This will cancel unpaid order ${orderLabel}.`
                 : 'This will cancel this unpaid purchase.'}{' '}
@@ -314,11 +305,11 @@ function CancelBookingModal({
             </p>
           )}
         </div>
-        <div className={purchaseStyles.modalActions}>
+        <div className={purchaseStyles.cancelConfirmActions}>
           <button
             ref={keepBtnRef}
             type="button"
-            className={purchaseStyles.modalGhostBtn}
+            className={purchaseStyles.cancelConfirmCancelBtn}
             onClick={onClose}
             disabled={confirming}
           >
@@ -326,11 +317,11 @@ function CancelBookingModal({
           </button>
           <button
             type="button"
-            className={purchaseStyles.modalDangerBtn}
+            className={purchaseStyles.cancelConfirmDangerBtn}
             onClick={onConfirm}
             disabled={confirming}
           >
-            {confirming ? 'Cancelling…' : showsPaidRefundDisclaimer ? 'Cancel and request refund' : 'Cancel purchase'}
+            {confirming ? 'Cancelling…' : showsPaidRefundDisclaimer ? 'Yes, Cancel it' : 'Cancel purchase'}
           </button>
         </div>
       </div>
@@ -428,7 +419,7 @@ function OpenDisputeModal({ open, rawOrderId, onClose, onSubmit, submitting }) {
               Request help
             </h2>
             <p className={purchaseStyles.reviewSubtitle}>
-              Describe the problem so our support team can review it with your provider. This does not automatically cancel or refund the purchase.
+              Describe the problem so our support team can review it with your provider.
             </p>
           </div>
           <button
@@ -488,6 +479,10 @@ function OpenDisputeModal({ open, rawOrderId, onClose, onSubmit, submitting }) {
             </div>
           </div>
         </div>
+
+        <p className={purchaseStyles.disputeInfoNote} role="note">
+          This does not automatically cancel or refund the purchase.
+        </p>
 
         <div className={purchaseStyles.reviewActions}>
           <button
@@ -1340,6 +1335,7 @@ export default function PurchasesPage() {
       rawOrderId: purchase.rawOrderId,
       displayOrderId: purchase.id,
       orderItems: purchase.orderItemsForReview,
+      hasExistingReview: Boolean(purchase.hasExistingReview),
     });
     setLeaveReviewOpen(true);
   }, []);
@@ -1578,6 +1574,11 @@ export default function PurchasesPage() {
           }
         }}
         onSubmitted={() => {
+          toast.success(
+            leaveReviewOrder?.hasExistingReview
+              ? 'Review updated successfully.'
+              : 'Review submitted successfully.',
+          );
           setLeaveReviewOpen(false);
           setLeaveReviewOrder(null);
           bumpRefresh();

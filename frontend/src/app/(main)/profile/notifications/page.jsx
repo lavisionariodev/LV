@@ -121,10 +121,13 @@ function mapApiRowToBuyerNotification(row) {
   if (t === 'payment_refund') iconKey = 'payment_refund';
   else if (t.startsWith('payment')) iconKey = t.includes('fail') ? 'payment_failed' : 'payment_success';
   else if (t === 'service_alert') iconKey = 'service_alert';
+  else if (t === 'service_completed') iconKey = 'service_completed';
+  else if (t === 'service_confirmed') iconKey = 'service_scheduled';
   else if (t.startsWith('service')) iconKey = 'service_inprogress';
   else if (t === 'reminder') iconKey = 'reminder';
   else if (t === 'message') iconKey = 'message';
   else if (t === 'alerts') iconKey = 'alerts';
+  else if (t === 'listing_approval' || t === 'listing_rejected') iconKey = 'account_profile';
 
   let variant = 'amber';
   if (t.startsWith('payment') || t === 'payment_refund') variant = t.includes('fail') ? 'red' : 'blue';
@@ -133,12 +136,15 @@ function mapApiRowToBuyerNotification(row) {
   else if (t === 'message') variant = 'purple';
   else if (t === 'reminder') variant = 'amber';
   else if (t === 'account' || t === 'alerts') variant = 'red';
+  else if (t === 'listing_rejected') variant = 'red';
+  else if (t === 'listing_approval') variant = 'green';
 
   let filterType = 'account';
   if (t.startsWith('payment') || t === 'payment_refund') filterType = 'payment';
   else if (t === 'service_alert' || t.startsWith('service')) filterType = 'service';
   else if (t === 'message') filterType = 'message';
   else if (t === 'reminder') filterType = 'reminder';
+  else if (t === 'listing_approval' || t === 'listing_rejected') filterType = 'account';
 
   const tag =
     t === 'payment_refund'
@@ -153,7 +159,11 @@ function mapApiRowToBuyerNotification(row) {
               ? 'Message'
               : t === 'reminder'
                 ? 'Reminder'
-                : 'Account';
+                : t === 'listing_approval'
+                  ? 'Listing'
+                  : t === 'listing_rejected'
+                    ? 'Listing'
+                    : 'Account';
 
   return {
     id: row.id,
@@ -186,7 +196,7 @@ export default function NotificationsPage() {
       return;
     }
     setFeedLoading(true);
-    const res = await fetch('/api/notifications', { cache: 'no-store' });
+    const res = await fetch('/api/notifications?limit=100', { cache: 'no-store' });
     const body = await res.json().catch(() => null);
     if (!res.ok) {
       setApiRows([]);

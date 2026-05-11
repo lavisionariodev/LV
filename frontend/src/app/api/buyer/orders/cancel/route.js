@@ -185,6 +185,7 @@ export async function POST(request) {
           title: 'Refund request received',
           body: `A buyer cancelled their booking before confirmation and has requested a refund. Please review and approve or decline.${refundReason ? ` Buyer note: ${refundReason}` : ''}`,
           metadata: { orderId },
+          dedupeKey: `seller_refund_requested:${orderId}`,
         })
       }
 

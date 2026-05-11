@@ -205,6 +205,7 @@ export async function POST(request) {
         title: 'Refund approved',
         body: 'Your provider has approved your cancellation and your refund has been initiated. Funds typically arrive within 5 to 15 business days, depending on your bank or e-wallet.',
         metadata: { orderId, paymongoRefundId: pm.refundId },
+        dedupeKey: `refund_approved:${orderId}:${pm.refundId}`,
       })
     }
 
@@ -243,6 +244,7 @@ export async function POST(request) {
         title: 'Refund request declined',
         body: `Your refund request has been declined by the provider. Your booking remains active and awaiting confirmation.${declineDetail} If you require further assistance, please use Request help to escalate this concern.`,
         metadata: { orderId },
+        dedupeKey: `refund_declined:${orderId}`,
       })
     }
   }

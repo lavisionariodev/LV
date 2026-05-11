@@ -5,7 +5,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import styles from './admin.module.css'
-import { countDisputesNeedingAdminAttention } from '@/data/adminSampleData'
 import { formatCount, formatPHPMobile } from '@/shared/utils/formatCount'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
 import { searchSellersForAdmin } from '@/lib/sellers/client'
@@ -126,6 +125,7 @@ export default function AdminDashboardPage() {
   /** Commission from released escrows by UTC day (7 days); filled from `/api/admin/metrics`. */
   const [commissionChartSeries, setCommissionChartSeries] = useState(() => utcLast7DaysSeriesZeros())
   const [recentActivityRows, setRecentActivityRows] = useState([])
+  const [disputesNeedingAttention, setDisputesNeedingAttention] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -141,6 +141,7 @@ export default function AdminDashboardPage() {
           pendingPayoutAmt: Number(body.payoutSummary.pendingPayoutAmt) || 0,
         })
         setActiveSellerCount(Number(body.sellersActive) || 0)
+        setDisputesNeedingAttention(Number(body.disputesNeedingAttention) || 0)
         if (Array.isArray(body.dailyReleasedCommission) && body.dailyReleasedCommission.length > 0) {
           setCommissionChartSeries(body.dailyReleasedCommission)
         }
@@ -155,9 +156,6 @@ export default function AdminDashboardPage() {
       cancelled = true
     }
   }, [])
-
-  /** Mock dispute queue count (matches sidebar badge); swap for API later. */
-  const disputesNeedingAttention = countDisputesNeedingAdminAttention()
 
   useEffect(() => {
     let cancelled = false

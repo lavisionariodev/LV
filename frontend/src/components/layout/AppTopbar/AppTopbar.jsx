@@ -13,6 +13,7 @@ import { TbSettings, TbMessage2Question } from 'react-icons/tb'
 import { Logout } from '@/components/ui'
 import { useAuth } from '@/contexts/AuthContext'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
+import { useInAppNotificationFeed, relativeNotificationTime } from '@/lib/notifications/useInAppNotificationFeed'
 
 const TOPBAR_CONFIG = {
   admin: {
@@ -100,37 +101,6 @@ function getPageTitle(variant, pathname) {
     : ''
 }
 
-const SAMPLE_NOTIFICATIONS = [
-  {
-    id: 1,
-    title: 'New dispute filed',
-    message: 'Order #4821 has a new dispute requiring your review.',
-    time: '2 min ago',
-    unread: true,
-  },
-  {
-    id: 2,
-    title: 'Seller approved',
-    message: 'Seller "Maria Santos" has been successfully verified.',
-    time: '1 hr ago',
-    unread: true,
-  },
-  {
-    id: 3,
-    title: 'Payout processed',
-    message: '₱12,500 payout was sent to 3 sellers.',
-    time: '3 hrs ago',
-    unread: false,
-  },
-  {
-    id: 4,
-    title: 'New user registered',
-    message: 'juan.dela.cruz@email.com just created an account.',
-    time: 'Yesterday',
-    unread: false,
-  },
-]
-
 export default function AppTopbar({ variant, onLogout, isMobile, sidebarCollapsed }) {
   const { user, profile } = useAuth()
   const [showLogout, setShowLogout] = useState(false)
@@ -140,6 +110,23 @@ export default function AppTopbar({ variant, onLogout, isMobile, sidebarCollapse
   const profileWrapRef = useRef(null)
   const notifWrapRef = useRef(null)
   const pathname = usePathname()
+
+  const {
+    notifications: topbarNotifRows,
+    unreadCount: topbarUnreadCount,
+    markRead: markTopbarNotifRead,
+  } = useInAppNotificationFeed({
+    limit: 8,
+    enabled: Boolean(user),
+  })
+
+  const topbarNotifications = topbarNotifRows.map((n) => ({
+    id: n.id,
+    title: n.title || 'Notification',
+    message: n.body || '',
+    time: relativeNotificationTime(n.createdAt),
+    unread: !n.readAt,
+  }))
 
   useEffect(() => {
     if (!dropdownOpen) return
@@ -162,6 +149,21 @@ export default function AppTopbar({ variant, onLogout, isMobile, sidebarCollapse
     document.addEventListener('click', handleClickOutside)
     return () => document.removeEventListener('click', handleClickOutside)
   }, [notifOpen])
+
+  useEffect(() => {
+    if (variant !== 'admin') return
+    let cancelled = false
+    const load = async () => {
+      try {
+        const data = await fetchCurrentAdminProfile()
+        if (!cancelled) setAdminProfile(data)
+      } catch {
+        // ignore; fall back to AuthContext profile
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [variant])
 
   const config = TOPBAR_CONFIG[variant]
   if (!config) return null
@@ -195,21 +197,6 @@ export default function AppTopbar({ variant, onLogout, isMobile, sidebarCollapse
     : isSettingsPage ? 'Profile'
     : isNotificationsPage ? 'Notifications'
     : ''
-
-  useEffect(() => {
-    if (!isAdmin) return
-    let cancelled = false
-    const load = async () => {
-      try {
-        const data = await fetchCurrentAdminProfile()
-        if (!cancelled) setAdminProfile(data)
-      } catch {
-        // ignore; fall back to AuthContext profile
-      }
-    }
-    load()
-    return () => { cancelled = true }
-  }, [isAdmin])
 
   const avatarUrl = isAdmin
     ? (adminProfile?.avatarUrl || profile?.avatar_url || '')
@@ -264,27 +251,44 @@ export default function AppTopbar({ variant, onLogout, isMobile, sidebarCollapse
             <div className={styles.notifDropdown}>
               <div className={styles.notifDropdownHead}>
                 <p className={styles.notifDropdownTitle}>Notifications</p>
-                {SAMPLE_NOTIFICATIONS.some((n) => n.unread) && (
+                {topbarUnreadCount > 0 && (
                   <span className={styles.notifUnreadCount}>
-                    {SAMPLE_NOTIFICATIONS.filter((n) => n.unread).length} new
+                    {topbarUnreadCount > 9 ? '9+' : topbarUnreadCount} new
                   </span>
                 )}
 
               </div>
               <ul className={styles.notifList}>
-                {SAMPLE_NOTIFICATIONS.map((n) => (
-                  <li
-                    key={n.id}
-                    className={`${styles.notifItem} ${n.unread ? styles.notifItemUnread : ''}`}
-                  >
-                    <span className={styles.notifDot} data-unread={n.unread} />
+                {topbarNotifications.length === 0 ? (
+                  <li className={styles.notifItem}>
                     <div className={styles.notifItemBody}>
-                      <p className={styles.notifItemTitle}>{n.title}</p>
-                      <p className={styles.notifItemMsg}>{n.message}</p>
-                      <p className={styles.notifItemTime}>{n.time}</p>
+                      <p className={styles.notifItemMsg}>No notifications yet.</p>
                     </div>
                   </li>
-                ))}
+                ) : (
+                  topbarNotifications.map((n) => (
+                    <li
+                      key={n.id}
+                      className={`${styles.notifItem} ${n.unread ? styles.notifItemUnread : ''}`}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => markTopbarNotifRead(n.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          markTopbarNotifRead(n.id)
+                        }
+                      }}
+                    >
+                      <span className={styles.notifDot} data-unread={n.unread} />
+                      <div className={styles.notifItemBody}>
+                        <p className={styles.notifItemTitle}>{n.title}</p>
+                        <p className={styles.notifItemMsg}>{n.message}</p>
+                        <p className={styles.notifItemTime}>{n.time}</p>
+                      </div>
+                    </li>
+                  ))
+                )}
               </ul>
               <div className={styles.notifFooter}>
                 <Link

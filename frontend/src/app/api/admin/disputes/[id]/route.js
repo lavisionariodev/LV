@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireAdminApiUser } from '@/lib/auth/requireAdminRoute'
+import { notifyUser } from '@/lib/notifications/inAppServer'
 
 function formatOpenedAt(iso) {
   if (!iso) return '—'
@@ -103,10 +104,45 @@ export async function PATCH(request, context) {
   if (resolutionNotes !== undefined) patch.resolution_notes = resolutionNotes || null
 
   const supabaseAdmin = getSupabaseAdmin()
+
+  const { data: before, error: beforeErr } = await supabaseAdmin
+    .from('disputes')
+    .select('id,order_id,buyer_id,seller_user_id,status')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (beforeErr || !before) {
+    return NextResponse.json({ error: 'Dispute not found.' }, { status: 404 })
+  }
+
   const { error } = await supabaseAdmin.from('disputes').update(patch).eq('id', id)
 
   if (error) {
     return NextResponse.json({ error: error.message ?? 'Update failed.' }, { status: 500 })
+  }
+
+  const ordRef = String(before.order_id || '').slice(0, 8)
+  const statusLabel = status === 'under_review' ? 'under review' : status
+
+  if (before.buyer_id) {
+    await notifyUser(supabaseAdmin, {
+      userId: before.buyer_id,
+      type: 'alerts',
+      title: 'Help request update (platform)',
+      body: `Your request for order ${ordRef} is now ${statusLabel}.`,
+      metadata: { orderId: before.order_id, disputeId: before.id },
+      dedupeKey: `dispute_admin_status:${id}:${status}`,
+    })
+  }
+  if (before.seller_user_id) {
+    await notifyUser(supabaseAdmin, {
+      userId: before.seller_user_id,
+      type: 'alerts',
+      title: 'Help request update (platform)',
+      body: `Buyer request for order ${ordRef} is now ${statusLabel}.`,
+      metadata: { orderId: before.order_id, disputeId: before.id },
+      dedupeKey: `dispute_admin_status_seller:${id}:${status}`,
+    })
   }
 
   return NextResponse.json({ ok: true }, { status: 200 })
