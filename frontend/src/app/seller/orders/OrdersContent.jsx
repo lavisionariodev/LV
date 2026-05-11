@@ -67,6 +67,11 @@ function formatDate(s) {
   return new Date(s + 'T00:00:00').toLocaleDateString('en-PH', { dateStyle: 'medium' })
 }
 
+function formatDateTime(s) {
+  if (!s) return '—'
+  return new Date(s).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' })
+}
+
 function sellerPaymentBadge(paymentStatus) {
   const ps = String(paymentStatus ?? 'unpaid')
   if (ps === 'refund_pending')
@@ -149,7 +154,25 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
       return
     }
 
+    const { data: disputeRows } = await supabase
+      .from('disputes')
+      .select('id,order_id,reason,description,status,opened_at,resolution_notes')
+      .eq('seller_user_id', user.id)
+      .in('status', ['open', 'under_review'])
+      .order('opened_at', { ascending: false })
+      .abortSignal?.(signal)
+
+    if (signal?.aborted) return
+
+    const disputeByOrder = new Map()
+    for (const dispute of disputeRows ?? []) {
+      if (!disputeByOrder.has(dispute.order_id)) {
+        disputeByOrder.set(dispute.order_id, dispute)
+      }
+    }
+
     const mapped = (data ?? []).map((o) => {
+        const helpRequest = disputeByOrder.get(o.id) ?? null
         const items = o.order_items ?? []
         const servicePackage =
           items.length === 1
@@ -217,6 +240,16 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
           refundRequestedAt: o.refund_requested_at ? String(o.refund_requested_at) : null,
           refundReason,
           refundAttachments: [],
+          helpRequest: helpRequest
+            ? {
+                id: helpRequest.id,
+                reason: helpRequest.reason,
+                description: helpRequest.description || '',
+                status: helpRequest.status,
+                openedAt: helpRequest.opened_at,
+                resolutionNotes: helpRequest.resolution_notes || '',
+              }
+            : null,
         }
       })
 
@@ -356,6 +389,11 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
     [orders]
   )
 
+  const helpRequests = useMemo(
+    () => orders.filter((o) => o.helpRequest),
+    [orders]
+  )
+
   const handleAcceptOrder = async (order) => {
     try {
       const res = await fetch('/api/seller/orders/confirm', {
@@ -424,6 +462,31 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
       await loadOrders()
       setSelectedOrder(null)
       clearOrderDeepLinkParams()
+    } catch {
+      window.alert('Network error. Please check your connection and try again.')
+    }
+  }
+
+  const handleHelpRequestStatus = async (order, status) => {
+    const requestId = order?.helpRequest?.id
+    if (!requestId) return
+    try {
+      const res = await fetch(`/api/seller/disputes/${encodeURIComponent(requestId)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) {
+        window.alert(
+          typeof body?.error === 'string'
+            ? body.error
+            : 'Unable to update this request. Please try again.',
+        )
+        return
+      }
+      await loadOrders()
+      setSelectedOrder((prev) => (prev?.id === order.id ? null : prev))
     } catch {
       window.alert('Network error. Please check your connection and try again.')
     }
@@ -648,6 +711,77 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
         </section>
       )}
 
+      {helpRequests.length > 0 && (
+        <section className={styles.refundListSection}>
+          <div className={styles.refundListHeader}>
+            <h2 className={styles.refundListTitle}>Buyer help requests</h2>
+            <span className={styles.refundListCount}>{formatCount(helpRequests.length)} open</span>
+          </div>
+          <div className={styles.refundCards}>
+            {helpRequests.map((order) => (
+              <article key={order.helpRequest.id} className={styles.refundCard}>
+                <header className={styles.refundCardHeader}>
+                  <div>
+                    <div className={styles.refundOrderId}>{order.displayId || order.id}</div>
+                    <div className={styles.refundCustomerName}>{order.customerName}</div>
+                  </div>
+                  <div className={styles.refundMeta}>
+                    <span>{order.helpRequest.status === 'under_review' ? 'Under review' : 'Open'}</span>
+                    <span>&middot;</span>
+                    <span>{formatDateTime(order.helpRequest.openedAt)}</span>
+                  </div>
+                </header>
+                <div className={styles.refundBody}>
+                  <div className={styles.refundDetailRow}>
+                    <span className={styles.detailLabel}>Reason</span>
+                    <span className={styles.detailValue}>{order.helpRequest.reason}</span>
+                  </div>
+                  {order.helpRequest.description ? (
+                    <div className={styles.refundDetailRow}>
+                      <span className={styles.detailLabel}>Buyer details</span>
+                      <span className={styles.detailValue}>{order.helpRequest.description}</span>
+                    </div>
+                  ) : null}
+                  <div className={styles.refundDetailRow}>
+                    <span className={styles.detailLabel}>Seller action</span>
+                    <span className={styles.detailValue}>
+                      Review the concern, contact the buyer if needed, then mark it resolved once handled.
+                    </span>
+                  </div>
+                </div>
+                <footer className={styles.refundFooter}>
+                  <button
+                    type="button"
+                    className={`${styles.btnTextSecondary}`}
+                    onClick={() => setSelectedOrder(order)}
+                  >
+                    View order
+                  </button>
+                  <div className={styles.refundQuickActions}>
+                    {order.helpRequest.status === 'open' && (
+                      <button
+                        type="button"
+                        className={`${styles.btnText}`}
+                        onClick={() => handleHelpRequestStatus(order, 'under_review')}
+                      >
+                        Mark under review
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className={`${styles.btnText} ${styles.btnAccept}`}
+                      onClick={() => handleHelpRequestStatus(order, 'resolved')}
+                    >
+                      Mark resolved
+                    </button>
+                  </div>
+                </footer>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className={styles.tableWrap}>
         <table className={styles.ordersTable}>
           <thead>
@@ -681,6 +815,7 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                   <td className={styles.cellOrderId} data-label="Order ID">
                     <span className={styles.orderId}>{order.displayId || order.id}</span>
                     {order.isUrgent && <span className={`${styles.badge} ${styles.badgeUrgent}`}>Urgent</span>}
+                    {order.helpRequest && <span className={`${styles.badge} ${styles.badgePending}`}>Help requested</span>}
                   </td>
                   <td data-label="Customer">{order.customerName}</td>
                   <td data-label="Package">{order.servicePackage}</td>
@@ -971,6 +1106,56 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                           payment provider confirms the refund.
                         </p>
                       )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {selectedOrder.helpRequest && (
+                <div className={styles.section}>
+                  <h3 className={styles.sectionTitle}>Buyer help request</h3>
+                  <div className={styles.sectionBlock}>
+                    <div className={styles.detailList}>
+                      <div className={styles.detailItem}>
+                        <span className={styles.detailLabel}>Status</span>
+                        <span className={styles.detailValue}>
+                          {selectedOrder.helpRequest.status === 'under_review' ? 'Under review' : 'Open'}
+                        </span>
+                      </div>
+                      <div className={styles.detailItem}>
+                        <span className={styles.detailLabel}>Reason</span>
+                        <span className={styles.detailValue}>{selectedOrder.helpRequest.reason}</span>
+                      </div>
+                      <div className={styles.detailItem}>
+                        <span className={styles.detailLabel}>Opened</span>
+                        <span className={styles.detailValue}>
+                          {formatDateTime(selectedOrder.helpRequest.openedAt)}
+                        </span>
+                      </div>
+                      {selectedOrder.helpRequest.description ? (
+                        <div className={styles.detailItem}>
+                          <span className={styles.detailLabel}>Buyer details</span>
+                          <span className={styles.detailValue}>{selectedOrder.helpRequest.description}</span>
+                        </div>
+                      ) : null}
+                    </div>
+                    <div className={styles.refundActions}>
+                      {selectedOrder.helpRequest.status === 'open' && (
+                        <button
+                          type="button"
+                          className={`${styles.btnText}`}
+                          onClick={() => handleHelpRequestStatus(selectedOrder, 'under_review')}
+                        >
+                          Mark under review
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className={`${styles.btnText} ${styles.btnAccept}`}
+                        onClick={() => handleHelpRequestStatus(selectedOrder, 'resolved')}
+                      >
+                        Mark resolved
+                      </button>
                     </div>
                   </div>
                 </div>

@@ -44,6 +44,21 @@ export async function POST(request) {
     )
   }
 
+  const { data: activeDispute } = await supabaseAdmin
+    .from('disputes')
+    .select('id')
+    .eq('order_id', orderId)
+    .in('status', ['open', 'under_review'])
+    .limit(1)
+    .maybeSingle()
+
+  if (activeDispute?.id) {
+    return NextResponse.json(
+      { error: 'This order has an open buyer request. Resolve or close it before releasing payout.' },
+      { status: 409 },
+    )
+  }
+
   if (order.payment_status !== 'paid') {
     return NextResponse.json({ error: 'Order is not paid.' }, { status: 400 })
   }

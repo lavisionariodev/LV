@@ -118,6 +118,15 @@ export async function POST(request) {
     )
   }
 
+  await supabaseAdmin
+    .from('order_escrows')
+    .update({
+      status: 'on_hold',
+      hold_reason: `Buyer request opened (${reason}). Review before releasing payout.`,
+    })
+    .eq('order_id', orderId)
+    .eq('status', 'escrowed')
+
   if (order.seller_user_id) {
     await supabaseAdmin.from('user_notifications').insert({
       user_id: order.seller_user_id,

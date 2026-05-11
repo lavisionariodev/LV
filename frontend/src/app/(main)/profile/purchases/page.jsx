@@ -428,7 +428,7 @@ function OpenDisputeModal({ open, rawOrderId, onClose, onSubmit, submitting }) {
               Request help
             </h2>
             <p className={purchaseStyles.reviewSubtitle}>
-              Describe the problem so our support team can review it and work with your provider toward a resolution.
+              Describe the problem so our support team can review it with your provider. This does not automatically cancel or refund the purchase.
             </p>
           </div>
           <button
