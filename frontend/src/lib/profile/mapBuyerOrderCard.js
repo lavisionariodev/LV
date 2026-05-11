@@ -245,6 +245,57 @@ export function mapBuyerOrderCard(o, orderItems, providerDisplayName) {
   }
 }
 
+/**
+ * One UI row per order line item (listing), while preserving shared checkout / order metadata.
+ * @param {Record<string, unknown>} baseCard from {@link mapBuyerOrderCard}
+ * @param {Array<{ id?: string; name?: string; quantity?: number; price?: number }>} orderItems
+ * @param {Set<string>} reviewedItemIds `order_item_id` values that already have a buyer review
+ * @returns {Array<Record<string, unknown>>}
+ */
+export function expandPurchaseCardsByLineItem(baseCard, orderItems, reviewedItemIds) {
+  const reviewed = reviewedItemIds instanceof Set ? reviewedItemIds : new Set()
+  const items = Array.isArray(orderItems) ? orderItems.filter((it) => it && it.id) : []
+  if (items.length === 0) {
+    return [
+      {
+        ...baseCard,
+        listRowKey: String(baseCard.rawOrderId),
+        isMultiItemCheckout: false,
+        checkoutSiblingCount: 0,
+        hasExistingReview: false,
+      },
+    ]
+  }
+
+  const multi = items.length > 1
+  const siblings = items.length - 1
+
+  return items.map((it) => {
+    const qty = Number(it.quantity) || 1
+    const unit = Number(it.price)
+    const lineTotal = Number.isFinite(unit) && unit > 0 ? unit * qty : 0
+    const itemId = String(it.id).trim()
+    const name = String(it.name || 'Service').trim() || 'Service'
+    return {
+      ...baseCard,
+      listRowKey: `${baseCard.rawOrderId}:${itemId}`,
+      service: name,
+      price: lineTotal,
+      formattedTotal: formatMoney(lineTotal, baseCard.currency),
+      itemsDetailed: [
+        {
+          line: `${name} ×${qty}`,
+          subtotal: formatMoney(lineTotal, baseCard.currency),
+        },
+      ],
+      orderItemsForReview: [{ orderItemId: it.id, label: name }],
+      hasExistingReview: reviewed.has(itemId),
+      isMultiItemCheckout: multi,
+      checkoutSiblingCount: siblings,
+    }
+  })
+}
+
 /** @param {unknown} v */
 function pickStr(v) {
   if (v == null) return ''

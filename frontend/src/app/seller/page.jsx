@@ -4,78 +4,29 @@ import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import styles from './seller.module.css'
-
-const metricCards = [
-  {
-    label: 'Total Revenue',
-    value: '$124,580',
-    trend: '+12.4%',
-    trendUp: true,
-  },
-  {
-    label: 'Orders',
-    value: '1,284',
-    trend: '+8.2%',
-    trendUp: true,
-  },
-  {
-    label: 'Pending Orders',
-    value: '26',
-    trend: '-3.1%',
-    trendUp: false,
-  },
-  {
-    label: 'New Customers',
-    value: '312',
-    trend: '+5.9%',
-    trendUp: true,
-  },
-]
-
-const chartSeries = {
-  daily: [14, 20, 18, 23, 27, 24, 31],
-  weekly: [92, 104, 88, 116, 132, 125, 143],
-  monthly: [342, 388, 371, 410, 436, 452, 479],
-}
-
-const chartLabels = {
-  daily: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-  weekly: ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7'],
-  monthly: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
-}
-
-const recentOrders = [
-  { id: 'LV-2024-0847', customer: 'Maria Santos', status: 'Pending', total: 'PHP 185,000', tab: 'pending' },
-  {
-    id: 'LV-2024-0846',
-    customer: 'Juan Dela Cruz',
-    status: 'Processing',
-    total: 'PHP 95,000',
-    tab: 'confirmed',
-  },
-  {
-    id: 'LV-2024-0844',
-    customer: 'Carlos Mendoza',
-    status: 'Completed',
-    total: 'PHP 195,000',
-    tab: 'completed',
-  },
-  { id: 'LV-2024-0845', customer: 'Ana Reyes', status: 'Pending', total: 'PHP 120,000', tab: 'pending' },
-  { id: 'LV-2024-0843', customer: 'Luis Ramirez', status: 'On Hold', total: 'PHP 88,000', tab: 'refunded' },
-]
-
-const bestSellingProducts = [
-  { name: 'Signature Facial Set', units: 142, revenue: '$9,940' },
-  { name: 'Hair & Makeup Bundle', units: 118, revenue: '$8,260' },
-  { name: 'Premium Nail Care Kit', units: 96, revenue: '$5,760' },
-  { name: 'Spa Relax Package', units: 78, revenue: '$7,020' },
-]
-
-const initialAlerts = [
-  { id: 'ALT-1', type: 'Low Stock', message: 'Premium Nail Care Kit is below 10 units.' },
-  { id: 'ALT-2', type: 'New Order', message: 'A new high-value order ORD-9216 needs review.' },
-  { id: 'ALT-3', type: 'Customer Concern', message: 'A customer requested urgent delivery support.' },
-]
+import { useSellerAnalyticsData } from '@/lib/seller/useSellerAnalyticsData'
+import {
+  buildSmartAlerts,
+  newBuyersPreviousMonthCount,
+  newBuyersThisMonthCount,
+  orderStatusLabel,
+  orderSubtotal,
+  orderTabForUrl,
+  ordersCountLast30Days,
+  ordersCountPrevious30Days,
+  paidOrdersLast30Days,
+  paidOrdersPrevious30Days,
+  paidRevenueByLastNDays,
+  paidRevenueByLastNMonths,
+  paidRevenueByLastNWeeks,
+  paidRevenueLast7DaysTotal,
+  paidRevenuePrevious7DaysTotal,
+  pendingFulfillmentCount,
+  percentChange,
+  topPackagesByPaidRevenue,
+  totalPaidRevenueAllTime,
+  fulfillmentStatus,
+} from '@/lib/seller/sellerOrderAnalytics'
 
 const quickActions = [
   { label: 'Add New Listing', href: '/seller/products/new-listing', icon: 'add' },
@@ -84,16 +35,28 @@ const quickActions = [
   { label: 'View Messages', href: '/seller/notifications', icon: 'messages' },
 ]
 
-function getStatusClass(status) {
-  if (status === 'Completed') return styles.statusCompleted
-  if (status === 'Processing') return styles.statusProcessing
-  if (status === 'On Hold') return styles.statusHold
+function formatPhp(n) {
+  return new Intl.NumberFormat('en-PH', {
+    style: 'currency',
+    currency: 'PHP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(n)
+}
+
+function getStatusClassFromOrder(row) {
+  const rs = String(row.refund_status || '').toLowerCase()
+  if (rs === 'requested' || rs === 'processing') return styles.statusHold
+  const f = fulfillmentStatus(row)
+  if (f === 'completed') return styles.statusCompleted
+  if (f === 'confirmed' || f === 'in_progress') return styles.statusProcessing
+  if (f === 'cancelled') return styles.statusHold
   return styles.statusPending
 }
 
 function formatCompactValue(value) {
   if (value >= 1000) return `${(value / 1000).toFixed(1)}k`
-  return `${value}`
+  return `${Math.round(value)}`
 }
 
 function QuickActionIcon({ type }) {
@@ -128,22 +91,124 @@ function QuickActionIcon({ type }) {
   )
 }
 
+function weekdayShort(ymd) {
+  const [y, m, d] = ymd.split('-').map((x) => Number(x))
+  if (!y || !m || !d) return ''
+  const dt = new Date(y, m - 1, d)
+  return dt.toLocaleDateString('en-PH', { weekday: 'short' })
+}
+
 export default function SellerDashboardPage() {
   const { user } = useAuth()
+  const { orders, listings, loading, error } = useSellerAnalyticsData()
   const displayEmail = user?.email || ''
   const [chartFilter, setChartFilter] = useState('weekly')
-  const [alerts, setAlerts] = useState(initialAlerts)
+  const [dismissedAlertIds, setDismissedAlertIds] = useState(() => new Set())
   const [activeAlert, setActiveAlert] = useState(null)
   const [activeDetailAlert, setActiveDetailAlert] = useState(null)
   const [resolveNote, setResolveNote] = useState('')
 
+  const alerts = useMemo(() => {
+    return buildSmartAlerts(orders, listings)
+      .slice(0, 5)
+      .filter((a) => !dismissedAlertIds.has(a.id))
+  }, [orders, listings, dismissedAlertIds])
+
+  const metricCards = useMemo(() => {
+    const totalRev = totalPaidRevenueAllTime(orders)
+    const rev30 = paidOrdersLast30Days(orders).reduce((s, o) => s + orderSubtotal(o), 0)
+    const revPrev30 = paidOrdersPrevious30Days(orders).reduce((s, o) => s + orderSubtotal(o), 0)
+    const revTrend = percentChange(rev30, revPrev30)
+
+    const ord30 = ordersCountLast30Days(orders)
+    const ordPrev30 = ordersCountPrevious30Days(orders)
+    const ordTrend = percentChange(ord30, ordPrev30)
+
+    const pending = pendingFulfillmentCount(orders)
+    const newThis = newBuyersThisMonthCount(orders)
+    const newPrev = newBuyersPreviousMonthCount(orders)
+    const newTrend = percentChange(newThis, newPrev)
+
+    return [
+      {
+        label: 'Total revenue (paid)',
+        value: formatPhp(totalRev),
+        trend: revTrend.text,
+        trendUp: revTrend.up,
+      },
+      {
+        label: 'Orders (last 30 days)',
+        value: `${ord30}`,
+        trend: ordTrend.text,
+        trendUp: ordTrend.up,
+      },
+      {
+        label: 'Pending confirmation',
+        value: `${pending}`,
+        trend: null,
+        trendUp: true,
+      },
+      {
+        label: 'New families (this month)',
+        value: `${newThis}`,
+        trend: newTrend.text,
+        trendUp: newTrend.up,
+      },
+    ]
+  }, [orders])
+
+  const chartSeries = useMemo(() => {
+    const daily = paidRevenueByLastNDays(orders, 7).map((x) => x.total)
+    const weekly = paidRevenueByLastNWeeks(orders, 7).map((x) => x.total)
+    const monthly = paidRevenueByLastNMonths(orders, 7).map((x) => x.total)
+    return { daily, weekly, monthly }
+  }, [orders])
+
+  const chartLabels = useMemo(() => {
+    const keys = paidRevenueByLastNDays(orders, 7).map((x) => x.date)
+    const daily = keys.map((k) => weekdayShort(k))
+    const weekly = paidRevenueByLastNWeeks(orders, 7).map((x) => x.label)
+    const monthly = paidRevenueByLastNMonths(orders, 7).map((x) => x.label)
+    return { daily, weekly, monthly }
+  }, [orders])
+
   const maxChartValue = useMemo(() => {
     const values = chartSeries[chartFilter]
     return Math.max(...values, 1)
-  }, [chartFilter])
+  }, [chartFilter, chartSeries])
+
   const yAxisTicks = useMemo(() => {
-    return [1, 0.75, 0.5, 0.25, 0].map((step) => Math.round(maxChartValue * step))
+    const raw = [1, 0.75, 0.5, 0.25, 0].map((step) => Math.round(maxChartValue * step))
+    const out = []
+    const seen = new Set()
+    for (const v of raw) {
+      if (!seen.has(v)) {
+        seen.add(v)
+        out.push(v)
+      }
+    }
+    return out
   }, [maxChartValue])
+
+  const recentOrders = useMemo(() => {
+    return [...orders].slice(0, 5).map((o) => ({
+      id: o.id,
+      displayId: o.order_number || String(o.id).slice(0, 8),
+      customer: o.contact_name?.trim() || 'Buyer',
+      status: orderStatusLabel(o),
+      total: formatPhp(orderSubtotal(o)),
+      tab: orderTabForUrl(o),
+      statusClass: getStatusClassFromOrder(o),
+    }))
+  }, [orders])
+
+  const bestSellingProducts = useMemo(() => {
+    return topPackagesByPaidRevenue(orders, 4).map((p) => ({
+      name: p.name,
+      units: p.units,
+      revenue: formatPhp(p.revenue),
+    }))
+  }, [orders])
 
   const handleOpenResolve = (alert) => {
     setActiveAlert(alert)
@@ -152,10 +217,14 @@ export default function SellerDashboardPage() {
 
   const handleResolve = () => {
     if (!activeAlert) return
-    setAlerts((prev) => prev.filter((item) => item.id !== activeAlert.id))
+    setDismissedAlertIds((prev) => new Set([...prev, activeAlert.id]))
     setActiveAlert(null)
     setResolveNote('')
   }
+
+  const rev7 = paidRevenueLast7DaysTotal(orders)
+  const rev7prev = paidRevenuePrevious7DaysTotal(orders)
+  const rev7Hint = percentChange(rev7, rev7prev)
 
   return (
     <div className={`${styles.pageWrap} ${styles.dashboardPage}`}>
@@ -172,6 +241,8 @@ export default function SellerDashboardPage() {
                 Signed in as <strong>{displayEmail}</strong>
               </p>
             )}
+            {error ? <p className={styles.signedIn}>{error}</p> : null}
+            {loading ? <p className={styles.signedIn}>Loading your numbers…</p> : null}
           </div>
         </div>
       </section>
@@ -181,9 +252,15 @@ export default function SellerDashboardPage() {
           <article key={card.label} className={styles.metricCard}>
             <p className={styles.metricLabel}>{card.label}</p>
             <p className={styles.metricValue}>{card.value}</p>
-            <p className={`${styles.metricTrend} ${card.trendUp ? styles.trendUp : styles.trendDown}`}>
-              <span aria-hidden>{card.trendUp ? '▲' : '▼'}</span> {card.trend}
-            </p>
+            {card.trend != null ? (
+              <p className={`${styles.metricTrend} ${card.trendUp ? styles.trendUp : styles.trendDown}`}>
+                <span aria-hidden>{card.trendUp ? '▲' : '▼'}</span> {card.trend}
+              </p>
+            ) : (
+              <p className={styles.metricTrend} style={{ opacity: 0.65 }}>
+                Awaiting your confirmation on paid bookings
+              </p>
+            )}
           </article>
         ))}
       </section>
@@ -208,7 +285,9 @@ export default function SellerDashboardPage() {
         <div className={styles.panelHeader}>
           <div>
             <h2 className={styles.sectionTitle}>Sales Overview</h2>
-            <p className={styles.sectionSubtitle}>Compare your sales performance by period.</p>
+            <p className={styles.sectionSubtitle}>
+              Paid booking value by period (PHP). Last 7 days vs prior week: {rev7Hint.text}.
+            </p>
           </div>
           <div className={styles.filterRow}>
             {['daily', 'weekly', 'monthly'].map((filter) => (
@@ -226,9 +305,12 @@ export default function SellerDashboardPage() {
           </div>
         </div>
         <div className={styles.chartArea}>
+          <div className={styles.chartYAxisTitleWrap}>
+            <span className={styles.yAxisTitle}>Paid revenue (PHP)</span>
+          </div>
           <div className={styles.yAxis}>
-            {yAxisTicks.map((tickValue) => (
-              <span key={tickValue} className={styles.yAxisLabel}>
+            {yAxisTicks.map((tickValue, tickIdx) => (
+              <span key={`${chartFilter}-y-${tickIdx}`} className={styles.yAxisLabel}>
                 {formatCompactValue(tickValue)}
               </span>
             ))}
@@ -239,14 +321,13 @@ export default function SellerDashboardPage() {
                 <div
                   className={styles.chartBar}
                   style={{ height: `${Math.max((value / maxChartValue) * 100, 6)}%` }}
-                  aria-label={`Sales value ${value}`}
+                  aria-label={`Paid revenue ${formatPhp(value)}`}
                 />
                 <span className={styles.chartLabel}>{chartLabels[chartFilter][idx]}</span>
               </div>
             ))}
           </div>
           <div className={styles.xAxisTitle}>Time Period</div>
-          <div className={styles.yAxisTitle}>Sales</div>
         </div>
       </section>
 
@@ -256,34 +337,38 @@ export default function SellerDashboardPage() {
             <h2 className={styles.sectionTitle}>Recent Orders</h2>
           </div>
           <div className={styles.ordersList}>
-            {recentOrders.map((order) => (
-              <div key={order.id} className={styles.orderItem}>
-                <div className={styles.orderMain}>
-                  <p className={styles.orderId}>{order.id}</p>
-                  <p className={styles.orderCustomer}>{order.customer}</p>
+            {recentOrders.length === 0 && !loading ? (
+              <p className={styles.emptyState}>No orders yet.</p>
+            ) : (
+              recentOrders.map((order) => (
+                <div key={order.id} className={styles.orderItem}>
+                  <div className={styles.orderMain}>
+                    <p className={styles.orderId}>{order.displayId}</p>
+                    <p className={styles.orderCustomer}>{order.customer}</p>
+                  </div>
+                  <div className={styles.orderMeta}>
+                    <span className={`${styles.orderStatus} ${order.statusClass}`}>
+                      {order.status}
+                    </span>
+                    <p className={styles.orderTotal}>{order.total}</p>
+                  </div>
+                  <div className={styles.orderActions}>
+                    <Link
+                      href={`/seller/orders?tab=${order.tab}&orderId=${order.id}&action=view`}
+                      className={styles.ghostButton}
+                    >
+                      View Details
+                    </Link>
+                    <Link
+                      href={`/seller/orders?tab=${order.tab}&orderId=${order.id}&action=process`}
+                      className={styles.primaryButton}
+                    >
+                      Process Order
+                    </Link>
+                  </div>
                 </div>
-                <div className={styles.orderMeta}>
-                  <span className={`${styles.orderStatus} ${getStatusClass(order.status)}`}>
-                    {order.status}
-                  </span>
-                  <p className={styles.orderTotal}>{order.total}</p>
-                </div>
-                <div className={styles.orderActions}>
-                  <Link
-                    href={`/seller/orders?tab=${order.tab}&orderId=${order.id}&action=view`}
-                    className={styles.ghostButton}
-                  >
-                    View Details
-                  </Link>
-                  <Link
-                    href={`/seller/orders?tab=${order.tab}&orderId=${order.id}&action=process`}
-                    className={styles.primaryButton}
-                  >
-                    Process Order
-                  </Link>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </article>
 
@@ -292,15 +377,19 @@ export default function SellerDashboardPage() {
             <h2 className={styles.sectionTitle}>Best-Selling Products</h2>
           </div>
           <div className={styles.productList}>
-            {bestSellingProducts.map((product) => (
-              <div key={product.name} className={styles.productItem}>
-                <p className={styles.productName}>{product.name}</p>
-                <div className={styles.productMeta}>
-                  <span>{product.units} sold</span>
-                  <strong>{product.revenue}</strong>
+            {bestSellingProducts.length === 0 && !loading ? (
+              <p className={styles.emptyState}>No paid bookings to rank yet.</p>
+            ) : (
+              bestSellingProducts.map((product) => (
+                <div key={product.name} className={styles.productItem}>
+                  <p className={styles.productName}>{product.name}</p>
+                  <div className={styles.productMeta}>
+                    <span>{product.units} units (paid)</span>
+                    <strong>{product.revenue}</strong>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </article>
       </section>
@@ -311,7 +400,7 @@ export default function SellerDashboardPage() {
         </div>
         <div className={styles.alertList}>
           {alerts.length === 0 ? (
-            <p className={styles.emptyState}>All alerts have been resolved.</p>
+            <p className={styles.emptyState}>No actionable alerts right now.</p>
           ) : (
             alerts.map((alert) => (
               <div key={alert.id} className={styles.alertItem}>
@@ -384,12 +473,14 @@ export default function SellerDashboardPage() {
               </div>
               <div className={styles.alertDetailItem}>
                 <span className={styles.alertDetailLabel}>Priority</span>
-                <span className={styles.alertDetailValue}>High</span>
+                <span className={styles.alertDetailValue}>
+                  {activeDetailAlert.priority === 'high' ? 'High' : activeDetailAlert.priority === 'medium' ? 'Medium' : 'Standard'}
+                </span>
               </div>
               <div className={styles.alertDetailItem}>
                 <span className={styles.alertDetailLabel}>Suggested action</span>
                 <span className={styles.alertDetailValue}>
-                  Review order or stock details and follow up with the affected customer.
+                  Follow the linked workflow in Orders or Products, then mark this reminder as resolved.
                 </span>
               </div>
             </div>

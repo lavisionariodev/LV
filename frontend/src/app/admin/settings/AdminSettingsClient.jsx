@@ -467,6 +467,16 @@ const ABOUT_LABELS = {
   whyUs: 'Why us',
   partners: 'Our partners',
   commitment: 'Our commitment',
+  testimonial1: 'Testimonial card 1',
+  testimonial1Name: 'Testimonial card 1 name',
+  testimonial1Location: 'Testimonial card 1 location',
+  testimonial2: 'Testimonial card 2',
+  testimonial2Name: 'Testimonial card 2 name',
+  testimonial2Location: 'Testimonial card 2 location',
+  testimonial3: 'Testimonial card 3',
+  testimonial3Name: 'Testimonial card 3 name',
+  testimonial3Location: 'Testimonial card 3 location',
+  testimonialFeatured: 'Featured testimonial quote',
 }
 
 const ABOUT_HELP = {
@@ -476,9 +486,40 @@ const ABOUT_HELP = {
   whyUs: 'Reasons customers choose you.',
   partners: 'Partner or sponsor callouts.',
   commitment: 'Values or promises you stand behind.',
+  testimonial1: 'Buyer/family quote shown in the first testimonial card.',
+  testimonial1Name: 'Name shown under testimonial card 1.',
+  testimonial1Location: 'Location shown under testimonial card 1.',
+  testimonial2: 'Buyer/family quote shown in the second testimonial card.',
+  testimonial2Name: 'Name shown under testimonial card 2.',
+  testimonial2Location: 'Location shown under testimonial card 2.',
+  testimonial3: 'Buyer/family quote shown in the third testimonial card.',
+  testimonial3Name: 'Name shown under testimonial card 3.',
+  testimonial3Location: 'Location shown under testimonial card 3.',
+  testimonialFeatured: 'Main highlighted quote shown under the testimonial cards.',
 }
 
-const ABOUT_KEYS = Object.keys(ABOUT_LABELS)
+const ABOUT_KEYS = ['ourStory', 'missionVision', 'description', 'whyUs', 'partners', 'commitment']
+
+const TESTIMONIAL_GROUPS = [
+  {
+    title: 'Testimonial card 1',
+    textKey: 'testimonial1',
+    nameKey: 'testimonial1Name',
+    locationKey: 'testimonial1Location',
+  },
+  {
+    title: 'Testimonial card 2',
+    textKey: 'testimonial2',
+    nameKey: 'testimonial2Name',
+    locationKey: 'testimonial2Location',
+  },
+  {
+    title: 'Testimonial card 3',
+    textKey: 'testimonial3',
+    nameKey: 'testimonial3Name',
+    locationKey: 'testimonial3Location',
+  },
+]
 
 const FOOTER_FIELD_META = {
   tagline: {
@@ -504,7 +545,24 @@ const FOOTER_FIELD_META = {
 const EMPTY_SITE_CONTENT = {
   systemName: '',
   footer: { tagline: '', supportPhone: '', supportEmail: '', copyrightText: '' },
-  about: { description: '', ourStory: '', missionVision: '', whyUs: '', partners: '', commitment: '' },
+  about: {
+    description: '',
+    ourStory: '',
+    missionVision: '',
+    whyUs: '',
+    partners: '',
+    commitment: '',
+    testimonial1: '',
+    testimonial1Name: '',
+    testimonial1Location: '',
+    testimonial2: '',
+    testimonial2Name: '',
+    testimonial2Location: '',
+    testimonial3: '',
+    testimonial3Name: '',
+    testimonial3Location: '',
+    testimonialFeatured: '',
+  },
 }
 
 function SettingsRow({ title, description, children, titleEnd }) {
@@ -542,8 +600,11 @@ export function AdminSiteContentPanel({
   }, [isMobile])
 
   useEffect(() => {
+    // Sync from server payload only when it changes. Avoid re-syncing on
+    // local edit-mode toggles, which can temporarily overwrite just-saved
+    // draft values with stale hook data until realtime update arrives.
     if (loadedContent && !isEditing) setDraft(loadedContent)
-  }, [loadedContent, isEditing])
+  }, [loadedContent])
 
   const adjustTextareaSize = useCallback((textarea) => {
     if (!textarea) return
@@ -787,28 +848,130 @@ export function AdminSiteContentPanel({
       </>
     )
 
-  const renderAbout = () =>
-    ABOUT_KEYS.map((key) => (
+  const renderAbout = () => (
+    <>
+      {ABOUT_KEYS.map((key) => (
+        <SettingsRow
+          key={key}
+          title={ABOUT_LABELS[key]}
+          description={ABOUT_HELP[key]}
+          titleEnd={isMobile ? mobileEditBtn(`Edit ${ABOUT_LABELS[key]}`, { kind: 'about', key }) : null}
+        >
+          {isMobile ? (
+            <div className={styles.settingsMobileValue}>{renderMobileValue(draft.about?.[key], true)}</div>
+          ) : (
+            <textarea
+              value={draft.about?.[key] ?? ''}
+              onChange={handleTextareaChange('about', key)}
+              rows={1}
+              readOnly={!isEditing}
+              className={`${styles.settingsFieldTextarea} ${styles.settingsFieldTextareaAbout}`}
+              placeholder={`Write your ${ABOUT_LABELS[key].toLowerCase()} copy here`}
+            />
+          )}
+        </SettingsRow>
+      ))}
+
+      {TESTIMONIAL_GROUPS.map((group) => (
+        <SettingsRow
+          key={group.textKey}
+          title={group.title}
+          description="Include name, location, and testimonial text for this card."
+        >
+          {isMobile ? (
+            <div className={styles.settingsMobileStack}>
+              <div className={styles.settingsMobileLabeledRow}>
+                <div className={styles.settingsMobileLabelRow}>
+                  <span className={styles.settingsMobileFieldLabel}>Name</span>
+                  {mobileEditBtn(`Edit ${group.title} name`, { kind: 'about', key: group.nameKey })}
+                </div>
+                <div className={styles.settingsMobileValue}>
+                  {renderMobileValue(draft.about?.[group.nameKey], false)}
+                </div>
+              </div>
+              <div className={styles.settingsMobileLabeledRow}>
+                <div className={styles.settingsMobileLabelRow}>
+                  <span className={styles.settingsMobileFieldLabel}>Location</span>
+                  {mobileEditBtn(`Edit ${group.title} location`, { kind: 'about', key: group.locationKey })}
+                </div>
+                <div className={styles.settingsMobileValue}>
+                  {renderMobileValue(draft.about?.[group.locationKey], false)}
+                </div>
+              </div>
+              <div className={styles.settingsMobileLabeledRow}>
+                <div className={styles.settingsMobileLabelRow}>
+                  <span className={styles.settingsMobileFieldLabel}>Testimonial</span>
+                  {mobileEditBtn(`Edit ${group.title} testimonial`, { kind: 'about', key: group.textKey })}
+                </div>
+                <div className={styles.settingsMobileValue}>
+                  {renderMobileValue(draft.about?.[group.textKey], true)}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gap: 10 }}>
+              <div className={styles.settingsRowControlPair}>
+                <input
+                  type="text"
+                  value={draft.about?.[group.nameKey] ?? ''}
+                  onChange={(e) => handleChange('about', group.nameKey, e.target.value)}
+                  className={styles.settingsFieldInput}
+                  disabled={disabled}
+                  placeholder="Name"
+                  aria-label={`${group.title} name`}
+                />
+                <input
+                  type="text"
+                  value={draft.about?.[group.locationKey] ?? ''}
+                  onChange={(e) => handleChange('about', group.locationKey, e.target.value)}
+                  className={styles.settingsFieldInput}
+                  disabled={disabled}
+                  placeholder="Location"
+                  aria-label={`${group.title} location`}
+                />
+              </div>
+              <textarea
+                value={draft.about?.[group.textKey] ?? ''}
+                onChange={handleTextareaChange('about', group.textKey)}
+                rows={2}
+                readOnly={!isEditing}
+                className={`${styles.settingsFieldTextarea} ${styles.settingsFieldTextareaAbout}`}
+                placeholder={`Write ${group.title.toLowerCase()} testimonial`}
+              />
+            </div>
+          )}
+        </SettingsRow>
+      ))}
+
       <SettingsRow
-        key={key}
-        title={ABOUT_LABELS[key]}
-        description={ABOUT_HELP[key]}
-        titleEnd={isMobile ? mobileEditBtn(`Edit ${ABOUT_LABELS[key]}`, { kind: 'about', key }) : null}
+        title={ABOUT_LABELS.testimonialFeatured}
+        description={ABOUT_HELP.testimonialFeatured}
+        titleEnd={
+          isMobile
+            ? mobileEditBtn(`Edit ${ABOUT_LABELS.testimonialFeatured}`, {
+                kind: 'about',
+                key: 'testimonialFeatured',
+              })
+            : null
+        }
       >
         {isMobile ? (
-          <div className={styles.settingsMobileValue}>{renderMobileValue(draft.about?.[key], true)}</div>
+          <div className={styles.settingsMobileValue}>
+            {renderMobileValue(draft.about?.testimonialFeatured, true)}
+          </div>
         ) : (
           <textarea
-            value={draft.about?.[key] ?? ''}
-            onChange={handleTextareaChange('about', key)}
-            rows={1}
+            value={draft.about?.testimonialFeatured ?? ''}
+            onChange={handleTextareaChange('about', 'testimonialFeatured')}
+            rows={2}
             readOnly={!isEditing}
             className={`${styles.settingsFieldTextarea} ${styles.settingsFieldTextareaAbout}`}
-            placeholder={`Write your ${ABOUT_LABELS[key].toLowerCase()} copy here`}
+            placeholder="Write featured testimonial quote"
           />
         )}
       </SettingsRow>
-    ))
+    </>
+  )
 
   const modalMeta = (() => {
     if (!modal) return null
@@ -823,11 +986,13 @@ export function AdminSiteContentPanel({
     }
     if (modal.kind === 'footer') return FOOTER_FIELD_META[modal.field]
     if (modal.kind === 'about') {
+      const isSingleLine = modal.key.endsWith('Name') || modal.key.endsWith('Location')
       return {
         title: ABOUT_LABELS[modal.key],
         description: ABOUT_HELP[modal.key],
         placeholder: `Write your ${ABOUT_LABELS[modal.key].toLowerCase()} copy here`,
-        multiline: true,
+        multiline: !isSingleLine,
+        inputType: isSingleLine ? 'text' : undefined,
       }
     }
     return null

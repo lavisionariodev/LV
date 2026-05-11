@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo, useSyncExternalStore, useId } from 'react'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import styles from './cart.module.css'
@@ -35,24 +35,16 @@ export default function CartPage() {
     useCart()
   const { authLoading, isBuyer, user } = useAuth()
   const { data: siteContent } = useSiteContent()
-  const [mounted, setMounted] = useState(false)
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  )
+  const invoiceId = useId().replace(/:/g, '').slice(-8).toUpperCase()
   const [selected, setSelected] = useState(new Set())
   const [coupon, setCoupon] = useState('')
   const [couponApplied, setCouponApplied] = useState(false)
   const [qtyEdits, setQtyEdits] = useState({})
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  useEffect(() => {
-    const ids = new Set(cartItems.map((i) => i.id))
-    setSelected((prev) => {
-      const filtered = [...prev].filter((id) => ids.has(id))
-      if (filtered.length === prev.size && [...prev].every((id) => ids.has(id))) return prev
-      return new Set(filtered)
-    })
-  }, [cartItems])
 
   const rows = useMemo(
     () =>
@@ -65,9 +57,14 @@ export default function CartPage() {
       }),
     [cartItems],
   )
+  const rowIdSet = useMemo(() => new Set(rows.map((r) => r.id)), [rows])
+  const selectedVisible = useMemo(
+    () => new Set([...selected].filter((id) => rowIdSet.has(id))),
+    [selected, rowIdSet],
+  )
 
-  const allSelected = rows.length > 0 && rows.every((r) => selected.has(r.id))
-  const someSelected = selected.size > 0 && !allSelected
+  const allSelected = rows.length > 0 && rows.every((r) => selectedVisible.has(r.id))
+  const someSelected = selectedVisible.size > 0 && !allSelected
 
   const toggleAll = () => {
     if (allSelected) setSelected(new Set())
@@ -77,7 +74,8 @@ export default function CartPage() {
   const toggleItem = (id) => {
     setSelected((prev) => {
       const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
       return next
     })
   }
@@ -97,19 +95,21 @@ export default function CartPage() {
   }
 
   const removeSelected = async () => {
-    const ids = [...selected]
+    const ids = [...selectedVisible]
     for (const id of ids) {
       await cartRemoveItem(id)
     }
     setSelected(new Set())
   }
 
-  const activeRows = selected.size > 0 ? rows.filter((r) => selected.has(r.id)) : rows
+  const activeRows = selectedVisible.size > 0 ? rows.filter((r) => selectedVisible.has(r.id)) : rows
   const subtotal = activeRows.reduce((sum, r) => sum + r.subtotal, 0)
   const discount = couponApplied ? Math.round(subtotal * 0.1) : 0
   const total = subtotal - discount
   const checkoutHref =
-    selected.size > 0 ? `/checkout?items=${encodeURIComponent([...selected].join(","))}` : "/checkout"
+    selectedVisible.size > 0
+      ? `/checkout?items=${encodeURIComponent([...selectedVisible].join(","))}`
+      : "/checkout"
 
   const isEmpty = rows.length === 0
   const showCartLoading = !authLoading && isBuyer && user && cartLoading
@@ -117,20 +117,7 @@ export default function CartPage() {
   if (!mounted) return null
 
   if (authLoading || showCartLoading) {
-    return (
-      <section className={styles.cartPage}>
-        <header className={styles.hero}>
-          <div className={styles.heroInner}>
-            <h1 className={styles.heroTitle}>Your Cart</h1>
-          </div>
-        </header>
-        <div className={styles.content}>
-          <p style={{ fontFamily: 'Lato, sans-serif', color: 'rgba(16,40,32,0.55)', padding: '2rem 0' }}>
-            Loading your cart…
-          </p>
-        </div>
-      </section>
-    )
+    return <CartLoadingSkeleton />
   }
 
   return (
@@ -153,7 +140,7 @@ export default function CartPage() {
             <div className={styles.receiptMetaGrid}>
               <span className={styles.receiptMetaKey}>Invoice No.</span>
               <span className={styles.receiptMetaVal}>
-                {`INV-${Date.now().toString().slice(-8)}`}
+                {`INV-${invoiceId}`}
               </span>
               <span className={styles.receiptMetaKey}>Date</span>
               <span className={styles.receiptMetaVal}>
@@ -350,7 +337,7 @@ export default function CartPage() {
               {selected.size > 0 && (
                 <div className={styles.bulkBar}>
                   <span className={styles.bulkCount}>
-                    {selected.size} item{selected.size > 1 ? 's' : ''} selected
+                    {selectedVisible.size} item{selectedVisible.size > 1 ? 's' : ''} selected
                   </span>
                   <button type="button" className={styles.bulkDeleteBtn} onClick={removeSelected}>
                     <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -432,11 +419,11 @@ export default function CartPage() {
             {/* ── RIGHT: Totals ── */}
             <aside className={styles.totalsSection}>
               <h2 className={styles.totalsTitle}>
-                {selected.size > 0 ? 'Selected Totals' : 'Cart Totals'}
+                {selectedVisible.size > 0 ? 'Selected Totals' : 'Cart Totals'}
               </h2>
-              {selected.size > 0 && (
+              {selectedVisible.size > 0 && (
                 <p className={styles.totalsNote}>
-                  Showing totals for {selected.size} selected item{selected.size > 1 ? 's' : ''}
+                  Showing totals for {selectedVisible.size} selected item{selectedVisible.size > 1 ? 's' : ''}
                 </p>
               )}
 
@@ -479,8 +466,8 @@ export default function CartPage() {
                     <circle cx="7" cy="13.5" r="1" fill="currentColor" stroke="none" />
                     <circle cx="12" cy="13.5" r="1" fill="currentColor" stroke="none" />
                   </svg>
-                  {selected.size > 0
-                    ? `Book Now (${selected.size} item${selected.size > 1 ? 's' : ''})`
+                  {selectedVisible.size > 0
+                    ? `Book Now (${selectedVisible.size} item${selectedVisible.size > 1 ? 's' : ''})`
                     : 'Proceed to Checkout'}
                 </Link>
                 <Link
@@ -537,6 +524,95 @@ export default function CartPage() {
             </aside>
           </>
         )}
+      </div>
+    </section>
+  )
+}
+
+function CartLoadingSkeleton() {
+  return (
+    <section className={styles.cartPage} aria-busy="true" aria-label="Loading shopping cart">
+      <header className={styles.hero}>
+        <div className={styles.heroInner}>
+          <nav className={styles.breadcrumb} aria-hidden>
+            <span className={`${styles.skeletonBlock} ${styles.skBreadSm}`} />
+            <span className={styles.slash}>/</span>
+            <span className={`${styles.skeletonBlock} ${styles.skBreadMd}`} />
+            <span className={styles.slash}>/</span>
+            <span className={`${styles.skeletonBlock} ${styles.skBreadLg}`} />
+          </nav>
+          <div className={`${styles.skeletonBlock} ${styles.skHeroTitle}`} />
+        </div>
+      </header>
+
+      <div className={styles.content}>
+        <div className={styles.productsSection}>
+          <div className={styles.tableHeader} aria-hidden>
+            <span className={`${styles.skeletonBlock} ${styles.skCheckbox}`} />
+            <span className={`${styles.skeletonBlock} ${styles.skHeaderWide}`} />
+            <span className={`${styles.skeletonBlock} ${styles.skHeaderPrice}`} />
+            <span className={`${styles.skeletonBlock} ${styles.skHeaderQty}`} />
+            <span className={`${styles.skeletonBlock} ${styles.skHeaderSubtotal}`} />
+            <span className={`${styles.skeletonBlock} ${styles.skHeaderAction}`} />
+          </div>
+
+          {Array.from({ length: 3 }).map((_, idx) => (
+            <div key={idx} className={styles.itemRow} aria-hidden>
+              <div className={styles.itemCheck}>
+                <span className={`${styles.skeletonBlock} ${styles.skCheckbox}`} />
+              </div>
+              <div className={styles.itemProduct}>
+                <div className={styles.thumbWrap}>
+                  <div className={`${styles.thumb} ${styles.skeletonBlock} ${styles.skThumb}`} />
+                </div>
+                <div className={styles.productInfo}>
+                  <div className={`${styles.skeletonBlock} ${styles.skProductTitle}`} />
+                  <div className={`${styles.skeletonBlock} ${styles.skProductLine}`} />
+                  <div className={`${styles.skeletonBlock} ${styles.skProductLineShort}`} />
+                </div>
+              </div>
+              <div className={styles.itemPrice}>
+                <span className={`${styles.skeletonBlock} ${styles.skHeaderPrice}`} />
+              </div>
+              <div className={styles.itemQty}>
+                <span className={`${styles.skeletonBlock} ${styles.skQtyControl}`} />
+              </div>
+              <div className={styles.itemSubtotal}>
+                <span className={`${styles.skeletonBlock} ${styles.skHeaderSubtotal}`} />
+              </div>
+              <div className={styles.itemRemove}>
+                <span className={`${styles.skeletonBlock} ${styles.skRemoveBtn}`} />
+              </div>
+            </div>
+          ))}
+
+          <div className={styles.updateWrap} aria-hidden>
+            <div className={`${styles.skeletonBlock} ${styles.skUpdateBtn}`} />
+          </div>
+          <div className={styles.couponSection} aria-hidden>
+            <div className={`${styles.skeletonBlock} ${styles.skCouponInput}`} />
+            <div className={`${styles.skeletonBlock} ${styles.skCouponBtn}`} />
+          </div>
+        </div>
+
+        <aside className={styles.totalsSection} aria-hidden>
+          <div className={`${styles.skeletonBlock} ${styles.skTotalsTitle}`} />
+          <table className={styles.totalsTable}>
+            <tbody>
+              {[0, 1, 2].map((i) => (
+                <tr key={i}>
+                  <th><span className={`${styles.skeletonBlock} ${styles.skTotalsLabel}`} /></th>
+                  <td><span className={`${styles.skeletonBlock} ${styles.skTotalsValue}`} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className={styles.actions}>
+            <div className={`${styles.skeletonBlock} ${styles.skActionBtnSm}`} />
+            <div className={`${styles.skeletonBlock} ${styles.skActionBtnLg}`} />
+            <div className={`${styles.skeletonBlock} ${styles.skActionBtnSm}`} />
+          </div>
+        </aside>
       </div>
     </section>
   )

@@ -103,8 +103,16 @@ const AVATARS_BUCKET = 'avatars'
 const MAX_MB = 2
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp']
 
+/** Path in `avatars` bucket from a public object URL. */
+function pathFromAvatarsPublicUrl(url) {
+  if (!url || typeof url !== 'string') return null
+  const match = url.split('/avatars/')[1]
+  return match ? match.split('?')[0] : null
+}
+
 export default function SellerSettingsClient() {
   const fileRef = useRef(null)
+  const coverFileRef = useRef(null)
   const avatarPreviewRef = useRef('')
 
   const [loading, setLoading] = useState(true)
@@ -132,6 +140,7 @@ export default function SellerSettingsClient() {
   const [isEditingShop, setIsEditingShop] = useState(false)
   const [shopSaving, setShopSaving] = useState(false)
   const [shopError, setShopError] = useState('')
+  const [coverLoading, setCoverLoading] = useState(false)
   const [settingsTab, setSettingsTab] = useState('profile')
 
   useEffect(() => {
@@ -240,10 +249,94 @@ export default function SellerSettingsClient() {
 
   const onCancelShopEdit = () => {
     setShopError('')
+    if (coverFileRef.current) coverFileRef.current.value = ''
     if (profile) {
       setShopForm(mapSellerToShopForm(seller, profile, sessionEmail))
     }
     setIsEditingShop(false)
+  }
+
+  const onPickShopCover = async (e) => {
+    setShopError('')
+    const file = e.target.files?.[0]
+    if (!file) return
+    const imgErr = validateImage(file)
+    if (imgErr) {
+      setShopError(imgErr)
+      return
+    }
+    if (!canEditShop) return
+    try {
+      const { data: auth } = await supabase.auth.getUser()
+      const user = auth?.user
+      if (!user?.id) {
+        setShopError('You must be signed in to update your shop cover.')
+        return
+      }
+      setCoverLoading(true)
+      const fileExt = file.name.split('.').pop()
+      const fileName = `cover-${Date.now()}.${fileExt}`
+      const filePath = `${user.id}/${fileName}`
+      const prevPath = seller?.cover_photo_url
+        ? pathFromAvatarsPublicUrl(String(seller.cover_photo_url))
+        : null
+      const { error: uploadError } = await supabase.storage
+        .from(AVATARS_BUCKET)
+        .upload(filePath, file, { upsert: true, cacheControl: '3600' })
+      if (uploadError) throw uploadError
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from(AVATARS_BUCKET).getPublicUrl(filePath)
+      const { error: updateError } = await supabase
+        .from('sellers')
+        .update({ cover_photo_url: publicUrl, updated_at: new Date().toISOString() })
+        .eq('user_id', user.id)
+      if (updateError) {
+        await supabase.storage.from(AVATARS_BUCKET).remove([filePath])
+        throw updateError
+      }
+      if (prevPath && prevPath !== filePath) {
+        await supabase.storage.from(AVATARS_BUCKET).remove([prevPath])
+      }
+      const refreshed = await getSellerByUserId(user.id)
+      setSeller(refreshed)
+      setToast({ id: Date.now(), type: 'success', message: 'Shop cover photo updated.' })
+    } catch (err) {
+      setShopError(err.message || 'Failed to upload shop cover.')
+    } finally {
+      setCoverLoading(false)
+      if (coverFileRef.current) coverFileRef.current.value = ''
+    }
+  }
+
+  const onRemoveShopCover = async () => {
+    setShopError('')
+    if (!seller?.cover_photo_url || !canEditShop) return
+    try {
+      const { data: auth } = await supabase.auth.getUser()
+      const user = auth?.user
+      if (!user?.id) {
+        setShopError('You must be signed in to remove your shop cover.')
+        return
+      }
+      setCoverLoading(true)
+      const prevPath = pathFromAvatarsPublicUrl(String(seller.cover_photo_url))
+      const { error: updateError } = await supabase
+        .from('sellers')
+        .update({ cover_photo_url: null, updated_at: new Date().toISOString() })
+        .eq('user_id', user.id)
+      if (updateError) throw updateError
+      if (prevPath) {
+        await supabase.storage.from(AVATARS_BUCKET).remove([prevPath])
+      }
+      const refreshed = await getSellerByUserId(user.id)
+      setSeller(refreshed)
+      setToast({ id: Date.now(), type: 'success', message: 'Shop cover photo removed.' })
+    } catch (err) {
+      setShopError(err.message || 'Failed to remove shop cover.')
+    } finally {
+      setCoverLoading(false)
+    }
   }
 
   const onClickEditSaveShop = async () => {
@@ -782,6 +875,57 @@ export default function SellerSettingsClient() {
                 <p className={styles.shopHelper}>
                   Helps buyers see where you operate; displayed as your storefront location where applicable.
                 </p>
+              </div>
+              <div className={`${styles.field} ${styles.shopFieldFull}`}>
+                <span className={styles.label}>Shop cover photo</span>
+                <p className={styles.shopHelper}>
+                  Wide image used on the homepage partner carousel and similar surfaces. PNG, JPG, or WEBP;
+                  max {MAX_MB}MB. Same storage rules as your profile avatar.
+                </p>
+                {seller?.cover_photo_url ? (
+                  <div style={{ marginTop: 10, marginBottom: 10, maxWidth: 480 }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={seller.cover_photo_url}
+                      alt="Shop cover preview"
+                      style={{ width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: 8 }}
+                    />
+                  </div>
+                ) : (
+                  <p className={styles.shopHelper} style={{ marginTop: 8 }}>
+                    No cover image yet — upload one so your business can stand out on the homepage.
+                  </p>
+                )}
+                <input
+                  ref={coverFileRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className={styles.fileInput}
+                  onChange={onPickShopCover}
+                  aria-label="Upload shop cover photo"
+                />
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 8 }}>
+                  <button
+                    type="button"
+                    className={styles.avatarButton}
+                    disabled={!isEditingShop || !canEditShop || coverLoading}
+                    onClick={() => coverFileRef.current?.click()}
+                  >
+                    <FaUpload aria-hidden />
+                    {seller?.cover_photo_url ? 'Replace cover' : 'Upload cover'}
+                  </button>
+                  {seller?.cover_photo_url ? (
+                    <button
+                      type="button"
+                      className={styles.avatarButton}
+                      disabled={!isEditingShop || !canEditShop || coverLoading}
+                      onClick={onRemoveShopCover}
+                    >
+                      <TbTrash aria-hidden />
+                      Remove cover
+                    </button>
+                  ) : null}
+                </div>
               </div>
               <div className={`${styles.field} ${styles.shopFieldFull}`}>
                 <label htmlFor={shopId('info')} className={styles.label}>

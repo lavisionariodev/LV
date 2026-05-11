@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useMemo, useState, useEffect } from 'react'
-import { PROVIDERS, SERVICES } from '@/data/shopSampleData'
 import {
   fetchActiveShopListings,
   getListingProviderLogoUrl,
@@ -14,9 +13,200 @@ import { formatPhpAmount } from '@/lib/cart/formatPhp'
 import shopStyles from '../shop.module.css'
 import styles from './compare.module.css'
 
+const COMPARE_SKELETON_ROW_LABELS = [
+  'Starting Price',
+  'Provider Rating',
+  'Location',
+  'Inclusions',
+  'Availability',
+]
+
+/** Normalized 0–1 for best-value score; unrated listings get a fixed discount vs rated. */
+function compareRatingNormForValue(rating) {
+  if (typeof rating !== 'number' || Number.isNaN(rating) || rating <= 0) return 0.5
+  return Math.min(5, Math.max(0, rating)) / 5
+}
+
+function compareListingIdsWithLowestPrice(rows) {
+  if (rows.length < 2) return []
+  const prices = rows.map((x) => Number(x.listing.price))
+  if (prices.some((p) => Number.isNaN(p))) return []
+  const min = Math.min(...prices)
+  const atMin = rows.filter((_, i) => prices[i] === min)
+  // No tag when multiple listings tie for lowest — equal prices are not a unique "lowest"
+  if (atMin.length !== 1) return []
+  return [atMin[0].listing.id]
+}
+
+function compareListingIdsWithHighestRating(rows) {
+  if (rows.length < 2) return []
+  const ratings = rows.map((x) => {
+    const r = x.provider?.rating
+    return typeof r === 'number' && !Number.isNaN(r) && r > 0 ? r : null
+  })
+  if (!ratings.some((r) => r !== null)) return []
+  const max = Math.max(...ratings.filter((r) => r !== null))
+  return rows.filter((_, i) => ratings[i] === max).map((x) => x.listing.id)
+}
+
+function compareListingIdsBestValue(rows) {
+  if (rows.length < 2) return []
+  const scores = rows.map((x) => {
+    const price = Math.max(Number(x.listing.price) || 0, 1)
+    const incCount = Array.isArray(x.listing.inclusions) ? x.listing.inclusions.length : 0
+    const mult = compareRatingNormForValue(x.provider?.rating)
+    return { id: x.listing.id, score: (incCount / price) * mult }
+  })
+  const max = Math.max(...scores.map((s) => s.score))
+  const eps = 1e-9
+  return scores.filter((s) => s.score >= max - eps).map((s) => s.id)
+}
+
+function formatCompareHighlightNames(rows, ids) {
+  if (!ids.length) return ''
+  const names = ids
+    .map((id) => rows.find((x) => x.listing.id === id)?.listing.name)
+    .filter(Boolean)
+  if (names.length === 1) return names[0]
+  if (names.length === 2) return `${names[0]} & ${names[1]}`
+  return `${names.length} services tied`
+}
+
+/**
+ * Skeleton layout mirroring header → highlights strip → comparison table.
+ */
+function ComparePageLoading({ columnCount }) {
+  const cols = Math.min(Math.max(columnCount, 2), 3)
+  return (
+    <section
+      className={styles.page}
+      aria-busy="true"
+      aria-describedby="compare-page-loading-hint"
+    >
+      <div className={styles.content}>
+        <p id="compare-page-loading-hint" role="status" className={shopStyles.visuallyHidden}>
+          Loading comparison. Highlight summaries and a side-by-side table for your selected
+          services will appear shortly.
+        </p>
+
+        <header className={styles.header} aria-hidden="true">
+          <div className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonHeaderLine}`} />
+          <div className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonSubtitle}`} />
+        </header>
+
+        <div className={styles.compareHighlightsSkeleton} aria-hidden="true">
+          {[0, 1, 2].map((i) => (
+            <div key={i}>
+              <div
+                className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonHighlightLine1}`}
+              />
+              <div
+                className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonHighlightLine2}`}
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className={styles.tableWrapper}>
+          <div className={styles.scrollHint}>
+            <span className={styles.scrollHintInner}>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                style={{ display: 'inline', verticalAlign: 'middle', marginRight: 5 }}
+              >
+                <path
+                  d="M3 8h10M9 4l4 4-4 4"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              Slide to compare
+            </span>
+          </div>
+          <div className={styles.tableCard}>
+            <div className={shopStyles.compareTableWrap}>
+              <table className={shopStyles.compareTable}>
+                <thead>
+                  <tr>
+                    <th className={shopStyles.compareTableLabel} />
+                    {Array.from({ length: cols }, (_, i) => (
+                      <th key={i} className={shopStyles.compareTableHead}>
+                        <div className={shopStyles.compareColHeader}>
+                          <div
+                            className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonThAvatar}`}
+                          />
+                          <div
+                            className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonThTitle}`}
+                          />
+                          <div
+                            className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonThSub}`}
+                          />
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {COMPARE_SKELETON_ROW_LABELS.map((label) => (
+                    <tr key={label} className={shopStyles.compareRow}>
+                      <td className={shopStyles.compareRowLabel}>{label}</td>
+                      {Array.from({ length: cols }, (_, i) => (
+                        <td key={i} className={shopStyles.compareRowCell}>
+                          {label === 'Inclusions' ? (
+                            <div className={shopStyles.compareSkeletonInclusionStack}>
+                              <div
+                                className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonCellWide}`}
+                              />
+                              <div
+                                className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonCellWide}`}
+                              />
+                              <div
+                                className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonCell}`}
+                              />
+                            </div>
+                          ) : (
+                            <div
+                              className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonCell}`}
+                            />
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                  <tr className={shopStyles.compareRowActions}>
+                    <td className={shopStyles.compareRowLabel} />
+                    {Array.from({ length: cols }, (_, i) => (
+                      <td key={i} className={shopStyles.compareRowCell}>
+                        <div
+                          className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonCtaBar}`}
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <footer className={styles.footer} aria-hidden="true">
+          <div className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonFooterBtn}`} />
+          <div className={`${shopStyles.shopSkeletonBlock} ${shopStyles.compareSkeletonFooterBtnPrimary}`} />
+        </footer>
+      </div>
+    </section>
+  )
+}
+
 export default function ComparePage() {
   const searchParams = useSearchParams()
-  const [catalog, setCatalog] = useState(() => mergeShopListings([]))
+  const [catalog, setCatalog] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -40,38 +230,35 @@ export default function ComparePage() {
   }, [idsParam])
 
   const compareListings = useMemo(() => {
+    if (!catalog) return []
     return compareIds
       .map((id) => {
         const listing = catalog.find((l) => String(l.id) === String(id))
-        const provider = listing
-          ? (listing.provider ?? PROVIDERS.find((p) => String(p.id) === String(listing.providerId)))
-          : null
-        const service = SERVICES.find((s) => s.id === listing?.serviceId)
-        return { listing, provider, service }
+        const provider = listing?.provider ?? null
+        return { listing, provider }
       })
       .filter((x) => x.listing)
   }, [compareIds, catalog])
 
-  const lowestPriceId = useMemo(() => {
-    if (compareListings.length < 2) return null
-    return compareListings.reduce((a, b) => (a.listing.price <= b.listing.price ? a : b)).listing?.id
-  }, [compareListings])
+  const catalogLoading = catalog === null
+  const compareSkeletonColumns = Math.min(Math.max(compareIds.length, 2), 3)
 
-  const highestRatedId = useMemo(() => {
-    if (compareListings.length < 2) return null
-    return compareListings.reduce((a, b) => ((a.provider?.rating ?? 0) >= (b.provider?.rating ?? 0) ? a : b)).listing?.id
-  }, [compareListings])
+  const lowestPriceIds = useMemo(
+    () => compareListingIdsWithLowestPrice(compareListings),
+    [compareListings]
+  )
+  const highestRatedIds = useMemo(
+    () => compareListingIdsWithHighestRating(compareListings),
+    [compareListings]
+  )
+  const bestValueIds = useMemo(
+    () => compareListingIdsBestValue(compareListings),
+    [compareListings]
+  )
 
-  const bestValueId = useMemo(() => {
-    if (compareListings.length < 2) return null
-    return compareListings
-      .reduce((a, b) => {
-        const aScore = (a.listing.inclusions.length / a.listing.price) * (a.provider?.rating ?? 1)
-        const bScore = (b.listing.inclusions.length / b.listing.price) * (b.provider?.rating ?? 1)
-        return aScore >= bScore ? a : b
-      })
-      .listing?.id
-  }, [compareListings])
+  if (catalogLoading && compareIds.length >= 2) {
+    return <ComparePageLoading columnCount={compareSkeletonColumns} />
+  }
 
   if (compareListings.length < 2) {
     return (
@@ -107,27 +294,27 @@ export default function ComparePage() {
 
         {/* ── Highlights strip ── */}
         <div className={styles.compareHighlights}>
-          {lowestPriceId && (
+          {lowestPriceIds.length > 0 && (
             <div className={shopStyles.compareHighlight}>
               <p className={shopStyles.highlightLabel}>Lowest Price</p>
               <p className={shopStyles.highlightValue}>
-                {compareListings.find((x) => x.listing.id === lowestPriceId)?.listing.name}
+                {formatCompareHighlightNames(compareListings, lowestPriceIds)}
               </p>
             </div>
           )}
-          {highestRatedId && (
+          {highestRatedIds.length > 0 && (
             <div className={shopStyles.compareHighlight}>
               <p className={shopStyles.highlightLabel}>Highest Rated</p>
               <p className={shopStyles.highlightValue}>
-                {compareListings.find((x) => x.listing.id === highestRatedId)?.listing.name}
+                {formatCompareHighlightNames(compareListings, highestRatedIds)}
               </p>
             </div>
           )}
-          {bestValueId && (
+          {bestValueIds.length > 0 && (
             <div className={shopStyles.compareHighlight}>
               <p className={shopStyles.highlightLabel}>Best Value</p>
               <p className={shopStyles.highlightValue}>
-                {compareListings.find((x) => x.listing.id === bestValueId)?.listing.name}
+                {formatCompareHighlightNames(compareListings, bestValueIds)}
               </p>
             </div>
           )}
@@ -170,7 +357,7 @@ export default function ComparePage() {
                         </div>
                         <p className={shopStyles.compareColName}>{listing.name}</p>
                         <p className={shopStyles.compareColProvider}>{provider?.name}</p>
-                        {listing.id === bestValueId && (
+                        {bestValueIds.includes(listing.id) && (
                           <span className={shopStyles.compareColBestBadge}>Best Value</span>
                         )}
                       </div>
@@ -188,13 +375,13 @@ export default function ComparePage() {
                     <td
                       key={listing.id}
                       className={`${shopStyles.compareRowCell}${
-                        listing.id === lowestPriceId ? ` ${shopStyles.compareCellHighlight}` : ''
+                        lowestPriceIds.includes(listing.id) ? ` ${shopStyles.compareCellHighlight}` : ''
                       }`}
                     >
                       <span className={shopStyles.comparePriceVal}>
                         {formatPhpAmount(listing.price)}
                       </span>
-                      {listing.id === lowestPriceId && (
+                      {lowestPriceIds.includes(listing.id) && (
                         <span className={shopStyles.compareCellTag}>Lowest</span>
                       )}
                     </td>
@@ -208,7 +395,7 @@ export default function ComparePage() {
                     <td
                       key={listing.id}
                       className={`${shopStyles.compareRowCell}${
-                        listing.id === highestRatedId ? ` ${shopStyles.compareCellHighlight}` : ''
+                        highestRatedIds.includes(listing.id) ? ` ${shopStyles.compareCellHighlight}` : ''
                       }`}
                     >
                       <div className={shopStyles.compareRating}>
@@ -218,7 +405,7 @@ export default function ComparePage() {
                           ({provider?.reviews} reviews)
                         </span>
                       </div>
-                      {listing.id === highestRatedId && (
+                      {highestRatedIds.includes(listing.id) && (
                         <span className={shopStyles.compareCellTag}>Top Rated</span>
                       )}
                     </td>

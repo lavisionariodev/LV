@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { TbChartLine } from 'react-icons/tb'
 import {
   AreaChart,
@@ -14,89 +15,102 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import styles from '../analytics.module.css'
+import { useSellerAnalyticsData } from '@/lib/seller/useSellerAnalyticsData'
+import {
+  averagePaidBookingValue,
+  packageBookingCountsLastNMonths,
+  paidOrdersLast30Days,
+  paidRevenueByLastNDays,
+  paidRevenueLast7DaysTotal,
+  paidRevenuePrevious7DaysTotal,
+  percentChange,
+  revenueByLineItemTopN,
+  monthlyRevenueBarsLastNMonths,
+  topPackageThisMonth,
+} from '@/lib/seller/sellerOrderAnalytics'
 
 const SELLER_BAR_COLORS = ['#1F312B', '#2D4A38', '#3D683A', '#4A7C47']
 const SELLER_CHART_ACCENT = '#1F312B'
 
 function formatShortDate(dateStr) {
-  const d = new Date(dateStr)
+  const d = new Date(dateStr + 'T12:00:00')
+  if (Number.isNaN(d.getTime())) return dateStr
   return `${d.getMonth() + 1}/${d.getDate()}`
 }
 
+function formatPhp(n) {
+  return new Intl.NumberFormat('en-PH', {
+    style: 'currency',
+    currency: 'PHP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(n)
+}
+
 export default function SellerAnalyticsSalesOverviewPage() {
-  const revenueByDay = [
-    { date: '2026-02-18', total: 42000 },
-    { date: '2026-02-19', total: 46000 },
-    { date: '2026-02-20', total: 38000 },
-    { date: '2026-02-21', total: 52000 },
-    { date: '2026-02-22', total: 61000 },
-    { date: '2026-02-23', total: 58000 },
-    { date: '2026-02-24', total: 64000 },
-  ]
+  const { orders, loading, error } = useSellerAnalyticsData()
 
-  const revenueByCategory = [
-    { name: 'Memorial Packages', value: 160000 },
-    { name: 'Flowers & Add-ons', value: 58000 },
-    { name: 'Transport & Logistics', value: 32000 },
-    { name: 'Documentation', value: 18000 },
-  ]
-  const monthlyRevenue = [
-    { label: 'Oct', value: '68%', amount: 118000 },
-    { label: 'Nov', value: '74%', amount: 126000 },
-    { label: 'Dec', value: '82%', amount: 138000 },
-    { label: 'Jan', value: '100%', amount: 168000 },
-    { label: 'Feb', value: '76%', amount: 128000 },
-    { label: 'Mar', value: '84%', amount: 142000 },
-  ]
-
-  const packageBookings = [
-    { label: 'Traditional full', confirmed: 18, pending: 6 },
-    { label: 'Cremation', confirmed: 12, pending: 6 },
-    { label: 'Simple wake', confirmed: 10, pending: 5 },
-    { label: 'Memorial only', confirmed: 5, pending: 3 },
-    { label: 'Transport add-on', confirmed: 7, pending: 2 },
-    { label: 'Documentation', confirmed: 6, pending: 1 },
-  ]
+  const revenueByDay = useMemo(() => paidRevenueByLastNDays(orders, 7), [orders])
+  const revenueByCategory = useMemo(() => revenueByLineItemTopN(orders, 7, 4), [orders])
+  const monthlyRevenue = useMemo(() => monthlyRevenueBarsLastNMonths(orders, 6), [orders])
+  const packageBookings = useMemo(() => packageBookingCountsLastNMonths(orders, 6), [orders])
 
   const packageTotals = packageBookings.map((pkg) => pkg.confirmed + pkg.pending)
   const packageMaxTotal = Math.max(...packageTotals, 1)
 
+  const rev7 = paidRevenueLast7DaysTotal(orders)
+  const rev7prev = paidRevenuePrevious7DaysTotal(orders)
+  const revDelta = percentChange(rev7, rev7prev)
+
+  const paid30 = paidOrdersLast30Days(orders)
+
+  const topPkg = topPackageThisMonth(orders)
+
   return (
     <div className={styles.pageWrap}>
+      {error ? <p className={styles.pageError}>{error}</p> : null}
+      {loading ? <p className={styles.pageLoading}>Loading analytics…</p> : null}
+
       <section aria-label="Sales summary" className={styles.summaryStrip}>
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftGreen}`}>
           <p className={styles.summaryLabel}>Revenue (7 days)</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>₱320k</p>
-            <span className={`${styles.summaryDelta} ${styles.summaryDeltaPositive}`}>
-              +12%
+            <p className={styles.summaryValue}>{formatPhp(rev7)}</p>
+            <span
+              className={`${styles.summaryDelta} ${
+                revDelta.up ? styles.summaryDeltaPositive : styles.summaryDeltaNegative
+              }`}
+            >
+              {revDelta.text}
             </span>
           </div>
-          <p className={styles.summaryHint}>Confirmed revenue</p>
+          <p className={styles.summaryHint}>Paid orders only · vs prior 7 days</p>
         </article>
 
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftBlue}`}>
           <p className={styles.summaryLabel}>Average booking value</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>₱26,800</p>
+            <p className={styles.summaryValue}>{formatPhp(averagePaidBookingValue(orders))}</p>
           </div>
-          <p className={styles.summaryHint}>Per service</p>
+          <p className={styles.summaryHint}>All paid orders</p>
         </article>
 
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftIndigo}`}>
-          <p className={styles.summaryLabel}>Transactions</p>
+          <p className={styles.summaryLabel}>Paid transactions</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>32</p>
+            <p className={styles.summaryValue}>{paid30.length}</p>
           </div>
-          <p className={styles.summaryHint}>Last 7 days</p>
+          <p className={styles.summaryHint}>Last 30 days</p>
         </article>
 
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftAmber}`}>
           <p className={styles.summaryLabel}>Top package</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>Traditional Full Service</p>
+            <p className={styles.summaryValue}>{topPkg.name}</p>
           </div>
-          <p className={styles.summaryHint}>Most booked (30 days)</p>
+          <p className={styles.summaryHint}>
+            {topPkg.count > 0 ? `${topPkg.count} booking(s) this month` : 'No bookings this month'}
+          </p>
         </article>
       </section>
 
@@ -104,8 +118,8 @@ export default function SellerAnalyticsSalesOverviewPage() {
         <article className={styles.chartCard}>
           <div className={styles.chartHeader}>
             <div className={styles.chartTitleGroup}>
-              <h2 className={styles.chartTitle}>Revenue overview (sample data)</h2>
-              <p className={styles.chartSubtitle}>Last 7 days</p>
+              <h2 className={styles.chartTitle}>Revenue overview</h2>
+              <p className={styles.chartSubtitle}>Last 7 days · paid orders</p>
             </div>
             <span className={styles.chartBadge}>
               <TbChartLine size={13} style={{ marginRight: 4 }} aria-hidden />
@@ -115,10 +129,7 @@ export default function SellerAnalyticsSalesOverviewPage() {
 
           <div className={styles.chartBody}>
             <ResponsiveContainer width="100%" height={220}>
-              <AreaChart
-                data={revenueByDay}
-                margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
-              >
+              <AreaChart data={revenueByDay} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="revenueGradientSeller" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor={SELLER_CHART_ACCENT} stopOpacity={0.35} />
@@ -156,8 +167,8 @@ export default function SellerAnalyticsSalesOverviewPage() {
         <article className={styles.chartCard}>
           <div className={styles.chartHeader}>
             <div className={styles.chartTitleGroup}>
-              <h2 className={styles.chartTitle}>Revenue by category</h2>
-              <p className={styles.chartSubtitle}>Same 7‑day period</p>
+              <h2 className={styles.chartTitle}>Revenue by line item</h2>
+              <p className={styles.chartSubtitle}>Same 7‑day period · paid orders</p>
             </div>
           </div>
 
@@ -187,15 +198,12 @@ export default function SellerAnalyticsSalesOverviewPage() {
                   formatter={(value) => [`₱ ${Number(value).toLocaleString()}`, 'Revenue']}
                   contentStyle={{ fontSize: 12, borderRadius: 8 }}
                 />
-                <Bar
-                  dataKey="value"
-                  radius={[0, 4, 4, 0]}
-                  maxBarSize={24}
-                  label={false}
-                >
-                  {revenueByCategory.map((_, index) => (
-                    // eslint-disable-next-line react/no-array-index-key
-                    <Cell key={index} fill={SELLER_BAR_COLORS[index % SELLER_BAR_COLORS.length]} />
+                <Bar dataKey="value" radius={[0, 4, 4, 0]} maxBarSize={24} label={false}>
+                  {revenueByCategory.map((row, index) => (
+                    <Cell
+                      key={`${row.name}-${index}`}
+                      fill={SELLER_BAR_COLORS[index % SELLER_BAR_COLORS.length]}
+                    />
                   ))}
                 </Bar>
               </BarChart>
@@ -209,20 +217,21 @@ export default function SellerAnalyticsSalesOverviewPage() {
           <div className={styles.chartHeader}>
             <div className={styles.chartTitleGroup}>
               <h2 className={styles.chartTitle}>Revenue by month</h2>
-              <p className={styles.chartSubtitle}>Last 6 months</p>
+              <p className={styles.chartSubtitle}>Last 6 months · paid orders</p>
             </div>
           </div>
 
           <div className={styles.chartBody}>
             <div className={styles.chartWithYAxis}>
               <div className={styles.chartYAxisLabels} aria-hidden>
-                <span>₱180k</span>
-                <span>₱150k</span>
-                <span>₱120k</span>
-                <span>₱90k</span>
-                <span>₱60k</span>
-                <span>₱30k</span>
-                <span>₱0</span>
+                {(() => {
+                  const maxAmt = Math.max(...monthlyRevenue.map((m) => m.amount), 1)
+                  return [1, 0.75, 0.5, 0.25, 0].map((step) => {
+                    const v = maxAmt * step
+                    const label = v >= 1000 ? `₱${(v / 1000).toFixed(0)}k` : `₱${Math.round(v)}`
+                    return <span key={step}>{label}</span>
+                  })
+                })()}
               </div>
 
               <div>
@@ -230,10 +239,7 @@ export default function SellerAnalyticsSalesOverviewPage() {
                   {monthlyRevenue.map((month) => (
                     <div key={month.label} className={styles.barGroup}>
                       <div className={styles.barOuter}>
-                        <div
-                          className={styles.barInnerPrimary}
-                          style={{ height: month.value }}
-                        />
+                        <div className={styles.barInnerPrimary} style={{ height: month.value }} />
                       </div>
                       <span className={styles.barLabel}>{month.label}</span>
                     </div>
@@ -248,7 +254,7 @@ export default function SellerAnalyticsSalesOverviewPage() {
           <div className={styles.chartHeader}>
             <div className={styles.chartTitleGroup}>
               <h2 className={styles.chartTitle}>Bookings by package</h2>
-              <p className={styles.chartSubtitle}>Last 6 months – confirmed and pending bookings</p>
+              <p className={styles.chartSubtitle}>Last 6 months · confirmed and pending bookings</p>
             </div>
             <button type="button" className={styles.chartActionButton}>
               <span className={styles.chartActionButtonIcon} aria-hidden>
@@ -261,11 +267,10 @@ export default function SellerAnalyticsSalesOverviewPage() {
           <div className={styles.chartBody}>
             <div className={styles.chartWithYAxis}>
               <div className={styles.chartYAxisLabels} aria-hidden>
-                <span>30</span>
-                <span>24</span>
-                <span>18</span>
-                <span>12</span>
-                <span>6</span>
+                <span>{packageMaxTotal}</span>
+                <span>{Math.round(packageMaxTotal * 0.75)}</span>
+                <span>{Math.round(packageMaxTotal * 0.5)}</span>
+                <span>{Math.round(packageMaxTotal * 0.25)}</span>
                 <span>0</span>
               </div>
 

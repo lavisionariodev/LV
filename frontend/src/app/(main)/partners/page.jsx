@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import { fetchActivePartnersDirectory } from '@/lib/partners/client'
+import { fetchActivePartnersDirectory, fetchPartnersSpotlight } from '@/lib/partners/client'
 import styles from './partners.module.css'
 
 export default function PartnershipsPage() {
@@ -37,32 +37,50 @@ function PartnerHeroSection() {
   )
 }
 
-/* ---------------- FEATURED PARTNERS ---------------- */
+/**
+ * Spotlight: all Top rated matches (tie rules), then admin-featured sellers who are
+ * not already shown as Top rated (no duplicate cards for the same seller).
+ */
 function FeaturedPartnersSection() {
-  const featured = [
-    {
-      name: 'Serenity Memorial Services',
-      tagline: 'Complete Care. Every Step.',
-      description:
-        'Providing complete funeral arrangements with compassion and care. Trusted by thousands of families across Metro Manila for over 18 years.',
-      specialty: 'Full Funeral Arrangements',
-      yearsActive: '18 years in service',
-      rating: '4.9',
-      badge: 'Top Rated',
-      image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=200&h=200&fit=crop&auto=format',
-    },
-    {
-      name: 'Eternal Peace Chapels',
-      tagline: 'Spaces of Quiet & Dignity',
-      description:
-        'Modern chapel spaces designed for peaceful and respectful services. Facilities available 24/7 with full amenity support for families.',
-      specialty: 'Chapel & Wake Facilities',
-      yearsActive: '12 years in service',
-      rating: '4.8',
-      badge: 'Featured',
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&auto=format',
-    },
-  ]
+  const [spotlight, setSpotlight] = useState({ featured: [], topRated: [] })
+  const [loadState, setLoadState] = useState('idle')
+  const [loadErrorDetail, setLoadErrorDetail] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    setLoadState('loading')
+    setLoadErrorDetail(null)
+    fetchPartnersSpotlight()
+      .then((data) => {
+        if (cancelled) return
+        setSpotlight(data)
+        setLoadState('ready')
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          const msg =
+            typeof err?.message === 'string' ? err.message : 'Failed to load spotlight.'
+          setSpotlight({ featured: [], topRated: [] })
+          setLoadErrorDetail(msg)
+          setLoadState('error')
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const cards = useMemo(() => {
+    const top = (spotlight.topRated || []).map((p) => ({ ...p, badge: 'Top Rated' }))
+    const topIds = new Set(top.map((p) => p.sellerUserId))
+    const feat = (spotlight.featured || [])
+      .filter((p) => p.sellerUserId && !topIds.has(p.sellerUserId))
+      .map((p) => ({ ...p, badge: 'Featured' }))
+    return [...top, ...feat]
+  }, [spotlight])
+
+  const showEmpty =
+    loadState === 'ready' && cards.length === 0
 
   return (
     <section className={styles.featuredSection}>
@@ -75,31 +93,89 @@ function FeaturedPartnersSection() {
           </p>
         </div>
 
-        <div className={styles.featuredGrid}>
-          {featured.map((partner, i) => (
-            <div key={i} className={styles.featuredCard}>
-              <div className={styles.featuredBadge}>{partner.badge}</div>
-              <div className={styles.featuredImageWrap}>
-                <img
-                  src={partner.image}
-                  alt={partner.name}
-                  className={styles.featuredCircleImage}
-                />
-              </div>
-              <div className={styles.featuredBody}>
-                <span className={styles.featuredSpecialty}>{partner.specialty}</span>
-                <h3 className={styles.featuredName}>{partner.name}</h3>
-                <p className={styles.featuredTagline}>{partner.tagline}</p>
-                <p className={styles.featuredDesc}>{partner.description}</p>
-                <div className={styles.featuredMeta}>
-                  <span className={styles.featuredYears}>{partner.yearsActive}</span>
-                  <span className={styles.featuredRating}>★ {partner.rating}</span>
+        {loadState === 'loading' && (
+          <p className={styles.featuredGridStatus} role="status">
+            Loading spotlight…
+          </p>
+        )}
+        {loadState === 'error' && (
+          <div className={styles.featuredGridStatus} role="alert">
+            <p className={styles.partnersGridErrorMain}>
+              We couldn&apos;t load the spotlight. Please try again later.
+            </p>
+            {loadErrorDetail ? (
+              <p className={styles.partnersGridErrorDetail}>{loadErrorDetail}</p>
+            ) : null}
+            <p className={styles.partnersGridErrorHint}>
+              Apply the migration that defines{' '}
+              <code className={styles.partnersInlineCode}>get_partners_spotlight</code> in Supabase
+              (see spotlight migrations <code className={styles.partnersInlineCode}>087</code>–
+              <code className={styles.partnersInlineCode}>089</code> and listing filter{' '}
+              <code className={styles.partnersInlineCode}>091</code>), then reload.
+            </p>
+          </div>
+        )}
+        {showEmpty && (
+          <p className={styles.featuredEmpty} role="status">
+            No partners to show yet.
+          </p>
+        )}
+        {loadState === 'ready' && cards.length > 0 && (
+          <div className={styles.featuredGrid}>
+            {cards.map((partner) => (
+              <div
+                key={`${partner.badge}-${partner.sellerUserId}`}
+                className={styles.featuredCard}
+              >
+                <div className={styles.featuredBadge}>{partner.badge}</div>
+                <div className={styles.featuredImageWrap}>
+                  {partner.avatarUrl ? (
+                    <img
+                      src={partner.avatarUrl}
+                      alt={partner.businessName}
+                      className={styles.featuredCircleImage}
+                    />
+                  ) : (
+                    <span
+                      className={styles.featuredAvatarInitials}
+                      aria-hidden
+                    >
+                      {partnerInitials(partner.businessName)}
+                    </span>
+                  )}
                 </div>
-                <button className={styles.viewBtn}>View Profile</button>
+                <div className={styles.featuredBody}>
+                  <span className={styles.featuredSpecialty}>
+                    {(partner.businessTypeLabel || 'Partner').toUpperCase()}
+                  </span>
+                  <h3 className={styles.featuredName}>{partner.businessName}</h3>
+                  {partner.tagline ? (
+                    <p className={styles.featuredTagline}>{partner.tagline}</p>
+                  ) : null}
+                  <p className={styles.featuredDesc}>{partner.description}</p>
+                  <div className={styles.featuredMeta}>
+                    <span className={styles.featuredYears}>
+                      {partner.yearsLabel || '—'}
+                    </span>
+                    {partner.avgRating != null ? (
+                      <span className={styles.featuredMetaRight}>
+                        <span className={styles.featuredRating}>
+                          ★ {Number(partner.avgRating).toFixed(1)}
+                        </span>
+                      </span>
+                    ) : null}
+                  </div>
+                  <Link
+                    href={`/seller-profile?seller=${encodeURIComponent(partner.sellerUserId)}`}
+                    className={styles.viewBtn}
+                  >
+                    View Profile
+                  </Link>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   )
@@ -215,15 +291,15 @@ function AllPartnersSection() {
               <p className={styles.partnersGridErrorHint}>
                 Typical fix: apply migrations that define{' '}
                 <code className={styles.partnersInlineCode}>get_active_partners_directory</code>{' '}
-                in Supabase, then reload this page (or reload the Schema in the Dashboard API
-                settings if the function existed but RPC still 404’d).
+                (including <code className={styles.partnersInlineCode}>090</code>–
+                <code className={styles.partnersInlineCode}>091</code>) in Supabase, then reload this page
+                (or reload the Schema in the Dashboard API settings if the function existed but RPC still
+                404’d).
               </p>
             </div>
           )}
           {loadState === 'ready' && partners.length === 0 && (
-            <p className={styles.partnersGridStatus}>
-              No registered sellers to show yet. When sellers join La Visionario, they will appear here.
-            </p>
+            <p className={styles.partnersGridStatus}>No partners to show yet.</p>
           )}
           {loadState === 'ready' && partners.length > 0 && filtered.length === 0 && (
             <p className={styles.partnersGridStatus}>No partners match this filter.</p>

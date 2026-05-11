@@ -89,10 +89,7 @@ export async function POST(request) {
 
   if (!actualOrderId) {
     apiLog('buyer.reviews.post.invalid_id', { orderId, orderIdLength: orderId?.length })
-    return NextResponse.json(
-      { error: 'Invalid orderId.', debug: { received: orderId, length: orderId?.length } },
-      { status: 400 }
-    )
+    return NextResponse.json({ error: 'Invalid orderId.' }, { status: 400 })
   }
   if (!reviewsPayload) {
     return NextResponse.json({ error: 'Missing reviews payload.' }, { status: 400 })
@@ -115,6 +112,28 @@ export async function POST(request) {
   }
   if (order.fulfillment_status !== 'completed') {
     return NextResponse.json({ error: 'Order is not completed yet.' }, { status: 400 })
+  }
+  const paymentStatus = String(order.payment_status ?? '').trim().toLowerCase()
+  const legacyStatus = String(order.status ?? '').trim().toLowerCase()
+  const refundStatus = String(order.refund_status ?? '').trim().toLowerCase()
+  const paid = paymentStatus === 'paid' || legacyStatus === 'paid'
+  if (!paid) {
+    return NextResponse.json(
+      { error: 'Order must be paid before you can leave a review.' },
+      { status: 400 },
+    )
+  }
+  if (order.fulfillment_status === 'cancelled' || legacyStatus === 'cancelled') {
+    return NextResponse.json({ error: 'Cancelled orders cannot be reviewed.' }, { status: 400 })
+  }
+  if (
+    paymentStatus === 'refund_pending' ||
+    paymentStatus === 'refunded' ||
+    refundStatus === 'requested' ||
+    refundStatus === 'processing' ||
+    refundStatus === 'completed'
+  ) {
+    return NextResponse.json({ error: 'Refunded orders cannot be reviewed.' }, { status: 400 })
   }
 
   const orderItemsIds = reviewsPayload

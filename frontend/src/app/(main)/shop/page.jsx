@@ -4,9 +4,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { SERVICES, CATEGORIES, PROVIDERS, getServiceById } from '@/data/shopSampleData'
 import { useDebouncedEffect } from '@/shared/hooks'
 import { readString, replaceUrlQuery } from '@/lib/url/queryParams'
+import { categoryLabelFromListings } from '@/lib/shop/categories'
 import {
   fetchActiveShopListings,
   getListingProviderLogoUrl,
@@ -18,12 +18,34 @@ import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/contexts/ToastContext'
 import { formatPhpAmount } from '@/lib/cart/formatPhp'
+import { isUuidLike } from '@/lib/uuidLike'
 import styles from './shop.module.css'
 
-function listingMatchesSearch(listing, needle) {
+/** API `pairs` segment and `aggregatesByPair` lookup key for listing-scoped ratings. */
+function providerServiceAggPairSegments(listing) {
+  const sellerId = String(listing?.providerId ?? '').trim()
+  const serviceId = String(listing?.serviceId ?? '').trim()
+  const lid = String(listing?.id ?? '').trim()
+  if (!sellerId || !serviceId) return null
+  if (isUuidLike(lid)) return { api: `${sellerId}|${serviceId}|${lid}`, lookup: `${sellerId}::${serviceId}::${lid}` }
+  return { api: `${sellerId}|${serviceId}`, lookup: `${sellerId}::${serviceId}` }
+}
+
+function serviceLabelFromId(serviceId) {
+  const raw = String(serviceId || '').trim()
+  if (!raw) return ''
+  return raw.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+function normalizeCategoryParam(raw) {
+  const t = String(raw || '').trim().toLowerCase()
+  return t || 'all'
+}
+
+function listingMatchesSearch(listing, needle, serviceById) {
   if (!needle) return true
   const n = needle.toLowerCase()
-  const service = getServiceById(listing.serviceId)
+  const service = serviceById[String(listing.serviceId).trim()] ?? null
   const chunks = [
     listing.name,
     listing.description,
@@ -46,8 +68,7 @@ function listingMatchesSearch(listing, needle) {
 function listingMatchesLocation(listing, needle) {
   if (!needle) return true
   const n = needle.toLowerCase()
-  const provider =
-    listing.provider ?? PROVIDERS.find((p) => String(p.id) === String(listing.providerId))
+  const provider = listing.provider ?? null
   return typeof provider?.location === 'string' && provider.location.toLowerCase().includes(n)
 }
 
@@ -65,12 +86,146 @@ function ShopProviderCircleThumb({ provider, wrapClassName, imgClassName }) {
   )
 }
 
+const SHOP_PAGE_SKELETON_CARD_KEYS = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9']
+
+/**
+ * Skeleton layout mirroring sidebar filters + toolbar + listing card grid (seller-profile style).
+ */
+function ShopPageLoading() {
+  return (
+    <div className={styles.shopLayout} aria-busy="true" aria-describedby="shop-page-loading-hint">
+      <p id="shop-page-loading-hint" role="status" className={styles.visuallyHidden}>
+        Loading shop. Categories, location search, service providers, and service cards will appear
+        shortly.
+      </p>
+
+      <div className={styles.sideNavCol} aria-hidden="true">
+        <aside className={styles.sideNav}>
+          <div className={styles.sideNavHeader}>
+            <span className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonSideHeader}`} />
+          </div>
+          <div className={styles.sideNavScroll}>
+            <nav className={styles.sideNavList}>
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <div
+                  key={`cat-${i}`}
+                  className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonNavLine}`}
+                />
+              ))}
+            </nav>
+            <div className={styles.sideNavSection}>
+              <div className={styles.sideNavHeader}>
+                <span className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonSideHeader}`} />
+              </div>
+              <div className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonLocationBox}`} />
+            </div>
+            <div className={styles.sideNavSection}>
+              <div className={styles.sideNavHeader}>
+                <span className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonSideHeader}`} />
+              </div>
+              {[0, 1, 2, 3, 4].map((i) => (
+                <div key={`p-${i}`} className={styles.shopSkeletonProviderRow}>
+                  <div
+                    className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonProviderAvatar}`}
+                  />
+                  <div className={styles.shopSkeletonProviderLines}>
+                    <div
+                      className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonProviderLine1}`}
+                    />
+                    <div
+                      className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonProviderLine2}`}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div className={styles.shopMain} aria-hidden="true">
+        <div className={styles.shopSkeletonToolbar}>
+          <div className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonResultsBar}`} />
+          <div className={styles.shopSkeletonSortRow}>
+            <div className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonSortLabel}`} />
+            <div className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonSortField}`} />
+          </div>
+        </div>
+
+        <div className={styles.grid}>
+          {SHOP_PAGE_SKELETON_CARD_KEYS.map((k) => (
+            <div key={k} className={`${styles.card} ${styles.listingCard}`}>
+              <div className={styles.listingImageWrap}>
+                <div className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardImage}`} />
+              </div>
+              <div className={styles.shopSkeletonCardBody}>
+                <div className={styles.shopSkeletonCardMetaRow}>
+                  <div
+                    className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardAvatar}`}
+                  />
+                  <div className={styles.shopSkeletonCardMetaText}>
+                    <div
+                      className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardLineA}`}
+                    />
+                    <div
+                      className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardLineB}`}
+                    />
+                  </div>
+                </div>
+              </div>
+              <hr className={styles.shopSkeletonCardDivider} />
+              <div className={styles.shopSkeletonTitlePriceRow}>
+                <div className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardTitle}`} />
+                <div className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardPrice}`} />
+              </div>
+              <div className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardCta}`} />
+            </div>
+          ))}
+        </div>
+
+        <div className={styles.mobileGrid}>
+          {SHOP_PAGE_SKELETON_CARD_KEYS.slice(0, 6).map((k) => (
+            <div key={`m-${k}`} className={`${styles.card} ${styles.listingCard}`}>
+              <div className={styles.listingImageWrap}>
+                <div className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardImage}`} />
+              </div>
+              <div className={styles.shopSkeletonCardBody}>
+                <div className={styles.shopSkeletonCardMetaRow}>
+                  <div
+                    className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardAvatar}`}
+                  />
+                  <div className={styles.shopSkeletonCardMetaText}>
+                    <div
+                      className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardLineA}`}
+                    />
+                    <div
+                      className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardLineB}`}
+                    />
+                  </div>
+                </div>
+              </div>
+              <hr className={styles.shopSkeletonCardDivider} />
+              <div className={styles.shopSkeletonTitlePriceRow}>
+                <div className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardTitle}`} />
+                <div className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardPrice}`} />
+              </div>
+              <div className={`${styles.shopSkeletonBlock} ${styles.shopSkeletonCardCta}`} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function ShopPage() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [listings, setListings] = useState(() => mergeShopListings([]))
-  const [activeCategory, setActiveCategory] = useState('all')
+  const [activeCategory, setActiveCategory] = useState(() =>
+    normalizeCategoryParam(readString(searchParams, 'category', 'all')),
+  )
   const [sortBy, setSortBy] = useState('newest')
   const [compareIds, setCompareIds] = useState([])
   /** City/area filter — separate from navbar keyword search (`q`). */
@@ -79,6 +234,8 @@ export default function ShopPage() {
   const [selectedProvider, setSelectedProvider] = useState(null)
   const [showFiltersModal, setShowFiltersModal] = useState(false)
   const [listingsLoading, setListingsLoading] = useState(true)
+  const [providerAggregatesById, setProviderAggregatesById] = useState({})
+  const [providerServiceAggregatesByPair, setProviderServiceAggregatesByPair] = useState({})
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 15 // 3 columns × 5 rows
 
@@ -164,18 +321,25 @@ export default function ShopPage() {
   }, [normalizeListings])
 
   // Sync state ← URL (back/forward, shared links)
-  // Keep the location filter in sync with the `loc` query param.
+  // Keep the category/location filters in sync with query params.
   useEffect(() => {
+    const nextCategory = normalizeCategoryParam(readString(searchParams, 'category', 'all'))
     const nextLoc = readString(searchParams, 'loc', '')
+    if (nextCategory !== activeCategory) {
+      queueMicrotask(() => setCategoryAndReset(nextCategory))
+    }
     if (nextLoc !== locationQuery) {
       queueMicrotask(() => setLocationQuery(nextLoc))
     }
-  }, [searchParams, locationQuery])
+  }, [searchParams, locationQuery, activeCategory, setCategoryAndReset])
 
   // Sync URL ← state (debounced typing in location fields — preserves `q` from navbar search)
   useDebouncedEffect(() => {
-    replaceUrlQuery(router, pathname, searchParams, { loc: locationQuery })
-  }, [locationQuery, router, pathname, searchParams], 300)
+    replaceUrlQuery(router, pathname, searchParams, {
+      category: { value: activeCategory, omitIf: 'all' },
+      loc: locationQuery,
+    })
+  }, [activeCategory, locationQuery, router, pathname, searchParams], 300)
 
   const allProviders = useMemo(() => {
     const byId = new Map()
@@ -183,6 +347,65 @@ export default function ShopPage() {
       if (l.provider) byId.set(String(l.provider.id), l.provider)
     })
     return Array.from(byId.values())
+  }, [listings])
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadRatingsAggregates() {
+      const ids = [...new Set(allProviders.map((p) => String(p?.id ?? '').trim()).filter(Boolean))]
+      const pairs = [
+        ...new Set(
+          listings
+            .map((l) => providerServiceAggPairSegments(l)?.api ?? '')
+            .filter(Boolean),
+        ),
+      ]
+      if (ids.length === 0 && pairs.length === 0) {
+        if (!cancelled) {
+          setProviderAggregatesById({})
+          setProviderServiceAggregatesByPair({})
+        }
+        return
+      }
+      try {
+        const qs = new URLSearchParams()
+        if (ids.length > 0) qs.set('ids', ids.join(','))
+        if (pairs.length > 0) qs.set('pairs', pairs.join(','))
+        const res = await fetch(`/api/ratings/aggregates?${qs.toString()}`, { cache: 'no-store' })
+        const body = await res.json().catch(() => null)
+        if (cancelled) return
+        setProviderAggregatesById(
+          body?.aggregatesBySellerId && typeof body.aggregatesBySellerId === 'object'
+            ? body.aggregatesBySellerId
+            : {},
+        )
+        setProviderServiceAggregatesByPair(
+          body?.aggregatesByPair && typeof body.aggregatesByPair === 'object' ? body.aggregatesByPair : {},
+        )
+      } catch {
+        if (cancelled) return
+        setProviderAggregatesById({})
+        setProviderServiceAggregatesByPair({})
+      }
+    }
+    loadRatingsAggregates()
+    return () => {
+      cancelled = true
+    }
+  }, [allProviders, listings])
+
+  const serviceById = useMemo(() => {
+    const byId = {}
+    for (const listing of listings) {
+      const id = String(listing?.serviceId || '').trim()
+      if (!id || byId[id]) continue
+      byId[id] = {
+        id,
+        name: categoryLabelFromListings(id, listings),
+        description: typeof listing?.description === 'string' ? listing.description : '',
+      }
+    }
+    return byId
   }, [listings])
 
   const filteredListings = useMemo(() => {
@@ -198,7 +421,7 @@ export default function ShopPage() {
 
     const keywordNeedle = readString(searchParams, 'q', '').trim().toLowerCase()
     if (keywordNeedle) {
-      list = list.filter((l) => listingMatchesSearch(l, keywordNeedle))
+      list = list.filter((l) => listingMatchesSearch(l, keywordNeedle, serviceById))
     }
 
     const locationNeedle = locationQuery.trim().toLowerCase()
@@ -210,9 +433,13 @@ export default function ShopPage() {
     else if (sortBy === 'price-desc') list.sort((a, b) => b.price - a.price)
     else if (sortBy === 'rating') {
       list.sort((a, b) => {
-        const pa = a.provider ?? PROVIDERS.find((p) => p.id === a.providerId)
-        const pb = b.provider ?? PROVIDERS.find((p) => p.id === b.providerId)
-        return (pb?.rating ?? 0) - (pa?.rating ?? 0)
+        const aPairKey = providerServiceAggPairSegments(a)?.lookup ?? ''
+        const bPairKey = providerServiceAggPairSegments(b)?.lookup ?? ''
+        const aPairAgg = providerServiceAggregatesByPair[aPairKey]
+        const bPairAgg = providerServiceAggregatesByPair[bPairKey]
+        const aRating = Number(aPairAgg?.avgRating ?? 0) || 0
+        const bRating = Number(bPairAgg?.avgRating ?? 0) || 0
+        return bRating - aRating
       })
     } else if (sortBy === 'newest') {
       list.sort((a, b) => {
@@ -231,7 +458,7 @@ export default function ShopPage() {
     }
 
     return list
-  }, [listings, activeCategory, sortBy, selectedProvider, locationQuery, searchParams])
+  }, [listings, activeCategory, sortBy, selectedProvider, locationQuery, searchParams, providerServiceAggregatesByPair, serviceById])
 
   const totalPages = Math.ceil(filteredListings.length / ITEMS_PER_PAGE)
   const paginatedListings = useMemo(() => {
@@ -288,26 +515,30 @@ export default function ShopPage() {
     return providers
   }, [listings, activeCategory, locationQuery, allProviders])
 
+  const getProviderMetrics = useCallback(
+    (provider) => {
+      const agg = providerAggregatesById[String(provider?.id ?? '')] ?? null
+      return {
+        rating: agg?.avgRating != null ? Number(agg.avgRating).toFixed(1) : provider?.rating,
+        reviews: agg?.reviewCount != null ? Number(agg.reviewCount) : provider?.reviews,
+      }
+    },
+    [providerAggregatesById],
+  )
+
   const availableCategories = useMemo(() => {
     const activeServiceIds = new Set(
       listings.map((l) => String(l.serviceId).trim()).filter(Boolean),
     )
 
-    const categories = [
+    return [
       { id: 'all', label: 'All Services' },
-      ...CATEGORIES.filter((cat) => cat.id !== 'all' && activeServiceIds.has(cat.id)),
+      ...[...activeServiceIds].map((id) => ({
+        id,
+        label: serviceById[id]?.name || serviceLabelFromId(id),
+      })),
     ]
-
-    const extraCategoryIds = [...activeServiceIds].filter(
-      (id) => !categories.some((cat) => cat.id === id),
-    )
-    extraCategoryIds.forEach((id) => {
-      const service = SERVICES.find((s) => s.id === id)
-      categories.push({ id, label: service?.name ?? id.replace(/-/g, ' ') })
-    })
-
-    return categories
-  }, [listings])
+  }, [listings, serviceById])
 
   function toggleCompare(id) {
     setCompareIds((prev) => {
@@ -328,15 +559,7 @@ export default function ShopPage() {
 
       <div className={styles.content}>
         {listingsLoading ? (
-          <div
-            className={styles.shopPageLoading}
-            role="status"
-            aria-live="polite"
-            aria-busy="true"
-          >
-            <span className={styles.shopLoadingSpinner} aria-hidden="true" />
-            <span className={styles.shopLoadingSrOnly}>Loading shop listings</span>
-          </div>
+          <ShopPageLoading />
         ) : (
         <>
         {/* ── Mobile Sort + Filter Row ── */}
@@ -493,7 +716,7 @@ export default function ShopPage() {
                               <svg width="9" height="9" viewBox="0 0 12 12" fill="var(--color-gold-base,#B8962E)">
                                 <path d="M6 1l1.35 2.73L10.5 4.2l-2.25 2.19.53 3.1L6 7.9l-2.78 1.6.53-3.1L1.5 4.2l3.15-.47z" />
                               </svg>
-                              {provider.rating}
+                              {getProviderMetrics(provider).rating}
                             </span>
                             {provider.badge && <span className={styles.providerItemBadge}>{provider.badge}</span>}
                           </div>
@@ -623,7 +846,7 @@ export default function ShopPage() {
                           <svg width="9" height="9" viewBox="0 0 12 12" fill="var(--color-gold-base,#B8962E)">
                             <path d="M6 1l1.35 2.73L10.5 4.2l-2.25 2.19.53 3.1L6 7.9l-2.78 1.6.53-3.1L1.5 4.2l3.15-.47z" />
                           </svg>
-                          {provider.rating}
+                          {getProviderMetrics(provider).rating}
                         </span>
                         {provider.badge && (
                           <span className={styles.providerItemBadge}>{provider.badge}</span>
@@ -705,6 +928,7 @@ export default function ShopPage() {
                         key={listing.id}
                         listing={listing}
                         styles={styles}
+                        providerServiceAggregatesByPair={providerServiceAggregatesByPair}
                         inCompare={compareIds.includes(listing.id)}
                         onToggleCompare={toggleCompare}
                         compareDisabled={compareIds.length >= 3 && !compareIds.includes(listing.id)}
@@ -772,6 +996,7 @@ export default function ShopPage() {
                         key={listing.id}
                         listing={listing}
                         styles={styles}
+                        providerServiceAggregatesByPair={providerServiceAggregatesByPair}
                         inCompare={compareIds.includes(listing.id)}
                         onToggleCompare={toggleCompare}
                         compareDisabled={compareIds.length >= 3 && !compareIds.includes(listing.id)}
@@ -902,8 +1127,25 @@ export default function ShopPage() {
 
 // ─── ListingCard ──────────────────────────────────────────────────────────────
 
-function ListingCard({ listing, styles, inCompare, onToggleCompare, compareDisabled }) {
-  const provider = listing.provider ?? PROVIDERS.find((p) => p.id === listing.providerId)
+function ListingCard({
+  listing,
+  styles,
+  inCompare,
+  onToggleCompare,
+  compareDisabled,
+  providerServiceAggregatesByPair = {},
+}) {
+  const provider = listing.provider ?? null
+  const pairKey = providerServiceAggPairSegments(listing)?.lookup ?? ''
+  const providerServiceAgg = pairKey ? providerServiceAggregatesByPair[pairKey] ?? null : null
+  const providerRating =
+    providerServiceAgg?.avgRating != null
+      ? Number(providerServiceAgg.avgRating).toFixed(1)
+      : null
+  const providerReviews =
+    providerServiceAgg?.reviewCount != null
+      ? Number(providerServiceAgg.reviewCount)
+      : 0
   const { addItem } = useCart()
   const { user, authLoading, isBuyer } = useAuth()
   const router = useRouter()
@@ -1006,8 +1248,10 @@ function ListingCard({ listing, styles, inCompare, onToggleCompare, compareDisab
                 <path d="M6 1l1.35 2.73L10.5 4.2l-2.25 2.19.53 3.1L6 7.9l-2.78 1.6.53-3.1L1.5 4.2l3.15-.47z" />
               </svg>
             </span>
-            <span className={styles.ratingNum}>{provider?.rating}</span>
-            <span className={styles.ratingReviews}>({provider?.reviews})</span>
+            {providerRating ? <span className={styles.ratingNum}>{providerRating}</span> : null}
+            <span className={styles.ratingReviews}>
+              ({providerReviews ?? 0})
+            </span>
           </div>
         </div>
 

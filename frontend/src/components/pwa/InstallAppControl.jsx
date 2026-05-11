@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import styles from './InstallAppControl.module.css'
 
 function isIOSDevice() {
@@ -22,9 +22,14 @@ export default function InstallAppControl({ variant = 'dark' }) {
   const [canInstall, setCanInstall] = useState(false)
   const [installed, setInstalled] = useState(false)
   const [iosHelpOpen, setIosHelpOpen] = useState(false)
+  const [hydrated, setHydrated] = useState(false)
+  const [isIOS, setIsIOS] = useState(false)
   const wrapRef = useRef(null)
 
-  const isIOS = useMemo(() => isIOSDevice(), [])
+  useEffect(() => {
+    setHydrated(true)
+    setIsIOS(isIOSDevice())
+  }, [])
 
   useEffect(() => {
     setInstalled(isInStandaloneMode())
@@ -65,7 +70,7 @@ export default function InstallAppControl({ variant = 'dark' }) {
     return () => document.removeEventListener('mousedown', onDocMouseDown)
   }, [iosHelpOpen])
 
-  const showForIOS = isIOS && !installed
+  const showForIOS = hydrated && isIOS && !installed
   const visible = (!installed && canInstall) || showForIOS
 
   if (!visible) return null

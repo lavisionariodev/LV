@@ -10,14 +10,14 @@ import { signOut } from "@/lib/auth/session";
 import ForgotPasswordModal from "@/components/ui/Modal/ForgotPasswordModal";
 import styles from "./administrator.module.css";
 import { useSiteContent } from "@/lib/siteContent/client";
-import { useToast } from "@/contexts/ToastContext";
+import { useAuthToast } from "@/contexts/ToastContext";
 
 export default function AdminLoginPage() {
   const { data: siteContent } = useSiteContent();
   const systemName = siteContent?.systemName || "La Visionario";
 
   const router = useRouter();
-  const toast = useToast();
+  const toast = useAuthToast();
   const [signInData, setSignInData] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");

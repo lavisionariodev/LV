@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useLayoutEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, useSelectedLayoutSegment } from 'next/navigation';
 import styles from './profile.module.css';
@@ -32,9 +32,9 @@ function useIsMobile(breakpoint = 768) {
   );
   useEffect(() => {
     const mq = window.matchMedia(`(max-width: ${breakpoint}px)`);
-    setIsMobile(mq.matches);
     const handler = (e) => setIsMobile(e.matches);
     mq.addEventListener('change', handler);
+    queueMicrotask(() => setIsMobile(mq.matches));
     return () => mq.removeEventListener('change', handler);
   }, [breakpoint]);
   return isMobile;
@@ -87,6 +87,8 @@ function ProfileSidebar({ activeTab, onMobileNavClick, onLogout, userEmail }) {
             aria-label="Edit profile"
           >
             {profile.avatar_url ? (
+              // Dynamic Supabase avatar URL — keep <img> to avoid next/image remotePatterns churn
+              // eslint-disable-next-line @next/next/no-img-element
               <img src={profile.avatar_url} alt="avatar" className={mobileStyles.avatarImg} />
             ) : (
               <span className={mobileStyles.avatarInitials}>{initials || '?'}</span>
@@ -225,6 +227,7 @@ function ProfileSidebar({ activeTab, onMobileNavClick, onLogout, userEmail }) {
           aria-label="Change profile photo"
         >
           {profile.avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element -- dynamic user avatar URL
             <img src={profile.avatar_url} alt="avatar" className={styles.sidebarAvatarImg} />
           ) : (
             <div className={styles.sidebarAvatarPlaceholder}>{initials || '?'}</div>
@@ -386,25 +389,38 @@ export default function ProfileLayout({ children }) {
   // Close sheet if screen grows to desktop while sheet is open
   useEffect(() => {
     if (!isMobile && openSheet) {
-      setOpenSheet(null);
+      queueMicrotask(() => setOpenSheet(null));
     }
   }, [isMobile, openSheet]);
 
   if (authLoading && !user) {
     return (
-      <main className={styles.profilePage}>
+      <main className={styles.profilePage} aria-busy="true" aria-describedby="profile-auth-skel-hint">
+        <p id="profile-auth-skel-hint" role="status" className={styles.visuallyHidden}>
+          Loading your profile. Navigation and tab content will appear shortly.
+        </p>
         <div className={styles.profileLayout}>
-          <aside className={styles.profileSidebar}>
-            <div className={styles.sidebarIdentity}>
-              <div className={styles.sidebarAvatarBtn} style={{ background: 'var(--forest-light)' }} />
-              <div className={styles.sidebarUserMeta}>
-                <span className={styles.sidebarUsername} style={{ opacity: 0.3 }}>Loading…</span>
+          <aside className={styles.profileSidebar} aria-hidden="true">
+            <div className={styles.skLayoutIdentity}>
+              <div className={`${styles.skBlock} ${styles.skLayoutAvatar}`} />
+              <div className={styles.skLayoutMeta}>
+                <div className={`${styles.skBlock} ${styles.skLayoutName}`} />
+                <div className={`${styles.skBlock} ${styles.skLayoutEdit}`} />
               </div>
             </div>
+            {['nav1', 'nav2', 'nav3'].map((k) => (
+              <div key={k} className={`${styles.skBlock} ${styles.skLayoutNavItem}`} />
+            ))}
           </aside>
           <div className={styles.profileMain}>
             <div className={styles.profileCard}>
-              <p className={styles.mutedText} style={{ padding: '24px' }}>Loading profile…</p>
+              <div className={styles.profileAccentBar} />
+              <div className={styles.skLayoutMainInner}>
+                <div className={`${styles.skBlock} ${styles.skLayoutEyebrow}`} />
+                <div className={`${styles.skBlock} ${styles.skLayoutSub}`} />
+                <div className={`${styles.skBlock} ${styles.skLayoutLine}`} />
+                <div className={`${styles.skBlock} ${styles.skLayoutLine} ${styles.skLayoutLineShort}`} />
+              </div>
             </div>
           </div>
         </div>
@@ -509,11 +525,16 @@ function AccountSheetForm({ onSaveTriggerReady, onSavingChange, onSaveComplete }
   const [dob, setDob] = useState({ day: '', month: '', year: '' });
   const dobRef = useRef(dob);
   const handleSaveRef = useRef(handleSave);
-  dobRef.current = dob;
-  handleSaveRef.current = handleSave;
+
+  useLayoutEffect(() => {
+    dobRef.current = dob;
+    handleSaveRef.current = handleSave;
+  }, [dob, handleSave]);
 
   useEffect(() => {
-    setDob(dobPartsFromIso(profile?.date_of_birth));
+    queueMicrotask(() => {
+      setDob(dobPartsFromIso(profile?.date_of_birth));
+    });
   }, [profile?.date_of_birth]);
 
   // Wire up the save trigger so the sheet's top bar can call it (async save + close on success)
@@ -548,6 +569,7 @@ function AccountSheetForm({ onSaveTriggerReady, onSavingChange, onSaveComplete }
           aria-label="Change profile photo"
         >
           {profile?.avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element -- dynamic user avatar URL
             <img src={profile.avatar_url} alt="avatar" className={sheetStyles.avatarImg} />
           ) : (
             <div className={sheetStyles.avatarPlaceholder}>{initials || '?'}</div>

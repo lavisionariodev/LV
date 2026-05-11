@@ -106,7 +106,7 @@ const SAMPLE_NOTIFICATIONS = [
 const PAGE_SIZE = 7;
 
 export default function NotificationsPage() {
-  useProfile();
+  const { loading } = useProfile();
   const [notifications, setNotifications] = useState(SAMPLE_NOTIFICATIONS);
   const [activeFilter, setActiveFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -147,6 +147,56 @@ export default function NotificationsPage() {
   function handleFilterChange(filterId) {
     setActiveFilter(filterId);
     setCurrentPage(1);
+  }
+
+  if (loading) {
+    return (
+      <div
+        className={styles.profileCard}
+        aria-busy="true"
+        aria-describedby="profile-notifications-skel-hint"
+      >
+        <p id="profile-notifications-skel-hint" role="status" className={styles.visuallyHidden}>
+          Loading notifications. Filters and your activity feed will appear shortly.
+        </p>
+        <div className={styles.profileAccentBar} />
+        <header className={styles.profileHeader} aria-hidden="true">
+          <div className={notifStyles.headerWrap}>
+            <div className={notifStyles.headerTop}>
+              <div className={notifStyles.headerText}>
+                <div className={`${styles.skBlock} ${styles.skNotifHeaderTitle}`} />
+                <div className={`${styles.skBlock} ${styles.skLayoutSub} ${styles.skNotifHeaderSub}`} />
+              </div>
+              <div className={notifStyles.headerActions}>
+                <div className={`${styles.skBlock} ${styles.skHeaderBadge}`} />
+              </div>
+            </div>
+            <div className={notifStyles.filterRow}>
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <div
+                  key={i}
+                  className={`${styles.skBlock} ${styles.skFilterBtn} ${i % 2 ? styles.skFilterBtnWide : styles.skFilterBtnNarrow}`}
+                />
+              ))}
+            </div>
+          </div>
+        </header>
+        <div className={notifStyles.feed} aria-hidden="true">
+          <div className={`${styles.skBlock} ${styles.skNotifDay}`} />
+          {['n1', 'n2', 'n3', 'n4'].map((k) => (
+            <div key={k} className={styles.skNotifRow}>
+              <div className={`${styles.skBlock} ${styles.skNotifIcon}`} />
+              <div className={styles.skNotifBody}>
+                <div className={`${styles.skBlock} ${styles.skNotifTitle}`} />
+                <div className={`${styles.skBlock} ${styles.skNotifText}`} />
+                <div className={`${styles.skBlock} ${styles.skNotifText} ${styles.skNotifText2}`} />
+                <div className={`${styles.skBlock} ${styles.skNotifTime}`} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (

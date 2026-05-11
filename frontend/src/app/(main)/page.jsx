@@ -3,7 +3,17 @@
 import Link from 'next/link'
 import { useCallback, useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
+import { fetchActivePartnersDirectory, formatTenureYearsShort } from '@/lib/partners/client'
+import { normalizeSellerSpecialties } from '@/lib/sellers/client'
+import { fetchActiveShopListings, mergeShopListings } from '@/lib/shop-listings/client'
+import { buildShopCategoryCatalog } from '@/lib/shop/categories'
+import { useSiteContent } from '@/lib/siteContent/client'
 import styles from './homepage.module.css'
+
+/** Homepage partner cards when seller has no cover or avatar */
+const PARTNER_CARD_PLACEHOLDER_IMAGE =
+  'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80'
+const SHOP_CATEGORY_PLACEHOLDER_IMAGE = '/sample/services/1.jpg'
 
 const ABOUT_PARTNERS_SLIDES = [
   {
@@ -29,6 +39,8 @@ const ABOUT_PARTNERS_SLIDES = [
 ]
 
 export default function LandingPage() {
+  const { data: siteContent } = useSiteContent()
+
   useEffect(() => {
     if (typeof window === 'undefined') return
     const hash = window.location.hash || ''
@@ -59,7 +71,7 @@ export default function LandingPage() {
       <ShopByCategorySection />
       <HowItWorksSection />
       <PartnerHighlightSection />
-      <AboutSection />
+      <AboutSection siteContent={siteContent} />
       <FinalCTASection />
     </>
   )
@@ -97,14 +109,40 @@ function HeroSection() {
 
 /* ---------------- SHOP BY CATEGORY ---------------- */
 function ShopByCategorySection() {
-  const categories = [
-    { title: 'Funeral Packages', image: '/sample/services/1.jpg', link: '/shop' },
-    { title: 'Cremation Services', image: '/sample/services/2.jpg', link: '/shop' },
-    { title: 'Burial Services', image: '/sample/services/3.jpg', link: '/shop' },
-    { title: 'Memorial & Wake', image: '/sample/services/4.jpg', link: '/shop' },
-    { title: 'Flowers & Items', image: '/sample/services/5.jpg', link: '/shop' },
-    { title: 'Transport & Docs', image: '/sample/services/6.jpg', link: '/shop' },
-  ]
+  const [categories, setCategories] = useState([])
+  const [loadState, setLoadState] = useState('loading')
+  const [loadError, setLoadError] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    fetchActiveShopListings({ bustCache: true })
+      .then((rows) => {
+        if (cancelled) return
+        const listings = mergeShopListings(rows)
+        const nextCategories = buildShopCategoryCatalog(listings).map((cat) => ({
+            id: cat.id,
+            title: cat.label,
+            image: cat.image || SHOP_CATEGORY_PLACEHOLDER_IMAGE,
+            link: `/shop?category=${encodeURIComponent(cat.id)}`,
+            count: cat.count,
+          }))
+
+        setCategories(nextCategories)
+        setLoadError(null)
+        setLoadState('ready')
+      })
+      .catch((err) => {
+        if (cancelled) return
+        setCategories([])
+        setLoadState('error')
+        setLoadError(typeof err?.message === 'string' ? err.message : 'Failed to load categories.')
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const loopedCategories = [...categories, ...categories, ...categories]
 
@@ -136,22 +174,39 @@ function ShopByCategorySection() {
           </button>
 
           <div className={styles.categoryGrid} id="categoryCarousel">
-            {loopedCategories.map((category, index) => (
-              <Link key={index} href={category.link} className={styles.categoryCard}>
-                <div className={styles.categoryImageWrapper}>
-                  <Image
-                    src={category.image}
-                    alt={category.title}
-                    fill
-                    className={styles.categoryImage}
-                    sizes="350px"
-                  />
-                </div>
-                <div className={styles.categoryContent}>
-                  <h3 className={styles.categoryTitle}>{category.title}</h3>
-                </div>
-              </Link>
-            ))}
+            {loadState === 'loading' && (
+              <p className={styles.description} role="status">
+                Loading categories…
+              </p>
+            )}
+            {loadState === 'error' && (
+              <p className={styles.description} role="alert">
+                We couldn&apos;t load categories right now. {loadError || ''}
+              </p>
+            )}
+            {loadState === 'ready' && categories.length === 0 && (
+              <p className={styles.description} role="status">
+                No categories to show yet.
+              </p>
+            )}
+            {loadState === 'ready' &&
+              categories.length > 0 &&
+              loopedCategories.map((category, index) => (
+                <Link key={`${category.id}-${index}`} href={category.link} className={styles.categoryCard}>
+                  <div className={styles.categoryImageWrapper}>
+                    <Image
+                      src={category.image}
+                      alt={category.title}
+                      fill
+                      className={styles.categoryImage}
+                      sizes="350px"
+                    />
+                  </div>
+                  <div className={styles.categoryContent}>
+                    <h3 className={styles.categoryTitle}>{category.title}</h3>
+                  </div>
+                </Link>
+              ))}
           </div>
 
           <button
@@ -229,74 +284,79 @@ function HowItWorksSection() {
 }
 
 /* ---------------- PARTNER HIGHLIGHT ---------------- */
+function mapDirectoryRowToCarouselPartner(row) {
+  const cardImage =
+    (row.coverPhotoUrl && String(row.coverPhotoUrl).trim()) ||
+    (row.avatarUrl && String(row.avatarUrl).trim()) ||
+    PARTNER_CARD_PLACEHOLDER_IMAGE
+  const yearsShort =
+    formatTenureYearsShort(row.businessStartedAt) ||
+    formatTenureYearsShort(row.registeredAt) ||
+    ''
+  const ratingLabel =
+    row.avgRating != null && Number.isFinite(Number(row.avgRating))
+      ? Number(row.avgRating).toFixed(1)
+      : null
+  const specialtyTags = normalizeSellerSpecialties(row.specialties ?? []).slice(0, 3)
+  return {
+    sellerUserId: row.sellerUserId,
+    name: row.businessName,
+    location: row.address?.trim() ? row.address : '—',
+    years: yearsShort || '—',
+    ratingLabel,
+    specialtyTags,
+    businessTypeLabel: row.businessTypeLabel?.trim() || '',
+    image: cardImage,
+  }
+}
+
 function PartnerHighlightSection() {
-  const PARTNERS = [
-    {
-      name: 'Heritage Funeral Services',
-      location: 'Quezon City',
-      years: '15 yrs',
-      rating: '4.9',
-      services: ['Traditional Burial', 'Catholic Rites', 'Embalming'],
-      specialty: 'Traditional Catholic ceremonies',
-      image: 'https://i.pinimg.com/736x/6e/8b/75/6e8b7560bc2e8538768dcf04b39f76df.jpg',
-    },
-    {
-      name: 'Metro Cremation Care',
-      location: 'Makati City',
-      years: '10 yrs',
-      rating: '4.8',
-      services: ['Cremation', 'Memorial Service', 'Urn Selection'],
-      specialty: 'Modern cremation services',
-      image: 'https://i.pinimg.com/736x/ec/fb/27/ecfb278d5b75bf40ca4e468f309847af.jpg',
-    },
-    {
-      name: 'Eternal Gardens Memorial',
-      location: 'Cavite',
-      years: '20 yrs',
-      rating: '5.0',
-      services: ['Memorial Park', 'Garden Burial', 'Wake Services'],
-      specialty: 'Memorial park & gardens',
-      image: 'https://i.pinimg.com/1200x/84/d5/60/84d56082a8cf35ffd66ed28d57357894.jpg',
-    },
-    {
-      name: 'Paz Memorial Chapel',
-      location: 'Pasig City',
-      years: '12 yrs',
-      rating: '4.7',
-      services: ['Chapel Wake', 'Final Arrangements', 'Documentation'],
-      specialty: 'Full chapel services',
-      image: 'https://i.pinimg.com/736x/6e/8b/75/6e8b7560bc2e8538768dcf04b39f76df.jpg',
-    },
-    {
-      name: 'Sanctuario Funeral Home',
-      location: 'Cebu City',
-      years: '18 yrs',
-      rating: '4.9',
-      services: ['Burial Services', 'Viewing', 'Grief Support'],
-      specialty: 'Holistic family care',
-      image: 'https://i.pinimg.com/736x/ec/fb/27/ecfb278d5b75bf40ca4e468f309847af.jpg',
-    },
-    {
-      name: 'Serene Passage Services',
-      location: 'Davao City',
-      years: '8 yrs',
-      rating: '4.8',
-      services: ['Cremation', 'Non-religious Rites', 'Urns & Keepsakes'],
-      specialty: 'Contemporary farewell services',
-      image: 'https://i.pinimg.com/1200x/84/d5/60/84d56082a8cf35ffd66ed28d57357894.jpg',
-    },
-  ]
+  const [partners, setPartners] = useState([])
+  const [loadState, setLoadState] = useState('loading')
+  const [loadError, setLoadError] = useState(null)
+  const [active, setActive] = useState(0)
 
-  const N = PARTNERS.length
-  const [active, setActive] = useState(1) // start with index 1 so left=0, center=1, right=2
+  useEffect(() => {
+    let cancelled = false
+    fetchActivePartnersDirectory({ bustCache: true })
+      .then((rows) => {
+        if (cancelled) return
+        setLoadError(null)
+        setPartners(rows)
+        setActive(rows.length >= 2 ? 1 : 0)
+        setLoadState('ready')
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setPartners([])
+          setLoadError(typeof err?.message === 'string' ? err.message : 'Failed to load partners.')
+          setLoadState('error')
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
-  const prev = () => setActive(i => (i - 1 + N) % N)
-  const next = () => setActive(i => (i + 1) % N)
+  const carouselPartners = partners.map(mapDirectoryRowToCarouselPartner)
+  const N = carouselPartners.length
 
-  // Returns the partner index for a given slot offset from active (-1, 0, +1)
+  const prev = () => {
+    if (N < 1) return
+    setActive((i) => (i - 1 + N) % N)
+  }
+  const next = () => {
+    if (N < 1) return
+    setActive((i) => (i + 1) % N)
+  }
+
+  const goToPartner = (index) => {
+    if (N < 1) return
+    setActive(index)
+  }
+
   const slotIndex = (offset) => (active + offset + N) % N
-
-  const slots = [-1, 0, 1] // left, center, right
+  const slots = [-1, 0, 1]
 
   return (
     <section className={styles.partnerSection}>
@@ -311,76 +371,114 @@ function PartnerHighlightSection() {
           </p>
         </div>
 
-        <div className={styles.partnerCarouselRow}>
-          {/* Prev Arrow */}
-          <button onClick={prev} aria-label="Previous partner" className={styles.partnerArrowBtn}>‹</button>
-
-          {/* 3 visible cards */}
-          <div className={styles.partnerCarouselStage}>
-            {slots.map((offset) => {
-              const p = PARTNERS[slotIndex(offset)]
-              const isCenter = offset === 0
-              return (
-                <div
-                  key={slotIndex(offset)}
-                  className={`${styles.partnerCarouselItem} ${isCenter ? styles.partnerCarouselItemCenter : styles.partnerCarouselItemSide}`}
-                  onClick={() => !isCenter && setActive(slotIndex(offset))}
-                >
-                  <div className={styles.partnerImageWrapper}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p.image} alt={p.name} className={styles.partnerImage} />
-                    <div className={styles.partnerImageOverlay} />
-                    <div className={styles.partnerRatingBadge}>★ {p.rating}</div>
-                  </div>
-
-                  <div className={styles.partnerContent}>
-                    <div className={styles.partnerMeta}>
-                      <span className={styles.partnerLocation}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                          <circle cx="12" cy="10" r="3" />
-                        </svg>
-                        {p.location}
-                      </span>
-                      <span className={styles.partnerYears}>{p.years}</span>
-                    </div>
-
-                    <h3 className={styles.partnerName}>{p.name}</h3>
-                    <p className={styles.partnerSpecialty}>{p.specialty}</p>
-
-                    {isCenter && (
-                      <>
-                        <ul className={styles.partnerServices}>
-                          {p.services.map((s, j) => (
-                            <li key={j} className={styles.partnerServiceTag}>{s}</li>
-                          ))}
-                        </ul>
-                        <Link href="/partners" className={styles.viewProviderBtn}>
-                          View Profile <span>›</span>
-                        </Link>
-                      </>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
+        {loadState === 'loading' && (
+          <p className={styles.partnerSectionSubtitle} role="status">
+            Loading partners…
+          </p>
+        )}
+        {loadState === 'error' && (
+          <div role="alert">
+            <p className={styles.partnerSectionSubtitle}>
+              We couldn&apos;t load partner highlights. Please try again later.
+            </p>
+            {loadError ? (
+              <p className={styles.partnerSectionSubtitle}>{loadError}</p>
+            ) : null}
           </div>
+        )}
+        {loadState === 'ready' && N === 0 && (
+          <p className={styles.partnerSectionSubtitle} role="status">
+            No partners to show yet.
+          </p>
+        )}
 
-          {/* Next Arrow */}
-          <button onClick={next} aria-label="Next partner" className={styles.partnerArrowBtn}>›</button>
-        </div>
+        {loadState === 'ready' && N > 0 && (
+          <>
+            <div className={styles.partnerCarouselRow}>
+              <button type="button" onClick={prev} aria-label="Previous partner" className={styles.partnerArrowBtn}>‹</button>
 
-        {/* Dot indicators */}
-        <div className={styles.partnerDots}>
-          {PARTNERS.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setActive(i)}
-              aria-label={`Go to ${PARTNERS[i].name}`}
-              className={`${styles.partnerDot} ${i === active ? styles.partnerDotActive : ''}`}
-            />
-          ))}
-        </div>
+              <div className={styles.partnerCarouselStage}>
+                {slots.map((offset) => {
+                  const p = carouselPartners[slotIndex(offset)]
+                  const isCenter = offset === 0
+                  const idx = slotIndex(offset)
+                  return (
+                    <div
+                      key={idx}
+                      className={`${styles.partnerCarouselItem} ${isCenter ? styles.partnerCarouselItemCenter : styles.partnerCarouselItemSide}`}
+                      onClick={() => {
+                        if (!isCenter) goToPartner(idx)
+                      }}
+                    >
+                      <div className={styles.partnerImageWrapper}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={p.image}
+                          alt={p.name}
+                          className={styles.partnerImage}
+                        />
+                        <div className={styles.partnerImageOverlay} />
+                        {p.ratingLabel != null ? (
+                          <div className={styles.partnerRatingBadge}>★ {p.ratingLabel}</div>
+                        ) : null}
+                      </div>
+
+                      <div className={styles.partnerContent}>
+                        <div className={styles.partnerMeta}>
+                          <span className={styles.partnerLocation}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                              <circle cx="12" cy="10" r="3" />
+                            </svg>
+                            {p.location}
+                          </span>
+                          <span className={styles.partnerYears}>{p.years}</span>
+                        </div>
+
+                        <h3 className={styles.partnerName}>{p.name}</h3>
+                        <p className={styles.partnerSpecialty}>
+                          {p.businessTypeLabel || '—'}
+                        </p>
+
+                        {isCenter && (
+                          <>
+                            {p.specialtyTags.length > 0 ? (
+                              <ul className={styles.partnerServices}>
+                                {p.specialtyTags.map((s, j) => (
+                                  <li key={`${p.sellerUserId}-tag-${j}`} className={styles.partnerServiceTag}>{s}</li>
+                                ))}
+                              </ul>
+                            ) : null}
+                            <Link
+                              href={`/seller-profile?seller=${encodeURIComponent(p.sellerUserId)}`}
+                              className={styles.viewProviderBtn}
+                            >
+                              View Profile <span>›</span>
+                            </Link>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              <button type="button" onClick={next} aria-label="Next partner" className={styles.partnerArrowBtn}>›</button>
+            </div>
+
+            <div className={styles.partnerDots}>
+              {carouselPartners.map((p, i) => (
+                <button
+                  key={p.sellerUserId}
+                  type="button"
+                  onClick={() => goToPartner(i)}
+                  aria-label={`Go to ${p.name}`}
+                  className={`${styles.partnerDot} ${i === active ? styles.partnerDotActive : ''}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
 
         <div className={styles.partnerCTA}>
           <p className={styles.partnerCTAText}>
@@ -450,7 +548,14 @@ function PartnershipSlideshow() {
   )
 }
 
-function AboutSection() {
+function AboutSection({ siteContent }) {
+  const about = siteContent?.about ?? {}
+  const aboutStory = String(about.ourStory || '').trim()
+  const aboutMissionVision = String(about.missionVision || '').trim()
+  const aboutWhyUs = String(about.whyUs || '').trim()
+  const aboutPartners = String(about.partners || '').trim()
+  const aboutCommitment = String(about.commitment || '').trim()
+
   const WHY_CARDS = [
     {
       icon: (
@@ -469,7 +574,9 @@ function AboutSection() {
         </svg>
       ),
       title: 'Why La Visionario',
-      body: 'We offer verified providers, clear pricing, and compassionate support so you can focus on honoring your loved one. From packages to documentation, we guide you every step of the way.',
+      body:
+        aboutWhyUs ||
+        'We offer verified providers, clear pricing, and compassionate support so you can focus on honoring your loved one. From packages to documentation, we guide you every step of the way.',
     },
     {
       icon: (
@@ -491,7 +598,9 @@ function AboutSection() {
         </svg>
       ),
       title: 'Our Partners',
-      body: 'We work with trusted funeral homes and service providers across the Philippines. Our partners share our commitment to dignity, quality, and fair dealing with families.',
+      body:
+        aboutPartners ||
+        'We work with trusted funeral homes and service providers across the Philippines. Our partners share our commitment to dignity, quality, and fair dealing with families.',
     },
     {
       icon: (
@@ -510,7 +619,9 @@ function AboutSection() {
         </svg>
       ),
       title: 'Our Commitment',
-      body: 'We are committed to treating every family with respect and empathy. From your first inquiry to the final arrangements, we prioritize clarity, fairness, and support.',
+      body:
+        aboutCommitment ||
+        'We are committed to treating every family with respect and empathy. From your first inquiry to the final arrangements, we prioritize clarity, fairness, and support.',
     },
   ]
 
@@ -526,13 +637,12 @@ function AboutSection() {
               <em>with Dignity</em>
             </h2>
             <p className={styles.aboutBody}>
-              La Visionario was created to help families plan funeral services in a simple,
-              respectful, and transparent way. We believe that saying goodbye should not be
-              stressful or confusing.
+              {aboutStory ||
+                'La Visionario was created to help families plan funeral services in a simple, respectful, and transparent way. We believe that saying goodbye should not be stressful or confusing.'}
             </p>
             <p className={styles.aboutBody}>
-              Our mission is to make funeral planning dignified, transparent, and accessible
-              for every Filipino family — supported by clarity, care, and trusted partners.
+              {aboutMissionVision ||
+                'Our mission is to make funeral planning dignified, transparent, and accessible for every Filipino family — supported by clarity, care, and trusted partners.'}
             </p>
             <Link href="/about" className={styles.aboutLink}>
               Our Full Story

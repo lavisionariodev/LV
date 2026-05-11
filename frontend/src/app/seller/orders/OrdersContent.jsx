@@ -276,6 +276,15 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
     })
   }, [activeTab, searchQuery, router, pathname, searchParams, routeDefaultTab], 300)
 
+  /** Drop dashboard / email deep-link params so auto-open effects do not run again after refresh or polling. */
+  const clearOrderDeepLinkParams = useCallback(() => {
+    if (!searchParams?.get('orderId') && !searchParams?.get('action')) return
+    replaceUrlQuery(router, pathname, searchParams, {
+      orderId: { value: null },
+      action: { value: null },
+    })
+  }, [router, pathname, searchParams])
+
   useEffect(() => {
     if (!initialOrderId) return
     const matchedOrder = orders.find((order) => order.id === initialOrderId)
@@ -346,7 +355,11 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ orderId: order.id, fulfillment_status: newStatus }),
         })
-        if (!res.ok) return
+        if (!res.ok) {
+          const body = await res.json().catch(() => null)
+          window.alert(typeof body?.error === 'string' ? body.error : 'Could not update order status.')
+          return
+        }
         await loadOrders()
       } else {
         setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, orderStatus: newStatus } : o)))
@@ -355,6 +368,7 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
       setSelectedOrder((prev) => (prev?.id === order.id ? { ...prev, orderStatus: newStatus } : prev))
       setShowUpdateStatus(false)
       setOrderForUpdateStatus(null)
+      clearOrderDeepLinkParams()
     } catch {
       // ignore
     }
@@ -374,6 +388,7 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
       }
       await loadOrders()
       setSelectedOrder(null)
+      clearOrderDeepLinkParams()
     } catch {
       window.alert('Network error.')
     }
@@ -705,7 +720,12 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
           role="dialog"
           aria-modal="true"
           aria-labelledby="order-details-title"
-          onClick={() => !showUpdateStatus && setSelectedOrder(null)}
+          onClick={() => {
+            if (!showUpdateStatus) {
+              clearOrderDeepLinkParams()
+              setSelectedOrder(null)
+            }
+          }}
         >
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
@@ -716,7 +736,11 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
               <button
                 type="button"
                 className={styles.modalClose}
-                onClick={() => { setSelectedOrder(null); setShowUpdateStatus(false) }}
+                onClick={() => {
+                  clearOrderDeepLinkParams()
+                  setSelectedOrder(null)
+                  setShowUpdateStatus(false)
+                }}
                 aria-label="Close"
               >
                 <TbX size={22} />
@@ -958,7 +982,11 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
       {showUpdateStatus && orderForUpdateStatus && (
         <div
           className={styles.updateStatusWrap}
-          onClick={() => { setShowUpdateStatus(false); setOrderForUpdateStatus(null) }}
+          onClick={() => {
+            clearOrderDeepLinkParams()
+            setShowUpdateStatus(false)
+            setOrderForUpdateStatus(null)
+          }}
         >
           <div
             className={styles.updateStatusCard}
@@ -969,7 +997,11 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
               <button
                 type="button"
                 className={styles.modalClose}
-                onClick={() => { setShowUpdateStatus(false); setOrderForUpdateStatus(null) }}
+                onClick={() => {
+                  clearOrderDeepLinkParams()
+                  setShowUpdateStatus(false)
+                  setOrderForUpdateStatus(null)
+                }}
                 aria-label="Close"
               >
                 <TbX size={22} />

@@ -1,28 +1,133 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import styles from './help.module.css'
 import {
-  LuShield,
   LuScale,
   LuUserCheck,
-  LuChartBar,
   LuChevronDown,
-  LuExternalLink,
   LuLifeBuoy,
+  LuWallet,
+  LuClipboardList,
 } from 'react-icons/lu'
-import {
-  helpCenterTopics,
-  helpCenterFaqs,
-  helpCenterPlaybooks,
-  helpCenterEscalationContacts,
-} from './helpContent'
+
+/** Admin help — plain-language guidance for the people running the marketplace. */
+const helpCenterTopics = [
+  {
+    iconKey: 'LuUserCheck',
+    title: 'Sellers',
+    desc: 'Review provider applications and manage their status.',
+    bullets: [
+      'See who is Pending, Active, Rejected, or Suspended',
+      'Approve providers whose details and documents check out',
+      'Reject with a short reason so the provider knows what to fix',
+      'Suspend an active provider if something serious comes up',
+    ],
+  },
+  {
+    iconKey: 'LuClipboardList',
+    title: 'Listings',
+    desc: 'Decide which service packages appear in the public Shop.',
+    bullets: [
+      'Browse everything providers have submitted',
+      'Approve listings that follow our rules and look complete',
+      'Reject listings with unclear details, prices, or wording',
+      'Only approved listings show up to families on the public site',
+    ],
+  },
+  {
+    iconKey: 'LuScale',
+    title: 'Disputes',
+    desc: 'Help when a family and a provider don’t see eye to eye.',
+    bullets: [
+      'Statuses: Open, Under Review, Resolved, Closed',
+      'Read both sides before you decide—messages, dates, evidence',
+      'Mark Under Review while you are still gathering information',
+      'Close the case when the family and provider have an outcome',
+    ],
+  },
+  {
+    iconKey: 'LuWallet',
+    title: 'Payouts',
+    desc: 'Track money held in escrow and what goes to each provider.',
+    bullets: [
+      'Escrow states: Escrowed, On hold, Released',
+      'Hold a payout when a dispute or refund is still being reviewed',
+      'Release it once the service is complete and there are no issues',
+      'Commission can be set as a default or as a per-provider override',
+    ],
+  },
+]
+
+const helpCenterFaqs = [
+  {
+    q: 'Where do I see all the services on the public shop?',
+    a: 'Open Listings → Browse from the sidebar. Anything marked Approved is visible to families on the public Shop. Drafts and rejected items stay hidden.',
+  },
+  {
+    q: 'A provider says their changes aren’t showing—what should I check?',
+    a: 'Most provider edits go through approval before they appear live. Open Listings → Approvals and look for a pending submission on that provider. If you don’t see one, the change may still be a draft on their side.',
+  },
+  {
+    q: 'When should I reject a provider application?',
+    a: 'Reject if the documents don’t match, the business details look inconsistent, or the provider can’t back up what they claim to offer. Add a short, specific reason so they can fix it and try again.',
+  },
+  {
+    q: 'When should I put a payout on hold?',
+    a: 'Put it on hold when there is an open dispute about that booking, a refund is still being worked out, or something doesn’t feel right and you need a colleague to take a second look. Release it once the case is resolved.',
+  },
+  {
+    q: 'When should I suspend a provider?',
+    a: 'Suspend a provider when there are repeated complaints, signs of dishonest behavior, or anything that could hurt the families they serve. Suspended providers can be reactivated later if things are resolved.',
+  },
+  {
+    q: 'What does the Analytics page actually show?',
+    a: 'It shows day-to-day signals you can trust: how many providers and buyers are on the platform, how many paid bookings happened in the last 30 days, the daily collected sales (GMV) chart, the top booked services, and recent activity. It is meant as a quick health check, not a deep report.',
+  },
+]
+
+const helpCenterPlaybooks = [
+  {
+    title: 'Reviewing a new provider',
+    steps: [
+      'Open Sellers and filter by Pending.',
+      'Click the provider to see their business details and documents.',
+      'Approve if everything matches—or reject with a short reason if it does not.',
+    ],
+  },
+  {
+    title: 'Working through a dispute',
+    steps: [
+      'Open the case from Disputes and read both sides first.',
+      'Set the case to Under Review while you collect more information.',
+      'Once you have an outcome, mark it Resolved and close the case.',
+    ],
+  },
+  {
+    title: 'Handling a payout that needs a closer look',
+    steps: [
+      'Open Payouts and find the booking in question.',
+      'Put the payout on hold so the money stays in escrow.',
+      'Release it once the booking is complete and any disputes are settled.',
+    ],
+  },
+]
+
+const helpCenterQuickLinks = [
+  { title: 'Sellers', description: 'Review applications, change status, manage commission.', href: '/admin/sellers' },
+  { title: 'Listings', description: 'Approve, reject, and browse what families can book.', href: '/admin/listings/approvals' },
+  { title: 'Disputes', description: 'Handle cases between families and providers.', href: '/admin/disputes' },
+  { title: 'Payouts', description: 'Track escrow, releases, and commission.', href: '/admin/payouts' },
+  { title: 'Analytics', description: 'A quick read on platform activity.', href: '/admin/analytics' },
+  { title: 'Notifications', description: 'Internal alerts and support messages from sellers.', href: '/admin/notifications' },
+]
 
 const HELP_TOPIC_ICON_MAP = {
   LuUserCheck,
+  LuClipboardList,
   LuScale,
-  LuShield,
-  LuChartBar,
+  LuWallet,
 }
 
 export default function AdminHelpCenterPage() {
@@ -59,8 +164,8 @@ export default function AdminHelpCenterPage() {
         <article className={styles.panel}>
           <div className={styles.panelHead}>
             <div>
-              <p className={styles.panelTitle}>Key FAQs</p>
-              <p className={styles.panelSub}>Fast answers for common CEO decisions.</p>
+              <p className={styles.panelTitle}>Common questions</p>
+              <p className={styles.panelSub}>Quick answers for the things admins ask most often.</p>
             </div>
           </div>
 
@@ -98,8 +203,8 @@ export default function AdminHelpCenterPage() {
         <article className={styles.panel}>
           <div className={styles.panelHead}>
             <div>
-              <p className={styles.panelTitle}>Decision playbooks</p>
-              <p className={styles.panelSub}>Short, safe actions you can follow.</p>
+              <p className={styles.panelTitle}>How-to steps</p>
+              <p className={styles.panelSub}>Simple, safe steps you can follow when you’re not sure where to start.</p>
             </div>
           </div>
 
@@ -120,18 +225,18 @@ export default function AdminHelpCenterPage() {
         <article className={styles.panel}>
           <div className={styles.panelHead}>
             <div>
-              <p className={styles.panelTitle}>Escalation contacts</p>
-              <p className={styles.panelSub}>Use when the case is high risk.</p>
+              <p className={styles.panelTitle}>Where things live</p>
+              <p className={styles.panelSub}>Jump straight to the page you need.</p>
             </div>
           </div>
 
           <div className={styles.contactGrid}>
-            {helpCenterEscalationContacts.map((c) => (
-              <div className={styles.contactCard} key={c.title}>
-                <p className={styles.contactTitle}>{c.title}</p>
-                <p className={styles.contactDesc}>{c.description}</p>
-                <div className={styles.contactMeta}>{c.email}</div>
-              </div>
+            {helpCenterQuickLinks.map((link) => (
+              <Link className={styles.contactCard} key={link.title} href={link.href}>
+                <p className={styles.contactTitle}>{link.title}</p>
+                <p className={styles.contactDesc}>{link.description}</p>
+                <div className={styles.contactMeta}>Open {link.title} →</div>
+              </Link>
             ))}
           </div>
 
@@ -141,16 +246,17 @@ export default function AdminHelpCenterPage() {
                 <LuLifeBuoy />
               </span>
               <div>
-                <p className={styles.supportTitle}>Need help now?</p>
+                <p className={styles.supportTitle}>If something feels off</p>
                 <p className={styles.supportSub}>
-                  For urgent incidents, escalate first, then document the case.
+                  Pause before deciding. Put payouts on hold, set the dispute to Under Review,
+                  and check with a teammate. It’s better to slow down than to act on incomplete information.
                 </p>
               </div>
             </div>
 
-            <button type="button" className={styles.primaryBtn}>
-              Open support ticket <LuExternalLink />
-            </button>
+            <Link href="/admin/notifications" className={styles.primaryBtn}>
+              View notifications
+            </Link>
           </div>
         </article>
       </section>

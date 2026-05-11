@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { validateNewPassword } from "@/lib/validators/authSchemas";
-import { useToast } from "@/contexts/ToastContext";
+import { useAuthToast } from "@/contexts/ToastContext";
 import styles from "./reset-password.module.css";
 
 const VALID_PORTALS = ["buyer", "seller", "administrator"];
@@ -39,7 +39,7 @@ const initialHasRecovery =
 function ResetPasswordInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const toast = useToast();
+  const toast = useAuthToast();
   const [mounted, setMounted] = useState(false);
   const [recoveryChecked, setRecoveryChecked] = useState(false);
   const [hasRecovery, setHasRecovery] = useState(initialHasRecovery);

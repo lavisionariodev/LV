@@ -1,6 +1,128 @@
-/* Toast curtain layout – inspiration style with site theme */
-
 .wrapper {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  width: calc(100vw - 32px);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.card {
+  width: fit-content;
+  max-width: min(560px, 100%);
+  background: rgba(16, 40, 32, 0.95);
+  color: #ffffff;
+  border: 1px solid rgba(184, 150, 46, 0.22);
+  border-radius: 10px;
+  padding: 12px 14px;
+  box-shadow: 0 8px 28px rgba(16, 40, 32, 0.2);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.message {
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.4;
+  font-size: 13px;
+  font-family: "Lato", sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.actionBtn {
+  background: var(--color-gold-base, #b8962e);
+  border: none;
+  border-radius: 5px;
+  color: #ffffff;
+  font-family: "Lato", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  padding: 6px 12px;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.actionBtn:hover {
+  opacity: 0.88;
+}
+
+.actionBtn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.closeBtn {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  padding: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.78);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+
+.closeBtnIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeBtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.34);
+  color: #ffffff;
+}
+
+.closeBtn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 2px;
+}
+
+.checkBadge {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.checkIcon {
+  color: #d2a51e;
+}
+
+/* Login / signup — matches frontend/toast.md + toast-js.md (curtain card, icon column, title + body) */
+.wrapperAuth {
   position: fixed;
   right: 1.5rem;
   bottom: 1.5rem;
@@ -10,22 +132,32 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 0;
+  pointer-events: none;
+  width: auto;
+  left: auto;
+  transform: none;
 }
 
-.card {
+.cardAuth {
+  width: 100%;
+  max-width: min(420px, calc(100vw - 2rem));
   background: #ffffff;
   color: var(--color-text-primary, #1a1a1a);
   border-radius: 1rem;
   padding: 1rem 1.25rem;
-  box-shadow: 0 10px 40px rgba(16, 40, 32, 0.12), 0 2px 8px rgba(16, 40, 32, 0.06);
+  box-shadow:
+    0 10px 40px rgba(16, 40, 32, 0.12),
+    0 2px 8px rgba(16, 40, 32, 0.06);
   border: 1px solid var(--color-border, #d0d0d0);
   display: flex;
   align-items: flex-start;
   gap: 1rem;
   font-size: 0.875rem;
+  font-family: inherit;
+  pointer-events: auto;
 }
 
-.content {
+.contentAuth {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -33,7 +165,24 @@
   gap: 0.25rem;
 }
 
-.icon {
+.authTitle {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  color: var(--color-text-primary, #1a1a1a);
+  line-height: 1.2;
+}
+
+.authMessage {
+  color: var(--color-text-secondary, #666);
+  line-height: 1.4;
+  font-size: 0.8125rem;
+  font-family: inherit;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.iconAuth {
   flex-shrink: 0;
   width: 2rem;
   height: 2rem;
@@ -41,50 +190,44 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family: inherit;
   font-weight: 700;
   font-size: 0.875rem;
   line-height: 1;
 }
 
-.iconError {
+.iconAuthError {
   background: #fef2f2;
   padding: 0.25rem;
 }
 
-.iconError .warnIcon {
+.warnIconAuth {
   color: #dc2626;
   flex-shrink: 0;
 }
 
-.iconSuccess {
+.iconAuthSuccess {
   background: #f0fdf4;
   padding: 0.25rem;
 }
 
-.iconSuccess .successIcon {
-  color: var(--color-primary, #204F38);
+.successIconAuth {
+  color: var(--color-primary, #204f38);
   flex-shrink: 0;
 }
 
-.iconInfo {
+.iconAuthInfo {
   background: var(--color-dark-brown, #4a4a4a);
   color: #fff;
+  padding: 0.25rem;
 }
 
-.title {
-  font-weight: 600;
-  font-size: 0.9375rem;
-  color: var(--color-text-primary, #1a1a1a);
-  line-height: 1.2;
+.infoIconAuth {
+  color: #fff;
+  flex-shrink: 0;
 }
 
-.message {
-  color: var(--color-text-secondary, #666);
-  line-height: 1.4;
-  font-size: 0.8125rem;
-}
-
-.closeBtn {
+.closeBtnAuth {
   position: relative;
   flex-shrink: 0;
   width: 2rem;
@@ -103,10 +246,13 @@
   font-size: 1.125rem;
   line-height: 1;
   font-family: inherit;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
-.closeBtnIcon {
+.closeBtnIconAuth {
   position: absolute;
   inset: 0;
   display: flex;
@@ -115,13 +261,72 @@
   line-height: 1;
 }
 
-.closeBtn:hover {
+.closeBtnAuth:hover {
   background: #f5f5f5;
   border-color: #d4d4d4;
   color: var(--color-text-primary, #1a1a1a);
 }
 
-.closeBtn:focus-visible {
-  outline: 2px solid var(--color-primary, #204F38);
+.closeBtnAuth:focus-visible {
+  outline: 2px solid var(--color-primary, #204f38);
   outline-offset: 2px;
+}
+
+.actionBtnAuth {
+  align-self: flex-start;
+  margin-top: 0.5rem;
+  background: var(--color-primary, #204f38);
+  border: none;
+  border-radius: 0.375rem;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 0.375rem 0.75rem;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.actionBtnAuth:hover {
+  opacity: 0.92;
+}
+
+.actionBtnAuth:focus-visible {
+  outline: 2px solid var(--color-primary, #204f38);
+  outline-offset: 2px;
+}
+
+.cardError {
+  border-color: rgba(220, 38, 38, 0.45);
+}
+
+.cardSuccess {
+  border-color: rgba(184, 150, 46, 0.3);
+}
+
+.cardInfo {
+  border-color: rgba(184, 150, 46, 0.22);
+}
+
+@media (max-width: 640px) {
+  .card {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .message {
+    white-space: normal;
+  }
+
+  .wrapperAuth {
+    right: 1rem;
+    bottom: 1rem;
+    max-width: calc(100vw - 2rem);
+  }
+
+  .cardAuth {
+    width: 100%;
+    max-width: 100%;
+  }
 }

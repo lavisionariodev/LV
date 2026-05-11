@@ -1,11 +1,50 @@
 'use client'
 
+import { useMemo } from 'react'
 import { TbCurrencyPeso, TbDownload } from 'react-icons/tb'
 import styles from '../analytics.module.css'
+import { useSellerAnalyticsData } from '@/lib/seller/useSellerAnalyticsData'
+import {
+  averagePaidBookingValueLastNMonths,
+  bestMonthLabelLastNMonths,
+  monthlyPaidRevenueBarPercents,
+  outstandingPaidPendingConfirmation,
+  percentChange,
+  revenueThisCalendarMonth,
+  revenuePreviousCalendarMonth,
+} from '@/lib/seller/sellerOrderAnalytics'
+
+function formatPhp(n) {
+  return new Intl.NumberFormat('en-PH', {
+    style: 'currency',
+    currency: 'PHP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(n)
+}
 
 export default function SellerAnalyticsRevenueReportsPage() {
+  const { orders, loading, error } = useSellerAnalyticsData()
+
+  const thisMonth = revenueThisCalendarMonth(orders)
+  const prevMonth = revenuePreviousCalendarMonth(orders)
+  const monthDelta = percentChange(thisMonth, prevMonth)
+
+  const best = bestMonthLabelLastNMonths(orders, 12)
+  const outstanding = outstandingPaidPendingConfirmation(orders)
+  const avg12 = averagePaidBookingValueLastNMonths(orders, 12)
+
+  const monthlyBars = useMemo(() => monthlyPaidRevenueBarPercents(orders, 6), [orders])
+  const maxAmt = useMemo(
+    () => Math.max(...monthlyBars.map((m) => m.amount), 1),
+    [monthlyBars],
+  )
+
   return (
     <div className={styles.pageWrap}>
+      {error ? <p className={styles.pageError}>{error}</p> : null}
+      {loading ? <p className={styles.pageLoading}>Loading analytics…</p> : null}
+
       <div className={styles.downloadRow}>
         <button
           type="button"
@@ -22,36 +61,42 @@ export default function SellerAnalyticsRevenueReportsPage() {
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftGreen}`}>
           <p className={styles.summaryLabel}>Revenue this month</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>₱142,500</p>
-            <span className={`${styles.summaryDelta} ${styles.summaryDeltaPositive}`}>
-              +9.2%
+            <p className={styles.summaryValue}>{formatPhp(thisMonth)}</p>
+            <span
+              className={`${styles.summaryDelta} ${
+                monthDelta.up ? styles.summaryDeltaPositive : styles.summaryDeltaNegative
+              }`}
+            >
+              {monthDelta.text}
             </span>
           </div>
-          <p className={styles.summaryHint}>Confirmed bookings only</p>
+          <p className={styles.summaryHint}>Paid orders only · vs last calendar month</p>
         </article>
 
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftIndigo}`}>
-          <p className={styles.summaryLabel}>Net payout rate</p>
+          <p className={styles.summaryLabel}>Avg booking value (12 mo)</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>82%</p>
+            <p className={styles.summaryValue}>{formatPhp(avg12)}</p>
           </div>
-          <p className={styles.summaryHint}>After fees and adjustments</p>
+          <p className={styles.summaryHint}>Paid orders in the trailing year</p>
         </article>
 
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftBlue}`}>
           <p className={styles.summaryLabel}>Best month (12 months)</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>January</p>
+            <p className={styles.summaryValue}>{best.label}</p>
           </div>
-          <p className={styles.summaryHint}>Highest revenue in the past year</p>
+          <p className={styles.summaryHint}>
+            {best.amount > 0 ? `${formatPhp(best.amount)} collected` : 'No paid revenue yet'}
+          </p>
         </article>
 
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftAmber}`}>
-          <p className={styles.summaryLabel}>Payouts pending</p>
+          <p className={styles.summaryLabel}>Awaiting confirmation</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>₱38,900</p>
+            <p className={styles.summaryValue}>{formatPhp(outstanding)}</p>
           </div>
-          <p className={styles.summaryHint}>Before fees and adjustments</p>
+          <p className={styles.summaryHint}>Paid bookings still pending your confirmation</p>
         </article>
       </section>
 
@@ -59,8 +104,11 @@ export default function SellerAnalyticsRevenueReportsPage() {
         <article className={styles.chartCard}>
           <div className={styles.chartHeader}>
             <div className={styles.chartTitleGroup}>
-              <h2 className={styles.chartTitle}>Revenue vs payouts</h2>
-              <p className={styles.chartSubtitle}>Last 6 months – gross revenue and paid out</p>
+              <h2 className={styles.chartTitle}>Monthly paid revenue</h2>
+              <p className={styles.chartSubtitle}>
+                Last 6 months · gross collected on paid orders. Payout series will appear here when
+                seller escrow data is exposed via API.
+              </p>
             </div>
             <span className={styles.chartBadge}>
               <TbCurrencyPeso size={13} style={{ marginRight: 4 }} aria-hidden />
@@ -71,33 +119,22 @@ export default function SellerAnalyticsRevenueReportsPage() {
           <div className={styles.chartBody}>
             <div className={styles.chartWithYAxis}>
               <div className={styles.chartYAxisLabels} aria-hidden>
-                <span>₱200k</span>
-                <span>₱160k</span>
-                <span>₱120k</span>
-                <span>₱80k</span>
-                <span>₱40k</span>
-                <span>₱0</span>
+                {[1, 0.75, 0.5, 0.25, 0].map((step) => {
+                  const v = maxAmt * step
+                  const label = v >= 1000 ? `₱${(v / 1000).toFixed(0)}k` : `₱${Math.round(v)}`
+                  return <span key={step}>{label}</span>
+                })}
               </div>
 
               <div>
                 <div className={styles.barChartRow} aria-hidden>
-                  {[
-                    { label: 'Oct', gross: '68%', paid: '58%' },
-                    { label: 'Nov', gross: '74%', paid: '61%' },
-                    { label: 'Dec', gross: '82%', paid: '70%' },
-                    { label: 'Jan', gross: '100%', paid: '84%' },
-                    { label: 'Feb', gross: '76%', paid: '63%' },
-                    { label: 'Mar', gross: '84%', paid: '69%' },
-                  ].map((month) => (
+                  {monthlyBars.map((month) => (
                     <div key={month.label} className={styles.barGroup}>
                       <div className={styles.barOuter}>
                         <div
                           className={styles.barInnerPrimary}
-                          style={{ height: month.gross }}
-                        />
-                        <div
-                          className={styles.barInnerSecondary}
-                          style={{ height: month.paid }}
+                          style={{ height: month.heightPct }}
+                          title={formatPhp(month.amount)}
                         />
                       </div>
                       <span className={styles.barLabel}>{month.label}</span>
@@ -115,14 +152,7 @@ export default function SellerAnalyticsRevenueReportsPage() {
                   className={styles.legendSwatch}
                   style={{ background: 'linear-gradient(180deg,#1f312b,#355846)' }}
                 />
-                <span className={styles.legendLabel}>Gross revenue</span>
-              </div>
-              <div className={styles.legendItem}>
-                <span
-                  className={styles.legendSwatch}
-                  style={{ background: 'linear-gradient(180deg,#8fb9a3,#5b8c71)' }}
-                />
-                <span className={styles.legendLabel}>Paid out</span>
+                <span className={styles.legendLabel}>Paid revenue (collected)</span>
               </div>
             </div>
           </footer>

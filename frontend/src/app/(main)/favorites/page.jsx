@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useFavorites } from '@/contexts/FavoritesContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { useToast } from '@/contexts/ToastContext'
 import { formatPhpAmount } from '@/lib/cart/formatPhp'
 import styles from './favorites.module.css'
 
@@ -22,18 +23,12 @@ const SORT_OPTIONS = [
 export default function FavoritesPage() {
   const { user, authLoading, isBuyer } = useAuth()
   const { items: favorites, loading, removeFavorite, restoreFavorite } = useFavorites()
+  const toast = useToast()
   const [sortBy, setSortBy] = useState('newest')
   const [removingId, setRemovingId] = useState(null)
-  const [undoItem, setUndoItem] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
 
   const ITEMS_PER_PAGE = 15 // 3 columns × 5 rows
-
-  useEffect(() => {
-    if (!undoItem) return undefined
-    const t = setTimeout(() => setUndoItem(null), 5000)
-    return () => clearTimeout(t)
-  }, [undoItem])
 
   const sorted = useMemo(() => {
     const list = [...favorites]
@@ -47,11 +42,8 @@ export default function FavoritesPage() {
   }, [favorites, sortBy])
 
   const totalPages = Math.ceil(sorted.length / ITEMS_PER_PAGE)
-  const paginated = sorted.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
-
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [sortBy, favorites.length])
+  const safeCurrentPage = totalPages > 0 ? Math.min(currentPage, totalPages) : 1
+  const paginated = sorted.slice((safeCurrentPage - 1) * ITEMS_PER_PAGE, safeCurrentPage * ITEMS_PER_PAGE)
 
   function handlePageChange(page) {
     setCurrentPage(page)
@@ -63,28 +55,32 @@ export default function FavoritesPage() {
     setRemovingId(id)
     const { error } = await removeFavorite(id)
     setRemovingId(null)
-    if (!error && item) setUndoItem(item)
-  }
-
-  async function handleUndo() {
-    if (!undoItem) return
-    await restoreFavorite(undoItem)
-    setUndoItem(null)
+    if (error) {
+      toast.error(error.message || 'Could not remove from favorites.')
+      return
+    }
+    if (item) {
+      toast.success(
+        `${item.name} removed from favorites.`,
+        6000,
+        {
+          actionLabel: 'Undo',
+          onAction: async () => {
+            const { error: undoErr } = await restoreFavorite(item)
+            if (undoErr) {
+              toast.error(undoErr.message || 'Could not restore favorite.')
+            }
+          },
+        },
+      )
+    }
   }
 
   const isEmpty = favorites.length === 0
   const showLoading = authLoading || (Boolean(user) && isBuyer && loading)
 
   if (showLoading) {
-    return (
-      <section className={styles.page}>
-        <div className={styles.content}>
-          <p style={{ fontFamily: 'Lato, sans-serif', color: 'rgba(16,40,32,0.55)', padding: '2rem 0' }}>
-            Loading favorites…
-          </p>
-        </div>
-      </section>
-    )
+    return <FavoritesLoadingSkeleton />
   }
 
   if (!user) {
@@ -189,8 +185,8 @@ export default function FavoritesPage() {
               <div className={styles.pagination}>
                 <button
                   className={styles.pageBtn}
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
+                  onClick={() => handlePageChange(safeCurrentPage - 1)}
+                  disabled={safeCurrentPage === 1}
                   aria-label="Previous page"
                 >
                   <svg viewBox="0 0 10 10" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -201,10 +197,10 @@ export default function FavoritesPage() {
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                   <button
                     key={page}
-                    className={`${styles.pageBtn} ${page === currentPage ? styles.pageBtnActive : ''}`}
+                    className={`${styles.pageBtn} ${page === safeCurrentPage ? styles.pageBtnActive : ''}`}
                     onClick={() => handlePageChange(page)}
                     aria-label={`Page ${page}`}
-                    aria-current={page === currentPage ? 'page' : undefined}
+                    aria-current={page === safeCurrentPage ? 'page' : undefined}
                   >
                     {page}
                   </button>
@@ -212,8 +208,8 @@ export default function FavoritesPage() {
 
                 <button
                   className={styles.pageBtn}
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
+                  onClick={() => handlePageChange(safeCurrentPage + 1)}
+                  disabled={safeCurrentPage === totalPages}
                   aria-label="Next page"
                 >
                   <svg viewBox="0 0 10 10" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -225,19 +221,6 @@ export default function FavoritesPage() {
           </>
         )}
       </div>
-
-      {/* ── Undo Toast ── */}
-      {undoItem && (
-        <div className={styles.undoToast} role="status">
-          <span className={styles.undoToastText}>
-            <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" stroke="none" style={{ marginRight: 6, flexShrink: 0, opacity: 0.6 }}>
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-            </svg>
-            <strong>{undoItem.name}</strong> removed from favorites
-          </span>
-          <button className={styles.undoBtn} onClick={handleUndo}>Undo</button>
-        </div>
-      )}
     </section>
   )
 }
@@ -375,4 +358,66 @@ function FavoriteCard({ item, isRemoving, onRemove, styles }) {
 function formatDate(str) {
   const d = new Date(str)
   return d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function FavoritesLoadingSkeleton() {
+  return (
+    <section className={styles.page} aria-busy="true" aria-label="Loading favorites">
+      <div className={styles.content}>
+        <div className={styles.toolbar} aria-hidden>
+          <div className={`${styles.skeletonBlock} ${styles.skToolbarCount}`} />
+          <div className={styles.sortWrap}>
+            <div className={`${styles.skeletonBlock} ${styles.skSortLabel}`} />
+            <div className={`${styles.skeletonBlock} ${styles.skSortSelect}`} />
+          </div>
+        </div>
+
+        <div className={styles.grid}>
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <div key={idx} className={styles.card} aria-hidden>
+              <div className={styles.listingImageWrap}>
+                <div className={`${styles.skeletonBlock} ${styles.skCardImage}`} />
+              </div>
+
+              <div className={styles.cardBody}>
+                <div className={styles.providerRow}>
+                  <div className={`${styles.skeletonBlock} ${styles.skProviderAvatar}`} />
+                  <div className={styles.skeletonStack}>
+                    <div className={`${styles.skeletonBlock} ${styles.skProviderName}`} />
+                    <div className={`${styles.skeletonBlock} ${styles.skProviderLocation}`} />
+                  </div>
+                  <div className={styles.skeletonRight}>
+                    <div className={`${styles.skeletonBlock} ${styles.skRating}`} />
+                  </div>
+                </div>
+
+                <div className={styles.listingDivider} />
+
+                <div className={styles.listingTitleRow}>
+                  <div className={`${styles.skeletonBlock} ${styles.skTitle}`} />
+                  <div className={styles.skeletonPriceStack}>
+                    <div className={`${styles.skeletonBlock} ${styles.skPriceLabel}`} />
+                    <div className={`${styles.skeletonBlock} ${styles.skPriceValue}`} />
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.cardActions}>
+                <div className={`${styles.skeletonBlock} ${styles.skRemove}`} />
+                <div className={`${styles.skeletonBlock} ${styles.skSavedAt}`} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className={styles.pagination} aria-hidden>
+          <div className={`${styles.skeletonBlock} ${styles.skPageBtn}`} />
+          <div className={`${styles.skeletonBlock} ${styles.skPageBtn}`} />
+          <div className={`${styles.skeletonBlock} ${styles.skPageBtn}`} />
+          <div className={`${styles.skeletonBlock} ${styles.skPageBtn}`} />
+          <div className={`${styles.skeletonBlock} ${styles.skPageBtn}`} />
+        </div>
+      </div>
+    </section>
+  )
 }

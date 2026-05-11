@@ -12,7 +12,7 @@ import { isAdmin } from '@/lib/auth/admin';
 import { getUser } from '@/lib/auth/session';
 import { getUserRole, ROLE_SELLER } from '@/lib/auth/roles';
 import { getSellerStatusForUser } from '@/lib/sellers/client';
-import { useToast } from '@/contexts/ToastContext';
+import { useAuthToast } from '@/contexts/ToastContext';
 import { useSiteContent } from '@/lib/siteContent/client';
 
 function SellerLoginPageInner() {
@@ -34,7 +34,7 @@ function SellerLoginPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/seller';
-  const toast = useToast();
+  const toast = useAuthToast();
 
   useLayoutEffect(() => {
     if (typeof window === 'undefined') return;

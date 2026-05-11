@@ -607,72 +607,54 @@
   transform: translateY(-1px);
 }
 
-/* ─── Undo Toast ─────────────────────────────────────────────────────────────── */
+/* ─── Loading Skeleton ─────────────────────────────────────────────────────── */
 
-.undoToast {
-  position: fixed;
-  bottom: 28px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 999;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  background: rgba(16, 40, 32, 0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(184, 150, 46, 0.22);
-  border-radius: 10px;
-  padding: 13px 18px;
-  box-shadow: 0 8px 28px rgba(16, 40, 32, 0.2);
-  animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
-  white-space: nowrap;
-  max-width: calc(100vw - 32px);
+@keyframes favoritesSkeletonPulse {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
 }
 
-@keyframes toastIn {
-  from { opacity: 0; transform: translateX(-50%) translateY(12px) scale(0.97); }
-  to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+.skeletonBlock {
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(16, 40, 32, 0.08) 25%,
+    rgba(16, 40, 32, 0.14) 37%,
+    rgba(16, 40, 32, 0.08) 63%
+  );
+  background-size: 400% 100%;
+  animation: favoritesSkeletonPulse 1.35s ease-in-out infinite;
 }
 
-.undoToastText {
-  font-size: 13px;
-  font-family: "Lato", sans-serif;
-  color: rgba(255, 255, 255, 0.75);
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.skToolbarCount { width: 180px; height: 16px; border-radius: 5px; }
+.skSortLabel { width: 48px; height: 12px; }
+.skSortSelect { width: 140px; height: 38px; border-radius: 6px; }
+.skCardImage { width: 100%; height: 220px; border-radius: 10px; }
+.skProviderAvatar { width: 30px; height: 30px; border-radius: 50%; }
+.skProviderName { width: 120px; height: 12px; }
+.skProviderLocation { width: 92px; height: 10px; }
+.skRating { width: 70px; height: 12px; }
+.skTitle { width: 160px; height: 16px; border-radius: 5px; }
+.skPriceLabel { width: 58px; height: 10px; }
+.skPriceValue { width: 76px; height: 14px; border-radius: 5px; }
+.skRemove { width: 126px; height: 34px; border-radius: 999px; }
+.skSavedAt { width: 84px; height: 10px; }
+.skPageBtn { width: 32px; height: 32px; border-radius: 6px; }
+
+.skeletonStack {
+  display: grid;
+  gap: 6px;
 }
 
-.undoToastText strong {
-  color: #FFFFFF;
-  font-weight: 600;
-  margin: 0 3px;
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: inline-block;
-  vertical-align: middle;
+.skeletonRight {
+  margin-left: auto;
 }
 
-.undoBtn {
-  background: var(--color-gold-base, #B8962E);
-  border: none;
-  border-radius: 5px;
-  color: #FFFFFF;
-  font-size: 12px;
-  font-weight: 700;
-  font-family: "Lato", sans-serif;
-  letter-spacing: 0.5px;
-  padding: 6px 14px;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: opacity 0.2s ease;
-}
-
-.undoBtn:hover {
-  opacity: 0.88;
+.skeletonPriceStack {
+  display: grid;
+  gap: 6px;
+  justify-items: end;
 }
 
 /* ─── Responsive ─────────────────────────────────────────────────────────────── */

@@ -256,6 +256,15 @@ export async function upsertSellerForUser(user, payload) {
       ? normalizeSellerSocialLinks(payload.socialLinks)
       : normalizeSellerSocialLinks(existing?.social_links ?? {});
 
+  const coverPhotoUrl =
+    payload.coverPhotoUrl !== undefined
+      ? payload.coverPhotoUrl == null || !String(payload.coverPhotoUrl).trim()
+        ? null
+        : String(payload.coverPhotoUrl).trim()
+      : existing?.cover_photo_url != null && String(existing.cover_photo_url).trim()
+        ? String(existing.cover_photo_url).trim()
+        : null;
+
   const sellerData = {
     user_id: user.id,
     email: payload.email || user.email || null,
@@ -275,6 +284,7 @@ export async function upsertSellerForUser(user, payload) {
       ? packageOptions.map((x) => String(x).trim()).filter(Boolean)
       : [],
     social_links: socialLinks,
+    cover_photo_url: coverPhotoUrl,
     // documents field is not yet in schema (future update)
     // documents: payload.documents || null,
   };

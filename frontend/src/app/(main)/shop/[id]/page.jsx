@@ -2,9 +2,8 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { use, useState, useEffect, useMemo } from 'react'
+import { use, useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { getServiceById, CATEGORIES } from '@/data/shopSampleData'
 import ContactSellerModal from '@/components/ui/Modal/ContactSellerModal'
 import { getRecommendedSimilarServices, getDynamicServicesFromListings } from '@/lib/shop/similarServices'
 import { fetchActiveShopListings, mergeShopListings, stockAvailabilityLabel } from '@/lib/shop-listings/client'
@@ -20,9 +19,17 @@ import { buildSellerContactOptions } from '@/lib/sellers/socialLinks'
 import { FaFacebook, FaFacebookMessenger, FaWhatsapp, FaPhoneAlt, FaEnvelope } from 'react-icons/fa'
 import styles from './detail.module.css'
 
+/** Same path shape as login redirect — includes `listing` when a row is selected. */
+function buildShopListingSharePath(serviceId, listingId, listing) {
+  if (!serviceId) return '/shop'
+  if (listingId && listing) {
+    return `/shop/${serviceId}?listing=${encodeURIComponent(String(listingId))}`
+  }
+  return `/shop/${serviceId}`
+}
+
 export default function ServiceDetailPage({ params }) {
   const { id } = use(params)
-  const service = getServiceById(id)
   const { addItem } = useCart()
   const { toggleFavorite, isFavorite } = useFavorites()
   const { user, authLoading, isBuyer } = useAuth()
@@ -48,6 +55,12 @@ export default function ServiceDetailPage({ params }) {
   }, [])
 
   const catalogForChildren = fullCatalog ?? mergeShopListings([])
+  const dynamicServices = useMemo(() => getDynamicServicesFromListings(catalogForChildren), [catalogForChildren])
+  const service = useMemo(() => {
+    const serviceId = String(id || '').trim()
+    if (!serviceId) return null
+    return dynamicServices.find((entry) => entry.id === serviceId) ?? null
+  }, [dynamicServices, id])
 
   const listingsForService = useMemo(() => {
     if (!service) return []
@@ -61,7 +74,6 @@ export default function ServiceDetailPage({ params }) {
   const [bookBusy, setBookBusy] = useState(false)
   const [addError, setAddError] = useState(null)
   const [saveBusy, setSaveBusy] = useState(false)
-  const [saveError, setSaveError] = useState(null)
   const [chatOpen, setChatOpen] = useState(false)
   const [isMobileView, setIsMobileView] = useState(false)
 
@@ -89,15 +101,29 @@ export default function ServiceDetailPage({ params }) {
   }, [id, listingsForService, listingQuery])
 
   const selectedListing = listingsForService.find((l) => l.id === selectedListingId)
+  const selectedProviderId = String(
+    selectedListing?.provider?.id ?? selectedListing?.providerId ?? '',
+  ).trim()
+  const listingIdForScopedReviews =
+    selectedListingId && isUuidLike(String(selectedListingId)) ? String(selectedListingId).trim() : ''
 
   const [serviceReviews, setServiceReviews] = useState([])
 
   useEffect(() => {
     let cancelled = false
     async function loadServiceReviews() {
-      if (!service?.id) return
+      if (!service?.id || !selectedProviderId) {
+        setServiceReviews([])
+        return
+      }
       try {
-        const res = await fetch(`/api/services/${encodeURIComponent(service.id)}/reviews`)
+        const listingQs = listingIdForScopedReviews
+          ? `&listingId=${encodeURIComponent(listingIdForScopedReviews)}`
+          : ''
+        const res = await fetch(
+          `/api/services/${encodeURIComponent(service.id)}/reviews?sellerId=${encodeURIComponent(selectedProviderId)}${listingQs}`,
+          { cache: 'no-store' },
+        )
         const body = await res.json().catch(() => null)
         if (!res.ok) {
           throw new Error(typeof body?.error === 'string' ? body.error : 'Failed to load reviews.')
@@ -114,7 +140,7 @@ export default function ServiceDetailPage({ params }) {
     return () => {
       cancelled = true
     }
-  }, [service?.id])
+  }, [service?.id, selectedProviderId, listingIdForScopedReviews])
 
   /** Uploaded listing images only (no service/sample assets). */
   const listingGalleryUrls = useMemo(() => {
@@ -144,7 +170,7 @@ export default function ServiceDetailPage({ params }) {
       ? listingGalleryUrls[Math.min(galleryIndex, listingGalleryUrls.length - 1)]
       : null
 
-  const shopCategoryLabel = CATEGORIES.find((c) => c.id === service.id)?.label ?? ''
+  const shopCategoryLabel = service?.name ?? ''
   const attrType = selectedListing?.listingKindLabel?.trim() || '—'
   const attrCategory =
     selectedListing?.categoryLabel?.trim() || shopCategoryLabel || '—'
@@ -167,31 +193,87 @@ export default function ServiceDetailPage({ params }) {
   const provider = selectedListing ? selectedListing.provider ?? null : null
 
   const [providerAggregates, setProviderAggregates] = useState(null)
+  const [providerAggLoaded, setProviderAggLoaded] = useState(false)
+  const providerAggPairParam =
+    provider?.id && service?.id
+      ? listingIdForScopedReviews
+        ? `${String(provider.id)}|${String(service.id)}|${listingIdForScopedReviews}`
+        : `${String(provider.id)}|${String(service.id)}`
+      : ''
+  const providerAggLookupKey =
+    provider?.id && service?.id
+      ? listingIdForScopedReviews
+        ? `${String(provider.id)}::${String(service.id)}::${listingIdForScopedReviews}`
+        : `${String(provider.id)}::${String(service.id)}`
+      : ''
+
   useEffect(() => {
     let cancelled = false
     async function loadProviderAgg() {
-      if (!provider?.id) {
+      if (!provider?.id || !service?.id) {
         setProviderAggregates(null)
+        setProviderAggLoaded(true)
         return
       }
+      setProviderAggLoaded(false)
       try {
         const res = await fetch(
-          `/api/ratings/provider-aggregates?ids=${encodeURIComponent(String(provider.id))}`,
+          `/api/ratings/aggregates?pairs=${encodeURIComponent(providerAggPairParam)}`,
+          { cache: 'no-store' },
         )
         const body = await res.json().catch(() => null)
         if (cancelled) return
-        const agg = body?.aggregatesBySellerId?.[String(provider.id)] ?? null
+        const agg = body?.aggregatesByPair?.[providerAggLookupKey] ?? null
         setProviderAggregates(agg)
       } catch {
         if (cancelled) return
         setProviderAggregates(null)
+      } finally {
+        if (!cancelled) setProviderAggLoaded(true)
       }
     }
     loadProviderAgg()
     return () => {
       cancelled = true
     }
-  }, [provider?.id])
+  }, [provider?.id, service?.id, providerAggPairParam, providerAggLookupKey])
+
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState !== 'visible') return
+      if (!service?.id || !provider?.id) return
+      const listingQs = listingIdForScopedReviews
+        ? `&listingId=${encodeURIComponent(listingIdForScopedReviews)}`
+        : ''
+      fetch(
+        `/api/services/${encodeURIComponent(service.id)}/reviews?sellerId=${encodeURIComponent(String(provider.id))}${listingQs}`,
+        { cache: 'no-store' },
+      )
+        .then((res) => res.json().catch(() => null))
+        .then((body) => {
+          setServiceReviews(Array.isArray(body?.reviews) ? body.reviews : [])
+        })
+        .catch(() => {
+          setServiceReviews([])
+        })
+      fetch(
+        `/api/ratings/aggregates?pairs=${encodeURIComponent(providerAggPairParam)}`,
+        {
+        cache: 'no-store',
+      },
+      )
+        .then((res) => res.json().catch(() => null))
+        .then((body) => {
+          const agg = body?.aggregatesByPair?.[providerAggLookupKey] ?? null
+          setProviderAggregates(agg)
+        })
+        .catch(() => {
+          setProviderAggregates(null)
+        })
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [service?.id, provider?.id, listingIdForScopedReviews, providerAggPairParam, providerAggLookupKey])
 
   const providerWithAggregates = provider
     ? {
@@ -201,10 +283,72 @@ export default function ServiceDetailPage({ params }) {
       }
     : null
 
+  const pairReviewCount = Number(providerAggregates?.reviewCount ?? 0) || 0
+  const pairAvgRating =
+    providerAggregates?.avgRating != null ? Number(providerAggregates.avgRating) : null
+  const hasPairReviews = providerAggLoaded && pairReviewCount > 0
+
   const pkgOptsForSave = selectedListing?.sellerPackageOptions ?? []
   const effectiveFavoritePkg = pkgOptsForSave.length > 0 ? String(buyerPackage || '').trim() : ''
   const savedToWishlist =
     Boolean(selectedListing) && isFavorite(selectedListing.id, effectiveFavoritePkg)
+
+  const listingSharePath = useMemo(
+    () => (service ? buildShopListingSharePath(id, selectedListingId, selectedListing) : '/shop'),
+    [service, id, selectedListingId, selectedListing],
+  )
+
+  const shareTitle = service ? selectedListing?.name || service.name : ''
+
+  const [shareAbsoluteUrl, setShareAbsoluteUrl] = useState('')
+  useEffect(() => {
+    if (typeof window === 'undefined' || !service) return
+    try {
+      setShareAbsoluteUrl(new URL(listingSharePath, window.location.origin).href)
+    } catch {
+      setShareAbsoluteUrl('')
+    }
+  }, [listingSharePath, service])
+
+  const shareImageAbsolute = useMemo(() => {
+    if (!shareAbsoluteUrl || !mainGallerySrc) return ''
+    try {
+      const origin = new URL(shareAbsoluteUrl).origin
+      return new URL(mainGallerySrc, origin).href
+    } catch {
+      return ''
+    }
+  }, [shareAbsoluteUrl, mainGallerySrc])
+
+  const shareLinks = useMemo(() => {
+    if (!shareAbsoluteUrl) return null
+    const u = encodeURIComponent(shareAbsoluteUrl)
+    const text = encodeURIComponent(shareTitle)
+    const whatsappText = encodeURIComponent(`${shareTitle} ${shareAbsoluteUrl}`)
+    let pinterest = `https://www.pinterest.com/pin/create/button/?url=${u}&description=${text}`
+    if (shareImageAbsolute) {
+      pinterest += `&media=${encodeURIComponent(shareImageAbsolute)}`
+    }
+    return {
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${u}`,
+      x: `https://twitter.com/intent/tweet?url=${u}&text=${text}`,
+      whatsapp: `https://api.whatsapp.com/send?text=${whatsappText}`,
+      pinterest,
+    }
+  }, [shareAbsoluteUrl, shareTitle, shareImageAbsolute])
+
+  const handleCopyListingLink = useCallback(async () => {
+    if (!shareAbsoluteUrl) {
+      toast.error('Link is not ready yet.')
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(shareAbsoluteUrl)
+      toast.success('Link copied to clipboard.')
+    } catch {
+      toast.error('Could not copy link. You can copy it from the address bar instead.')
+    }
+  }, [shareAbsoluteUrl, toast])
 
   const redirectToLogin = () => {
     const target =
@@ -216,7 +360,6 @@ export default function ServiceDetailPage({ params }) {
 
   const handleSaveToggle = async () => {
     if (!selectedListing || !service) return
-    setSaveError(null)
     if (!user) {
       redirectToLogin()
       return
@@ -227,9 +370,10 @@ export default function ServiceDetailPage({ params }) {
     }
     const pkgOpts = selectedListing.sellerPackageOptions ?? []
     if (pkgOpts.length > 0 && !String(buyerPackage || '').trim()) {
-      setSaveError('Please select a package before saving.')
+      toast.error('Please select a package before saving.')
       return
     }
+    const wasSaved = savedToWishlist
     setSaveBusy(true)
     try {
       const { error } = await toggleFavorite(selectedListing, {
@@ -237,7 +381,15 @@ export default function ServiceDetailPage({ params }) {
         serviceLabel: service.name,
         packageOption: effectiveFavoritePkg,
       })
-      if (error) setSaveError(error.message || 'Could not update favorites')
+      if (error) {
+        toast.error(error.message || 'Could not update favorites.')
+        return
+      }
+      if (wasSaved) {
+        toast.success('Removed from favorites.')
+      } else {
+        toast.success('Saved to favorites.')
+      }
     } finally {
       setSaveBusy(false)
     }
@@ -333,6 +485,117 @@ export default function ServiceDetailPage({ params }) {
     selectedListing.inStock === false ||
     (buyerPackageOptions.length > 0 && !String(buyerPackage || '').trim())
 
+  if (fullCatalog === null) {
+    return (
+      <section
+        className={styles.detailPage}
+        aria-busy="true"
+        aria-describedby="shop-detail-loading-hint"
+      >
+        <div className={styles.content}>
+          <p id="shop-detail-loading-hint" role="status" className={styles.visuallyHidden}>
+            Loading service listing. Gallery, pricing and actions, provider card, description tabs,
+            and reviews will appear shortly.
+          </p>
+          <article className={`${styles.card} ${styles.detailSkeletonCard}`}>
+            <div className={styles.galleryCol} aria-hidden="true">
+              <div className={styles.mainImageWrap}>
+                <div className={styles.detailSkeletonHero} />
+              </div>
+              <div className={styles.thumbStrip}>
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className={styles.detailSkeletonThumb} />
+                ))}
+              </div>
+              <div className={styles.galleryMeta}>
+                <div className={styles.detailSkeletonPill} />
+                <div className={styles.detailSkeletonShareRow}>
+                  <div className={styles.detailSkeletonDot} />
+                  <div className={styles.detailSkeletonDot} />
+                  <div className={styles.detailSkeletonDot} />
+                  <div className={styles.detailSkeletonDot} />
+                </div>
+              </div>
+            </div>
+            <div className={styles.body} aria-hidden="true">
+              <div className={styles.detailSkeletonTitle} />
+              <div className={styles.detailSkeletonRatings} />
+              <div className={styles.detailSkeletonPrice} />
+              <div className={styles.detailSkeletonText} />
+              <div className={styles.detailSkeletonTextShort} />
+              <hr className={styles.divider} />
+              <div className={styles.attributes}>
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className={styles.attrRow}>
+                    <div className={styles.detailSkeletonAttrLabel} />
+                    <div className={styles.detailSkeletonAttrValue} />
+                  </div>
+                ))}
+              </div>
+              <div className={styles.selectors}>
+                <div className={styles.detailSkeletonSelect} />
+                <div className={styles.detailSkeletonQty} />
+              </div>
+              <div className={styles.actions}>
+                <div className={`${styles.detailSkeletonBtn} ${styles.detailSkeletonBtnPrimary}`} />
+                <div className={`${styles.detailSkeletonBtn} ${styles.detailSkeletonBtnOutline}`} />
+              </div>
+            </div>
+          </article>
+
+          <div className={styles.providerCard} aria-hidden="true">
+            <div className={styles.providerInfo}>
+              <div className={styles.detailSkeletonProviderAvatar} />
+              <div className={styles.providerMeta}>
+                <div className={styles.detailSkeletonProviderNameBar} />
+                <div className={styles.detailSkeletonProviderStatusBar} />
+              </div>
+              <div className={styles.providerActions}>
+                <div className={styles.detailSkeletonProviderBtn} />
+                <div
+                  className={`${styles.detailSkeletonProviderBtn} ${styles.detailSkeletonProviderBtnWide}`}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.fullDesc} aria-hidden="true">
+            <div className={`${styles.tabNav} ${styles.detailSkeletonTabNavRow}`}>
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className={styles.detailSkeletonTabPill} />
+              ))}
+            </div>
+            <div className={styles.tabContent}>
+              <div className={`${styles.tabBody} ${styles.detailSkeletonTabBodyOpen}`}>
+                <div className={styles.detailSkeletonText} />
+                <div className={styles.detailSkeletonText} />
+                <div className={styles.detailSkeletonText} />
+                <div className={styles.detailSkeletonTextShort} />
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.reviewsBox} aria-hidden="true">
+            <div className={styles.detailSkeletonReviewsHeader}>
+              <div className={styles.detailSkeletonReviewsTitle} />
+              <div className={styles.detailSkeletonReviewsChip} />
+            </div>
+            {[0, 1, 2].map((i) => (
+              <div key={i} className={styles.detailSkeletonReviewsRow}>
+                <div className={styles.detailSkeletonReviewsAvatar} />
+                <div className={styles.detailSkeletonReviewsBody}>
+                  <div className={styles.detailSkeletonText} />
+                  <div className={styles.detailSkeletonTextShort} />
+                  <div className={styles.detailSkeletonReviewsMetaBar} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   if (!service) {
     return (
       <section className={styles.detailPage}>
@@ -346,66 +609,6 @@ export default function ServiceDetailPage({ params }) {
               ← Back to Shop
             </Link>
           </div>
-        </div>
-      </section>
-    )
-  }
-
-  if (fullCatalog === null) {
-    return (
-      <section className={styles.detailPage}>
-        <div className={styles.content}>
-          <article
-            className={`${styles.card} ${styles.detailSkeletonCard}`}
-            role="status"
-            aria-busy="true"
-            aria-live="polite"
-          >
-            <span className={styles.detailSkeletonSrOnly}>Loading listing</span>
-            <div className={styles.galleryCol}>
-              <div className={styles.mainImageWrap}>
-                <div className={styles.detailSkeletonHero} aria-hidden="true" />
-              </div>
-              <div className={styles.thumbStrip} aria-hidden="true">
-                {[0, 1, 2, 3].map((i) => (
-                  <div key={i} className={styles.detailSkeletonThumb} />
-                ))}
-              </div>
-              <div className={styles.galleryMeta}>
-                <div className={styles.detailSkeletonPill} aria-hidden="true" />
-                <div className={styles.detailSkeletonShareRow} aria-hidden="true">
-                  <div className={styles.detailSkeletonDot} />
-                  <div className={styles.detailSkeletonDot} />
-                  <div className={styles.detailSkeletonDot} />
-                  <div className={styles.detailSkeletonDot} />
-                </div>
-              </div>
-            </div>
-            <div className={styles.body}>
-              <div className={styles.detailSkeletonTitle} aria-hidden="true" />
-              <div className={styles.detailSkeletonRatings} aria-hidden="true" />
-              <div className={styles.detailSkeletonPrice} aria-hidden="true" />
-              <div className={styles.detailSkeletonText} aria-hidden="true" />
-              <div className={styles.detailSkeletonTextShort} aria-hidden="true" />
-              <hr className={styles.divider} />
-              <div className={styles.attributes} aria-hidden="true">
-                {[0, 1, 2, 3].map((i) => (
-                  <div key={i} className={styles.attrRow}>
-                    <div className={styles.detailSkeletonAttrLabel} />
-                    <div className={styles.detailSkeletonAttrValue} />
-                  </div>
-                ))}
-              </div>
-              <div className={styles.selectors} aria-hidden="true">
-                <div className={styles.detailSkeletonSelect} />
-                <div className={styles.detailSkeletonQty} />
-              </div>
-              <div className={styles.actions}>
-                <div className={`${styles.detailSkeletonBtn} ${styles.detailSkeletonBtnPrimary}`} />
-                <div className={`${styles.detailSkeletonBtn} ${styles.detailSkeletonBtnOutline}`} />
-              </div>
-            </div>
-          </article>
         </div>
       </section>
     )
@@ -483,35 +686,61 @@ export default function ServiceDetailPage({ params }) {
               <div className={styles.shareRow}>
                 <span className={styles.shareLabel}>Share</span>
                 {/* Facebook */}
-                <a href="#" className={styles.shareIcon} aria-label="Share on Facebook" target="_blank" rel="noopener noreferrer">
+                <a
+                  href={shareLinks?.facebook ?? '#'}
+                  className={`${styles.shareIcon}${!shareLinks ? ` ${styles.shareIconDisabled}` : ''}`}
+                  aria-label="Share on Facebook"
+                  aria-disabled={!shareLinks}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
                 </a>
                 {/* X / Twitter */}
-                <a href="#" className={styles.shareIcon} aria-label="Share on X" target="_blank" rel="noopener noreferrer">
+                <a
+                  href={shareLinks?.x ?? '#'}
+                  className={`${styles.shareIcon}${!shareLinks ? ` ${styles.shareIconDisabled}` : ''}`}
+                  aria-label="Share on X"
+                  aria-disabled={!shareLinks}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                 </a>
                 {/* WhatsApp */}
-                <a href="#" className={styles.shareIcon} aria-label="Share on WhatsApp" target="_blank" rel="noopener noreferrer">
+                <a
+                  href={shareLinks?.whatsapp ?? '#'}
+                  className={`${styles.shareIcon}${!shareLinks ? ` ${styles.shareIconDisabled}` : ''}`}
+                  aria-label="Share on WhatsApp"
+                  aria-disabled={!shareLinks}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
                 </a>
                 {/* Pinterest */}
-                <a href="#" className={styles.shareIcon} aria-label="Share on Pinterest" target="_blank" rel="noopener noreferrer">
+                <a
+                  href={shareLinks?.pinterest ?? '#'}
+                  className={`${styles.shareIcon}${!shareLinks ? ` ${styles.shareIconDisabled}` : ''}`}
+                  aria-label="Share on Pinterest"
+                  aria-disabled={!shareLinks}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
                 </a>
                 {/* Copy link */}
-                <button className={styles.shareIcon} aria-label="Copy link">
+                <button
+                  type="button"
+                  className={`${styles.shareIcon}${!shareAbsoluteUrl ? ` ${styles.shareIconDisabled}` : ''}`}
+                  aria-label="Copy link"
+                  disabled={!shareAbsoluteUrl}
+                  onClick={handleCopyListingLink}
+                >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                 </button>
               </div>
             </div>
-            {saveError && (
-              <p
-                className={styles.tabText}
-                style={{ color: 'var(--color-error, #b91c1c)', marginTop: 8, fontSize: 12 }}
-              >
-                {saveError}
-              </p>
-            )}
           </div>
 
           {/* ── RIGHT: Product details ── */}
@@ -521,15 +750,25 @@ export default function ServiceDetailPage({ params }) {
 
             {/* Ratings row */}
             <div className={styles.ratingsRow}>
-              <span className={styles.stars}>★★★★★</span>
-              <span className={styles.ratingScore}>
-                {providerWithAggregates?.rating != null
-                  ? Number(providerWithAggregates.rating).toFixed(1)
-                  : '—'}
-              </span>
-              <span className={styles.ratingCount}>
-                · {providerWithAggregates?.reviews ?? 0} reviews
-              </span>
+              {!hasPairReviews ? (
+                <span className={styles.ratingCount}>No reviews yet</span>
+              ) : (
+                <>
+                  <StarRow
+                    rating={pairAvgRating != null && Number.isFinite(pairAvgRating) ? pairAvgRating : 0}
+                    styles={styles}
+                    size={14}
+                  />
+                  <span className={styles.ratingScore}>
+                    {pairAvgRating != null && Number.isFinite(pairAvgRating)
+                      ? pairAvgRating.toFixed(1)
+                      : '0.0'}
+                  </span>
+                  <span className={styles.ratingCount}>
+                    · {pairReviewCount} seller reviews
+                  </span>
+                </>
+              )}
               <span
                 className={`${styles.stockBadge}${stockInfo && !stockInfo.inStock ? ` ${styles.stockBadgeOut}` : ''}`}
               >
@@ -544,13 +783,12 @@ export default function ServiceDetailPage({ params }) {
                   ? formatPhpAmount(selectedListing.price)
                   : '₱ Contact for pricing'}
               </span>
-              {service.priceNote && <span className={styles.priceNote}>{service.priceNote}</span>}
             </div>
 
             {/* Short description — 2–3 lines max */}
             <p className={styles.shortDesc}>
               {selectedListing?.description?.trim() ||
-                service.shortDescription ||
+                service.description ||
                 `A thoughtfully curated memorial service that honors your loved one with grace, 
                  dignity, and compassion — guiding your family through every step of the process.`}
             </p>
@@ -782,7 +1020,6 @@ function formatTenureLength(joinedDate, now = new Date()) {
 function FullDescriptionSection({ service, selectedListing, styles, allListings = [] }) {
   const [activeTab, setActiveTab] = useState('description')
   const [expanded, setExpanded] = useState(false)
-
   const dynamicServices = useMemo(() => getDynamicServicesFromListings(allListings), [allListings])
 
   const cheapestListingByServiceId = useMemo(() => {
@@ -1000,7 +1237,9 @@ function ReviewsSection({ reviews = [], styles }) {
             <span className={styles.reviewsScoreNum}>{avgRating}</span>
             <div className={styles.reviewsScoreMeta}>
               <StarRow rating={parseFloat(avgRating)} styles={styles} size={15} />
-              <span className={styles.reviewsScoreCount}>{reviews.length} review{reviews.length !== 1 ? 's' : ''}</span>
+              <span className={styles.reviewsScoreCount}>
+                {reviews.length} service review{reviews.length !== 1 ? 's' : ''}
+              </span>
             </div>
           </div>
         )}
@@ -1192,7 +1431,7 @@ function ReviewsSection({ reviews = [], styles }) {
                   return (
                     <div key={review.id} className={styles.reviewCard}>
                       <div className={styles.reviewHeader}>
-                        <div className={styles.reviewAvatar}>{review.author[0].toUpperCase()}</div>
+                        <div className={styles.reviewAvatar}>{(review.author?.[0] || 'B').toUpperCase()}</div>
                         <div className={styles.reviewMeta}>
                           <span className={styles.reviewAuthor}>
                             {review.author}

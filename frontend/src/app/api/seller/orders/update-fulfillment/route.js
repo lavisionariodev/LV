@@ -48,6 +48,12 @@ export async function POST(request) {
       { status: 400 },
     )
   }
+  if (fulfillmentStatus === 'completed' && !paid) {
+    return NextResponse.json(
+      { error: 'Order must be paid before it can be marked as completed.' },
+      { status: 400 },
+    )
+  }
 
   if (fulfillmentStatus === 'cancelled' && paid) {
     return NextResponse.json(

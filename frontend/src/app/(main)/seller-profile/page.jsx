@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { fetchActiveShopListings, mergeShopListings } from '@/lib/shop-listings/client'
 import { fetchPublicSellerProfile, normalizeSellerSpecialties } from '@/lib/sellers/client'
+import { fetchActivePartnersDirectory, pickTopRatedSellerUserIdFromDirectory } from '@/lib/partners/client'
 import { isUuidLike } from '@/lib/uuidLike'
 import { buildCartPayloadFromListing } from '@/lib/cart/fromListing'
 import { assertListingReadyForCart } from '@/lib/cart/bookNow'
@@ -152,7 +153,7 @@ const SAMPLE_REVIEWS = [
 /** Fields still SAMPLE_* / mock for `?seller=<uuid>` (real data comes via Supabase `get_active_shop_listings` only — no Next.js API route). */
 export const MOCK_SELLER_PROFILE_FIELDS = /** @type {const} */ ([
   'bannerUrl',
-  'badge',
+  'badge — "Top Provider" only when this seller is #1 by avg rating in `get_active_partners_directory` (ties: review count, id)',
   'rating',
   'reviewCount',
   'turnaround',
@@ -306,7 +307,7 @@ function buildSellerViewModel(sellerUserId, shopRows, publicProfileRow) {
     location,
     avatarUrl: avatarUrlResolved,
     bannerUrl: SAMPLE_SELLER.bannerUrl,
-    badge: SAMPLE_SELLER.badge,
+    badge: null,
     rating: SAMPLE_SELLER.rating,
     reviewCount: SAMPLE_SELLER.reviewCount,
     memberSince,
@@ -815,7 +816,7 @@ function SellerProfileLoading() {
           </div>
 
           <div className={styles.statsRow} aria-hidden>
-            {[0, 1, 2, 3, 4].map((i) => (
+            {[0, 1, 2, 3].map((i) => (
               <div key={i} className={styles.statItem}>
                 <div className={`${styles.skeletonBlock} ${styles.skeletonStatBar}`} />
                 <div className={`${styles.skeletonBlock} ${styles.skeletonStatLabel}`} />
@@ -891,12 +892,19 @@ export default function SellerProfilePage() {
     allShopListings: [],
     publicSellerProfile: null,
     sellerReviewsPayload: null,
+    /** From `get_active_partners_directory`: single seller with highest avg rating (for Top Provider chip only). */
+    topRatedSellerUserId: null,
     /** `user_id` the catalog + profile fetch completed for (loading until this matches `realSellerId`). */
     catalogLoadedSellerId: null,
   })
 
-  const { allShopListings, publicSellerProfile, sellerReviewsPayload, catalogLoadedSellerId } =
-    sellerFetchState
+  const {
+    allShopListings,
+    publicSellerProfile,
+    sellerReviewsPayload,
+    topRatedSellerUserId,
+    catalogLoadedSellerId,
+  } = sellerFetchState
 
   const loading = Boolean(realSellerId) && catalogLoadedSellerId !== realSellerId
 
@@ -909,19 +917,24 @@ export default function SellerProfilePage() {
       allShopListings: [],
       publicSellerProfile: null,
       sellerReviewsPayload: null,
+      topRatedSellerUserId: null,
       catalogLoadedSellerId: null,
     })
     Promise.all([
       fetchActiveShopListings({ bustCache: true }).then((raw) => mergeShopListings(raw)),
       fetchPublicSellerProfile(realSellerId),
-      fetch(`/api/seller/${encodeURIComponent(realSellerId)}/reviews`).then((r) => r.json()).catch(() => null),
+      fetch(`/api/seller/${encodeURIComponent(realSellerId)}/reviews`, { cache: 'no-store' })
+        .then((r) => r.json())
+        .catch(() => null),
+      fetchActivePartnersDirectory({ bustCache: true }).catch(() => []),
     ])
-      .then(([listings, profile, reviewsPayload]) => {
+      .then(([listings, profile, reviewsPayload, directoryRows]) => {
         if (cancelled) return
         setSellerFetchState({
           allShopListings: listings,
           publicSellerProfile: profile,
           sellerReviewsPayload: reviewsPayload,
+          topRatedSellerUserId: pickTopRatedSellerUserIdFromDirectory(directoryRows),
           catalogLoadedSellerId: realSellerId,
         })
       })
@@ -931,6 +944,7 @@ export default function SellerProfilePage() {
           allShopListings: [],
           publicSellerProfile: null,
           sellerReviewsPayload: null,
+          topRatedSellerUserId: null,
           catalogLoadedSellerId: realSellerId,
         })
       })
@@ -952,16 +966,29 @@ export default function SellerProfilePage() {
     const aggregates = sellerReviewsPayload?.aggregates ?? {}
     const avgRating = aggregates?.avgRating ?? null
     const reviewCount = Number(aggregates?.reviewCount ?? 0) || 0
+    const idNorm = String(realSellerId).toLowerCase()
+    const topNorm =
+      topRatedSellerUserId != null && String(topRatedSellerUserId).trim()
+        ? String(topRatedSellerUserId).toLowerCase()
+        : null
+    const showTopProviderBadge = topNorm != null && idNorm === topNorm
     return {
       seller: {
         ...buildSellerViewModel(realSellerId, shopRowsForSeller, publicSellerProfile),
         rating: avgRating,
         reviewCount,
+        badge: showTopProviderBadge ? 'Top Provider' : null,
       },
       listings: listingsFromShopRows(shopRowsForSeller),
       reviews: Array.isArray(sellerReviewsPayload?.reviews) ? sellerReviewsPayload.reviews : [],
     }
-  }, [realSellerId, shopRowsForSeller, publicSellerProfile, sellerReviewsPayload])
+  }, [
+    realSellerId,
+    shopRowsForSeller,
+    publicSellerProfile,
+    sellerReviewsPayload,
+    topRatedSellerUserId,
+  ])
 
   if (realSellerId && loading) {
     return <SellerProfileLoading />
