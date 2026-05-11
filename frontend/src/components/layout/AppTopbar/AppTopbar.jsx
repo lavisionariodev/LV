@@ -242,10 +242,17 @@ export default function AppTopbar({ variant, onLogout, isMobile, sidebarCollapse
             <button
               type="button"
               className={styles.notifIconBtn}
-              aria-label="Notifications"
+              aria-label={
+                topbarUnreadCount > 0
+                  ? `Notifications, ${topbarUnreadCount} unread`
+                  : 'Notifications'
+              }
               onClick={() => setNotifOpen((o) => !o)}
             >
               <TbBell />
+              {topbarUnreadCount > 0 ? (
+                <span className={styles.notifUnreadDot} aria-hidden />
+              ) : null}
             </button>
 
             <div className={styles.notifDropdown}>
