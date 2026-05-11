@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
 import { getClientIp, takeToken } from '@/lib/rate-limit/memoryRateLimit'
+import { insertOrderRefundEvent, insertUserNotification } from '@/lib/payments/refundReconcile'
 
 /**
  * Buyer cancels purchase while provider has not confirmed (fulfillment pending).
@@ -15,7 +16,7 @@ export async function POST(request) {
   if (!rl.ok) {
     apiLog('buyer.cancel.ratelimited', { retryAfterSec: rl.retryAfterSec })
     return NextResponse.json(
-      { error: 'Too many attempts. Wait a minute and try again.' },
+      { error: 'Too many requests. Please wait a moment and try again.' },
       { status: 429, headers: { 'Retry-After': String(rl.retryAfterSec ?? 60) } },
     )
   }
@@ -30,53 +31,73 @@ export async function POST(request) {
 
   if (userErr || !user) {
     apiLog('buyer.cancel.unauthorized', {})
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json(
+      { error: 'You must be signed in to cancel a purchase.' },
+      { status: 401 },
+    )
   }
 
   const body = await request.json().catch(() => ({}))
   const orderId = String(body?.orderId ?? '').trim()
+  const refundReason =
+    body?.refundReason != null ? String(body.refundReason).trim().slice(0, 2000) : ''
 
   if (!orderId) {
-    return NextResponse.json({ error: 'Missing orderId.' }, { status: 400 })
+    return NextResponse.json(
+      { error: 'Purchase not found. Please refresh the page and try again.' },
+      { status: 400 },
+    )
   }
 
   try {
     const { data: order, error: orderErr } = await supabaseAdmin
       .from('orders')
       .select(
-        'id,buyer_id,seller_user_id,fulfillment_status,payment_status,status,refund_status',
+        'id,buyer_id,seller_user_id,fulfillment_status,payment_status,status,refund_status,subtotal',
       )
       .eq('id', orderId)
       .maybeSingle()
 
     if (orderErr || !order) {
       apiLog('buyer.cancel.not_found', {})
-      return NextResponse.json({ error: 'Order not found.' }, { status: 404 })
+      return NextResponse.json(
+        { error: 'Purchase not found.' },
+        { status: 404 },
+      )
     }
 
     if (order.buyer_id !== user.id) {
       apiLog('buyer.cancel.forbidden', {})
-      return NextResponse.json({ error: 'Not allowed.' }, { status: 403 })
+      return NextResponse.json(
+        { error: 'You are not authorized to cancel this purchase.' },
+        { status: 403 },
+      )
     }
 
     const fulfillment = order.fulfillment_status || 'pending'
 
     if (fulfillment === 'cancelled') {
-      return NextResponse.json({ error: 'This order is already cancelled.' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'This purchase has already been cancelled.' },
+        { status: 400 },
+      )
     }
 
     if (['confirmed', 'in_progress', 'completed'].includes(fulfillment)) {
       return NextResponse.json(
         {
           error:
-            'The provider already confirmed this order. You can no longer cancel it from purchases — contact support if you still need changes.',
+            'This booking has already been confirmed and can no longer be cancelled. Please use Request help to escalate this concern.',
         },
         { status: 400 },
       )
     }
 
     if (fulfillment !== 'pending') {
-      return NextResponse.json({ error: 'This order cannot be cancelled.' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'This purchase can no longer be cancelled.' },
+        { status: 400 },
+      )
     }
 
     const { data: joinRows } = await supabaseAdmin
@@ -95,7 +116,7 @@ export async function POST(request) {
         return NextResponse.json(
           {
             error:
-              'Payment checkout is still in progress for this order. Wait for it to finish or expire, then try again.',
+              'Payment is still being processed. Please wait for it to complete, then try again.',
           },
           { status: 409 },
         )
@@ -122,13 +143,14 @@ export async function POST(request) {
           refund_status: 'requested',
           refund_requested_at: nowIso,
           status: 'cancelled',
+          refund_reason: refundReason || null,
         })
         .eq('id', orderId)
 
       if (paidUpdErr) {
         apiLog('buyer.cancel.paid_update_failed', { err: errorMessage(paidUpdErr) })
         return NextResponse.json(
-          { error: paidUpdErr.message ?? 'Could not cancel this paid order.' },
+          { error: 'Unable to cancel this purchase. Please try again.' },
           { status: 500 },
         )
       }
@@ -141,6 +163,32 @@ export async function POST(request) {
         })
         .eq('order_id', orderId)
 
+      const { data: joinPay } = await supabaseAdmin
+        .from('payment_orders')
+        .select('payment_id')
+        .eq('order_id', orderId)
+        .limit(1)
+      const pid = joinPay?.[0]?.payment_id ?? null
+
+      await insertOrderRefundEvent(supabaseAdmin, {
+        orderId,
+        paymentId: pid,
+        actor: 'buyer',
+        action: 'cancel_paid_refund_requested',
+        payload: { refund_reason: refundReason || null },
+      })
+
+      if (order.seller_user_id) {
+        await insertUserNotification(supabaseAdmin, {
+          userId: order.seller_user_id,
+          type: 'alerts',
+          title: 'Refund request received',
+          body: `A buyer cancelled their booking before confirmation and has requested a refund. Please review and approve or decline.${refundReason ? ` Buyer note: ${refundReason}` : ''}`,
+          metadata: { orderId },
+          dedupeKey: `seller_refund_requested:${orderId}`,
+        })
+      }
+
       apiLog('buyer.cancel.ok_paid_refund_requested', {})
 
       return NextResponse.json(
@@ -148,7 +196,7 @@ export async function POST(request) {
           ok: true,
           mode: 'refund_requested',
           message:
-            'Purchase cancelled and refund requested. After the provider approves, refunds usually arrive in about 5–15 business days, depending on your bank or e-wallet.',
+            'Your purchase has been cancelled and a refund request has been submitted. Once approved by the provider, refunds typically arrive within 5 to 15 business days, depending on your bank or e-wallet.',
         },
         { status: 200 },
       )
@@ -165,7 +213,7 @@ export async function POST(request) {
     if (updErr) {
       apiLog('buyer.cancel.update_failed', { err: errorMessage(updErr) })
       return NextResponse.json(
-        { error: updErr.message ?? 'Failed to cancel order.' },
+        { error: 'Unable to cancel this purchase. Please try again.' },
         { status: 500 },
       )
     }
@@ -175,6 +223,9 @@ export async function POST(request) {
     return NextResponse.json({ ok: true, mode: 'unpaid_cancelled' }, { status: 200 })
   } catch (e) {
     apiLog('buyer.cancel.exception', { err: errorMessage(e) })
-    return NextResponse.json({ error: 'Cancellation failed.' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Unable to cancel this purchase. Please try again.' },
+      { status: 500 },
+    )
   }
 }

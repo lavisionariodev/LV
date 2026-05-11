@@ -7,7 +7,6 @@ import { FiRotateCcw } from 'react-icons/fi';
 import { TbX } from 'react-icons/tb';
 import { LuSettings2 } from 'react-icons/lu';
 import styles from './sellers.module.css';
-import { getEffectiveCommissionForSeller } from '@/data/adminSampleData';
 import {
   listSellersForAdmin,
   rejectSellerApplication,
@@ -436,6 +435,7 @@ export default function AdminSellersPage() {
   const [rejectDraft, setRejectDraft] = useState(null);
   const [rejectReasonInput, setRejectReasonInput] = useState('');
   const [rejectSubmitting, setRejectSubmitting] = useState(false);
+  const [platformDefaultCommissionPct, setPlatformDefaultCommissionPct] = useState(10);
 
   // Sync state <- URL (back/forward, shared links)
   useEffect(() => {
@@ -489,6 +489,25 @@ export default function AdminSellersPage() {
     load();
     return () => { cancelled = true; };
   }, [toast]);
+
+  useEffect(() => {
+    let cancelled = false;
+    ;(async () => {
+      try {
+        const res = await fetch('/api/admin/platform-billing', { credentials: 'include' });
+        const body = await res.json().catch(() => null);
+        if (!cancelled && res.ok && body?.defaultCommissionPercent != null) {
+          const n = Number(body.defaultCommissionPercent);
+          if (Number.isFinite(n)) setPlatformDefaultCommissionPct(n);
+        }
+      } catch {
+        // keep default 10
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (loading) return;
@@ -867,8 +886,7 @@ export default function AdminSellersPage() {
               <tbody>
                 {filtered.map((seller) => {
                   const sellerId = seller.user_id || seller.id
-                  const commissionInfo = getEffectiveCommissionForSeller(sellerId);
-                  const isOverride = commissionInfo.source === 'override';
+                  const isOverride = false
                   const isUpdating = updatingId === sellerId;
 
                   return (
@@ -919,12 +937,7 @@ export default function AdminSellersPage() {
                       </td>
 
                       <td>
-                        <CommissionBadge percentage={commissionInfo.percentage} isOverride={isOverride} />
-                        {isOverride && (
-                          <p className={`${styles.meta} ${styles.ruleId}`}>
-                            Rule: {commissionInfo.ruleId}
-                          </p>
-                        )}
+                        <CommissionBadge percentage={platformDefaultCommissionPct} isOverride={isOverride} />
                       </td>
 
                       <td>

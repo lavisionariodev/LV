@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileContext';
+import { useToast } from '@/contexts/ToastContext';
 import { getUserRole, ROLE_SELLER } from '@/lib/auth/roles';
 import { supabase } from '@/lib/supabase/client';
 import { expandPurchaseCardsByLineItem, mapBuyerOrderCard } from '@/lib/profile/mapBuyerOrderCard';
+import { listingIdFromOrderItemProductId } from '@/lib/orders/listingIdFromProductId';
 import styles from '../profile.module.css';
 import purchaseStyles from './purchases.module.css';
 
@@ -23,6 +25,9 @@ const PURCHASE_FILTER_TABS = [
 function purchaseMatchesFilter(purchase, filterLabel) {
   if (filterLabel === 'All') return true;
   if (filterLabel === 'Refunded') return purchase.status === 'Refunded';
+  if (filterLabel === 'Pending') {
+    return purchase.status === 'Pending' || purchase.status === 'Active booking';
+  }
   return purchase.status === filterLabel;
 }
 const PAGE_SIZE = 5;
@@ -55,6 +60,7 @@ function PurchaseCardSkeleton() {
 
 const STATUS_CONFIG = {
   Pending: { color: '#A8894A', bg: 'rgba(168,137,74,0.10)' },
+  'Active booking': { color: '#0f766e', bg: 'rgba(15,118,110,0.10)' },
   Confirmed: { color: '#204F38', bg: 'rgba(32,79,56,0.10)' },
   'In Progress': { color: '#2563EB', bg: 'rgba(37,99,235,0.09)' },
   Completed: { color: '#16a34a', bg: 'rgba(22,163,74,0.10)' },
@@ -88,32 +94,40 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
   );
 }
 
-function StarPicker({ value, onChange, size = 22 }) {
+/**
+ * Card-style 5-star rating picker matching the review-modal mock-up.
+ * Each star sits inside its own bordered tile that fills the row.
+ */
+function StarCardPicker({ value, onChange, disabled = false }) {
   const rating = Number.isFinite(Number(value)) ? Number(value) : 0;
   return (
-    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }} aria-label="Rating picker">
-      {[1, 2, 3, 4, 5].map((s) => (
-        <button
-          key={s}
-          type="button"
-          onClick={() => onChange(s)}
-          aria-label={`${s} star`}
-          aria-pressed={rating === s}
-          style={{
-            border: 'none',
-            background: 'transparent',
-            cursor: 'pointer',
-            padding: 0,
-            lineHeight: 1,
-            color: s <= rating ? '#E8A020' : '#d1d5db',
-            fontSize: size,
-          }}
-        >
-          ★
-        </button>
-      ))}
+    <div className={purchaseStyles.reviewStarGrid} role="radiogroup" aria-label="Rating">
+      {[1, 2, 3, 4, 5].map((s) => {
+        const filled = s <= rating;
+        return (
+          <button
+            key={s}
+            type="button"
+            disabled={disabled}
+            onClick={() => onChange(s)}
+            role="radio"
+            aria-checked={rating === s}
+            aria-label={`${s} star${s === 1 ? '' : 's'}`}
+            className={`${purchaseStyles.reviewStarCard} ${filled ? purchaseStyles.reviewStarCardFilled : ''}`}
+          >
+            <span aria-hidden="true">{filled ? '\u2605' : '\u2606'}</span>
+          </button>
+        );
+      })}
     </div>
   );
+}
+
+/** @returns {'Service' | 'Product'} */
+function reviewKindNoun(kind) {
+  const k = String(kind ?? '').trim().toLowerCase();
+  if (k === 'product') return 'Product';
+  return 'Service';
 }
 
 function InfoModal({ open, title, message, buttonLabel = 'OK', onClose }) {
@@ -255,57 +269,47 @@ function CancelBookingModal({
       onMouseDown={backdropMouseDown}
     >
       <div
-        className={purchaseStyles.modalPanel}
+        className={purchaseStyles.cancelConfirmPanel}
         role="dialog"
         aria-modal="true"
         aria-labelledby="cancel-booking-title"
         aria-describedby="cancel-booking-desc"
       >
-        <h2 id="cancel-booking-title" className={purchaseStyles.modalTitle}>
+        <h2 id="cancel-booking-title" className={purchaseStyles.cancelConfirmTitle}>
           Cancel purchase?
         </h2>
-        <div id="cancel-booking-desc" className={purchaseStyles.modalBody}>
+        <div id="cancel-booking-desc" className={purchaseStyles.cancelConfirmBody}>
           {showsPaidRefundDisclaimer ? (
             <>
               {orderLabel ? (
-                <p style={{ margin: '0 0 12px' }}>
-                  Cancel order <strong>{orderLabel}</strong> before your provider confirms. Your payment has already
-                  been received; we will open a refund for you instead of cancelling instantly like an unpaid basket.
+                <p>
+                  This will cancel order <strong>{orderLabel}</strong> and submit a refund request to your
+                  provider for approval.
                 </p>
               ) : (
-                <p style={{ margin: '0 0 12px' }}>
-                  You are about to cancel this paid purchase before the provider confirms it.
+                <p>
+                  This will cancel your paid booking and submit a refund request to your provider for approval.
                 </p>
               )}
-              <p
-                style={{
-                  margin: 0,
-                  padding: '10px 12px',
-                  borderRadius: 8,
-                  background: 'rgba(180,83,9,0.09)',
-                  fontSize: '0.92em',
-                  lineHeight: 1.5,
-                }}
-              >
-                <strong>Refund timing:</strong> after the provider approves the cancellation, refunds are usually
-                credited in about <strong>5–15 business days</strong>, similar to major marketplaces — exact timing
-                depends on your bank, card network, or e-wallet.
+              <p className={purchaseStyles.cancelConfirmNote}>
+                <strong>Refund timeline:</strong> once approved, refunds typically arrive within
+                <strong> 5 to 15 business days</strong>, depending on your bank or e-wallet.
               </p>
             </>
           ) : (
-            <p style={{ margin: 0 }}>
+            <p>
               {orderLabel
                 ? `This will cancel unpaid order ${orderLabel}.`
                 : 'This will cancel this unpaid purchase.'}{' '}
-              You can add services to cart and check out again if you change your mind.
+              You may add the service back to your cart at any time.
             </p>
           )}
         </div>
-        <div className={purchaseStyles.modalActions}>
+        <div className={purchaseStyles.cancelConfirmActions}>
           <button
             ref={keepBtnRef}
             type="button"
-            className={purchaseStyles.modalGhostBtn}
+            className={purchaseStyles.cancelConfirmCancelBtn}
             onClick={onClose}
             disabled={confirming}
           >
@@ -313,11 +317,11 @@ function CancelBookingModal({
           </button>
           <button
             type="button"
-            className={purchaseStyles.modalDangerBtn}
+            className={purchaseStyles.cancelConfirmDangerBtn}
             onClick={onConfirm}
             disabled={confirming}
           >
-            {confirming ? 'Cancelling…' : showsPaidRefundDisclaimer ? 'Cancel & request refund' : 'Cancel purchase'}
+            {confirming ? 'Cancelling…' : showsPaidRefundDisclaimer ? 'Yes, Cancel it' : 'Cancel purchase'}
           </button>
         </div>
       </div>
@@ -325,22 +329,200 @@ function CancelBookingModal({
   );
 }
 
+const DISPUTE_REASON_OPTIONS = [
+  { value: 'Service quality or scope', label: 'Service quality or scope' },
+  { value: 'Billing or payment', label: 'Billing or payment' },
+  { value: 'Scheduling or cancellation', label: 'Scheduling or cancellation' },
+  { value: 'Provider did not deliver', label: 'Provider did not deliver' },
+  { value: 'Other concern', label: 'Other concern' },
+];
+
+/**
+ * @param {{
+ *   open: boolean,
+ *   rawOrderId: string,
+ *   onClose: () => void,
+ *   onSubmit: (payload: { reason: string, description: string }) => Promise<void>,
+ *   submitting: boolean,
+ * }} props
+ */
+function OpenDisputeModal({ open, rawOrderId, onClose, onSubmit, submitting }) {
+  const backdropRef = useRef(null);
+  const cancelBtnRef = useRef(null);
+  const [reason, setReason] = useState(DISPUTE_REASON_OPTIONS[0].value);
+  const [description, setDescription] = useState('');
+
+  useEffect(() => {
+    if (!open) {
+      queueMicrotask(() => {
+        setReason(DISPUTE_REASON_OPTIONS[0].value);
+        setDescription('');
+      });
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const prevActive = typeof document !== 'undefined' ? document.activeElement : null;
+    queueMicrotask(() => cancelBtnRef.current?.focus?.());
+
+    function onKeyDown(e) {
+      if (e.key === 'Escape' && !submitting) onClose();
+    }
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      if (prevActive && typeof prevActive.focus === 'function') prevActive.focus();
+    };
+  }, [open, submitting, onClose]);
+
+  if (!open || !rawOrderId) return null;
+
+  function backdropMouseDown(e) {
+    if (e.target === backdropRef.current && !submitting) onClose();
+  }
+
+  return (
+    <div
+      ref={backdropRef}
+      className={purchaseStyles.modalBackdrop}
+      role="presentation"
+      onMouseDown={backdropMouseDown}
+    >
+      <div
+        className={purchaseStyles.reviewPanel}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dispute-title"
+      >
+        <div className={purchaseStyles.reviewHeader}>
+          <span className={purchaseStyles.reviewIconBox} aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"
+                stroke="currentColor"
+                strokeWidth="1.25"
+              />
+              <path
+                d="M9.09 9a3 3 0 015.83 1c0 2-3 2-3 4"
+                stroke="currentColor"
+                strokeWidth="1.25"
+                strokeLinecap="round"
+              />
+              <circle cx="12" cy="17" r="1" fill="currentColor" />
+            </svg>
+          </span>
+          <div className={purchaseStyles.reviewHeaderText}>
+            <h2 id="dispute-title" className={purchaseStyles.reviewTitle}>
+              Request help
+            </h2>
+            <p className={purchaseStyles.reviewSubtitle}>
+              Describe the problem so our support team can review it with your provider.
+            </p>
+          </div>
+          <button
+            type="button"
+            className={purchaseStyles.reviewCloseBtn}
+            onClick={() => {
+              if (!submitting) onClose();
+            }}
+            disabled={submitting}
+            aria-label="Close request help dialog"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M4 4l8 8M12 4l-8 8"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <div className={purchaseStyles.reviewBody}>
+          <div className={purchaseStyles.reviewSection}>
+            <label className={purchaseStyles.reviewFieldLabel} htmlFor="dispute-reason">
+              Reason
+            </label>
+            <select
+              id="dispute-reason"
+              className={purchaseStyles.disputeSheetSelect}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              disabled={submitting}
+            >
+              {DISPUTE_REASON_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className={purchaseStyles.reviewSection}>
+            <label className={purchaseStyles.reviewFieldLabel} htmlFor="dispute-desc">
+              Additional details
+              <span className={purchaseStyles.reviewFieldLabelOptional}>(optional)</span>
+            </label>
+            <div className={purchaseStyles.reviewTextareaWrap}>
+              <textarea
+                id="dispute-desc"
+                className={`${purchaseStyles.reviewTextarea} ${purchaseStyles.disputeSheetTextarea}`}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                disabled={submitting}
+                placeholder="Describe the issue. Include relevant dates, amounts, and other details to help us resolve it faster."
+              />
+            </div>
+          </div>
+        </div>
+
+        <p className={purchaseStyles.disputeInfoNote} role="note">
+          This does not automatically cancel or refund the purchase.
+        </p>
+
+        <div className={purchaseStyles.reviewActions}>
+          <button
+            ref={cancelBtnRef}
+            type="button"
+            className={purchaseStyles.reviewCancelBtn}
+            onClick={onClose}
+            disabled={submitting}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className={purchaseStyles.reviewSubmitBtnDanger}
+            disabled={submitting}
+            onClick={async () => {
+              await onSubmit({ reason, description: description.trim() });
+            }}
+          >
+            {submitting ? 'Submitting\u2026' : 'Submit request'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const REVIEW_MAX_CHARS = 2000;
+
 function LeaveReviewModal({
   open,
   orderId,
-  orderLabel,
   orderItems,
   onClose,
   onSubmitted,
 }) {
   const backdropRef = useRef(null);
-  const keepBtnRef = useRef(null);
+  const cancelBtnRef = useRef(null);
 
   const safeOrderId = String(orderId ?? '').trim();
-
-  if (open && safeOrderId) {
-    console.log('[LeaveReviewModal] orderId prop:', orderId, 'safeOrderId:', safeOrderId, 'length:', safeOrderId.length);
-  }
 
   const reviewItems = useMemo(
     () => (Array.isArray(orderItems) ? orderItems : []).filter((x) => x?.orderItemId && x?.label),
@@ -406,12 +588,11 @@ function LeaveReviewModal({
     if (!open) return undefined;
 
     const prevActive = typeof document !== 'undefined' ? document.activeElement : null;
-    queueMicrotask(() => keepBtnRef.current?.focus?.());
+    queueMicrotask(() => cancelBtnRef.current?.focus?.());
 
     function onKeyDown(e) {
       if (e.key === 'Escape') {
         if (!submitting) onClose();
-        return;
       }
     }
 
@@ -431,6 +612,54 @@ function LeaveReviewModal({
   const ratedDraft = draft.filter((d) => d.rating >= 1 && d.rating <= 5);
   const hasAtLeastOneRating = ratedDraft.length > 0;
 
+  /**
+   * Pick the dominant noun ("Service" or "Product") for the modal header.
+   * Mixed checkouts fall back to "Item" so the header copy stays accurate.
+   */
+  const headerNoun = (() => {
+    const nouns = new Set(reviewItems.map((it) => reviewKindNoun(it.kind)));
+    if (nouns.size === 1) return [...nouns][0];
+    if (nouns.size === 0) return 'Service';
+    return 'Item';
+  })();
+
+  async function handleSubmit() {
+    setSubmitError('');
+    if (!hasAtLeastOneRating) {
+      setSubmitError(`Please select a rating (1\u20135 stars) for at least one ${headerNoun.toLowerCase()}.`);
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const payload = {
+        orderId: safeOrderId,
+        reviews: ratedDraft.map((d) => ({
+          orderItemId: d.orderItemId,
+          rating: d.rating,
+          reviewText: d.reviewText,
+        })),
+      };
+
+      const res = await fetch('/api/buyer/orders/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(typeof body?.error === 'string' ? body.error : 'Failed to submit review.');
+      }
+
+      onSubmitted?.();
+    } catch (e) {
+      setSubmitError(e?.message ? String(e.message) : 'Failed to submit review.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <div
       ref={backdropRef}
@@ -438,68 +667,146 @@ function LeaveReviewModal({
       role="presentation"
       onMouseDown={backdropMouseDown}
     >
-      <div className={purchaseStyles.modalPanel} role="dialog" aria-modal="true" aria-label="Leave a review">
-        <div className={purchaseStyles.modalTitle} style={{ fontSize: '1.15rem' }}>
-          Leave a review {orderLabel ? <span style={{ color: '#204F38' }}>{orderLabel}</span> : null}
+      <div
+        className={purchaseStyles.reviewPanel}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="review-modal-title"
+      >
+        <div className={purchaseStyles.reviewHeader}>
+          <span className={purchaseStyles.reviewIconBox} aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 3.25l2.75 5.57 6.15.9-4.45 4.34 1.05 6.12L12 17.27 6.5 20.18l1.05-6.12L3.1 9.72l6.15-.9L12 3.25z"
+                fill="currentColor"
+                stroke="currentColor"
+                strokeWidth="0.6"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
+          <div className={purchaseStyles.reviewHeaderText}>
+            <h2 id="review-modal-title" className={purchaseStyles.reviewTitle}>
+              Rate Our {headerNoun}
+            </h2>
+            <p className={purchaseStyles.reviewSubtitle}>
+              Provide us with feedback for the {headerNoun.toLowerCase()}.
+            </p>
+          </div>
+          <button
+            type="button"
+            className={purchaseStyles.reviewCloseBtn}
+            onClick={() => {
+              if (!submitting) onClose();
+            }}
+            disabled={submitting}
+            aria-label="Close review dialog"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M4 4l8 8M12 4l-8 8"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
         </div>
 
-        <div className={purchaseStyles.modalBody}>
+        <div className={purchaseStyles.reviewBody}>
           {loadingExisting ? (
-            <p style={{ margin: 0 }}>Loading your previous ratings…</p>
+            <p className={purchaseStyles.reviewHint} style={{ marginTop: 4 }}>
+              Loading your previous ratings…
+            </p>
           ) : loadError ? (
-            <p style={{ margin: 0, color: '#b91c1c', fontWeight: 600 }}>{loadError}</p>
+            <p className={purchaseStyles.reviewError}>{loadError}</p>
           ) : (
             <>
-              {reviewItems.map((item) => {
+              {reviewItems.map((item, idx) => {
                 const hit = draft.find((d) => String(d.orderItemId) === String(item.orderItemId));
                 const rating = hit?.rating ?? 0;
                 const reviewText = hit?.reviewText ?? '';
+                const noun = reviewKindNoun(item.kind);
+                const reviewCount = reviewText.length;
 
                 return (
-                  <div key={item.orderItemId} style={{ marginBottom: 14 }}>
-                    <div style={{ fontWeight: 700, marginBottom: 8, color: 'var(--forest, #102820)' }}>
-                      {item.label}
+                  <div key={item.orderItemId}>
+                    {idx > 0 ? <div className={purchaseStyles.reviewSectionDivider} /> : null}
+
+                    <div className={purchaseStyles.reviewSection}>
+                      <label className={purchaseStyles.reviewFieldLabel}>Your Rating</label>
+                      <StarCardPicker
+                        value={rating}
+                        disabled={submitting}
+                        onChange={(v) =>
+                          setDraft((prev) =>
+                            prev.map((x) =>
+                              x.orderItemId === item.orderItemId ? { ...x, rating: v } : x,
+                            ),
+                          )
+                        }
+                      />
                     </div>
-                    <StarPicker value={rating} onChange={(v) => setDraft((prev) => prev.map((x) => (x.orderItemId === item.orderItemId ? { ...x, rating: v } : x)))} />
-                    <textarea
-                      value={reviewText}
-                      onChange={(e) =>
-                        setDraft((prev) =>
-                          prev.map((x) => (x.orderItemId === item.orderItemId ? { ...x, reviewText: e.target.value } : x)),
-                        )
-                      }
-                      placeholder="Share your experience (optional)."
-                      rows={3}
-                      style={{
-                        width: '100%',
-                        marginTop: 8,
-                        border: '1px solid rgba(168, 137, 74, 0.35)',
-                        borderRadius: 8,
-                        padding: 10,
-                        fontFamily: 'Lato, sans-serif',
-                        fontSize: '0.86rem',
-                        resize: 'vertical',
-                      }}
-                      maxLength={2000}
-                    />
+
+                    <div className={purchaseStyles.reviewSection}>
+                      <label className={purchaseStyles.reviewFieldLabel}>{noun} Name</label>
+                      <div className={purchaseStyles.reviewItemName} aria-readonly="true">
+                        <span className={purchaseStyles.reviewItemNameText} title={item.label}>
+                          {item.label}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className={purchaseStyles.reviewSection}>
+                      <label
+                        className={purchaseStyles.reviewFieldLabel}
+                        htmlFor={`review-text-${item.orderItemId}`}
+                      >
+                        {noun} Review
+                        <span className={purchaseStyles.reviewFieldLabelOptional}>(Optional)</span>
+                      </label>
+                      <div className={purchaseStyles.reviewTextareaWrap}>
+                        <textarea
+                          id={`review-text-${item.orderItemId}`}
+                          className={purchaseStyles.reviewTextarea}
+                          value={reviewText}
+                          onChange={(e) =>
+                            setDraft((prev) =>
+                              prev.map((x) =>
+                                x.orderItemId === item.orderItemId
+                                  ? { ...x, reviewText: e.target.value.slice(0, REVIEW_MAX_CHARS) }
+                                  : x,
+                              ),
+                            )
+                          }
+                          placeholder="Provide a detailed review..."
+                          rows={4}
+                          maxLength={REVIEW_MAX_CHARS}
+                          disabled={submitting}
+                        />
+                        <span className={purchaseStyles.reviewCharCount} aria-live="polite">
+                          {reviewCount}/{REVIEW_MAX_CHARS}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
-              {submitError ? (
-                <p style={{ margin: '8px 0 0', color: '#b91c1c', fontWeight: 600 }}>{submitError}</p>
+              {submitError ? <p className={purchaseStyles.reviewError}>{submitError}</p> : null}
+              {reviewItems.length > 1 ? (
+                <p className={purchaseStyles.reviewHint}>
+                  You can rate one or more items now, then update or add the rest later.
+                </p>
               ) : null}
-              <p style={{ margin: '10px 0 0', color: '#6B6B6B', fontSize: '0.82rem' }}>
-                You can rate one or more services now, then update or add the rest later.
-              </p>
             </>
           )}
         </div>
 
-        <div className={purchaseStyles.modalActions}>
+        <div className={purchaseStyles.reviewActions}>
           <button
-            ref={keepBtnRef}
+            ref={cancelBtnRef}
             type="button"
-            className={purchaseStyles.modalGhostBtn}
+            className={purchaseStyles.reviewCancelBtn}
             onClick={onClose}
             disabled={submitting}
           >
@@ -507,46 +814,11 @@ function LeaveReviewModal({
           </button>
           <button
             type="button"
-            className={purchaseStyles.modalDangerBtn}
-            onClick={async () => {
-              setSubmitError('');
-              if (!hasAtLeastOneRating) {
-                setSubmitError('Please select a rating (1–5 stars) for at least one service.');
-                return;
-              }
-
-              setSubmitting(true);
-              try {
-                const payload = {
-                  orderId: safeOrderId,
-                  reviews: ratedDraft.map((d) => ({
-                    orderItemId: d.orderItemId,
-                    rating: d.rating,
-                    reviewText: d.reviewText,
-                  })),
-                };
-
-                const res = await fetch('/api/buyer/orders/reviews', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(payload),
-                });
-
-                const body = await res.json().catch(() => null);
-                if (!res.ok) {
-                  throw new Error(typeof body?.error === 'string' ? body.error : 'Failed to submit review.');
-                }
-
-                onSubmitted?.();
-              } catch (e) {
-                setSubmitError(e?.message ? String(e.message) : 'Failed to submit review.');
-              } finally {
-                setSubmitting(false);
-              }
-            }}
+            className={purchaseStyles.reviewSubmitBtn}
+            onClick={handleSubmit}
             disabled={submitting || loadingExisting || reviewItems.length === 0}
           >
-            {submitting ? 'Submitting…' : 'Submit'}
+            {submitting ? 'Submitting\u2026' : 'Submit'}
           </button>
         </div>
       </div>
@@ -716,6 +988,16 @@ function PurchaseCard({ purchase, cancellingOrderId }) {
           </button>
         ) : null}
 
+        {purchase.showOpenDispute ? (
+          <button
+            type="button"
+            className={purchaseStyles.actionLink}
+            onClick={() => purchase.onOpenDispute?.(purchase)}
+          >
+            Request help
+          </button>
+        ) : null}
+
         {purchase.showCancelPurchase ? (
           <button
             type="button"
@@ -736,6 +1018,7 @@ function PurchaseCard({ purchase, cancellingOrderId }) {
 
 export default function PurchasesPage() {
   const { user } = useProfile();
+  const toast = useToast();
   const router = useRouter();
   /** `undefined` until `getUserRole` resolves — avoids a one-frame buyer skeleton for sellers. */
   const [isSeller, setIsSeller] = useState(undefined);
@@ -743,8 +1026,12 @@ export default function PurchasesPage() {
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [loadingPurchases, setLoadingPurchases] = useState(true);
+  const [refreshingPurchases, setRefreshingPurchases] = useState(false);
   const [purchases, setPurchases] = useState([]);
   const [refreshNonce, setRefreshNonce] = useState(0);
+  const hasLoadedPurchasesRef = useRef(false);
+  const lastRefreshAtRef = useRef(0);
+  const lastLoadedUserIdRef = useRef(null);
 
   const [cancellingOrderId, setCancellingOrderId] = useState(null);
   const [cancelConfirmRawOrderId, setCancelConfirmRawOrderId] = useState(null);
@@ -755,6 +1042,9 @@ export default function PurchasesPage() {
 
   const [leaveReviewOpen, setLeaveReviewOpen] = useState(false);
   const [leaveReviewOrder, setLeaveReviewOrder] = useState(null);
+
+  const [disputeModalPurchase, setDisputeModalPurchase] = useState(null);
+  const [disputeSubmitting, setDisputeSubmitting] = useState(false);
 
   const bumpRefresh = useCallback(() => {
     setRefreshNonce((n) => n + 1);
@@ -793,6 +1083,14 @@ export default function PurchasesPage() {
   useEffect(() => {
     let cancelled = false;
     async function load() {
+      const currentUserId = user?.id ?? null;
+      const userChanged = currentUserId !== lastLoadedUserIdRef.current;
+      if (userChanged) {
+        hasLoadedPurchasesRef.current = false;
+        lastRefreshAtRef.current = 0;
+        lastLoadedUserIdRef.current = currentUserId;
+      }
+
       if (!user) {
         if (!cancelled) setLoadingPurchases(false);
         return;
@@ -800,7 +1098,12 @@ export default function PurchasesPage() {
       if (isSeller !== false) {
         return;
       }
-      setLoadingPurchases(true);
+      const shouldBlock = !hasLoadedPurchasesRef.current;
+      if (shouldBlock) {
+        setLoadingPurchases(true);
+      } else {
+        setRefreshingPurchases(true);
+      }
       try {
         const { data: orders, error: ordersErr } = await supabase
           .from('orders')
@@ -895,11 +1198,51 @@ export default function PurchasesPage() {
           }
         }
 
+        /** Resolve `listing_kind` for each purchased listing so the review modal can pick "Service Name" vs "Product Name". */
+        const listingIdByItemId = new Map();
+        const listingIdSet = new Set();
+        for (const it of items ?? []) {
+          const lid = listingIdFromOrderItemProductId(it.product_id);
+          if (lid) {
+            listingIdByItemId.set(String(it.id), lid);
+            listingIdSet.add(lid);
+          }
+        }
+
+        /** @type {Record<string, string | null>} */
+        let kindByListingId = {};
+        if (listingIdSet.size > 0 && !cancelled) {
+          try {
+            const kindsRes = await fetch('/api/profile/purchases/listing-kinds', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ listingIds: [...listingIdSet] }),
+            });
+            if (kindsRes.ok) {
+              const kbody = await kindsRes.json();
+              kindByListingId = kbody?.kinds && typeof kbody.kinds === 'object' ? kbody.kinds : {};
+            }
+          } catch {
+            kindByListingId = {};
+          }
+        }
+
         if (cancelled) return;
+
+        const itemsByOrderWithKind = new Map();
+        for (const [orderId, list] of itemsByOrder.entries()) {
+          itemsByOrderWithKind.set(
+            orderId,
+            list.map((it) => {
+              const lid = listingIdByItemId.get(String(it.id));
+              return { ...it, listing_kind: lid ? kindByListingId[lid] ?? null : null };
+            }),
+          );
+        }
 
         const flattened = [];
         for (const o of orders ?? []) {
-          const orderItems = itemsByOrder.get(o.id) ?? [];
+          const orderItems = itemsByOrderWithKind.get(o.id) ?? [];
           const dn = nameMap[o.seller_user_id];
           const card = mapBuyerOrderCard(o, orderItems, dn ?? undefined);
           const reviewedSet = reviewedItemIdsByOrder.get(String(o.id)) ?? new Set();
@@ -910,7 +1253,12 @@ export default function PurchasesPage() {
           setPurchases(flattened);
         }
       } finally {
-        if (!cancelled) setLoadingPurchases(false);
+        if (!cancelled) {
+          setLoadingPurchases(false);
+          setRefreshingPurchases(false);
+          hasLoadedPurchasesRef.current = true;
+          lastRefreshAtRef.current = Date.now();
+        }
       }
     }
 
@@ -923,7 +1271,11 @@ export default function PurchasesPage() {
   useEffect(() => {
     if (typeof document === 'undefined' || !user || isSeller) return undefined;
     const onVis = () => {
-      if (document.visibilityState === 'visible') bumpRefresh();
+      if (document.visibilityState !== 'visible') return;
+      const now = Date.now();
+      const MIN_REFRESH_INTERVAL_MS = 45_000;
+      if (now - lastRefreshAtRef.current < MIN_REFRESH_INTERVAL_MS) return;
+      bumpRefresh();
     };
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
@@ -983,6 +1335,7 @@ export default function PurchasesPage() {
       rawOrderId: purchase.rawOrderId,
       displayOrderId: purchase.id,
       orderItems: purchase.orderItemsForReview,
+      hasExistingReview: Boolean(purchase.hasExistingReview),
     });
     setLeaveReviewOpen(true);
   }, []);
@@ -998,15 +1351,21 @@ export default function PurchasesPage() {
       });
       const body = await res.json().catch(() => null);
       if (!res.ok) {
-        window.alert(typeof body?.error === 'string' ? body.error : 'Could not cancel purchase.');
+        toast.error(
+          typeof body?.error === 'string'
+            ? body.error
+            : 'Unable to cancel this purchase. Please try again.',
+        );
         return;
       }
       if (body?.mode === 'refund_requested') {
         setCancelResultMessage(
           (typeof body?.message === 'string' ? String(body.message) : '')
-            || 'Purchase cancelled and refund requested. After the provider approves, refunds usually arrive in about 5-15 business days, depending on your bank or e-wallet.',
+            || 'Your purchase has been cancelled and a refund request has been submitted. Once approved by the provider, refunds typically arrive within 5 to 15 business days, depending on your bank or e-wallet.',
         );
         setCancelResultOpen(true);
+      } else {
+        toast.success('Purchase cancelled.');
       }
       setCancelConfirmRawOrderId(null);
       setCancelShowsRefundDisclaimer(false);
@@ -1014,13 +1373,43 @@ export default function PurchasesPage() {
     } finally {
       setCancellingOrderId(null);
     }
-  }, [cancelConfirmRawOrderId, bumpRefresh]);
+  }, [cancelConfirmRawOrderId, bumpRefresh, toast]);
 
   const cancelConfirmLabel = useMemo(() => {
     if (!cancelConfirmRawOrderId) return '';
     const p = purchases.find((x) => x.rawOrderId === cancelConfirmRawOrderId);
     return p?.id ? String(p.id) : '';
   }, [cancelConfirmRawOrderId, purchases]);
+
+  const submitDispute = useCallback(
+    async ({ reason, description }) => {
+      const rawOrderId = disputeModalPurchase?.rawOrderId;
+      if (!rawOrderId) return;
+      setDisputeSubmitting(true);
+      try {
+        const res = await fetch('/api/buyer/disputes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: rawOrderId, reason, description }),
+        });
+        const body = await res.json().catch(() => null);
+        if (!res.ok) {
+          toast.error(
+            typeof body?.error === 'string'
+              ? body.error
+              : 'Unable to submit your request. Please try again.',
+          );
+          return;
+        }
+        toast.success('Your request has been submitted. Our support team will respond shortly.');
+        setDisputeModalPurchase(null);
+        bumpRefresh();
+      } finally {
+        setDisputeSubmitting(false);
+      }
+    },
+    [disputeModalPurchase, bumpRefresh, toast],
+  );
 
   if (isSeller === true) {
     return (
@@ -1118,6 +1507,11 @@ export default function PurchasesPage() {
             ))}
           </div>
         </div>
+        {refreshingPurchases ? (
+          <div className={purchaseStyles.paginationMeta} aria-live="polite">
+            Refreshing purchases…
+          </div>
+        ) : null}
         {checkoutPayBanner ? (
           <div className={`${purchaseStyles.payErrorBanner} ${purchaseStyles.payErrorBannerDismissRow}`} role="alert">
             <p style={{ margin: 0, flex: 1 }}>{checkoutPayBanner}</p>
@@ -1145,6 +1539,7 @@ export default function PurchasesPage() {
                       setCancelConfirmRawOrderId(id);
                       setCancelShowsRefundDisclaimer(Boolean(showsRefundDisclaimer));
                     },
+                    onOpenDispute: (row) => setDisputeModalPurchase(row),
                     onLeaveReview: openLeaveReview,
                   }}
                 />
@@ -1171,7 +1566,6 @@ export default function PurchasesPage() {
       <LeaveReviewModal
         open={leaveReviewOpen}
         orderId={leaveReviewOrder?.rawOrderId ?? ''}
-        orderLabel={leaveReviewOrder?.displayOrderId ? `#${leaveReviewOrder.displayOrderId}` : ''}
         orderItems={leaveReviewOrder?.orderItems ?? []}
         onClose={() => {
           if (leaveReviewOpen) {
@@ -1180,10 +1574,26 @@ export default function PurchasesPage() {
           }
         }}
         onSubmitted={() => {
+          toast.success(
+            leaveReviewOrder?.hasExistingReview
+              ? 'Review updated successfully.'
+              : 'Review submitted successfully.',
+          );
           setLeaveReviewOpen(false);
           setLeaveReviewOrder(null);
           bumpRefresh();
         }}
+      />
+
+      <OpenDisputeModal
+        open={Boolean(disputeModalPurchase)}
+        rawOrderId={disputeModalPurchase?.rawOrderId ?? ''}
+        onClose={() => {
+          if (disputeSubmitting) return;
+          setDisputeModalPurchase(null);
+        }}
+        onSubmit={submitDispute}
+        submitting={disputeSubmitting}
       />
 
       <InfoModal

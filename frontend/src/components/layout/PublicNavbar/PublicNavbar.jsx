@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useSiteContent } from '@/lib/siteContent/client'
 import { readString, replaceUrlQuery } from '@/lib/url/queryParams'
 import InstallAppControl from '@/components/pwa/InstallAppControl'
+import { useInAppNotificationFeed, relativeNotificationTime } from '@/lib/notifications/useInAppNotificationFeed'
 
 export default function PublicNavbar() {
   const { cartCount } = useCart()
@@ -25,12 +26,22 @@ export default function PublicNavbar() {
   const [searchQuery, setSearchQuery] = useState('')
   const [desktopSearchOpen, setDesktopSearchOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
-  const [notifications, setNotifications] = useState([
-    { id: 1, message: 'Your order #1042 has been confirmed.', timestamp: '2 min ago', read: false },
-    { id: 2, message: 'New service available: Premium Floral Package.', timestamp: '1 hr ago', read: false },
-    { id: 3, message: 'Your payment for order #1039 was received.', timestamp: 'Yesterday', read: true },
-    { id: 4, message: 'Reminder: Review your recent purchase.', timestamp: '2 days ago', read: true },
-  ])
+  const {
+    notifications: notifRows,
+    unreadCount,
+    markRead: markNotifRead,
+    markAllRead: markAllNotifsRead,
+  } = useInAppNotificationFeed({
+    limit: 12,
+    enabled: hydrated && !authLoading && !!user && isBuyer,
+  })
+
+  const notifications = notifRows.map((n) => ({
+    id: n.id,
+    message: [n.title, n.body].filter(Boolean).join(' — '),
+    timestamp: relativeNotificationTime(n.createdAt),
+    read: Boolean(n.readAt),
+  }))
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -127,14 +138,12 @@ export default function PublicNavbar() {
         ? 'My Purchases'
         : ''
 
-  const unreadCount = notifications.filter(n => !n.read).length
-
   const markAllRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+    markAllNotifsRead()
   }
 
   const markOneRead = (id) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
+    markNotifRead(id)
   }
 
   const openLogoutModal = () => {

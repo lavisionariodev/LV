@@ -88,7 +88,7 @@ export async function GET(request, { params }) {
 
   const buyerIds = [...new Set(reviews.map((r) => r.buyer_id).filter(Boolean))]
   const { data: profileRows, error: profilesErr } = buyerIds.length
-    ? await supabaseAdmin.from('profiles').select('id,full_name').in('id', buyerIds)
+    ? await supabaseAdmin.from('profiles').select('id,full_name,avatar_url').in('id', buyerIds)
     : { data: [], error: null }
 
   if (profilesErr) {
@@ -96,10 +96,12 @@ export async function GET(request, { params }) {
   }
 
   const nameByBuyerId = new Map((profileRows ?? []).map((p) => [p.id, p.full_name]))
+  const avatarByBuyerId = new Map((profileRows ?? []).map((p) => [p.id, p.avatar_url]))
 
   const mapped = reviews.map((r) => ({
     id: String(r.order_item_id),
     author: nameByBuyerId.get(r.buyer_id) || 'Buyer',
+    avatarUrl: avatarByBuyerId.get(r.buyer_id) || '',
     rating: Number(r.rating) || 0,
     date: formatISODate(r.created_at),
     title: String(r.listing_label ?? ''),

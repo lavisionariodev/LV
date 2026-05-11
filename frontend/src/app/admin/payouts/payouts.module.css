@@ -6025,3 +6025,95 @@
     border-radius: 12px;
   }
 }
+
+/* ── Stuck refunds strip (admin refund queue) ───────────────────────────── */
+
+.stuckRefundsWrap {
+  border-radius: 12px;
+  border: 1px solid rgba(220, 38, 38, 0.28);
+  background: rgba(254, 242, 242, 0.65);
+  padding: 14px 16px 16px;
+}
+
+.stuckRefundsHead {
+  margin-bottom: 10px;
+}
+
+.stuckRefundsTitle {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #991b1b;
+}
+
+.stuckRefundsSub {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.stuckRefundsError {
+  margin: 0;
+  font-size: 13px;
+  color: #b91c1c;
+}
+
+.stuckRefundsTableWrap {
+  overflow-x: auto;
+}
+
+.stuckRefundsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.stuckRefundsTable th,
+.stuckRefundsTable td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.stuckRefundsTable th {
+  color: #64748b;
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.stuckRefundsMono {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+}
+
+.stuckRefundsActions {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.stuckRefundsBtn,
+.stuckRefundsBtnDanger,
+.stuckRefundsLink {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #0f172a;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.stuckRefundsBtnDanger {
+  border-color: rgba(220, 38, 38, 0.45);
+  color: #991b1b;
+}
+
+.stuckRefundsBtn:disabled,
+.stuckRefundsBtnDanger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

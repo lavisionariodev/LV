@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { notifyUser } from '@/lib/notifications/inAppServer'
 
 const ALLOWED = new Set(['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'])
 
@@ -28,7 +29,7 @@ export async function POST(request) {
 
   const { data: order, error: orderErr } = await supabaseAdmin
     .from('orders')
-    .select('id,seller_user_id,fulfillment_status,payment_status,status')
+    .select('id,buyer_id,seller_user_id,fulfillment_status,payment_status,status,order_number')
     .eq('id', orderId)
     .maybeSingle()
 
@@ -69,6 +70,38 @@ export async function POST(request) {
 
   if (updErr) {
     return NextResponse.json({ error: 'Failed to update status.' }, { status: 500 })
+  }
+
+  if (order.buyer_id && ['confirmed', 'in_progress', 'completed'].includes(fulfillmentStatus)) {
+    const ref = order.order_number || String(orderId).slice(0, 8)
+    if (fulfillmentStatus === 'in_progress') {
+      await notifyUser(supabaseAdmin, {
+        userId: order.buyer_id,
+        type: 'service_inprogress',
+        title: 'Service in progress',
+        body: `Your provider has started work on booking ${ref}.`,
+        metadata: { orderId },
+        dedupeKey: `order_inprogress:${orderId}`,
+      })
+    } else if (fulfillmentStatus === 'completed') {
+      await notifyUser(supabaseAdmin, {
+        userId: order.buyer_id,
+        type: 'service_completed',
+        title: 'Service completed',
+        body: `Your provider marked booking ${ref} as completed. Thank you for using our platform.`,
+        metadata: { orderId },
+        dedupeKey: `order_completed:${orderId}`,
+      })
+    } else if (fulfillmentStatus === 'confirmed') {
+      await notifyUser(supabaseAdmin, {
+        userId: order.buyer_id,
+        type: 'service_confirmed',
+        title: 'Booking confirmed',
+        body: `Your booking ${ref} is confirmed.`,
+        metadata: { orderId },
+        dedupeKey: `order_confirmed:${orderId}`,
+      })
+    }
   }
 
   return NextResponse.json({ ok: true }, { status: 200 })

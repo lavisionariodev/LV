@@ -25,7 +25,6 @@ import { LuUserCheck } from 'react-icons/lu'
 import { BsPerson } from 'react-icons/bs'
 import styles from './AppSidebar.module.css'
 import { useSiteContent } from '@/lib/siteContent/client'
-import { countDisputesNeedingAdminAttention } from '@/data/adminSampleData'
 
 /** Stable empty list when sidebar config is absent (avoid new [] each render). */
 const EMPTY_NAV_ITEMS = []
@@ -213,6 +212,27 @@ export default function AppSidebar({
     return () => document.removeEventListener('pointerdown', down, true)
   }, [collapsedFlyoutLabel, mounted, showCollapsed])
 
+  const [adminDisputesAttention, setAdminDisputesAttention] = useState(0)
+
+  useEffect(() => {
+    if (variant !== 'admin') return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch('/api/admin/disputes/attention-count', { credentials: 'include' })
+        const body = await res.json().catch(() => null)
+        if (!cancelled && res.ok && body?.count != null) {
+          setAdminDisputesAttention(Number(body.count) || 0)
+        }
+      } catch {
+        // keep 0
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [variant])
+
   const config = SIDEBAR_CONFIG[variant]
   const sidebarNavItems = config?.navItems ?? EMPTY_NAV_ITEMS
   const hasGroups = sidebarNavItems.some((item) => !isLinkItem(item))
@@ -253,8 +273,7 @@ export default function AppSidebar({
 
   const showSidebar = !(isMobile && variant === 'seller')
 
-  const showDisputeNewBadge =
-    variant === 'admin' && countDisputesNeedingAdminAttention() > 0
+  const showDisputeNewBadge = variant === 'admin' && adminDisputesAttention > 0
 
   const collapsedFlyoutGroup =
     collapsedFlyoutLabel &&

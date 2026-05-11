@@ -126,7 +126,10 @@ export function mapBuyerOrderCard(o, orderItems, providerDisplayName) {
   /** @type {string | null} */
   let statusDetail = null
   let status
-  if (fulfillment === 'cancelled') {
+  if (fulfillment === 'pending' && refundRsRaw === 'declined') {
+    status = 'Active booking'
+    statusDetail = 'Refund request declined. Booking remains paid and awaiting provider confirmation.'
+  } else if (fulfillment === 'cancelled') {
     const refundComplete =
       refundRsRaw === 'completed' || ps === 'refunded'
     if (refundComplete) {
@@ -138,7 +141,7 @@ export function mapBuyerOrderCard(o, orderItems, providerDisplayName) {
         refundRsRaw === 'processing' ||
         ps === 'refund_pending'
       ) {
-        statusDetail = 'Waiting for refund'
+        statusDetail = 'Refund in progress'
       }
     }
   } else {
@@ -173,6 +176,7 @@ export function mapBuyerOrderCard(o, orderItems, providerDisplayName) {
   const orderItemsForReview = orderItems.map((it) => ({
     orderItemId: it.id ?? null,
     label: it.name,
+    kind: pickKind(it.listing_kind),
   }))
 
   /** PayMongo checkout session opened (`payment_status` set to pending by `/api/checkout/pay`). Not the same as legacy `status: pending_payment` on new unpaid orders. */
@@ -193,6 +197,12 @@ export function mapBuyerOrderCard(o, orderItems, providerDisplayName) {
   /** Cancel anytime before seller confirms fulfillment (paid or unpaid); not mid–PayMongo checkout. */
   const eligibleCancelPurchase =
     fulfillment === 'pending' && !blockingRefundLifecycle && !paymongoCheckoutActive
+
+  /** After confirmation (or if a refund request was declined), buyer can open a support dispute. */
+  const showOpenDispute =
+    paid &&
+    fulfillment !== 'cancelled' &&
+    (['confirmed', 'in_progress', 'completed'].includes(fulfillment) || refundRsRaw === 'declined')
 
   /** Show refund timeline copy in confirm modal after payment, before confirmation. */
   const cancelShowsRefundDisclaimer = Boolean(eligibleCancelPurchase && paid)
@@ -232,6 +242,7 @@ export function mapBuyerOrderCard(o, orderItems, providerDisplayName) {
     canSubmitCancelPurchase,
     cancelPurchaseHint,
     cancelShowsRefundDisclaimer,
+    showOpenDispute,
     detail: {
       serviceLocation: pickStr(o.service_location),
       contactName: pickStr(o.contact_name),
@@ -288,7 +299,7 @@ export function expandPurchaseCardsByLineItem(baseCard, orderItems, reviewedItem
           subtotal: formatMoney(lineTotal, baseCard.currency),
         },
       ],
-      orderItemsForReview: [{ orderItemId: it.id, label: name }],
+      orderItemsForReview: [{ orderItemId: it.id, label: name, kind: pickKind(it.listing_kind) }],
       hasExistingReview: reviewed.has(itemId),
       isMultiItemCheckout: multi,
       checkoutSiblingCount: siblings,
@@ -301,4 +312,17 @@ function pickStr(v) {
   if (v == null) return ''
   const s = String(v).trim()
   return s
+}
+
+/**
+ * Normalize the `listing_kind` to one of 'service' | 'package' | 'product', else null.
+ * Used to label the review modal as "Service Name" vs "Product Name".
+ * @param {unknown} v
+ * @returns {'service' | 'package' | 'product' | null}
+ */
+function pickKind(v) {
+  if (typeof v !== 'string') return null
+  const k = v.trim().toLowerCase()
+  if (k === 'service' || k === 'package' || k === 'product') return k
+  return null
 }

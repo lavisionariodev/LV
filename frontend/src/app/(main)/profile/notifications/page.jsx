@@ -3,7 +3,7 @@
 import { useProfile } from '@/contexts/ProfileContext';
 import styles from '../profile.module.css';
 import notifStyles from './notifications.module.css';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -88,28 +88,133 @@ const ICON_MAP = {
       <path d="M10.5 2.5l3 3-7 7H3.5V9l7-6.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
     </svg>
   ),
+  alerts: (
+    <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8 1.5L14.5 13H1.5L8 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+      <path d="M8 6v3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <circle cx="8" cy="11.5" r="0.8" fill="currentColor" />
+    </svg>
+  ),
 };
 
-const SAMPLE_NOTIFICATIONS = [
-  { id: 1, type: 'service', iconKey: 'service_inprogress', variant: 'amber', unread: true, day: 'Today', time: 'Just now', title: 'Preparation in progress', body: 'Body preparation for the Reyes family has begun. Estimated completion by 3:00 PM today.', tag: 'In progress' },
-  { id: 2, type: 'message', iconKey: 'message', variant: 'purple', unread: true, day: 'Today', time: '18 min ago', title: 'New message from your provider', body: 'La Visionario Staff: "The floral arrangement and casket display for the Santos family are ready for your review."', tag: 'Message' },
-  { id: 3, type: 'service', iconKey: 'service_scheduled', variant: 'green', unread: true, day: 'Today', time: '1 hr ago', title: 'Burial service scheduled', body: 'The interment for the Santos family has been confirmed at Loyola Memorial Park — Chapel B, April 2 at 10:00 AM.', tag: 'Confirmed' },
-  { id: 4, type: 'payment', iconKey: 'payment_success', variant: 'blue', unread: true, day: 'Today', time: '5 hrs ago', title: 'Payment received', body: '₱45,000 deposit for the full burial package (Order #LV-20481) has been confirmed. Thank you.', tag: 'Paid' },
-  { id: 5, type: 'service', iconKey: 'service_completed', variant: 'green', unread: false, day: 'Yesterday', time: 'Yesterday, 4:30 PM', title: 'Service completed', body: 'All rites for the Dela Cruz family interment have been concluded. A follow-up summary has been sent to your email.', tag: 'Completed' },
-  { id: 6, type: 'reminder', iconKey: 'reminder', variant: 'amber', unread: false, day: 'Yesterday', time: 'Yesterday, 9:00 AM', title: 'Reminder — Wake viewing tomorrow', body: 'The Reyes family wake viewing begins tomorrow at 3:00 PM in Chapel A. Please arrive 30 minutes early for coordination.', tag: 'Reminder' },
-  { id: 7, type: 'service', iconKey: 'service_alert', variant: 'red', unread: false, day: 'Earlier', time: '2 days ago', title: 'Schedule adjusted — Dela Cruz wake', body: 'The wake has been moved from 2:00 PM to 5:00 PM due to a venue conflict. All registered guests have been notified.', tag: 'Updated' },
-  { id: 8, type: 'payment', iconKey: 'payment_failed', variant: 'red', unread: false, day: 'Earlier', time: '3 days ago', title: 'Payment failed — action needed', body: 'The remaining balance of ₱15,000 for Order #LV-20481 could not be processed. Please update your payment method.', tag: 'Failed' },
-  { id: 9, type: 'message', iconKey: 'message', variant: 'purple', unread: false, day: 'Earlier', time: '4 days ago', title: 'Provider update — hearse confirmed', body: 'La Visionario Staff: "The hearse and funeral cortege for the Santos service have been confirmed for April 2 at 9:00 AM."', tag: 'Message' },
-  { id: 10, type: 'account', iconKey: 'account_security', variant: 'red', unread: false, day: 'Earlier', time: '5 days ago', title: 'New login detected', body: "A new sign-in was detected from Chrome on Windows in Manila, PH. If this wasn't you, secure your account immediately.", tag: 'Security' },
-];
+function sameCalendarDay(a, b) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function dayLabelForDate(d) {
+  const now = new Date();
+  if (sameCalendarDay(d, now)) return 'Today';
+  const y = new Date(now);
+  y.setDate(y.getDate() - 1);
+  if (sameCalendarDay(d, y)) return 'Yesterday';
+  return d.toLocaleDateString('en-PH', { dateStyle: 'medium' });
+}
+
+function mapApiRowToBuyerNotification(row) {
+  const created = new Date(row.createdAt);
+  const t = String(row.type || '');
+  let iconKey = 'account_profile';
+  if (t === 'payment_refund') iconKey = 'payment_refund';
+  else if (t.startsWith('payment')) iconKey = t.includes('fail') ? 'payment_failed' : 'payment_success';
+  else if (t === 'service_alert') iconKey = 'service_alert';
+  else if (t === 'service_completed') iconKey = 'service_completed';
+  else if (t === 'service_confirmed') iconKey = 'service_scheduled';
+  else if (t.startsWith('service')) iconKey = 'service_inprogress';
+  else if (t === 'reminder') iconKey = 'reminder';
+  else if (t === 'message') iconKey = 'message';
+  else if (t === 'alerts') iconKey = 'alerts';
+  else if (t === 'listing_approval' || t === 'listing_rejected') iconKey = 'account_profile';
+
+  let variant = 'amber';
+  if (t.startsWith('payment') || t === 'payment_refund') variant = t.includes('fail') ? 'red' : 'blue';
+  else if (t === 'service_alert' || t.includes('alert')) variant = 'red';
+  else if (t === 'service' || t.startsWith('service')) variant = 'green';
+  else if (t === 'message') variant = 'purple';
+  else if (t === 'reminder') variant = 'amber';
+  else if (t === 'account' || t === 'alerts') variant = 'red';
+  else if (t === 'listing_rejected') variant = 'red';
+  else if (t === 'listing_approval') variant = 'green';
+
+  let filterType = 'account';
+  if (t.startsWith('payment') || t === 'payment_refund') filterType = 'payment';
+  else if (t === 'service_alert' || t.startsWith('service')) filterType = 'service';
+  else if (t === 'message') filterType = 'message';
+  else if (t === 'reminder') filterType = 'reminder';
+  else if (t === 'listing_approval' || t === 'listing_rejected') filterType = 'account';
+
+  const tag =
+    t === 'payment_refund'
+      ? 'Refund'
+      : t.startsWith('payment')
+        ? 'Payment'
+        : t === 'service_alert'
+          ? 'Alert'
+          : t.startsWith('service')
+            ? 'Service'
+            : t === 'message'
+              ? 'Message'
+              : t === 'reminder'
+                ? 'Reminder'
+                : t === 'listing_approval'
+                  ? 'Listing'
+                  : t === 'listing_rejected'
+                    ? 'Listing'
+                    : 'Account';
+
+  return {
+    id: row.id,
+    type: filterType,
+    iconKey,
+    variant,
+    unread: !row.readAt,
+    day: dayLabelForDate(created),
+    time: created.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' }),
+    title: row.title || 'Notification',
+    body: row.body || '',
+    tag,
+  };
+}
 
 const PAGE_SIZE = 7;
 
 export default function NotificationsPage() {
-  const { loading } = useProfile();
-  const [notifications, setNotifications] = useState(SAMPLE_NOTIFICATIONS);
+  const { loading, user } = useProfile();
+  const [apiRows, setApiRows] = useState([]);
+  const [feedLoading, setFeedLoading] = useState(true);
+
   const [activeFilter, setActiveFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+
+  const loadFeed = useCallback(async () => {
+    if (!user) {
+      setApiRows([]);
+      setFeedLoading(false);
+      return;
+    }
+    setFeedLoading(true);
+    const res = await fetch('/api/notifications?limit=100', { cache: 'no-store' });
+    const body = await res.json().catch(() => null);
+    if (!res.ok) {
+      setApiRows([]);
+      setFeedLoading(false);
+      return;
+    }
+    setApiRows(Array.isArray(body?.notifications) ? body.notifications : []);
+    setFeedLoading(false);
+  }, [user]);
+
+  useEffect(() => {
+    if (loading) return;
+    queueMicrotask(() => {
+      loadFeed();
+    });
+  }, [loading, loadFeed]);
+
+  const notifications = useMemo(() => apiRows.map(mapApiRowToBuyerNotification), [apiRows]);
 
   const unreadCount = notifications.filter((n) => n.unread).length;
 
@@ -138,12 +243,27 @@ export default function NotificationsPage() {
     return map;
   }, [paginated]);
 
-  function markRead(id) {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, unread: false } : n)));
+  async function markRead(id) {
+    await fetch('/api/notifications', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: String(id) }),
+    });
+    setApiRows((prev) =>
+      prev.map((r) => (String(r.id) === String(id) ? { ...r, readAt: new Date().toISOString() } : r)),
+    );
   }
-  function markAllRead() {
-    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+
+  async function markAllRead() {
+    await fetch('/api/notifications', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ markAllRead: true }),
+    });
+    const nowIso = new Date().toISOString();
+    setApiRows((prev) => prev.map((r) => ({ ...r, readAt: r.readAt || nowIso })));
   }
+
   function handleFilterChange(filterId) {
     setActiveFilter(filterId);
     setCurrentPage(1);
@@ -228,7 +348,9 @@ export default function NotificationsPage() {
       </header>
 
       <div className={notifStyles.feed}>
-        {grouped.length === 0 ? (
+        {feedLoading && notifications.length === 0 ? (
+          <div className={notifStyles.emptyState}>Loading notifications…</div>
+        ) : grouped.length === 0 ? (
           <div className={notifStyles.emptyState}>No notifications in this category.</div>
         ) : (
           grouped.map((group) => (
@@ -241,7 +363,7 @@ export default function NotificationsPage() {
                   onKeyDown={(e) => e.key === 'Enter' && markRead(notif.id)}>
                   {notif.unread && <span className={notifStyles.unreadTopRight} aria-hidden="true" />}
                   <div className={`${notifStyles.iconWrap} ${notifStyles[`iconWrap_${notif.variant}`]}`}>
-                    {ICON_MAP[notif.iconKey]}
+                    {ICON_MAP[notif.iconKey] || ICON_MAP.account_profile}
                   </div>
                   <div className={notifStyles.notifContent}>
                     <div className={notifStyles.notifTitle}>

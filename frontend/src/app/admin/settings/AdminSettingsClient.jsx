@@ -20,7 +20,6 @@ import { MdCheckCircle, MdErrorOutline } from 'react-icons/md'
 import { validateNewPassword } from '@/lib/validators/authSchemas'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
 import { useMediaQuery } from '@/shared/hooks'
-import { commission } from '@/data/adminSampleData'
 import { useSiteContent, upsertSiteContent } from '@/lib/siteContent/client'
 import { useToast } from '@/contexts/ToastContext'
 import loadingStyles from '../admin-loading.module.css'
@@ -53,8 +52,32 @@ function formatRuleDate(isoDate) {
 export function AdminBillingSettingsPanel({ variant = 'default' }) {
   const isSheet = variant === 'sheet'
   const isProfileDetail = variant === 'profileDetail'
-  const rule = commission.defaultRule
-  const overrideCount = commission.sellerOverrides?.length ?? 0
+  const [billingLoading, setBillingLoading] = useState(true)
+  const [defaultCommissionPercent, setDefaultCommissionPercent] = useState(10)
+  const [billingUpdatedAt, setBillingUpdatedAt] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      setBillingLoading(true)
+      try {
+        const res = await fetch('/api/admin/platform-billing', { credentials: 'include' })
+        const body = await res.json().catch(() => null)
+        if (cancelled || !res.ok) return
+        setDefaultCommissionPercent(
+          Number.isFinite(Number(body?.defaultCommissionPercent))
+            ? Number(body.defaultCommissionPercent)
+            : 10,
+        )
+        setBillingUpdatedAt(body?.row?.updated_at ? String(body.row.updated_at) : null)
+      } finally {
+        if (!cancelled) setBillingLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const wrapClass = isSheet
     ? styles.settingsSheetEmbed
@@ -92,25 +115,31 @@ export function AdminBillingSettingsPanel({ variant = 'default' }) {
           <dl className={styles.billingDl}>
             <div className={styles.billingDlRow}>
               <dt>Default rate</dt>
-              <dd>{rule.percentage}%</dd>
+              <dd>{billingLoading ? '…' : `${defaultCommissionPercent}%`}</dd>
             </div>
             <div className={styles.billingDlRow}>
               <dt>Rule</dt>
-              <dd>{rule.name}</dd>
+              <dd>Platform default (applied at order capture)</dd>
             </div>
             <div className={styles.billingDlRow}>
-              <dt>Effective from</dt>
-              <dd>{formatRuleDate(rule.effectiveFrom)}</dd>
-            </div>
-            <div className={styles.billingDlRow}>
-              <dt>Seller overrides</dt>
+              <dt>Last updated</dt>
               <dd>
-                {overrideCount} active override{overrideCount === 1 ? '' : 's'}
+                {billingLoading
+                  ? '…'
+                  : billingUpdatedAt
+                    ? formatRuleDate(billingUpdatedAt.slice(0, 10))
+                    : '—'}
+              </dd>
+            </div>
+            <div className={styles.billingDlRow}>
+              <dt>Per-seller overrides</dt>
+              <dd>
+                Not stored separately — adjust commission on individual escrows in Payouts when needed.
               </dd>
             </div>
           </dl>
-          <Link href="/admin/sellers" className={styles.billingCta}>
-            Manage seller-specific rates →
+          <Link href="/admin/payouts" className={styles.billingCta}>
+            Review escrows &amp; payout rates →
           </Link>
         </div>
 

@@ -23,6 +23,7 @@ import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 import confirmModalStyles from '@/components/ui/Modal/ConfirmModal.module.css'
 
 import styles from './payouts.module.css'
+import StuckRefundsStrip from './StuckRefundsStrip'
 
 // ─── Admin payouts page data hook (formerly useAdminPayoutsPage.js) ──────────
 
@@ -2076,6 +2077,8 @@ export default function AdminPayoutsPage() {
           />
         </section>
       )}
+
+      {activeTab === 'all' && <StuckRefundsStrip />}
 
       {/* Tab panels: All = transactions → commission → seller earnings */}
       <div

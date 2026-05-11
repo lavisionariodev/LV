@@ -693,7 +693,15 @@ function SellerProfileView({
                       <div key={review.id} className={styles.reviewCard}>
                         <div className={styles.reviewHeader}>
                           <div className={styles.reviewerAvatar}>
-                            {(review.reviewerInitials || review.reviewerName?.charAt(0) || 'A').toUpperCase()}
+                            {review.reviewerAvatarUrl ? (
+                              <img
+                                src={review.reviewerAvatarUrl}
+                                alt={`${review.reviewerName || 'Buyer'} avatar`}
+                                className={styles.reviewerAvatarImg}
+                              />
+                            ) : (
+                              (review.reviewerInitials || review.reviewerName?.charAt(0) || 'A').toUpperCase()
+                            )}
                           </div>
                           <div className={styles.reviewerInfo}>
                             <div className={styles.reviewerName}>{review.reviewerName}</div>

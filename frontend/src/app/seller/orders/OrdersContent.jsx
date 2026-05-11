@@ -19,7 +19,6 @@ import {
   TbPhone,
   TbMail,
   TbFileText,
-  TbCurrencyDollar,
   TbPhoto,
 } from 'react-icons/tb'
 import styles from './orders.module.css'
@@ -66,6 +65,11 @@ function formatPrice(n) {
 function formatDate(s) {
   if (!s) return '—'
   return new Date(s + 'T00:00:00').toLocaleDateString('en-PH', { dateStyle: 'medium' })
+}
+
+function formatDateTime(s) {
+  if (!s) return '—'
+  return new Date(s).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
 function sellerPaymentBadge(paymentStatus) {
@@ -150,7 +154,25 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
       return
     }
 
+    const { data: disputeRows } = await supabase
+      .from('disputes')
+      .select('id,order_id,reason,description,status,opened_at,resolution_notes')
+      .eq('seller_user_id', user.id)
+      .in('status', ['open', 'under_review'])
+      .order('opened_at', { ascending: false })
+      .abortSignal?.(signal)
+
+    if (signal?.aborted) return
+
+    const disputeByOrder = new Map()
+    for (const dispute of disputeRows ?? []) {
+      if (!disputeByOrder.has(dispute.order_id)) {
+        disputeByOrder.set(dispute.order_id, dispute)
+      }
+    }
+
     const mapped = (data ?? []).map((o) => {
+        const helpRequest = disputeByOrder.get(o.id) ?? null
         const items = o.order_items ?? []
         const servicePackage =
           items.length === 1
@@ -184,9 +206,9 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
         const refundRequested = Boolean(refundStage)
         const refundReason =
           refundStage === 'processing'
-            ? 'Buyer cancelled before you confirmed this booking. Refund approved — mark completed once the buyer has received the refund (typically about 5–15 business days).'
+            ? 'Refund approved and being processed by the payment provider. Completion is automatic and typically takes a few business days.'
             : refundStage === 'requested'
-              ? 'Buyer cancelled before you confirmed this booking. Approve to start processing the refund, or decline to reopen the booking as paid.'
+              ? 'Buyer cancelled this booking before confirmation and has requested a refund. Approve to initiate the refund, or decline to keep the booking active.'
               : null
 
         return {
@@ -218,6 +240,16 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
           refundRequestedAt: o.refund_requested_at ? String(o.refund_requested_at) : null,
           refundReason,
           refundAttachments: [],
+          helpRequest: helpRequest
+            ? {
+                id: helpRequest.id,
+                reason: helpRequest.reason,
+                description: helpRequest.description || '',
+                status: helpRequest.status,
+                openedAt: helpRequest.opened_at,
+                resolutionNotes: helpRequest.resolution_notes || '',
+              }
+            : null,
         }
       })
 
@@ -226,6 +258,7 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
 
   useEffect(() => {
     if (authLoading) return
+    if (!user?.id || !isSeller) return
     const controller = new AbortController()
     let cancelled = false
     queueMicrotask(() => {
@@ -242,13 +275,32 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
       }
     }, 12_000)
 
+    const channel = supabase
+      .channel(`seller-orders-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `seller_user_id=eq.${user.id}`,
+        },
+        () => {
+          if (!controller.signal.aborted) {
+            loadOrders({ signal: controller.signal })
+          }
+        },
+      )
+      .subscribe()
+
     return () => {
       cancelled = true
       controller.abort()
       window.removeEventListener('focus', onFocus)
       window.clearInterval(interval)
+      supabase.removeChannel(channel)
     }
-  }, [authLoading, loadOrders, isSeller])
+  }, [authLoading, loadOrders, isSeller, user?.id])
 
   useEffect(() => {
     // Back-compat: if parent route supplies initialTab, respect it.
@@ -314,7 +366,17 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
   const filteredOrders = useMemo(() => {
     let list = [...orders]
     if (activeTab && activeTab !== 'all') {
-      list = list.filter((o) => o.orderStatus === activeTab)
+      if (activeTab === 'refunded') {
+        list = list.filter(
+          (o) =>
+            o.paymentStatus === 'refunded' ||
+            o.paymentStatus === 'refund_pending' ||
+            o.refundStage === 'processing' ||
+            o.refundStage === 'requested',
+        )
+      } else {
+        list = list.filter((o) => o.orderStatus === activeTab)
+      }
     }
     if (searchQuery.trim()) {
       list = list.filter((o) => orderMatchesSearchQuery(o, searchQuery))
@@ -324,6 +386,11 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
 
   const refundRequests = useMemo(
     () => orders.filter((o) => o.refundRequested),
+    [orders]
+  )
+
+  const helpRequests = useMemo(
+    () => orders.filter((o) => o.helpRequest),
     [orders]
   )
 
@@ -348,7 +415,7 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
 
   const handleUpdateStatus = async (order, newStatus) => {
     try {
-      // Only fulfillment statuses are persisted. "refunded" is currently UI-only.
+      // Only fulfillment statuses are persisted via the API.
       if (['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'].includes(newStatus)) {
         const res = await fetch('/api/seller/orders/update-fulfillment', {
           method: 'POST',
@@ -357,12 +424,14 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
         })
         if (!res.ok) {
           const body = await res.json().catch(() => null)
-          window.alert(typeof body?.error === 'string' ? body.error : 'Could not update order status.')
+          window.alert(
+            typeof body?.error === 'string'
+              ? body.error
+              : 'Unable to update this order. Please try again.',
+          )
           return
         }
         await loadOrders()
-      } else {
-        setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, orderStatus: newStatus } : o)))
       }
 
       setSelectedOrder((prev) => (prev?.id === order.id ? { ...prev, orderStatus: newStatus } : prev))
@@ -383,14 +452,43 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
       })
       const body = await res.json().catch(() => null)
       if (!res.ok) {
-        window.alert(typeof body?.error === 'string' ? body.error : 'Could not update refund.')
+        window.alert(
+          typeof body?.error === 'string'
+            ? body.error
+            : 'Unable to update this refund. Please try again.',
+        )
         return
       }
       await loadOrders()
       setSelectedOrder(null)
       clearOrderDeepLinkParams()
     } catch {
-      window.alert('Network error.')
+      window.alert('Network error. Please check your connection and try again.')
+    }
+  }
+
+  const handleHelpRequestStatus = async (order, status) => {
+    const requestId = order?.helpRequest?.id
+    if (!requestId) return
+    try {
+      const res = await fetch(`/api/seller/disputes/${encodeURIComponent(requestId)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) {
+        window.alert(
+          typeof body?.error === 'string'
+            ? body.error
+            : 'Unable to update this request. Please try again.',
+        )
+        return
+      }
+      await loadOrders()
+      setSelectedOrder((prev) => (prev?.id === order.id ? null : prev))
+    } catch {
+      window.alert('Network error. Please check your connection and try again.')
     }
   }
 
@@ -600,14 +698,82 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                       </>
                     )}
                     {order.refundStage === 'processing' && (
+                      <p className={styles.refundProcessingNote}>
+                        Refund in progress. Completion is automatic once the payment provider confirms the return
+                        of funds, typically within a few business days.
+                      </p>
+                    )}
+                  </div>
+                </footer>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {helpRequests.length > 0 && (
+        <section className={styles.refundListSection}>
+          <div className={styles.refundListHeader}>
+            <h2 className={styles.refundListTitle}>Buyer help requests</h2>
+            <span className={styles.refundListCount}>{formatCount(helpRequests.length)} open</span>
+          </div>
+          <div className={styles.refundCards}>
+            {helpRequests.map((order) => (
+              <article key={order.helpRequest.id} className={styles.refundCard}>
+                <header className={styles.refundCardHeader}>
+                  <div>
+                    <div className={styles.refundOrderId}>{order.displayId || order.id}</div>
+                    <div className={styles.refundCustomerName}>{order.customerName}</div>
+                  </div>
+                  <div className={styles.refundMeta}>
+                    <span>{order.helpRequest.status === 'under_review' ? 'Under review' : 'Open'}</span>
+                    <span>&middot;</span>
+                    <span>{formatDateTime(order.helpRequest.openedAt)}</span>
+                  </div>
+                </header>
+                <div className={styles.refundBody}>
+                  <div className={styles.refundDetailRow}>
+                    <span className={styles.detailLabel}>Reason</span>
+                    <span className={styles.detailValue}>{order.helpRequest.reason}</span>
+                  </div>
+                  {order.helpRequest.description ? (
+                    <div className={styles.refundDetailRow}>
+                      <span className={styles.detailLabel}>Buyer details</span>
+                      <span className={styles.detailValue}>{order.helpRequest.description}</span>
+                    </div>
+                  ) : null}
+                  <div className={styles.refundDetailRow}>
+                    <span className={styles.detailLabel}>Seller action</span>
+                    <span className={styles.detailValue}>
+                      Review the concern, contact the buyer if needed, then mark it resolved once handled.
+                    </span>
+                  </div>
+                </div>
+                <footer className={styles.refundFooter}>
+                  <button
+                    type="button"
+                    className={`${styles.btnTextSecondary}`}
+                    onClick={() => setSelectedOrder(order)}
+                  >
+                    View order
+                  </button>
+                  <div className={styles.refundQuickActions}>
+                    {order.helpRequest.status === 'open' && (
                       <button
                         type="button"
-                        className={`${styles.btnText} ${styles.btnAccept}`}
-                        onClick={() => handleRefundDecision(order, 'complete')}
+                        className={`${styles.btnText}`}
+                        onClick={() => handleHelpRequestStatus(order, 'under_review')}
                       >
-                        Mark refund completed
+                        Mark under review
                       </button>
                     )}
+                    <button
+                      type="button"
+                      className={`${styles.btnText} ${styles.btnAccept}`}
+                      onClick={() => handleHelpRequestStatus(order, 'resolved')}
+                    >
+                      Mark resolved
+                    </button>
                   </div>
                 </footer>
               </article>
@@ -649,6 +815,7 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                   <td className={styles.cellOrderId} data-label="Order ID">
                     <span className={styles.orderId}>{order.displayId || order.id}</span>
                     {order.isUrgent && <span className={`${styles.badge} ${styles.badgeUrgent}`}>Urgent</span>}
+                    {order.helpRequest && <span className={`${styles.badge} ${styles.badgePending}`}>Help requested</span>}
                   </td>
                   <td data-label="Customer">{order.customerName}</td>
                   <td data-label="Package">{order.servicePackage}</td>
@@ -934,14 +1101,61 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                         </>
                       )}
                       {selectedOrder.refundStage === 'processing' && (
+                        <p className={styles.refundProcessingNote}>
+                          Refund in progress. No further action is required. The buyer will be notified once the
+                          payment provider confirms the refund.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {selectedOrder.helpRequest && (
+                <div className={styles.section}>
+                  <h3 className={styles.sectionTitle}>Buyer help request</h3>
+                  <div className={styles.sectionBlock}>
+                    <div className={styles.detailList}>
+                      <div className={styles.detailItem}>
+                        <span className={styles.detailLabel}>Status</span>
+                        <span className={styles.detailValue}>
+                          {selectedOrder.helpRequest.status === 'under_review' ? 'Under review' : 'Open'}
+                        </span>
+                      </div>
+                      <div className={styles.detailItem}>
+                        <span className={styles.detailLabel}>Reason</span>
+                        <span className={styles.detailValue}>{selectedOrder.helpRequest.reason}</span>
+                      </div>
+                      <div className={styles.detailItem}>
+                        <span className={styles.detailLabel}>Opened</span>
+                        <span className={styles.detailValue}>
+                          {formatDateTime(selectedOrder.helpRequest.openedAt)}
+                        </span>
+                      </div>
+                      {selectedOrder.helpRequest.description ? (
+                        <div className={styles.detailItem}>
+                          <span className={styles.detailLabel}>Buyer details</span>
+                          <span className={styles.detailValue}>{selectedOrder.helpRequest.description}</span>
+                        </div>
+                      ) : null}
+                    </div>
+                    <div className={styles.refundActions}>
+                      {selectedOrder.helpRequest.status === 'open' && (
                         <button
                           type="button"
-                          className={`${styles.btnText} ${styles.btnAccept}`}
-                          onClick={() => handleRefundDecision(selectedOrder, 'complete')}
+                          className={`${styles.btnText}`}
+                          onClick={() => handleHelpRequestStatus(selectedOrder, 'under_review')}
                         >
-                          Mark refund completed
+                          Mark under review
                         </button>
                       )}
+                      <button
+                        type="button"
+                        className={`${styles.btnText} ${styles.btnAccept}`}
+                        onClick={() => handleHelpRequestStatus(selectedOrder, 'resolved')}
+                      >
+                        Mark resolved
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1016,7 +1230,6 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                   { status: 'confirmed', label: 'Confirm', icon: TbCheck, iconClass: styles.updateStatusBtnIconConfirmed, btnClass: styles.updateStatusBtnConfirmed },
                   { status: 'in_progress', label: 'In progress', icon: TbTools, iconClass: styles.updateStatusBtnIconInProgress, btnClass: styles.updateStatusBtnInProgress },
                   { status: 'completed', label: 'Completed', icon: TbCircleCheck, iconClass: styles.updateStatusBtnIconCompleted, btnClass: styles.updateStatusBtnCompleted },
-                  { status: 'refunded', label: 'Refunded', icon: TbCurrencyDollar, iconClass: styles.updateStatusBtnIconRefund, btnClass: styles.updateStatusBtnRefund },
                   { status: 'cancelled', label: 'Decline', icon: TbCircleX, iconClass: styles.updateStatusBtnIconDecline, btnClass: styles.updateStatusBtnDecline },
                 ].map(({ status, label, icon: Icon, iconClass, btnClass }) => (
                   <button

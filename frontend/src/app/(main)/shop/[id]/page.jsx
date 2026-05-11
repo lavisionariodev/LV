@@ -1431,7 +1431,18 @@ function ReviewsSection({ reviews = [], styles }) {
                   return (
                     <div key={review.id} className={styles.reviewCard}>
                       <div className={styles.reviewHeader}>
-                        <div className={styles.reviewAvatar}>{(review.author?.[0] || 'B').toUpperCase()}</div>
+                        <div className={styles.reviewAvatar}>
+                          {review.avatarUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- Buyer profile avatars come from Supabase.
+                            <img
+                              src={review.avatarUrl}
+                              alt={`${review.author || 'Buyer'} avatar`}
+                              className={styles.reviewAvatarImg}
+                            />
+                          ) : (
+                            (review.author?.[0] || 'B').toUpperCase()
+                          )}
+                        </div>
                         <div className={styles.reviewMeta}>
                           <span className={styles.reviewAuthor}>
                             {review.author}

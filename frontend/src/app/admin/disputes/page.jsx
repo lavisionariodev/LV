@@ -1,9 +1,8 @@
 'use client'
 
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import styles from './disputes.module.css'
-import { disputes as initialDisputes } from '@/data/adminSampleData'
 import { TbX } from 'react-icons/tb'
 import { LuSettings2 } from 'react-icons/lu'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
@@ -114,12 +113,14 @@ export default function AdminDisputesPage() {
   const [filterModalOpen, setFilterModalOpen] = useState(false)
   const [selectedRows, setSelectedRows] = useState(() => new Set())
 
-  // Sync state <- URL (back/forward, shared links)
+  // Sync state from URL (back/forward, shared links)
   useEffect(() => {
     const nextQ = readString(searchParams, 'q', '')
     const nextStatus = readEnum(searchParams, 'status', STATUS_OPTIONS.map((o) => o.value), 'all')
-    if (nextQ !== search) setSearch(nextQ)
-    if (nextStatus !== statusFilter) setStatusFilter(nextStatus)
+    queueMicrotask(() => {
+      if (nextQ !== search) setSearch(nextQ)
+      if (nextStatus !== statusFilter) setStatusFilter(nextStatus)
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
@@ -131,26 +132,54 @@ export default function AdminDisputesPage() {
     })
   }, [search, statusFilter, router, pathname, searchParams], 300)
 
-  const summary = useMemo(() => {
-    const open = initialDisputes.filter((d) => d.status === 'open').length
-    const under_review = initialDisputes.filter((d) => d.status === 'under_review').length
-    const resolved = initialDisputes.filter((d) => d.status === 'resolved').length
-    const total = initialDisputes.length
-    return { total, open, under_review, resolved }
+  const [allDisputes, setAllDisputes] = useState([])
+  const [listLoading, setListLoading] = useState(true)
+  const [listError, setListError] = useState('')
+
+  const loadDisputes = useCallback(async () => {
+    setListError('')
+    const res = await fetch('/api/admin/disputes', { cache: 'no-store' })
+    const body = await res.json().catch(() => null)
+    if (!res.ok) {
+      setListError(typeof body?.error === 'string' ? body.error : 'Failed to load disputes.')
+      setAllDisputes([])
+      return
+    }
+    setAllDisputes(Array.isArray(body?.disputes) ? body.disputes : [])
   }, [])
 
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      setListLoading(true)
+      await loadDisputes()
+      if (!cancelled) setListLoading(false)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [loadDisputes])
+
+  const summary = useMemo(() => {
+    const open = allDisputes.filter((d) => d.status === 'open').length
+    const under_review = allDisputes.filter((d) => d.status === 'under_review').length
+    const resolved = allDisputes.filter((d) => d.status === 'resolved').length
+    const total = allDisputes.length
+    return { total, open, under_review, resolved }
+  }, [allDisputes])
+
   const tabCounts = useMemo(() => {
-    const counts = { all: initialDisputes.length }
+    const counts = { all: allDisputes.length }
     STATUS_OPTIONS.forEach(({ value }) => {
       if (value !== 'all') {
-        counts[value] = initialDisputes.filter((d) => d.status === value).length
+        counts[value] = allDisputes.filter((d) => d.status === value).length
       }
     })
     return counts
-  }, [])
+  }, [allDisputes])
 
   const filtered = useMemo(() => {
-    return initialDisputes.filter((d) => {
+    return allDisputes.filter((d) => {
       if (statusFilter !== 'all' && d.status !== statusFilter) return false
       if (!search.trim()) return true
       const q = search.trim().toLowerCase()
@@ -159,15 +188,22 @@ export default function AdminDisputesPage() {
         d.orderRef.toLowerCase().includes(q) ||
         d.complainantName.toLowerCase().includes(q) ||
         d.respondentName.toLowerCase().includes(q) ||
-        d.reason.toLowerCase().includes(q)
+        d.reason.toLowerCase().includes(q) ||
+        d.description.toLowerCase().includes(q)
       )
     })
-  }, [statusFilter, search])
+  }, [allDisputes, statusFilter, search])
 
   const activeFilterLabel = statusFilter !== 'all' ? STATUS_LABEL[statusFilter] : null
 
   return (
     <div className={styles.page}>
+      {listError ? (
+        <p role="alert" style={{ color: '#b91c1c', margin: '0 0 8px', fontSize: 14 }}>
+          {listError}
+        </p>
+      ) : null}
+      {listLoading ? <p style={{ margin: '0 0 12px', color: '#64748b', fontSize: 14 }}>Loading disputes…</p> : null}
 
       {/* ── Stats ── */}
       <section className={styles.statsGrid}>
@@ -453,7 +489,7 @@ export default function AdminDisputesPage() {
 
         {filtered.length > 0 && (
           <div className={styles.tableFooter}>
-            Showing <strong>{filtered.length}</strong> of <strong>{initialDisputes.length}</strong> disputes
+            Showing <strong>{filtered.length}</strong> of <strong>{allDisputes.length}</strong> disputes
           </div>
         )}
       </section>

@@ -125,43 +125,21 @@ export async function updateSellerListing(id, payload) {
   return { data: normalizeListingRow(data), error: null }
 }
 
-/** Seller: submit an existing listing for admin review. */
+/** Seller: submit an existing listing for admin review (server route notifies admins). */
 export async function submitListingForReview(id) {
-  const { data: existing, error: fetchErr } = await supabase
-    .from('seller_listings')
-    .select('id, approval_status')
-    .eq('id', id)
-    .maybeSingle()
-
-  if (fetchErr) {
-    return { data: null, error: fetchErr.message || 'Failed to load listing.' }
-  }
-
-  if (String(existing?.approval_status || '').toLowerCase() === 'approved') {
-    const { data, error } = await supabase.from('seller_listings').select('*').eq('id', id).maybeSingle()
-    if (error) {
-      return { data: null, error: error.message || 'Failed to load listing.' }
-    }
-    return { data: data ? normalizeListingRow(data) : null, error: null }
-  }
-
-  const { data, error } = await supabase
-    .from('seller_listings')
-    .update({
-      approval_status: 'pending',
-      submitted_at: new Date().toISOString(),
-      // Seller intent: ready to be visible once approved (shop RPC still gates on approval + seller status).
-      status: 'active',
+  try {
+    const res = await fetch(`/api/seller/listings/${encodeURIComponent(id)}/submit-for-review`, {
+      method: 'POST',
     })
-    .eq('id', id)
-    .select('*')
-    .maybeSingle()
-
-  if (error) {
-    return { data: null, error: error.message || 'Failed to submit listing for review.' }
+    const body = await res.json().catch(() => null)
+    if (!res.ok) {
+      return { data: null, error: body?.error || 'Failed to submit listing for review.' }
+    }
+    const row = body?.data
+    return { data: row ? normalizeListingRow(row) : null, error: null }
+  } catch (e) {
+    return { data: null, error: e?.message || 'Failed to submit listing for review.' }
   }
-
-  return { data: normalizeListingRow(data), error: null }
 }
 
 /** Seller: resubmit after rejection (same as submit; DB trigger clears rejection fields on pending). */

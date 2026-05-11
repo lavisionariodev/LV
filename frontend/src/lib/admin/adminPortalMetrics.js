@@ -153,6 +153,16 @@ async function aggregateTopOrderLineItems(supabaseAdmin, cutoffIso) {
     .slice(0, 8)
 }
 
+/** Disputes that need admin review (matches `/admin/disputes` queue). */
+export async function countOpenOrReviewDisputes(supabaseAdmin) {
+  const { count, error } = await supabaseAdmin
+    .from('disputes')
+    .select('*', { count: 'exact', head: true })
+    .in('status', ['open', 'under_review'])
+  if (error) return 0
+  return count ?? 0
+}
+
 /**
  * Dashboard + analytics payloads (counts, charts, recent paid orders).
  * @param {import('@supabase/supabase-js').SupabaseClient} supabaseAdmin
@@ -182,6 +192,7 @@ export async function getAdminPortalMetrics(supabaseAdmin) {
     dailyCollectedGmv,
     topLineItems,
     recentOrdersRes,
+    disputesAttentionCount,
   ] = await Promise.all([
     supabaseAdmin.from('platform_billing').select('default_commission_percent').eq('id', 1).maybeSingle(),
     supabaseAdmin.from('sellers').select('*', { count: 'exact', head: true }),
@@ -206,6 +217,7 @@ export async function getAdminPortalMetrics(supabaseAdmin) {
       .eq('payment_status', 'paid')
       .order('created_at', { ascending: false })
       .limit(12),
+    countOpenOrReviewDisputes(supabaseAdmin),
   ])
 
   const defaultCommissionPercent =
@@ -231,6 +243,7 @@ export async function getAdminPortalMetrics(supabaseAdmin) {
 
   return {
     defaultCommissionPercent,
+    disputesNeedingAttention: Number(disputesAttentionCount) || 0,
     sellersTotal: sellersTotalRes.count ?? 0,
     sellersActive: sellersActiveRes.count ?? 0,
     buyersTotal: buyersTotalRes.count ?? 0,
