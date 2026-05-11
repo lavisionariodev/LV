@@ -4,7 +4,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { use, useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { getServiceById, CATEGORIES } from '@/data/shopSampleData'
 import ContactSellerModal from '@/components/ui/Modal/ContactSellerModal'
 import { getRecommendedSimilarServices, getDynamicServicesFromListings } from '@/lib/shop/similarServices'
 import { fetchActiveShopListings, mergeShopListings, stockAvailabilityLabel } from '@/lib/shop-listings/client'
@@ -31,7 +30,6 @@ function buildShopListingSharePath(serviceId, listingId, listing) {
 
 export default function ServiceDetailPage({ params }) {
   const { id } = use(params)
-  const service = getServiceById(id)
   const { addItem } = useCart()
   const { toggleFavorite, isFavorite } = useFavorites()
   const { user, authLoading, isBuyer } = useAuth()
@@ -57,6 +55,12 @@ export default function ServiceDetailPage({ params }) {
   }, [])
 
   const catalogForChildren = fullCatalog ?? mergeShopListings([])
+  const dynamicServices = useMemo(() => getDynamicServicesFromListings(catalogForChildren), [catalogForChildren])
+  const service = useMemo(() => {
+    const serviceId = String(id || '').trim()
+    if (!serviceId) return null
+    return dynamicServices.find((entry) => entry.id === serviceId) ?? null
+  }, [dynamicServices, id])
 
   const listingsForService = useMemo(() => {
     if (!service) return []
@@ -166,7 +170,7 @@ export default function ServiceDetailPage({ params }) {
       ? listingGalleryUrls[Math.min(galleryIndex, listingGalleryUrls.length - 1)]
       : null
 
-  const shopCategoryLabel = CATEGORIES.find((c) => c.id === service.id)?.label ?? ''
+  const shopCategoryLabel = service?.name ?? ''
   const attrType = selectedListing?.listingKindLabel?.trim() || '—'
   const attrCategory =
     selectedListing?.categoryLabel?.trim() || shopCategoryLabel || '—'
@@ -481,24 +485,6 @@ export default function ServiceDetailPage({ params }) {
     selectedListing.inStock === false ||
     (buyerPackageOptions.length > 0 && !String(buyerPackage || '').trim())
 
-  if (!service) {
-    return (
-      <section className={styles.detailPage}>
-        <div className={styles.content}>
-          <div className={styles.notFound}>
-            <h1 className={styles.notFoundTitle}>Service not found</h1>
-            <p className={styles.notFoundText}>
-              The service you are looking for does not exist or has been removed.
-            </p>
-            <Link href="/shop" className={styles.notFoundLink}>
-              ← Back to Shop
-            </Link>
-          </div>
-        </div>
-      </section>
-    )
-  }
-
   if (fullCatalog === null) {
     return (
       <section
@@ -604,6 +590,24 @@ export default function ServiceDetailPage({ params }) {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (!service) {
+    return (
+      <section className={styles.detailPage}>
+        <div className={styles.content}>
+          <div className={styles.notFound}>
+            <h1 className={styles.notFoundTitle}>Service not found</h1>
+            <p className={styles.notFoundText}>
+              The service you are looking for does not exist or has been removed.
+            </p>
+            <Link href="/shop" className={styles.notFoundLink}>
+              ← Back to Shop
+            </Link>
           </div>
         </div>
       </section>
@@ -779,13 +783,12 @@ export default function ServiceDetailPage({ params }) {
                   ? formatPhpAmount(selectedListing.price)
                   : '₱ Contact for pricing'}
               </span>
-              {service.priceNote && <span className={styles.priceNote}>{service.priceNote}</span>}
             </div>
 
             {/* Short description — 2–3 lines max */}
             <p className={styles.shortDesc}>
               {selectedListing?.description?.trim() ||
-                service.shortDescription ||
+                service.description ||
                 `A thoughtfully curated memorial service that honors your loved one with grace, 
                  dignity, and compassion — guiding your family through every step of the process.`}
             </p>
@@ -1017,7 +1020,6 @@ function formatTenureLength(joinedDate, now = new Date()) {
 function FullDescriptionSection({ service, selectedListing, styles, allListings = [] }) {
   const [activeTab, setActiveTab] = useState('description')
   const [expanded, setExpanded] = useState(false)
-
   const dynamicServices = useMemo(() => getDynamicServicesFromListings(allListings), [allListings])
 
   const cheapestListingByServiceId = useMemo(() => {

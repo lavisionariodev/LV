@@ -4,7 +4,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { SERVICES, CATEGORIES, PROVIDERS, getServiceById } from '@/data/shopSampleData'
 import { useDebouncedEffect } from '@/shared/hooks'
 import { readString, replaceUrlQuery } from '@/lib/url/queryParams'
 import {
@@ -31,10 +30,16 @@ function providerServiceAggPairSegments(listing) {
   return { api: `${sellerId}|${serviceId}`, lookup: `${sellerId}::${serviceId}` }
 }
 
-function listingMatchesSearch(listing, needle) {
+function serviceLabelFromId(serviceId) {
+  const raw = String(serviceId || '').trim()
+  if (!raw) return ''
+  return raw.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+function listingMatchesSearch(listing, needle, serviceById) {
   if (!needle) return true
   const n = needle.toLowerCase()
-  const service = getServiceById(listing.serviceId)
+  const service = serviceById[String(listing.serviceId).trim()] ?? null
   const chunks = [
     listing.name,
     listing.description,
@@ -57,8 +62,7 @@ function listingMatchesSearch(listing, needle) {
 function listingMatchesLocation(listing, needle) {
   if (!needle) return true
   const n = needle.toLowerCase()
-  const provider =
-    listing.provider ?? PROVIDERS.find((p) => String(p.id) === String(listing.providerId))
+  const provider = listing.provider ?? null
   return typeof provider?.location === 'string' && provider.location.toLowerCase().includes(n)
 }
 
@@ -375,6 +379,20 @@ export default function ShopPage() {
     }
   }, [allProviders, listings])
 
+  const serviceById = useMemo(() => {
+    const byId = {}
+    for (const listing of listings) {
+      const id = String(listing?.serviceId || '').trim()
+      if (!id || byId[id]) continue
+      byId[id] = {
+        id,
+        name: serviceLabelFromId(id),
+        description: typeof listing?.description === 'string' ? listing.description : '',
+      }
+    }
+    return byId
+  }, [listings])
+
   const filteredListings = useMemo(() => {
     let list = [...listings]
 
@@ -388,7 +406,7 @@ export default function ShopPage() {
 
     const keywordNeedle = readString(searchParams, 'q', '').trim().toLowerCase()
     if (keywordNeedle) {
-      list = list.filter((l) => listingMatchesSearch(l, keywordNeedle))
+      list = list.filter((l) => listingMatchesSearch(l, keywordNeedle, serviceById))
     }
 
     const locationNeedle = locationQuery.trim().toLowerCase()
@@ -425,7 +443,7 @@ export default function ShopPage() {
     }
 
     return list
-  }, [listings, activeCategory, sortBy, selectedProvider, locationQuery, searchParams, providerServiceAggregatesByPair])
+  }, [listings, activeCategory, sortBy, selectedProvider, locationQuery, searchParams, providerServiceAggregatesByPair, serviceById])
 
   const totalPages = Math.ceil(filteredListings.length / ITEMS_PER_PAGE)
   const paginatedListings = useMemo(() => {
@@ -498,21 +516,14 @@ export default function ShopPage() {
       listings.map((l) => String(l.serviceId).trim()).filter(Boolean),
     )
 
-    const categories = [
+    return [
       { id: 'all', label: 'All Services' },
-      ...CATEGORIES.filter((cat) => cat.id !== 'all' && activeServiceIds.has(cat.id)),
+      ...[...activeServiceIds].map((id) => ({
+        id,
+        label: serviceById[id]?.name || serviceLabelFromId(id),
+      })),
     ]
-
-    const extraCategoryIds = [...activeServiceIds].filter(
-      (id) => !categories.some((cat) => cat.id === id),
-    )
-    extraCategoryIds.forEach((id) => {
-      const service = SERVICES.find((s) => s.id === id)
-      categories.push({ id, label: service?.name ?? id.replace(/-/g, ' ') })
-    })
-
-    return categories
-  }, [listings])
+  }, [listings, serviceById])
 
   function toggleCompare(id) {
     setCompareIds((prev) => {
@@ -1109,7 +1120,7 @@ function ListingCard({
   compareDisabled,
   providerServiceAggregatesByPair = {},
 }) {
-  const provider = listing.provider ?? PROVIDERS.find((p) => p.id === listing.providerId)
+  const provider = listing.provider ?? null
   const pairKey = providerServiceAggPairSegments(listing)?.lookup ?? ''
   const providerServiceAgg = pairKey ? providerServiceAggregatesByPair[pairKey] ?? null : null
   const providerRating =

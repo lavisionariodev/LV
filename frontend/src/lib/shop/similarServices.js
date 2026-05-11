@@ -32,7 +32,7 @@ export function getDynamicServicesFromListings(allListings) {
         id: listing.serviceId,
         name: listing.serviceId.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
         description: listing.description || `Professional ${listing.serviceId.replace(/-/g, ' ')} services.`,
-        image: listing.imageUrl || '/sample/services/default.jpg',
+        image: listing.imageUrl || null,
       })
     }
   })

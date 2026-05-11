@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useMemo, useState, useEffect } from 'react'
-import { PROVIDERS, SERVICES } from '@/data/shopSampleData'
 import {
   fetchActiveShopListings,
   getListingProviderLogoUrl,
@@ -235,11 +234,8 @@ export default function ComparePage() {
     return compareIds
       .map((id) => {
         const listing = catalog.find((l) => String(l.id) === String(id))
-        const provider = listing
-          ? (listing.provider ?? PROVIDERS.find((p) => String(p.id) === String(listing.providerId)))
-          : null
-        const service = SERVICES.find((s) => s.id === listing?.serviceId)
-        return { listing, provider, service }
+        const provider = listing?.provider ?? null
+        return { listing, provider }
       })
       .filter((x) => x.listing)
   }, [compareIds, catalog])

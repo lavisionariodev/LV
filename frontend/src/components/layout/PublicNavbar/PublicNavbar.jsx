@@ -16,11 +16,12 @@ import InstallAppControl from '@/components/pwa/InstallAppControl'
 export default function PublicNavbar() {
   const { cartCount } = useCart()
   const { favoriteCount } = useFavorites()
-  const { user, profile, isBuyer } = useAuth()
+  const { user, profile, isBuyer, authLoading } = useAuth()
   const [howItWorksOpen, setHowItWorksOpen] = useState(false)
   const [aboutUsOpen, setAboutUsOpen] = useState(false)
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const [logoutOpen, setLogoutOpen] = useState(false)
+  const [hydrated, setHydrated] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [desktopSearchOpen, setDesktopSearchOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
@@ -39,6 +40,10 @@ export default function PublicNavbar() {
   const desktopSearchRef = useRef(null)
   const desktopSearchInputRef = useRef(null)
   const { data: siteContent } = useSiteContent()
+
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
 
   const qFromShopUrl = readString(searchParams, 'q', '')
   /** While `/shop` has a `q` query param, keep the desktop search UI expanded (ignore outside click). */
@@ -90,8 +95,9 @@ export default function PublicNavbar() {
   }, [profileMenuOpen, desktopSearchOpen, notificationsOpen])
 
   // Only buyers count as authenticated on the main site; seller/admin have their own portals.
-  const isAuthenticated = !!user && isBuyer
-  const showSellerEntryCtas = !isBuyer
+  const authUiReady = hydrated && !authLoading
+  const isAuthenticated = authUiReady && !!user && isBuyer
+  const showSellerEntryCtas = !authUiReady || !isBuyer
 
   const displayName =
     (profile && profile.full_name) || user?.user_metadata?.full_name || ''
