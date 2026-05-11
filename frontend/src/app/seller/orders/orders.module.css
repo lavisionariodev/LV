@@ -2075,3 +2075,48 @@
     min-height: 34px;
   }
 }
+
+/* ── Orders loading skeleton ── */
+
+@keyframes ordersSkShimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.ordersSkBar {
+  display: block;
+  border-radius: 6px;
+  height: 12px;
+  background: linear-gradient(90deg, #e8ecf0 0%, #f4f6f8 45%, #e8ecf0 90%);
+  background-size: 200% 100%;
+  animation: ordersSkShimmer 1.15s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ordersSkBar {
+    animation: none;
+    background: #e8ecf0;
+  }
+}
+
+.ordersSkSearchBar {
+  height: 44px;
+  width: 100%;
+  max-width: 480px;
+  border-radius: 10px;
+}
+
+.ordersSkFilterBtn {
+  height: 44px;
+  width: 168px;
+  border-radius: 10px;
+}
+
+.ordersSkRow td {
+  vertical-align: middle;
+  padding: 0.65rem 0.75rem;
+}

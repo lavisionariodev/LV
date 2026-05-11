@@ -619,74 +619,106 @@ export default function SellerNotificationsPage() {
             </div>
 
             <div className={styles.detailsBody}>
-              {detailsLoading && <p className={styles.detailsLoading}>Loading live details...</p>}
-              {detailsError && <p className={styles.detailsError}>{detailsError}</p>}
-
-              <div className={styles.detailsSection}>
-                <div className={styles.detailsSectionTitle}>Expanded explanation</div>
-                <p className={styles.detailsText}>
-                  {detailsData?.body || selectedNotification?.body || 'No expanded details available.'}
-                </p>
-              </div>
-
-              <div className={styles.detailsSection}>
-                <div className={styles.detailsSectionTitle}>System-generated insight</div>
-                <p className={styles.detailsText}>
-                  {buildInsight(
-                    detailsData?.type || selectedNotification?.type,
-                    detailsData?.payload || selectedNotification?.payload || {},
-                  )}
-                </p>
-              </div>
-
-              <div className={styles.detailsSection}>
-                <div className={styles.detailsSectionTitle}>Key details</div>
-                <div className={styles.detailsGrid}>
-                  {Object.entries(detailsData?.payload || selectedNotification?.payload || {})
-                    .slice(0, 8)
-                    .map(([key, value]) => (
-                      <div key={key} className={styles.detailsItem}>
-                        <span className={styles.detailsKey}>{key}</span>
-                        <span className={styles.detailsVal}>{String(value)}</span>
+              {detailsLoading ? (
+                <div
+                  className={styles.notifDetailsSkRoot}
+                  role="status"
+                  aria-live="polite"
+                  aria-busy="true"
+                  aria-label="Loading notification details"
+                >
+                  <div className={styles.notifDetailsSkPanel} aria-hidden>
+                    <span className={styles.notifDetailsSkBar} style={{ width: '100%', height: 13 }} />
+                    <span className={styles.notifDetailsSkBar} style={{ width: '92%', height: 11 }} />
+                    <span className={styles.notifDetailsSkBar} style={{ width: '78%', height: 11 }} />
+                  </div>
+                  <div className={styles.notifDetailsSkPanel} aria-hidden>
+                    <span className={styles.notifDetailsSkBar} style={{ width: '42%', height: 10, marginBottom: 2 }} />
+                    <span className={styles.notifDetailsSkBar} style={{ width: '100%', height: 10 }} />
+                    <span className={styles.notifDetailsSkBar} style={{ width: '96%', height: 10 }} />
+                    <span className={styles.notifDetailsSkBar} style={{ width: '88%', height: 10 }} />
+                  </div>
+                  <div className={styles.notifDetailsSkGrid} aria-hidden>
+                    {[0, 1, 2, 3].map((k) => (
+                      <div key={k} className={styles.notifDetailsSkGridCell}>
+                        <span className={styles.notifDetailsSkBar} style={{ width: '45%', height: 9 }} />
+                        <span className={styles.notifDetailsSkBar} style={{ width: '88%', height: 10 }} />
                       </div>
                     ))}
-                  {Object.keys(detailsData?.payload || selectedNotification?.payload || {}).length === 0 && (
-                    <div className={styles.detailsEmpty}>No additional payload details found.</div>
-                  )}
+                  </div>
                 </div>
-              </div>
+              ) : null}
+              {!detailsLoading ? (
+                <>
+                  {detailsError ? <p className={styles.detailsError}>{detailsError}</p> : null}
 
-              <div className={styles.detailsSection}>
-                <div className={styles.detailsSectionTitle}>Metadata</div>
-                <div className={styles.metaRow}>
-                  <span className={`${styles.metaChip} ${styles.metaChipTime}`}>
-                    Time: {detailsData?.timestampLabel || selectedNotification?.timestampLabel || '—'}
-                  </span>
-                  <span className={`${styles.metaChip} ${styles.metaChipPriority}`}>
-                    Priority: {detailsData?.priority || selectedNotification?.priority || 'low'}
-                  </span>
-                  <span className={`${styles.metaChip} ${styles.metaChipStatus}`}>
-                    Status: {(detailsData?.read ?? selectedNotification?.read) ? 'Read' : 'Unread'}
-                  </span>
-                </div>
-              </div>
+                  <div className={styles.detailsSection}>
+                    <div className={styles.detailsSectionTitle}>Expanded explanation</div>
+                    <p className={styles.detailsText}>
+                      {detailsData?.body || selectedNotification?.body || 'No expanded details available.'}
+                    </p>
+                  </div>
 
-              <div className={styles.detailsSection}>
-                <div className={styles.detailsSectionTitle}>Context actions</div>
-                <div className={styles.contextActions}>
-                  {getContextActions(detailsData || selectedNotification || {}).map((action) => (
-                    <button
-                      key={action.id}
-                      type="button"
-                      className={`${styles.actionBtn} ${styles.actionBtnDetails}`}
-                      onClick={() => router.push(action.href)}
-                    >
-                      {action.label}
-                      <TbExternalLink size={14} />
-                    </button>
-                  ))}
-                </div>
-              </div>
+                  <div className={styles.detailsSection}>
+                    <div className={styles.detailsSectionTitle}>System-generated insight</div>
+                    <p className={styles.detailsText}>
+                      {buildInsight(
+                        detailsData?.type || selectedNotification?.type,
+                        detailsData?.payload || selectedNotification?.payload || {},
+                      )}
+                    </p>
+                  </div>
+
+                  <div className={styles.detailsSection}>
+                    <div className={styles.detailsSectionTitle}>Key details</div>
+                    <div className={styles.detailsGrid}>
+                      {Object.entries(detailsData?.payload || selectedNotification?.payload || {})
+                        .slice(0, 8)
+                        .map(([key, value]) => (
+                          <div key={key} className={styles.detailsItem}>
+                            <span className={styles.detailsKey}>{key}</span>
+                            <span className={styles.detailsVal}>{String(value)}</span>
+                          </div>
+                        ))}
+                      {Object.keys(detailsData?.payload || selectedNotification?.payload || {}).length === 0 && (
+                        <div className={styles.detailsEmpty}>No additional payload details found.</div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className={styles.detailsSection}>
+                    <div className={styles.detailsSectionTitle}>Metadata</div>
+                    <div className={styles.metaRow}>
+                      <span className={`${styles.metaChip} ${styles.metaChipTime}`}>
+                        Time: {detailsData?.timestampLabel || selectedNotification?.timestampLabel || '—'}
+                      </span>
+                      <span className={`${styles.metaChip} ${styles.metaChipPriority}`}>
+                        Priority: {detailsData?.priority || selectedNotification?.priority || 'low'}
+                      </span>
+                      <span className={`${styles.metaChip} ${styles.metaChipStatus}`}>
+                        Status: {(detailsData?.read ?? selectedNotification?.read) ? 'Read' : 'Unread'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className={styles.detailsSection}>
+                    <div className={styles.detailsSectionTitle}>Context actions</div>
+                    <div className={styles.contextActions}>
+                      {getContextActions(detailsData || selectedNotification || {}).map((action) => (
+                        <button
+                          key={action.id}
+                          type="button"
+                          className={`${styles.actionBtn} ${styles.actionBtnDetails}`}
+                          onClick={() => router.push(action.href)}
+                        >
+                          {action.label}
+                          <TbExternalLink size={14} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : null}
             </div>
 
             <div className={styles.detailsFooter}>

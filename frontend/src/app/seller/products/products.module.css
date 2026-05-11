@@ -2989,3 +2989,27 @@
   background: #163628;
   border-color: #163628;
 }
+
+/* ── Catalog / listings grid loading skeleton ── */
+
+.catalogSkGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.catalogSkCard {
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.catalogSkLines {
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

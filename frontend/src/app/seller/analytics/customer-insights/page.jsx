@@ -20,6 +20,50 @@ const CUSTOMER_BAR_COLORS = {
   fresh: '#9ca3af',
 }
 
+const CUSTOMER_INSIGHTS_SUMMARY_SOFT = [
+  styles.summaryCardSoftGreen,
+  styles.summaryCardSoftBlue,
+  styles.summaryCardSoftIndigo,
+  styles.summaryCardSoftAmber,
+]
+
+function SellerAnalyticsCustomerInsightsSkeleton() {
+  return (
+    <div
+      className={styles.pageWrap}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label="Loading customer analytics"
+    >
+      <section className={styles.summaryStrip} aria-hidden>
+        {CUSTOMER_INSIGHTS_SUMMARY_SOFT.map((soft, i) => (
+          <article key={i} className={`${styles.summaryCard} ${soft}`}>
+            <span className={`${styles.analyticsSkBar} ${styles.analyticsSkSummaryLabel}`} />
+            <div className={styles.summaryValueRow}>
+              <span className={`${styles.analyticsSkBar} ${styles.analyticsSkSummaryValue}`} />
+            </div>
+            <span className={`${styles.analyticsSkBar} ${styles.analyticsSkSummaryHint}`} />
+          </article>
+        ))}
+      </section>
+
+      <section className={styles.chartsGridSingle} aria-hidden>
+        <article className={styles.chartCard}>
+          <div className={styles.chartHeader}>
+            <div className={styles.chartTitleGroup}>
+              <span className={`${styles.analyticsSkBar} ${styles.analyticsSkChartHeadLine}`} />
+              <span className={`${styles.analyticsSkBar} ${styles.analyticsSkChartHeadSub}`} />
+            </div>
+            <span className={`${styles.analyticsSkBar} ${styles.analyticsSkChartBadge}`} />
+          </div>
+          <span className={`${styles.analyticsSkBar} ${styles.analyticsSkChartBlock}`} />
+        </article>
+      </section>
+    </div>
+  )
+}
+
 export default function SellerAnalyticsCustomerInsightsPage() {
   const { data: siteContent } = useSiteContent()
   const systemName = siteContent?.systemName || 'La Visionario'
@@ -38,10 +82,13 @@ export default function SellerAnalyticsCustomerInsightsPage() {
   const avgBetween = averageMonthsBetweenRepeatBookings(orders)
   const paid12 = paidOrderCountLast12Months(orders)
 
+  if (loading && !error) {
+    return <SellerAnalyticsCustomerInsightsSkeleton />
+  }
+
   return (
     <div className={styles.pageWrap}>
       {error ? <p className={styles.pageError}>{error}</p> : null}
-      {loading ? <p className={styles.pageLoading}>Loading analytics…</p> : null}
 
       <section aria-label="Customer summary" className={styles.summaryStrip}>
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftGreen}`}>

@@ -1189,3 +1189,92 @@
   }
 }
 
+/* ── Settings loading skeleton ── */
+
+@keyframes settingsSkShimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.settingsSkBar {
+  display: block;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #e8ecf0 0%, #f4f6f8 45%, #e8ecf0 90%);
+  background-size: 200% 100%;
+  animation: settingsSkShimmer 1.15s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settingsSkBar {
+    animation: none;
+    background: #e8ecf0;
+  }
+}
+
+.settingsSkTabSlot {
+  height: 34px;
+  width: 92px;
+  border-radius: 6px;
+}
+
+.settingsSkHeadTitle {
+  height: 16px;
+  width: 38%;
+  max-width: 220px;
+}
+
+.settingsSkHeadSub {
+  height: 11px;
+  width: 62%;
+  max-width: 360px;
+  margin-top: 8px;
+}
+
+.settingsSkProfileRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.settingsSkAvatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.settingsSkField {
+  height: 40px;
+  width: 100%;
+  max-width: 440px;
+  border-radius: 8px;
+  margin-top: 14px;
+}
+
+.settingsSkFieldShort {
+  height: 40px;
+  width: 48%;
+  max-width: 200px;
+  border-radius: 8px;
+  margin-top: 14px;
+}
+
+.settingsSkTwoCol {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 8px;
+}
+
+@media (max-width: 640px) {
+  .settingsSkTwoCol {
+    grid-template-columns: 1fr;
+  }
+}
+

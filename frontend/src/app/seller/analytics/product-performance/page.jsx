@@ -22,6 +22,50 @@ function formatPhp(n) {
   }).format(n)
 }
 
+const PRODUCT_PERF_SUMMARY_SOFT = [
+  styles.summaryCardSoftGreen,
+  styles.summaryCardSoftBlue,
+  styles.summaryCardSoftIndigo,
+  styles.summaryCardSoftAmber,
+]
+
+function SellerAnalyticsProductPerformanceSkeleton() {
+  return (
+    <div
+      className={styles.pageWrap}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label="Loading product analytics"
+    >
+      <section className={styles.summaryStrip} aria-hidden>
+        {PRODUCT_PERF_SUMMARY_SOFT.map((soft, i) => (
+          <article key={i} className={`${styles.summaryCard} ${soft}`}>
+            <span className={`${styles.analyticsSkBar} ${styles.analyticsSkSummaryLabel}`} />
+            <div className={styles.summaryValueRow}>
+              <span className={`${styles.analyticsSkBar} ${styles.analyticsSkSummaryValue}`} />
+            </div>
+            <span className={`${styles.analyticsSkBar} ${styles.analyticsSkSummaryHint}`} />
+          </article>
+        ))}
+      </section>
+
+      <section className={styles.chartsGridSingle} aria-hidden>
+        <article className={styles.chartCard}>
+          <div className={styles.chartHeader}>
+            <div className={styles.chartTitleGroup}>
+              <span className={`${styles.analyticsSkBar} ${styles.analyticsSkChartHeadLine}`} />
+              <span className={`${styles.analyticsSkBar} ${styles.analyticsSkChartHeadSub}`} />
+            </div>
+            <span className={styles.analyticsSkBar} style={{ height: 32, width: 132, borderRadius: 999 }} />
+          </div>
+          <span className={`${styles.analyticsSkBar} ${styles.analyticsSkChartBlock}`} />
+        </article>
+      </section>
+    </div>
+  )
+}
+
 export default function SellerAnalyticsProductPerformancePage() {
   const { orders, loading, error } = useSellerAnalyticsData()
 
@@ -45,10 +89,13 @@ export default function SellerAnalyticsProductPerformancePage() {
   const repeatRate = returningBuyerRate(orders)
   const avg12 = averagePaidBookingValueLastNMonths(orders, 12)
 
+  if (loading && !error) {
+    return <SellerAnalyticsProductPerformanceSkeleton />
+  }
+
   return (
     <div className={styles.pageWrap}>
       {error ? <p className={styles.pageError}>{error}</p> : null}
-      {loading ? <p className={styles.pageLoading}>Loading analytics…</p> : null}
 
       <section aria-label="Product summary" className={styles.summaryStrip}>
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftGreen}`}>

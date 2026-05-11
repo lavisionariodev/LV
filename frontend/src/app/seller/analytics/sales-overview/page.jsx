@@ -47,6 +47,65 @@ function formatPhp(n) {
   }).format(n)
 }
 
+const SALES_SUMMARY_SOFT = [
+  styles.summaryCardSoftGreen,
+  styles.summaryCardSoftBlue,
+  styles.summaryCardSoftIndigo,
+  styles.summaryCardSoftAmber,
+]
+
+function SalesOverviewChartCardSk({ withBadge, withAction }) {
+  return (
+    <article className={styles.chartCard}>
+      <div className={styles.chartHeader}>
+        <div className={styles.chartTitleGroup}>
+          <span className={`${styles.analyticsSkBar} ${styles.analyticsSkChartHeadLine}`} />
+          <span className={`${styles.analyticsSkBar} ${styles.analyticsSkChartHeadSub}`} />
+        </div>
+        {withBadge ? <span className={`${styles.analyticsSkBar} ${styles.analyticsSkChartBadge}`} /> : null}
+        {withAction ? (
+          <span className={styles.analyticsSkBar} style={{ height: 32, width: 124, borderRadius: 999 }} />
+        ) : null}
+      </div>
+      <span className={`${styles.analyticsSkBar} ${styles.analyticsSkChartBlock}`} />
+    </article>
+  )
+}
+
+function SellerAnalyticsSalesOverviewSkeleton() {
+  return (
+    <div
+      className={styles.pageWrap}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label="Loading sales analytics"
+    >
+      <section className={styles.summaryStrip} aria-hidden>
+        {SALES_SUMMARY_SOFT.map((soft, i) => (
+          <article key={i} className={`${styles.summaryCard} ${soft}`}>
+            <span className={`${styles.analyticsSkBar} ${styles.analyticsSkSummaryLabel}`} />
+            <div className={styles.summaryValueRow}>
+              <span className={`${styles.analyticsSkBar} ${styles.analyticsSkSummaryValue}`} />
+            </div>
+            <span className={`${styles.analyticsSkBar} ${styles.analyticsSkSummaryHint}`} />
+          </article>
+        ))}
+      </section>
+
+      <section className={styles.chartsGrid} aria-hidden>
+        <SalesOverviewChartCardSk withBadge />
+        <SalesOverviewChartCardSk />
+      </section>
+
+      <section className={styles.chartsGridTwo} aria-hidden>
+        <SalesOverviewChartCardSk />
+        <SalesOverviewChartCardSk withAction />
+      </section>
+    </div>
+  )
+}
+
 export default function SellerAnalyticsSalesOverviewPage() {
   const { orders, loading, error } = useSellerAnalyticsData()
 
@@ -66,10 +125,13 @@ export default function SellerAnalyticsSalesOverviewPage() {
 
   const topPkg = topPackageThisMonth(orders)
 
+  if (loading && !error) {
+    return <SellerAnalyticsSalesOverviewSkeleton />
+  }
+
   return (
     <div className={styles.pageWrap}>
       {error ? <p className={styles.pageError}>{error}</p> : null}
-      {loading ? <p className={styles.pageLoading}>Loading analytics…</p> : null}
 
       <section aria-label="Sales summary" className={styles.summaryStrip}>
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftGreen}`}>

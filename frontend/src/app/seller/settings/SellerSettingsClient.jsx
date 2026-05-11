@@ -606,8 +606,30 @@ export default function SellerSettingsClient() {
           ))}
         </nav>
         <div className={`${styles.contentArea} ${styles.grid}`}>
-          <section className={`${styles.card} ${styles.full}`}>
-            <p className={styles.loadingText}>Loading settings…</p>
+          <section
+            className={`${styles.card} ${styles.full}`}
+            role="status"
+            aria-live="polite"
+            aria-busy="true"
+            aria-label="Loading settings"
+          >
+            <div className={styles.tabDetailHead} aria-hidden>
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkHeadTitle}`} />
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkHeadSub}`} />
+            </div>
+            <div className={styles.settingsSkProfileRow}>
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkAvatar}`} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkField}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkField}`} />
+              </div>
+            </div>
+            <div className={styles.settingsSkTwoCol} aria-hidden>
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkFieldShort}`} />
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkFieldShort}`} />
+            </div>
+            <span className={`${styles.settingsSkBar} ${styles.settingsSkField}`} />
+            <span className={`${styles.settingsSkBar} ${styles.settingsSkField}`} style={{ maxWidth: 280 }} />
           </section>
         </div>
       </div>

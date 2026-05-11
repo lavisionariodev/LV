@@ -98,6 +98,107 @@ function weekdayShort(ymd) {
   return dt.toLocaleDateString('en-PH', { weekday: 'short' })
 }
 
+function SellerDashboardSkeleton() {
+  const chartHeights = [44, 62, 38, 55, 48, 70, 52]
+  return (
+    <div
+      className={`${styles.pageWrap} ${styles.dashboardPage}`}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label="Loading seller dashboard"
+    >
+      <div className={styles.sellerDashSkWrap}>
+        <section className={styles.hero}>
+          <div className={styles.heroInner}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }} aria-hidden>
+              <span className={`${styles.sellerSkBarInverse} ${styles.sellerDashSkHeroLineSm}`} />
+              <span className={`${styles.sellerSkBarInverse} ${styles.sellerDashSkHeroLineMd}`} />
+              <span className={`${styles.sellerSkBarInverse} ${styles.sellerDashSkHeroLineLg}`} />
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.sellerDashSkMetrics} aria-hidden>
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className={styles.sellerDashSkMetric}>
+              <span className={`${styles.sellerSkBar} ${styles.sellerDashSkMetricLineA}`} />
+              <span className={`${styles.sellerSkBar} ${styles.sellerDashSkMetricLineB}`} />
+              <span className={`${styles.sellerSkBar} ${styles.sellerDashSkMetricLineC}`} />
+            </div>
+          ))}
+        </section>
+
+        <section className={styles.panel}>
+          <div className={styles.sellerDashSkPanel} aria-hidden>
+            <span className={`${styles.sellerSkBar} ${styles.sellerDashSkPanelTitle}`} />
+            <div className={styles.sellerDashSkQuickGrid}>
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className={styles.sellerDashSkQuickTile}>
+                  <span className={`${styles.sellerSkBar} ${styles.sellerDashSkQuickIcon}`} />
+                  <span className={`${styles.sellerSkBar} ${styles.sellerDashSkQuickLabel}`} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.panel}>
+          <div className={styles.sellerDashSkPanel} aria-hidden>
+            <span className={`${styles.sellerSkBar} ${styles.sellerDashSkPanelTitle}`} style={{ width: '48%' }} />
+            <div className={styles.sellerDashSkChart}>
+              <div className={styles.sellerDashSkChartBars}>
+                {chartHeights.map((h, idx) => (
+                  <span
+                    key={idx}
+                    className={`${styles.sellerSkBar} ${styles.sellerDashSkBar}`}
+                    style={{ height: `${h}%` }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.twoColumnGrid}>
+          {[0, 1].map((col) => (
+            <article key={col} className={styles.panel}>
+              <div className={styles.sellerDashSkPanel} style={{ minHeight: 200 }} aria-hidden>
+                <span className={`${styles.sellerSkBar} ${styles.sellerDashSkPanelTitle}`} />
+                <div className={styles.sellerDashSkList}>
+                  {[0, 1, 2, 3].map((row) => (
+                    <div key={row} className={styles.sellerDashSkListRow}>
+                      <span className={styles.sellerSkBar} style={{ height: 12, width: '42%' }} />
+                      <span className={styles.sellerSkBar} style={{ height: 12, width: '22%' }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </article>
+          ))}
+        </section>
+
+        <section className={styles.panel}>
+          <div className={styles.sellerDashSkPanel} style={{ minHeight: 140 }} aria-hidden>
+            <span className={`${styles.sellerSkBar} ${styles.sellerDashSkPanelTitle}`} />
+            <div className={styles.sellerDashSkList}>
+              {[0, 1, 2].map((row) => (
+                <div key={row} className={styles.sellerDashSkAlertRow}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <span className={styles.sellerSkBar} style={{ height: 11, width: '28%' }} />
+                    <span className={styles.sellerSkBar} style={{ height: 12, width: '92%' }} />
+                  </div>
+                  <span className={styles.sellerSkBar} style={{ height: 32, width: 72, borderRadius: 8 }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  )
+}
+
 export default function SellerDashboardPage() {
   const { user } = useAuth()
   const { orders, listings, loading, error } = useSellerAnalyticsData()
@@ -226,6 +327,10 @@ export default function SellerDashboardPage() {
   const rev7prev = paidRevenuePrevious7DaysTotal(orders)
   const rev7Hint = percentChange(rev7, rev7prev)
 
+  if (loading && !error) {
+    return <SellerDashboardSkeleton />
+  }
+
   return (
     <div className={`${styles.pageWrap} ${styles.dashboardPage}`}>
       <section className={styles.hero}>
@@ -242,7 +347,6 @@ export default function SellerDashboardPage() {
               </p>
             )}
             {error ? <p className={styles.signedIn}>{error}</p> : null}
-            {loading ? <p className={styles.signedIn}>Loading your numbers…</p> : null}
           </div>
         </div>
       </section>

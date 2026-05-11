@@ -117,6 +117,84 @@ function orderMatchesSearchQuery(order, rawQuery) {
   return tokens.every((t) => hay.includes(t))
 }
 
+function SellerOrdersTableSkeletonBody() {
+  const widths = ['68%', '76%', '84%', '52%', '72%', '48%']
+  return (
+    <>
+      {Array.from({ length: 8 }).map((_, i) => (
+        <tr key={`ord-sk-${i}`} className={styles.ordersSkRow}>
+          {widths.map((w, j) => (
+            <td key={j}>
+              <span className={styles.ordersSkBar} style={{ width: w, maxWidth: j === 2 ? 200 : undefined }} />
+            </td>
+          ))}
+          <td>
+            <span className={styles.ordersSkBar} style={{ width: 56, margin: '0 auto' }} />
+          </td>
+          <td>
+            <span className={styles.ordersSkBar} style={{ width: 72, margin: '0 auto' }} />
+          </td>
+          <td>
+            <span className={styles.ordersSkBar} style={{ width: 88, marginLeft: 'auto' }} />
+          </td>
+        </tr>
+      ))}
+    </>
+  )
+}
+
+function SellerOrdersShellSkeleton() {
+  const statVariants = [
+    styles.statCardTotal,
+    styles.statCardPending,
+    styles.statCardInProgress,
+    styles.statCardCompleted,
+  ]
+  return (
+    <div
+      className={styles.pageWrap}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label="Loading orders"
+    >
+      <div className={styles.filtersRow} aria-hidden style={{ alignItems: 'center', gap: '0.75rem' }}>
+        <span className={`${styles.ordersSkBar} ${styles.ordersSkSearchBar}`} />
+        <span className={`${styles.ordersSkBar} ${styles.ordersSkFilterBtn}`} />
+      </div>
+      <div className={styles.statsStrip}>
+        {statVariants.map((cls, i) => (
+          <div key={i} className={`${styles.statCard} ${cls}`}>
+            <span className={styles.ordersSkBar} style={{ width: '62%', height: 10, opacity: 0.85 }} />
+            <span className={styles.ordersSkBar} style={{ width: '40%', height: 22, marginTop: 8, opacity: 0.9 }} />
+            <span className={styles.ordersSkBar} style={{ width: '76%', height: 9, marginTop: 8, opacity: 0.75 }} />
+          </div>
+        ))}
+      </div>
+      <div className={styles.tableWrap}>
+        <table className={styles.ordersTable}>
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Customer Name</th>
+              <th>Service Package</th>
+              <th>Date of Service</th>
+              <th>Location</th>
+              <th>Total Price</th>
+              <th>Payment Status</th>
+              <th>Order Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <SellerOrdersTableSkeletonBody />
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 export default function OrdersContent({ initialTab, initialOrderId, initialAction }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -133,13 +211,15 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
   const [orderForUpdateStatus, setOrderForUpdateStatus] = useState(null)
   const [showUpdateStatus, setShowUpdateStatus] = useState(false)
   const [orders, setOrders] = useState([])
+  const [ordersReady, setOrdersReady] = useState(false)
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false)
   const [previewAttachment, setPreviewAttachment] = useState(null)
   const filterDropdownRef = useRef(null)
 
   const loadOrders = useCallback(async ({ signal } = {}) => {
     if (!user?.id || !isSeller) return
-    const { data, error } = await supabase
+    try {
+      const { data, error } = await supabase
       .from('orders')
       .select(
         'id,order_number,status,fulfillment_status,payment_status,subtotal,created_at,preferred_date,refund_status,refund_requested_at,contact_name,contact_email,contact_phone,notes,service_location,deceased_name,date_of_death,wake_duration_days,order_items(name,quantity)',
@@ -254,11 +334,18 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
       })
 
     setOrders(mapped)
+    } finally {
+      if (!signal?.aborted) setOrdersReady(true)
+    }
   }, [user, isSeller])
 
   useEffect(() => {
     if (authLoading) return
-    if (!user?.id || !isSeller) return
+    if (!user?.id || !isSeller) {
+      queueMicrotask(() => setOrdersReady(true))
+      return
+    }
+    queueMicrotask(() => setOrdersReady(false))
     const controller = new AbortController()
     let cancelled = false
     queueMicrotask(() => {
@@ -798,7 +885,9 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
             </tr>
           </thead>
           <tbody>
-            {filteredOrders.length === 0 ? (
+            {!ordersReady ? (
+              <SellerOrdersTableSkeletonBody />
+            ) : filteredOrders.length === 0 ? (
               <tr>
                 <td colSpan={9} className={styles.emptyState}>
                   <div className={styles.emptyStateIcon}>
@@ -1296,9 +1385,5 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
 }
 
 export function SellerOrdersLoadingFallback() {
-  return (
-    <div className={styles.pageWrap} role="status" aria-live="polite">
-      <p style={{ margin: 0, color: '#64748b', fontSize: '0.95rem' }}>Loading orders…</p>
-    </div>
-  )
+  return <SellerOrdersShellSkeleton />
 }
