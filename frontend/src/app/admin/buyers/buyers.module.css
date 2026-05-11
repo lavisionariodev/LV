@@ -887,6 +887,66 @@
   }
 }
 
+@keyframes buyersSkShimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.buyersSkBar {
+  display: inline-block;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #e8ecf0 0%, #f4f6f8 45%, #e8ecf0 90%);
+  background-size: 200% 100%;
+  animation: buyersSkShimmer 1.12s ease-in-out infinite;
+  vertical-align: middle;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .buyersSkBar {
+    animation: none;
+    background: #e8ecf0;
+  }
+}
+
+.buyersSkCheckbox {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.buyersSkAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.buyersSkName {
+  height: 13px;
+  width: 120px;
+}
+
+.buyersSkEmail {
+  height: 11px;
+  width: 180px;
+  margin-top: 6px;
+}
+
+.buyersSkMeta {
+  height: 12px;
+  width: 88px;
+}
+
+.buyersSkPill {
+  height: 22px;
+  width: 72px;
+  border-radius: 999px;
+}
+
 .loadError {
   padding: 14px 18px;
   font-size: 13px;

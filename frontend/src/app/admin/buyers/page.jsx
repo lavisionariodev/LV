@@ -372,10 +372,58 @@ export default function AdminBuyersPage() {
 
         <div className={styles.tableWrap}>
           {isLoading && (
-            <div className={styles.loadingState}>
-              <div className={styles.spinner} />
-              <p>Loading buyers…</p>
-            </div>
+            <table className={styles.table} role="status" aria-live="polite" aria-busy="true" aria-label="Loading buyers">
+              <colgroup>
+                <col className={styles.colCheck} />
+                <col className={styles.colBuyer} />
+                <col className={styles.colEmail} />
+                <col className={styles.colJoined} />
+                <col className={styles.colRole} />
+                <col className={styles.colStatus} />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th className={styles.checkboxCell} aria-hidden>
+                    <span className={`${styles.buyersSkBar} ${styles.buyersSkCheckbox}`} />
+                  </th>
+                  <th>Buyer</th>
+                  <th>Email</th>
+                  <th>Joined</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 9 }).map((_, i) => (
+                  <tr key={`buyers-sk-${i}`} className={styles.primaryRow}>
+                    <td className={styles.checkboxCell}>
+                      <span className={`${styles.buyersSkBar} ${styles.buyersSkCheckbox}`} aria-hidden />
+                    </td>
+                    <td>
+                      <div className={styles.buyerCell}>
+                        <span className={`${styles.buyersSkBar} ${styles.buyersSkAvatar}`} aria-hidden />
+                        <div className={styles.buyerText}>
+                          <span className={`${styles.buyersSkBar} ${styles.buyersSkName}`} aria-hidden />
+                          <span className={`${styles.buyersSkBar} ${styles.buyersSkEmail} ${styles.mobileEmailInline}`} aria-hidden />
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span className={`${styles.buyersSkBar} ${styles.buyersSkEmail}`} style={{ width: 200 }} aria-hidden />
+                    </td>
+                    <td>
+                      <span className={`${styles.buyersSkBar} ${styles.buyersSkMeta}`} aria-hidden />
+                    </td>
+                    <td>
+                      <span className={`${styles.buyersSkBar} ${styles.buyersSkPill}`} aria-hidden />
+                    </td>
+                    <td>
+                      <span className={`${styles.buyersSkBar} ${styles.buyersSkPill}`} aria-hidden />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
 
           {error && !isLoading && (

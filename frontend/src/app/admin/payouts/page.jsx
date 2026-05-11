@@ -996,8 +996,9 @@ function EscrowReleasePanel({
 }
 
 
-function StatCard({ label, shortLabel, value, percent, className }) {
+function StatCard({ label, shortLabel, value, percent, className, valueLoading, summarySkWidth }) {
   const isPositive = percent >= 0
+  const loading = Boolean(valueLoading)
 
   return (
     <div className={`${styles.statCard}${className ? ` ${className}` : ''}`}>
@@ -1011,7 +1012,18 @@ function StatCard({ label, shortLabel, value, percent, className }) {
       </p>
       <div className={styles.statBody}>
         <div className={styles.statLeft}>
-          <p className={styles.statValue}>{value}</p>
+          <p className={styles.statValue}>
+            {loading ? (
+              <span
+                className={styles.payoutsSummarySk}
+                style={summarySkWidth != null ? { width: summarySkWidth } : undefined}
+                aria-hidden
+              />
+            ) : (
+              value
+            )}
+          </p>
+          {!loading && (
           <div
             className={`${styles.statTrend} ${isPositive ? styles.statTrendPositive : styles.statTrendNegative}`}
           >
@@ -1022,7 +1034,9 @@ function StatCard({ label, shortLabel, value, percent, className }) {
             )}
             <span className={styles.statTrendValue}>{Math.abs(percent)}%</span>
           </div>
+          )}
         </div>
+        {!loading && (
         <div className={styles.statRight}>
           <svg
             className={`${styles.statSparkline} ${isPositive ? styles.statSparklinePositive : styles.statSparklineNegative}`}
@@ -1094,6 +1108,7 @@ function StatCard({ label, shortLabel, value, percent, className }) {
             )}
           </svg>
         </div>
+        )}
       </div>
     </div>
   )
@@ -2035,43 +2050,37 @@ export default function AdminPayoutsPage() {
 
       {/* Financial overview — only on "All" tab (not Transactions / Commission / Seller alone) */}
       {activeTab === 'all' && (
-        <section className={styles.statsGrid}>
+        <section className={styles.statsGrid} aria-busy={summaryLoading}>
           <StatCard
             label="Platform Revenue"
             shortLabel="Revenue"
-            value={
-              summaryLoading
-                ? '…'
-                : isMobile
-                  ? formatPHPMobile(summary.platformRevenue)
-                  : formatPHP(summary.platformRevenue)
-            }
+            value={isMobile ? formatPHPMobile(summary.platformRevenue) : formatPHP(summary.platformRevenue)}
+            valueLoading={summaryLoading}
+            summarySkWidth={isMobile ? undefined : 132}
             percent={14}
           />
           <StatCard
             label="Escrow rows"
             shortLabel="Escrows"
-            value={summaryLoading ? '…' : formatCount(summary.total, { desktop: !isMobile })}
+            value={formatCount(summary.total, { desktop: !isMobile })}
+            valueLoading={summaryLoading}
+            summarySkWidth={isMobile ? 44 : 56}
             percent={-17}
           />
           <StatCard
             label="Pending release"
             shortLabel="Pending"
-            value={
-              summaryLoading ? '…' : isMobile ? formatPHPMobile(summary.pendingAmt) : formatPHP(summary.pendingAmt)
-            }
+            value={isMobile ? formatPHPMobile(summary.pendingAmt) : formatPHP(summary.pendingAmt)}
+            valueLoading={summaryLoading}
+            summarySkWidth={isMobile ? undefined : 112}
             percent={8}
           />
           <StatCard
             label="Released (seller net)"
             shortLabel="Released"
-            value={
-              summaryLoading
-                ? '…'
-                : isMobile
-                  ? formatPHPMobile(summary.completedAmt)
-                  : formatPHP(summary.completedAmt)
-            }
+            value={isMobile ? formatPHPMobile(summary.completedAmt) : formatPHP(summary.completedAmt)}
+            valueLoading={summaryLoading}
+            summarySkWidth={isMobile ? undefined : 112}
             percent={23}
             className={styles.statCardMobileHide}
           />

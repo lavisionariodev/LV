@@ -630,9 +630,26 @@ export default function AdminListingsBrowsePage() {
 
       <div className={styles.cardList}>
         {isLoading && (
-          <div className={styles.loadingState}>
-            <div className={styles.spinner} />
-            <p>Loading approved listings…</p>
+          <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading approved listings" style={{ display: 'contents' }}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={`browse-sk-${i}`} className={styles.card}>
+                <div className={styles.cardMain}>
+                  <span className={`${styles.listingsSkBar} ${styles.listingsSkThumb}`} aria-hidden />
+                  <div className={styles.cardBody}>
+                    <span className={`${styles.listingsSkBar} ${styles.listingsSkTitle}`} aria-hidden />
+                    <span className={`${styles.listingsSkBar} ${styles.listingsSkSub}`} aria-hidden />
+                    <div className={styles.cardTags}>
+                      <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} aria-hidden />
+                      <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 96 }} aria-hidden />
+                    </div>
+                  </div>
+                  <div className={styles.cardRight}>
+                    <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} aria-hidden />
+                    <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 56 }} aria-hidden />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
@@ -652,7 +669,7 @@ export default function AdminListingsBrowsePage() {
           ))}
 
         {!isLoading && !error && approvedFiltered.length === 0 && (
-          <div className={styles.emptyState}>
+          <div className={`${styles.emptyState} ${styles.cardListEmptyState}`}>
             <svg className={styles.emptyIcon} viewBox="0 0 48 48" fill="none">
               <rect x="8" y="12" width="32" height="26" rx="3" stroke="currentColor" strokeWidth="2" />
               <path d="M8 20h32" stroke="currentColor" strokeWidth="2" />

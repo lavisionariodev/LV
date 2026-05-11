@@ -22,7 +22,6 @@ import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProf
 import { useMediaQuery } from '@/shared/hooks'
 import { useSiteContent, upsertSiteContent } from '@/lib/siteContent/client'
 import { useToast } from '@/contexts/ToastContext'
-import loadingStyles from '../admin-loading.module.css'
 import { normalizeSettingsTab } from './adminSettingsTabs'
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -112,10 +111,20 @@ export function AdminBillingSettingsPanel({ variant = 'default' }) {
             Default share of each successful order between buyers and sellers that applies before
             any seller-specific rate.
           </p>
-          <dl className={styles.billingDl}>
+          <dl className={styles.billingDl} aria-busy={billingLoading}>
             <div className={styles.billingDlRow}>
               <dt>Default rate</dt>
-              <dd>{billingLoading ? '…' : `${defaultCommissionPercent}%`}</dd>
+              <dd>
+                {billingLoading ? (
+                  <span
+                    className={styles.settingsSkBar}
+                    style={{ display: 'inline-block', width: 44, height: 15, verticalAlign: 'middle' }}
+                    aria-hidden
+                  />
+                ) : (
+                  `${defaultCommissionPercent}%`
+                )}
+              </dd>
             </div>
             <div className={styles.billingDlRow}>
               <dt>Rule</dt>
@@ -124,11 +133,17 @@ export function AdminBillingSettingsPanel({ variant = 'default' }) {
             <div className={styles.billingDlRow}>
               <dt>Last updated</dt>
               <dd>
-                {billingLoading
-                  ? '…'
-                  : billingUpdatedAt
-                    ? formatRuleDate(billingUpdatedAt.slice(0, 10))
-                    : '—'}
+                {billingLoading ? (
+                  <span
+                    className={styles.settingsSkBar}
+                    style={{ display: 'inline-block', width: 128, height: 14, verticalAlign: 'middle' }}
+                    aria-hidden
+                  />
+                ) : billingUpdatedAt ? (
+                  formatRuleDate(billingUpdatedAt.slice(0, 10))
+                ) : (
+                  '—'
+                )}
               </dd>
             </div>
             <div className={styles.billingDlRow}>
@@ -394,14 +409,21 @@ export const AdminNotificationPreferencesPanel = forwardRef(function AdminNotifi
   if (loading) {
     return (
       <section className={wrapClass}>
-        <div
-          className={`${loadingStyles.root} ${loadingStyles.variantCard}`}
-          role="status"
-          aria-live="polite"
-          aria-busy="true"
-        >
-          <span className={loadingStyles.spinner} aria-hidden />
-          <span className={loadingStyles.label}>Loading notification settings</span>
+        <div className={styles.settingsSkNotifList} role="status" aria-live="polite" aria-busy="true" aria-label="Loading notification settings">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className={styles.settingsSkNotifRow}>
+              <div className={styles.settingsSkNotifMeta}>
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkNotifTitle}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkNotifDesc}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkNotifDesc2}`} />
+              </div>
+              <div className={styles.settingsSkNotifControls}>
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkSwitch}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkSwitch}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkSwitch}`} />
+              </div>
+            </div>
+          ))}
         </div>
       </section>
     )
@@ -1076,14 +1098,14 @@ export function AdminSiteContentPanel({
 
       <div className={styles.settingsProgramBody} ref={contentRefs}>
         {isLoading ? (
-          <div
-            className={`${loadingStyles.root} ${loadingStyles.variantEmbed}`}
-            role="status"
-            aria-live="polite"
-            aria-busy="true"
-          >
-            <span className={loadingStyles.spinner} aria-hidden />
-            <span className={loadingStyles.label}>Loading site content</span>
+          <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading site content">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className={styles.settingsSkSiteSection}>
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkSiteH2}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkSiteBlock}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkSiteBlockTall}`} />
+              </div>
+            ))}
           </div>
         ) : (
           <>
@@ -1547,16 +1569,27 @@ export default function AdminSettingsClient() {
   if (loading) {
     return (
       <div className={styles.page}>
+        <div className={styles.settingsSkTabRow}>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <span key={i} className={`${styles.settingsSkBar} ${styles.settingsSkTabPill}`} />
+          ))}
+        </div>
         <div className={`${styles.contentArea} ${styles.grid}`}>
           <section className={`${styles.card} ${styles.full}`}>
-            <div
-              className={`${loadingStyles.root} ${loadingStyles.variantCard}`}
-              role="status"
-              aria-live="polite"
-              aria-busy="true"
-            >
-              <span className={loadingStyles.spinner} aria-hidden />
-              <span className={loadingStyles.label}>Loading your profile</span>
+            <div className={styles.settingsSkCardHead}>
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkTitle}`} />
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkSubtitle}`} />
+            </div>
+            <div className={styles.settingsSkAvatarRow}>
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkAvatar}`} />
+              <div className={styles.settingsSkFields} style={{ flex: 1 }}>
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkFieldLabel}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkField}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkFieldLabel}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkField}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkFieldLabel}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkField}`} />
+              </div>
             </div>
           </section>
         </div>

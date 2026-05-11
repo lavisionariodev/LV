@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import AdminSettingsClient from './AdminSettingsClient'
-import loadingStyles from '../admin-loading.module.css'
+import styles from './settings.module.css'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -28,14 +28,27 @@ export default async function SettingsPage() {
   return (
     <Suspense
       fallback={
-        <div
-          className={`${loadingStyles.root} ${loadingStyles.variantPage}`}
-          role="status"
-          aria-live="polite"
-          aria-busy="true"
-        >
-          <span className={loadingStyles.spinner} aria-hidden />
-          <span className={loadingStyles.label}>Loading settings</span>
+        <div className={styles.settingsSkSuspense} role="status" aria-live="polite" aria-busy="true" aria-label="Loading settings">
+          <div className={styles.settingsSkTabRow}>
+            {[0, 1, 2, 3, 4].map((i) => (
+              <span key={i} className={`${styles.settingsSkBar} ${styles.settingsSkTabPill}`} />
+            ))}
+          </div>
+          <div className={styles.settingsSkCard}>
+            <div className={styles.settingsSkCardHead}>
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkTitle}`} />
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkSubtitle}`} />
+            </div>
+            <div className={styles.settingsSkAvatarRow}>
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkAvatar}`} />
+              <div className={styles.settingsSkFields} style={{ flex: 1 }}>
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkFieldLabel}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkField}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkFieldLabel}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkField}`} />
+              </div>
+            </div>
+          </div>
         </div>
       }
     >

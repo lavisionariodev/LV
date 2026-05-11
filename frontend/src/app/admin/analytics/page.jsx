@@ -75,6 +75,50 @@ export default function AdminAnalyticsPage() {
     }
   }, [])
 
+  if (loading) {
+    return (
+      <div className={layoutStyles.dashWrap} role="status" aria-live="polite" aria-busy="true" aria-label="Loading analytics">
+        <section className={layoutStyles.analyticsSkStats}>
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className={layoutStyles.analyticsSkStatCard}>
+              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 11, width: '55%' }} />
+              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 24, width: '48%' }} />
+              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 10, width: '72%' }} />
+            </div>
+          ))}
+        </section>
+        <section className={layoutStyles.analyticsSkPanel}>
+          <div className={layoutStyles.analyticsSkPanelHead}>
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 16, width: 180 }} />
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 12, width: 100 }} />
+          </div>
+          <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 12, width: '62%', maxWidth: 400 }} />
+          <div className={layoutStyles.analyticsSkChartGrid}>
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.analyticsSkChart}`} />
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.analyticsSkChart}`} />
+          </div>
+        </section>
+        <section className={`${layoutStyles.panel} ${layoutStyles.homeDesktopOnly} ${layoutStyles.analyticsSkActivity}`}>
+          <div className={layoutStyles.panelHead}>
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 15, width: 160 }} />
+          </div>
+          <div className={layoutStyles.analyticsSkRowHead}>
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 10 }} />
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 10 }} />
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 10 }} />
+          </div>
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className={layoutStyles.analyticsSkRow}>
+              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 12 }} />
+              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 12 }} />
+              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 22, borderRadius: 8 }} />
+            </div>
+          ))}
+        </section>
+      </div>
+    )
+  }
+
   return (
     <div className={layoutStyles.dashWrap}>
       {/* Stat cards — 4 col desktop, 2 col tablet/mobile */}
@@ -105,7 +149,6 @@ export default function AdminAnalyticsPage() {
       <section className={layoutStyles.panel}>
         <div className={layoutStyles.panelHead}>
           <p className={layoutStyles.panelTitle}>Revenue overview</p>
-          {loading ? <span style={{ fontSize: 13, color: '#64748b' }}>Loading…</span> : null}
         </div>
         <p className={layoutStyles.analyticsSubtitle}>
           Collected GMV from paid orders (order escrows), last 7 days · UTC day.

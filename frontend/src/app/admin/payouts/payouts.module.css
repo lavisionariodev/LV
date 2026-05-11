@@ -76,6 +76,34 @@
   line-height: 1.1;
 }
 
+/* Summary strip / cards — value placeholder while summary API loads */
+.payoutsSummarySk {
+  display: inline-block;
+  vertical-align: middle;
+  border-radius: 8px;
+  height: 26px;
+  width: min(124px, 92%);
+  max-width: 100%;
+  box-sizing: border-box;
+  background: linear-gradient(
+    90deg,
+    #f1f5f9 0%,
+    #e8eef4 42%,
+    #f8fafc 50%,
+    #e8eef4 58%,
+    #f1f5f9 100%
+  );
+  background-size: 200% 100%;
+  animation: payoutsSkeletonShimmer 1.35s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .payoutsSummarySk {
+    animation: none;
+    background: #e8eef4;
+  }
+}
+
 .statTrend {
   display: inline-flex;
   align-items: center;
@@ -6116,4 +6144,26 @@
 .stuckRefundsBtnDanger:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+/* Payouts summary skeleton on mobile dark stat strip */
+@media (max-width: 640px) {
+  .statsGrid .payoutsSummarySk {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.12) 0%,
+      rgba(255, 255, 255, 0.26) 45%,
+      rgba(255, 255, 255, 0.14) 90%
+    );
+    background-size: 200% 100%;
+    height: 24px;
+    width: min(80px, 86%);
+  }
+}
+
+@media (max-width: 640px) and (prefers-reduced-motion: reduce) {
+  .statsGrid .payoutsSummarySk {
+    animation: none;
+    background: rgba(255, 255, 255, 0.18);
+  }
 }

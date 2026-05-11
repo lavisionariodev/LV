@@ -836,10 +836,67 @@ export default function AdminSellersPage() {
 
         <div className={styles.tableWrap}>
           {loading ? (
-            <div className={styles.loadingState}>
-              <div className={styles.spinner} />
-              <p>Loading sellers…</p>
-            </div>
+            <table className={styles.table} role="status" aria-live="polite" aria-busy="true" aria-label="Loading sellers">
+              <colgroup>
+                <col className={styles.colCheck} />
+                <col className={styles.colSeller} />
+                <col className={styles.colContact} />
+                <col className={styles.colListings} />
+                <col className={styles.colCommission} />
+                <col className={styles.colStatus} />
+                <col className={styles.colActions} />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th className={styles.checkboxCell} aria-hidden>
+                    <span className={`${styles.sellersSkBar} ${styles.sellersSkCheckbox}`} />
+                  </th>
+                  <th>Shop</th>
+                  <th>Contact</th>
+                  <th>Listings</th>
+                  <th>Commission</th>
+                  <th>Status</th>
+                  <th className={styles.actionsTh}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <tr key={`sellers-sk-${i}`} className={styles.primaryRow}>
+                    <td className={styles.checkboxCell}>
+                      <span className={`${styles.sellersSkBar} ${styles.sellersSkCheckbox}`} aria-hidden />
+                    </td>
+                    <td>
+                      <div className={styles.sellerCell}>
+                        <span className={`${styles.sellersSkBar} ${styles.sellersSkAvatar}`} aria-hidden />
+                        <div className={styles.sellerText}>
+                          <span className={`${styles.sellersSkBar} ${styles.sellersSkLine}`} aria-hidden />
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span className={`${styles.sellersSkBar} ${styles.sellersSkLine}`} aria-hidden />
+                      <span className={`${styles.sellersSkBar} ${styles.sellersSkLineSm}`} style={{ display: 'block', width: 180 }} aria-hidden />
+                    </td>
+                    <td>
+                      <span className={`${styles.sellersSkBar} ${styles.sellersSkLine}`} style={{ width: 40 }} aria-hidden />
+                      <span className={`${styles.sellersSkBar} ${styles.sellersSkLineSm}`} style={{ display: 'block', width: 64 }} aria-hidden />
+                    </td>
+                    <td>
+                      <span className={`${styles.sellersSkBar} ${styles.sellersSkPill}`} aria-hidden />
+                    </td>
+                    <td>
+                      <span className={`${styles.sellersSkBar} ${styles.sellersSkPill}`} aria-hidden />
+                    </td>
+                    <td className={styles.actionsCell}>
+                      <div className={styles.actionsCellInner}>
+                        <span className={`${styles.sellersSkBar} ${styles.sellersSkBtn}`} aria-hidden />
+                        <span className={`${styles.sellersSkBar} ${styles.sellersSkBtn}`} aria-hidden />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           ) : filtered.length === 0 ? null : (
             <table className={styles.table}>
               <colgroup>

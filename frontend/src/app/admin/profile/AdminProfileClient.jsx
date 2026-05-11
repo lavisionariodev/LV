@@ -17,7 +17,6 @@ import { HiOutlineNewspaper } from 'react-icons/hi'
 import { validateNewPassword } from '@/lib/validators/authSchemas'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
 import { useMediaQuery } from '@/shared/hooks'
-import loadingStyles from '../admin-loading.module.css'
 import { normalizeSettingsTab } from '../settings/adminSettingsTabs'
 const AVATARS_BUCKET = 'avatars'
 const MAX_MB = 2
@@ -448,17 +447,19 @@ export default function AdminProfileClient() {
 
   if (!isMobile) {
     return (
-      <div className={styles.page}>
+      <div className={styles.page} role="status" aria-live="polite" aria-busy="true" aria-label="Opening settings">
         <div className={`${styles.contentArea} ${styles.grid}`}>
           <section className={`${styles.card} ${styles.full}`}>
-            <div
-              className={`${loadingStyles.root} ${loadingStyles.variantCard}`}
-              role="status"
-              aria-live="polite"
-              aria-busy="true"
-            >
-              <span className={loadingStyles.spinner} aria-hidden />
-              <span className={loadingStyles.label}>Opening settings</span>
+            <div className={styles.settingsSkCardHead}>
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkTitle}`} />
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkSubtitle}`} />
+            </div>
+            <div className={styles.settingsSkAvatarRow}>
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkAvatar}`} />
+              <div className={styles.settingsSkFields} style={{ flex: 1 }}>
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkField}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkField}`} style={{ maxWidth: '85%' }} />
+              </div>
             </div>
           </section>
         </div>
@@ -468,17 +469,26 @@ export default function AdminProfileClient() {
 
   if (loading) {
     return (
-      <div className={styles.page}>
+      <div className={styles.page} role="status" aria-live="polite" aria-busy="true" aria-label="Loading your profile">
+        <nav className={styles.settingsSkTabRow} aria-hidden style={{ marginBottom: 12 }}>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <span key={i} className={`${styles.settingsSkBar} ${styles.settingsSkTabPill}`} />
+          ))}
+        </nav>
         <div className={`${styles.contentArea} ${styles.grid}`}>
           <section className={`${styles.card} ${styles.full}`}>
-            <div
-              className={`${loadingStyles.root} ${loadingStyles.variantCard}`}
-              role="status"
-              aria-live="polite"
-              aria-busy="true"
-            >
-              <span className={loadingStyles.spinner} aria-hidden />
-              <span className={loadingStyles.label}>Loading your profile</span>
+            <div className={styles.settingsSkCardHead}>
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkTitle}`} />
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkSubtitle}`} />
+            </div>
+            <div className={styles.settingsSkAvatarRow}>
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkAvatar}`} />
+              <div className={styles.settingsSkFields} style={{ flex: 1 }}>
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkFieldLabel}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkField}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkFieldLabel}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkField}`} />
+              </div>
             </div>
           </section>
         </div>
