@@ -107,6 +107,36 @@ export async function fetchActivePartnersDirectory({ bustCache = false } = {}) {
   return rows
 }
 
+/**
+ * Directory `seller_user_id` with the highest `avg_rating` (ties: higher `review_count`, then id).
+ * Returns null if no row has a finite average rating.
+ * @param {Array<{ sellerUserId?: string, avgRating?: number | null, reviewCount?: number | null }>|null|undefined} rows Mapped directory rows (`mapPartnersRpcRow`).
+ * @returns {string | null}
+ */
+export function pickTopRatedSellerUserIdFromDirectory(rows) {
+  if (!Array.isArray(rows) || rows.length === 0) return null
+  /** @type {{ id: string, rating: number, reviews: number }[]} */
+  const candidates = []
+  for (const r of rows) {
+    if (!r || typeof r !== 'object') continue
+    const id = r.sellerUserId
+    if (id == null || String(id).trim() === '') continue
+    const rating = r.avgRating
+    const n = rating == null ? NaN : Number(rating)
+    if (!Number.isFinite(n)) continue
+    const rc = r.reviewCount == null ? 0 : Number(r.reviewCount)
+    const reviews = Number.isFinite(rc) ? rc : 0
+    candidates.push({ id: String(id), rating: n, reviews })
+  }
+  if (candidates.length === 0) return null
+  candidates.sort((a, b) => {
+    if (b.rating !== a.rating) return b.rating - a.rating
+    if (b.reviews !== a.reviews) return b.reviews - a.reviews
+    return a.id.localeCompare(b.id)
+  })
+  return candidates[0].id
+}
+
 /** @param {string|undefined|null} iso */
 function formatTenureLabel(iso) {
   if (iso == null || typeof iso !== 'string' || !iso.trim()) return ''
