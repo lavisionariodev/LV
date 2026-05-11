@@ -176,6 +176,7 @@ export function mapBuyerOrderCard(o, orderItems, providerDisplayName) {
   const orderItemsForReview = orderItems.map((it) => ({
     orderItemId: it.id ?? null,
     label: it.name,
+    kind: pickKind(it.listing_kind),
   }))
 
   /** PayMongo checkout session opened (`payment_status` set to pending by `/api/checkout/pay`). Not the same as legacy `status: pending_payment` on new unpaid orders. */
@@ -298,7 +299,7 @@ export function expandPurchaseCardsByLineItem(baseCard, orderItems, reviewedItem
           subtotal: formatMoney(lineTotal, baseCard.currency),
         },
       ],
-      orderItemsForReview: [{ orderItemId: it.id, label: name }],
+      orderItemsForReview: [{ orderItemId: it.id, label: name, kind: pickKind(it.listing_kind) }],
       hasExistingReview: reviewed.has(itemId),
       isMultiItemCheckout: multi,
       checkoutSiblingCount: siblings,
@@ -311,4 +312,17 @@ function pickStr(v) {
   if (v == null) return ''
   const s = String(v).trim()
   return s
+}
+
+/**
+ * Normalize the `listing_kind` to one of 'service' | 'package' | 'product', else null.
+ * Used to label the review modal as "Service Name" vs "Product Name".
+ * @param {unknown} v
+ * @returns {'service' | 'package' | 'product' | null}
+ */
+function pickKind(v) {
+  if (typeof v !== 'string') return null
+  const k = v.trim().toLowerCase()
+  if (k === 'service' || k === 'package' || k === 'product') return k
+  return null
 }

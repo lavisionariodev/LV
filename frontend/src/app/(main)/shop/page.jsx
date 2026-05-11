@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useDebouncedEffect } from '@/shared/hooks'
 import { readString, replaceUrlQuery } from '@/lib/url/queryParams'
@@ -238,6 +238,7 @@ export default function ShopPage() {
   const [providerServiceAggregatesByPair, setProviderServiceAggregatesByPair] = useState({})
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 15 // 3 columns × 5 rows
+  const lastSyncedFilterQueryRef = useRef('')
 
   // Mobile-specific pagination: 2 columns × 5 rows = 10 items per page
   const [mobileCurrentPage, setMobileCurrentPage] = useState(1)
@@ -325,6 +326,13 @@ export default function ShopPage() {
   useEffect(() => {
     const nextCategory = normalizeCategoryParam(readString(searchParams, 'category', 'all'))
     const nextLoc = readString(searchParams, 'loc', '')
+    const syncKey = `${nextCategory}|${nextLoc}`
+
+    // Prevent state→URL updates from being immediately reverted by this effect.
+    // We only need to sync from URL when query params actually changed.
+    if (lastSyncedFilterQueryRef.current === syncKey) return
+    lastSyncedFilterQueryRef.current = syncKey
+
     if (nextCategory !== activeCategory) {
       queueMicrotask(() => setCategoryAndReset(nextCategory))
     }

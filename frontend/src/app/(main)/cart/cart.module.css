@@ -385,12 +385,11 @@
   align-items: center;
   justify-content: center;
   border-radius: 5px;
-  transition: color 0.18s ease, background 0.18s ease;
+  transition: color 0.18s ease;
 }
 
 .removeBtn:hover {
   color: #c0392b;
-  background: rgba(192, 57, 43, 0.07);
 }
 
 /* ─── Update & Coupon Footer ───────────────────────────────────────────────── */
