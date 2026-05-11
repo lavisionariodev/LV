@@ -258,7 +258,7 @@ export default function SellerDashboardPage() {
               </p>
             ) : (
               <p className={styles.metricTrend} style={{ opacity: 0.65 }}>
-                Awaiting your confirmation on paid bookings
+                Paid bookings awaiting confirmation
               </p>
             )}
           </article>

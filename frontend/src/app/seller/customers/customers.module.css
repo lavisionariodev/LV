@@ -260,6 +260,10 @@
   background: #ffffff;
 }
 
+.searchBox::-webkit-search-cancel-button {
+  cursor: pointer;
+}
+
 /* Customers table */
 .customersSection {
   margin-top: 0.25rem;

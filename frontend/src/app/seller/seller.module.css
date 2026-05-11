@@ -48,6 +48,7 @@
   padding: 18px;
   width: 100%;
   box-sizing: border-box;
+  padding-bottom: calc(18px + 28px + env(safe-area-inset-bottom, 0px));
 }
 
 .pendingBanner {
@@ -81,7 +82,7 @@
   }
 
   /*
-   * Single bottom inset for the fixed bottom nav (AppSidebar ~60px + safe area).
+   * Bottom inset matches admin mobile `.content` (92px) for fixed bottom nav + breathing room.
    * Do not also pad .main — that stacked with .content and looked like a huge empty band on every page.
    */
   .main {
@@ -89,8 +90,7 @@
   }
 
   .content {
-    padding: 16px;
-    padding-bottom: calc(60px + env(safe-area-inset-bottom) + 16px);
+    padding: 16px 16px 92px;
   }
 
   /*
@@ -103,8 +103,7 @@
 
 @media (max-width: 600px) {
   .content {
-    padding: 14px;
-    padding-bottom: calc(60px + env(safe-area-inset-bottom) + 14px);
+    padding: 14px 14px 92px;
   }
 
   .content:has([class*='newListingPage']) {
@@ -116,7 +115,7 @@
 
 .dashboardPage {
   min-height: 0;
-  padding: 0 0 2rem;
+  padding: 0;
   width: 100%;
   color: var(--color-text-primary);
 }
@@ -692,7 +691,7 @@
 
 @media (max-width: 640px) {
   .dashboardPage {
-    padding: 0 0 1.5rem;
+    padding: 0;
   }
 
   .heroInner {

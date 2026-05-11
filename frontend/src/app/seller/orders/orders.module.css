@@ -215,6 +215,10 @@
   box-shadow: 0 0 0 3px rgba(32, 79, 56, 0.12);
 }
 
+.searchBox::-webkit-search-cancel-button {
+  cursor: pointer;
+}
+
 .searchWrap {
   position: relative;
   flex: 1;
