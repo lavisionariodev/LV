@@ -51,21 +51,23 @@ export default async function AboutPage() {
 
   const testimonials = [
     {
-      text:   `${systemName} made an incredibly difficult time much easier to bear. The transparent pricing meant we could focus on our loved one instead of worrying about costs.`,
-      name:   "Maria Santos",
-      label:  "Quezon City",
+      text: String(about.testimonial1 || "").trim(),
+      name: String(about.testimonial1Name || "").trim(),
+      label: String(about.testimonial1Location || "").trim(),
     },
     {
-      text:   "The ease of comparing packages and the support we received was exceptional. We felt guided and respected throughout the entire process.",
-      name:   "Jose Reyes",
-      label:  "Cebu City",
+      text: String(about.testimonial2 || "").trim(),
+      name: String(about.testimonial2Name || "").trim(),
+      label: String(about.testimonial2Location || "").trim(),
     },
     {
-      text:   `Finding a trusted provider felt impossible until we found ${systemName}. Their verified partners gave us complete peace of mind during our grief.`,
-      name:   "Ana Dela Cruz",
-      label:  "Davao City",
+      text: String(about.testimonial3 || "").trim(),
+      name: String(about.testimonial3Name || "").trim(),
+      label: String(about.testimonial3Location || "").trim(),
     },
-  ];
+  ].filter((t) => t.text && t.name && t.label);
+  const featuredTestimonial = String(about.testimonialFeatured || "").trim();
+  const hasTestimonials = testimonials.length > 0;
 
   return (
     <>
@@ -287,62 +289,64 @@ export default async function AboutPage() {
             Deep gradient bg · 3 quote cards
             + 1 wide featured quote at the bottom
         ══════════════════════════════════════ */}
-        <div
-          id="testimonials"
-          className={`${styles.sectionAnchorOffset} ${styles.testimonialsWrap}`}
-        >
-          <div className={styles.testimonialsInner}>
+        {hasTestimonials && (
+          <div
+            id="testimonials"
+            className={`${styles.sectionAnchorOffset} ${styles.testimonialsWrap}`}
+          >
+            <div className={styles.testimonialsInner}>
 
-            <div className={styles.testimonialsHeader}>
-              <p className={styles.testimonialsEyebrow}>Testimonials</p>
-              <h2 className={styles.testimonialsTitle}>
-                Families We Have{" "}
-                <span className={styles.testimonialsTitleAccent}>Honored</span>
-              </h2>
-            </div>
+              <div className={styles.testimonialsHeader}>
+                <p className={styles.testimonialsEyebrow}>Testimonials</p>
+                <h2 className={styles.testimonialsTitle}>
+                  Families We Have{" "}
+                  <span className={styles.testimonialsTitleAccent}>Honored</span>
+                </h2>
+              </div>
 
-            {/* 3 quote cards */}
-            <div className={styles.testimonialsGrid}>
-              {testimonials.map((t) => (
-                <div key={t.name} className={styles.testimonialCard}>
-                  <i className={`fa-solid fa-quote-left ${styles.testimonialQuoteIcon}`} />
-                  <p className={styles.testimonialText}>{t.text}</p>
-                  <div className={styles.testimonialAuthorRow}>
-                    <div className={styles.testimonialAvatar}>
-                      <img
-                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(t.name)}&background=102820&color=fff&size=84&font-size=0.38&bold=true&rounded=true`}
-                        alt={t.name}
-                        className={styles.testimonialAvatarImg}
-                      />
+              <div className={styles.testimonialsGrid}>
+                {testimonials.map((t) => (
+                  <div key={`${t.name}-${t.label}`} className={styles.testimonialCard}>
+                    <i className={`fa-solid fa-quote-left ${styles.testimonialQuoteIcon}`} />
+                    <p className={styles.testimonialText}>{t.text}</p>
+                    <div className={styles.testimonialAuthorRow}>
+                      <div className={styles.testimonialAvatar}>
+                        <img
+                          src={`https://ui-avatars.com/api/?name=${encodeURIComponent(t.name)}&background=102820&color=fff&size=84&font-size=0.38&bold=true&rounded=true`}
+                          alt={t.name}
+                          className={styles.testimonialAvatarImg}
+                        />
+                      </div>
+                      <div>
+                        <p className={styles.testimonialAuthorName}>{t.name}</p>
+                        <p className={styles.testimonialAuthorLabel}>{t.label}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className={styles.testimonialAuthorName}>{t.name}</p>
-                      <p className={styles.testimonialAuthorLabel}>{t.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {featuredTestimonial && (
+                <div className={styles.testimonialFeatured}>
+                  <div className={styles.testimonialFeaturedIcon}>
+                    <i className="fa-solid fa-dove" />
+                  </div>
+                  <div className={styles.testimonialFeaturedBody}>
+                    <p className={styles.testimonialFeaturedText}>
+                      {featuredTestimonial}
+                    </p>
+                    <div className={styles.testimonialStars}>
+                      {[1,2,3,4,5].map((s) => (
+                        <i key={s} className="fa-solid fa-star" />
+                      ))}
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              )}
 
-            {/* featured centered quote */}
-            <div className={styles.testimonialFeatured}>
-              <div className={styles.testimonialFeaturedIcon}>
-                <i className="fa-solid fa-dove" />
-              </div>
-              <div className={styles.testimonialFeaturedBody}>
-                <p className={styles.testimonialFeaturedText}>
-                  {`Families who have used ${systemName} appreciate the ease of comparison, transparent pricing, and the support they received during a difficult time. We are honored to help every family navigate this journey with dignity and care.`}
-                </p>
-                <div className={styles.testimonialStars}>
-                  {[1,2,3,4,5].map((s) => (
-                    <i key={s} className="fa-solid fa-star" />
-                  ))}
-                </div>
-              </div>
             </div>
-
           </div>
-        </div>
+        )}
 
       </div>
     </>

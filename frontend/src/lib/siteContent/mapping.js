@@ -14,6 +14,16 @@ const DEFAULT_SITE_CONTENT = {
     whyUs: '',
     partners: '',
     commitment: '',
+    testimonial1: '',
+    testimonial1Name: '',
+    testimonial1Location: '',
+    testimonial2: '',
+    testimonial2Name: '',
+    testimonial2Location: '',
+    testimonial3: '',
+    testimonial3Name: '',
+    testimonial3Location: '',
+    testimonialFeatured: '',
   },
 }
 
@@ -46,6 +56,27 @@ export function rowToSiteContent(row) {
       commitment:
         row.about_commitment ??
         DEFAULT_SITE_CONTENT.about.commitment,
+      testimonial1:
+        row.about_testimonial_1 ?? DEFAULT_SITE_CONTENT.about.testimonial1,
+      testimonial1Name:
+        row.about_testimonial_1_name ?? DEFAULT_SITE_CONTENT.about.testimonial1Name,
+      testimonial1Location:
+        row.about_testimonial_1_location ?? DEFAULT_SITE_CONTENT.about.testimonial1Location,
+      testimonial2:
+        row.about_testimonial_2 ?? DEFAULT_SITE_CONTENT.about.testimonial2,
+      testimonial2Name:
+        row.about_testimonial_2_name ?? DEFAULT_SITE_CONTENT.about.testimonial2Name,
+      testimonial2Location:
+        row.about_testimonial_2_location ?? DEFAULT_SITE_CONTENT.about.testimonial2Location,
+      testimonial3:
+        row.about_testimonial_3 ?? DEFAULT_SITE_CONTENT.about.testimonial3,
+      testimonial3Name:
+        row.about_testimonial_3_name ?? DEFAULT_SITE_CONTENT.about.testimonial3Name,
+      testimonial3Location:
+        row.about_testimonial_3_location ?? DEFAULT_SITE_CONTENT.about.testimonial3Location,
+      testimonialFeatured:
+        row.about_testimonial_featured ??
+        DEFAULT_SITE_CONTENT.about.testimonialFeatured,
     },
   }
 }
@@ -68,6 +99,16 @@ export function siteContentToRow(content) {
     about_why_us: src.about?.whyUs ?? null,
     about_commitment: src.about?.commitment ?? null,
     about_partners: src.about?.partners ?? null,
+    about_testimonial_1: src.about?.testimonial1 ?? null,
+    about_testimonial_1_name: src.about?.testimonial1Name ?? null,
+    about_testimonial_1_location: src.about?.testimonial1Location ?? null,
+    about_testimonial_2: src.about?.testimonial2 ?? null,
+    about_testimonial_2_name: src.about?.testimonial2Name ?? null,
+    about_testimonial_2_location: src.about?.testimonial2Location ?? null,
+    about_testimonial_3: src.about?.testimonial3 ?? null,
+    about_testimonial_3_name: src.about?.testimonial3Name ?? null,
+    about_testimonial_3_location: src.about?.testimonial3Location ?? null,
+    about_testimonial_featured: src.about?.testimonialFeatured ?? null,
   }
 }
 

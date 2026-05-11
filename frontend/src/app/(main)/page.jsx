@@ -7,6 +7,7 @@ import { fetchActivePartnersDirectory, formatTenureYearsShort } from '@/lib/part
 import { normalizeSellerSpecialties } from '@/lib/sellers/client'
 import { fetchActiveShopListings, mergeShopListings } from '@/lib/shop-listings/client'
 import { buildShopCategoryCatalog } from '@/lib/shop/categories'
+import { useSiteContent } from '@/lib/siteContent/client'
 import styles from './homepage.module.css'
 
 /** Homepage partner cards when seller has no cover or avatar */
@@ -38,6 +39,8 @@ const ABOUT_PARTNERS_SLIDES = [
 ]
 
 export default function LandingPage() {
+  const { data: siteContent } = useSiteContent()
+
   useEffect(() => {
     if (typeof window === 'undefined') return
     const hash = window.location.hash || ''
@@ -68,7 +71,7 @@ export default function LandingPage() {
       <ShopByCategorySection />
       <HowItWorksSection />
       <PartnerHighlightSection />
-      <AboutSection />
+      <AboutSection siteContent={siteContent} />
       <FinalCTASection />
     </>
   )
@@ -545,7 +548,14 @@ function PartnershipSlideshow() {
   )
 }
 
-function AboutSection() {
+function AboutSection({ siteContent }) {
+  const about = siteContent?.about ?? {}
+  const aboutStory = String(about.ourStory || '').trim()
+  const aboutMissionVision = String(about.missionVision || '').trim()
+  const aboutWhyUs = String(about.whyUs || '').trim()
+  const aboutPartners = String(about.partners || '').trim()
+  const aboutCommitment = String(about.commitment || '').trim()
+
   const WHY_CARDS = [
     {
       icon: (
@@ -564,7 +574,9 @@ function AboutSection() {
         </svg>
       ),
       title: 'Why La Visionario',
-      body: 'We offer verified providers, clear pricing, and compassionate support so you can focus on honoring your loved one. From packages to documentation, we guide you every step of the way.',
+      body:
+        aboutWhyUs ||
+        'We offer verified providers, clear pricing, and compassionate support so you can focus on honoring your loved one. From packages to documentation, we guide you every step of the way.',
     },
     {
       icon: (
@@ -586,7 +598,9 @@ function AboutSection() {
         </svg>
       ),
       title: 'Our Partners',
-      body: 'We work with trusted funeral homes and service providers across the Philippines. Our partners share our commitment to dignity, quality, and fair dealing with families.',
+      body:
+        aboutPartners ||
+        'We work with trusted funeral homes and service providers across the Philippines. Our partners share our commitment to dignity, quality, and fair dealing with families.',
     },
     {
       icon: (
@@ -605,7 +619,9 @@ function AboutSection() {
         </svg>
       ),
       title: 'Our Commitment',
-      body: 'We are committed to treating every family with respect and empathy. From your first inquiry to the final arrangements, we prioritize clarity, fairness, and support.',
+      body:
+        aboutCommitment ||
+        'We are committed to treating every family with respect and empathy. From your first inquiry to the final arrangements, we prioritize clarity, fairness, and support.',
     },
   ]
 
@@ -621,13 +637,12 @@ function AboutSection() {
               <em>with Dignity</em>
             </h2>
             <p className={styles.aboutBody}>
-              La Visionario was created to help families plan funeral services in a simple,
-              respectful, and transparent way. We believe that saying goodbye should not be
-              stressful or confusing.
+              {aboutStory ||
+                'La Visionario was created to help families plan funeral services in a simple, respectful, and transparent way. We believe that saying goodbye should not be stressful or confusing.'}
             </p>
             <p className={styles.aboutBody}>
-              Our mission is to make funeral planning dignified, transparent, and accessible
-              for every Filipino family — supported by clarity, care, and trusted partners.
+              {aboutMissionVision ||
+                'Our mission is to make funeral planning dignified, transparent, and accessible for every Filipino family — supported by clarity, care, and trusted partners.'}
             </p>
             <Link href="/about" className={styles.aboutLink}>
               Our Full Story
