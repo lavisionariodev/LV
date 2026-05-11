@@ -9,7 +9,6 @@ import {
   isoFromDobParts,
 } from '@/shared/utils/profileDob';
 import styles from '../profile.module.css';
-import { AccountTabSkeleton } from '../components/ProfileTabSkeletons';
 
 const GENDER_OPTIONS = ['Male', 'Female', 'Other'];
 const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
@@ -53,7 +52,60 @@ export default function AccountPage() {
   };
 
   if (loading) {
-    return <AccountTabSkeleton />;
+    return (
+      <div
+        className={styles.profileCard}
+        aria-busy="true"
+        aria-describedby="profile-account-skel-hint"
+      >
+        <p id="profile-account-skel-hint" role="status" className={styles.visuallyHidden}>
+          Loading account settings. Your profile fields and photo panel will appear shortly.
+        </p>
+        <div className={styles.profileAccentBar} />
+        <header className={styles.profileHeader} aria-hidden="true">
+          <div className={styles.profileHeaderLeft}>
+            <div className={`${styles.skBlock} ${styles.skAccountHeaderEyebrow}`} />
+            <div className={`${styles.skBlock} ${styles.skLayoutSub}`} />
+          </div>
+        </header>
+        <div className={styles.profileCardBody}>
+          <div className={styles.profileFormSection} aria-hidden="true">
+            <div className={styles.form}>
+              {['r1', 'r2', 'r3', 'r4', 'r5', 'r6'].map((k, i) => (
+                <div key={k} className={styles.formRow}>
+                  <div className={`${styles.skBlock} ${styles.skFormLabel}`} />
+                  <div className={styles.formRowField}>
+                    <div className={`${styles.skBlock} ${styles.skInput}`} />
+                    {i === 0 ? <div className={`${styles.skBlock} ${styles.skHint}`} /> : null}
+                    {i === 5 ? (
+                      <div className={styles.skAddressStack}>
+                        <div className={`${styles.skBlock} ${styles.skInput}`} />
+                        <div className={`${styles.skBlock} ${styles.skInput}`} />
+                        <div className={`${styles.skBlock} ${styles.skInput} ${styles.skInputShort}`} />
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+              <div className={styles.formRow}>
+                <span className={styles.formRowLabel} />
+                <div className={styles.formRowField}>
+                  <div className={`${styles.skBlock} ${styles.skSaveBtnStub}`} />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className={styles.avatarPanel} aria-hidden="true">
+            <div className={styles.avatarDivider} />
+            <div className={styles.avatarPanelInner}>
+              <div className={`${styles.skBlock} ${styles.skAvatarCircle}`} />
+              <div className={`${styles.skBlock} ${styles.skAvatarBtn}`} />
+              <div className={`${styles.skBlock} ${styles.skAvatarHint}`} />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

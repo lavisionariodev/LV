@@ -8,7 +8,6 @@ import { supabase } from '@/lib/supabase/client';
 import { expandPurchaseCardsByLineItem, mapBuyerOrderCard } from '@/lib/profile/mapBuyerOrderCard';
 import styles from '../profile.module.css';
 import purchaseStyles from './purchases.module.css';
-import { PurchasesTabSkeleton } from '../components/ProfileTabSkeletons';
 
 /** Purchases toolbar tabs — match buyer-facing `purchase.status`. */
 const PURCHASE_FILTER_TABS = [
@@ -27,6 +26,32 @@ function purchaseMatchesFilter(purchase, filterLabel) {
   return purchase.status === filterLabel;
 }
 const PAGE_SIZE = 5;
+
+function PurchaseCardSkeleton() {
+  return (
+    <div className={purchaseStyles.card}>
+      <div className={purchaseStyles.cardHeader}>
+        <div className={purchaseStyles.cardTop}>
+          <div className={purchaseStyles.cardInfo}>
+            <div className={`${styles.skBlock} ${styles.skPurOrderId}`} />
+            <div className={`${styles.skBlock} ${styles.skPurTitle}`} />
+            <div className={`${styles.skBlock} ${styles.skPurProvider}`} />
+          </div>
+          <div className={purchaseStyles.badgeColumn}>
+            <div className={`${styles.skBlock} ${styles.skPurBadge}`} />
+            <div className={`${styles.skBlock} ${styles.skPurBadgeSub}`} />
+          </div>
+        </div>
+        <div className={`${styles.skBlock} ${styles.skPurPaymentLine}`} />
+        <div className={purchaseStyles.cardMeta}>
+          <div className={`${styles.skBlock} ${styles.skPurMetaChip}`} />
+          <div className={`${styles.skBlock} ${styles.skPurMetaChip}`} />
+          <div className={`${styles.skBlock} ${styles.skPurMetaPrice}`} />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const STATUS_CONFIG = {
   Pending: { color: '#A8894A', bg: 'rgba(168,137,74,0.10)' },
@@ -1015,7 +1040,43 @@ export default function PurchasesPage() {
   }
 
   if (isSeller === undefined || (!isSeller && loadingPurchases)) {
-    return <PurchasesTabSkeleton />;
+    return (
+      <div
+        className={styles.profileCard}
+        aria-busy="true"
+        aria-describedby="profile-purchases-skel-hint"
+      >
+        <p id="profile-purchases-skel-hint" role="status" className={styles.visuallyHidden}>
+          Loading your purchases. Search, filters, and order cards will appear shortly.
+        </p>
+        <div className={styles.profileAccentBar} />
+        <header className={`${styles.profileHeader} ${purchaseStyles.desktopOnlyHeader}`} aria-hidden="true">
+          <div className={styles.profileHeaderLeft}>
+            <div className={`${styles.skBlock} ${styles.skPurchHeaderTitle}`} />
+            <div className={`${styles.skBlock} ${styles.skLayoutSub} ${styles.skPurchHeaderSub}`} />
+          </div>
+        </header>
+        <div className={purchaseStyles.purchasesBody}>
+          <div className={purchaseStyles.toolbar} aria-hidden="true">
+            <div className={`${styles.skBlock} ${styles.skPurchSearch}`} />
+            <div className={styles.skPurchFilters}>
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <div
+                  key={i}
+                  className={`${styles.skBlock} ${styles.skPurchFilterPill} ${i % 2 ? styles.skPurchFilterPillAlt : ''}`}
+                />
+              ))}
+            </div>
+          </div>
+          <div className={`${styles.skBlock} ${styles.skPurchMeta}`} />
+          <div className={purchaseStyles.cardList}>
+            {['p1', 'p2', 'p3'].map((k) => (
+              <PurchaseCardSkeleton key={k} />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const filtered = purchases.filter((p) => {

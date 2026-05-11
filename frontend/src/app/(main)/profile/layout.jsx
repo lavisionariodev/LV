@@ -13,7 +13,6 @@ import { useProfile } from '@/contexts/ProfileContext';
 import BottomSheet from './components/BottomSheet';
 import { signOut as signOutSession } from '@/lib/auth/session';
 import LogoutModal from '@/components/ui/Modal/Logout';
-import { ProfileAuthLayoutSkeleton } from './components/ProfileTabSkeletons';
 import {
   PROFILE_DOB_MONTHS,
   dobPartsFromIso,
@@ -392,7 +391,38 @@ export default function ProfileLayout({ children }) {
   }, [isMobile, openSheet]);
 
   if (authLoading && !user) {
-    return <ProfileAuthLayoutSkeleton />;
+    return (
+      <main className={styles.profilePage} aria-busy="true" aria-describedby="profile-auth-skel-hint">
+        <p id="profile-auth-skel-hint" role="status" className={styles.visuallyHidden}>
+          Loading your profile. Navigation and tab content will appear shortly.
+        </p>
+        <div className={styles.profileLayout}>
+          <aside className={styles.profileSidebar} aria-hidden="true">
+            <div className={styles.skLayoutIdentity}>
+              <div className={`${styles.skBlock} ${styles.skLayoutAvatar}`} />
+              <div className={styles.skLayoutMeta}>
+                <div className={`${styles.skBlock} ${styles.skLayoutName}`} />
+                <div className={`${styles.skBlock} ${styles.skLayoutEdit}`} />
+              </div>
+            </div>
+            {['nav1', 'nav2', 'nav3'].map((k) => (
+              <div key={k} className={`${styles.skBlock} ${styles.skLayoutNavItem}`} />
+            ))}
+          </aside>
+          <div className={styles.profileMain}>
+            <div className={styles.profileCard}>
+              <div className={styles.profileAccentBar} />
+              <div className={styles.skLayoutMainInner}>
+                <div className={`${styles.skBlock} ${styles.skLayoutEyebrow}`} />
+                <div className={`${styles.skBlock} ${styles.skLayoutSub}`} />
+                <div className={`${styles.skBlock} ${styles.skLayoutLine}`} />
+                <div className={`${styles.skBlock} ${styles.skLayoutLine} ${styles.skLayoutLineShort}`} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   if (!user) return null;
