@@ -133,6 +133,7 @@
   height: 28px;
   width: 28px;
   border-radius: 999px;
+  border: 1px solid #204f38;
   background: #e0e2e6;
   color: #64748b;
 
@@ -238,6 +239,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
+  border: 1px solid #204f38;
   overflow: hidden;
   flex-shrink: 0;
   background: #e0e2e6;
