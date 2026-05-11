@@ -110,14 +110,14 @@ function FeaturedPartnersSection() {
               Apply the migration that defines{' '}
               <code className={styles.partnersInlineCode}>get_partners_spotlight</code> in Supabase
               (see spotlight migrations <code className={styles.partnersInlineCode}>087</code>–
-              <code className={styles.partnersInlineCode}>089</code>), then reload.
+              <code className={styles.partnersInlineCode}>089</code> and listing filter{' '}
+              <code className={styles.partnersInlineCode}>091</code>), then reload.
             </p>
           </div>
         )}
         {showEmpty && (
           <p className={styles.featuredEmpty} role="status">
-            Spotlight partners will appear when reviews are available and an admin marks a featured
-            partner.
+            No partners to show yet.
           </p>
         )}
         {loadState === 'ready' && cards.length > 0 && (
@@ -291,15 +291,15 @@ function AllPartnersSection() {
               <p className={styles.partnersGridErrorHint}>
                 Typical fix: apply migrations that define{' '}
                 <code className={styles.partnersInlineCode}>get_active_partners_directory</code>{' '}
-                in Supabase, then reload this page (or reload the Schema in the Dashboard API
-                settings if the function existed but RPC still 404’d).
+                (including <code className={styles.partnersInlineCode}>090</code>–
+                <code className={styles.partnersInlineCode}>091</code>) in Supabase, then reload this page
+                (or reload the Schema in the Dashboard API settings if the function existed but RPC still
+                404’d).
               </p>
             </div>
           )}
           {loadState === 'ready' && partners.length === 0 && (
-            <p className={styles.partnersGridStatus}>
-              No registered sellers to show yet. When sellers join La Visionario, they will appear here.
-            </p>
+            <p className={styles.partnersGridStatus}>No partners to show yet.</p>
           )}
           {loadState === 'ready' && partners.length > 0 && filtered.length === 0 && (
             <p className={styles.partnersGridStatus}>No partners match this filter.</p>

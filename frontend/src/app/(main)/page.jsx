@@ -3,7 +3,13 @@
 import Link from 'next/link'
 import { useCallback, useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
+import { fetchActivePartnersDirectory, formatTenureYearsShort } from '@/lib/partners/client'
+import { normalizeSellerSpecialties } from '@/lib/sellers/client'
 import styles from './homepage.module.css'
+
+/** Homepage partner cards when seller has no cover or avatar */
+const PARTNER_CARD_PLACEHOLDER_IMAGE =
+  'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80'
 
 const ABOUT_PARTNERS_SLIDES = [
   {
@@ -229,74 +235,74 @@ function HowItWorksSection() {
 }
 
 /* ---------------- PARTNER HIGHLIGHT ---------------- */
+function mapDirectoryRowToCarouselPartner(row) {
+  const cardImage =
+    (row.coverPhotoUrl && String(row.coverPhotoUrl).trim()) ||
+    (row.avatarUrl && String(row.avatarUrl).trim()) ||
+    PARTNER_CARD_PLACEHOLDER_IMAGE
+  const yearsShort =
+    formatTenureYearsShort(row.businessStartedAt) ||
+    formatTenureYearsShort(row.registeredAt) ||
+    ''
+  const ratingLabel =
+    row.avgRating != null && Number.isFinite(Number(row.avgRating))
+      ? Number(row.avgRating).toFixed(1)
+      : null
+  const specialtyTags = normalizeSellerSpecialties(row.specialties ?? []).slice(0, 3)
+  return {
+    sellerUserId: row.sellerUserId,
+    name: row.businessName,
+    location: row.address?.trim() ? row.address : '—',
+    years: yearsShort || '—',
+    ratingLabel,
+    specialtyTags,
+    businessTypeLabel: row.businessTypeLabel?.trim() || '',
+    image: cardImage,
+  }
+}
+
 function PartnerHighlightSection() {
-  const PARTNERS = [
-    {
-      name: 'Heritage Funeral Services',
-      location: 'Quezon City',
-      years: '15 yrs',
-      rating: '4.9',
-      services: ['Traditional Burial', 'Catholic Rites', 'Embalming'],
-      specialty: 'Traditional Catholic ceremonies',
-      image: 'https://i.pinimg.com/736x/6e/8b/75/6e8b7560bc2e8538768dcf04b39f76df.jpg',
-    },
-    {
-      name: 'Metro Cremation Care',
-      location: 'Makati City',
-      years: '10 yrs',
-      rating: '4.8',
-      services: ['Cremation', 'Memorial Service', 'Urn Selection'],
-      specialty: 'Modern cremation services',
-      image: 'https://i.pinimg.com/736x/ec/fb/27/ecfb278d5b75bf40ca4e468f309847af.jpg',
-    },
-    {
-      name: 'Eternal Gardens Memorial',
-      location: 'Cavite',
-      years: '20 yrs',
-      rating: '5.0',
-      services: ['Memorial Park', 'Garden Burial', 'Wake Services'],
-      specialty: 'Memorial park & gardens',
-      image: 'https://i.pinimg.com/1200x/84/d5/60/84d56082a8cf35ffd66ed28d57357894.jpg',
-    },
-    {
-      name: 'Paz Memorial Chapel',
-      location: 'Pasig City',
-      years: '12 yrs',
-      rating: '4.7',
-      services: ['Chapel Wake', 'Final Arrangements', 'Documentation'],
-      specialty: 'Full chapel services',
-      image: 'https://i.pinimg.com/736x/6e/8b/75/6e8b7560bc2e8538768dcf04b39f76df.jpg',
-    },
-    {
-      name: 'Sanctuario Funeral Home',
-      location: 'Cebu City',
-      years: '18 yrs',
-      rating: '4.9',
-      services: ['Burial Services', 'Viewing', 'Grief Support'],
-      specialty: 'Holistic family care',
-      image: 'https://i.pinimg.com/736x/ec/fb/27/ecfb278d5b75bf40ca4e468f309847af.jpg',
-    },
-    {
-      name: 'Serene Passage Services',
-      location: 'Davao City',
-      years: '8 yrs',
-      rating: '4.8',
-      services: ['Cremation', 'Non-religious Rites', 'Urns & Keepsakes'],
-      specialty: 'Contemporary farewell services',
-      image: 'https://i.pinimg.com/1200x/84/d5/60/84d56082a8cf35ffd66ed28d57357894.jpg',
-    },
-  ]
+  const [partners, setPartners] = useState([])
+  const [loadState, setLoadState] = useState('loading')
+  const [loadError, setLoadError] = useState(null)
+  const [active, setActive] = useState(0)
 
-  const N = PARTNERS.length
-  const [active, setActive] = useState(1) // start with index 1 so left=0, center=1, right=2
+  useEffect(() => {
+    let cancelled = false
+    fetchActivePartnersDirectory({ bustCache: true })
+      .then((rows) => {
+        if (cancelled) return
+        setLoadError(null)
+        setPartners(rows)
+        setActive(rows.length >= 2 ? 1 : 0)
+        setLoadState('ready')
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setPartners([])
+          setLoadError(typeof err?.message === 'string' ? err.message : 'Failed to load partners.')
+          setLoadState('error')
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
-  const prev = () => setActive(i => (i - 1 + N) % N)
-  const next = () => setActive(i => (i + 1) % N)
+  const carouselPartners = partners.map(mapDirectoryRowToCarouselPartner)
+  const N = carouselPartners.length
 
-  // Returns the partner index for a given slot offset from active (-1, 0, +1)
+  const prev = () => {
+    if (N < 1) return
+    setActive((i) => (i - 1 + N) % N)
+  }
+  const next = () => {
+    if (N < 1) return
+    setActive((i) => (i + 1) % N)
+  }
+
   const slotIndex = (offset) => (active + offset + N) % N
-
-  const slots = [-1, 0, 1] // left, center, right
+  const slots = [-1, 0, 1]
 
   return (
     <section className={styles.partnerSection}>
@@ -311,76 +317,108 @@ function PartnerHighlightSection() {
           </p>
         </div>
 
-        <div className={styles.partnerCarouselRow}>
-          {/* Prev Arrow */}
-          <button onClick={prev} aria-label="Previous partner" className={styles.partnerArrowBtn}>‹</button>
-
-          {/* 3 visible cards */}
-          <div className={styles.partnerCarouselStage}>
-            {slots.map((offset) => {
-              const p = PARTNERS[slotIndex(offset)]
-              const isCenter = offset === 0
-              return (
-                <div
-                  key={slotIndex(offset)}
-                  className={`${styles.partnerCarouselItem} ${isCenter ? styles.partnerCarouselItemCenter : styles.partnerCarouselItemSide}`}
-                  onClick={() => !isCenter && setActive(slotIndex(offset))}
-                >
-                  <div className={styles.partnerImageWrapper}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p.image} alt={p.name} className={styles.partnerImage} />
-                    <div className={styles.partnerImageOverlay} />
-                    <div className={styles.partnerRatingBadge}>★ {p.rating}</div>
-                  </div>
-
-                  <div className={styles.partnerContent}>
-                    <div className={styles.partnerMeta}>
-                      <span className={styles.partnerLocation}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                          <circle cx="12" cy="10" r="3" />
-                        </svg>
-                        {p.location}
-                      </span>
-                      <span className={styles.partnerYears}>{p.years}</span>
-                    </div>
-
-                    <h3 className={styles.partnerName}>{p.name}</h3>
-                    <p className={styles.partnerSpecialty}>{p.specialty}</p>
-
-                    {isCenter && (
-                      <>
-                        <ul className={styles.partnerServices}>
-                          {p.services.map((s, j) => (
-                            <li key={j} className={styles.partnerServiceTag}>{s}</li>
-                          ))}
-                        </ul>
-                        <Link href="/partners" className={styles.viewProviderBtn}>
-                          View Profile <span>›</span>
-                        </Link>
-                      </>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
+        {loadState === 'loading' && (
+          <p className={styles.partnerSectionSubtitle} role="status">
+            Loading partners…
+          </p>
+        )}
+        {loadState === 'error' && (
+          <div role="alert">
+            <p className={styles.partnerSectionSubtitle}>
+              We couldn&apos;t load partner highlights. Please try again later.
+            </p>
+            {loadError ? (
+              <p className={styles.partnerSectionSubtitle}>{loadError}</p>
+            ) : null}
           </div>
+        )}
+        {loadState === 'ready' && N === 0 && (
+          <p className={styles.partnerSectionSubtitle} role="status">
+            No partners to show yet.
+          </p>
+        )}
 
-          {/* Next Arrow */}
-          <button onClick={next} aria-label="Next partner" className={styles.partnerArrowBtn}>›</button>
-        </div>
+        {loadState === 'ready' && N > 0 && (
+          <>
+            <div className={styles.partnerCarouselRow}>
+              <button type="button" onClick={prev} aria-label="Previous partner" className={styles.partnerArrowBtn}>‹</button>
 
-        {/* Dot indicators */}
-        <div className={styles.partnerDots}>
-          {PARTNERS.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setActive(i)}
-              aria-label={`Go to ${PARTNERS[i].name}`}
-              className={`${styles.partnerDot} ${i === active ? styles.partnerDotActive : ''}`}
-            />
-          ))}
-        </div>
+              <div className={styles.partnerCarouselStage}>
+                {slots.map((offset) => {
+                  const p = carouselPartners[slotIndex(offset)]
+                  const isCenter = offset === 0
+                  const idx = slotIndex(offset)
+                  return (
+                    <div
+                      key={`${p.sellerUserId}-${offset}`}
+                      className={`${styles.partnerCarouselItem} ${isCenter ? styles.partnerCarouselItemCenter : styles.partnerCarouselItemSide}`}
+                      onClick={() => !isCenter && setActive(idx)}
+                    >
+                      <div className={styles.partnerImageWrapper}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={p.image} alt={p.name} className={styles.partnerImage} />
+                        <div className={styles.partnerImageOverlay} />
+                        {p.ratingLabel != null ? (
+                          <div className={styles.partnerRatingBadge}>★ {p.ratingLabel}</div>
+                        ) : null}
+                      </div>
+
+                      <div className={styles.partnerContent}>
+                        <div className={styles.partnerMeta}>
+                          <span className={styles.partnerLocation}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                              <circle cx="12" cy="10" r="3" />
+                            </svg>
+                            {p.location}
+                          </span>
+                          <span className={styles.partnerYears}>{p.years}</span>
+                        </div>
+
+                        <h3 className={styles.partnerName}>{p.name}</h3>
+                        <p className={styles.partnerSpecialty}>
+                          {p.businessTypeLabel || '—'}
+                        </p>
+
+                        {isCenter && (
+                          <>
+                            {p.specialtyTags.length > 0 ? (
+                              <ul className={styles.partnerServices}>
+                                {p.specialtyTags.map((s, j) => (
+                                  <li key={`${p.sellerUserId}-tag-${j}`} className={styles.partnerServiceTag}>{s}</li>
+                                ))}
+                              </ul>
+                            ) : null}
+                            <Link
+                              href={`/seller-profile?seller=${encodeURIComponent(p.sellerUserId)}`}
+                              className={styles.viewProviderBtn}
+                            >
+                              View Profile <span>›</span>
+                            </Link>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              <button type="button" onClick={next} aria-label="Next partner" className={styles.partnerArrowBtn}>›</button>
+            </div>
+
+            <div className={styles.partnerDots}>
+              {carouselPartners.map((p, i) => (
+                <button
+                  key={p.sellerUserId}
+                  type="button"
+                  onClick={() => setActive(i)}
+                  aria-label={`Go to ${p.name}`}
+                  className={`${styles.partnerDot} ${i === active ? styles.partnerDotActive : ''}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
 
         <div className={styles.partnerCTA}>
           <p className={styles.partnerCTAText}>
