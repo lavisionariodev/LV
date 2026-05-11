@@ -23,6 +23,54 @@ function formatPhp(n) {
   }).format(n)
 }
 
+const REVENUE_SUMMARY_SOFT = [
+  styles.summaryCardSoftGreen,
+  styles.summaryCardSoftIndigo,
+  styles.summaryCardSoftBlue,
+  styles.summaryCardSoftAmber,
+]
+
+function SellerAnalyticsRevenueReportsSkeleton() {
+  return (
+    <div
+      className={styles.pageWrap}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label="Loading revenue analytics"
+    >
+      <div className={styles.analyticsSkDownloadRow} aria-hidden>
+        <span className={`${styles.analyticsSkBar} ${styles.analyticsSkDownloadBtn}`} />
+      </div>
+
+      <section className={styles.summaryStrip} aria-hidden>
+        {REVENUE_SUMMARY_SOFT.map((soft, i) => (
+          <article key={i} className={`${styles.summaryCard} ${soft}`}>
+            <span className={`${styles.analyticsSkBar} ${styles.analyticsSkSummaryLabel}`} />
+            <div className={styles.summaryValueRow}>
+              <span className={`${styles.analyticsSkBar} ${styles.analyticsSkSummaryValue}`} />
+            </div>
+            <span className={`${styles.analyticsSkBar} ${styles.analyticsSkSummaryHint}`} />
+          </article>
+        ))}
+      </section>
+
+      <section className={styles.chartsGridSingle} aria-hidden>
+        <article className={styles.chartCard}>
+          <div className={styles.chartHeader}>
+            <div className={styles.chartTitleGroup}>
+              <span className={`${styles.analyticsSkBar} ${styles.analyticsSkChartHeadLine}`} />
+              <span className={`${styles.analyticsSkBar} ${styles.analyticsSkChartHeadSub}`} />
+            </div>
+            <span className={`${styles.analyticsSkBar} ${styles.analyticsSkChartBadge}`} />
+          </div>
+          <span className={`${styles.analyticsSkBar} ${styles.analyticsSkChartBlock}`} />
+        </article>
+      </section>
+    </div>
+  )
+}
+
 export default function SellerAnalyticsRevenueReportsPage() {
   const { orders, loading, error } = useSellerAnalyticsData()
 
@@ -40,10 +88,13 @@ export default function SellerAnalyticsRevenueReportsPage() {
     [monthlyBars],
   )
 
+  if (loading && !error) {
+    return <SellerAnalyticsRevenueReportsSkeleton />
+  }
+
   return (
     <div className={styles.pageWrap}>
       {error ? <p className={styles.pageError}>{error}</p> : null}
-      {loading ? <p className={styles.pageLoading}>Loading analytics…</p> : null}
 
       <div className={styles.downloadRow}>
         <button

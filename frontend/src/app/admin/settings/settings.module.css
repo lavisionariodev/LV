@@ -2042,3 +2042,195 @@
       font-size: 13px;
     }
   }
+
+/* =====================
+   Skeleton loading (settings + profile entry)
+   ===================== */
+
+@keyframes settingsSkShimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.settingsSkBar {
+  display: block;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #e8ecf0 0%, #f4f6f8 45%, #e8ecf0 90%);
+  background-size: 200% 100%;
+  animation: settingsSkShimmer 1.12s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settingsSkBar {
+    animation: none;
+    background: #e8ecf0;
+  }
+}
+
+.settingsSkSuspense {
+  width: 100%;
+  min-height: min(420px, 55vh);
+  padding: 8px 0 24px;
+  box-sizing: border-box;
+}
+
+.settingsSkTabRow {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  margin-bottom: 20px;
+  padding: 8px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+}
+
+.settingsSkTabPill {
+  height: 30px;
+  width: 88px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.settingsSkCard {
+  background: #ffffff;
+  border: 1px solid #e9e9ef;
+  border-radius: 12px;
+  padding: 22px 26px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.settingsSkCardHead {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settingsSkTitle {
+  height: 18px;
+  max-width: 220px;
+}
+
+.settingsSkSubtitle {
+  height: 12px;
+  max-width: 420px;
+}
+
+.settingsSkAvatarRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.settingsSkAvatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.settingsSkFields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.settingsSkFieldLabel {
+  height: 10px;
+  width: 72px;
+}
+
+.settingsSkField {
+  height: 40px;
+  width: 100%;
+  border-radius: 8px;
+}
+
+.settingsSkNotifList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.settingsSkNotifRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.settingsSkNotifRow:last-child {
+  border-bottom: none;
+}
+
+.settingsSkNotifMeta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settingsSkNotifTitle {
+  height: 14px;
+  width: 55%;
+}
+
+.settingsSkNotifDesc {
+  height: 11px;
+  width: 92%;
+}
+
+.settingsSkNotifDesc2 {
+  height: 11px;
+  width: 78%;
+}
+
+.settingsSkNotifControls {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.settingsSkSwitch {
+  width: 40px;
+  height: 22px;
+  border-radius: 999px;
+}
+
+.settingsSkSiteSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 20px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.settingsSkSiteSection:last-child {
+  border-bottom: none;
+}
+
+.settingsSkSiteH2 {
+  height: 15px;
+  width: 140px;
+}
+
+.settingsSkSiteBlock {
+  height: 48px;
+  width: 100%;
+  border-radius: 10px;
+}
+
+.settingsSkSiteBlockTall {
+  height: 88px;
+  width: 100%;
+  border-radius: 10px;
+}

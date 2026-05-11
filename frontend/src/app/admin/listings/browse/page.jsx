@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { FiExternalLink, FiRotateCcw } from 'react-icons/fi'
 import { VscSettings } from 'react-icons/vsc'
 import { LuSettings2 } from 'react-icons/lu'
@@ -48,7 +49,15 @@ function SellerAvatarMark({ src, initialsSource, listingStyles: styleMod }) {
       title={label}
     >
       {showImg ? (
-        <img src={url} alt="" className={styleMod.sellerAvatarImg} onError={() => setFailed(true)} />
+        <Image
+          src={url}
+          alt=""
+          width={18}
+          height={18}
+          unoptimized
+          className={styleMod.sellerAvatarImg}
+          onError={() => setFailed(true)}
+        />
       ) : (
         label.charAt(0).toUpperCase()
       )}
@@ -148,11 +157,13 @@ function ListingThumb({ row, kind }) {
   if (url && !imgFailed) {
     return (
       <div className={styles.thumb}>
-        <img
+        <Image
           src={url}
           alt=""
+          width={72}
+          height={72}
+          unoptimized
           loading="lazy"
-          decoding="async"
           onError={() => setImgFailed(true)}
         />
       </div>
@@ -242,17 +253,18 @@ export default function AdminListingsBrowsePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Sync state <- URL (back/forward, shared links)
+  // Sync state <- URL (back/forward, shared links). Defer updates so this effect does not set state synchronously.
   useEffect(() => {
     const nextQ = readString(searchParams, 'q', '')
     const nextStatus = readEnum(searchParams, 'status', APPROVED_STATUS_TABS.map((t) => t.value), 'active')
     const nextKind = readEnum(searchParams, 'kind', KIND_FILTER_OPTIONS.map((o) => o.value), 'all')
     const nextSort = readEnum(searchParams, 'sort', SORT_OPTIONS.map((o) => o.value), 'updated')
-    if (nextQ !== search) setSearch(nextQ)
-    if (nextStatus !== statusTab) setStatusTab(nextStatus)
-    if (nextKind !== kindFilter) setKindFilter(nextKind)
-    if (nextSort !== sortKey) setSortKey(nextSort)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    queueMicrotask(() => {
+      setSearch((s) => (nextQ !== s ? nextQ : s))
+      setStatusTab((t) => (nextStatus !== t ? nextStatus : t))
+      setKindFilter((k) => (nextKind !== k ? nextKind : k))
+      setSortKey((sk) => (nextSort !== sk ? nextSort : sk))
+    })
   }, [searchParams])
 
   // Sync URL <- state (debounce search typing)
@@ -630,9 +642,26 @@ export default function AdminListingsBrowsePage() {
 
       <div className={styles.cardList}>
         {isLoading && (
-          <div className={styles.loadingState}>
-            <div className={styles.spinner} />
-            <p>Loading approved listings…</p>
+          <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading approved listings" style={{ display: 'contents' }}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={`browse-sk-${i}`} className={styles.card}>
+                <div className={styles.cardMain}>
+                  <span className={`${styles.listingsSkBar} ${styles.listingsSkThumb}`} aria-hidden />
+                  <div className={styles.cardBody}>
+                    <span className={`${styles.listingsSkBar} ${styles.listingsSkTitle}`} aria-hidden />
+                    <span className={`${styles.listingsSkBar} ${styles.listingsSkSub}`} aria-hidden />
+                    <div className={styles.cardTags}>
+                      <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} aria-hidden />
+                      <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 96 }} aria-hidden />
+                    </div>
+                  </div>
+                  <div className={styles.cardRight}>
+                    <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} aria-hidden />
+                    <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 56 }} aria-hidden />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
@@ -652,7 +681,7 @@ export default function AdminListingsBrowsePage() {
           ))}
 
         {!isLoading && !error && approvedFiltered.length === 0 && (
-          <div className={styles.emptyState}>
+          <div className={`${styles.emptyState} ${styles.cardListEmptyState}`}>
             <svg className={styles.emptyIcon} viewBox="0 0 48 48" fill="none">
               <rect x="8" y="12" width="32" height="26" rx="3" stroke="currentColor" strokeWidth="2" />
               <path d="M8 20h32" stroke="currentColor" strokeWidth="2" />

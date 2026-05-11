@@ -127,9 +127,50 @@ export default function AdminDisputeDetailPage() {
 
   if (loading) {
     return (
-      <div className={layoutStyles.dashWrap}>
+      <div className={layoutStyles.dashWrap} role="status" aria-live="polite" aria-busy="true" aria-label="Loading dispute">
         <section className={layoutStyles.panel}>
-          <p className={layoutStyles.panelTitle}>Loading…</p>
+          <div className={layoutStyles.panelHead}>
+            <div className={styles.headLeft}>
+              <span className={styles.detailSkBar} style={{ height: 18, width: 100, marginBottom: 6 }} aria-hidden />
+              <span className={styles.detailSkBar} style={{ height: 12, width: 200 }} aria-hidden />
+            </div>
+            <span className={styles.detailSkBar} style={{ height: 36, width: 120, borderRadius: 10 }} aria-hidden />
+          </div>
+          <div className={styles.detailSkBanner} aria-hidden>
+            <span className={styles.detailSkBar} style={{ height: 20, width: '35%', borderRadius: 999 }} />
+          </div>
+          <div className={styles.form}>
+            <div className={styles.section}>
+              <span className={styles.detailSkBar} style={{ height: 14, width: 140, marginBottom: 14 }} aria-hidden />
+              <div className={styles.fieldGrid}>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={`dsk-f-${i}`} className={styles.field}>
+                    <span className={styles.detailSkBar} style={{ height: 10, width: 80, marginBottom: 8 }} aria-hidden />
+                    <span className={styles.detailSkBar} style={{ height: 14, width: '100%' }} aria-hidden />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className={styles.section}>
+              <span className={styles.detailSkBar} style={{ height: 14, width: 100, marginBottom: 14 }} aria-hidden />
+              <div className={styles.partyGrid}>
+                <div className={styles.detailSkPartyCard}>
+                  <span className={styles.detailSkBar} style={{ width: 48, height: 48, borderRadius: 999 }} aria-hidden />
+                  <span className={styles.detailSkBar} style={{ height: 14, width: '80%' }} aria-hidden />
+                  <span className={styles.detailSkBar} style={{ height: 11, width: '60%' }} aria-hidden />
+                </div>
+                <div className={styles.detailSkPartyCard}>
+                  <span className={styles.detailSkBar} style={{ width: 48, height: 48, borderRadius: 999 }} aria-hidden />
+                  <span className={styles.detailSkBar} style={{ height: 14, width: '75%' }} aria-hidden />
+                  <span className={styles.detailSkBar} style={{ height: 11, width: '55%' }} aria-hidden />
+                </div>
+              </div>
+            </div>
+            <div className={styles.section}>
+              <span className={styles.detailSkBar} style={{ height: 14, width: 110, marginBottom: 12 }} aria-hidden />
+              <span className={styles.detailSkBar} style={{ height: 88, width: '100%', borderRadius: 12 }} aria-hidden />
+            </div>
+          </div>
         </section>
       </div>
     )

@@ -966,3 +966,62 @@
   }
 }
 
+/* ── Notification details drawer loading skeleton ── */
+
+@keyframes notifDetailsSkShimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.notifDetailsSkRoot {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.notifDetailsSkBar {
+  display: block;
+  border-radius: 6px;
+  height: 11px;
+  background: linear-gradient(90deg, #e8ecf0 0%, #f4f6f8 45%, #e8ecf0 90%);
+  background-size: 200% 100%;
+  animation: notifDetailsSkShimmer 1.15s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notifDetailsSkBar {
+    animation: none;
+    background: #e8ecf0;
+  }
+}
+
+.notifDetailsSkPanel {
+  border: 1px solid var(--color-light-gray);
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notifDetailsSkGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.notifDetailsSkGridCell {
+  border-radius: 10px;
+  border: 1px solid var(--color-light-gray);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+

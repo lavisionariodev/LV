@@ -203,17 +203,19 @@ export default function AdminDisputesPage() {
           {listError}
         </p>
       ) : null}
-      {listLoading ? <p style={{ margin: '0 0 12px', color: '#64748b', fontSize: 14 }}>Loading disputes…</p> : null}
-
       {/* ── Stats ── */}
       <section className={styles.statsGrid}>
         <div className={styles.statsBar} aria-label="Dispute summary">
           <div className={styles.statItem}>
-            <div className={styles.statNumber}>{summary.open}</div>
+            <div className={styles.statNumber}>
+              {listLoading ? <span className={styles.disputesSkStat} aria-hidden /> : summary.open}
+            </div>
             <div className={styles.statItemLabel}>Open</div>
           </div>
           <div className={styles.statItem}>
-            <div className={styles.statNumber}>{summary.under_review}</div>
+            <div className={styles.statNumber}>
+              {listLoading ? <span className={styles.disputesSkStat} aria-hidden /> : summary.under_review}
+            </div>
             <div className={styles.statItemLabel}>Under Review</div>
           </div>
         </div>
@@ -322,13 +324,14 @@ export default function AdminDisputesPage() {
 
         {/* ── Desktop table (hidden on mobile) ── */}
         <div className={styles.tableWrap}>
-          <table className={styles.table}>
+          <table className={styles.table} aria-busy={listLoading}>
             <thead>
               <tr>
                 <th className={styles.checkboxCell}>
                   <input
                     type="checkbox"
                     className={styles.rowCheckbox}
+                    disabled={listLoading}
                     checked={filtered.length > 0 && filtered.every((d) => selectedRows.has(d.id))}
                     onChange={(e) => {
                       setSelectedRows((prev) => {
@@ -353,7 +356,36 @@ export default function AdminDisputesPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((d) => (
+              {listLoading ? (
+                Array.from({ length: 7 }).map((_, i) => (
+                  <tr key={`dis-sk-${i}`} className={styles.tr}>
+                    <td className={styles.checkboxCell}>
+                      <span className={styles.disputesSkBar} style={{ width: 16, height: 16, borderRadius: 4 }} aria-hidden />
+                    </td>
+                    <td className={styles.td}>
+                      <span className={styles.disputesSkBar} style={{ height: 12, width: 72, marginBottom: 6 }} aria-hidden />
+                      <span className={styles.disputesSkBar} style={{ height: 10, width: 100 }} aria-hidden />
+                    </td>
+                    <td className={styles.td}>
+                      <span className={styles.disputesSkBar} style={{ height: 12, width: 120, marginBottom: 8 }} aria-hidden />
+                      <span className={styles.disputesSkBar} style={{ height: 10, width: '90%' }} aria-hidden />
+                    </td>
+                    <td className={styles.td}>
+                      <span className={styles.disputesSkBar} style={{ height: 22, width: 88, borderRadius: 999 }} aria-hidden />
+                    </td>
+                    <td className={styles.td}>
+                      <span className={styles.disputesSkBar} style={{ height: 10, width: '100%' }} aria-hidden />
+                      <span className={styles.disputesSkBar} style={{ height: 10, width: '85%', marginTop: 6 }} aria-hidden />
+                    </td>
+                    <td className={styles.td}>
+                      <span className={styles.disputesSkBar} style={{ height: 24, width: 96, borderRadius: 999 }} aria-hidden />
+                    </td>
+                    <td className={`${styles.td} ${styles.tdRight}`}>
+                      <span className={styles.disputesSkBar} style={{ height: 28, width: 52, borderRadius: 8 }} aria-hidden />
+                    </td>
+                  </tr>
+                ))
+              ) : filtered.map((d) => (
                 <tr key={d.id} className={styles.tr}>
                   <td className={styles.checkboxCell}>
                     <input
@@ -408,7 +440,7 @@ export default function AdminDisputesPage() {
             </tbody>
           </table>
 
-          {filtered.length === 0 && (
+          {!listLoading && filtered.length === 0 && (
             <div className={styles.emptyState}>
               <svg className={styles.emptyIcon} viewBox="0 0 48 48" fill="none" aria-hidden>
                 <circle cx="22" cy="22" r="14" stroke="currentColor" strokeWidth="2" />
@@ -422,7 +454,20 @@ export default function AdminDisputesPage() {
 
         {/* ── Mobile card list (hidden on desktop) ── */}
         <div className={styles.mobileList}>
-          {filtered.map((d) => (
+          {listLoading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <div key={`dis-m-sk-${i}`} className={styles.disputesSkMobileCardSk}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                  <span className={styles.disputesSkBar} style={{ width: 40, height: 40, borderRadius: 999 }} aria-hidden />
+                  <span className={styles.disputesSkBar} style={{ width: 72, height: 24, borderRadius: 999 }} aria-hidden />
+                </div>
+                <span className={styles.disputesSkBar} style={{ height: 14, width: '70%' }} aria-hidden />
+                <span className={styles.disputesSkBar} style={{ height: 12, width: '50%' }} aria-hidden />
+                <span className={styles.disputesSkBar} style={{ height: 40, width: '100%' }} aria-hidden />
+                <span className={styles.disputesSkBar} style={{ height: 40, width: '100%', borderRadius: 10 }} aria-hidden />
+              </div>
+            ))
+          ) : filtered.map((d) => (
             <div key={d.id} className={styles.mobileCard}>
               {/* Header: avatar + identity + status badge */}
               <div className={styles.mobileCardHeader}>
@@ -475,7 +520,7 @@ export default function AdminDisputesPage() {
             </div>
           ))}
 
-          {filtered.length === 0 && (
+          {!listLoading && filtered.length === 0 && (
             <div className={styles.emptyState}>
               <svg className={styles.emptyIcon} viewBox="0 0 48 48" fill="none" aria-hidden>
                 <circle cx="22" cy="22" r="14" stroke="currentColor" strokeWidth="2" />
@@ -487,7 +532,7 @@ export default function AdminDisputesPage() {
           )}
         </div>
 
-        {filtered.length > 0 && (
+        {!listLoading && filtered.length > 0 && (
           <div className={styles.tableFooter}>
             Showing <strong>{filtered.length}</strong> of <strong>{allDisputes.length}</strong> disputes
           </div>

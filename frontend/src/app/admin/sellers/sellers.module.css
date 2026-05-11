@@ -1348,6 +1348,67 @@
   font-size: 13px;
 }
 
+@keyframes sellersSkShimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.sellersSkBar {
+  display: inline-block;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #e8ecf0 0%, #f4f6f8 45%, #e8ecf0 90%);
+  background-size: 200% 100%;
+  animation: sellersSkShimmer 1.12s ease-in-out infinite;
+  vertical-align: middle;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sellersSkBar {
+    animation: none;
+    background: #e8ecf0;
+  }
+}
+
+.sellersSkCheckbox {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.sellersSkAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.sellersSkLine {
+  height: 13px;
+  width: 140px;
+}
+
+.sellersSkLineSm {
+  height: 11px;
+  width: 100px;
+  margin-top: 6px;
+}
+
+.sellersSkPill {
+  height: 24px;
+  width: 76px;
+  border-radius: 999px;
+}
+
+.sellersSkBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+
 .spinner {
   width: 24px;
   height: 24px;

@@ -501,10 +501,32 @@ function StagedUpdatesSection({
 
       <div className={styles.tableWrap}>
         {isLoading ? (
-          <div className={styles.loadingState}>
-            <div className={styles.spinner} />
-            <p>Loading…</p>
-          </div>
+          <table className={styles.table} role="status" aria-live="polite" aria-busy="true" aria-label="Loading staged updates">
+            <colgroup>
+              <col className={styles.colSeller} />
+              <col className={styles.colListing} />
+              <col className={styles.colChangedFields} />
+              <col className={styles.colActions} />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Seller</th>
+                <th>Listing</th>
+                <th>Changed Fields</th>
+                <th className={styles.actionsTh}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <tr key={`staged-sk-${i}`} className={styles.primaryRow}>
+                  <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 140 }} aria-hidden /></td>
+                  <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 200 }} aria-hidden /></td>
+                  <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 280, height: 36 }} aria-hidden /></td>
+                  <td className={styles.actionsCell}><span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 88, height: 28 }} aria-hidden /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         ) : rows.length === 0 ? (
           <div className={styles.reviewEmpty}>
             <div className={styles.reviewEmptyIcon}>
@@ -618,10 +640,52 @@ function ApprovalsTableSection({
 
       <div className={styles.tableWrap}>
         {isLoading ? (
-          <div className={styles.loadingState}>
-            <div className={styles.spinner} />
-            <p>Loading…</p>
-          </div>
+          <>
+            <table className={`${styles.table} ${styles.desktopOnly}`} role="status" aria-live="polite" aria-busy="true" aria-label="Loading listings">
+              <colgroup>
+                <col className={styles.colListing} />
+                <col className={styles.colSeller} />
+                <col className={styles.colKind} />
+                <col className={styles.colPrice} />
+                <col className={styles.colSubmitted} />
+                <col className={styles.colActions} />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Listing</th>
+                  <th>Seller</th>
+                  <th>Kind</th>
+                  <th>Price</th>
+                  <th>Submitted</th>
+                  <th className={styles.actionsTh}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={`pend-sk-${i}`} className={styles.primaryRow}>
+                    <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 220, height: 32 }} aria-hidden /></td>
+                    <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 160 }} aria-hidden /></td>
+                    <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} aria-hidden /></td>
+                    <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 72 }} aria-hidden /></td>
+                    <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 100 }} aria-hidden /></td>
+                    <td className={styles.actionsCell}><span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 100, height: 28 }} aria-hidden /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className={`${styles.mobileCardList} ${styles.mobileOnly}`} aria-hidden>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={`pend-m-sk-${i}`} className={styles.listingsSkMobileCard}>
+                  <span className={`${styles.listingsSkBar} ${styles.listingsSkTitle}`} />
+                  <span className={`${styles.listingsSkBar} ${styles.listingsSkSub}`} />
+                  <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                    <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} />
+                    <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 80 }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         ) : rows.length === 0 ? (
           <div className={styles.reviewEmpty}>
             <div className={styles.reviewEmptyIcon}>
@@ -853,19 +917,23 @@ export default function AdminListingsApprovalsPage() {
     <div className={`${styles.pageRoot} ${styles.approvalsPageStack} ${styles.approvalsGreenTheme}`}>
       <ListingsMobileTabs />
 
-      {/* Summary stats strip */}
-      {!isLoading && !error && (
-        <div className={`${styles.approvalsSummaryStrip} ${styles.approvalsSummaryStripGreen}`}>
+      {/* Summary stats strip — skeleton matches disputes stat bar while loading */}
+      {!error && (
+        <div
+          className={`${styles.approvalsSummaryStrip} ${styles.approvalsSummaryStripGreen}`}
+          aria-busy={isLoading}
+          aria-live="polite"
+        >
           <div
-            className={`${styles.summaryStatItem} ${pendingRows.length > 0 ? styles.summaryStatItemActive : ''}`}
+            className={`${styles.summaryStatItem} ${!isLoading && pendingRows.length > 0 ? styles.summaryStatItemActive : ''}`}
           >
             <span
-              className={`${styles.summaryStatValue} ${pendingRows.length > 0 ? styles.summaryStatValueHighlight : styles.summaryStatValueZero}`}
+              className={`${styles.summaryStatValue} ${!isLoading && pendingRows.length > 0 ? styles.summaryStatValueHighlight : styles.summaryStatValueZero}`}
             >
-              {formatCount(pendingRows.length)}
+              {isLoading ? <span className={styles.approvalsSummaryStatSk} aria-hidden /> : formatCount(pendingRows.length)}
             </span>
             <span
-              className={`${styles.summaryStatLabel} ${pendingRows.length > 0 ? styles.summaryStatLabelActive : ''}`}
+              className={`${styles.summaryStatLabel} ${!isLoading && pendingRows.length > 0 ? styles.summaryStatLabelActive : ''}`}
             >
               <span className={styles.summaryStatLabelLong}>New Listings</span>
               <span className={styles.summaryStatLabelShort}>New</span>
@@ -873,15 +941,15 @@ export default function AdminListingsApprovalsPage() {
           </div>
           <div className={styles.summaryStatDivider} />
           <div
-            className={`${styles.summaryStatItem} ${stagedRows.length > 0 ? styles.summaryStatItemActive : ''}`}
+            className={`${styles.summaryStatItem} ${!isLoading && stagedRows.length > 0 ? styles.summaryStatItemActive : ''}`}
           >
             <span
-              className={`${styles.summaryStatValue} ${stagedRows.length > 0 ? styles.summaryStatValueHighlight : styles.summaryStatValueZero}`}
+              className={`${styles.summaryStatValue} ${!isLoading && stagedRows.length > 0 ? styles.summaryStatValueHighlight : styles.summaryStatValueZero}`}
             >
-              {formatCount(stagedRows.length)}
+              {isLoading ? <span className={styles.approvalsSummaryStatSk} aria-hidden /> : formatCount(stagedRows.length)}
             </span>
             <span
-              className={`${styles.summaryStatLabel} ${stagedRows.length > 0 ? styles.summaryStatLabelActive : ''}`}
+              className={`${styles.summaryStatLabel} ${!isLoading && stagedRows.length > 0 ? styles.summaryStatLabelActive : ''}`}
             >
               <span className={styles.summaryStatLabelLong}>Staged Updates</span>
               <span className={styles.summaryStatLabelShort}>Staged</span>
@@ -889,15 +957,15 @@ export default function AdminListingsApprovalsPage() {
           </div>
           <div className={styles.summaryStatDivider} />
           <div
-            className={`${styles.summaryStatItem} ${totalPending > 0 ? styles.summaryStatItemActive : ''}`}
+            className={`${styles.summaryStatItem} ${!isLoading && totalPending > 0 ? styles.summaryStatItemActive : ''}`}
           >
             <span
-              className={`${styles.summaryStatValue} ${totalPending > 0 ? styles.summaryStatValueHighlight : styles.summaryStatValueZero}`}
+              className={`${styles.summaryStatValue} ${!isLoading && totalPending > 0 ? styles.summaryStatValueHighlight : styles.summaryStatValueZero}`}
             >
-              {formatCount(totalPending)}
+              {isLoading ? <span className={styles.approvalsSummaryStatSk} aria-hidden /> : formatCount(totalPending)}
             </span>
             <span
-              className={`${styles.summaryStatLabel} ${totalPending > 0 ? styles.summaryStatLabelActive : ''}`}
+              className={`${styles.summaryStatLabel} ${!isLoading && totalPending > 0 ? styles.summaryStatLabelActive : ''}`}
             >
               <span className={styles.summaryStatLabelLong}>Total Pending</span>
               <span className={styles.summaryStatLabelShort}>Pendings</span>
@@ -923,9 +991,89 @@ export default function AdminListingsApprovalsPage() {
       )}
 
       {isLoading ? (
-        <div className={styles.approvalsLoadingWrap}>
-          <div className={styles.spinner} />
-          <p>Loading approvals…</p>
+        <div className={styles.listingsSkApprovalsStack} role="status" aria-live="polite" aria-busy="true" aria-label="Loading approvals">
+          <section className={`${styles.reviewPanel} ${styles.reviewPanelAccentNew}`}>
+            <div className={styles.listingsSkReviewHead}>
+              <span className={`${styles.listingsSkBar} ${styles.listingsSkKicker}`} />
+              <span className={`${styles.listingsSkBar} ${styles.listingsSkH2}`} />
+            </div>
+            <div className={styles.tableWrap}>
+              <table className={`${styles.table} ${styles.desktopOnly}`} aria-hidden>
+                <colgroup>
+                  <col className={styles.colListing} />
+                  <col className={styles.colSeller} />
+                  <col className={styles.colKind} />
+                  <col className={styles.colPrice} />
+                  <col className={styles.colSubmitted} />
+                  <col className={styles.colActions} />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Listing</th>
+                    <th>Seller</th>
+                    <th>Kind</th>
+                    <th>Price</th>
+                    <th>Submitted</th>
+                    <th className={styles.actionsTh}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <tr key={`ap-sk-a-${i}`} className={styles.primaryRow}>
+                      <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 200, height: 28 }} /></td>
+                      <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 140 }} /></td>
+                      <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} /></td>
+                      <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 64 }} /></td>
+                      <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 88 }} /></td>
+                      <td className={styles.actionsCell}><span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 92, height: 26 }} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className={`${styles.mobileCardList} ${styles.mobileOnly}`}>
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={`ap-sk-am-${i}`} className={styles.listingsSkMobileCard}>
+                    <span className={`${styles.listingsSkBar} ${styles.listingsSkTitle}`} />
+                    <span className={`${styles.listingsSkBar} ${styles.listingsSkSub}`} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+          <section className={`${styles.reviewPanel} ${styles.reviewPanelAccentStaged}`}>
+            <div className={styles.listingsSkReviewHead}>
+              <span className={`${styles.listingsSkBar} ${styles.listingsSkKicker}`} />
+              <span className={`${styles.listingsSkBar} ${styles.listingsSkH2}`} style={{ width: 240 }} />
+            </div>
+            <div className={styles.tableWrap}>
+              <table className={styles.table} aria-hidden>
+                <colgroup>
+                  <col className={styles.colSeller} />
+                  <col className={styles.colListing} />
+                  <col className={styles.colChangedFields} />
+                  <col className={styles.colActions} />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Seller</th>
+                    <th>Listing</th>
+                    <th>Changed Fields</th>
+                    <th className={styles.actionsTh}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <tr key={`ap-sk-b-${i}`} className={styles.primaryRow}>
+                      <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 120 }} /></td>
+                      <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 180 }} /></td>
+                      <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 260, height: 32 }} /></td>
+                      <td className={styles.actionsCell}><span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 80, height: 26 }} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
         </div>
       ) : (
         <>

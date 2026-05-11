@@ -558,8 +558,23 @@ export default function ProductsContent({ initialKind = 'all' }) {
 
       <section className={styles.productsSection} aria-label="Products list">
         {loadingData ? (
-          <div className={styles.emptyState}>
-            <p className={styles.emptyTitle}>Loading listings...</p>
+          <div
+            className={styles.catalogSkGrid}
+            role="status"
+            aria-live="polite"
+            aria-busy="true"
+            aria-label="Loading listings"
+          >
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={`listing-sk-${i}`} className={styles.catalogSkCard} aria-hidden>
+                <div className={styles.skeletonBlock} style={{ height: 148, borderRadius: 0 }} />
+                <div className={styles.catalogSkLines}>
+                  <div className={`${styles.skeletonLine} ${styles.skeletonTitle}`} />
+                  <div className={`${styles.skeletonLine} ${styles.skeletonMedium}`} />
+                  <div className={`${styles.skeletonLine} ${styles.skeletonShort}`} />
+                </div>
+              </div>
+            ))}
           </div>
         ) : filteredProducts.length === 0 ? (
           <div className={styles.emptyState}>

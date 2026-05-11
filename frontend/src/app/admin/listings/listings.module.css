@@ -1200,6 +1200,100 @@
   to { transform: rotate(360deg); }
 }
 
+@keyframes listingsSkShimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.listingsSkBar {
+  display: block;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #e8ecf0 0%, #f4f6f8 45%, #e8ecf0 90%);
+  background-size: 200% 100%;
+  animation: listingsSkShimmer 1.12s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .listingsSkBar {
+    animation: none;
+    background: #e8ecf0;
+  }
+
+  .approvalsSummaryStatSk {
+    animation: none;
+    background: rgba(255, 255, 255, 0.16);
+  }
+}
+
+.listingsSkThumb {
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.listingsSkTitle {
+  height: 14px;
+  width: min(100%, 220px);
+}
+
+.listingsSkSub {
+  height: 11px;
+  width: min(100%, 180px);
+  margin-top: 8px;
+}
+
+.listingsSkTag {
+  height: 22px;
+  width: 72px;
+  border-radius: 999px;
+  margin-top: 10px;
+}
+
+.listingsSkApprovalsStack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.listingsSkReviewHead {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.listingsSkKicker {
+  height: 11px;
+  width: 160px;
+}
+
+.listingsSkH2 {
+  height: 16px;
+  width: 200px;
+}
+
+.listingsSkTdBar {
+  height: 12px;
+  width: 100%;
+  max-width: 160px;
+}
+
+.listingsSkMobileCard {
+  border: 1px solid #e9e9ef;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #fff;
+}
+
 .loadError {
   padding: 0 0 12px 0;
   font-size: 13px;
@@ -1220,6 +1314,12 @@
   gap: 8px;
   padding: 48px 0;
   text-align: center;
+}
+
+/* Browse card grid: empty state should span all columns so it centers in the content area */
+.cardListEmptyState {
+  grid-column: 1 / -1;
+  justify-self: stretch;
 }
 
 .emptyIcon {
@@ -2103,6 +2203,23 @@
   border-color: rgba(16, 40, 32, 0.22);
   border-radius: 18px;
   box-shadow: 0 8px 24px rgba(2, 6, 23, 0.14), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+/* Stat value placeholder while approvals data loads — same treatment as disputes `.disputesSkStat` */
+.approvalsSummaryStatSk {
+  display: block;
+  height: 28px;
+  width: 40px;
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.22) 45%,
+    rgba(255, 255, 255, 0.1) 90%
+  );
+  background-size: 200% 100%;
+  animation: listingsSkShimmer 1.12s ease-in-out infinite;
+  margin: 0 auto;
 }
 
 .summaryStatItem {

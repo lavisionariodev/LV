@@ -257,8 +257,47 @@ export default function AdminDashboardPage() {
 
   if (adminProfileLoading) {
     return (
-      <div className={styles.dashLoadingScreen} role="status" aria-label="Loading dashboard">
-        <span className={styles.dashSpinner} aria-hidden="true" />
+      <div className={styles.dashSkWrap} role="status" aria-live="polite" aria-busy="true" aria-label="Loading dashboard">
+        <div className={styles.dashSkWelcome}>
+          <div className={styles.dashSkWelcomeLeft}>
+            <span className={`${styles.adminSkBar} ${styles.dashSkWelcomeIcon}`} />
+            <div className={styles.dashSkWelcomeText}>
+              <span className={`${styles.adminSkBar} ${styles.dashSkLineLg}`} />
+              <span className={`${styles.adminSkBar} ${styles.dashSkLineMd}`} />
+            </div>
+          </div>
+          <span className={`${styles.adminSkBar} ${styles.dashSkPill}`} />
+        </div>
+        <div className={styles.dashSkDesktopGrid}>
+          <div className={styles.dashSkPanel}>
+            <span className={`${styles.adminSkBar} ${styles.dashSkPanelTitle}`} />
+            <span className={`${styles.adminSkBar} ${styles.dashSkLineMd}`} style={{ maxWidth: 260 }} />
+            <span className={`${styles.adminSkBar} ${styles.dashSkChart}`} />
+          </div>
+          <div className={styles.dashSkStatCol}>
+            {[0, 1, 2].map((i) => (
+              <div key={i} className={styles.dashSkStatCard}>
+                <div className={styles.dashSkStatTop}>
+                  <span className={`${styles.adminSkBar} ${styles.dashSkStatLabel}`} />
+                  <span className={`${styles.adminSkBar} ${styles.dashSkStatIcon}`} />
+                </div>
+                <span className={`${styles.adminSkBar} ${styles.dashSkStatValue}`} />
+                <span className={`${styles.adminSkBar} ${styles.dashSkStatHint}`} />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className={styles.dashSkMobileHub}>
+          <div className={styles.dashSkHero}>
+            <span className={`${styles.adminSkBar} ${styles.dashSkLineLg}`} style={{ maxWidth: 200 }} />
+            <span className={`${styles.adminSkBar} ${styles.dashSkStatValue}`} style={{ width: '72%' }} />
+            <span className={`${styles.adminSkBar} ${styles.dashSkLineMd}`} />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+              <span className={`${styles.adminSkBar} ${styles.dashSkStatCard}`} style={{ minHeight: 72, padding: 0 }} />
+              <span className={`${styles.adminSkBar} ${styles.dashSkStatCard}`} style={{ minHeight: 72, padding: 0 }} />
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -506,7 +545,21 @@ export default function AdminDashboardPage() {
             {sellerOpen && (sellerQuery.trim().length >= 2) && (
               <div className={styles.homeSearchDropdown} role="listbox" aria-label="Seller results">
                 {sellerLoading ? (
-                  <div className={styles.homeSearchDropdownEmpty}>Searching…</div>
+                  <div role="status" aria-live="polite" aria-busy="true" aria-label="Searching sellers">
+                    {[0, 1, 2].map((i) => (
+                      <div key={`seller-sk-${i}`} className={styles.homeSearchDropdownSkItem}>
+                        <span
+                          className={styles.adminSkBar}
+                          style={{ width: 34, height: 34, borderRadius: 12, flexShrink: 0 }}
+                          aria-hidden
+                        />
+                        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                          <span className={styles.adminSkBar} style={{ height: 12, width: '72%', maxWidth: 200 }} aria-hidden />
+                          <span className={styles.adminSkBar} style={{ height: 10, width: '48%', maxWidth: 140 }} aria-hidden />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 ) : sellerResults.length === 0 ? (
                   <div className={styles.homeSearchDropdownEmpty}>No sellers found</div>
                 ) : (

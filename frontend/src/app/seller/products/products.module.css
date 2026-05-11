@@ -5,7 +5,6 @@
   flex-direction: column;
   gap: 18px;
   width: 100%;
-  padding-bottom: 2.5rem;
   box-sizing: border-box;
 }
 
@@ -129,6 +128,10 @@
   outline: none;
   border-color: #204f38;
   box-shadow: 0 0 0 3px rgba(32, 79, 56, 0.14);
+}
+
+.searchBox::-webkit-search-cancel-button {
+  cursor: pointer;
 }
 
 /* Shown when seller sidebar is hidden (≤860px) — same destination as sidebar “Add New Listing” */
@@ -1820,7 +1823,7 @@
   width: 100%;
   max-width: 1120px;
   margin: 0 auto;
-  padding: 1.1rem 1.1rem 2rem;
+  padding: 1.1rem;
   box-sizing: border-box;
   background: #ffffff;
   border-radius: 22px;
@@ -2985,4 +2988,28 @@
 .filterButtonActive:hover {
   background: #163628;
   border-color: #163628;
+}
+
+/* ── Catalog / listings grid loading skeleton ── */
+
+.catalogSkGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.catalogSkCard {
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.catalogSkLines {
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }

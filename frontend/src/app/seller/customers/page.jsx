@@ -280,7 +280,7 @@ function SellerCustomersPageContent() {
 
   const tablePlaceholder =
     customersLoading && customers.length === 0
-      ? 'Loading customers…'
+      ? null
       : customersError && customers.length === 0
         ? customersError
         : showEmptyLedger
@@ -357,7 +357,39 @@ function SellerCustomersPageContent() {
               </tr>
             </thead>
             <tbody>
-              {tablePlaceholder !== null ? (
+              {customersLoading && customers.length === 0 ? (
+                Array.from({ length: 8 }).map((_, i) => (
+                  <tr key={`cust-sk-${i}`} className={styles.customersSkRow}>
+                    <td>
+                      <div className={styles.customerNameCell}>
+                        <span
+                          className={styles.customersSkBar}
+                          style={{ width: 32, height: 32, borderRadius: 999, flexShrink: 0 }}
+                        />
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <span className={styles.customersSkBar} style={{ width: '55%', maxWidth: 160 }} />
+                          <span className={styles.customersSkBar} style={{ width: '42%', maxWidth: 120, marginTop: 8 }} />
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span className={styles.customersSkBar} style={{ width: '72%', maxWidth: 140 }} />
+                    </td>
+                    <td>
+                      <span className={styles.customersSkBar} style={{ width: '88%', maxWidth: 200 }} />
+                    </td>
+                    <td>
+                      <span className={styles.customersSkBar} style={{ width: 36, margin: '0 auto' }} />
+                    </td>
+                    <td>
+                      <span className={styles.customersSkBar} style={{ width: '62%', maxWidth: 120 }} />
+                    </td>
+                    <td>
+                      <span className={styles.customersSkBar} style={{ width: 72, marginLeft: 'auto' }} />
+                    </td>
+                  </tr>
+                ))
+              ) : tablePlaceholder !== null ? (
                 <tr>
                   <td colSpan={6} className={styles.emptyState}>
                     {tablePlaceholder}
@@ -623,12 +655,73 @@ function SellerCustomersPageContent() {
   )
 }
 
-function SellerCustomersPageFallback() {
+function SellerCustomersShellSkeleton() {
   return (
-    <div className={styles.pageWrap} role="status" aria-live="polite">
-      <p style={{ margin: 0, color: '#64748b', fontSize: '0.95rem' }}>Loading customers…</p>
+    <div
+      className={styles.pageWrap}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label="Loading customers"
+    >
+      <section className={styles.filtersRow} aria-hidden>
+        <span className={`${styles.customersSkBar} ${styles.customersSkSearchBar}`} />
+      </section>
+      <section className={styles.statsStrip} aria-hidden>
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className={styles.statCard}>
+            <span className={styles.customersSkBar} style={{ width: '58%', height: 10 }} />
+            <span className={styles.customersSkBar} style={{ width: '36%', height: 20, marginTop: 8 }} />
+            <span className={styles.customersSkBar} style={{ width: '74%', height: 9, marginTop: 8 }} />
+          </div>
+        ))}
+      </section>
+      <section className={styles.customersSection} aria-hidden>
+        <div className={styles.customersTableWrap}>
+          <table className={styles.customersTable}>
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Contact Number</th>
+                <th>Email</th>
+                <th>Total Bookings</th>
+                <th>Last Service Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <tr key={`sk-${i}`} className={styles.customersSkRow}>
+                  <td>
+                    <span className={styles.customersSkBar} style={{ width: '62%', maxWidth: 180 }} />
+                  </td>
+                  <td>
+                    <span className={styles.customersSkBar} style={{ width: '72%' }} />
+                  </td>
+                  <td>
+                    <span className={styles.customersSkBar} style={{ width: '80%' }} />
+                  </td>
+                  <td>
+                    <span className={styles.customersSkBar} style={{ width: 40, margin: '0 auto' }} />
+                  </td>
+                  <td>
+                    <span className={styles.customersSkBar} style={{ width: '58%' }} />
+                  </td>
+                  <td>
+                    <span className={styles.customersSkBar} style={{ width: 72, marginLeft: 'auto' }} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   )
+}
+
+function SellerCustomersPageFallback() {
+  return <SellerCustomersShellSkeleton />
 }
 
 export default function SellerCustomersPage() {

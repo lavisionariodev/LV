@@ -54,7 +54,83 @@ export default function StuckRefundsStrip() {
     }
   }
 
-  if (loading) return null
+  if (loading) {
+    return (
+      <section
+        className={styles.stuckRefundsWrap}
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+        aria-label="Loading refunds queue"
+      >
+        <div className={styles.stuckRefundsHead}>
+          <p className={styles.stuckRefundsTitle}>Refunds requiring attention</p>
+          <span
+            className={styles.tableSkeletonBar}
+            style={{ display: 'block', height: 11, width: 'min(100%, 520px)', marginTop: 6, maxWidth: '100%' }}
+            aria-hidden
+          />
+          <span
+            className={styles.tableSkeletonBar}
+            style={{ display: 'block', height: 11, width: 'min(100%, 380px)', marginTop: 6, maxWidth: '100%' }}
+            aria-hidden
+          />
+        </div>
+        <div className={styles.stuckRefundsTableWrap}>
+          <table className={styles.stuckRefundsTable}>
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Refund status</th>
+                <th>Payment</th>
+                <th>Subtotal</th>
+                <th>PayMongo refund</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: 3 }).map((_, i) => (
+                <tr key={`stuck-sk-${i}`} className={styles.tableSkeletonRow}>
+                  <td>
+                    <span className={styles.tableSkeletonBar} style={{ width: 88, height: 12 }} aria-hidden />
+                  </td>
+                  <td>
+                    <span className={styles.tableSkeletonBar} style={{ width: 110, height: 12 }} aria-hidden />
+                  </td>
+                  <td>
+                    <span className={styles.tableSkeletonBar} style={{ width: 72, height: 12 }} aria-hidden />
+                  </td>
+                  <td>
+                    <span className={styles.tableSkeletonBar} style={{ width: 64, height: 13 }} aria-hidden />
+                  </td>
+                  <td>
+                    <span className={styles.tableSkeletonBar} style={{ width: 120, height: 12 }} aria-hidden />
+                  </td>
+                  <td className={styles.stuckRefundsActions}>
+                    <span
+                      className={styles.tableSkeletonBar}
+                      style={{ display: 'inline-block', width: 88, height: 28, borderRadius: 8, marginLeft: 6 }}
+                      aria-hidden
+                    />
+                    <span
+                      className={styles.tableSkeletonBar}
+                      style={{ display: 'inline-block', width: 132, height: 28, borderRadius: 8, marginLeft: 6 }}
+                      aria-hidden
+                    />
+                    <span
+                      className={styles.tableSkeletonBar}
+                      style={{ display: 'inline-block', width: 56, height: 22, borderRadius: 8, marginLeft: 6 }}
+                      aria-hidden
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    )
+  }
   if (err) {
     return (
       <section className={styles.stuckRefundsWrap} aria-live="polite">

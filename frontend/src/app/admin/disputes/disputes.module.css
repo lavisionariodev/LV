@@ -1138,3 +1138,57 @@
     display: none;
   }
 }
+
+/* ── Skeleton loading ─────────────────────────────────────────────────────── */
+
+@keyframes disputesSkShimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.disputesSkBar {
+  display: block;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #e8ecf0 0%, #f4f6f8 45%, #e8ecf0 90%);
+  background-size: 200% 100%;
+  animation: disputesSkShimmer 1.12s ease-in-out infinite;
+}
+
+.disputesSkStat {
+  display: block;
+  height: 28px;
+  width: 40px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.22) 45%, rgba(255, 255, 255, 0.1) 90%);
+  background-size: 200% 100%;
+  animation: disputesSkShimmer 1.12s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .disputesSkBar,
+  .disputesSkStat {
+    animation: none;
+  }
+
+  .disputesSkBar {
+    background: #e8ecf0;
+  }
+
+  .disputesSkStat {
+    background: rgba(255, 255, 255, 0.16);
+  }
+}
+
+.disputesSkMobileCardSk {
+  border: 1px solid #e9e9ef;
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}

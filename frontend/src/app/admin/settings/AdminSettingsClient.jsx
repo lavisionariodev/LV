@@ -17,12 +17,11 @@ import styles from './settings.module.css'
 import { FaUser } from 'react-icons/fa6'
 import { FiEdit, FiUpload } from 'react-icons/fi'
 import { MdCheckCircle, MdErrorOutline } from 'react-icons/md'
-import { validateNewPassword } from '@/lib/validators/authSchemas'
+import { changePasswordWithReauth } from '@/lib/auth/changePassword'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
 import { useMediaQuery } from '@/shared/hooks'
 import { useSiteContent, upsertSiteContent } from '@/lib/siteContent/client'
 import { useToast } from '@/contexts/ToastContext'
-import loadingStyles from '../admin-loading.module.css'
 import { normalizeSettingsTab } from './adminSettingsTabs'
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -112,10 +111,20 @@ export function AdminBillingSettingsPanel({ variant = 'default' }) {
             Default share of each successful order between buyers and sellers that applies before
             any seller-specific rate.
           </p>
-          <dl className={styles.billingDl}>
+          <dl className={styles.billingDl} aria-busy={billingLoading}>
             <div className={styles.billingDlRow}>
               <dt>Default rate</dt>
-              <dd>{billingLoading ? '…' : `${defaultCommissionPercent}%`}</dd>
+              <dd>
+                {billingLoading ? (
+                  <span
+                    className={styles.settingsSkBar}
+                    style={{ display: 'inline-block', width: 44, height: 15, verticalAlign: 'middle' }}
+                    aria-hidden
+                  />
+                ) : (
+                  `${defaultCommissionPercent}%`
+                )}
+              </dd>
             </div>
             <div className={styles.billingDlRow}>
               <dt>Rule</dt>
@@ -124,11 +133,17 @@ export function AdminBillingSettingsPanel({ variant = 'default' }) {
             <div className={styles.billingDlRow}>
               <dt>Last updated</dt>
               <dd>
-                {billingLoading
-                  ? '…'
-                  : billingUpdatedAt
-                    ? formatRuleDate(billingUpdatedAt.slice(0, 10))
-                    : '—'}
+                {billingLoading ? (
+                  <span
+                    className={styles.settingsSkBar}
+                    style={{ display: 'inline-block', width: 128, height: 14, verticalAlign: 'middle' }}
+                    aria-hidden
+                  />
+                ) : billingUpdatedAt ? (
+                  formatRuleDate(billingUpdatedAt.slice(0, 10))
+                ) : (
+                  '—'
+                )}
               </dd>
             </div>
             <div className={styles.billingDlRow}>
@@ -394,14 +409,21 @@ export const AdminNotificationPreferencesPanel = forwardRef(function AdminNotifi
   if (loading) {
     return (
       <section className={wrapClass}>
-        <div
-          className={`${loadingStyles.root} ${loadingStyles.variantCard}`}
-          role="status"
-          aria-live="polite"
-          aria-busy="true"
-        >
-          <span className={loadingStyles.spinner} aria-hidden />
-          <span className={loadingStyles.label}>Loading notification settings</span>
+        <div className={styles.settingsSkNotifList} role="status" aria-live="polite" aria-busy="true" aria-label="Loading notification settings">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className={styles.settingsSkNotifRow}>
+              <div className={styles.settingsSkNotifMeta}>
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkNotifTitle}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkNotifDesc}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkNotifDesc2}`} />
+              </div>
+              <div className={styles.settingsSkNotifControls}>
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkSwitch}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkSwitch}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkSwitch}`} />
+              </div>
+            </div>
+          ))}
         </div>
       </section>
     )
@@ -1076,14 +1098,14 @@ export function AdminSiteContentPanel({
 
       <div className={styles.settingsProgramBody} ref={contentRefs}>
         {isLoading ? (
-          <div
-            className={`${loadingStyles.root} ${loadingStyles.variantEmbed}`}
-            role="status"
-            aria-live="polite"
-            aria-busy="true"
-          >
-            <span className={loadingStyles.spinner} aria-hidden />
-            <span className={loadingStyles.label}>Loading site content</span>
+          <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading site content">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className={styles.settingsSkSiteSection}>
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkSiteH2}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkSiteBlock}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkSiteBlockTall}`} />
+              </div>
+            ))}
           </div>
         ) : (
           <>
@@ -1192,6 +1214,7 @@ export default function AdminSettingsClient() {
   const [passStatus, setPassStatus] = useState('')
   const [passError, setPassError] = useState('')
   const [isEditingPassword, setIsEditingPassword] = useState(false)
+  const [passwordSaving, setPasswordSaving] = useState(false)
 
   const isMobile = useMediaQuery('(max-width: 640px)')
 
@@ -1449,33 +1472,29 @@ export default function AdminSettingsClient() {
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault()
+    if (!isEditingPassword || passwordSaving) return false
     setPassError('')
     setPassStatus('')
-    if (!currentPassword) {
-      const message = 'Please enter your current password.'
-      setPassError(message)
-      toast.error(message)
-      return false
-    }
-    const validation = validateNewPassword(newPassword, confirmPassword)
-    if (!validation.valid) {
-      setPassError(validation.message)
-      toast.error(validation.message)
-      return false
-    }
+    setPasswordSaving(true)
     try {
-      const { error } = await supabase.auth.updateUser({ password: newPassword })
-      if (error) {
-        const message = error.message || 'Failed to update password.'
-        setPassError(message)
-        toast.error(message)
+      const result = await changePasswordWithReauth(supabase, {
+        currentPassword,
+        newPassword,
+        confirmPassword,
+      })
+      if (!result.ok) {
+        setPassError(result.error)
+        toast.error(result.error)
         return false
       }
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
-      setPassStatus('Password updated successfully.')
-      toast.success('Password updated successfully.')
+      const okMsg = result.warning
+        ? `Password updated. ${result.warning}`
+        : 'Password updated successfully. Other sessions were signed out.'
+      setPassStatus(okMsg)
+      toast.success(okMsg)
       setIsEditingPassword(false)
       return true
     } catch (err) {
@@ -1483,6 +1502,8 @@ export default function AdminSettingsClient() {
       setPassError(message)
       toast.error(message)
       return false
+    } finally {
+      setPasswordSaving(false)
     }
   }
 
@@ -1493,6 +1514,7 @@ export default function AdminSettingsClient() {
   }
 
   const onCancelPasswordEdit = () => {
+    if (passwordSaving) return
     setPassError('')
     setPassStatus('')
     setCurrentPassword('')
@@ -1547,16 +1569,27 @@ export default function AdminSettingsClient() {
   if (loading) {
     return (
       <div className={styles.page}>
+        <div className={styles.settingsSkTabRow}>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <span key={i} className={`${styles.settingsSkBar} ${styles.settingsSkTabPill}`} />
+          ))}
+        </div>
         <div className={`${styles.contentArea} ${styles.grid}`}>
           <section className={`${styles.card} ${styles.full}`}>
-            <div
-              className={`${loadingStyles.root} ${loadingStyles.variantCard}`}
-              role="status"
-              aria-live="polite"
-              aria-busy="true"
-            >
-              <span className={loadingStyles.spinner} aria-hidden />
-              <span className={loadingStyles.label}>Loading your profile</span>
+            <div className={styles.settingsSkCardHead}>
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkTitle}`} />
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkSubtitle}`} />
+            </div>
+            <div className={styles.settingsSkAvatarRow}>
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkAvatar}`} />
+              <div className={styles.settingsSkFields} style={{ flex: 1 }}>
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkFieldLabel}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkField}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkFieldLabel}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkField}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkFieldLabel}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkField}`} />
+              </div>
             </div>
           </section>
         </div>
@@ -1795,11 +1828,18 @@ export default function AdminSettingsClient() {
                       type="button"
                       className={styles.secondaryBtn}
                       onClick={onCancelPasswordEdit}
+                      disabled={passwordSaving}
                     >
                       Cancel
                     </button>
-                    <button form={formId} type="submit" className={styles.primaryBtn}>
-                      Save Changes
+                    <button
+                      form={formId}
+                      type="submit"
+                      className={styles.primaryBtn}
+                      disabled={passwordSaving}
+                      aria-busy={passwordSaving}
+                    >
+                      {passwordSaving ? 'Saving…' : 'Save Changes'}
                     </button>
                   </>
                 ) : (
@@ -1810,7 +1850,12 @@ export default function AdminSettingsClient() {
               </div>
             </div>
           </div>
-          <form id={formId} onSubmit={handlePasswordSubmit} className={styles.form}>
+          <form
+            id={formId}
+            onSubmit={handlePasswordSubmit}
+            className={styles.form}
+            aria-busy={passwordSaving}
+          >
             <div className={styles.passGrid}>
               <div className={styles.passField}>
                 <label htmlFor={id('current_password')} className={styles.label}>
@@ -1823,7 +1868,8 @@ export default function AdminSettingsClient() {
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   className={styles.input}
-                  disabled={!isEditingPassword}
+                  disabled={!isEditingPassword || passwordSaving}
+                  autoComplete="current-password"
                 />
               </div>
               <div className={styles.passField}>
@@ -1837,7 +1883,8 @@ export default function AdminSettingsClient() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className={styles.input}
-                  disabled={!isEditingPassword}
+                  disabled={!isEditingPassword || passwordSaving}
+                  autoComplete="new-password"
                 />
               </div>
               <div className={styles.passField}>
@@ -1851,7 +1898,8 @@ export default function AdminSettingsClient() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className={styles.input}
-                  disabled={!isEditingPassword}
+                  disabled={!isEditingPassword || passwordSaving}
+                  autoComplete="new-password"
                 />
               </div>
             </div>

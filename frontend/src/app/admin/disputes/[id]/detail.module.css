@@ -470,3 +470,52 @@
   .footerNote { font-size: 12px; }
   .footerNote p + p { margin-top: 6px; }
 }
+
+/* ── Loading skeleton ───────────────────────────────────────────────────── */
+
+@keyframes detailSkShimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.detailSkBar {
+  display: block;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #e8ecf0 0%, #f4f6f8 45%, #e8ecf0 90%);
+  background-size: 200% 100%;
+  animation: detailSkShimmer 1.12s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detailSkBar {
+    animation: none;
+    background: #e8ecf0;
+  }
+}
+
+.detailSkBanner {
+  min-height: 52px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  box-sizing: border-box;
+  background: #f8fafc;
+}
+
+.detailSkPartyCard {
+  border: 1px solid #e9e9ef;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-height: 120px;
+}

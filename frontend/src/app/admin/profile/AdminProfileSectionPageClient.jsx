@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { useMediaQuery } from '@/shared/hooks'
 import styles from '../settings/settings.module.css'
 import profileStyles from './profile.module.css'
-import loadingStyles from '../admin-loading.module.css'
 import {
   AdminNotificationPreferencesPanel,
   AdminBillingSettingsPanel,
@@ -29,17 +28,25 @@ export default function AdminProfileSectionPageClient({ section }) {
 
   if (!isMobile) {
     return (
-      <div className={styles.page}>
+      <div className={styles.page} role="status" aria-live="polite" aria-busy="true" aria-label="Opening settings">
         <div className={`${styles.contentArea} ${styles.grid}`}>
           <section className={`${styles.card} ${styles.full}`}>
-            <div
-              className={`${loadingStyles.root} ${loadingStyles.variantCard}`}
-              role="status"
-              aria-live="polite"
-              aria-busy="true"
-            >
-              <span className={loadingStyles.spinner} aria-hidden />
-              <span className={loadingStyles.label}>Opening settings</span>
+            <div className={styles.settingsSkCardHead}>
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkTitle}`} />
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkSubtitle}`} />
+            </div>
+            <div className={styles.settingsSkNotifList}>
+              {[0, 1, 2].map((i) => (
+                <div key={i} className={styles.settingsSkNotifRow}>
+                  <div className={styles.settingsSkNotifMeta}>
+                    <span className={`${styles.settingsSkBar} ${styles.settingsSkNotifTitle}`} />
+                    <span className={`${styles.settingsSkBar} ${styles.settingsSkNotifDesc}`} />
+                  </div>
+                  <div className={styles.settingsSkNotifControls}>
+                    <span className={`${styles.settingsSkBar} ${styles.settingsSkSwitch}`} />
+                  </div>
+                </div>
+              ))}
             </div>
           </section>
         </div>

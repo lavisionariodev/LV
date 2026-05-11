@@ -20,6 +20,53 @@ function formatPhp(n) {
   }).format(n)
 }
 
+const ANALYTICS_HUB_SUMMARY_SOFT = [
+  styles.summaryCardSoftGreen,
+  styles.summaryCardSoftBlue,
+  styles.summaryCardSoftIndigo,
+  styles.summaryCardSoftAmber,
+]
+
+function SellerAnalyticsHubSkeleton() {
+  return (
+    <div
+      className={styles.pageWrap}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label="Loading analytics summary"
+    >
+      <section className={styles.summaryStrip} aria-hidden>
+        {ANALYTICS_HUB_SUMMARY_SOFT.map((soft, i) => (
+          <article key={i} className={`${styles.summaryCard} ${soft}`}>
+            <span className={`${styles.analyticsSkBar} ${styles.analyticsSkSummaryLabel}`} />
+            <div className={styles.summaryValueRow}>
+              <span className={`${styles.analyticsSkBar} ${styles.analyticsSkSummaryValue}`} />
+            </div>
+            <span className={`${styles.analyticsSkBar} ${styles.analyticsSkSummaryHint}`} />
+          </article>
+        ))}
+      </section>
+
+      <section className={styles.navGrid} aria-hidden>
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className={styles.navCard} style={{ pointerEvents: 'none' }}>
+            <div className={styles.navCardHeader}>
+              <div>
+                <span className={`${styles.analyticsSkBar} ${styles.analyticsSkNavPill}`} />
+                <span className={`${styles.analyticsSkBar} ${styles.analyticsSkNavTitle}`} />
+              </div>
+              <span className={`${styles.analyticsSkBar} ${styles.analyticsSkNavIcon}`} />
+            </div>
+            <span className={`${styles.analyticsSkBar} ${styles.analyticsSkNavText}`} />
+            <span className={`${styles.analyticsSkBar} ${styles.analyticsSkNavText2}`} />
+          </div>
+        ))}
+      </section>
+    </div>
+  )
+}
+
 export default function SellerAnalyticsPage() {
   const { orders, listings, loading, error } = useSellerAnalyticsData()
 
@@ -38,10 +85,13 @@ export default function SellerAnalyticsPage() {
     [totalOrders, totalRevenue, activeServices, totalCustomers],
   )
 
+  if (loading && !error) {
+    return <SellerAnalyticsHubSkeleton />
+  }
+
   return (
     <div className={styles.pageWrap}>
       {error ? <p className={styles.pageError}>{error}</p> : null}
-      {loading ? <p className={styles.pageLoading}>Loading summary…</p> : null}
 
       <section aria-label="Analytics summary" className={styles.summaryStrip}>
         {summary.map((s) => (

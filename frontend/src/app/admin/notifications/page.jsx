@@ -77,6 +77,59 @@ function HeaderMenu({ onMarkAll, onClearAll, hasUnread, hasNotifs }) {
   )
 }
 
+function NotificationsLoadingSkeleton({ variant }) {
+  const count = variant === 'mobile' ? 5 : 7
+  const rows = Array.from({ length: count })
+  if (variant === 'mobile') {
+    return (
+      <div className={styles.mobileList} role="status" aria-live="polite" aria-busy="true" aria-label="Loading notifications">
+        {rows.map((_, i) => (
+          <div key={`nsk-m-${i}`} className={`${styles.mobileNotifItem} ${styles.notifSkRow}`} aria-hidden>
+            <div className={`${styles.notifIconWrap} ${styles.icon_blue}`}>
+              <span className={styles.notifSkBar} style={{ width: 20, height: 20, borderRadius: 6 }} />
+            </div>
+            <div className={styles.notifBody}>
+              <div className={styles.notifTop}>
+                <span className={styles.notifSkBar} style={{ height: 13, width: '62%', maxWidth: 200 }} />
+              </div>
+              <span className={styles.notifSkBar} style={{ height: 11, width: '100%', marginTop: 6 }} />
+              <span className={styles.notifSkBar} style={{ height: 11, width: '80%', marginTop: 5 }} />
+              <span className={styles.notifSkBar} style={{ height: 10, width: 56, marginTop: 6 }} />
+            </div>
+            <span className={styles.notifSkBar} style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0 }} />
+          </div>
+        ))}
+      </div>
+    )
+  }
+  return (
+    <div className={styles.notifList} role="status" aria-live="polite" aria-busy="true" aria-label="Loading notifications">
+      {rows.map((_, i) => (
+        <div
+          key={`nsk-d-${i}`}
+          className={`${styles.notifItem} ${styles.notifSkRow} ${i < rows.length - 1 ? styles.notifBorder : ''}`}
+          aria-hidden
+        >
+          <div className={`${styles.notifIconWrap} ${styles.icon_blue}`}>
+            <span className={styles.notifSkBar} style={{ width: 22, height: 22, borderRadius: 6 }} />
+          </div>
+          <div className={styles.notifBody}>
+            <div className={styles.notifTop}>
+              <span className={styles.notifSkBar} style={{ height: 13, width: '48%', maxWidth: 240 }} />
+              <span className={styles.notifSkBar} style={{ height: 10, width: 52 }} />
+            </div>
+            <span className={styles.notifSkBar} style={{ height: 11, width: '94%', marginTop: 6 }} />
+            <span className={styles.notifSkBar} style={{ height: 11, width: '72%', marginTop: 5 }} />
+          </div>
+          <div className={styles.notifActions}>
+            <span className={styles.notifSkBar} style={{ width: 30, height: 30, borderRadius: 8 }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function NotifMenu({ notifId, isRead, onMarkRead, onDelete }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
@@ -206,9 +259,7 @@ export default function NotificationsPage() {
 
         <div className={styles.card}>
           {loading && notifications.length === 0 ? (
-            <div className={styles.emptyState}>
-              <p className={styles.emptyTitle}>Loading notifications…</p>
-            </div>
+            <NotificationsLoadingSkeleton variant="desktop" />
           ) : filtered.length === 0 ? (
             <div className={styles.emptyState}>
               <TbBellOff className={styles.emptyIcon} />
@@ -286,9 +337,7 @@ export default function NotificationsPage() {
         </div>
 
         {loading && notifications.length === 0 ? (
-          <div className={styles.emptyState}>
-            <p className={styles.emptyTitle}>Loading notifications…</p>
-          </div>
+          <NotificationsLoadingSkeleton variant="mobile" />
         ) : filtered.length === 0 ? (
           <div className={styles.emptyState}>
             <TbBellOff className={styles.emptyIcon} />

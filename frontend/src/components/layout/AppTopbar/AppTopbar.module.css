@@ -75,11 +75,26 @@
   padding: 0;
   margin: 0;
   line-height: 0;
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: #0f172a;
   cursor: pointer;
+}
+
+/* Unread indicator: green dot on top-right of bell (seller + admin topbar) */
+.notifUnreadDot {
+  position: absolute;
+  top: -2px;
+  right: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  border: 2px solid #ffffff;
+  box-sizing: content-box;
+  pointer-events: none;
 }
 
 .notifIconBtn svg {
@@ -133,6 +148,7 @@
   height: 28px;
   width: 28px;
   border-radius: 999px;
+  border: 1px solid #204f38;
   background: #e0e2e6;
   color: #64748b;
 
@@ -238,6 +254,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
+  border: 1px solid #204f38;
   overflow: hidden;
   flex-shrink: 0;
   background: #e0e2e6;
