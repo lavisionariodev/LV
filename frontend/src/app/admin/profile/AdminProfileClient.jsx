@@ -14,7 +14,8 @@ import { FiUpload } from 'react-icons/fi'
 import { MdCheckCircle, MdErrorOutline } from 'react-icons/md'
 import { TbMessage2Question, TbBell, TbCreditCard } from 'react-icons/tb'
 import { HiOutlineNewspaper } from 'react-icons/hi'
-import { validateNewPassword } from '@/lib/validators/authSchemas'
+import { changePasswordWithReauth } from '@/lib/auth/changePassword'
+import { useToast } from '@/contexts/ToastContext'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
 import { useMediaQuery } from '@/shared/hooks'
 import { normalizeSettingsTab } from '../settings/adminSettingsTabs'
@@ -79,6 +80,7 @@ function ProfileMobileTabBar({ onPasswordTab, passwordSheetOpen = false }) {
 export default function AdminProfileClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const toast = useToast()
   const fileRef = useRef(null)
   const avatarPreviewRef = useRef('')
 
@@ -98,6 +100,7 @@ export default function AdminProfileClient() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passError, setPassError] = useState('')
+  const [passwordSaving, setPasswordSaving] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -344,34 +347,41 @@ export default function AdminProfileClient() {
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault()
+    if (passwordSaving) return false
     setPassError('')
-    if (!currentPassword) {
-      setPassError('Please enter your current password.')
-      return false
-    }
-    const validation = validateNewPassword(newPassword, confirmPassword)
-    if (!validation.valid) {
-      setPassError(validation.message)
-      return false
-    }
+    setPasswordSaving(true)
     try {
-      const { error } = await supabase.auth.updateUser({ password: newPassword })
-      if (error) {
-        setPassError(error.message || 'Failed to update password.')
+      const result = await changePasswordWithReauth(supabase, {
+        currentPassword,
+        newPassword,
+        confirmPassword,
+      })
+      if (!result.ok) {
+        setPassError(result.error)
+        toast.error(result.error)
         return false
       }
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
+      const okMsg = result.warning
+        ? `Password updated. ${result.warning}`
+        : 'Password updated successfully. Other sessions were signed out.'
+      toast.success(okMsg)
       setShowPasswordSheet(false)
       return true
     } catch (err) {
-      setPassError(err.message || 'Failed to update password.')
+      const message = err.message || 'Failed to update password.'
+      setPassError(message)
+      toast.error(message)
       return false
+    } finally {
+      setPasswordSaving(false)
     }
   }
 
   const onClosePasswordSheet = () => {
+    if (passwordSaving) return
     setPassError('')
     setCurrentPassword('')
     setNewPassword('')
@@ -428,7 +438,7 @@ export default function AdminProfileClient() {
   useEffect(() => {
     if (!showPasswordSheet) return
     const onKey = (e) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && !passwordSaving) {
         setPassError('')
         setCurrentPassword('')
         setNewPassword('')
@@ -438,7 +448,7 @@ export default function AdminProfileClient() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [showPasswordSheet])
+  }, [showPasswordSheet, passwordSaving])
 
   const handleLogout = async () => {
     await signOut()
@@ -938,7 +948,10 @@ export default function AdminProfileClient() {
 
       {showPasswordSheet && (
         <div className={`${styles.bottomSheetRoot} ${styles.mobileOnly}`}>
-          <div className={styles.bottomSheetBackdrop} onClick={onClosePasswordSheet} />
+          <div
+            className={styles.bottomSheetBackdrop}
+            onClick={() => !passwordSaving && onClosePasswordSheet()}
+          />
           <div
             className={styles.bottomSheet}
             role="dialog"
@@ -951,6 +964,7 @@ export default function AdminProfileClient() {
                 type="button"
                 className={`${styles.sheetHeaderTextBtn} ${styles.sheetHeaderTextBtnCancel}`}
                 onClick={onClosePasswordSheet}
+                disabled={passwordSaving}
               >
                 Cancel
               </button>
@@ -961,8 +975,10 @@ export default function AdminProfileClient() {
                 type="submit"
                 form={passwordSheetFormId}
                 className={`${styles.sheetHeaderTextBtn} ${styles.sheetHeaderTextBtnSave}`}
+                disabled={passwordSaving}
+                aria-busy={passwordSaving}
               >
-                Save
+                {passwordSaving ? 'Saving…' : 'Save'}
               </button>
             </div>
 
@@ -971,6 +987,7 @@ export default function AdminProfileClient() {
                 id={passwordSheetFormId}
                 onSubmit={handlePasswordSubmit}
                 className={styles.form}
+                aria-busy={passwordSaving}
               >
                 <div className={styles.passGrid}>
                   <div className={styles.passField}>
@@ -985,6 +1002,7 @@ export default function AdminProfileClient() {
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       className={styles.input}
                       autoComplete="current-password"
+                      disabled={passwordSaving}
                     />
                   </div>
                   <div className={styles.passField}>
@@ -999,6 +1017,7 @@ export default function AdminProfileClient() {
                       onChange={(e) => setNewPassword(e.target.value)}
                       className={styles.input}
                       autoComplete="new-password"
+                      disabled={passwordSaving}
                     />
                   </div>
                   <div className={styles.passField}>
@@ -1013,6 +1032,7 @@ export default function AdminProfileClient() {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       className={styles.input}
                       autoComplete="new-password"
+                      disabled={passwordSaving}
                     />
                   </div>
                 </div>

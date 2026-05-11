@@ -73,3 +73,22 @@ export function validateNewPassword(password, confirmPassword) {
   }
   return { valid: true, message: "" };
 }
+
+/** Change-password form: current password + new + confirm; new must differ from current. */
+export function validateChangePasswordForm({ currentPassword, newPassword, confirmPassword }) {
+  const cur = typeof currentPassword === "string" ? currentPassword : "";
+  if (!cur.trim()) {
+    return { valid: false, message: "Please enter your current password." };
+  }
+  const base = validateNewPassword(newPassword, confirmPassword);
+  if (!base.valid) {
+    return base;
+  }
+  if (newPassword === cur) {
+    return {
+      valid: false,
+      message: "New password must be different from your current password.",
+    };
+  }
+  return { valid: true, message: "" };
+}

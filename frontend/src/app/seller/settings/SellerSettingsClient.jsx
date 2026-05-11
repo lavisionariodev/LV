@@ -10,7 +10,7 @@ import { FaUser, FaUpload } from 'react-icons/fa6'
 import { TbCamera, TbTrash } from 'react-icons/tb'
 import { FiEdit, FiPlus, FiSave } from 'react-icons/fi'
 import { MdCheckCircle, MdErrorOutline } from 'react-icons/md'
-import { validateNewPassword } from '@/lib/validators/authSchemas'
+import { changePasswordWithReauth } from '@/lib/auth/changePassword'
 import { fetchCurrentSellerProfile } from '@/features/seller/settings/getSellerProfile'
 import {
   SELLER_BUSINESS_TYPE_OTHER,
@@ -95,6 +95,54 @@ function validateShopForm(form) {
   return ''
 }
 
+function inferSellerCanChangePassword(user) {
+  // Heuristic based on common Supabase GoTrue user fields. If we can't detect
+  // the provider reliably, fail-open to avoid blocking legitimate local users.
+  if (!user) return false
+
+  const meta = user.app_metadata || {}
+  const userMeta = user.user_metadata || {}
+
+  const providers = new Set()
+  if (typeof meta.provider === 'string') providers.add(meta.provider)
+  if (Array.isArray(meta.providers)) {
+    meta.providers.forEach((p) => {
+      if (typeof p === 'string') providers.add(p)
+      else if (p && typeof p.provider === 'string') providers.add(p.provider)
+    })
+  }
+  if (typeof userMeta.provider === 'string') providers.add(userMeta.provider)
+
+  // Some Supabase identity payloads include identities on the user object.
+  if (Array.isArray(user.identities)) {
+    user.identities.forEach((id) => {
+      const p = id?.provider || id?.identity_provider
+      if (typeof p === 'string') providers.add(p)
+    })
+  }
+
+  if (providers.size === 0) return true
+
+  const lowered = Array.from(providers).map((p) => String(p).toLowerCase())
+
+  // Supabase users can have multiple identities (e.g. email/password + linked Google).
+  // If *any* email/password identity exists, they must be able to use “change password”.
+  // This check MUST run before OAuth-only rejection, or linked Google hides the tab wrongly.
+  if (lowered.some((p) => p === 'email' || p === 'password')) return true
+
+  // OAuth-only sellers (no local email/password identity) should not see “change password”.
+  if (lowered.some((p) => p.includes('google'))) return false
+  if (lowered.some((p) => p.includes('facebook'))) return false
+
+  // If we see some other provider and still can't confirm local credentials,
+  // err on the side of hiding.
+  return lowered.some((p) =>
+    ['google', 'facebook', 'github', 'twitter', 'apple', 'oidc', 'saml'].some((x) => p.includes(x)),
+  )
+    ? false
+    : true
+}
+
 /** Lines for the specialties list UI (newline-separated in `shopForm.shopSpecialties`). */
 function specialtiesFormStringToLines(s) {
   const raw = String(s ?? '')
@@ -141,6 +189,8 @@ export default function SellerSettingsClient() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isEditingPassword, setIsEditingPassword] = useState(false)
+  const [passwordSaving, setPasswordSaving] = useState(false)
+  const [sellerCanChangePassword, setSellerCanChangePassword] = useState(null)
   const [toast, setToast] = useState(null)
   const [avatarModalOpen, setAvatarModalOpen] = useState(false)
 
@@ -178,6 +228,7 @@ export default function SellerSettingsClient() {
         const user = auth?.user
         const email = user?.email ?? ''
         if (cancelled) return
+        setSellerCanChangePassword(inferSellerCanChangePassword(user))
         setSessionEmail(email)
         const sellerRow = user?.id ? await getSellerByUserId(user.id) : null
         if (cancelled) return
@@ -196,6 +247,14 @@ export default function SellerSettingsClient() {
       if (avatarPreviewRef.current) URL.revokeObjectURL(avatarPreviewRef.current)
     }
   }, [notifyToast])
+
+  useEffect(() => {
+    // If the user navigates directly to ?tab=password but the account is OAuth-only,
+    // redirect back to profile.
+    if (sellerCanChangePassword === false && activeTab === 'password') {
+      goTab('profile')
+    }
+  }, [sellerCanChangePassword, activeTab])
 
   useEffect(() => {
     if (!toast) return
@@ -535,30 +594,31 @@ export default function SellerSettingsClient() {
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault()
-    if (!isEditingPassword) return
+    if (!isEditingPassword || passwordSaving) return
     setToast(null)
-    if (!currentPassword) {
-      notifyToast('error', 'Please enter your current password.')
-      return
-    }
-    const validation = validateNewPassword(newPassword, confirmPassword)
-    if (!validation.valid) {
-      notifyToast('error', validation.message)
-      return
-    }
+    setPasswordSaving(true)
     try {
-      const { error } = await supabase.auth.updateUser({ password: newPassword })
-      if (error) {
-        notifyToast('error', error.message || 'Failed to update password.')
+      const result = await changePasswordWithReauth(supabase, {
+        currentPassword,
+        newPassword,
+        confirmPassword,
+      })
+      if (!result.ok) {
+        notifyToast('error', result.error)
         return
       }
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
-      notifyToast('success', 'Password updated successfully.')
+      const okMsg = result.warning
+        ? `Password updated. ${result.warning}`
+        : 'Password updated successfully. Other sessions were signed out.'
+      notifyToast('success', okMsg)
       setIsEditingPassword(false)
     } catch (err) {
       notifyToast('error', err.message || 'Failed to update password.')
+    } finally {
+      setPasswordSaving(false)
     }
   }
 
@@ -568,6 +628,7 @@ export default function SellerSettingsClient() {
   }
 
   const onCancelPasswordEdit = () => {
+    if (passwordSaving) return
     setToast(null)
     setCurrentPassword('')
     setNewPassword('')
@@ -648,15 +709,17 @@ export default function SellerSettingsClient() {
         >
           <span className={styles.tabLabel}>Profile</span>
         </button>
-        <button
-          type="button"
-          id={passwordTabId}
-          className={`${styles.tabItem} ${activeTab === 'password' ? styles.tabItemActive : ''}`}
-          onClick={() => goTab('password')}
-          aria-current={activeTab === 'password' ? 'page' : undefined}
-        >
-          <span className={styles.tabLabel}>Password</span>
-        </button>
+        {sellerCanChangePassword === true && (
+          <button
+            type="button"
+            id={passwordTabId}
+            className={`${styles.tabItem} ${activeTab === 'password' ? styles.tabItemActive : ''}`}
+            onClick={() => goTab('password')}
+            aria-current={activeTab === 'password' ? 'page' : undefined}
+          >
+            <span className={styles.tabLabel}>Password</span>
+          </button>
+        )}
         <button
           type="button"
           id={shopTabId}
@@ -1392,7 +1455,30 @@ export default function SellerSettingsClient() {
           </section>
         )}
 
-        {activeTab === 'password' && (
+        {activeTab === 'password' &&
+          sellerCanChangePassword !== true && (
+            <section
+              id={passwordPanelId}
+              role="tabpanel"
+              aria-labelledby={passwordTabId}
+              className={`${styles.card} ${styles.full}`}
+            >
+              <div className={styles.tabDetailHead}>
+                <div className={styles.tabDetailHeadRow}>
+                  <div className={styles.tabDetailHeadText}>
+                    <h2 className={styles.tabDetailTitle}>Change Password</h2>
+                    <p className={styles.tabDetailSubtitle}>
+                      {sellerCanChangePassword === null
+                        ? 'Checking your sign-in method...'
+                        : 'Password change is available only for email/password accounts.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+        {sellerCanChangePassword === true && activeTab === 'password' && (
           <section
             id={passwordPanelId}
             role="tabpanel"
@@ -1410,11 +1496,22 @@ export default function SellerSettingsClient() {
                 <div className={styles.headActions}>
                   {isEditingPassword ? (
                     <>
-                      <button type="button" className={styles.secondaryBtn} onClick={onCancelPasswordEdit}>
+                      <button
+                        type="button"
+                        className={styles.secondaryBtn}
+                        onClick={onCancelPasswordEdit}
+                        disabled={passwordSaving}
+                      >
                         Cancel
                       </button>
-                      <button form={formId} type="submit" className={styles.primaryBtn}>
-                        <FiSave /> Save Changes
+                      <button
+                        form={formId}
+                        type="submit"
+                        className={styles.primaryBtn}
+                        disabled={passwordSaving}
+                        aria-busy={passwordSaving}
+                      >
+                        <FiSave /> {passwordSaving ? 'Saving…' : 'Save Changes'}
                       </button>
                     </>
                   ) : (
@@ -1425,7 +1522,12 @@ export default function SellerSettingsClient() {
                 </div>
               </div>
             </div>
-            <form id={formId} onSubmit={handlePasswordSubmit} className={styles.form}>
+            <form
+              id={formId}
+              onSubmit={handlePasswordSubmit}
+              className={styles.form}
+              aria-busy={passwordSaving}
+            >
               <div className={styles.passGrid}>
                 <div className={styles.passField}>
                   <label htmlFor={id('current_password')} className={styles.label}>
@@ -1438,7 +1540,8 @@ export default function SellerSettingsClient() {
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     className={`${styles.input} ${!isEditingPassword ? styles.inputReadOnly : ''}`}
-                    disabled={!isEditingPassword}
+                    disabled={!isEditingPassword || passwordSaving}
+                    autoComplete="current-password"
                   />
                 </div>
                 <div className={styles.passField}>
@@ -1452,7 +1555,8 @@ export default function SellerSettingsClient() {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     className={`${styles.input} ${!isEditingPassword ? styles.inputReadOnly : ''}`}
-                    disabled={!isEditingPassword}
+                    disabled={!isEditingPassword || passwordSaving}
+                    autoComplete="new-password"
                   />
                 </div>
                 <div className={styles.passField}>
@@ -1466,7 +1570,8 @@ export default function SellerSettingsClient() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className={`${styles.input} ${!isEditingPassword ? styles.inputReadOnly : ''}`}
-                    disabled={!isEditingPassword}
+                    disabled={!isEditingPassword || passwordSaving}
+                    autoComplete="new-password"
                   />
                 </div>
               </div>

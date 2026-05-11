@@ -36,3 +36,11 @@ export function onAuthStateChange(callback) {
 export async function signOut() {
   return supabase.auth.signOut();
 }
+
+/**
+ * Revoke refresh tokens for all sessions except the current browser session.
+ * Short-lived JWTs elsewhere may remain valid until expiry.
+ */
+export async function signOutOtherSessions(supabaseClient = supabase) {
+  return supabaseClient.auth.signOut({ scope: "others" });
+}
