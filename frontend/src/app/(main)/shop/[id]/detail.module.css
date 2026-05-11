@@ -550,6 +550,21 @@
   border-color: var(--color-green, #102820);
 }
 
+.shareIconDisabled,
+.shareIconDisabled:hover {
+  opacity: 0.45;
+  pointer-events: none;
+  cursor: default;
+  background: transparent;
+  color: #666;
+  border-color: rgba(16, 40, 32, 0.12);
+}
+
+button.shareIconDisabled,
+button.shareIconDisabled:hover {
+  pointer-events: none;
+}
+
 .body {
   padding: 28px 36px 36px 32px;
   display: flex;
