@@ -301,6 +301,11 @@ function PartnerHighlightSection() {
     setActive((i) => (i + 1) % N)
   }
 
+  const goToPartner = (index) => {
+    if (N < 1) return
+    setActive(index)
+  }
+
   const slotIndex = (offset) => (active + offset + N) % N
   const slots = [-1, 0, 1]
 
@@ -350,13 +355,19 @@ function PartnerHighlightSection() {
                   const idx = slotIndex(offset)
                   return (
                     <div
-                      key={`${p.sellerUserId}-${offset}`}
+                      key={idx}
                       className={`${styles.partnerCarouselItem} ${isCenter ? styles.partnerCarouselItemCenter : styles.partnerCarouselItemSide}`}
-                      onClick={() => !isCenter && setActive(idx)}
+                      onClick={() => {
+                        if (!isCenter) goToPartner(idx)
+                      }}
                     >
                       <div className={styles.partnerImageWrapper}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={p.image} alt={p.name} className={styles.partnerImage} />
+                        <img
+                          src={p.image}
+                          alt={p.name}
+                          className={styles.partnerImage}
+                        />
                         <div className={styles.partnerImageOverlay} />
                         {p.ratingLabel != null ? (
                           <div className={styles.partnerRatingBadge}>★ {p.ratingLabel}</div>
@@ -411,7 +422,7 @@ function PartnerHighlightSection() {
                 <button
                   key={p.sellerUserId}
                   type="button"
-                  onClick={() => setActive(i)}
+                  onClick={() => goToPartner(i)}
                   aria-label={`Go to ${p.name}`}
                   className={`${styles.partnerDot} ${i === active ? styles.partnerDotActive : ''}`}
                 />
