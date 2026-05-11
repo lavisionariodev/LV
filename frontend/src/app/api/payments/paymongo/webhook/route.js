@@ -3,9 +3,9 @@ import crypto from 'crypto'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { computeCommissionSnapshot } from '@/shared/utils/commissionSnapshot'
 import { apiLog } from '@/lib/observability/apiLog'
+import { reconcilePaymongoRefundEvent } from '@/lib/payments/refundReconcile'
 
 function parseSignatureHeader(headerValue) {
-  // Example: t=1496734173,te=...,li=...
   const out = {}
   for (const part of String(headerValue || '').split(',')) {
     const [k, v] = part.split('=').map((s) => s.trim())
@@ -39,7 +39,6 @@ function verifyPaymongoSignature({ rawBody, signatureHeader, webhookSecret }) {
     .update(signedPayload, 'utf8')
     .digest('hex')
 
-  // Prefer matching either test or live signature to avoid coupling to env mode here.
   const matchesTest = te ? timingSafeEqualHex(computed, te) : false
   const matchesLive = li ? timingSafeEqualHex(computed, li) : false
 
@@ -75,6 +74,36 @@ function extractCheckoutSessionId(payload) {
 function extractReferenceNumber(payload) {
   const resource = getResource(payload)
   return resource?.attributes?.reference_number ?? null
+}
+
+function extractPaymongoPaymentIdFromResource(payload) {
+  const resource = getResource(payload)
+  if (resource?.type === 'payment' && resource?.id) return String(resource.id)
+  return null
+}
+
+/**
+ * @param {import('@supabase/supabase-js').SupabaseClient} supabaseAdmin
+ * @param {{ checkoutSessionId?: string | null, referenceNumber?: string | null, paymongoPaymentId?: string | null }}
+ */
+async function resolveInternalPaymentRow(supabaseAdmin, { checkoutSessionId, referenceNumber, paymongoPaymentId }) {
+  const orParts = [
+    checkoutSessionId ? `paymongo_checkout_id.eq.${checkoutSessionId}` : null,
+    referenceNumber ? `paymongo_reference.eq.${referenceNumber}` : null,
+    paymongoPaymentId ? `paymongo_payment_id.eq.${paymongoPaymentId}` : null,
+  ].filter(Boolean)
+
+  if (orParts.length === 0) return null
+
+  const { data, error } = await supabaseAdmin
+    .from('payments')
+    .select('id,status,amount')
+    .or(orParts.join(','))
+    .order('created_at', { ascending: false })
+    .maybeSingle()
+
+  if (error || !data) return null
+  return data
 }
 
 /**
@@ -134,6 +163,33 @@ async function ensureOrderEscrowsForPayment({ supabaseAdmin, paymentId, orderIds
   }
 }
 
+/**
+ * @param {import('@supabase/supabase-js').SupabaseClient} supabaseAdmin
+ * @param {unknown} payload
+ */
+async function handlePaymentRefundedPayload(supabaseAdmin, payload) {
+  const resource = getResource(payload)
+  if (resource?.type !== 'payment' || !resource?.id) return
+
+  const payId = String(resource.id)
+  const refunds = Array.isArray(resource?.attributes?.refunds) ? resource.attributes.refunds : []
+
+  for (const ref of refunds) {
+    const rid = ref?.id ? String(ref.id) : ''
+    const attrs = ref?.attributes ?? {}
+    const st = attrs.status != null ? String(attrs.status) : ''
+    const amt = attrs.amount != null ? Number(attrs.amount) : null
+    const terminal = String(st).toLowerCase() === 'succeeded'
+    if (!rid || !terminal) continue
+    await reconcilePaymongoRefundEvent(supabaseAdmin, {
+      paymongoPaymentId: payId,
+      refundId: rid,
+      amountCentavos: Number.isFinite(amt) ? amt : null,
+      status: st,
+    })
+  }
+}
+
 export async function POST(request) {
   const supabaseAdmin = getSupabaseAdmin()
   const rawBody = await request.text()
@@ -152,28 +208,7 @@ export async function POST(request) {
 
   const checkoutSessionId = extractCheckoutSessionId(payload)
   const referenceNumber = extractReferenceNumber(payload)
-
-  if (!checkoutSessionId && !referenceNumber) {
-    return NextResponse.json({ received: true }, { status: 200 })
-  }
-
-  const { data: paymentRow, error: paymentLookupErr } = await supabaseAdmin
-    .from('payments')
-    .select('id,status')
-    .or(
-      [
-        checkoutSessionId ? `paymongo_checkout_id.eq.${checkoutSessionId}` : null,
-        referenceNumber ? `paymongo_reference.eq.${referenceNumber}` : null,
-      ]
-        .filter(Boolean)
-        .join(','),
-    )
-    .order('created_at', { ascending: false })
-    .maybeSingle()
-
-  if (paymentLookupErr || !paymentRow) {
-    return NextResponse.json({ received: true }, { status: 200 })
-  }
+  const paymongoPaymentIdEarly = extractPaymongoPaymentIdFromResource(payload)
 
   const markPaid =
     eventType === 'checkout_session.payment.paid' ||
@@ -183,26 +218,75 @@ export async function POST(request) {
     eventType === 'checkout_session.payment.failed' ||
     eventType === 'payment.failed'
 
-  if (markPaid) {
-    if (paymentRow.status !== 'paid') {
-      await supabaseAdmin
-        .from('payments')
-        .update({ status: 'paid' })
-        .eq('id', paymentRow.id)
+  const markRefundUpdated = eventType === 'payment.refund.updated'
+  const markPaymentRefunded = eventType === 'payment.refunded'
 
-      // Update related orders atomically from join table.
-      const { data: joinRows } = await supabaseAdmin
-        .from('payment_orders')
-        .select('order_id')
-        .eq('payment_id', paymentRow.id)
-
-      const orderIds = (joinRows ?? []).map((r) => r.order_id)
-      if (orderIds.length > 0) {
-        await supabaseAdmin
-          .from('orders')
-          .update({ payment_status: 'paid', status: 'paid' })
-          .in('id', orderIds)
+  /** Refund events: resolve payment by PayMongo payment id first. */
+  if (markRefundUpdated || markPaymentRefunded) {
+    const resource = getResource(payload)
+    let paymongoPaymentId = paymongoPaymentIdEarly
+    if (resource?.type === 'refund' && resource?.attributes?.payment_id) {
+      paymongoPaymentId = String(resource.attributes.payment_id)
+    }
+    if (markRefundUpdated && resource?.type === 'refund') {
+      const refundId = resource?.id ? String(resource.id) : ''
+      const st = resource?.attributes?.status != null ? String(resource.attributes.status) : ''
+      const amt =
+        resource?.attributes?.amount != null ? Number(resource.attributes.amount) : null
+      const pid = String(paymongoPaymentId || '').trim()
+      if (pid && refundId) {
+        await reconcilePaymongoRefundEvent(supabaseAdmin, {
+          paymongoPaymentId: pid,
+          refundId,
+          amountCentavos: Number.isFinite(amt) ? amt : null,
+          status: st,
+        })
       }
+      apiLog('paymongo.webhook.refund_updated', {})
+      return NextResponse.json({ received: true }, { status: 200 })
+    }
+    if (markPaymentRefunded) {
+      await handlePaymentRefundedPayload(supabaseAdmin, payload)
+      apiLog('paymongo.webhook.payment_refunded', {})
+      return NextResponse.json({ received: true }, { status: 200 })
+    }
+  }
+
+  const paymentRow = await resolveInternalPaymentRow(supabaseAdmin, {
+    checkoutSessionId,
+    referenceNumber,
+    paymongoPaymentId: paymongoPaymentIdEarly,
+  })
+
+  if (!paymentRow) {
+    return NextResponse.json({ received: true }, { status: 200 })
+  }
+
+  if (markPaid) {
+    const resource = getResource(payload)
+    const payId = resource?.type === 'payment' && resource?.id ? String(resource.id) : null
+
+    if (paymentRow.status !== 'paid') {
+      const payPatch = { status: 'paid' }
+      if (payId) {
+        payPatch.paymongo_payment_id = payId
+      }
+      await supabaseAdmin.from('payments').update(payPatch).eq('id', paymentRow.id)
+    } else if (payId) {
+      await supabaseAdmin.from('payments').update({ paymongo_payment_id: payId }).eq('id', paymentRow.id)
+    }
+
+    const { data: joinRows } = await supabaseAdmin
+      .from('payment_orders')
+      .select('order_id')
+      .eq('payment_id', paymentRow.id)
+
+    const orderIds = (joinRows ?? []).map((r) => r.order_id)
+    if (orderIds.length > 0) {
+      await supabaseAdmin
+        .from('orders')
+        .update({ payment_status: 'paid', status: 'paid' })
+        .in('id', orderIds)
     }
 
     const { data: joinRowsPaid } = await supabaseAdmin
@@ -219,10 +303,7 @@ export async function POST(request) {
     apiLog('paymongo.webhook.mark_paid', {})
   } else if (markFailed) {
     if (paymentRow.status === 'pending') {
-      await supabaseAdmin
-        .from('payments')
-        .update({ status: 'failed' })
-        .eq('id', paymentRow.id)
+      await supabaseAdmin.from('payments').update({ status: 'failed' }).eq('id', paymentRow.id)
 
       const { data: joinRows } = await supabaseAdmin
         .from('payment_orders')
@@ -242,4 +323,3 @@ export async function POST(request) {
 
   return NextResponse.json({ received: true }, { status: 200 })
 }
-

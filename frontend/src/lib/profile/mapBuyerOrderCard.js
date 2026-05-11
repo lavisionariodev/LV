@@ -126,7 +126,10 @@ export function mapBuyerOrderCard(o, orderItems, providerDisplayName) {
   /** @type {string | null} */
   let statusDetail = null
   let status
-  if (fulfillment === 'cancelled') {
+  if (fulfillment === 'pending' && refundRsRaw === 'declined') {
+    status = 'Active booking'
+    statusDetail = 'Refund request declined. Booking remains paid and awaiting provider confirmation.'
+  } else if (fulfillment === 'cancelled') {
     const refundComplete =
       refundRsRaw === 'completed' || ps === 'refunded'
     if (refundComplete) {
@@ -138,7 +141,7 @@ export function mapBuyerOrderCard(o, orderItems, providerDisplayName) {
         refundRsRaw === 'processing' ||
         ps === 'refund_pending'
       ) {
-        statusDetail = 'Waiting for refund'
+        statusDetail = 'Refund in progress'
       }
     }
   } else {
@@ -194,6 +197,12 @@ export function mapBuyerOrderCard(o, orderItems, providerDisplayName) {
   const eligibleCancelPurchase =
     fulfillment === 'pending' && !blockingRefundLifecycle && !paymongoCheckoutActive
 
+  /** After confirmation (or if a refund request was declined), buyer can open a support dispute. */
+  const showOpenDispute =
+    paid &&
+    fulfillment !== 'cancelled' &&
+    (['confirmed', 'in_progress', 'completed'].includes(fulfillment) || refundRsRaw === 'declined')
+
   /** Show refund timeline copy in confirm modal after payment, before confirmation. */
   const cancelShowsRefundDisclaimer = Boolean(eligibleCancelPurchase && paid)
 
@@ -232,6 +241,7 @@ export function mapBuyerOrderCard(o, orderItems, providerDisplayName) {
     canSubmitCancelPurchase,
     cancelPurchaseHint,
     cancelShowsRefundDisclaimer,
+    showOpenDispute,
     detail: {
       serviceLocation: pickStr(o.service_location),
       contactName: pickStr(o.contact_name),

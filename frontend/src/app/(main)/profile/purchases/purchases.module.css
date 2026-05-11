@@ -680,3 +680,35 @@
     padding: 5px 10px;
   }
 }
+
+/* ── Open dispute modal ─────────────────────────────── */
+
+.disputeLabel {
+  display: block;
+  margin: 10px 0 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.disputeSelect {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  font: inherit;
+  box-sizing: border-box;
+  background: #fff;
+}
+
+.disputeTextarea {
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  font: inherit;
+  resize: vertical;
+  box-sizing: border-box;
+  min-height: 96px;
+}

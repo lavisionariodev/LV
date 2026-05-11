@@ -1447,6 +1447,14 @@
   gap: 0.4rem;
 }
 
+.refundProcessingNote {
+  margin: 0;
+  width: 100%;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+}
+
 /* Responsive */
 @media (max-width: 900px) {
   .pageWrap {

@@ -19,7 +19,6 @@ import {
   TbPhone,
   TbMail,
   TbFileText,
-  TbCurrencyDollar,
   TbPhoto,
 } from 'react-icons/tb'
 import styles from './orders.module.css'
@@ -184,9 +183,9 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
         const refundRequested = Boolean(refundStage)
         const refundReason =
           refundStage === 'processing'
-            ? 'Buyer cancelled before you confirmed this booking. Refund approved — mark completed once the buyer has received the refund (typically about 5–15 business days).'
+            ? 'Refund approved and being processed by the payment provider. Completion is automatic and typically takes a few business days.'
             : refundStage === 'requested'
-              ? 'Buyer cancelled before you confirmed this booking. Approve to start processing the refund, or decline to reopen the booking as paid.'
+              ? 'Buyer cancelled this booking before confirmation and has requested a refund. Approve to initiate the refund, or decline to keep the booking active.'
               : null
 
         return {
@@ -226,6 +225,7 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
 
   useEffect(() => {
     if (authLoading) return
+    if (!user?.id || !isSeller) return
     const controller = new AbortController()
     let cancelled = false
     queueMicrotask(() => {
@@ -242,13 +242,32 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
       }
     }, 12_000)
 
+    const channel = supabase
+      .channel(`seller-orders-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `seller_user_id=eq.${user.id}`,
+        },
+        () => {
+          if (!controller.signal.aborted) {
+            loadOrders({ signal: controller.signal })
+          }
+        },
+      )
+      .subscribe()
+
     return () => {
       cancelled = true
       controller.abort()
       window.removeEventListener('focus', onFocus)
       window.clearInterval(interval)
+      supabase.removeChannel(channel)
     }
-  }, [authLoading, loadOrders, isSeller])
+  }, [authLoading, loadOrders, isSeller, user?.id])
 
   useEffect(() => {
     // Back-compat: if parent route supplies initialTab, respect it.
@@ -314,7 +333,17 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
   const filteredOrders = useMemo(() => {
     let list = [...orders]
     if (activeTab && activeTab !== 'all') {
-      list = list.filter((o) => o.orderStatus === activeTab)
+      if (activeTab === 'refunded') {
+        list = list.filter(
+          (o) =>
+            o.paymentStatus === 'refunded' ||
+            o.paymentStatus === 'refund_pending' ||
+            o.refundStage === 'processing' ||
+            o.refundStage === 'requested',
+        )
+      } else {
+        list = list.filter((o) => o.orderStatus === activeTab)
+      }
     }
     if (searchQuery.trim()) {
       list = list.filter((o) => orderMatchesSearchQuery(o, searchQuery))
@@ -348,7 +377,7 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
 
   const handleUpdateStatus = async (order, newStatus) => {
     try {
-      // Only fulfillment statuses are persisted. "refunded" is currently UI-only.
+      // Only fulfillment statuses are persisted via the API.
       if (['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'].includes(newStatus)) {
         const res = await fetch('/api/seller/orders/update-fulfillment', {
           method: 'POST',
@@ -357,12 +386,14 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
         })
         if (!res.ok) {
           const body = await res.json().catch(() => null)
-          window.alert(typeof body?.error === 'string' ? body.error : 'Could not update order status.')
+          window.alert(
+            typeof body?.error === 'string'
+              ? body.error
+              : 'Unable to update this order. Please try again.',
+          )
           return
         }
         await loadOrders()
-      } else {
-        setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, orderStatus: newStatus } : o)))
       }
 
       setSelectedOrder((prev) => (prev?.id === order.id ? { ...prev, orderStatus: newStatus } : prev))
@@ -383,14 +414,18 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
       })
       const body = await res.json().catch(() => null)
       if (!res.ok) {
-        window.alert(typeof body?.error === 'string' ? body.error : 'Could not update refund.')
+        window.alert(
+          typeof body?.error === 'string'
+            ? body.error
+            : 'Unable to update this refund. Please try again.',
+        )
         return
       }
       await loadOrders()
       setSelectedOrder(null)
       clearOrderDeepLinkParams()
     } catch {
-      window.alert('Network error.')
+      window.alert('Network error. Please check your connection and try again.')
     }
   }
 
@@ -600,13 +635,10 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                       </>
                     )}
                     {order.refundStage === 'processing' && (
-                      <button
-                        type="button"
-                        className={`${styles.btnText} ${styles.btnAccept}`}
-                        onClick={() => handleRefundDecision(order, 'complete')}
-                      >
-                        Mark refund completed
-                      </button>
+                      <p className={styles.refundProcessingNote}>
+                        Refund in progress. Completion is automatic once the payment provider confirms the return
+                        of funds, typically within a few business days.
+                      </p>
                     )}
                   </div>
                 </footer>
@@ -934,13 +966,10 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                         </>
                       )}
                       {selectedOrder.refundStage === 'processing' && (
-                        <button
-                          type="button"
-                          className={`${styles.btnText} ${styles.btnAccept}`}
-                          onClick={() => handleRefundDecision(selectedOrder, 'complete')}
-                        >
-                          Mark refund completed
-                        </button>
+                        <p className={styles.refundProcessingNote}>
+                          Refund in progress. No further action is required. The buyer will be notified once the
+                          payment provider confirms the refund.
+                        </p>
                       )}
                     </div>
                   </div>
@@ -1016,7 +1045,6 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                   { status: 'confirmed', label: 'Confirm', icon: TbCheck, iconClass: styles.updateStatusBtnIconConfirmed, btnClass: styles.updateStatusBtnConfirmed },
                   { status: 'in_progress', label: 'In progress', icon: TbTools, iconClass: styles.updateStatusBtnIconInProgress, btnClass: styles.updateStatusBtnInProgress },
                   { status: 'completed', label: 'Completed', icon: TbCircleCheck, iconClass: styles.updateStatusBtnIconCompleted, btnClass: styles.updateStatusBtnCompleted },
-                  { status: 'refunded', label: 'Refunded', icon: TbCurrencyDollar, iconClass: styles.updateStatusBtnIconRefund, btnClass: styles.updateStatusBtnRefund },
                   { status: 'cancelled', label: 'Decline', icon: TbCircleX, iconClass: styles.updateStatusBtnIconDecline, btnClass: styles.updateStatusBtnDecline },
                 ].map(({ status, label, icon: Icon, iconClass, btnClass }) => (
                   <button

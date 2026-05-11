@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileContext';
+import { useToast } from '@/contexts/ToastContext';
 import { getUserRole, ROLE_SELLER } from '@/lib/auth/roles';
 import { supabase } from '@/lib/supabase/client';
 import { expandPurchaseCardsByLineItem, mapBuyerOrderCard } from '@/lib/profile/mapBuyerOrderCard';
@@ -23,6 +24,9 @@ const PURCHASE_FILTER_TABS = [
 function purchaseMatchesFilter(purchase, filterLabel) {
   if (filterLabel === 'All') return true;
   if (filterLabel === 'Refunded') return purchase.status === 'Refunded';
+  if (filterLabel === 'Pending') {
+    return purchase.status === 'Pending' || purchase.status === 'Active booking';
+  }
   return purchase.status === filterLabel;
 }
 const PAGE_SIZE = 5;
@@ -55,6 +59,7 @@ function PurchaseCardSkeleton() {
 
 const STATUS_CONFIG = {
   Pending: { color: '#A8894A', bg: 'rgba(168,137,74,0.10)' },
+  'Active booking': { color: '#0f766e', bg: 'rgba(15,118,110,0.10)' },
   Confirmed: { color: '#204F38', bg: 'rgba(32,79,56,0.10)' },
   'In Progress': { color: '#2563EB', bg: 'rgba(37,99,235,0.09)' },
   Completed: { color: '#16a34a', bg: 'rgba(22,163,74,0.10)' },
@@ -269,12 +274,12 @@ function CancelBookingModal({
             <>
               {orderLabel ? (
                 <p style={{ margin: '0 0 12px' }}>
-                  Cancel order <strong>{orderLabel}</strong> before your provider confirms. Your payment has already
-                  been received; we will open a refund for you instead of cancelling instantly like an unpaid basket.
+                  This will cancel order <strong>{orderLabel}</strong> and submit a refund request to your
+                  provider for approval.
                 </p>
               ) : (
                 <p style={{ margin: '0 0 12px' }}>
-                  You are about to cancel this paid purchase before the provider confirms it.
+                  This will cancel your paid booking and submit a refund request to your provider for approval.
                 </p>
               )}
               <p
@@ -287,9 +292,8 @@ function CancelBookingModal({
                   lineHeight: 1.5,
                 }}
               >
-                <strong>Refund timing:</strong> after the provider approves the cancellation, refunds are usually
-                credited in about <strong>5–15 business days</strong>, similar to major marketplaces — exact timing
-                depends on your bank, card network, or e-wallet.
+                <strong>Refund timeline:</strong> once approved, refunds typically arrive within
+                <strong> 5 to 15 business days</strong>, depending on your bank or e-wallet.
               </p>
             </>
           ) : (
@@ -297,7 +301,7 @@ function CancelBookingModal({
               {orderLabel
                 ? `This will cancel unpaid order ${orderLabel}.`
                 : 'This will cancel this unpaid purchase.'}{' '}
-              You can add services to cart and check out again if you change your mind.
+              You may add the service back to your cart at any time.
             </p>
           )}
         </div>
@@ -317,7 +321,106 @@ function CancelBookingModal({
             onClick={onConfirm}
             disabled={confirming}
           >
-            {confirming ? 'Cancelling…' : showsPaidRefundDisclaimer ? 'Cancel & request refund' : 'Cancel purchase'}
+            {confirming ? 'Cancelling…' : showsPaidRefundDisclaimer ? 'Cancel and request refund' : 'Cancel purchase'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const DISPUTE_REASON_OPTIONS = [
+  { value: 'Service quality or scope', label: 'Service quality or scope' },
+  { value: 'Billing or payment', label: 'Billing or payment' },
+  { value: 'Scheduling or cancellation', label: 'Scheduling or cancellation' },
+  { value: 'Provider did not deliver', label: 'Provider did not deliver' },
+  { value: 'Other concern', label: 'Other concern' },
+];
+
+/**
+ * @param {{
+ *   open: boolean,
+ *   orderLabel: string,
+ *   rawOrderId: string,
+ *   onClose: () => void,
+ *   onSubmit: (payload: { reason: string, description: string }) => Promise<void>,
+ *   submitting: boolean,
+ * }} props
+ */
+function OpenDisputeModal({ open, orderLabel, rawOrderId, onClose, onSubmit, submitting }) {
+  const [reason, setReason] = useState(DISPUTE_REASON_OPTIONS[0].value);
+  const [description, setDescription] = useState('');
+
+  useEffect(() => {
+    if (!open) {
+      queueMicrotask(() => {
+        setReason(DISPUTE_REASON_OPTIONS[0].value);
+        setDescription('');
+      });
+    }
+  }, [open]);
+
+  if (!open || !rawOrderId) return null;
+
+  return (
+    <div
+      className={purchaseStyles.modalBackdrop}
+      role="presentation"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget && !submitting) onClose();
+      }}
+    >
+      <div className={purchaseStyles.modalPanel} role="dialog" aria-modal="true" aria-labelledby="dispute-title">
+        <h2 id="dispute-title" className={purchaseStyles.modalTitle}>
+          Submit a request for help
+        </h2>
+        <div className={purchaseStyles.modalBody}>
+          <p style={{ margin: '0 0 12px' }}>
+            Please provide details regarding the issue with order <strong>{orderLabel}</strong>. Our support team will
+            review your request and coordinate with your provider for a resolution.
+          </p>
+          <label className={purchaseStyles.disputeLabel} htmlFor="dispute-reason">
+            Reason
+          </label>
+          <select
+            id="dispute-reason"
+            className={purchaseStyles.disputeSelect}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            disabled={submitting}
+          >
+            {DISPUTE_REASON_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <label className={purchaseStyles.disputeLabel} htmlFor="dispute-desc">
+            Additional details (optional)
+          </label>
+          <textarea
+            id="dispute-desc"
+            className={purchaseStyles.disputeTextarea}
+            rows={4}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            disabled={submitting}
+            placeholder="Describe the issue. Include relevant dates, amounts, and other details to help us resolve it faster."
+          />
+        </div>
+        <div className={purchaseStyles.modalActions}>
+          <button type="button" className={purchaseStyles.modalGhostBtn} onClick={onClose} disabled={submitting}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className={purchaseStyles.modalDangerBtn}
+            disabled={submitting}
+            onClick={async () => {
+              await onSubmit({ reason, description: description.trim() });
+            }}
+          >
+            {submitting ? 'Submitting\u2026' : 'Submit request'}
           </button>
         </div>
       </div>
@@ -716,6 +819,16 @@ function PurchaseCard({ purchase, cancellingOrderId }) {
           </button>
         ) : null}
 
+        {purchase.showOpenDispute ? (
+          <button
+            type="button"
+            className={purchaseStyles.actionLink}
+            onClick={() => purchase.onOpenDispute?.(purchase)}
+          >
+            Request help
+          </button>
+        ) : null}
+
         {purchase.showCancelPurchase ? (
           <button
             type="button"
@@ -736,6 +849,7 @@ function PurchaseCard({ purchase, cancellingOrderId }) {
 
 export default function PurchasesPage() {
   const { user } = useProfile();
+  const toast = useToast();
   const router = useRouter();
   /** `undefined` until `getUserRole` resolves — avoids a one-frame buyer skeleton for sellers. */
   const [isSeller, setIsSeller] = useState(undefined);
@@ -755,6 +869,9 @@ export default function PurchasesPage() {
 
   const [leaveReviewOpen, setLeaveReviewOpen] = useState(false);
   const [leaveReviewOrder, setLeaveReviewOrder] = useState(null);
+
+  const [disputeModalPurchase, setDisputeModalPurchase] = useState(null);
+  const [disputeSubmitting, setDisputeSubmitting] = useState(false);
 
   const bumpRefresh = useCallback(() => {
     setRefreshNonce((n) => n + 1);
@@ -998,15 +1115,21 @@ export default function PurchasesPage() {
       });
       const body = await res.json().catch(() => null);
       if (!res.ok) {
-        window.alert(typeof body?.error === 'string' ? body.error : 'Could not cancel purchase.');
+        toast.error(
+          typeof body?.error === 'string'
+            ? body.error
+            : 'Unable to cancel this purchase. Please try again.',
+        );
         return;
       }
       if (body?.mode === 'refund_requested') {
         setCancelResultMessage(
           (typeof body?.message === 'string' ? String(body.message) : '')
-            || 'Purchase cancelled and refund requested. After the provider approves, refunds usually arrive in about 5-15 business days, depending on your bank or e-wallet.',
+            || 'Your purchase has been cancelled and a refund request has been submitted. Once approved by the provider, refunds typically arrive within 5 to 15 business days, depending on your bank or e-wallet.',
         );
         setCancelResultOpen(true);
+      } else {
+        toast.success('Purchase cancelled.');
       }
       setCancelConfirmRawOrderId(null);
       setCancelShowsRefundDisclaimer(false);
@@ -1014,13 +1137,48 @@ export default function PurchasesPage() {
     } finally {
       setCancellingOrderId(null);
     }
-  }, [cancelConfirmRawOrderId, bumpRefresh]);
+  }, [cancelConfirmRawOrderId, bumpRefresh, toast]);
 
   const cancelConfirmLabel = useMemo(() => {
     if (!cancelConfirmRawOrderId) return '';
     const p = purchases.find((x) => x.rawOrderId === cancelConfirmRawOrderId);
     return p?.id ? String(p.id) : '';
   }, [cancelConfirmRawOrderId, purchases]);
+
+  const disputeModalLabel = useMemo(() => {
+    if (!disputeModalPurchase) return '';
+    return disputeModalPurchase.id ? String(disputeModalPurchase.id) : '';
+  }, [disputeModalPurchase]);
+
+  const submitDispute = useCallback(
+    async ({ reason, description }) => {
+      const rawOrderId = disputeModalPurchase?.rawOrderId;
+      if (!rawOrderId) return;
+      setDisputeSubmitting(true);
+      try {
+        const res = await fetch('/api/buyer/disputes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: rawOrderId, reason, description }),
+        });
+        const body = await res.json().catch(() => null);
+        if (!res.ok) {
+          toast.error(
+            typeof body?.error === 'string'
+              ? body.error
+              : 'Unable to submit your request. Please try again.',
+          );
+          return;
+        }
+        toast.success('Your request has been submitted. Our support team will respond shortly.');
+        setDisputeModalPurchase(null);
+        bumpRefresh();
+      } finally {
+        setDisputeSubmitting(false);
+      }
+    },
+    [disputeModalPurchase, bumpRefresh, toast],
+  );
 
   if (isSeller === true) {
     return (
@@ -1145,6 +1303,7 @@ export default function PurchasesPage() {
                       setCancelConfirmRawOrderId(id);
                       setCancelShowsRefundDisclaimer(Boolean(showsRefundDisclaimer));
                     },
+                    onOpenDispute: (row) => setDisputeModalPurchase(row),
                     onLeaveReview: openLeaveReview,
                   }}
                 />
@@ -1184,6 +1343,18 @@ export default function PurchasesPage() {
           setLeaveReviewOrder(null);
           bumpRefresh();
         }}
+      />
+
+      <OpenDisputeModal
+        open={Boolean(disputeModalPurchase)}
+        orderLabel={disputeModalLabel}
+        rawOrderId={disputeModalPurchase?.rawOrderId ?? ''}
+        onClose={() => {
+          if (disputeSubmitting) return;
+          setDisputeModalPurchase(null);
+        }}
+        onSubmit={submitDispute}
+        submitting={disputeSubmitting}
       />
 
       <InfoModal

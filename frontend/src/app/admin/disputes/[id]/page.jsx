@@ -1,11 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import layoutStyles from '../../admin.module.css'
 import styles from './detail.module.css'
-import { getDisputeById } from '@/data/adminSampleData'
 
 const STATUS_FLOW = ['open', 'under_review', 'resolved', 'closed']
 
@@ -72,17 +71,81 @@ export default function AdminDisputeDetailPage() {
   const params = useParams()
   const router = useRouter()
   const id = Array.isArray(params?.id) ? params.id[0] : params?.id
-  const dispute = id ? getDisputeById(id) : null
 
-  const [status, setStatus] = useState(dispute?.status ?? 'open')
+  const [dispute, setDispute] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [fetchErr, setFetchErr] = useState('')
+  const [resolutionNotes, setResolutionNotes] = useState('')
+  const [saving, setSaving] = useState(false)
 
-  if (!dispute) {
+  const reload = useCallback(async () => {
+    if (!id) return
+    setLoading(true)
+    setFetchErr('')
+    const res = await fetch(`/api/admin/disputes/${encodeURIComponent(id)}`, { cache: 'no-store' })
+    const body = await res.json().catch(() => null)
+    if (!res.ok) {
+      setDispute(null)
+      setFetchErr(typeof body?.error === 'string' ? body.error : 'Failed to load dispute.')
+      setLoading(false)
+      return
+    }
+    const d = body?.dispute
+    setDispute(d || null)
+    setResolutionNotes(d?.resolutionNotes ? String(d.resolutionNotes) : '')
+    setLoading(false)
+  }, [id])
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      reload();
+    });
+  }, [reload]);
+
+  async function savePatch(nextStatus) {
+    if (!id) return
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/admin/disputes/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: nextStatus,
+          resolutionNotes: resolutionNotes.trim() || null,
+        }),
+      })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) {
+        window.alert(typeof body?.error === 'string' ? body.error : 'Save failed.')
+        return
+      }
+      await reload()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className={layoutStyles.dashWrap}>
+        <section className={layoutStyles.panel}>
+          <p className={layoutStyles.panelTitle}>Loading…</p>
+        </section>
+      </div>
+    )
+  }
+
+  if (fetchErr || !dispute) {
     return (
       <div className={layoutStyles.dashWrap}>
         <section className={layoutStyles.panel}>
           <p className={layoutStyles.panelTitle}>Dispute not found</p>
           <p className={styles.notFoundHint}>
-            We could not find dispute <code>{id}</code> in the sample data.
+            {fetchErr || (
+              <>
+                We could not find dispute <code>{id}</code>.
+              </>
+            )}
           </p>
           <div className={styles.backBtnWrap}>
             <button
@@ -98,11 +161,12 @@ export default function AdminDisputeDetailPage() {
     )
   }
 
+  const status = dispute.status
   const currentIndex = STATUS_FLOW.indexOf(status)
 
   const goToNextStatus = () => {
     if (currentIndex === -1 || currentIndex === STATUS_FLOW.length - 1) return
-    setStatus(STATUS_FLOW[currentIndex + 1])
+    savePatch(STATUS_FLOW[currentIndex + 1])
   }
 
   return (
@@ -152,6 +216,23 @@ export default function AdminDisputeDetailPage() {
                 <span className={styles.label}>Opened on</span>
                 <span className={styles.value}>{dispute.openedAt}</span>
               </div>
+              <div className={styles.field}>
+                <span className={styles.label}>Order payment</span>
+                <span className={styles.value}>
+                  {dispute.orderPaymentStatus || '—'} · fulfillment {dispute.orderFulfillment || '—'}
+                </span>
+              </div>
+              <div className={styles.field}>
+                <span className={styles.label}>Payouts</span>
+                <span className={styles.value}>
+                  <Link
+                    href={`/admin/payouts?q=${encodeURIComponent(dispute.orderRef || '')}`}
+                    className={styles.link}
+                  >
+                    Search this order in payouts
+                  </Link>
+                </span>
+              </div>
             </div>
           </div>
 
@@ -165,7 +246,9 @@ export default function AdminDisputeDetailPage() {
                   {getInitials(dispute.complainantName)}
                 </div>
                 <span className={styles.partyName}>{dispute.complainantName}</span>
-                <span className={styles.partyMeta}>Buyer</span>
+                <span className={styles.partyMeta}>
+                  Buyer{dispute.complainantEmail ? ` · ${dispute.complainantEmail}` : ''}
+                </span>
               </div>
               <div className={styles.partyCard} data-role="respondent">
                 <span className={styles.partyKicker}>Respondent</span>
@@ -173,7 +256,9 @@ export default function AdminDisputeDetailPage() {
                   {getInitials(dispute.respondentName)}
                 </div>
                 <span className={styles.partyName}>{dispute.respondentName}</span>
-                <span className={styles.partyMeta}>Seller</span>
+                <span className={styles.partyMeta}>
+                  Seller{dispute.respondentEmail ? ` · ${dispute.respondentEmail}` : ''}
+                </span>
               </div>
             </div>
           </div>
@@ -181,7 +266,7 @@ export default function AdminDisputeDetailPage() {
           {/* ── Description ── */}
           <div className={styles.section}>
             <p className={styles.sectionTitle}>Description</p>
-            <div className={styles.textAreaLike}>{dispute.description}</div>
+            <div className={styles.textAreaLike}>{dispute.description || '—'}</div>
           </div>
 
         </div>
@@ -190,6 +275,18 @@ export default function AdminDisputeDetailPage() {
         <div className={styles.statusSection}>
           <p className={styles.sectionTitle}>Status workflow</p>
           <StepTracker currentStatus={status} />
+          <label className={styles.sectionTitle} htmlFor="resolution-notes" style={{ display: 'block', marginTop: 12 }}>
+            Resolution notes (optional)
+          </label>
+          <textarea
+            id="resolution-notes"
+            className={styles.textAreaLike}
+            rows={4}
+            value={resolutionNotes}
+            onChange={(e) => setResolutionNotes(e.target.value)}
+            disabled={saving}
+            style={{ width: '100%', resize: 'vertical', marginBottom: 12 }}
+          />
           <div className={styles.statusActions}>
             {STATUS_FLOW.map((s) => {
               const active = status === s
@@ -198,32 +295,27 @@ export default function AdminDisputeDetailPage() {
                   key={s}
                   type="button"
                   className={`${styles.statusBtn}${active ? ` ${styles.statusBtnActive}` : ''}`}
-                  onClick={() => setStatus(s)}
+                  onClick={() => savePatch(s)}
                   aria-pressed={active}
+                  disabled={saving}
                 >
                   {STATUS_LABELS[s]}
                 </button>
               )
             })}
             {currentIndex !== -1 && currentIndex < STATUS_FLOW.length - 1 && (
-              <button type="button" className={styles.nextBtn} onClick={goToNextStatus}>
+              <button type="button" className={styles.nextBtn} onClick={goToNextStatus} disabled={saving}>
                 Move to next step →
               </button>
             )}
           </div>
-          <p className={styles.demoHint}>
-            Frontend-only demo. Status changes update local state only and do not persist.
-          </p>
+          <p className={styles.demoHint}>Status changes are saved immediately. Admin access only.</p>
         </div>
 
         <hr className={styles.divider} />
 
         {/* ── Footer note ── */}
         <div className={styles.footerNote}>
-          <p>
-            In a real implementation this screen would also show the full message
-            history, attached evidence, and links to the related transaction and payments.
-          </p>
           <p>
             You can always go back to{' '}
             <Link href="/admin/disputes" className={styles.link}>the disputes list</Link>{' '}

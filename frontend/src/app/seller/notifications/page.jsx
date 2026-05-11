@@ -1,4 +1,4 @@
-   'use client'
+'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -12,75 +12,6 @@ import {
 } from 'react-icons/tb'
 import { supabase } from '@/lib/supabase/client'
 import styles from './notifications.module.css'
-
-const INITIAL_NOTIFICATIONS = [
-  {
-    id: 'N1',
-    title: 'Campaign budget threshold reached',
-    body: 'Spring Beauty Push has consumed 80% of the planned ad budget. Review spend settings to avoid overrun.',
-    type: 'alerts',
-    priority: 'high',
-    timestampLabel: '15 minutes ago',
-    createdAt: '2026-03-23T09:15:00Z',
-    read: false,
-    resolved: false,
-  },
-  {
-    id: 'N2',
-    title: 'Voucher blast underperforming',
-    body: 'Weekend voucher blast conversion is below target by 22%. Consider revising audience segment or discount depth.',
-    type: 'marketing',
-    priority: 'medium',
-    timestampLabel: '2 hours ago',
-    createdAt: '2026-03-23T07:25:00Z',
-    read: false,
-    resolved: false,
-  },
-  {
-    id: 'N3',
-    title: 'Seller payout successfully released',
-    body: 'Payout P-00817 has been transferred to your linked account and should reflect within one business day.',
-    type: 'system',
-    priority: 'low',
-    timestampLabel: 'Yesterday',
-    createdAt: '2026-03-22T11:40:00Z',
-    read: true,
-    resolved: false,
-  },
-  {
-    id: 'N4',
-    title: 'Discount schedule conflict detected',
-    body: 'Two active discounts overlap on Standard Service package. Resolve to prevent unexpected checkout pricing.',
-    type: 'alerts',
-    priority: 'high',
-    timestampLabel: 'Yesterday',
-    createdAt: '2026-03-22T08:50:00Z',
-    read: false,
-    resolved: false,
-  },
-  {
-    id: 'N5',
-    title: 'New analytics snapshot is available',
-    body: 'Your weekly marketing performance report has been refreshed and is ready for review in Analytics.',
-    type: 'system',
-    priority: 'low',
-    timestampLabel: '2 days ago',
-    createdAt: '2026-03-21T13:30:00Z',
-    read: true,
-    resolved: true,
-  },
-  {
-    id: 'N6',
-    title: 'Campaign approved and now active',
-    body: 'Campaign “Weekend Flash” passed review and is now running on your selected channels.',
-    type: 'marketing',
-    priority: 'medium',
-    timestampLabel: '3 days ago',
-    createdAt: '2026-03-20T10:20:00Z',
-    read: true,
-    resolved: false,
-  },
-]
 
 const TABS = [
   { key: 'all', label: 'All' },
@@ -105,40 +36,10 @@ const STATUS_OPTIONS = [
 const TYPE_OPTIONS = [
   { id: 'all', label: 'All types' },
   { id: 'alerts', label: 'Alerts' },
+  { id: 'payment', label: 'Payments' },
   { id: 'system', label: 'System' },
   { id: 'marketing', label: 'Marketing' },
 ]
-
-function parsePayload(payload) {
-  if (!payload) return {}
-  if (typeof payload === 'object') return payload
-  try {
-    return JSON.parse(payload)
-  } catch {
-    return {}
-  }
-}
-
-function normalizeNotificationRow(row) {
-  const payload = parsePayload(row.payload)
-  const type = row.type || payload.type || 'system'
-  const priority = row.priority || payload.priority || 'low'
-  const title = row.title || payload.title || 'Notification'
-  const body = row.body || row.message || payload.body || payload.message || 'No details available.'
-  const createdAt = row.created_at || payload.createdAt || new Date().toISOString()
-  return {
-    id: String(row.id),
-    title,
-    body,
-    type,
-    priority,
-    timestampLabel: row.timestamp_label || payload.timestampLabel || relativeTime(createdAt),
-    createdAt,
-    read: Boolean(row.read ?? payload.read ?? false),
-    resolved: Boolean(row.resolved ?? payload.resolved ?? false),
-    payload,
-  }
-}
 
 function relativeTime(value) {
   const date = new Date(value)
@@ -187,6 +88,22 @@ function getContextActions(notification) {
   }
 
   return [{ id: 'view-module', label: 'Open Relevant Module', href: '/seller/marketing/centre' }]
+}
+
+function mapUserNotificationsFromApi(rows) {
+  const list = Array.isArray(rows) ? rows : []
+  return list.map((r) => ({
+    id: String(r.id),
+    title: r.title || 'Notification',
+    body: r.body || '',
+    type: String(r.type || 'system'),
+    priority: 'low',
+    timestampLabel: relativeTime(r.createdAt),
+    createdAt: r.createdAt,
+    read: Boolean(r.readAt),
+    resolved: false,
+    payload: r.metadata && typeof r.metadata === 'object' ? r.metadata : {},
+  }))
 }
 
 function TabsDropdown({ value, onChange }) {
@@ -374,12 +291,11 @@ function BulkActionsDropdown({ onMarkAllRead, onClearResolved }) {
 
 export default function SellerNotificationsPage() {
   const router = useRouter()
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS)
+  const [notifications, setNotifications] = useState([])
   const [activeTab, setActiveTab] = useState('all')
   const [sortBy, setSortBy] = useState('newest')
   const [statusFilter, setStatusFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
-  const [liveEnabled, setLiveEnabled] = useState(false)
   const [selectedId, setSelectedId] = useState(null)
   const [detailsLoading, setDetailsLoading] = useState(false)
   const [detailsError, setDetailsError] = useState('')
@@ -403,7 +319,13 @@ export default function SellerNotificationsPage() {
     if (statusFilter === 'read') data = data.filter((n) => n.read)
     if (statusFilter === 'unread') data = data.filter((n) => !n.read)
 
-    if (typeFilter !== 'all') data = data.filter((n) => n.type === typeFilter)
+    if (typeFilter !== 'all') {
+      if (typeFilter === 'payment') {
+        data = data.filter((n) => String(n.type).startsWith('payment'))
+      } else {
+        data = data.filter((n) => n.type === typeFilter)
+      }
+    }
 
     if (sortBy === 'newest') {
       data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -419,49 +341,54 @@ export default function SellerNotificationsPage() {
 
   useEffect(() => {
     let cancelled = false
-    async function loadNotifications() {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100)
+    let channel = null
 
-      if (cancelled) return
-      if (error) {
-        setLiveEnabled(false)
-        return
+    async function refreshFromApi() {
+      try {
+        const res = await fetch('/api/notifications', { cache: 'no-store' })
+        const body = await res.json().catch(() => null)
+        if (!res.ok) throw new Error(typeof body?.error === 'string' ? body.error : 'Failed to load')
+        if (!cancelled) {
+          setNotifications(mapUserNotificationsFromApi(body?.notifications))
+        }
+      } catch {
+        // ignore load errors
       }
-
-      setLiveEnabled(true)
-      setNotifications((data || []).map(normalizeNotificationRow))
     }
 
-    loadNotifications()
+    async function setup() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      const uid = session?.user?.id
+      await refreshFromApi()
 
-    const channel = supabase
-      .channel('seller-notifications-live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, (payload) => {
-        setLiveEnabled(true)
-        if (payload.eventType === 'INSERT' && payload.new) {
-          const next = normalizeNotificationRow(payload.new)
-          setNotifications((prev) => [next, ...prev.filter((n) => n.id !== next.id)])
-        }
-        if (payload.eventType === 'UPDATE' && payload.new) {
-          const next = normalizeNotificationRow(payload.new)
-          setNotifications((prev) => prev.map((n) => (n.id === next.id ? next : n)))
-        }
-        if (payload.eventType === 'DELETE' && payload.old?.id != null) {
-          const removedId = String(payload.old.id)
-          setNotifications((prev) => prev.filter((n) => n.id !== removedId))
-        }
-      })
-      .subscribe()
+      if (!uid || cancelled) return
+
+      channel = supabase
+        .channel(`user_notifications:${uid}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'user_notifications',
+            filter: `user_id=eq.${uid}`,
+          },
+          () => {
+            refreshFromApi()
+          },
+        )
+        .subscribe()
+    }
+
+    setup()
 
     return () => {
       cancelled = true
-      supabase.removeChannel(channel)
+      if (channel) supabase.removeChannel(channel)
     }
-  }, [supabase])
+  }, [])
 
   const selectedNotification = useMemo(
     () => notifications.find((n) => String(n.id) === String(selectedId)) || null,
@@ -471,15 +398,14 @@ export default function SellerNotificationsPage() {
   const fetchNotificationDetails = async (id) => {
     setDetailsLoading(true)
     setDetailsError('')
-    const { data, error } = await supabase.from('notifications').select('*').eq('id', id).single()
-    if (error) {
-      setDetailsError('Live details unavailable. Showing latest cached notification data.')
-      setDetailsLoading(false)
-      const fallback = notifications.find((n) => String(n.id) === String(id)) || null
+    const fallback = notifications.find((n) => String(n.id) === String(id)) || null
+    if (fallback) {
       setDetailsData(fallback)
+      setDetailsLoading(false)
       return
     }
-    setDetailsData(normalizeNotificationRow(data))
+    setDetailsError('Notification not found.')
+    setDetailsData(null)
     setDetailsLoading(false)
   }
 
@@ -495,38 +421,35 @@ export default function SellerNotificationsPage() {
   }
 
   const markAllAsRead = async () => {
+    await fetch('/api/notifications', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ markAllRead: true }),
+    })
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
-    if (liveEnabled) {
-      await supabase.from('notifications').update({ read: true }).neq('id', '')
-    }
   }
 
   const clearResolved = async () => {
     setNotifications((prev) => prev.filter((n) => !n.resolved))
-    if (liveEnabled) {
-      await supabase.from('notifications').delete().eq('resolved', true)
-    }
   }
 
   const markAsRead = async (id) => {
+    await fetch('/api/notifications', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: String(id) }),
+    })
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
-    if (liveEnabled) {
-      await supabase.from('notifications').update({ read: true }).eq('id', id)
-    }
   }
 
   const resolveItem = async (id) => {
+    await markAsRead(id)
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, resolved: true, read: true } : n)))
-    if (liveEnabled) {
-      await supabase.from('notifications').update({ resolved: true, read: true }).eq('id', id)
-    }
   }
 
   const dismissItem = async (id) => {
+    await markAsRead(id)
     setNotifications((prev) => prev.filter((n) => n.id !== id))
-    if (liveEnabled) {
-      await supabase.from('notifications').delete().eq('id', id)
-    }
     if (selectedId && String(selectedId) === String(id)) closeDetails()
   }
 
