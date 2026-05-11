@@ -607,6 +607,56 @@
   transform: translateY(-1px);
 }
 
+/* ─── Loading Skeleton ─────────────────────────────────────────────────────── */
+
+@keyframes favoritesSkeletonPulse {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+
+.skeletonBlock {
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(16, 40, 32, 0.08) 25%,
+    rgba(16, 40, 32, 0.14) 37%,
+    rgba(16, 40, 32, 0.08) 63%
+  );
+  background-size: 400% 100%;
+  animation: favoritesSkeletonPulse 1.35s ease-in-out infinite;
+}
+
+.skToolbarCount { width: 180px; height: 16px; border-radius: 5px; }
+.skSortLabel { width: 48px; height: 12px; }
+.skSortSelect { width: 140px; height: 38px; border-radius: 6px; }
+.skCardImage { width: 100%; height: 220px; border-radius: 10px; }
+.skProviderAvatar { width: 30px; height: 30px; border-radius: 50%; }
+.skProviderName { width: 120px; height: 12px; }
+.skProviderLocation { width: 92px; height: 10px; }
+.skRating { width: 70px; height: 12px; }
+.skTitle { width: 160px; height: 16px; border-radius: 5px; }
+.skPriceLabel { width: 58px; height: 10px; }
+.skPriceValue { width: 76px; height: 14px; border-radius: 5px; }
+.skRemove { width: 126px; height: 34px; border-radius: 999px; }
+.skSavedAt { width: 84px; height: 10px; }
+.skPageBtn { width: 32px; height: 32px; border-radius: 6px; }
+
+.skeletonStack {
+  display: grid;
+  gap: 6px;
+}
+
+.skeletonRight {
+  margin-left: auto;
+}
+
+.skeletonPriceStack {
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+}
+
 /* ─── Responsive ─────────────────────────────────────────────────────────────── */
 
 @media (max-width: 1024px) {

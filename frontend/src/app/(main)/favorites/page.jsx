@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useFavorites } from '@/contexts/FavoritesContext'
@@ -42,11 +42,8 @@ export default function FavoritesPage() {
   }, [favorites, sortBy])
 
   const totalPages = Math.ceil(sorted.length / ITEMS_PER_PAGE)
-  const paginated = sorted.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
-
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [sortBy, favorites.length])
+  const safeCurrentPage = totalPages > 0 ? Math.min(currentPage, totalPages) : 1
+  const paginated = sorted.slice((safeCurrentPage - 1) * ITEMS_PER_PAGE, safeCurrentPage * ITEMS_PER_PAGE)
 
   function handlePageChange(page) {
     setCurrentPage(page)
@@ -83,15 +80,7 @@ export default function FavoritesPage() {
   const showLoading = authLoading || (Boolean(user) && isBuyer && loading)
 
   if (showLoading) {
-    return (
-      <section className={styles.page}>
-        <div className={styles.content}>
-          <p style={{ fontFamily: 'Lato, sans-serif', color: 'rgba(16,40,32,0.55)', padding: '2rem 0' }}>
-            Loading favorites…
-          </p>
-        </div>
-      </section>
-    )
+    return <FavoritesLoadingSkeleton />
   }
 
   if (!user) {
@@ -196,8 +185,8 @@ export default function FavoritesPage() {
               <div className={styles.pagination}>
                 <button
                   className={styles.pageBtn}
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
+                  onClick={() => handlePageChange(safeCurrentPage - 1)}
+                  disabled={safeCurrentPage === 1}
                   aria-label="Previous page"
                 >
                   <svg viewBox="0 0 10 10" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -208,10 +197,10 @@ export default function FavoritesPage() {
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                   <button
                     key={page}
-                    className={`${styles.pageBtn} ${page === currentPage ? styles.pageBtnActive : ''}`}
+                    className={`${styles.pageBtn} ${page === safeCurrentPage ? styles.pageBtnActive : ''}`}
                     onClick={() => handlePageChange(page)}
                     aria-label={`Page ${page}`}
-                    aria-current={page === currentPage ? 'page' : undefined}
+                    aria-current={page === safeCurrentPage ? 'page' : undefined}
                   >
                     {page}
                   </button>
@@ -219,8 +208,8 @@ export default function FavoritesPage() {
 
                 <button
                   className={styles.pageBtn}
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
+                  onClick={() => handlePageChange(safeCurrentPage + 1)}
+                  disabled={safeCurrentPage === totalPages}
                   aria-label="Next page"
                 >
                   <svg viewBox="0 0 10 10" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -369,4 +358,66 @@ function FavoriteCard({ item, isRemoving, onRemove, styles }) {
 function formatDate(str) {
   const d = new Date(str)
   return d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function FavoritesLoadingSkeleton() {
+  return (
+    <section className={styles.page} aria-busy="true" aria-label="Loading favorites">
+      <div className={styles.content}>
+        <div className={styles.toolbar} aria-hidden>
+          <div className={`${styles.skeletonBlock} ${styles.skToolbarCount}`} />
+          <div className={styles.sortWrap}>
+            <div className={`${styles.skeletonBlock} ${styles.skSortLabel}`} />
+            <div className={`${styles.skeletonBlock} ${styles.skSortSelect}`} />
+          </div>
+        </div>
+
+        <div className={styles.grid}>
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <div key={idx} className={styles.card} aria-hidden>
+              <div className={styles.listingImageWrap}>
+                <div className={`${styles.skeletonBlock} ${styles.skCardImage}`} />
+              </div>
+
+              <div className={styles.cardBody}>
+                <div className={styles.providerRow}>
+                  <div className={`${styles.skeletonBlock} ${styles.skProviderAvatar}`} />
+                  <div className={styles.skeletonStack}>
+                    <div className={`${styles.skeletonBlock} ${styles.skProviderName}`} />
+                    <div className={`${styles.skeletonBlock} ${styles.skProviderLocation}`} />
+                  </div>
+                  <div className={styles.skeletonRight}>
+                    <div className={`${styles.skeletonBlock} ${styles.skRating}`} />
+                  </div>
+                </div>
+
+                <div className={styles.listingDivider} />
+
+                <div className={styles.listingTitleRow}>
+                  <div className={`${styles.skeletonBlock} ${styles.skTitle}`} />
+                  <div className={styles.skeletonPriceStack}>
+                    <div className={`${styles.skeletonBlock} ${styles.skPriceLabel}`} />
+                    <div className={`${styles.skeletonBlock} ${styles.skPriceValue}`} />
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.cardActions}>
+                <div className={`${styles.skeletonBlock} ${styles.skRemove}`} />
+                <div className={`${styles.skeletonBlock} ${styles.skSavedAt}`} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className={styles.pagination} aria-hidden>
+          <div className={`${styles.skeletonBlock} ${styles.skPageBtn}`} />
+          <div className={`${styles.skeletonBlock} ${styles.skPageBtn}`} />
+          <div className={`${styles.skeletonBlock} ${styles.skPageBtn}`} />
+          <div className={`${styles.skeletonBlock} ${styles.skPageBtn}`} />
+          <div className={`${styles.skeletonBlock} ${styles.skPageBtn}`} />
+        </div>
+      </div>
+    </section>
+  )
 }

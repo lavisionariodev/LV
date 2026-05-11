@@ -1075,6 +1075,74 @@
   opacity: 0.88;
 }
 
+/* ─── Loading Skeleton ─────────────────────────────────────────────────────── */
+
+@keyframes cartSkeletonPulse {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+
+.skeletonBlock {
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(16, 40, 32, 0.08) 25%,
+    rgba(16, 40, 32, 0.14) 37%,
+    rgba(16, 40, 32, 0.08) 63%
+  );
+  background-size: 400% 100%;
+  animation: cartSkeletonPulse 1.35s ease-in-out infinite;
+}
+
+.skBreadSm { width: 42px; height: 10px; }
+.skBreadMd { width: 54px; height: 10px; }
+.skBreadLg { width: 78px; height: 10px; }
+.skHeroTitle { width: 220px; height: 24px; border-radius: 6px; }
+
+.skCheckbox { width: 18px; height: 18px; border-radius: 4px; }
+.skHeaderWide { width: 140px; height: 12px; }
+.skHeaderPrice { width: 70px; height: 12px; }
+.skHeaderQty { width: 75px; height: 12px; }
+.skHeaderSubtotal { width: 80px; height: 12px; }
+.skHeaderAction { width: 20px; height: 12px; }
+
+.skThumb {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  border: none;
+}
+
+.skProductTitle {
+  width: 190px;
+  height: 15px;
+  margin-bottom: 8px;
+  border-radius: 5px;
+}
+
+.skProductLine {
+  width: 140px;
+  height: 11px;
+  margin-bottom: 8px;
+}
+
+.skProductLineShort {
+  width: 110px;
+  height: 11px;
+}
+
+.skQtyControl { width: 94px; height: 34px; border-radius: 8px; }
+.skRemoveBtn { width: 28px; height: 28px; border-radius: 999px; }
+.skUpdateBtn { width: 108px; height: 34px; border-radius: 6px; }
+.skCouponInput { width: 220px; height: 38px; border-radius: 6px; }
+.skCouponBtn { width: 122px; height: 38px; border-radius: 6px; }
+.skTotalsTitle { width: 120px; height: 20px; border-radius: 6px; margin-bottom: 14px; }
+.skTotalsLabel { width: 90px; height: 12px; }
+.skTotalsValue { width: 70px; height: 12px; margin-left: auto; }
+.skActionBtnSm { width: 100%; height: 38px; border-radius: 6px; }
+.skActionBtnLg { width: 100%; height: 44px; border-radius: 6px; }
+
 /* ─── Responsive ────────────────────────────────────────────────────────────── */
 
 @media (max-width: 1024px) {
