@@ -6,6 +6,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useDebouncedEffect } from '@/shared/hooks'
 import { readString, replaceUrlQuery } from '@/lib/url/queryParams'
+import { categoryLabelFromListings } from '@/lib/shop/categories'
 import {
   fetchActiveShopListings,
   getListingProviderLogoUrl,
@@ -34,6 +35,11 @@ function serviceLabelFromId(serviceId) {
   const raw = String(serviceId || '').trim()
   if (!raw) return ''
   return raw.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+function normalizeCategoryParam(raw) {
+  const t = String(raw || '').trim().toLowerCase()
+  return t || 'all'
 }
 
 function listingMatchesSearch(listing, needle, serviceById) {
@@ -217,7 +223,9 @@ export default function ShopPage() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [listings, setListings] = useState(() => mergeShopListings([]))
-  const [activeCategory, setActiveCategory] = useState('all')
+  const [activeCategory, setActiveCategory] = useState(() =>
+    normalizeCategoryParam(readString(searchParams, 'category', 'all')),
+  )
   const [sortBy, setSortBy] = useState('newest')
   const [compareIds, setCompareIds] = useState([])
   /** City/area filter — separate from navbar keyword search (`q`). */
@@ -313,18 +321,25 @@ export default function ShopPage() {
   }, [normalizeListings])
 
   // Sync state ← URL (back/forward, shared links)
-  // Keep the location filter in sync with the `loc` query param.
+  // Keep the category/location filters in sync with query params.
   useEffect(() => {
+    const nextCategory = normalizeCategoryParam(readString(searchParams, 'category', 'all'))
     const nextLoc = readString(searchParams, 'loc', '')
+    if (nextCategory !== activeCategory) {
+      queueMicrotask(() => setCategoryAndReset(nextCategory))
+    }
     if (nextLoc !== locationQuery) {
       queueMicrotask(() => setLocationQuery(nextLoc))
     }
-  }, [searchParams, locationQuery])
+  }, [searchParams, locationQuery, activeCategory, setCategoryAndReset])
 
   // Sync URL ← state (debounced typing in location fields — preserves `q` from navbar search)
   useDebouncedEffect(() => {
-    replaceUrlQuery(router, pathname, searchParams, { loc: locationQuery })
-  }, [locationQuery, router, pathname, searchParams], 300)
+    replaceUrlQuery(router, pathname, searchParams, {
+      category: { value: activeCategory, omitIf: 'all' },
+      loc: locationQuery,
+    })
+  }, [activeCategory, locationQuery, router, pathname, searchParams], 300)
 
   const allProviders = useMemo(() => {
     const byId = new Map()
@@ -386,7 +401,7 @@ export default function ShopPage() {
       if (!id || byId[id]) continue
       byId[id] = {
         id,
-        name: serviceLabelFromId(id),
+        name: categoryLabelFromListings(id, listings),
         description: typeof listing?.description === 'string' ? listing.description : '',
       }
     }

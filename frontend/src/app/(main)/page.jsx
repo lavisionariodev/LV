@@ -5,11 +5,14 @@ import { useCallback, useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { fetchActivePartnersDirectory, formatTenureYearsShort } from '@/lib/partners/client'
 import { normalizeSellerSpecialties } from '@/lib/sellers/client'
+import { fetchActiveShopListings, mergeShopListings } from '@/lib/shop-listings/client'
+import { buildShopCategoryCatalog } from '@/lib/shop/categories'
 import styles from './homepage.module.css'
 
 /** Homepage partner cards when seller has no cover or avatar */
 const PARTNER_CARD_PLACEHOLDER_IMAGE =
   'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80'
+const SHOP_CATEGORY_PLACEHOLDER_IMAGE = '/sample/services/1.jpg'
 
 const ABOUT_PARTNERS_SLIDES = [
   {
@@ -103,14 +106,40 @@ function HeroSection() {
 
 /* ---------------- SHOP BY CATEGORY ---------------- */
 function ShopByCategorySection() {
-  const categories = [
-    { title: 'Funeral Packages', image: '/sample/services/1.jpg', link: '/shop' },
-    { title: 'Cremation Services', image: '/sample/services/2.jpg', link: '/shop' },
-    { title: 'Burial Services', image: '/sample/services/3.jpg', link: '/shop' },
-    { title: 'Memorial & Wake', image: '/sample/services/4.jpg', link: '/shop' },
-    { title: 'Flowers & Items', image: '/sample/services/5.jpg', link: '/shop' },
-    { title: 'Transport & Docs', image: '/sample/services/6.jpg', link: '/shop' },
-  ]
+  const [categories, setCategories] = useState([])
+  const [loadState, setLoadState] = useState('loading')
+  const [loadError, setLoadError] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    fetchActiveShopListings({ bustCache: true })
+      .then((rows) => {
+        if (cancelled) return
+        const listings = mergeShopListings(rows)
+        const nextCategories = buildShopCategoryCatalog(listings).map((cat) => ({
+            id: cat.id,
+            title: cat.label,
+            image: cat.image || SHOP_CATEGORY_PLACEHOLDER_IMAGE,
+            link: `/shop?category=${encodeURIComponent(cat.id)}`,
+            count: cat.count,
+          }))
+
+        setCategories(nextCategories)
+        setLoadError(null)
+        setLoadState('ready')
+      })
+      .catch((err) => {
+        if (cancelled) return
+        setCategories([])
+        setLoadState('error')
+        setLoadError(typeof err?.message === 'string' ? err.message : 'Failed to load categories.')
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const loopedCategories = [...categories, ...categories, ...categories]
 
@@ -142,22 +171,39 @@ function ShopByCategorySection() {
           </button>
 
           <div className={styles.categoryGrid} id="categoryCarousel">
-            {loopedCategories.map((category, index) => (
-              <Link key={index} href={category.link} className={styles.categoryCard}>
-                <div className={styles.categoryImageWrapper}>
-                  <Image
-                    src={category.image}
-                    alt={category.title}
-                    fill
-                    className={styles.categoryImage}
-                    sizes="350px"
-                  />
-                </div>
-                <div className={styles.categoryContent}>
-                  <h3 className={styles.categoryTitle}>{category.title}</h3>
-                </div>
-              </Link>
-            ))}
+            {loadState === 'loading' && (
+              <p className={styles.description} role="status">
+                Loading categories…
+              </p>
+            )}
+            {loadState === 'error' && (
+              <p className={styles.description} role="alert">
+                We couldn&apos;t load categories right now. {loadError || ''}
+              </p>
+            )}
+            {loadState === 'ready' && categories.length === 0 && (
+              <p className={styles.description} role="status">
+                No categories to show yet.
+              </p>
+            )}
+            {loadState === 'ready' &&
+              categories.length > 0 &&
+              loopedCategories.map((category, index) => (
+                <Link key={`${category.id}-${index}`} href={category.link} className={styles.categoryCard}>
+                  <div className={styles.categoryImageWrapper}>
+                    <Image
+                      src={category.image}
+                      alt={category.title}
+                      fill
+                      className={styles.categoryImage}
+                      sizes="350px"
+                    />
+                  </div>
+                  <div className={styles.categoryContent}>
+                    <h3 className={styles.categoryTitle}>{category.title}</h3>
+                  </div>
+                </Link>
+              ))}
           </div>
 
           <button
