@@ -1,4 +1,4 @@
-const VALID_SETTINGS_TABS = new Set(['profile', 'password', 'shop'])
+const VALID_SETTINGS_TABS = new Set(['profile', 'password', 'shop', 'payouts', 'documents'])
 
 export function normalizeSellerSettingsTab(tab) {
   if (tab === 'general' || tab === 'my-details') return 'profile'

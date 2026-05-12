@@ -211,8 +211,8 @@ export default function AppTopbar({ variant, onLogout, isMobile, sidebarCollapse
   const onClickLogout = () => setShowLogout(true)
   const onCancelLogout = () => setShowLogout(false)
   const onConfirmLogout = async () => {
-    setShowLogout(false)
     if (typeof onLogout === 'function') await onLogout()
+    setShowLogout(false)
   }
 
   return (

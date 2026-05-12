@@ -13,7 +13,7 @@ import {
   updateSellerPartnersFeatured,
   updateSellerStatus,
 } from '@/lib/sellers/client';
-import { useToast } from '@/contexts/ToastContext';
+import { useAuthToast } from '@/contexts/ToastContext';
 import { useMediaQuery } from '@/shared/hooks';
 import { Dropdown } from '@/components/ui';
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal';
@@ -549,7 +549,7 @@ export default function AdminSellersPage() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams();
-  const toast = useToast();
+  const toast = useAuthToast();
   const isMobile = useMediaQuery('(max-width: 640px)');
   const highlightId = searchParams.get('highlight') || '';
   const [sellers, setSellers] = useState([]);

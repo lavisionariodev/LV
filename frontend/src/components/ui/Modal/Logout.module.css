@@ -89,6 +89,16 @@
   background: #dfe4ea;
 }
 
+.cancelBtn:disabled,
+.logoutBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.cancelBtn:disabled:hover {
+  background: #e5e7eb;
+}
+
 .logoutBtn {
   height: 44px;
   border-radius: 12px;
@@ -109,4 +119,8 @@
 
 .logoutBtn:hover {
   opacity: 0.95;
+}
+
+.logoutBtn:disabled:hover {
+  opacity: 0.72;
 }

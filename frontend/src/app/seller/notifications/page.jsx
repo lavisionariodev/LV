@@ -1,764 +1,525 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { useMemo, useState } from 'react'
 import {
   TbAlertTriangle,
-  TbBell,
-  TbCircleCheck,
-  TbExternalLink,
-  TbSpeakerphone,
-  TbX,
+  TbBellOff,
+  TbBellRinging,
+  TbCheck,
+  TbDots,
+  TbFileText,
+  TbMessage2,
+  TbReceiptRefund,
+  TbTrash,
 } from 'react-icons/tb'
-import { supabase } from '@/lib/supabase/client'
-import styles from './notifications.module.css'
+import { LuMegaphone, LuShoppingBag } from 'react-icons/lu'
+import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
+import {
+  relativeNotificationTime,
+  useInAppNotificationFeed,
+} from '@/lib/notifications/useInAppNotificationFeed'
+import {
+  SELLER_NOTIFICATION_FILTER_TABS,
+  sellerNotificationFilterBucket,
+} from '@/lib/notifications/types'
+import styles from '@/app/admin/notifications/notifications.module.css'
 
-const TABS = [
-  { key: 'all', label: 'All' },
-  { key: 'unread', label: 'Unread' },
-  { key: 'alerts', label: 'Alerts' },
-  { key: 'system', label: 'System' },
-  { key: 'marketing', label: 'Marketing' },
-]
-
-const SORT_OPTIONS = [
-  { id: 'newest', label: 'Newest first' },
-  { id: 'oldest', label: 'Oldest first' },
-  { id: 'priority', label: 'Priority' },
-]
-
-const STATUS_OPTIONS = [
-  { id: 'all', label: 'All' },
-  { id: 'unread', label: 'Unread' },
-  { id: 'read', label: 'Read' },
-]
-
-const TYPE_OPTIONS = [
-  { id: 'all', label: 'All types' },
-  { id: 'alerts', label: 'Alerts' },
-  { id: 'payment', label: 'Payments' },
-  { id: 'system', label: 'System' },
-  { id: 'marketing', label: 'Marketing' },
-]
-
-function relativeTime(value) {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return 'Just now'
-  const diffMs = Date.now() - date.getTime()
-  const min = Math.floor(diffMs / 60000)
-  if (min < 1) return 'Just now'
-  if (min < 60) return `${min} min ago`
-  const hr = Math.floor(min / 60)
-  if (hr < 24) return `${hr} hour${hr > 1 ? 's' : ''} ago`
-  const day = Math.floor(hr / 24)
-  return `${day} day${day > 1 ? 's' : ''} ago`
+const ICON_BY_BUCKET = {
+  order: LuShoppingBag,
+  payment: TbReceiptRefund,
+  listing: TbFileText,
+  message: TbMessage2,
+  alert: TbAlertTriangle,
+  system: LuMegaphone,
 }
 
-function buildInsight(type, payload) {
-  if (type === 'marketing') {
-    const convDrop = payload.conversionDropPct
-    if (convDrop) return `Conversion rate is down by ${convDrop}% against target, which triggered this alert.`
-    return 'Marketing performance moved outside its expected threshold and triggered an automated alert.'
-  }
-  if (type === 'alerts') {
-    if (payload.conflictField) return `A conflict was detected in ${payload.conflictField}, requiring manual review.`
-    return 'System validation detected a critical mismatch that needs action.'
-  }
-  if (type === 'system') {
-    if (payload.payoutStatus) return `Payout status changed to ${payload.payoutStatus}, so this system update was generated.`
-    return 'A platform-level system event triggered this notification.'
-  }
-  return 'An automated rule detected a condition that requires your attention.'
+const COLOR_BY_BUCKET = {
+  order: 'blue',
+  payment: 'gold',
+  listing: 'green',
+  message: 'blue',
+  alert: 'red',
+  system: 'gold',
 }
 
-function getContextActions(notification) {
-  const payload = notification?.payload || {}
-  if (notification?.type === 'marketing') {
-    return [
-      { id: 'adjust-budget', label: 'Adjust Budget', href: '/seller/marketing/centre?tab=campaigns' },
-      { id: 'pause-campaign', label: 'Pause Campaign', href: '/seller/marketing/centre?tab=campaigns' },
-      payload.voucherId
-        ? { id: 'edit-voucher', label: 'Edit Voucher', href: '/seller/marketing/centre?tab=vouchers' }
-        : null,
-    ].filter(Boolean)
-  }
+function notificationHref(row) {
+  const meta = row?.metadata && typeof row.metadata === 'object' ? row.metadata : {}
+  const orderId = meta.orderId || meta.order_id
+  const listingId = meta.listingId || meta.listing_id
+  const disputeId = meta.disputeId || meta.dispute_id
+  const bucket = sellerNotificationFilterBucket(row?.type)
 
-  if (notification?.type === 'alerts') {
-    return [{ id: 'fix-conflict', label: 'Fix Conflict', href: '/seller/marketing/centre?tab=discounts' }]
+  if (orderId) {
+    const params = new URLSearchParams({ orderId: String(orderId), action: 'view' })
+    if (disputeId) params.set('tab', 'all')
+    return `/seller/orders?${params.toString()}`
   }
-
-  return [{ id: 'view-module', label: 'Open Relevant Module', href: '/seller/marketing/centre' }]
+  if (listingId || bucket === 'listing') return '/seller/products/catalog'
+  if (bucket === 'payment') return '/seller/analytics/revenue-reports'
+  if (bucket === 'message') return '/seller/customers'
+  if (bucket === 'alert') return '/seller/orders'
+  return '/seller/marketing/centre'
 }
 
-function mapUserNotificationsFromApi(rows) {
-  const list = Array.isArray(rows) ? rows : []
-  return list.map((r) => ({
-    id: String(r.id),
-    title: r.title || 'Notification',
-    body: r.body || '',
-    type: String(r.type || 'system'),
-    priority: 'low',
-    timestampLabel: relativeTime(r.createdAt),
-    createdAt: r.createdAt,
-    read: Boolean(r.readAt),
-    resolved: false,
-    payload: r.metadata && typeof r.metadata === 'object' ? r.metadata : {},
-  }))
-}
-
-function TabsDropdown({ value, onChange }) {
+function HeaderMenu({
+  onMarkAll,
+  onMarkAllResolved,
+  onRequestClearResolved,
+  onRequestClearAll,
+  hasUnread,
+  hasUnresolved,
+  hasResolved,
+  hasNotifs,
+}) {
   const [open, setOpen] = useState(false)
-  const dropdownRef = useRef(null)
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setOpen(false)
-      }
-    }
-
-    if (open) {
-      document.addEventListener('click', handleClickOutside)
-      return () => document.removeEventListener('click', handleClickOutside)
-    }
-  }, [open])
-
-  const selectedLabel = TABS.find((t) => t.key === value)?.label || 'All'
+  if (!hasNotifs && !hasUnread && !hasUnresolved) return null
 
   return (
-    <div
-      className={`${styles.tabDropdownWrap} ${open ? styles.tabDropdownOpen : ''}`}
-      ref={dropdownRef}
-    >
+    <div className={styles.menuWrap}>
       <button
         type="button"
-        className={styles.tabDropdownTrigger}
-        onClick={() => setOpen((v) => !v)}
-        aria-haspopup="listbox"
-        aria-expanded={open}
+        className={styles.dotsBtn}
+        onClick={() => setOpen((o) => !o)}
+        aria-label="More options"
       >
-        <span className={styles.tabDropdownLabel}>{selectedLabel}</span>
-        <span className={styles.tabDropdownChevron} aria-hidden>
-          ▾
-        </span>
+        <TbDots />
       </button>
       {open && (
-        <div className={styles.tabDropdownPanel} role="listbox" aria-label="Notification category">
-          {TABS.map((t) => (
+        <div className={styles.menuDropdown}>
+          {hasUnread && (
             <button
-              key={t.key}
               type="button"
-              role="option"
-              aria-selected={value === t.key}
-              className={`${styles.tabDropdownOption} ${value === t.key ? styles.tabDropdownOptionSelected : ''}`}
+              className={styles.menuItem}
               onClick={() => {
-                onChange(t.key)
+                onMarkAll()
                 setOpen(false)
               }}
             >
-              {t.label}
+              <TbCheck className={styles.menuItemIcon} />
+              Mark all as read
             </button>
-          ))}
+          )}
+          {hasUnresolved && (
+            <button
+              type="button"
+              className={styles.menuItem}
+              onClick={() => {
+                onMarkAllResolved()
+                setOpen(false)
+              }}
+            >
+              <TbCheck className={styles.menuItemIcon} />
+              Resolve all
+            </button>
+          )}
+          {hasResolved && (
+            <button
+              type="button"
+              className={styles.menuItem}
+              onClick={() => {
+                onRequestClearResolved()
+                setOpen(false)
+              }}
+            >
+              <TbTrash className={styles.menuItemIcon} />
+              Clear resolved
+            </button>
+          )}
+          {hasNotifs && (
+            <button
+              type="button"
+              className={`${styles.menuItem} ${styles.menuItemDanger}`}
+              onClick={() => {
+                onRequestClearAll()
+                setOpen(false)
+              }}
+            >
+              <TbTrash className={styles.menuItemIcon} />
+              Clear all
+            </button>
+          )}
         </div>
       )}
     </div>
   )
 }
 
-function FilterDropdown({ value, onChange, options, label }) {
-  const [open, setOpen] = useState(false)
-  const dropdownRef = useRef(null)
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setOpen(false)
-      }
-    }
-
-    if (open) {
-      document.addEventListener('click', handleClickOutside)
-      return () => document.removeEventListener('click', handleClickOutside)
-    }
-  }, [open])
-
-  const selectedLabel = options.find((opt) => opt.id === value)?.label || label || ''
+function NotificationsLoadingSkeleton({ variant }) {
+  const count = variant === 'mobile' ? 5 : 7
+  const rows = Array.from({ length: count })
+  const rowClass = variant === 'mobile' ? styles.mobileNotifItem : styles.notifItem
 
   return (
     <div
-      className={`${styles.tabDropdownWrap} ${open ? styles.tabDropdownOpen : ''}`}
-      ref={dropdownRef}
+      className={variant === 'mobile' ? styles.mobileList : styles.notifList}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label="Loading notifications"
     >
+      {rows.map((_, i) => (
+        <div
+          key={`seller-nsk-${variant}-${i}`}
+          className={`${rowClass} ${styles.notifSkRow} ${variant !== 'mobile' && i < rows.length - 1 ? styles.notifBorder : ''}`}
+          aria-hidden
+        >
+          <div className={`${styles.notifIconWrap} ${styles.icon_blue}`}>
+            <span className={styles.notifSkBar} style={{ width: 22, height: 22, borderRadius: 6 }} />
+          </div>
+          <div className={styles.notifBody}>
+            <div className={styles.notifTop}>
+              <span className={styles.notifSkBar} style={{ height: 13, width: '48%', maxWidth: 240 }} />
+              <span className={styles.notifSkBar} style={{ height: 10, width: 52 }} />
+            </div>
+            <span className={styles.notifSkBar} style={{ height: 11, width: '94%', marginTop: 6 }} />
+            <span className={styles.notifSkBar} style={{ height: 11, width: '72%', marginTop: 5 }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function NotifMenu({ notifId, isRead, isResolved, onMarkRead, onResolve, onRequestDelete }) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className={styles.menuWrap}>
       <button
         type="button"
-        className={styles.tabDropdownTrigger}
-        onClick={() => setOpen((v) => !v)}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-label={label ? `${label} filter` : 'Filter'}
+        className={styles.dotsBtn}
+        onClick={(e) => {
+          e.stopPropagation()
+          setOpen((o) => !o)
+        }}
+        aria-label="Notification options"
       >
-        <span className={styles.tabDropdownLabel}>{selectedLabel}</span>
-        <span className={styles.tabDropdownChevron} aria-hidden>
-          ▾
-        </span>
+        <TbDots />
       </button>
       {open && (
-        <div className={styles.tabDropdownPanel} role="listbox" aria-label={`${label ?? 'Filter'} options`}>
-          {options.map((opt) => (
+        <div className={`${styles.menuDropdown} ${styles.menuDropdownLeft}`}>
+          {!isRead && (
             <button
-              key={opt.id}
               type="button"
-              role="option"
-              aria-selected={value === opt.id}
-              className={`${styles.tabDropdownOption} ${value === opt.id ? styles.tabDropdownOptionSelected : ''}`}
-              onClick={() => {
-                onChange(opt.id)
+              className={styles.menuItem}
+              onClick={(e) => {
+                e.stopPropagation()
+                onMarkRead(notifId)
                 setOpen(false)
               }}
             >
-              {opt.label}
+              <TbCheck className={styles.menuItemIcon} />
+              Mark as read
             </button>
-          ))}
+          )}
+          {!isResolved && (
+            <button
+              type="button"
+              className={styles.menuItem}
+              onClick={(e) => {
+                e.stopPropagation()
+                onResolve(notifId)
+                setOpen(false)
+              }}
+            >
+              <TbCheck className={styles.menuItemIcon} />
+              Mark resolved
+            </button>
+          )}
+          <button
+            type="button"
+            className={`${styles.menuItem} ${styles.menuItemDanger}`}
+            onClick={(e) => {
+              e.stopPropagation()
+              onRequestDelete(notifId)
+              setOpen(false)
+            }}
+          >
+            <TbTrash className={styles.menuItemIcon} />
+            Delete notification
+          </button>
         </div>
       )}
     </div>
   )
 }
 
-function BulkActionsDropdown({ onMarkAllRead, onClearResolved }) {
-  const [open, setOpen] = useState(false)
-  const dropdownRef = useRef(null)
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setOpen(false)
-      }
-    }
-
-    if (open) {
-      document.addEventListener('click', handleClickOutside)
-      return () => document.removeEventListener('click', handleClickOutside)
-    }
-  }, [open])
+function NotificationRow({ notif, variant, isLast, onMarkRead, onResolve, onRequestDelete }) {
+  const Icon = notif.icon || TbAlertTriangle
+  const className =
+    variant === 'mobile'
+      ? `${styles.mobileNotifItem} ${!notif.read ? styles.notifUnread : ''}`
+      : `${styles.notifItem} ${!notif.read ? styles.notifUnread : ''} ${!isLast ? styles.notifBorder : ''}`
 
   return (
-    <div
-      className={`${styles.bulkDropdownWrap} ${open ? styles.bulkDropdownOpen : ''}`}
-      ref={dropdownRef}
-    >
-      <button
-        type="button"
-        className={styles.bulkDropdownTrigger}
-        onClick={() => setOpen((v) => !v)}
-        aria-haspopup="menu"
-        aria-expanded={open}
-      >
-        <span className={styles.bulkDropdownLabel}>Bulk Actions</span>
-        <span className={styles.bulkDropdownChevron} aria-hidden>
-          ▾
-        </span>
-      </button>
-      {open && (
-        <div className={styles.bulkDropdownPanel} role="menu" aria-label="Bulk actions">
-          <button
-            type="button"
-            role="menuitem"
-            className={styles.bulkDropdownOption}
-            onClick={() => {
-              onMarkAllRead()
-              setOpen(false)
-            }}
-          >
-            Mark All as Read
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            className={styles.bulkDropdownOption}
-            onClick={() => {
-              onClearResolved()
-              setOpen(false)
-            }}
-          >
-            Clear Resolved
-          </button>
+    <div className={className} onClick={() => onMarkRead(notif.id)}>
+      <div className={`${styles.notifIconWrap} ${styles[`icon_${notif.iconColor}`]}`}>
+        <Icon />
+      </div>
+      <div className={styles.notifBody}>
+        <div className={styles.notifTop}>
+          <p className={styles.notifTitle}>{notif.title}</p>
+          {variant === 'desktop' ? <span className={styles.notifTime}>{notif.time}</span> : null}
+          {variant === 'mobile' && !notif.read ? <span className={styles.unreadDot} /> : null}
         </div>
-      )}
+        <p className={styles.notifMessage}>{notif.message}</p>
+        {notif.resolved ? (
+          <p className={styles.notifMessage} style={{ marginTop: 4, color: '#16a34a', fontWeight: 700 }}>
+            Resolved
+          </p>
+        ) : null}
+        {variant === 'mobile' ? <span className={styles.notifTime}>{notif.time}</span> : null}
+      </div>
+      <div className={styles.notifActions}>
+        {variant === 'desktop' && !notif.read ? <span className={styles.unreadDot} /> : null}
+        <Link
+          href={notif.href}
+          className={styles.menuItem}
+          style={{ borderRadius: 8, padding: '6px 8px', textDecoration: 'none' }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          Open
+        </Link>
+        <NotifMenu
+          notifId={notif.id}
+          isRead={notif.read}
+          isResolved={notif.resolved}
+          onMarkRead={onMarkRead}
+          onResolve={onResolve}
+          onRequestDelete={onRequestDelete}
+        />
+      </div>
     </div>
   )
 }
 
 export default function SellerNotificationsPage() {
-  const router = useRouter()
-  const [notifications, setNotifications] = useState([])
-  const [activeTab, setActiveTab] = useState('all')
-  const [sortBy, setSortBy] = useState('newest')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [typeFilter, setTypeFilter] = useState('all')
-  const [selectedId, setSelectedId] = useState(null)
-  const [detailsLoading, setDetailsLoading] = useState(false)
-  const [detailsError, setDetailsError] = useState('')
-  const [detailsData, setDetailsData] = useState(null)
+  const {
+    notifications: apiRows,
+    loading,
+    unreadCount,
+    unresolvedCount,
+    markRead,
+    markAllRead,
+    resolveOne,
+    markAllResolved,
+    deleteOne,
+    clearAll,
+    clearResolved,
+  } = useInAppNotificationFeed({ limit: 100, enabled: true })
 
-  const overview = useMemo(() => {
-    const total = notifications.length
-    const unread = notifications.filter((n) => !n.read).length
-    const highPriority = notifications.filter((n) => n.priority === 'high' && !n.resolved).length
-    return { total, unread, highPriority }
-  }, [notifications])
+  const [activeFilter, setActiveFilter] = useState('all')
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null)
+  const [clearAllOpen, setClearAllOpen] = useState(false)
+  const [clearResolvedOpen, setClearResolvedOpen] = useState(false)
 
-  const visibleNotifications = useMemo(() => {
-    let data = [...notifications]
-
-    if (activeTab === 'unread') data = data.filter((n) => !n.read)
-    if (activeTab === 'alerts' || activeTab === 'system' || activeTab === 'marketing') {
-      if (activeTab === 'alerts') {
-        data = data.filter(
-          (n) =>
-            n.type === 'alerts' ||
-            String(n.type).startsWith('service') ||
-            n.type === 'reminder' ||
-            n.type === 'listing_approval' ||
-            n.type === 'listing_rejected' ||
-            n.type === 'payment_refund',
-        )
-      } else {
-        data = data.filter((n) => n.type === activeTab)
-      }
-    }
-
-    if (statusFilter === 'read') data = data.filter((n) => n.read)
-    if (statusFilter === 'unread') data = data.filter((n) => !n.read)
-
-    if (typeFilter !== 'all') {
-      if (typeFilter === 'payment') {
-        data = data.filter((n) => String(n.type).startsWith('payment'))
-      } else {
-        data = data.filter((n) => n.type === typeFilter)
-      }
-    }
-
-    if (sortBy === 'newest') {
-      data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    } else if (sortBy === 'oldest') {
-      data.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-    } else if (sortBy === 'priority') {
-      const weight = { high: 3, medium: 2, low: 1 }
-      data.sort((a, b) => weight[b.priority] - weight[a.priority])
-    }
-
-    return data
-  }, [notifications, activeTab, sortBy, statusFilter, typeFilter])
-
-  useEffect(() => {
-    let cancelled = false
-    let channel = null
-
-    async function refreshFromApi() {
-      try {
-        const res = await fetch('/api/notifications?limit=100', { cache: 'no-store' })
-        const body = await res.json().catch(() => null)
-        if (!res.ok) throw new Error(typeof body?.error === 'string' ? body.error : 'Failed to load')
-        if (!cancelled) {
-          setNotifications(mapUserNotificationsFromApi(body?.notifications))
+  const notifications = useMemo(
+    () =>
+      apiRows.map((row) => {
+        const bucket = sellerNotificationFilterBucket(row.type)
+        const Icon = ICON_BY_BUCKET[bucket] || TbAlertTriangle
+        return {
+          id: row.id,
+          filterBucket: bucket,
+          title: row.title || 'Notification',
+          message: row.body || '',
+          time: relativeNotificationTime(row.createdAt),
+          read: Boolean(row.readAt),
+          resolved: Boolean(row.resolvedAt),
+          icon: Icon,
+          iconColor: COLOR_BY_BUCKET[bucket] || 'red',
+          href: notificationHref(row),
         }
-      } catch {
-        // ignore load errors
-      }
-    }
-
-    async function setup() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      const uid = session?.user?.id
-      await refreshFromApi()
-
-      if (!uid || cancelled) return
-
-      channel = supabase
-        .channel(`user_notifications:${uid}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'user_notifications',
-            filter: `user_id=eq.${uid}`,
-          },
-          () => {
-            refreshFromApi()
-          },
-        )
-        .subscribe()
-    }
-
-    setup()
-
-    return () => {
-      cancelled = true
-      if (channel) supabase.removeChannel(channel)
-    }
-  }, [])
-
-  const selectedNotification = useMemo(
-    () => notifications.find((n) => String(n.id) === String(selectedId)) || null,
-    [notifications, selectedId],
+      }),
+    [apiRows],
   )
 
-  const fetchNotificationDetails = async (id) => {
-    setDetailsLoading(true)
-    setDetailsError('')
-    const fallback = notifications.find((n) => String(n.id) === String(id)) || null
-    if (fallback) {
-      setDetailsData(fallback)
-      setDetailsLoading(false)
-      return
-    }
-    setDetailsError('Notification not found.')
-    setDetailsData(null)
-    setDetailsLoading(false)
-  }
-
-  const openDetails = (id) => {
-    setSelectedId(String(id))
-    fetchNotificationDetails(id)
-  }
-
-  const closeDetails = () => {
-    setSelectedId(null)
-    setDetailsData(null)
-    setDetailsError('')
-  }
-
-  const markAllAsRead = async () => {
-    await fetch('/api/notifications', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ markAllRead: true }),
+  const filtered = useMemo(() => {
+    return notifications.filter((n) => {
+      if (activeFilter === 'all') return true
+      if (activeFilter === 'unread') return !n.read
+      if (activeFilter === 'unresolved') return !n.resolved
+      return n.filterBucket === activeFilter
     })
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
-  }
+  }, [notifications, activeFilter])
 
-  const clearResolved = async () => {
-    setNotifications((prev) => prev.filter((n) => !n.resolved))
-  }
-
-  const markAsRead = async (id) => {
-    await fetch('/api/notifications', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: String(id) }),
-    })
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
-  }
-
-  const resolveItem = async (id) => {
-    await markAsRead(id)
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, resolved: true, read: true } : n)))
-  }
-
-  const dismissItem = async (id) => {
-    await markAsRead(id)
-    setNotifications((prev) => prev.filter((n) => n.id !== id))
-    if (selectedId && String(selectedId) === String(id)) closeDetails()
-  }
+  const resolvedCount = notifications.filter((n) => n.resolved).length
 
   return (
-    <div className={styles.pageWrap}>
-      <section className={styles.overviewSection}>
-        <div className={styles.overviewTopRow}>
-          <div className={styles.filtersBar}>
-            <div className={styles.panelTopRow}>
-              <div className={styles.filtersRight}>
-                <label className={styles.controlGroup}>
-                  <span className={styles.controlLabel}>Actions</span>
-                  <BulkActionsDropdown onMarkAllRead={markAllAsRead} onClearResolved={clearResolved} />
-                </label>
-                <label className={styles.controlGroup}>
-                  <span className={styles.controlLabel}>Category</span>
-                  <TabsDropdown value={activeTab} onChange={setActiveTab} />
-                </label>
-
-                <div className={styles.controlRow}>
-                  <label className={styles.controlGroup}>
-                    <span className={styles.controlLabel}>Sort by</span>
-                    <FilterDropdown
-                      value={sortBy}
-                      onChange={setSortBy}
-                      label="Sort by"
-                      options={SORT_OPTIONS}
-                    />
-                  </label>
-
-                  <label className={styles.controlGroup}>
-                    <span className={styles.controlLabel}>Status</span>
-                    <FilterDropdown
-                      value={statusFilter}
-                      onChange={setStatusFilter}
-                      label="Status"
-                      options={STATUS_OPTIONS}
-                    />
-                  </label>
-
-                  <label className={`${styles.controlGroup} ${styles.controlGroupFull}`}>
-                    <span className={styles.controlLabel}>Type</span>
-                    <FilterDropdown
-                      value={typeFilter}
-                      onChange={setTypeFilter}
-                      label="Type"
-                      options={TYPE_OPTIONS}
-                    />
-                  </label>
-                </div>
-              </div>
+    <div className={styles.page}>
+      <div className={styles.desktopLayout}>
+        <div className={styles.headerBanner}>
+          <div className={styles.headerBannerLeft}>
+            <div className={styles.headerIconWrap}>
+              <TbBellRinging />
             </div>
+            <p className={styles.headerSub}>
+              {unreadCount > 0
+                ? `You have ${unreadCount} unread seller notification${unreadCount > 1 ? 's' : ''}.`
+                : unresolvedCount > 0
+                  ? `${unresolvedCount} notification${unresolvedCount > 1 ? 's' : ''} still need resolution.`
+                  : `You're all caught up.`}
+            </p>
           </div>
+          <HeaderMenu
+            hasUnread={unreadCount > 0}
+            hasUnresolved={unresolvedCount > 0}
+            hasResolved={resolvedCount > 0}
+            hasNotifs={notifications.length > 0}
+            onMarkAll={markAllRead}
+            onMarkAllResolved={markAllResolved}
+            onRequestClearResolved={() => setClearResolvedOpen(true)}
+            onRequestClearAll={() => setClearAllOpen(true)}
+          />
         </div>
 
-        <div className={styles.overviewGrid}>
-          <div className={`${styles.overviewCard} ${styles.totalCard}`}>
-            <div className={styles.overviewLabel}>Total Notifications</div>
-            <div className={styles.overviewValue}>{overview.total}</div>
-            <div className={styles.overviewMeta}>Across all categories</div>
-          </div>
-          <div className={`${styles.overviewCard} ${styles.unreadCard}`}>
-            <div className={styles.overviewLabel}>Unread</div>
-            <div className={styles.overviewValue}>{overview.unread}</div>
-            <div className={styles.overviewMeta}>Needs your review</div>
-          </div>
-          <div className={`${styles.overviewCard} ${styles.alertCard}`}>
-            <div className={styles.overviewLabel}>High Priority Alerts</div>
-            <div className={styles.overviewValue}>{overview.highPriority}</div>
-            <div className={styles.overviewMeta}>Immediate attention</div>
-          </div>
+        <div className={styles.filterRow}>
+          {SELLER_NOTIFICATION_FILTER_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              className={`${styles.filterTab} ${activeFilter === tab.id ? styles.filterTabActive : ''}`}
+              onClick={() => setActiveFilter(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
-      </section>
 
-      <section className={styles.panel}>
-
-        <div className={styles.listWrap}>
-          {visibleNotifications.length === 0 ? (
+        <div className={styles.card}>
+          {loading && notifications.length === 0 ? (
+            <NotificationsLoadingSkeleton variant="desktop" />
+          ) : filtered.length === 0 ? (
             <div className={styles.emptyState}>
-              <TbCircleCheck className={styles.emptyIcon} />
-              <p>No notifications match the current filters.</p>
+              <TbBellOff className={styles.emptyIcon} />
+              <p className={styles.emptyTitle}>No notifications</p>
+              <p className={styles.emptyText}>You&apos;re all caught up!</p>
             </div>
           ) : (
-            visibleNotifications.map((item) => {
-              const Icon = getTypeIcon(item.type)
-              return (
-                <article
-                  key={item.id}
-                  className={`${styles.notificationRow} ${!item.read ? styles.unreadRow : ''} ${
-                    item.resolved ? styles.resolvedRow : ''
-                  }`}
-                >
-                  <div className={styles.iconCol}>
-                    <span className={`${styles.typeIcon} ${styles[`typeIcon_${item.type}`]}`}>
-                      <Icon size={16} />
-                    </span>
-                  </div>
-                  <div className={styles.contentCol}>
-                    <div className={styles.rowTop}>
-                      <h2 className={styles.rowTitle}>{item.title}</h2>
-                      <div className={styles.rowMeta}>
-                        <span className={styles.timestamp}>{item.timestampLabel}</span>
-                        <span className={`${styles.priorityBadge} ${styles[`priority_${item.priority}`]}`}>
-                          {item.priority}
-                        </span>
-                        <span className={`${styles.statusBadge} ${item.read ? styles.statusRead : styles.statusUnread}`}>
-                          {item.read ? 'Read' : 'Unread'}
-                        </span>
-                      </div>
-                    </div>
-                    <p className={styles.rowBody}>{item.body}</p>
-                    <div className={styles.quickActions}>
-                      <button
-                        type="button"
-                        className={`${styles.actionBtn} ${styles.actionBtnDetails}`}
-                        onClick={() => openDetails(item.id)}
-                      >
-                        View Details
-                      </button>
-                      {!item.resolved && (
-                        <button
-                          type="button"
-                          className={`${styles.actionBtn} ${styles.actionBtnResolve}`}
-                          onClick={() => resolveItem(item.id)}
-                        >
-                          Resolve
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </article>
-              )
-            })
+            <div className={styles.notifList}>
+              {filtered.map((notif, i) => (
+                <NotificationRow
+                  key={notif.id}
+                  notif={notif}
+                  variant="desktop"
+                  isLast={i === filtered.length - 1}
+                  onMarkRead={markRead}
+                  onResolve={resolveOne}
+                  onRequestDelete={setDeleteConfirmId}
+                />
+              ))}
+            </div>
           )}
         </div>
-      </section>
+      </div>
 
-      {selectedId && (
-        <div className={styles.detailsOverlay} role="dialog" aria-modal="true" onClick={closeDetails}>
-          <aside className={styles.detailsDrawer} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.detailsHeader}>
-              <div>
-                <div className={styles.detailsTitleRow}>
-                  <h3 className={styles.detailsTitle}>
-                    {detailsData?.title || selectedNotification?.title || 'Notification details'}
-                  </h3>
-                  <span className={styles.detailsPriorityBadge}>
-                    {(detailsData?.priority || selectedNotification?.priority || 'low').toUpperCase()}
-                  </span>
-                </div>
-              </div>
-              <button type="button" className={styles.detailsClose} onClick={closeDetails} aria-label="Close">
-                <TbX size={18} />
-              </button>
+      <div className={styles.mobileLayout}>
+        <div className={styles.headerBanner}>
+          <div className={styles.headerBannerLeft}>
+            <div className={styles.headerIconWrap}>
+              <TbBellRinging />
             </div>
-
-            <div className={styles.detailsBody}>
-              {detailsLoading ? (
-                <div
-                  className={styles.notifDetailsSkRoot}
-                  role="status"
-                  aria-live="polite"
-                  aria-busy="true"
-                  aria-label="Loading notification details"
-                >
-                  <div className={styles.notifDetailsSkPanel} aria-hidden>
-                    <span className={styles.notifDetailsSkBar} style={{ width: '100%', height: 13 }} />
-                    <span className={styles.notifDetailsSkBar} style={{ width: '92%', height: 11 }} />
-                    <span className={styles.notifDetailsSkBar} style={{ width: '78%', height: 11 }} />
-                  </div>
-                  <div className={styles.notifDetailsSkPanel} aria-hidden>
-                    <span className={styles.notifDetailsSkBar} style={{ width: '42%', height: 10, marginBottom: 2 }} />
-                    <span className={styles.notifDetailsSkBar} style={{ width: '100%', height: 10 }} />
-                    <span className={styles.notifDetailsSkBar} style={{ width: '96%', height: 10 }} />
-                    <span className={styles.notifDetailsSkBar} style={{ width: '88%', height: 10 }} />
-                  </div>
-                  <div className={styles.notifDetailsSkGrid} aria-hidden>
-                    {[0, 1, 2, 3].map((k) => (
-                      <div key={k} className={styles.notifDetailsSkGridCell}>
-                        <span className={styles.notifDetailsSkBar} style={{ width: '45%', height: 9 }} />
-                        <span className={styles.notifDetailsSkBar} style={{ width: '88%', height: 10 }} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-              {!detailsLoading ? (
-                <>
-                  {detailsError ? <p className={styles.detailsError}>{detailsError}</p> : null}
-
-                  <div className={styles.detailsSection}>
-                    <div className={styles.detailsSectionTitle}>Expanded explanation</div>
-                    <p className={styles.detailsText}>
-                      {detailsData?.body || selectedNotification?.body || 'No expanded details available.'}
-                    </p>
-                  </div>
-
-                  <div className={styles.detailsSection}>
-                    <div className={styles.detailsSectionTitle}>System-generated insight</div>
-                    <p className={styles.detailsText}>
-                      {buildInsight(
-                        detailsData?.type || selectedNotification?.type,
-                        detailsData?.payload || selectedNotification?.payload || {},
-                      )}
-                    </p>
-                  </div>
-
-                  <div className={styles.detailsSection}>
-                    <div className={styles.detailsSectionTitle}>Key details</div>
-                    <div className={styles.detailsGrid}>
-                      {Object.entries(detailsData?.payload || selectedNotification?.payload || {})
-                        .slice(0, 8)
-                        .map(([key, value]) => (
-                          <div key={key} className={styles.detailsItem}>
-                            <span className={styles.detailsKey}>{key}</span>
-                            <span className={styles.detailsVal}>{String(value)}</span>
-                          </div>
-                        ))}
-                      {Object.keys(detailsData?.payload || selectedNotification?.payload || {}).length === 0 && (
-                        <div className={styles.detailsEmpty}>No additional payload details found.</div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className={styles.detailsSection}>
-                    <div className={styles.detailsSectionTitle}>Metadata</div>
-                    <div className={styles.metaRow}>
-                      <span className={`${styles.metaChip} ${styles.metaChipTime}`}>
-                        Time: {detailsData?.timestampLabel || selectedNotification?.timestampLabel || '—'}
-                      </span>
-                      <span className={`${styles.metaChip} ${styles.metaChipPriority}`}>
-                        Priority: {detailsData?.priority || selectedNotification?.priority || 'low'}
-                      </span>
-                      <span className={`${styles.metaChip} ${styles.metaChipStatus}`}>
-                        Status: {(detailsData?.read ?? selectedNotification?.read) ? 'Read' : 'Unread'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className={styles.detailsSection}>
-                    <div className={styles.detailsSectionTitle}>Context actions</div>
-                    <div className={styles.contextActions}>
-                      {getContextActions(detailsData || selectedNotification || {}).map((action) => (
-                        <button
-                          key={action.id}
-                          type="button"
-                          className={`${styles.actionBtn} ${styles.actionBtnDetails}`}
-                          onClick={() => router.push(action.href)}
-                        >
-                          {action.label}
-                          <TbExternalLink size={14} />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              ) : null}
-            </div>
-
-            <div className={styles.detailsFooter}>
-              <button
-                type="button"
-                className={`${styles.actionBtn} ${styles.actionBtnResolve}`}
-                onClick={() => resolveItem(String(selectedId))}
-              >
-                Resolve
-              </button>
-              <button
-                type="button"
-                className={`${styles.actionBtn} ${styles.actionBtnRead}`}
-                onClick={() => markAsRead(String(selectedId))}
-              >
-                Mark as Read
-              </button>
-              <button
-                type="button"
-                className={`${styles.actionBtn} ${styles.actionBtnDismiss}`}
-                onClick={() => dismissItem(String(selectedId))}
-              >
-                Dismiss
-              </button>
-            </div>
-          </aside>
+            <p className={styles.headerSub}>
+              {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}.` : `You're all caught up.`}
+            </p>
+          </div>
+          <HeaderMenu
+            hasUnread={unreadCount > 0}
+            hasUnresolved={unresolvedCount > 0}
+            hasResolved={resolvedCount > 0}
+            hasNotifs={notifications.length > 0}
+            onMarkAll={markAllRead}
+            onMarkAllResolved={markAllResolved}
+            onRequestClearResolved={() => setClearResolvedOpen(true)}
+            onRequestClearAll={() => setClearAllOpen(true)}
+          />
         </div>
-      )}
+
+        <div className={styles.mobileFilterScroll}>
+          {SELLER_NOTIFICATION_FILTER_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              className={`${styles.mobileFilterChip} ${activeFilter === tab.id ? styles.mobileFilterChipActive : ''}`}
+              onClick={() => setActiveFilter(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {loading && notifications.length === 0 ? (
+          <NotificationsLoadingSkeleton variant="mobile" />
+        ) : filtered.length === 0 ? (
+          <div className={styles.emptyState}>
+            <TbBellOff className={styles.emptyIcon} />
+            <p className={styles.emptyTitle}>No notifications</p>
+            <p className={styles.emptyText}>You&apos;re all caught up!</p>
+          </div>
+        ) : (
+          <div className={styles.mobileList}>
+            {filtered.map((notif) => (
+              <NotificationRow
+                key={notif.id}
+                notif={notif}
+                variant="mobile"
+                isLast={false}
+                onMarkRead={markRead}
+                onResolve={resolveOne}
+                onRequestDelete={setDeleteConfirmId}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <ConfirmModal
+        open={deleteConfirmId != null}
+        variant="danger"
+        title="Delete notification?"
+        message="This notification will be removed from your seller inbox."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onCancel={() => setDeleteConfirmId(null)}
+        onConfirm={() => {
+          if (deleteConfirmId) deleteOne(deleteConfirmId)
+          setDeleteConfirmId(null)
+        }}
+      />
+
+      <ConfirmModal
+        open={clearResolvedOpen}
+        variant="danger"
+        title="Clear resolved notifications?"
+        message="Resolved seller notifications will be removed from your inbox."
+        confirmLabel="Clear resolved"
+        cancelLabel="Cancel"
+        onCancel={() => setClearResolvedOpen(false)}
+        onConfirm={() => {
+          clearResolved()
+          setClearResolvedOpen(false)
+        }}
+      />
+
+      <ConfirmModal
+        open={clearAllOpen}
+        variant="danger"
+        title="Clear all notifications?"
+        message={
+          notifications.length > 0
+            ? `This will remove all ${notifications.length} notification${notifications.length > 1 ? 's' : ''} from your inbox. This cannot be undone.`
+            : 'Remove every notification from your inbox? This cannot be undone.'
+        }
+        confirmLabel="Clear all"
+        cancelLabel="Cancel"
+        onCancel={() => setClearAllOpen(false)}
+        onConfirm={() => {
+          clearAll()
+          setClearAllOpen(false)
+        }}
+      />
     </div>
   )
 }
-
-function getTypeIcon(type) {
-  const t = String(type || '')
-  if (t === 'alerts' || t === 'service_alert') return TbAlertTriangle
-  if (t === 'marketing') return TbSpeakerphone
-  if (t.startsWith('payment')) return TbBell
-  if (t.startsWith('service')) return TbBell
-  if (t === 'listing_approval' || t === 'listing_rejected') return TbBell
-  if (t === 'reminder') return TbBell
-  return TbBell
-}
-

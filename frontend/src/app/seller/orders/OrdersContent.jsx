@@ -81,6 +81,59 @@ function sellerPaymentBadge(paymentStatus) {
   return { label: 'Pending', badgeClass: styles.badgePending }
 }
 
+function isPaidOrder(order) {
+  return order?.paymentStatus === 'paid'
+}
+
+function canDeclineOrder(order) {
+  return (
+    isPaidOrder(order) &&
+    order?.orderStatus !== 'completed' &&
+    order?.refundStage !== 'requested' &&
+    order?.refundStage !== 'processing'
+  )
+}
+
+function paymentMethodLabel(payment) {
+  const provider = String(payment?.provider || '').trim()
+  const status = String(payment?.status || '').trim()
+  const reference = String(payment?.paymongo_reference || '').trim()
+  const label = provider
+    ? provider.charAt(0).toUpperCase() + provider.slice(1)
+    : status || reference
+      ? 'Payment provider'
+      : '—'
+  return reference ? `${label} · ${reference}` : label
+}
+
+const IMAGE_EXT_RE = /\.(png|jpe?g|webp|gif)$/i
+const PDF_EXT_RE = /\.pdf$/i
+
+function fileNameFromPath(path) {
+  const s = String(path || '').split('?')[0]
+  return s.split('/').filter(Boolean).pop() || 'Attachment'
+}
+
+function attachmentKind(name) {
+  if (IMAGE_EXT_RE.test(name)) return 'photo'
+  if (PDF_EXT_RE.test(name)) return 'pdf'
+  return 'file'
+}
+
+function mapDisputeAttachmentPaths(dispute) {
+  const paths = Array.isArray(dispute?.attachment_paths) ? dispute.attachment_paths : []
+  return paths.map((path, idx) => {
+    const label = fileNameFromPath(path)
+    return {
+      id: `${dispute.id}-${idx}`,
+      label,
+      path,
+      disputeId: dispute.id,
+      type: attachmentKind(label),
+    }
+  })
+}
+
 /**
  * Token-based AND search across buyer-facing order fields (aligned with seller customers/products).
  */
@@ -210,11 +263,20 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [orderForUpdateStatus, setOrderForUpdateStatus] = useState(null)
   const [showUpdateStatus, setShowUpdateStatus] = useState(false)
+  const [declineOrder, setDeclineOrder] = useState(null)
+  const [declineBusy, setDeclineBusy] = useState(false)
   const [orders, setOrders] = useState([])
   const [ordersReady, setOrdersReady] = useState(false)
+  const [orderNotice, setOrderNotice] = useState(null)
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false)
   const [previewAttachment, setPreviewAttachment] = useState(null)
   const filterDropdownRef = useRef(null)
+
+  const showOrderNotice = useCallback((type, message) => {
+    const text = String(message || '').trim()
+    if (!text) return
+    setOrderNotice({ id: Date.now(), type, message: text })
+  }, [])
 
   const loadOrders = useCallback(async ({ signal } = {}) => {
     if (!user?.id || !isSeller) return
@@ -230,19 +292,37 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
 
     if (signal?.aborted) return
     if (error) {
-      setOrders([])
+      showOrderNotice('error', error.message || 'Failed to load orders.')
       return
     }
 
     const { data: disputeRows } = await supabase
       .from('disputes')
-      .select('id,order_id,reason,description,status,opened_at,resolution_notes')
+      .select('id,order_id,reason,description,status,opened_at,resolution_notes,attachment_paths')
       .eq('seller_user_id', user.id)
       .in('status', ['open', 'under_review'])
       .order('opened_at', { ascending: false })
       .abortSignal?.(signal)
 
     if (signal?.aborted) return
+
+    const orderIds = (data ?? []).map((o) => o.id).filter(Boolean)
+    const paymentByOrder = new Map()
+    if (orderIds.length) {
+      const { data: paymentLinks } = await supabase
+        .from('payment_orders')
+        .select('order_id,payments(provider,status,paymongo_reference,created_at)')
+        .in('order_id', orderIds)
+        .abortSignal?.(signal)
+
+      if (signal?.aborted) return
+      for (const link of paymentLinks ?? []) {
+        const payment = Array.isArray(link.payments) ? link.payments[0] : link.payments
+        if (link.order_id && payment && !paymentByOrder.has(link.order_id)) {
+          paymentByOrder.set(link.order_id, payment)
+        }
+      }
+    }
 
     const disputeByOrder = new Map()
     for (const dispute of disputeRows ?? []) {
@@ -253,6 +333,8 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
 
     const mapped = (data ?? []).map((o) => {
         const helpRequest = disputeByOrder.get(o.id) ?? null
+        const helpAttachments = mapDisputeAttachmentPaths(helpRequest)
+        const payment = paymentByOrder.get(o.id) ?? null
         const items = o.order_items ?? []
         const servicePackage =
           items.length === 1
@@ -301,12 +383,10 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
           totalPrice: Number(o.subtotal) || 0,
           paymentStatus,
           orderStatus,
-          isUrgent: false,
           customerPhone: o.contact_phone || '—',
           customerEmail: o.contact_email || '—',
           deceasedName: o.deceased_name || null,
           dateOfDeath: o.date_of_death ? String(o.date_of_death) : null,
-          religion: null,
           specialRequests: o.notes || null,
           addOns: items.map((it) => `${it.name} ×${it.quantity ?? 1}`),
           wakeDuration:
@@ -314,12 +394,12 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
               ? `${o.wake_duration_days} day${o.wake_duration_days === 1 ? '' : 's'}`
               : '—',
           burialLocation: o.service_location || '—',
-          paymentMethod: 'PayMongo',
+          paymentMethod: paymentMethodLabel(payment),
           refundRequested,
           refundStage,
           refundRequestedAt: o.refund_requested_at ? String(o.refund_requested_at) : null,
           refundReason,
-          refundAttachments: [],
+          refundAttachments: helpAttachments,
           helpRequest: helpRequest
             ? {
                 id: helpRequest.id,
@@ -328,16 +408,22 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                 status: helpRequest.status,
                 openedAt: helpRequest.opened_at,
                 resolutionNotes: helpRequest.resolution_notes || '',
+                attachments: helpAttachments,
               }
             : null,
         }
       })
 
     setOrders(mapped)
+    setOrderNotice((prev) => (prev?.type === 'error' ? null : prev))
+    } catch (err) {
+      if (!signal?.aborted) {
+        showOrderNotice('error', err?.message || 'Failed to load orders.')
+      }
     } finally {
       if (!signal?.aborted) setOrdersReady(true)
     }
-  }, [user, isSeller])
+  }, [user, isSeller, showOrderNotice])
 
   useEffect(() => {
     if (authLoading) return
@@ -488,19 +574,60 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId: order.id }),
       })
-      if (!res.ok) return
+      const body = await res.json().catch(() => null)
+      if (!res.ok) {
+        showOrderNotice('error', body?.error || 'Unable to confirm this order. Please try again.')
+        return
+      }
       await loadOrders()
       setSelectedOrder((prev) => (prev?.id === order.id ? { ...prev, orderStatus: 'confirmed' } : prev))
-    } catch {
-      // ignore UI update on network error
+      showOrderNotice('success', 'Order confirmed.')
+    } catch (err) {
+      showOrderNotice('error', err?.message || 'Network error. Please check your connection and try again.')
     }
   }
 
   const handleDeclineOrder = (order) => {
-    handleUpdateStatus(order, 'cancelled')
+    if (!canDeclineOrder(order)) {
+      showOrderNotice('error', 'Only paid non-completed orders can be declined for automatic refund.')
+      return
+    }
+    setShowUpdateStatus(false)
+    setOrderForUpdateStatus(null)
+    setDeclineOrder(order)
+  }
+
+  const handleConfirmDeclineOrder = async () => {
+    if (!declineOrder || declineBusy) return
+    setDeclineBusy(true)
+    try {
+      const res = await fetch('/api/seller/orders/decline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: declineOrder.id }),
+      })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) {
+        showOrderNotice('error', body?.error || 'Unable to decline this order. Please try again.')
+        return
+      }
+      await loadOrders()
+      setSelectedOrder((prev) => (prev?.id === declineOrder.id ? null : prev))
+      setDeclineOrder(null)
+      clearOrderDeepLinkParams()
+      showOrderNotice('success', 'Order declined. The buyer refund has been initiated.')
+    } catch (err) {
+      showOrderNotice('error', err?.message || 'Unable to decline this order. Please try again.')
+    } finally {
+      setDeclineBusy(false)
+    }
   }
 
   const handleUpdateStatus = async (order, newStatus) => {
+    if (newStatus === 'cancelled') {
+      handleDeclineOrder(order)
+      return
+    }
     try {
       // Only fulfillment statuses are persisted via the API.
       if (['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'].includes(newStatus)) {
@@ -511,11 +638,7 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
         })
         if (!res.ok) {
           const body = await res.json().catch(() => null)
-          window.alert(
-            typeof body?.error === 'string'
-              ? body.error
-              : 'Unable to update this order. Please try again.',
-          )
+          showOrderNotice('error', body?.error || 'Unable to update this order. Please try again.')
           return
         }
         await loadOrders()
@@ -525,8 +648,9 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
       setShowUpdateStatus(false)
       setOrderForUpdateStatus(null)
       clearOrderDeepLinkParams()
-    } catch {
-      // ignore
+      showOrderNotice('success', 'Order status updated.')
+    } catch (err) {
+      showOrderNotice('error', err?.message || 'Unable to update this order. Please try again.')
     }
   }
 
@@ -539,18 +663,15 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
       })
       const body = await res.json().catch(() => null)
       if (!res.ok) {
-        window.alert(
-          typeof body?.error === 'string'
-            ? body.error
-            : 'Unable to update this refund. Please try again.',
-        )
+        showOrderNotice('error', body?.error || 'Unable to update this refund. Please try again.')
         return
       }
       await loadOrders()
       setSelectedOrder(null)
       clearOrderDeepLinkParams()
-    } catch {
-      window.alert('Network error. Please check your connection and try again.')
+      showOrderNotice('success', 'Refund request updated.')
+    } catch (err) {
+      showOrderNotice('error', err?.message || 'Network error. Please check your connection and try again.')
     }
   }
 
@@ -565,35 +686,92 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
       })
       const body = await res.json().catch(() => null)
       if (!res.ok) {
-        window.alert(
-          typeof body?.error === 'string'
-            ? body.error
-            : 'Unable to update this request. Please try again.',
-        )
+        showOrderNotice('error', body?.error || 'Unable to update this request. Please try again.')
         return
       }
       await loadOrders()
       setSelectedOrder((prev) => (prev?.id === order.id ? null : prev))
+      showOrderNotice('success', 'Help request updated.')
+    } catch (err) {
+      showOrderNotice('error', err?.message || 'Network error. Please check your connection and try again.')
+    }
+  }
+
+  const handleDownloadDocument = async (order, type) => {
+    if (!order?.id || !type) return
+    try {
+      const res = await fetch(
+        `/api/seller/orders/${encodeURIComponent(order.id)}/documents?type=${encodeURIComponent(type)}&format=pdf`,
+        { cache: 'no-store' },
+      )
+      const body = res.ok ? null : await res.json().catch(() => null)
+      if (!res.ok) {
+        showOrderNotice('error', body?.error || 'Unable to download this document. Please try again.')
+        return
+      }
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      const label = order.displayId || order.id
+      a.href = url
+      a.download = `${type}-${String(label).replace(/[^a-zA-Z0-9-_]+/g, '_')}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+      showOrderNotice('success', 'Document download started.')
+    } catch (err) {
+      showOrderNotice('error', err?.message || 'Could not download this document.')
+    }
+  }
+
+  const handlePreviewAttachment = async (order, file) => {
+    if (!file) return
+    const base = { orderId: order?.displayId || order?.id, ...file }
+    setPreviewAttachment(base)
+
+    if (file.signedUrl || !file.disputeId) return
+    try {
+      const res = await fetch(`/api/seller/disputes/${encodeURIComponent(file.disputeId)}`, {
+        cache: 'no-store',
+      })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) return
+      const match = (body?.dispute?.attachments || []).find((att) => att.path === file.path)
+      if (!match?.signedUrl) return
+      setPreviewAttachment((prev) =>
+        prev?.path === file.path
+          ? {
+              ...prev,
+              signedUrl: match.signedUrl,
+              error: match.error || null,
+              type: attachmentKind(file.label || match.path),
+            }
+          : prev,
+      )
     } catch {
-      window.alert('Network error. Please check your connection and try again.')
+      // Keep the basic attachment metadata visible; the user can retry by reopening.
     }
   }
 
   const getTimelineProgress = (order) => {
-    const statusOrder = ['pending', 'confirmed', 'in_progress', 'completed']
-    const idx = statusOrder.indexOf(order?.orderStatus)
-    if (idx < 0) return { received: true, confirmed: false, preparation: false, ongoing: false, completed: false }
+    const rankByStatus = {
+      pending: 0,
+      confirmed: 1,
+      in_progress: 3,
+      completed: 4,
+      cancelled: 0,
+      refunded: 0,
+    }
+    const rank = rankByStatus[order?.orderStatus] ?? 0
     return {
       received: true,
-      confirmed: idx >= 1,
-      preparation: idx >= 2,
-      ongoing: idx >= 3,
-      completed: idx >= 4,
+      confirmed: rank >= 1,
+      preparation: rank >= 2,
+      ongoing: rank >= 3,
+      completed: rank >= 4,
     }
   }
-
-  const STEP_TIMES = ['10:11 PM', '10:30 PM', '10:45 PM', '11:00 AM', '11:30 AM']
-  const getStepTime = (stepIndex) => STEP_TIMES[stepIndex] ?? '—'
 
   const timelineProgress = selectedOrder ? getTimelineProgress(selectedOrder) : {}
   const selectedPaymentBadge = selectedOrder
@@ -662,6 +840,23 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
           )}
         </div>
       </div>
+
+      {orderNotice ? (
+        <div
+          className={`${styles.orderNotice} ${orderNotice.type === 'success' ? styles.orderNoticeSuccess : styles.orderNoticeError}`}
+          role={orderNotice.type === 'error' ? 'alert' : 'status'}
+        >
+          <span>{orderNotice.message}</span>
+          <button
+            type="button"
+            className={styles.orderNoticeClose}
+            onClick={() => setOrderNotice(null)}
+            aria-label="Dismiss message"
+          >
+            <TbX size={16} />
+          </button>
+        </div>
+      ) : null}
 
       {/* Metric cards (stats strip) */}
       <div className={styles.statsStrip}>
@@ -741,12 +936,7 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                               key={file.label}
                               type="button"
                               className={styles.attachmentChip}
-                                  onClick={() =>
-                                    setPreviewAttachment({
-                                      orderId: order.id,
-                                      ...file,
-                                    })
-                                  }
+                                  onClick={() => handlePreviewAttachment(order, file)}
                             >
                               <Icon size={14} />
                               <span>{file.label}</span>
@@ -903,7 +1093,6 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                 <tr key={order.id} className={styles.orderRow}>
                   <td className={styles.cellOrderId} data-label="Order ID">
                     <span className={styles.orderId}>{order.displayId || order.id}</span>
-                    {order.isUrgent && <span className={`${styles.badge} ${styles.badgeUrgent}`}>Urgent</span>}
                     {order.helpRequest && <span className={`${styles.badge} ${styles.badgePending}`}>Help requested</span>}
                   </td>
                   <td data-label="Customer">{order.customerName}</td>
@@ -939,12 +1128,12 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                           <TbCheck size={16} />
                         </button>
                       )}
-                      {order.orderStatus === 'pending' && order.paymentStatus !== 'paid' && (
+                      {canDeclineOrder(order) && (
                         <button
                           type="button"
                           className={`${styles.btnIcon} ${styles.btnIconDecline} ${styles.hideOnMobile}`}
                           onClick={() => handleDeclineOrder(order)}
-                          title="Decline unpaid order"
+                          title="Decline and refund"
                         >
                           <TbCircleX size={16} />
                         </button>
@@ -987,7 +1176,6 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
             <div className={styles.modalHeader}>
               <h2 id="order-details-title" className={styles.modalTitle}>
                 Order {selectedOrder.displayId || selectedOrder.id}
-                {selectedOrder.isUrgent && <span className={`${styles.badge} ${styles.badgeUrgent}`}>Urgent</span>}
               </h2>
               <button
                 type="button"
@@ -1013,10 +1201,6 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                       const Icon = step.icon
                       return (
                         <div key={step.id} className={styles.timelineStep}>
-                          {isDone && (
-                            <span className={styles.timelineStepTime}>{getStepTime(i)}</span>
-                          )}
-                          {!isDone && <span className={styles.timelineStepTimePlaceholder} aria-hidden />}
                           <div
                             className={`${styles.timelineStepIcon} ${isDone ? styles.timelineStepIconActive : ''}`}
                             aria-hidden
@@ -1090,12 +1274,6 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                     <span className={styles.detailLabel}>Date of death</span>
                     <span className={styles.detailValue}>{formatDate(selectedOrder.dateOfDeath)}</span>
                   </div>
-                  {selectedOrder.religion && (
-                    <div className={styles.detailItem}>
-                      <span className={styles.detailLabel}>Religion</span>
-                      <span className={styles.detailValue}>{selectedOrder.religion}</span>
-                    </div>
-                  )}
                   {(selectedOrder.specialRequests != null && selectedOrder.specialRequests !== '') && (
                     <div className={styles.detailItem}>
                       <span className={styles.detailLabel}>Special requests</span>
@@ -1227,6 +1405,29 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                           <span className={styles.detailValue}>{selectedOrder.helpRequest.description}</span>
                         </div>
                       ) : null}
+                      {selectedOrder.helpRequest.attachments?.length > 0 ? (
+                        <div className={styles.detailItem}>
+                          <span className={styles.detailLabel}>Attachments</span>
+                          <span className={styles.detailValue}>
+                            <span className={styles.refundAttachments}>
+                              {selectedOrder.helpRequest.attachments.map((file) => {
+                                const Icon = file.type === 'photo' ? TbPhoto : TbFileText
+                                return (
+                                  <button
+                                    key={file.id || file.path}
+                                    type="button"
+                                    className={styles.attachmentChip}
+                                    onClick={() => handlePreviewAttachment(selectedOrder, file)}
+                                  >
+                                    <Icon size={14} />
+                                    <span>{file.label}</span>
+                                  </button>
+                                )
+                              })}
+                            </span>
+                          </span>
+                        </div>
+                      ) : null}
                     </div>
                     <div className={styles.refundActions}>
                       {selectedOrder.helpRequest.status === 'open' && (
@@ -1253,22 +1454,38 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
               <div className={styles.documentsSection}>
                 <h3 className={styles.documentsSectionTitle}>Documents</h3>
                 <div className={styles.documentsList}>
-                  <a href="#" className={styles.documentChip} onClick={(e) => e.preventDefault()}>
+                  <button
+                    type="button"
+                    className={styles.documentChip}
+                    onClick={() => handleDownloadDocument(selectedOrder, 'invoice')}
+                  >
                     <span className={styles.documentChipIcon}><TbFileText size={16} /></span>
                     <span>Invoice</span>
-                  </a>
-                  <a href="#" className={styles.documentChip} onClick={(e) => e.preventDefault()}>
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.documentChip}
+                    onClick={() => handleDownloadDocument(selectedOrder, 'receipt')}
+                  >
                     <span className={styles.documentChipIcon}><TbReceipt size={16} /></span>
                     <span>Receipt</span>
-                  </a>
-                  <a href="#" className={styles.documentChip} onClick={(e) => e.preventDefault()}>
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.documentChip}
+                    onClick={() => handleDownloadDocument(selectedOrder, 'summary')}
+                  >
                     <span className={styles.documentChipIcon}><TbFileText size={16} /></span>
                     <span>Summary</span>
-                  </a>
-                  <a href="#" className={styles.documentChip} onClick={(e) => e.preventDefault()}>
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.documentChip}
+                    onClick={() => handleDownloadDocument(selectedOrder, 'contract')}
+                  >
                     <span className={styles.documentChipIcon}><TbFileText size={16} /></span>
                     <span>Contract</span>
-                  </a>
+                  </button>
                 </div>
               </div>
 
@@ -1320,7 +1537,9 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                   { status: 'in_progress', label: 'In progress', icon: TbTools, iconClass: styles.updateStatusBtnIconInProgress, btnClass: styles.updateStatusBtnInProgress },
                   { status: 'completed', label: 'Completed', icon: TbCircleCheck, iconClass: styles.updateStatusBtnIconCompleted, btnClass: styles.updateStatusBtnCompleted },
                   { status: 'cancelled', label: 'Decline', icon: TbCircleX, iconClass: styles.updateStatusBtnIconDecline, btnClass: styles.updateStatusBtnDecline },
-                ].map(({ status, label, icon: Icon, iconClass, btnClass }) => (
+                ]
+                  .filter((option) => option.status !== 'cancelled' || canDeclineOrder(orderForUpdateStatus))
+                  .map(({ status, label, icon: Icon, iconClass, btnClass }) => (
                   <button
                     key={status}
                     type="button"
@@ -1333,6 +1552,66 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                     <span className={styles.updateStatusBtnLabel}>{label}</span>
                   </button>
                 ))}
+              </div>
+              {canDeclineOrder(orderForUpdateStatus) ? (
+                <p className={styles.updateStatusNote}>
+                  Declining this paid order will cancel the booking, refund the buyer, and prevent seller payout.
+                </p>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {declineOrder && (
+        <div
+          className={styles.updateStatusWrap}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="decline-order-title"
+          onClick={() => {
+            if (!declineBusy) setDeclineOrder(null)
+          }}
+        >
+          <div className={styles.updateStatusCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.updateStatusHeader}>
+              <h2 id="decline-order-title" className={styles.updateStatusTitle}>
+                Decline and refund order
+              </h2>
+              <button
+                type="button"
+                className={styles.modalClose}
+                onClick={() => setDeclineOrder(null)}
+                disabled={declineBusy}
+                aria-label="Close"
+              >
+                <TbX size={22} />
+              </button>
+            </div>
+            <div className={styles.updateStatusBody}>
+              <p className={styles.updateStatusPrompt}>
+                Declining order <span className={styles.updateStatusOrderId}>{declineOrder.displayId || declineOrder.id}</span> will cancel the booking, initiate a buyer refund to the original payment method, and prevent seller payout for this order.
+              </p>
+              <p className={styles.updateStatusNote}>
+                Refund completion depends on the payment provider webhook. The order will stay refund pending until PayMongo confirms the refund.
+              </p>
+              <div className={styles.declineConfirmActions}>
+                <button
+                  type="button"
+                  className={styles.declineConfirmSecondary}
+                  onClick={() => setDeclineOrder(null)}
+                  disabled={declineBusy}
+                >
+                  Keep order
+                </button>
+                <button
+                  type="button"
+                  className={styles.declineConfirmDanger}
+                  onClick={handleConfirmDeclineOrder}
+                  disabled={declineBusy}
+                >
+                  {declineBusy ? 'Starting refund...' : 'Decline and refund buyer'}
+                </button>
               </div>
             </div>
           </div>
@@ -1370,11 +1649,31 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                 <span className={styles.detailValue}>{previewAttachment.orderId}</span>
               </div>
               <div className={styles.attachmentPreviewContent}>
-                <p>
-                  This is a mock preview for <strong>{previewAttachment.label}</strong>. In a real
-                  implementation, this area would show the actual image or PDF viewer for the
-                  uploaded file.
-                </p>
+                {previewAttachment.signedUrl ? (
+                  previewAttachment.type === 'photo' ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- signed Supabase URLs expire quickly.
+                    <img
+                      src={previewAttachment.signedUrl}
+                      alt={previewAttachment.label}
+                      className={styles.attachmentPreviewImage}
+                    />
+                  ) : previewAttachment.type === 'pdf' ? (
+                    <iframe
+                      title={previewAttachment.label}
+                      src={previewAttachment.signedUrl}
+                      className={styles.attachmentPreviewFrame}
+                    />
+                  ) : (
+                    <a href={previewAttachment.signedUrl} target="_blank" rel="noreferrer" className={styles.documentChip}>
+                      Open attachment
+                    </a>
+                  )
+                ) : (
+                  <p>
+                    Preparing secure preview for <strong>{previewAttachment.label}</strong>. If it does
+                    not appear, close and reopen the attachment.
+                  </p>
+                )}
               </div>
             </div>
           </div>

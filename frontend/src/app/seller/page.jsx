@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import styles from './seller.module.css'
 import { useSellerAnalyticsData } from '@/lib/seller/useSellerAnalyticsData'
@@ -205,15 +205,52 @@ export default function SellerDashboardPage() {
   const displayEmail = user?.email || ''
   const [chartFilter, setChartFilter] = useState('weekly')
   const [dismissedAlertIds, setDismissedAlertIds] = useState(() => new Set())
+  const [dashboardAlertRows, setDashboardAlertRows] = useState([])
   const [activeAlert, setActiveAlert] = useState(null)
   const [activeDetailAlert, setActiveDetailAlert] = useState(null)
   const [resolveNote, setResolveNote] = useState('')
 
+  const rawAlerts = useMemo(() => buildSmartAlerts(orders, listings).slice(0, 5), [orders, listings])
+
+  const alertNotificationById = useMemo(() => {
+    const map = new Map()
+    for (const row of dashboardAlertRows) {
+      const alertId = row?.metadata?.alertId
+      if (alertId) map.set(String(alertId), row)
+    }
+    return map
+  }, [dashboardAlertRows])
+
   const alerts = useMemo(() => {
-    return buildSmartAlerts(orders, listings)
-      .slice(0, 5)
-      .filter((a) => !dismissedAlertIds.has(a.id))
-  }, [orders, listings, dismissedAlertIds])
+    return rawAlerts.filter((a) => {
+      const row = alertNotificationById.get(a.id)
+      return !dismissedAlertIds.has(a.id) && !row?.resolved_at && !row?.resolvedAt
+    })
+  }, [rawAlerts, dismissedAlertIds, alertNotificationById])
+
+  useEffect(() => {
+    if (loading || error || rawAlerts.length === 0) return
+    let cancelled = false
+    async function syncAlerts() {
+      try {
+        const res = await fetch('/api/seller/dashboard-alerts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ alerts: rawAlerts }),
+        })
+        const body = await res.json().catch(() => null)
+        if (!cancelled && res.ok) {
+          setDashboardAlertRows(Array.isArray(body?.notifications) ? body.notifications : [])
+        }
+      } catch {
+        // Dashboard alerts still render locally if notification sync is temporarily unavailable.
+      }
+    }
+    syncAlerts()
+    return () => {
+      cancelled = true
+    }
+  }, [loading, error, rawAlerts])
 
   const metricCards = useMemo(() => {
     const totalRev = totalPaidRevenueAllTime(orders)
@@ -316,8 +353,20 @@ export default function SellerDashboardPage() {
     setResolveNote('')
   }
 
-  const handleResolve = () => {
+  const handleResolve = async () => {
     if (!activeAlert) return
+    const row = alertNotificationById.get(activeAlert.id)
+    if (row?.id) {
+      await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: row.id, resolve: true }),
+      })
+      const nowIso = new Date().toISOString()
+      setDashboardAlertRows((prev) =>
+        prev.map((r) => (r.id === row.id ? { ...r, read_at: r.read_at || nowIso, resolved_at: nowIso } : r)),
+      )
+    }
     setDismissedAlertIds((prev) => new Set([...prev, activeAlert.id]))
     setActiveAlert(null)
     setResolveNote('')

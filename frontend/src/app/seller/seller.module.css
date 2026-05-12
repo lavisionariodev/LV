@@ -36,11 +36,12 @@
 
 .mainScroll {
   flex: 1;
-  min-height: 0;
+  min-height: 0; /* critical: keep scroll inside content pane */
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain; /* prevent scroll chaining to window on mobile */
   -webkit-overflow-scrolling: touch;
+  background: #ffffff;
 }
 .content {
   max-width: 1200px;
