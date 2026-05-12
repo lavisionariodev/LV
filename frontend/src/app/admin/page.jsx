@@ -128,6 +128,8 @@ export default function AdminDashboardPage() {
   const [commissionChartSeries, setCommissionChartSeries] = useState(() => utcLast7DaysSeriesZeros())
   const [recentActivityRows, setRecentActivityRows] = useState([])
   const [disputesNeedingAttention, setDisputesNeedingAttention] = useState(0)
+  const [metricsError, setMetricsError] = useState(null)
+  const [metricsRetryTick, setMetricsRetryTick] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -135,9 +137,16 @@ export default function AdminDashboardPage() {
       try {
         const res = await fetch('/api/admin/metrics', { credentials: 'include' })
         const body = await res.json().catch(() => null)
-        if (cancelled || !res.ok || !body?.payoutSummary) {
+        if (cancelled) return
+        if (!res.ok || !body?.payoutSummary) {
+          const msg =
+            typeof body?.error === 'string'
+              ? body.error
+              : 'Could not load dashboard metrics. Figures below may be incomplete.'
+          setMetricsError(msg)
           return
         }
+        setMetricsError(null)
         setPayoutMetrics({
           platformRevenue30d: Number(body.payoutSummary.platformRevenue30d) || 0,
           pendingPayoutAmt: Number(body.payoutSummary.pendingPayoutAmt) || 0,
@@ -150,14 +159,18 @@ export default function AdminDashboardPage() {
         if (Array.isArray(body.recentActivity))
           setRecentActivityRows(body.recentActivity.slice(0, RECENT_ACTIVITY_LIMIT))
       } catch {
-        // keep defaults
+        if (!cancelled) {
+          setMetricsError(
+            'Could not load dashboard metrics. Check your connection and try again.',
+          )
+        }
       }
     }
     load()
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [metricsRetryTick])
 
   useEffect(() => {
     let cancelled = false
@@ -351,6 +364,20 @@ export default function AdminDashboardPage() {
 
   return (
     <div className={styles.dashWrap}>
+      {metricsError ? (
+        <div className={styles.metricsLoadBanner} role="alert">
+          <p className={styles.metricsLoadBannerText}>{metricsError}</p>
+          <div className={styles.metricsLoadBannerActions}>
+            <button
+              type="button"
+              className={styles.metricsLoadBannerBtn}
+              onClick={() => setMetricsRetryTick((n) => n + 1)}
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      ) : null}
       {/* ── Welcome banner ── */}
       <section className={styles.welcomeBanner}>
         <div className={styles.welcomeLeft}>

@@ -93,7 +93,7 @@ const SIDEBAR_CONFIG = {
           { href: '/admin/listings/approvals', label: 'Approvals', icon: TbClipboardCheck },
         ],
       },
-      { href: '/admin/disputes', label: 'Dispute', icon: TbReportSearch },
+      { href: '/admin/disputes', label: 'Disputes', icon: TbReportSearch },
     ],
   },
   seller: {
@@ -342,7 +342,7 @@ export default function AppSidebar({
                     : undefined
                 }
                 aria-label={
-                  disputeBadge ? 'Dispute, new disputes to review' : undefined
+                  disputeBadge ? 'Disputes, new disputes to review' : undefined
                 }
                 onClick={handleNavClose}
               >

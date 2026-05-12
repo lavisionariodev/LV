@@ -51,17 +51,28 @@ export default function AdminAnalyticsPage() {
   const [topLineItems, setTopLineItems] = useState([])
   const [recentActivity, setRecentActivity] = useState([])
   const [disputesNeedingAttention, setDisputesNeedingAttention] = useState(0)
+  const [metricsError, setMetricsError] = useState(null)
+  const [metricsRetryTick, setMetricsRetryTick] = useState(0)
 
   useEffect(() => {
     let cancelled = false
     const load = async () => {
       setLoading(true)
+      setMetricsError(null)
       try {
         const res = await fetch(`/api/admin/metrics?range=${rangeDays}d`, {
           credentials: 'include',
         })
         const body = await res.json().catch(() => null)
-        if (cancelled || !res.ok || !body?.payoutSummary) return
+        if (cancelled) return
+        if (!res.ok || !body?.payoutSummary) {
+          const msg =
+            typeof body?.error === 'string'
+              ? body.error
+              : 'Could not load analytics. Charts and totals below may be incomplete.'
+          setMetricsError(msg)
+          return
+        }
         setSellersTotal(Number(body.sellersTotal) || 0)
         setBuyersTotal(Number(body.buyersTotal) || 0)
         setPaidOrdersLast30Days(Number(body.paidOrdersLast30Days) || 0)
@@ -74,7 +85,11 @@ export default function AdminAnalyticsPage() {
         if (Array.isArray(body.recentActivity)) setRecentActivity(body.recentActivity)
         setDisputesNeedingAttention(Number(body.disputesNeedingAttention) || 0)
       } catch {
-        // keep defaults / zeros
+        if (!cancelled) {
+          setMetricsError(
+            'Could not load analytics. Check your connection and try again.',
+          )
+        }
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -83,7 +98,7 @@ export default function AdminAnalyticsPage() {
     return () => {
       cancelled = true
     }
-  }, [rangeDays])
+  }, [rangeDays, metricsRetryTick])
 
   if (loading) {
     return (
@@ -148,6 +163,20 @@ export default function AdminAnalyticsPage() {
 
   return (
     <div className={layoutStyles.dashWrap}>
+      {metricsError ? (
+        <div className={layoutStyles.metricsLoadBanner} role="alert">
+          <p className={layoutStyles.metricsLoadBannerText}>{metricsError}</p>
+          <div className={layoutStyles.metricsLoadBannerActions}>
+            <button
+              type="button"
+              className={layoutStyles.metricsLoadBannerBtn}
+              onClick={() => setMetricsRetryTick((n) => n + 1)}
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      ) : null}
       {/* Stat cards — 4 col desktop, 2 col tablet/mobile */}
       <section className={layoutStyles.analyticsStatsGrid}>
         <div className={layoutStyles.statCard}>
