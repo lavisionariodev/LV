@@ -567,11 +567,62 @@ export default function AdminSellersPage() {
         const curId = cur.user_id || cur.id;
         return curId === sellerId ? { ...cur, ...data } : cur;
       });
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('admin:attention-refresh'));
+      }
     } catch (err) {
       console.error('Failed to update seller status:', err);
       toast.error('Failed to update seller status. Please try again.');
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const [bulkBusy, setBulkBusy] = useState(false);
+
+  const handleBulkStatus = async (nextStatus) => {
+    const ids = [...selectedRows];
+    if (ids.length === 0) return;
+    if (
+      !window.confirm(
+        `Set ${ids.length} selected seller${ids.length > 1 ? 's' : ''} to "${nextStatus}"?`,
+      )
+    ) {
+      return;
+    }
+    setBulkBusy(true);
+    try {
+      const results = await Promise.allSettled(
+        ids.map((id) => updateSellerStatus(id, nextStatus)),
+      );
+      const updates = new Map();
+      let failed = 0;
+      results.forEach((r, idx) => {
+        if (r.status === 'fulfilled' && r.value?.data?.user_id) {
+          updates.set(ids[idx], r.value.data);
+        } else {
+          failed += 1;
+        }
+      });
+      if (updates.size > 0) {
+        setSellers((prev) =>
+          prev.map((s) => {
+            const id = s?.user_id || s?.id;
+            return updates.has(id) ? { ...s, ...updates.get(id) } : s;
+          }),
+        );
+      }
+      if (failed > 0) {
+        toast.error(`${failed} seller(s) failed to update.`);
+      } else {
+        toast.success(`${ids.length} seller(s) updated.`);
+      }
+      setSelectedRows(new Set());
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('admin:attention-refresh'));
+      }
+    } finally {
+      setBulkBusy(false);
     }
   };
 
@@ -833,6 +884,68 @@ export default function AdminSellersPage() {
             </div>
           </div>
         )}
+
+        {selectedRows.size > 0 ? (
+          <div
+            style={{
+              display: 'flex',
+              gap: 8,
+              alignItems: 'center',
+              padding: '10px 12px',
+              background: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: 8,
+              margin: '0 0 10px',
+              flexWrap: 'wrap',
+            }}
+            aria-live="polite"
+          >
+            <span style={{ fontSize: 13, fontWeight: 500 }}>
+              {selectedRows.size} selected
+            </span>
+            {[
+              { value: 'active', label: 'Set Active' },
+              { value: 'pending', label: 'Set Pending' },
+              { value: 'suspended', label: 'Suspend' },
+              { value: 'rejected', label: 'Mark Rejected' },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => handleBulkStatus(opt.value)}
+                disabled={bulkBusy}
+                style={{
+                  padding: '6px 12px',
+                  background: opt.value === 'suspended' || opt.value === 'rejected' ? '#b91c1c' : '#0f172a',
+                  color: '#fff',
+                  border: 0,
+                  borderRadius: 6,
+                  fontSize: 12,
+                  cursor: bulkBusy ? 'not-allowed' : 'pointer',
+                  opacity: bulkBusy ? 0.7 : 1,
+                }}
+              >
+                {bulkBusy ? 'Working…' : opt.label}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setSelectedRows(new Set())}
+              disabled={bulkBusy}
+              style={{
+                marginLeft: 'auto',
+                padding: '6px 12px',
+                background: 'transparent',
+                border: '1px solid #cbd5e1',
+                borderRadius: 6,
+                fontSize: 12,
+                cursor: 'pointer',
+              }}
+            >
+              Clear selection
+            </button>
+          </div>
+        ) : null}
 
         <div className={styles.tableWrap}>
           {loading ? (

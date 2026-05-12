@@ -119,10 +119,24 @@ function useAdminPayoutsPage() {
 
   const applyListPayload = useCallback((payload) => {
     if (!payload || typeof payload !== 'object') return
-    if (typeof payload.defaultCommissionPercent === 'number' && Number.isFinite(payload.defaultCommissionPercent)) {
-      setCommissionSettings((prev) => ({ ...prev, global: payload.defaultCommissionPercent }))
+    const sellers = Array.isArray(payload.sellers) ? payload.sellers : []
+    const overrideMap = {}
+    for (const s of sellers) {
+      if (s?.id && s.commissionPercentOverride != null) {
+        const n = Number(s.commissionPercentOverride)
+        if (Number.isFinite(n)) overrideMap[s.id] = n
+      }
     }
-    setSellerOptions(Array.isArray(payload.sellers) ? payload.sellers : [])
+    setCommissionSettings((prev) => ({
+      ...prev,
+      global:
+        typeof payload.defaultCommissionPercent === 'number' &&
+        Number.isFinite(payload.defaultCommissionPercent)
+          ? payload.defaultCommissionPercent
+          : prev.global,
+      sellers: overrideMap,
+    }))
+    setSellerOptions(sellers)
     setTransactions(Array.isArray(payload.transactions) ? payload.transactions : [])
   }, [])
 
@@ -372,6 +386,41 @@ function useAdminPayoutsPage() {
     [refreshAll],
   )
 
+  const updateGlobalCommission = useCallback(
+    async (defaultCommissionPercent) => {
+      const res = await fetch('/api/admin/platform-billing', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ defaultCommissionPercent }),
+      })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(body?.error || 'Failed to save default commission.')
+      await refreshAll()
+      return body
+    },
+    [refreshAll],
+  )
+
+  const updateSellerCommissionOverride = useCallback(
+    async (sellerUserId, commissionPercentOverride) => {
+      const res = await fetch(
+        `/api/admin/sellers/${encodeURIComponent(sellerUserId)}/commission`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ commissionPercentOverride }),
+        },
+      )
+      const body = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(body?.error || 'Failed to save seller commission.')
+      await refreshAll()
+      return body
+    },
+    [refreshAll],
+  )
+
   const clearFilters = () => {
     setSearch('')
     setFilterSeller('all')
@@ -434,6 +483,8 @@ function useAdminPayoutsPage() {
     holdOrder,
     unholdOrder,
     updateOrderCommission,
+    updateGlobalCommission,
+    updateSellerCommissionOverride,
     clearFilters,
     hasFilters,
     showTransactions,
@@ -1456,12 +1507,37 @@ function ExpandedEscrowDetails({
 
 // ─── Commission Settings Panel ────────────────────────────────────────────────
 
-function RateGauge({ rate }) {
+/**
+ * Resolve commission gauge thresholds from the platform default rate.
+ *
+ * - "Low": strictly below the platform default (seller-friendly band).
+ * - "Standard": from the default up to 1.5× default.
+ * - "High": anything above 1.5× default.
+ *
+ * Always safe even when defaultRate is 0 / NaN (falls back to a sensible 10%).
+ */
+function resolveCommissionThresholds(defaultRate) {
+  const base = Number.isFinite(defaultRate) && defaultRate > 0 ? Number(defaultRate) : 10
+  return {
+    lowBoundary: Math.max(0, base),
+    standardBoundary: Math.max(base, base * 1.5),
+  }
+}
+
+function commissionRiskTier(rate, defaultRate) {
+  const { lowBoundary, standardBoundary } = resolveCommissionThresholds(defaultRate)
+  if (rate < lowBoundary) return 'low'
+  if (rate <= standardBoundary) return 'standard'
+  return 'high'
+}
+
+function RateGauge({ rate, defaultRate }) {
   const clamp = Math.min(100, Math.max(0, rate))
   const r = 38, cx = 48, cy = 48
   const circumference = Math.PI * r // half-circle
   const filled = (clamp / 100) * circumference
-  const color = clamp <= 8 ? '#10b981' : clamp <= 15 ? '#4ade80' : '#ef4444'
+  const tier = commissionRiskTier(clamp, defaultRate)
+  const color = tier === 'low' ? '#10b981' : tier === 'standard' ? '#4ade80' : '#ef4444'
   return (
     <svg width="96" height="56" viewBox="0 0 96 60" className={styles.rateGaugeSvg}>
       <path
@@ -1480,55 +1556,154 @@ function RateGauge({ rate }) {
   )
 }
 
-function CommissionPanel({ settings, onUpdateSettings, transactions = [], sellersList = [] }) {
+function CommissionPanel({
+  settings,
+  transactions = [],
+  sellersList = [],
+  onSaveGlobal,
+  onSaveSellerOverride,
+  onClearSellerOverride,
+}) {
   const [globalInput, setGlobalInput] = useState(String(settings.global))
   const [editingGlobal, setEditingGlobal] = useState(false)
   const [sellerInputs, setSellerInputs] = useState({})
   const [editingSeller, setEditingSeller] = useState(null)
   const [confirmReset, setConfirmReset] = useState(false)
-  /** In-session edits to commission preview UI only (not persisted server-side yet). */
+  /** Persisted change log entries (succeeded API calls). */
   const [changeLog, setChangeLog] = useState([])
   const [showLog, setShowLog] = useState(false)
   const [activeSection, setActiveSection] = useState('global') // 'global' | 'sellers'
+  const [busy, setBusy] = useState(null) // 'global' | sellerId | 'reset' | null
+  const [saveError, setSaveError] = useState('')
+
+  useEffect(() => {
+    setGlobalInput(String(settings.global))
+  }, [settings.global])
 
   const customCount = Object.keys(settings.sellers).length
 
-  const saveGlobal = () => {
+  const logEntry = (entry) => {
+    setChangeLog((prev) => [{ id: Date.now(), ts: Date.now(), ...entry }, ...prev.slice(0, 9)])
+  }
+
+  const saveGlobal = async () => {
+    setSaveError('')
     const v = parseFloat(globalInput)
-    if (!isNaN(v) && v >= 0 && v <= 100) {
-      setChangeLog(prev => [{ id: Date.now(), type: 'global', label: 'Global rate', from: settings.global, to: v, ts: Date.now() }, ...prev.slice(0, 9)])
-      onUpdateSettings({ ...settings, global: v })
+    if (Number.isNaN(v) || v < 0 || v > 100) {
+      setSaveError('Enter a rate from 0 through 100.')
+      return
     }
-    setEditingGlobal(false)
+    if (typeof onSaveGlobal !== 'function') {
+      setEditingGlobal(false)
+      return
+    }
+    setBusy('global')
+    try {
+      await onSaveGlobal(v)
+      logEntry({ type: 'global', label: 'Global rate', from: settings.global, to: v })
+      setEditingGlobal(false)
+    } catch (err) {
+      setSaveError(err?.message || 'Failed to save commission.')
+    } finally {
+      setBusy(null)
+    }
   }
 
-  const saveSeller = (sid) => {
-    const seller = sellersList.find(s => s.id === sid)
-    const v = parseFloat(sellerInputs[sid])
+  const saveSeller = async (sid) => {
+    setSaveError('')
+    const seller = sellersList.find((s) => s.id === sid)
+    const rawInput = sellerInputs[sid]
     const prev = settings.sellers[sid] !== undefined ? settings.sellers[sid] : settings.global
-    if (!isNaN(v) && v >= 0 && v <= 100) {
-      setChangeLog(p => [{ id: Date.now(), type: 'seller', label: seller?.name || sid, from: prev, to: v, ts: Date.now() }, ...p.slice(0, 9)])
-      onUpdateSettings({ ...settings, sellers: { ...settings.sellers, [sid]: v } })
-    } else if (sellerInputs[sid] === '') {
-      const next = { ...settings.sellers }
-      delete next[sid]
-      onUpdateSettings({ ...settings, sellers: next })
+
+    if (rawInput === '' || rawInput == null) {
+      if (typeof onClearSellerOverride === 'function') {
+        setBusy(sid)
+        try {
+          await onClearSellerOverride(sid)
+          logEntry({
+            type: 'remove',
+            label: seller?.name || sid,
+            from: settings.sellers[sid],
+            to: settings.global,
+          })
+          setEditingSeller(null)
+        } catch (err) {
+          setSaveError(err?.message || 'Failed to clear override.')
+        } finally {
+          setBusy(null)
+        }
+      } else {
+        setEditingSeller(null)
+      }
+      return
     }
-    setEditingSeller(null)
+
+    const v = parseFloat(rawInput)
+    if (Number.isNaN(v) || v < 0 || v > 100) {
+      setSaveError('Enter a rate from 0 through 100.')
+      return
+    }
+    if (typeof onSaveSellerOverride !== 'function') {
+      setEditingSeller(null)
+      return
+    }
+    setBusy(sid)
+    try {
+      await onSaveSellerOverride(sid, v)
+      logEntry({ type: 'seller', label: seller?.name || sid, from: prev, to: v })
+      setEditingSeller(null)
+    } catch (err) {
+      setSaveError(err?.message || 'Failed to save override.')
+    } finally {
+      setBusy(null)
+    }
   }
 
-  const removeOverride = (sid) => {
-    const seller = sellersList.find(s => s.id === sid)
-    setChangeLog(p => [{ id: Date.now(), type: 'remove', label: seller?.name || sid, from: settings.sellers[sid], to: settings.global, ts: Date.now() }, ...p.slice(0, 9)])
-    const next = { ...settings.sellers }
-    delete next[sid]
-    onUpdateSettings({ ...settings, sellers: next })
+  const removeOverride = async (sid) => {
+    if (typeof onClearSellerOverride !== 'function') return
+    const seller = sellersList.find((s) => s.id === sid)
+    setBusy(sid)
+    setSaveError('')
+    try {
+      await onClearSellerOverride(sid)
+      logEntry({
+        type: 'remove',
+        label: seller?.name || sid,
+        from: settings.sellers[sid],
+        to: settings.global,
+      })
+    } catch (err) {
+      setSaveError(err?.message || 'Failed to clear override.')
+    } finally {
+      setBusy(null)
+    }
   }
 
-  const resetAll = () => {
-    setChangeLog(p => [{ id: Date.now(), type: 'reset', label: 'All overrides cleared', from: null, to: settings.global, ts: Date.now() }, ...p.slice(0, 9)])
-    onUpdateSettings({ ...settings, sellers: {} })
-    setConfirmReset(false)
+  const resetAll = async () => {
+    if (typeof onClearSellerOverride !== 'function') {
+      setConfirmReset(false)
+      return
+    }
+    const sellerIds = Object.keys(settings.sellers)
+    if (sellerIds.length === 0) {
+      setConfirmReset(false)
+      return
+    }
+    setBusy('reset')
+    setSaveError('')
+    try {
+      const results = await Promise.allSettled(
+        sellerIds.map((sid) => onClearSellerOverride(sid)),
+      )
+      const failed = results.filter((r) => r.status === 'rejected')
+      if (failed.length > 0) {
+        setSaveError(`Cleared ${sellerIds.length - failed.length} of ${sellerIds.length} overrides.`)
+      }
+      logEntry({ type: 'reset', label: 'All overrides cleared', from: null, to: settings.global })
+    } finally {
+      setBusy(null)
+      setConfirmReset(false)
+    }
   }
 
   function timeAgo(ts) {
@@ -1567,8 +1742,13 @@ function CommissionPanel({ settings, onUpdateSettings, transactions = [], seller
           <div className={styles.commissionPanelTitleWrap}>
             <p className={styles.commissionPanelTitle}>Commission Settings</p>
             <p className={styles.commissionPanelSub}>
-              Global rate matches Platform billing · Per-seller overrides are preview-only until stored in DB
+              Global rate matches Platform billing · Per-seller overrides persist to the seller record
             </p>
+            {saveError ? (
+              <p className={styles.commissionPanelSub} style={{ color: '#b91c1c' }}>
+                {saveError}
+              </p>
+            ) : null}
           </div>
         </div>
         <div className={styles.commissionPanelHeaderRight}>
@@ -1644,14 +1824,26 @@ function CommissionPanel({ settings, onUpdateSettings, transactions = [], seller
             {/* Gauge card */}
             <div className={styles.commissionGaugeCard}>
               <div className={styles.gaugeCardLeft}>
-                <RateGauge rate={settings.global} />
+                <RateGauge rate={settings.global} defaultRate={settings.global} />
                 <div className={styles.gaugeCardInfo}>
                   <p className={styles.gaugeCardLabel}>Global Commission Rate</p>
                   <p className={styles.gaugeCardHint}>Applied to all sellers without a custom override</p>
                   <div className={styles.gaugeCardMeta}>
-                    <span className={`${styles.gaugeRiskBadge} ${settings.global <= 8 ? styles.gaugeRiskLow : settings.global <= 15 ? styles.gaugeRiskMid : styles.gaugeRiskHigh}`}>
-                      {settings.global <= 8 ? 'Low' : settings.global <= 15 ? 'Standard' : 'High'} rate
-                    </span>
+                    {(() => {
+                      const tier = commissionRiskTier(settings.global, settings.global)
+                      const badgeClass =
+                        tier === 'low'
+                          ? styles.gaugeRiskLow
+                          : tier === 'standard'
+                            ? styles.gaugeRiskMid
+                            : styles.gaugeRiskHigh
+                      const badgeLabel = tier === 'low' ? 'Low' : tier === 'standard' ? 'Standard' : 'High'
+                      return (
+                        <span className={`${styles.gaugeRiskBadge} ${badgeClass}`}>
+                          {badgeLabel} rate
+                        </span>
+                      )
+                    })()}
                     <span className={styles.gaugeAffects}>
                       Affects{' '}
                       {Math.max(0, sellersList.length - customCount)} seller
@@ -1680,8 +1872,24 @@ function CommissionPanel({ settings, onUpdateSettings, transactions = [], seller
                       <strong>{formatPHP(Math.round(50000 * (parseFloat(globalInput)||0) / 100))} fee</strong>
                     </div>
                     <div className={styles.gaugeEditActions}>
-                      <button className={styles.btnSave} onClick={saveGlobal}>Save Rate</button>
-                      <button className={styles.btnCancel} onClick={() => { setEditingGlobal(false); setGlobalInput(String(settings.global)) }}>Cancel</button>
+                      <button
+                        className={styles.btnSave}
+                        onClick={saveGlobal}
+                        disabled={busy === 'global'}
+                      >
+                        {busy === 'global' ? 'Saving…' : 'Save Rate'}
+                      </button>
+                      <button
+                        className={styles.btnCancel}
+                        onClick={() => {
+                          setEditingGlobal(false)
+                          setGlobalInput(String(settings.global))
+                          setSaveError('')
+                        }}
+                        disabled={busy === 'global'}
+                      >
+                        Cancel
+                      </button>
                     </div>
                   </div>
                 ) : (
@@ -1780,10 +1988,25 @@ function CommissionPanel({ settings, onUpdateSettings, transactions = [], seller
                             autoFocus
                           />
                           <span className={styles.pctSymbol}>%</span>
-                          <button className={styles.btnSave} onClick={() => saveSeller(seller.id)}>Save</button>
-                          <button className={styles.btnCancel} onClick={() => setEditingSeller(null)}>Cancel</button>
+                          <button
+                            className={styles.btnSave}
+                            onClick={() => saveSeller(seller.id)}
+                            disabled={busy === seller.id}
+                          >
+                            {busy === seller.id ? 'Saving…' : 'Save'}
+                          </button>
+                          <button
+                            className={styles.btnCancel}
+                            onClick={() => {
+                              setEditingSeller(null)
+                              setSaveError('')
+                            }}
+                            disabled={busy === seller.id}
+                          >
+                            Cancel
+                          </button>
                         </div>
-                        <p className={styles.sellerEditHint}>Leave blank or 0 to remove override</p>
+                        <p className={styles.sellerEditHint}>Leave blank to remove override</p>
                       </div>
                     ) : (
                       <div className={styles.sellerOverrideRight}>
@@ -1799,7 +2022,13 @@ function CommissionPanel({ settings, onUpdateSettings, transactions = [], seller
                           <Icon.Edit /> {isCustom ? 'Edit' : 'Override'}
                         </button>
                         {isCustom && (
-                          <button className={styles.btnRemoveOverride} onClick={() => removeOverride(seller.id)}>Remove</button>
+                          <button
+                            className={styles.btnRemoveOverride}
+                            onClick={() => removeOverride(seller.id)}
+                            disabled={busy === seller.id}
+                          >
+                            {busy === seller.id ? 'Working…' : 'Remove'}
+                          </button>
                         )}
                       </div>
                     )}
@@ -1823,8 +2052,20 @@ function CommissionPanel({ settings, onUpdateSettings, transactions = [], seller
               This will remove all {customCount} custom seller rate{customCount > 1 ? 's' : ''} and revert everyone to the global <strong>{settings.global}%</strong> rate. This cannot be undone.
             </p>
             <div className={styles.confirmActions}>
-              <button className={styles.confirmCancelBtn} onClick={() => setConfirmReset(false)}>Cancel</button>
-              <button className={styles.confirmResetBtn} onClick={resetAll}>Yes, Reset All</button>
+              <button
+                className={styles.confirmCancelBtn}
+                onClick={() => setConfirmReset(false)}
+                disabled={busy === 'reset'}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.confirmResetBtn}
+                onClick={resetAll}
+                disabled={busy === 'reset'}
+              >
+                {busy === 'reset' ? 'Clearing…' : 'Yes, Reset All'}
+              </button>
             </div>
           </div>
         </div>
@@ -1950,6 +2191,8 @@ export default function AdminPayoutsPage() {
     holdOrder,
     unholdOrder,
     updateOrderCommission,
+    updateGlobalCommission,
+    updateSellerCommissionOverride,
     clearFilters,
     hasFilters,
     showTransactions,
@@ -2536,9 +2779,15 @@ export default function AdminPayoutsPage() {
       {showCommissions && (
         <CommissionPanel
           settings={commissionSettings}
-          onUpdateSettings={setCommissionSettings}
           transactions={transactions}
           sellersList={sellerOptions}
+          onSaveGlobal={updateGlobalCommission}
+          onSaveSellerOverride={(sellerId, rate) =>
+            updateSellerCommissionOverride(sellerId, rate)
+          }
+          onClearSellerOverride={(sellerId) =>
+            updateSellerCommissionOverride(sellerId, null)
+          }
         />
       )}
 

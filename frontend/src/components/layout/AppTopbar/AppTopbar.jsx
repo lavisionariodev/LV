@@ -12,7 +12,7 @@ import { IoIosArrowBack } from 'react-icons/io'
 import { TbSettings, TbMessage2Question } from 'react-icons/tb'
 import { Logout } from '@/components/ui'
 import { useAuth } from '@/contexts/AuthContext'
-import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
+import { fetchCurrentAdminProfile } from '@/features/admin/settings/adminProfile'
 import { useInAppNotificationFeed, relativeNotificationTime } from '@/lib/notifications/useInAppNotificationFeed'
 
 const TOPBAR_CONFIG = {

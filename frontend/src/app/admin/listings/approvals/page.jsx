@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { BsThreeDots } from 'react-icons/bs'
+import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { usePathname } from 'next/navigation'
 import styles from '../listings.module.css'
-import ListingsMobileTabs from '../ListingsMobileTabs'
 import {
   approveListing,
   listSellerListingsForAdmin,
@@ -29,7 +30,15 @@ function SellerAvatarMark({ src, initialsSource, listingStyles: styleMod }) {
       title={label}
     >
       {showImg ? (
-        <img src={url} alt="" className={styleMod.sellerAvatarImg} onError={() => setFailed(true)} />
+        <Image
+          src={url}
+          alt=""
+          width={18}
+          height={18}
+          unoptimized
+          className={styleMod.sellerAvatarImg}
+          onError={() => setFailed(true)}
+        />
       ) : (
         label.charAt(0).toUpperCase()
       )}
@@ -581,7 +590,7 @@ function StagedUpdatesSection({
                     </td>
                     <td>
                       <div className={styles.stagedFieldPills}>
-                        {lines.map(({ label, before, after }, idx) => (
+                        {lines.map(({ label, after }, idx) => (
                           <span key={`${row.id}-${label}-${idx}`} className={styles.stagedFieldPill}>
                             <span className={styles.stagedFieldName}>{label}</span>
                             <span className={styles.stagedFieldArrow}>→</span>
@@ -797,6 +806,10 @@ function ApprovalsTableSection({
 }
 
 export default function AdminListingsApprovalsPage() {
+  const pathname = usePathname()
+  const listingsPathClean = pathname?.split(/[?#]/)[0] || ''
+  const isListingsApprovalsRoute = listingsPathClean.startsWith('/admin/listings/approvals')
+
   const [pendingRows, setPendingRows] = useState([])
   const [approvedApproved, setApprovedApproved] = useState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -871,6 +884,9 @@ export default function AdminListingsApprovalsPage() {
           setApprovedApproved((prev) => prev.map((r) => (r.id === data.id ? data : r)))
         }
       }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('admin:attention-refresh'))
+      }
     } finally {
       setModerationBusyId(null)
     }
@@ -906,6 +922,9 @@ export default function AdminListingsApprovalsPage() {
       }
       setRejectingRow(null)
       setRejectReason('')
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('admin:attention-refresh'))
+      }
     } finally {
       setModerationBusyId(null)
     }
@@ -915,7 +934,22 @@ export default function AdminListingsApprovalsPage() {
 
   return (
     <div className={`${styles.pageRoot} ${styles.approvalsPageStack} ${styles.approvalsGreenTheme}`}>
-      <ListingsMobileTabs />
+      <nav className={styles.listingsMobileSwitch} aria-label="Listings navigation">
+        <Link
+          href="/admin/listings/browse"
+          className={`${styles.listingsMobileSwitchLink} ${!isListingsApprovalsRoute ? styles.listingsMobileSwitchLinkActive : ''}`}
+          aria-current={!isListingsApprovalsRoute ? 'page' : undefined}
+        >
+          Browse
+        </Link>
+        <Link
+          href="/admin/listings/approvals"
+          className={`${styles.listingsMobileSwitchLink} ${isListingsApprovalsRoute ? styles.listingsMobileSwitchLinkActive : ''}`}
+          aria-current={isListingsApprovalsRoute ? 'page' : undefined}
+        >
+          Approvals
+        </Link>
+      </nav>
 
       {/* Summary stats strip — skeleton matches disputes stat bar while loading */}
       {!error && (

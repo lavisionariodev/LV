@@ -37,6 +37,32 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Order not found.' }, { status: 404 })
     }
 
+    const { data: escrowRows, error: escrowErr } = await supabaseAdmin
+      .from('order_escrows')
+      .select('id,status')
+      .eq('order_id', orderId)
+
+    if (escrowErr) {
+      return NextResponse.json(
+        { error: escrowErr.message ?? 'Could not verify escrow status.' },
+        { status: 500 },
+      )
+    }
+
+    const releasedEscrow = (escrowRows ?? []).find(
+      (e) => String(e?.status || '').toLowerCase() === 'released',
+    )
+    if (releasedEscrow) {
+      return NextResponse.json(
+        {
+          error:
+            'This escrow has already been released to the seller. Manual refund completion would silently undo a payout. Recover funds from the seller via a separate flow before retrying.',
+          escrowStatus: 'released',
+        },
+        { status: 409 },
+      )
+    }
+
     const nowIso = new Date().toISOString()
     const { error: updErr } = await supabaseAdmin
       .from('orders')
@@ -60,6 +86,7 @@ export async function POST(request) {
         hold_reason: 'Admin manually marked refund complete (break-glass).',
       })
       .eq('order_id', orderId)
+      .neq('status', 'released')
 
     await insertOrderRefundEvent(supabaseAdmin, {
       orderId,

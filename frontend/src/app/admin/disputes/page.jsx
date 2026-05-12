@@ -135,6 +135,7 @@ export default function AdminDisputesPage() {
   const [allDisputes, setAllDisputes] = useState([])
   const [listLoading, setListLoading] = useState(true)
   const [listError, setListError] = useState('')
+  const [bulkBusy, setBulkBusy] = useState(false)
 
   const loadDisputes = useCallback(async () => {
     setListError('')
@@ -147,6 +148,53 @@ export default function AdminDisputesPage() {
     }
     setAllDisputes(Array.isArray(body?.disputes) ? body.disputes : [])
   }, [])
+
+  const handleBulkStatus = useCallback(
+    async (nextStatus) => {
+      const ids = [...selectedRows]
+      if (ids.length === 0) return
+      const label =
+        nextStatus === 'under_review' ? 'under review' : nextStatus
+      if (
+        !window.confirm(
+          `Set ${ids.length} selected dispute${ids.length > 1 ? 's' : ''} to "${label}"?`,
+        )
+      ) {
+        return
+      }
+      setBulkBusy(true)
+      try {
+        const results = await Promise.allSettled(
+          ids.map((id) =>
+            fetch(`/api/admin/disputes/${encodeURIComponent(id)}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({ status: nextStatus }),
+            }).then(async (res) => {
+              if (!res.ok) {
+                const body = await res.json().catch(() => null)
+                throw new Error(body?.error || 'Failed to update.')
+              }
+              return res
+            }),
+          ),
+        )
+        const failed = results.filter((r) => r.status === 'rejected').length
+        if (failed > 0) {
+          window.alert(`${failed} dispute(s) failed to update.`)
+        }
+        setSelectedRows(new Set())
+        await loadDisputes()
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('admin:disputes-changed'))
+        }
+      } finally {
+        setBulkBusy(false)
+      }
+    },
+    [loadDisputes, selectedRows],
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -321,6 +369,64 @@ export default function AdminDisputesPage() {
             </div>
           </div>
         </div>
+
+        {/* ── Bulk action toolbar ── */}
+        {selectedRows.size > 0 ? (
+          <div
+            style={{
+              display: 'flex',
+              gap: 8,
+              alignItems: 'center',
+              padding: '10px 12px',
+              background: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: 8,
+              marginBottom: 10,
+              flexWrap: 'wrap',
+            }}
+            aria-live="polite"
+          >
+            <span style={{ fontSize: 13, fontWeight: 500 }}>
+              {selectedRows.size} selected
+            </span>
+            {STATUS_OPTIONS.filter((o) => o.value !== 'all').map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => handleBulkStatus(opt.value)}
+                disabled={bulkBusy}
+                style={{
+                  padding: '6px 12px',
+                  background: '#0f172a',
+                  color: '#fff',
+                  border: 0,
+                  borderRadius: 6,
+                  fontSize: 12,
+                  cursor: bulkBusy ? 'not-allowed' : 'pointer',
+                  opacity: bulkBusy ? 0.7 : 1,
+                }}
+              >
+                {bulkBusy ? 'Working…' : `Set ${STATUS_LABEL[opt.value] ?? opt.value}`}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setSelectedRows(new Set())}
+              disabled={bulkBusy}
+              style={{
+                marginLeft: 'auto',
+                padding: '6px 12px',
+                background: 'transparent',
+                border: '1px solid #cbd5e1',
+                borderRadius: 6,
+                fontSize: 12,
+                cursor: 'pointer',
+              }}
+            >
+              Clear selection
+            </button>
+          </div>
+        ) : null}
 
         {/* ── Desktop table (hidden on mobile) ── */}
         <div className={styles.tableWrap}>

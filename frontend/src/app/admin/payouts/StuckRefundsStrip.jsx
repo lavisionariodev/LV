@@ -9,25 +9,46 @@ function formatMoney(n) {
   return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 0 }).format(v)
 }
 
+const PAGE_LIMIT = 50
+
 export default function StuckRefundsStrip() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [err, setErr] = useState('')
   const [busyId, setBusyId] = useState(null)
+  const [total, setTotal] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
 
-  const load = useCallback(async () => {
+  const fetchPage = useCallback(async ({ offset = 0, append = false } = {}) => {
     setErr('')
-    const res = await fetch('/api/admin/refunds/stuck', { cache: 'no-store' })
-    const body = await res.json().catch(() => null)
-    if (!res.ok) {
-      setErr(typeof body?.error === 'string' ? body.error : 'Could not load refund queue.')
-      setOrders([])
+    if (!append) setLoading(true)
+    else setLoadingMore(true)
+    try {
+      const url = `/api/admin/refunds/stuck?limit=${PAGE_LIMIT}&offset=${offset}`
+      const res = await fetch(url, { cache: 'no-store' })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) {
+        setErr(typeof body?.error === 'string' ? body.error : 'Could not load refund queue.')
+        if (!append) setOrders([])
+        return
+      }
+      const next = Array.isArray(body?.orders) ? body.orders : []
+      setOrders((prev) => (append ? [...prev, ...next] : next))
+      setTotal(Number.isFinite(body?.total) ? body.total : next.length)
+      setHasMore(Boolean(body?.hasMore))
+    } finally {
       setLoading(false)
-      return
+      setLoadingMore(false)
     }
-    setOrders(Array.isArray(body?.orders) ? body.orders : [])
-    setLoading(false)
   }, [])
+
+  const load = useCallback(() => fetchPage({ offset: 0, append: false }), [fetchPage])
+
+  const loadMore = useCallback(
+    () => fetchPage({ offset: orders.length, append: true }),
+    [fetchPage, orders.length],
+  )
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -145,7 +166,10 @@ export default function StuckRefundsStrip() {
     <section className={styles.stuckRefundsWrap} aria-labelledby="stuck-refunds-title">
       <div className={styles.stuckRefundsHead}>
         <p id="stuck-refunds-title" className={styles.stuckRefundsTitle}>
-          Refunds requiring attention
+          Refunds requiring attention{' '}
+          <span style={{ fontWeight: 400, color: '#64748b', fontSize: 13 }}>
+            ({orders.length} of {total})
+          </span>
         </p>
         <p className={styles.stuckRefundsSub}>
           Orders with refunds in a requested or processing state. Use Retry to re-initiate a refund through the
@@ -211,6 +235,18 @@ export default function StuckRefundsStrip() {
           </tbody>
         </table>
       </div>
+      {hasMore ? (
+        <div style={{ marginTop: 12, textAlign: 'center' }}>
+          <button
+            type="button"
+            onClick={loadMore}
+            disabled={loadingMore}
+            className={styles.stuckRefundsBtn}
+          >
+            {loadingMore ? 'Loading…' : 'Load more'}
+          </button>
+        </div>
+      ) : null}
     </section>
   )
 }

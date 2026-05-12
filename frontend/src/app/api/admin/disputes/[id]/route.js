@@ -3,6 +3,38 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireAdminApiUser } from '@/lib/auth/requireAdminRoute'
 import { notifyUser } from '@/lib/notifications/inAppServer'
 
+const DISPUTE_ATTACHMENT_BUCKET = 'dispute-attachments'
+const SIGNED_URL_TTL_SECONDS = 600
+
+async function buildAttachments(supabaseAdmin, paths) {
+  const list = Array.isArray(paths) ? paths.filter(Boolean) : []
+  if (list.length === 0) return []
+  const out = await Promise.all(
+    list.map(async (path) => {
+      const safePath = String(path)
+      try {
+        const { data, error } = await supabaseAdmin.storage
+          .from(DISPUTE_ATTACHMENT_BUCKET)
+          .createSignedUrl(safePath, SIGNED_URL_TTL_SECONDS)
+        return {
+          path: safePath,
+          signedUrl: data?.signedUrl || null,
+          expiresAt: new Date(Date.now() + SIGNED_URL_TTL_SECONDS * 1000).toISOString(),
+          error: error?.message || null,
+        }
+      } catch (err) {
+        return {
+          path: safePath,
+          signedUrl: null,
+          expiresAt: null,
+          error: err instanceof Error ? err.message : 'Unable to sign attachment URL.',
+        }
+      }
+    }),
+  )
+  return out
+}
+
 function formatOpenedAt(iso) {
   if (!iso) return '—'
   try {
@@ -54,6 +86,8 @@ export async function GET(_request, context) {
     .eq('id', d.seller_user_id)
     .maybeSingle()
 
+  const attachments = await buildAttachments(supabaseAdmin, d.attachment_paths ?? [])
+
   return NextResponse.json(
     {
       dispute: {
@@ -73,8 +107,10 @@ export async function GET(_request, context) {
         status: d.status,
         openedAt: formatOpenedAt(d.opened_at),
         openedAtIso: d.opened_at,
+        updatedAtIso: d.updated_at,
         resolutionNotes: d.resolution_notes,
         attachmentPaths: d.attachment_paths ?? [],
+        attachments,
       },
     },
     { status: 200 },
@@ -82,7 +118,7 @@ export async function GET(_request, context) {
 }
 
 export async function PATCH(request, context) {
-  const { responseError } = await requireAdminApiUser()
+  const { user, responseError } = await requireAdminApiUser()
   if (responseError) return responseError
 
   const params = await context.params
@@ -119,6 +155,18 @@ export async function PATCH(request, context) {
 
   if (error) {
     return NextResponse.json({ error: error.message ?? 'Update failed.' }, { status: 500 })
+  }
+
+  if (before.status !== status || resolutionNotes !== undefined) {
+    await supabaseAdmin.from('dispute_events').insert({
+      dispute_id: id,
+      actor_user_id: user.id,
+      actor_role: 'admin',
+      event_type: before.status !== status ? 'status_changed' : 'note_added',
+      from_status: before.status,
+      to_status: status,
+      note: resolutionNotes && resolutionNotes.length > 0 ? resolutionNotes : null,
+    })
   }
 
   const ordRef = String(before.order_id || '').slice(0, 8)

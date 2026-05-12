@@ -16,7 +16,7 @@ import { TbMessage2Question, TbBell, TbCreditCard } from 'react-icons/tb'
 import { HiOutlineNewspaper } from 'react-icons/hi'
 import { changePasswordWithReauth } from '@/lib/auth/changePassword'
 import { useToast } from '@/contexts/ToastContext'
-import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
+import { fetchCurrentAdminProfile } from '@/features/admin/settings/adminProfile'
 import { useMediaQuery } from '@/shared/hooks'
 import { normalizeSettingsTab } from '../settings/adminSettingsTabs'
 const AVATARS_BUCKET = 'avatars'
@@ -288,9 +288,12 @@ export default function AdminProfileClient() {
     const trimmedName = [firstName, lastNameRaw].filter(Boolean).join(' ')
     const trimmedEmail = draftEmail.trim()
     const trimmedSms = draftSmsPhone.trim()
+    const emailChanged = trimmedEmail !== (profile.email || '')
     try {
-      const { error: authError } = await supabase.auth.updateUser({ email: trimmedEmail })
-      if (authError) throw authError
+      if (emailChanged) {
+        const { error: authError } = await supabase.auth.updateUser({ email: trimmedEmail })
+        if (authError) throw authError
+      }
       const { error } = await supabase
         .from('admins')
         .update({
@@ -316,6 +319,13 @@ export default function AdminProfileClient() {
       )
       setIsEditingPersonal(false)
       setPersonalStatus('Profile updated successfully.')
+      if (emailChanged) {
+        toast.success(
+          `Verification link sent to ${trimmedEmail}. Email change applies once confirmed.`,
+        )
+      } else {
+        toast.success('Profile updated successfully.')
+      }
     } catch (err) {
       setPersonalError(err.message || 'Failed to update profile.')
     }
@@ -428,11 +438,12 @@ export default function AdminProfileClient() {
 
   useEffect(() => {
     if (!isMobile) return
-    if (searchParams.get('tab') === 'password') {
+    if (searchParams.get('tab') !== 'password') return
+    queueMicrotask(() => {
       setPassError('')
       setShowPasswordSheet(true)
       router.replace('/admin/profile', { scroll: false })
-    }
+    })
   }, [isMobile, searchParams, router])
 
   useEffect(() => {

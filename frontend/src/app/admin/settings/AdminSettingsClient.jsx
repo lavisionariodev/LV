@@ -18,7 +18,7 @@ import { FaUser } from 'react-icons/fa6'
 import { FiEdit, FiUpload } from 'react-icons/fi'
 import { MdCheckCircle, MdErrorOutline } from 'react-icons/md'
 import { changePasswordWithReauth } from '@/lib/auth/changePassword'
-import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
+import { fetchCurrentAdminProfile } from '@/features/admin/settings/adminProfile'
 import { useMediaQuery } from '@/shared/hooks'
 import { useSiteContent, upsertSiteContent } from '@/lib/siteContent/client'
 import { useToast } from '@/contexts/ToastContext'
@@ -54,33 +54,165 @@ export function AdminBillingSettingsPanel({ variant = 'default' }) {
   const [billingLoading, setBillingLoading] = useState(true)
   const [defaultCommissionPercent, setDefaultCommissionPercent] = useState(10)
   const [billingUpdatedAt, setBillingUpdatedAt] = useState(null)
+  const [row, setRow] = useState(null)
+
+  const [editingRate, setEditingRate] = useState(false)
+  const [rateInput, setRateInput] = useState('10')
+  const [rateBusy, setRateBusy] = useState(false)
+  const [rateError, setRateError] = useState('')
+
+  const [editingLegal, setEditingLegal] = useState(false)
+  const [legalDraft, setLegalDraft] = useState({
+    legalName: '',
+    address: '',
+    taxId: '',
+    billingEmail: '',
+  })
+  const [editingSettlement, setEditingSettlement] = useState(false)
+  const [settlementDraft, setSettlementDraft] = useState('')
+  const [panelBusy, setPanelBusy] = useState(false)
+  const [panelError, setPanelError] = useState('')
+
+  const applyResponse = (body) => {
+    if (!body || typeof body !== 'object') return
+    setDefaultCommissionPercent(
+      Number.isFinite(Number(body?.defaultCommissionPercent))
+        ? Number(body.defaultCommissionPercent)
+        : 10,
+    )
+    setBillingUpdatedAt(body?.row?.updated_at ? String(body.row.updated_at) : null)
+    setRow(body?.row ?? null)
+  }
 
   useEffect(() => {
     let cancelled = false
-    ;(async () => {
-      setBillingLoading(true)
-      try {
-        const res = await fetch('/api/admin/platform-billing', { credentials: 'include' })
-        const body = await res.json().catch(() => null)
-        if (cancelled || !res.ok) return
-        setDefaultCommissionPercent(
-          Number.isFinite(Number(body?.defaultCommissionPercent))
-            ? Number(body.defaultCommissionPercent)
-            : 10,
-        )
-        setBillingUpdatedAt(body?.row?.updated_at ? String(body.row.updated_at) : null)
-      } finally {
-        if (!cancelled) setBillingLoading(false)
-      }
-    })()
+    queueMicrotask(() => {
+      ;(async () => {
+        setBillingLoading(true)
+        try {
+          const res = await fetch('/api/admin/platform-billing', { credentials: 'include' })
+          const body = await res.json().catch(() => null)
+          if (cancelled || !res.ok) return
+          applyResponse(body)
+        } finally {
+          if (!cancelled) setBillingLoading(false)
+        }
+      })()
+    })
     return () => {
       cancelled = true
     }
   }, [])
 
+  const startEditRate = () => {
+    setRateInput(String(defaultCommissionPercent))
+    setRateError('')
+    setEditingRate(true)
+  }
+
+  const saveRate = async () => {
+    setRateError('')
+    const v = parseFloat(rateInput)
+    if (!Number.isFinite(v) || v < 0 || v > 100) {
+      setRateError('Enter a rate from 0 through 100.')
+      return
+    }
+    setRateBusy(true)
+    try {
+      const res = await fetch('/api/admin/platform-billing', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ defaultCommissionPercent: v }),
+      })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) {
+        setRateError(body?.error || 'Failed to save commission rate.')
+        return
+      }
+      applyResponse(body)
+      setEditingRate(false)
+    } finally {
+      setRateBusy(false)
+    }
+  }
+
+  const startEditLegal = () => {
+    setLegalDraft({
+      legalName: row?.legal_name || '',
+      address: row?.address || '',
+      taxId: row?.tax_id || '',
+      billingEmail: row?.billing_email || '',
+    })
+    setPanelError('')
+    setEditingLegal(true)
+  }
+
+  const saveLegal = async () => {
+    setPanelError('')
+    setPanelBusy(true)
+    try {
+      const res = await fetch('/api/admin/platform-billing', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          legalName: legalDraft.legalName,
+          address: legalDraft.address,
+          taxId: legalDraft.taxId,
+          billingEmail: legalDraft.billingEmail,
+        }),
+      })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) {
+        setPanelError(body?.error || 'Failed to save legal details.')
+        return
+      }
+      applyResponse(body)
+      setEditingLegal(false)
+    } finally {
+      setPanelBusy(false)
+    }
+  }
+
+  const startEditSettlement = () => {
+    setSettlementDraft(row?.settlement_notes || '')
+    setPanelError('')
+    setEditingSettlement(true)
+  }
+
+  const saveSettlement = async () => {
+    setPanelError('')
+    setPanelBusy(true)
+    try {
+      const res = await fetch('/api/admin/platform-billing', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ settlementNotes: settlementDraft }),
+      })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) {
+        setPanelError(body?.error || 'Failed to save settlement notes.')
+        return
+      }
+      applyResponse(body)
+      setEditingSettlement(false)
+    } finally {
+      setPanelBusy(false)
+    }
+  }
+
   const wrapClass = isSheet
     ? styles.settingsSheetEmbed
     : `${styles.card} ${styles.full} ${isProfileDetail ? styles.cardBorderless : ''}`
+
+  const hasLegal =
+    Boolean(row?.legal_name) ||
+    Boolean(row?.address) ||
+    Boolean(row?.tax_id) ||
+    Boolean(row?.billing_email)
+  const hasSettlement = Boolean(row?.settlement_notes)
 
   return (
     <section className={wrapClass}>
@@ -104,12 +236,18 @@ export function AdminBillingSettingsPanel({ variant = 'default' }) {
         </p>
       )}
 
+      {panelError ? (
+        <p className={styles.tabDetailSubtitle} style={{ color: '#b91c1c' }}>
+          {panelError}
+        </p>
+      ) : null}
+
       <div className={styles.billingStack}>
         <div className={styles.billingSection}>
           <h3 className={styles.billingSectionTitle}>Platform commission</h3>
           <p className={styles.billingSectionLead}>
-            Default share of each successful order between buyers and sellers that applies before
-            any seller-specific rate.
+            Default share of each successful order between buyers and sellers, applied at order
+            capture. Per-seller overrides are stored on the seller record.
           </p>
           <dl className={styles.billingDl} aria-busy={billingLoading}>
             <div className={styles.billingDlRow}>
@@ -118,11 +256,62 @@ export function AdminBillingSettingsPanel({ variant = 'default' }) {
                 {billingLoading ? (
                   <span
                     className={styles.settingsSkBar}
-                    style={{ display: 'inline-block', width: 44, height: 15, verticalAlign: 'middle' }}
+                    style={{
+                      display: 'inline-block',
+                      width: 44,
+                      height: 15,
+                      verticalAlign: 'middle',
+                    }}
                     aria-hidden
                   />
+                ) : editingRate ? (
+                  <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.5"
+                      value={rateInput}
+                      onChange={(e) => setRateInput(e.target.value)}
+                      style={{ width: 80, padding: '4px 8px' }}
+                    />
+                    <span>%</span>
+                    <button
+                      type="button"
+                      onClick={saveRate}
+                      disabled={rateBusy}
+                      className={styles.billingCta}
+                    >
+                      {rateBusy ? 'Saving…' : 'Save'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingRate(false)
+                        setRateError('')
+                      }}
+                      disabled={rateBusy}
+                      className={styles.billingCta}
+                      style={{ background: 'transparent', color: '#475569' }}
+                    >
+                      Cancel
+                    </button>
+                    {rateError ? (
+                      <span style={{ color: '#b91c1c', marginLeft: 4 }}>{rateError}</span>
+                    ) : null}
+                  </span>
                 ) : (
-                  `${defaultCommissionPercent}%`
+                  <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+                    {`${defaultCommissionPercent}%`}
+                    <button
+                      type="button"
+                      onClick={startEditRate}
+                      className={styles.billingCta}
+                      style={{ padding: '2px 8px', fontSize: 12 }}
+                    >
+                      Edit
+                    </button>
+                  </span>
                 )}
               </dd>
             </div>
@@ -136,7 +325,12 @@ export function AdminBillingSettingsPanel({ variant = 'default' }) {
                 {billingLoading ? (
                   <span
                     className={styles.settingsSkBar}
-                    style={{ display: 'inline-block', width: 128, height: 14, verticalAlign: 'middle' }}
+                    style={{
+                      display: 'inline-block',
+                      width: 128,
+                      height: 14,
+                      verticalAlign: 'middle',
+                    }}
                     aria-hidden
                   />
                 ) : billingUpdatedAt ? (
@@ -148,9 +342,7 @@ export function AdminBillingSettingsPanel({ variant = 'default' }) {
             </div>
             <div className={styles.billingDlRow}>
               <dt>Per-seller overrides</dt>
-              <dd>
-                Not stored separately — adjust commission on individual escrows in Payouts when needed.
-              </dd>
+              <dd>Stored on the seller record (Payouts → Commission settings).</dd>
             </div>
           </dl>
           <Link href="/admin/payouts" className={styles.billingCta}>
@@ -161,12 +353,64 @@ export function AdminBillingSettingsPanel({ variant = 'default' }) {
         <div className={styles.billingSection}>
           <h3 className={styles.billingSectionTitle}>Settlement</h3>
           <p className={styles.billingSectionLead}>
-            Bank or e-wallet details where the platform receives its commission will appear here
-            once treasury setup is connected.
+            Notes about where the platform commission settles (treasury account, bank, e-wallet,
+            etc.).
           </p>
-          <div className={styles.billingPlaceholder} role="status">
-            Not configured yet
-          </div>
+          {editingSettlement ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <textarea
+                value={settlementDraft}
+                onChange={(e) => setSettlementDraft(e.target.value)}
+                rows={4}
+                style={{ width: '100%', padding: 8 }}
+              />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={saveSettlement}
+                  disabled={panelBusy}
+                  className={styles.billingCta}
+                >
+                  {panelBusy ? 'Saving…' : 'Save'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingSettlement(false)}
+                  disabled={panelBusy}
+                  className={styles.billingCta}
+                  style={{ background: 'transparent', color: '#475569' }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : hasSettlement ? (
+            <>
+              <p style={{ whiteSpace: 'pre-wrap' }}>{row.settlement_notes}</p>
+              <button
+                type="button"
+                onClick={startEditSettlement}
+                className={styles.billingCta}
+                style={{ padding: '4px 10px', fontSize: 12 }}
+              >
+                Edit settlement notes
+              </button>
+            </>
+          ) : (
+            <>
+              <div className={styles.billingPlaceholder} role="status">
+                Not configured yet
+              </div>
+              <button
+                type="button"
+                onClick={startEditSettlement}
+                className={styles.billingCta}
+                style={{ padding: '4px 10px', fontSize: 12 }}
+              >
+                Add settlement notes
+              </button>
+            </>
+          )}
           <Link href="/admin/payouts" className={styles.billingCta}>
             View payout activity →
           </Link>
@@ -177,9 +421,114 @@ export function AdminBillingSettingsPanel({ variant = 'default' }) {
           <p className={styles.billingSectionLead}>
             Registered business name, address, tax ID, and billing contact for official documents.
           </p>
-          <div className={styles.billingPlaceholder} role="status">
-            Not configured yet — stored data will appear here after setup.
-          </div>
+          {editingLegal ? (
+            <div style={{ display: 'grid', gap: 8 }}>
+              <label style={{ display: 'grid', gap: 4 }}>
+                <span style={{ fontSize: 12, color: '#475569' }}>Legal name</span>
+                <input
+                  value={legalDraft.legalName}
+                  onChange={(e) =>
+                    setLegalDraft((p) => ({ ...p, legalName: e.target.value }))
+                  }
+                  style={{ padding: '6px 10px' }}
+                />
+              </label>
+              <label style={{ display: 'grid', gap: 4 }}>
+                <span style={{ fontSize: 12, color: '#475569' }}>Address</span>
+                <textarea
+                  value={legalDraft.address}
+                  onChange={(e) =>
+                    setLegalDraft((p) => ({ ...p, address: e.target.value }))
+                  }
+                  rows={2}
+                  style={{ padding: '6px 10px' }}
+                />
+              </label>
+              <label style={{ display: 'grid', gap: 4 }}>
+                <span style={{ fontSize: 12, color: '#475569' }}>Tax ID</span>
+                <input
+                  value={legalDraft.taxId}
+                  onChange={(e) =>
+                    setLegalDraft((p) => ({ ...p, taxId: e.target.value }))
+                  }
+                  style={{ padding: '6px 10px' }}
+                />
+              </label>
+              <label style={{ display: 'grid', gap: 4 }}>
+                <span style={{ fontSize: 12, color: '#475569' }}>Billing email</span>
+                <input
+                  type="email"
+                  value={legalDraft.billingEmail}
+                  onChange={(e) =>
+                    setLegalDraft((p) => ({ ...p, billingEmail: e.target.value }))
+                  }
+                  style={{ padding: '6px 10px' }}
+                />
+              </label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={saveLegal}
+                  disabled={panelBusy}
+                  className={styles.billingCta}
+                >
+                  {panelBusy ? 'Saving…' : 'Save'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingLegal(false)}
+                  disabled={panelBusy}
+                  className={styles.billingCta}
+                  style={{ background: 'transparent', color: '#475569' }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : hasLegal ? (
+            <>
+              <dl className={styles.billingDl}>
+                <div className={styles.billingDlRow}>
+                  <dt>Legal name</dt>
+                  <dd>{row.legal_name || '—'}</dd>
+                </div>
+                <div className={styles.billingDlRow}>
+                  <dt>Address</dt>
+                  <dd style={{ whiteSpace: 'pre-wrap' }}>{row.address || '—'}</dd>
+                </div>
+                <div className={styles.billingDlRow}>
+                  <dt>Tax ID</dt>
+                  <dd>{row.tax_id || '—'}</dd>
+                </div>
+                <div className={styles.billingDlRow}>
+                  <dt>Billing email</dt>
+                  <dd>{row.billing_email || '—'}</dd>
+                </div>
+              </dl>
+              <button
+                type="button"
+                onClick={startEditLegal}
+                className={styles.billingCta}
+                style={{ padding: '4px 10px', fontSize: 12 }}
+              >
+                Edit legal details
+              </button>
+            </>
+          ) : (
+            <>
+              <div className={styles.billingPlaceholder} role="status">
+                Not configured yet — stored data will appear here after setup.
+              </div>
+              <button
+                type="button"
+                onClick={startEditLegal}
+                className={styles.billingCta}
+                style={{ padding: '4px 10px', fontSize: 12 }}
+              >
+                Configure legal details
+              </button>
+            </>
+          )}
         </div>
 
         <div className={styles.billingQuickLinks} aria-label="Related admin pages">
@@ -239,13 +588,10 @@ const CATEGORIES = [
 const CHANNELS = [
   { id: 'push', label: 'Push', hint: 'In-app notification' },
   { id: 'email', label: 'Email', hint: null },
-  {
-    id: 'sms',
-    label: 'SMS',
-    hint: 'Not available yet',
-    disabled: true,
-  },
 ]
+
+const SMS_DISCLAIMER =
+  'SMS delivery is not connected yet — only push and email channels are honored.'
 
 function defaultPrefs() {
   const o = {}
@@ -295,11 +641,16 @@ export const AdminNotificationPreferencesPanel = forwardRef(function AdminNotifi
   const isProfileDetail = variant === 'profileDetail'
   const [prefs, setPrefs] = useState(() => defaultPrefs())
   const prefsRef = useRef(prefs)
-  prefsRef.current = prefs
   const [loading, setLoading] = useState(true)
   const [saveError, setSaveError] = useState('')
   const adminIdRef = useRef(null)
   const saveTimerRef = useRef(null)
+
+  // Keep the ref in sync with state so `flushPendingSave` (called via the
+  // imperative handle) always sees the latest preferences without re-binding.
+  useEffect(() => {
+    prefsRef.current = prefs
+  }, [prefs])
 
   useImperativeHandle(
     ref,
@@ -357,7 +708,9 @@ export const AdminNotificationPreferencesPanel = forwardRef(function AdminNotifi
         if (!cancelled) setLoading(false)
       }
     }
-    load()
+    queueMicrotask(() => {
+      load()
+    })
     return () => {
       cancelled = true
     }
@@ -495,6 +848,10 @@ export const AdminNotificationPreferencesPanel = forwardRef(function AdminNotifi
           {saveError}
         </p>
       ) : null}
+
+      <p className={styles.notifPrefDesc} style={{ marginTop: 12, fontStyle: 'italic' }}>
+        {SMS_DISCLAIMER}
+      </p>
 
       <div className={styles.notifPrefFooter}>
         <Link href="/admin/notifications" className={styles.notificationsCta}>
@@ -645,16 +1002,29 @@ export function AdminSiteContentPanel({
   const { data: loadedContent, isLoading, error } = useSiteContent()
   const toast = useToast()
   const contentRefs = useRef(null)
+  // Track edit-mode in a ref so the loadedContent-sync effect can read the
+  // latest value without listing `isEditing` as a dep (intentional: we don't
+  // want to resync drafts when entering / leaving edit mode).
+  const isEditingRef = useRef(isEditing)
+  useEffect(() => {
+    isEditingRef.current = isEditing
+  }, [isEditing])
 
   useEffect(() => {
-    if (isMobile) setIsEditing(false)
+    if (!isMobile) return
+    queueMicrotask(() => {
+      setIsEditing(false)
+    })
   }, [isMobile])
 
   useEffect(() => {
     // Sync from server payload only when it changes. Avoid re-syncing on
     // local edit-mode toggles, which can temporarily overwrite just-saved
     // draft values with stale hook data until realtime update arrives.
-    if (loadedContent && !isEditing) setDraft(loadedContent)
+    if (!loadedContent || isEditingRef.current) return
+    queueMicrotask(() => {
+      setDraft(loadedContent)
+    })
   }, [loadedContent])
 
   const adjustTextareaSize = useCallback((textarea) => {
@@ -1250,7 +1620,9 @@ export default function AdminSettingsClient() {
         if (!cancelled) setLoading(false)
       }
     }
-    loadProfile()
+    queueMicrotask(() => {
+      loadProfile()
+    })
     return () => {
       cancelled = true
       if (avatarPreviewRef.current) URL.revokeObjectURL(avatarPreviewRef.current)
@@ -1410,9 +1782,12 @@ export default function AdminSettingsClient() {
     const trimmedName = [firstName, lastNameRaw].filter(Boolean).join(' ')
     const trimmedEmail = draftEmail.trim()
     const trimmedSms = draftSmsPhone.trim()
+    const emailChanged = trimmedEmail !== (profile.email || '')
     try {
-      const { error: authError } = await supabase.auth.updateUser({ email: trimmedEmail })
-      if (authError) throw authError
+      if (emailChanged) {
+        const { error: authError } = await supabase.auth.updateUser({ email: trimmedEmail })
+        if (authError) throw authError
+      }
       const { error } = await supabase
         .from('admins')
         .update({
@@ -1438,7 +1813,13 @@ export default function AdminSettingsClient() {
       )
       setIsEditingPersonal(false)
       setPersonalStatus('Profile updated successfully.')
-      toast.success('Profile updated successfully.')
+      if (emailChanged) {
+        toast.success(
+          `Verification link sent to ${trimmedEmail}. Email change applies once confirmed.`,
+        )
+      } else {
+        toast.success('Profile updated successfully.')
+      }
     } catch (err) {
       const message = err.message || 'Failed to update profile.'
       setPersonalError(message)
@@ -1534,7 +1915,9 @@ export default function AdminSettingsClient() {
 
   useEffect(() => {
     const t = searchParams.get('tab')
-    setActiveTab(normalizeSettingsTab(t || undefined))
+    queueMicrotask(() => {
+      setActiveTab(normalizeSettingsTab(t || undefined))
+    })
   }, [searchParams])
 
   const goTab = (tabId) => {

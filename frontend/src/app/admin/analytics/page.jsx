@@ -19,10 +19,15 @@ import {
 
 const BAR_COLORS = ['#1F312B', '#2D4A38', '#3D683A', '#4A7C47']
 const CHART_ACCENT = '#1F312B'
+const RANGE_OPTIONS = [
+  { value: 7, label: '7d' },
+  { value: 30, label: '30d' },
+  { value: 90, label: '90d' },
+]
 
-function utcLast7DaysSeriesZeros() {
+function utcLastNDaysSeriesZeros(n) {
   const out = []
-  for (let i = 6; i >= 0; i--) {
+  for (let i = n - 1; i >= 0; i--) {
     const d = new Date()
     d.setUTCHours(0, 0, 0, 0)
     d.setUTCDate(d.getUTCDate() - i)
@@ -38,10 +43,11 @@ function formatShortDate(dateStr) {
 
 export default function AdminAnalyticsPage() {
   const [loading, setLoading] = useState(true)
+  const [rangeDays, setRangeDays] = useState(7)
   const [sellersTotal, setSellersTotal] = useState(0)
   const [buyersTotal, setBuyersTotal] = useState(0)
   const [paidOrdersLast30Days, setPaidOrdersLast30Days] = useState(0)
-  const [dailyCollectedGmv, setDailyCollectedGmv] = useState(() => utcLast7DaysSeriesZeros())
+  const [dailyCollectedGmv, setDailyCollectedGmv] = useState(() => utcLastNDaysSeriesZeros(7))
   const [topLineItems, setTopLineItems] = useState([])
   const [recentActivity, setRecentActivity] = useState([])
   const [disputesNeedingAttention, setDisputesNeedingAttention] = useState(0)
@@ -51,7 +57,9 @@ export default function AdminAnalyticsPage() {
     const load = async () => {
       setLoading(true)
       try {
-        const res = await fetch('/api/admin/metrics', { credentials: 'include' })
+        const res = await fetch(`/api/admin/metrics?range=${rangeDays}d`, {
+          credentials: 'include',
+        })
         const body = await res.json().catch(() => null)
         if (cancelled || !res.ok || !body?.payoutSummary) return
         setSellersTotal(Number(body.sellersTotal) || 0)
@@ -59,6 +67,8 @@ export default function AdminAnalyticsPage() {
         setPaidOrdersLast30Days(Number(body.paidOrdersLast30Days) || 0)
         if (Array.isArray(body.dailyCollectedGmv) && body.dailyCollectedGmv.length > 0) {
           setDailyCollectedGmv(body.dailyCollectedGmv)
+        } else {
+          setDailyCollectedGmv(utcLastNDaysSeriesZeros(rangeDays))
         }
         if (Array.isArray(body.topLineItems)) setTopLineItems(body.topLineItems)
         if (Array.isArray(body.recentActivity)) setRecentActivity(body.recentActivity)
@@ -73,7 +83,7 @@ export default function AdminAnalyticsPage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [rangeDays])
 
   if (loading) {
     return (
@@ -149,15 +159,45 @@ export default function AdminAnalyticsPage() {
       <section className={layoutStyles.panel}>
         <div className={layoutStyles.panelHead}>
           <p className={layoutStyles.panelTitle}>Revenue overview</p>
+          <div
+            role="group"
+            aria-label="Date range"
+            style={{ display: 'inline-flex', gap: 4, padding: 2, background: '#f1f5f9', borderRadius: 8 }}
+          >
+            {RANGE_OPTIONS.map((opt) => {
+              const active = rangeDays === opt.value
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={layoutStyles.smallBtn}
+                  aria-pressed={active}
+                  onClick={() => setRangeDays(opt.value)}
+                  style={{
+                    background: active ? '#1F312B' : 'transparent',
+                    color: active ? '#fff' : '#334155',
+                    border: 'none',
+                    padding: '4px 10px',
+                    fontSize: 12,
+                    fontWeight: active ? 600 : 500,
+                    borderRadius: 6,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              )
+            })}
+          </div>
         </div>
         <p className={layoutStyles.analyticsSubtitle}>
-          Collected GMV from paid orders (order escrows), last 7 days · UTC day.
+          Collected GMV from paid orders (order escrows), last {rangeDays} days · UTC day.
         </p>
 
         <div className={layoutStyles.analyticsChartGrid}>
-          {/* Area chart — last 7 days GMV */}
+          {/* Area chart — last N days GMV */}
           <div className={layoutStyles.analyticsChartBlock}>
-            <p className={layoutStyles.analyticsChartLabel}>Last 7 days · GMV</p>
+            <p className={layoutStyles.analyticsChartLabel}>Last {rangeDays} days · GMV</p>
             <ResponsiveContainer width="100%" height={220}>
               <AreaChart
                 data={dailyCollectedGmv}
@@ -196,9 +236,11 @@ export default function AdminAnalyticsPage() {
             </ResponsiveContainer>
           </div>
 
-          {/* Bar chart — top line items (30d paid orders) */}
+          {/* Bar chart — top line items (paid orders within selected range) */}
           <div className={layoutStyles.analyticsChartBlock}>
-            <p className={layoutStyles.analyticsChartLabel}>Top paid line items · 30d</p>
+            <p className={layoutStyles.analyticsChartLabel}>
+              Top paid line items · {rangeDays}d
+            </p>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart
                 data={topLineItems.length > 0 ? topLineItems : [{ name: '—', value: 0 }]}

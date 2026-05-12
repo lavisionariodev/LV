@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import styles from './admin.module.css'
 import { formatCount, formatPHPMobile } from '@/shared/utils/formatCount'
-import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
+import { fetchCurrentAdminProfile } from '@/features/admin/settings/adminProfile'
 import { searchSellersForAdmin } from '@/lib/sellers/client'
 import { listSellerListingsForAdmin } from '@/lib/seller-listings/client'
 import { hasPendingSellerChanges } from '@/lib/seller-listings/pendingChanges'
@@ -25,6 +25,7 @@ import { LuUserCheck } from 'react-icons/lu'
 import { MdArrowOutward } from 'react-icons/md'
 
 const CHART_ACCENT = '#1F312B'
+const RECENT_ACTIVITY_LIMIT = 6
 
 const NAV_ACTIONS = [
   { id: 'sellers',  label: 'Sellers',  icon: LuUserCheck,    href: '/admin/sellers' },
@@ -146,7 +147,7 @@ export default function AdminDashboardPage() {
           setCommissionChartSeries(body.dailyReleasedCommission)
         }
         if (Array.isArray(body.recentActivity))
-          setRecentActivityRows(body.recentActivity.slice(0, 4))
+          setRecentActivityRows(body.recentActivity.slice(0, RECENT_ACTIVITY_LIMIT))
       } catch {
         // keep defaults
       }
@@ -653,9 +654,11 @@ export default function AdminDashboardPage() {
         <div className={styles.panel}>
           <div className={styles.panelHead}>
             <p className={styles.panelTitle}>Recent activity</p>
-            <Link href="/admin/analytics" className={styles.smallBtn}>
-              View all
-            </Link>
+            {recentActivityRows.length >= RECENT_ACTIVITY_LIMIT ? (
+              <Link href="/admin/analytics" className={styles.smallBtn}>
+                View all
+              </Link>
+            ) : null}
           </div>
 
           <div className={styles.table}>

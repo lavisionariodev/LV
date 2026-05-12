@@ -5,6 +5,11 @@ import { computeCommissionSnapshot } from '@/shared/utils/commissionSnapshot'
 import { apiLog } from '@/lib/observability/apiLog'
 import { reconcilePaymongoRefundEvent } from '@/lib/payments/refundReconcile'
 import { notifyUser, notifyAllAdmins } from '@/lib/notifications/inAppServer'
+import {
+  fetchPlatformDefaultCommissionPercent,
+  fetchSellerOverridesByUserId,
+  resolveCommissionRate,
+} from '@/lib/admin/commissionRate'
 
 function parseSignatureHeader(headerValue) {
   const out = {}
@@ -123,14 +128,11 @@ async function ensureOrderEscrowsForPayment({ supabaseAdmin, paymentId, orderIds
   const paidOrders = ordersRows.filter((o) => o.payment_status === 'paid')
   if (!paidOrders.length) return
 
-  const { data: billing } = await supabaseAdmin
-    .from('platform_billing')
-    .select('default_commission_percent')
-    .eq('id', 1)
-    .maybeSingle()
-
-  const ratePercent =
-    billing?.default_commission_percent != null ? Number(billing.default_commission_percent) : 10
+  const sellerIds = paidOrders.map((o) => o.seller_user_id).filter(Boolean)
+  const [defaultPercent, sellerOverrides] = await Promise.all([
+    fetchPlatformDefaultCommissionPercent(supabaseAdmin),
+    fetchSellerOverridesByUserId(supabaseAdmin, sellerIds),
+  ])
 
   const { data: existingRows } = await supabaseAdmin
     .from('order_escrows')
@@ -145,6 +147,10 @@ async function ensureOrderEscrowsForPayment({ supabaseAdmin, paymentId, orderIds
   const inserts = []
   for (const o of paidOrders) {
     if (existingIds.has(o.id)) continue
+    const ratePercent = resolveCommissionRate({
+      defaultPercent,
+      sellerOverride: sellerOverrides.get(o.seller_user_id) ?? null,
+    })
     const snap = computeCommissionSnapshot(Number(o.subtotal), ratePercent)
     inserts.push({
       order_id: o.id,
