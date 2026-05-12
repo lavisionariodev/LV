@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { BsThreeDots } from 'react-icons/bs';
 import { FaRegStar, FaStar } from 'react-icons/fa';
 import { FiRotateCcw } from 'react-icons/fi';
@@ -21,6 +21,7 @@ import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDebouncedEffect } from '@/shared/hooks';
 import { readEnum, readString, replaceUrlQuery } from '@/lib/url/queryParams';
+import { bulkStatusActionApplies } from '@/lib/admin/bulkEligibility';
 
 const STATUS_FILTER_OPTIONS = [
   { value: 'all', label: 'All statuses', color: 'slate' },
@@ -589,7 +590,46 @@ export default function AdminSellersPage() {
   const [pendingBulk, setPendingBulk] = useState(null);
   const [suspendSellerConfirm, setSuspendSellerConfirm] = useState(null);
 
+  const sellerBySelectId = useMemo(() => {
+    const m = new Map();
+    for (const s of sellers) {
+      if (!s) continue;
+      const raw = s.user_id ?? s.id;
+      if (raw == null) continue;
+      m.set(String(raw), s);
+    }
+    return m;
+  }, [sellers]);
+
+  const bulkSellerStatusApplies = useCallback(
+    (nextStatus) => {
+      // Rejecting is the onboarding outcome for pending applications only (see row actions menu).
+      if (nextStatus === 'rejected') {
+        for (const id of selectedRows) {
+          const s = sellerBySelectId.get(String(id));
+          if (s != null && s.status === 'pending') return true;
+        }
+        return false;
+      }
+      return bulkStatusActionApplies(
+        selectedRows,
+        (id) => sellerBySelectId.get(String(id)) ?? null,
+        nextStatus,
+      );
+    },
+    [selectedRows, sellerBySelectId],
+  );
+
   const requestBulkStatus = (nextStatus) => {
+    if (nextStatus === 'rejected') {
+      const pendingIds = [...selectedRows].filter(
+        (id) => sellerBySelectId.get(String(id))?.status === 'pending',
+      );
+      if (pendingIds.length === 0) return;
+      setPendingBulk({ nextStatus, ids: pendingIds });
+      return;
+    }
+    if (!bulkSellerStatusApplies(nextStatus)) return;
     const ids = [...selectedRows];
     if (ids.length === 0) return;
     setPendingBulk({ nextStatus, ids });
@@ -902,41 +942,46 @@ export default function AdminSellersPage() {
               alignItems: 'center',
               padding: '10px 12px',
               background: '#f8fafc',
-              border: '1px solid #e2e8f0',
+              border: '1px solid #cbd5e1',
               borderRadius: 8,
               margin: '0 0 10px',
               flexWrap: 'wrap',
             }}
             aria-live="polite"
           >
-            <span style={{ fontSize: 13, fontWeight: 500 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>
               {selectedRows.size} selected
             </span>
             {[
               { value: 'active', label: 'Set Active' },
-              { value: 'pending', label: 'Set Pending' },
               { value: 'suspended', label: 'Suspend' },
               { value: 'rejected', label: 'Mark Rejected' },
-            ].map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => requestBulkStatus(opt.value)}
-                disabled={bulkBusy}
-                style={{
-                  padding: '6px 12px',
-                  background: opt.value === 'suspended' || opt.value === 'rejected' ? '#b91c1c' : '#0f172a',
-                  color: '#fff',
-                  border: 0,
-                  borderRadius: 6,
-                  fontSize: 12,
-                  cursor: bulkBusy ? 'not-allowed' : 'pointer',
-                  opacity: bulkBusy ? 0.7 : 1,
-                }}
-              >
-                {bulkBusy ? 'Working…' : opt.label}
-              </button>
-            ))}
+            ]
+              .filter((opt) => bulkSellerStatusApplies(opt.value))
+              .map((opt) => {
+                const isNegative = opt.value === 'suspended' || opt.value === 'rejected'
+                return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => requestBulkStatus(opt.value)}
+                  disabled={bulkBusy}
+                  style={{
+                    padding: '6px 12px',
+                    background: isNegative ? '#fef2f2' : '#f1f5f9',
+                    color: isNegative ? '#b91c1c' : '#0f172a',
+                    border: isNegative ? '1px solid #b91c1c' : '1px solid #0f172a',
+                    borderRadius: 6,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: bulkBusy ? 'not-allowed' : 'pointer',
+                    opacity: bulkBusy ? 0.5 : 1,
+                  }}
+                >
+                  {bulkBusy ? 'Working…' : opt.label}
+                </button>
+                )
+              })}
             <button
               type="button"
               onClick={() => setSelectedRows(new Set())}
@@ -944,11 +989,14 @@ export default function AdminSellersPage() {
               style={{
                 marginLeft: 'auto',
                 padding: '6px 12px',
-                background: 'transparent',
-                border: '1px solid #cbd5e1',
+                background: '#ffffff',
+                color: '#0f172a',
+                border: '1px solid #0f172a',
                 borderRadius: 6,
                 fontSize: 12,
-                cursor: 'pointer',
+                fontWeight: 600,
+                cursor: bulkBusy ? 'not-allowed' : 'pointer',
+                opacity: bulkBusy ? 0.5 : 1,
               }}
             >
               Clear selection
@@ -1247,9 +1295,7 @@ export default function AdminSellersPage() {
         variant={
           pendingBulk?.nextStatus === 'suspended' || pendingBulk?.nextStatus === 'rejected'
             ? 'danger'
-            : pendingBulk?.nextStatus === 'active'
-              ? 'primary'
-              : 'warning'
+            : 'primary'
         }
         title="Update selected sellers?"
         message={

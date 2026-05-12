@@ -11,6 +11,7 @@ import { Dropdown } from '@/components/ui'
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { readEnum, readString, replaceUrlQuery } from '@/lib/url/queryParams'
+import { bulkStatusActionApplies } from '@/lib/admin/bulkEligibility'
 
 const STATUS_FILTER_OPTIONS = [
   { value: 'all', label: 'All statuses', color: 'slate' },
@@ -409,13 +410,30 @@ export default function AdminBuyersPage() {
     setStatusConfirm({ kind: 'reactivate', buyer })
   }, [])
 
+  const buyerById = useMemo(() => {
+    const m = new Map()
+    for (const b of buyers) {
+      if (b?.id != null) m.set(String(b.id), b)
+    }
+    return m
+  }, [buyers])
+
   const requestBulkBuyerStatus = useCallback(
     (nextStatus) => {
+      if (
+        !bulkStatusActionApplies(
+          selectedRows,
+          (id) => buyerById.get(String(id)) ?? null,
+          nextStatus,
+        )
+      ) {
+        return
+      }
       const ids = [...selectedRows]
       if (ids.length === 0) return
       setStatusConfirm({ kind: 'bulk', nextStatus, ids })
     },
-    [selectedRows],
+    [selectedRows, buyerById],
   )
 
   const handleStatusConfirm = useCallback(async () => {
@@ -503,6 +521,24 @@ export default function AdminBuyersPage() {
   const activeFilterLabel = statusFilter !== 'all' ? statusLabel : null
 
   const selectedCount = selectedRows.size
+  const bulkSuspendApplies = useMemo(
+    () =>
+      bulkStatusActionApplies(
+        selectedRows,
+        (id) => buyerById.get(String(id)) ?? null,
+        'suspended',
+      ),
+    [selectedRows, buyerById],
+  )
+  const bulkReactivateApplies = useMemo(
+    () =>
+      bulkStatusActionApplies(
+        selectedRows,
+        (id) => buyerById.get(String(id)) ?? null,
+        'active',
+      ),
+    [selectedRows, buyerById],
+  )
 
   return (
     <div className={styles.pageRoot}>
@@ -623,60 +659,71 @@ export default function AdminBuyersPage() {
               style={{
                 display: 'flex',
                 gap: 8,
+                flexWrap: 'wrap',
                 padding: '10px 12px',
                 background: '#f8fafc',
-                borderTop: '1px solid #e2e8f0',
+                borderTop: '1px solid #cbd5e1',
                 alignItems: 'center',
               }}
               aria-live="polite"
             >
-              <span style={{ fontSize: 13, fontWeight: 500 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>
                 {selectedCount} selected
               </span>
-              <button
-                type="button"
-                onClick={() => requestBulkBuyerStatus('suspended')}
-                disabled={bulkBusy}
-                style={{
-                  padding: '6px 12px',
-                  background: '#b91c1c',
-                  color: '#fff',
-                  border: 0,
-                  borderRadius: 6,
-                  fontSize: 13,
-                  cursor: bulkBusy ? 'not-allowed' : 'pointer',
-                }}
-              >
-                {bulkBusy ? 'Working…' : 'Suspend selected'}
-              </button>
-              <button
-                type="button"
-                onClick={() => requestBulkBuyerStatus('active')}
-                disabled={bulkBusy}
-                style={{
-                  padding: '6px 12px',
-                  background: '#0f172a',
-                  color: '#fff',
-                  border: 0,
-                  borderRadius: 6,
-                  fontSize: 13,
-                  cursor: bulkBusy ? 'not-allowed' : 'pointer',
-                }}
-              >
-                {bulkBusy ? 'Working…' : 'Reactivate selected'}
-              </button>
+              {bulkSuspendApplies ? (
+                <button
+                  type="button"
+                  onClick={() => requestBulkBuyerStatus('suspended')}
+                  disabled={bulkBusy}
+                  style={{
+                    padding: '6px 12px',
+                    background: '#fef2f2',
+                    color: '#b91c1c',
+                    border: '1px solid #b91c1c',
+                    borderRadius: 6,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: bulkBusy ? 'not-allowed' : 'pointer',
+                    opacity: bulkBusy ? 0.5 : 1,
+                  }}
+                >
+                  {bulkBusy ? 'Working…' : 'Suspend selected'}
+                </button>
+              ) : null}
+              {bulkReactivateApplies ? (
+                <button
+                  type="button"
+                  onClick={() => requestBulkBuyerStatus('active')}
+                  disabled={bulkBusy}
+                  style={{
+                    padding: '6px 12px',
+                    background: '#f1f5f9',
+                    color: '#0f172a',
+                    border: '1px solid #0f172a',
+                    borderRadius: 6,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: bulkBusy ? 'not-allowed' : 'pointer',
+                    opacity: bulkBusy ? 0.5 : 1,
+                  }}
+                >
+                  {bulkBusy ? 'Working…' : 'Reactivate selected'}
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={() => setSelectedRows(new Set())}
                 disabled={bulkBusy}
                 style={{
                   padding: '6px 12px',
-                  background: 'transparent',
-                  color: '#475569',
-                  border: '1px solid #e2e8f0',
+                  background: '#ffffff',
+                  color: '#0f172a',
+                  border: '1px solid #0f172a',
                   borderRadius: 6,
                   fontSize: 13,
-                  cursor: 'pointer',
+                  fontWeight: 600,
+                  cursor: bulkBusy ? 'not-allowed' : 'pointer',
+                  opacity: bulkBusy ? 0.5 : 1,
                   marginLeft: 'auto',
                 }}
               >

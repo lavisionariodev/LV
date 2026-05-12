@@ -8,6 +8,7 @@ import { LuSettings2 } from 'react-icons/lu'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useDebouncedEffect } from '@/shared/hooks'
 import { readEnum, readString, replaceUrlQuery } from '@/lib/url/queryParams'
+import { bulkStatusActionApplies } from '@/lib/admin/bulkEligibility'
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 
 const STATUS_OPTIONS = [
@@ -19,6 +20,22 @@ const STATUS_OPTIONS = [
 ]
 
 const STATUS_LABEL = Object.fromEntries(STATUS_OPTIONS.map((o) => [o.value, o.label]))
+
+/** Light bg + matching border/text for bulk “Set status” actions */
+function disputeBulkActionButtonStyles(statusValue) {
+  switch (statusValue) {
+    case 'open':
+      return { background: '#fef2f2', color: '#b91c1c', border: '1px solid #b91c1c' }
+    case 'under_review':
+      return { background: '#fffbeb', color: '#b45309', border: '1px solid #b45309' }
+    case 'resolved':
+      return { background: '#f0fdf4', color: '#15803d', border: '1px solid #16a34a' }
+    case 'closed':
+      return { background: '#f1f5f9', color: '#475569', border: '1px solid #64748b' }
+    default:
+      return { background: '#f1f5f9', color: '#0f172a', border: '1px solid #0f172a' }
+  }
+}
 
 const Icon = {
   Search: () => (
@@ -139,6 +156,14 @@ export default function AdminDisputesPage() {
   const [bulkBusy, setBulkBusy] = useState(false)
   const [bulkStatusConfirm, setBulkStatusConfirm] = useState(null)
 
+  const disputeById = useMemo(() => {
+    const m = new Map()
+    for (const d of allDisputes) {
+      if (d?.id != null) m.set(String(d.id), d)
+    }
+    return m
+  }, [allDisputes])
+
   const loadDisputes = useCallback(async () => {
     setListError('')
     const res = await fetch('/api/admin/disputes', { cache: 'no-store' })
@@ -153,11 +178,20 @@ export default function AdminDisputesPage() {
 
   const requestBulkStatus = useCallback(
     (nextStatus) => {
+      if (
+        !bulkStatusActionApplies(
+          selectedRows,
+          (id) => disputeById.get(String(id)) ?? null,
+          nextStatus,
+        )
+      ) {
+        return
+      }
       const ids = [...selectedRows]
       if (ids.length === 0) return
       setBulkStatusConfirm({ nextStatus, ids })
     },
-    [selectedRows],
+    [selectedRows, disputeById],
   )
 
   const confirmBulkStatus = useCallback(async () => {
@@ -379,36 +413,43 @@ export default function AdminDisputesPage() {
               alignItems: 'center',
               padding: '10px 12px',
               background: '#f8fafc',
-              border: '1px solid #e2e8f0',
+              border: '1px solid #cbd5e1',
               borderRadius: 8,
               marginBottom: 10,
               flexWrap: 'wrap',
             }}
             aria-live="polite"
           >
-            <span style={{ fontSize: 13, fontWeight: 500 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>
               {selectedRows.size} selected
             </span>
-            {STATUS_OPTIONS.filter((o) => o.value !== 'all').map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => requestBulkStatus(opt.value)}
-                disabled={bulkBusy}
-                style={{
-                  padding: '6px 12px',
-                  background: '#0f172a',
-                  color: '#fff',
-                  border: 0,
-                  borderRadius: 6,
-                  fontSize: 12,
-                  cursor: bulkBusy ? 'not-allowed' : 'pointer',
-                  opacity: bulkBusy ? 0.7 : 1,
-                }}
-              >
-                {bulkBusy ? 'Working…' : `Set ${STATUS_LABEL[opt.value] ?? opt.value}`}
-              </button>
-            ))}
+            {STATUS_OPTIONS.filter((o) => o.value !== 'all')
+              .filter((opt) =>
+                bulkStatusActionApplies(
+                  selectedRows,
+                  (id) => disputeById.get(String(id)) ?? null,
+                  opt.value,
+                ),
+              )
+              .map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => requestBulkStatus(opt.value)}
+                  disabled={bulkBusy}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 6,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: bulkBusy ? 'not-allowed' : 'pointer',
+                    opacity: bulkBusy ? 0.5 : 1,
+                    ...disputeBulkActionButtonStyles(opt.value),
+                  }}
+                >
+                  {bulkBusy ? 'Working…' : `Set ${STATUS_LABEL[opt.value] ?? opt.value}`}
+                </button>
+              ))}
             <button
               type="button"
               onClick={() => setSelectedRows(new Set())}
@@ -416,11 +457,14 @@ export default function AdminDisputesPage() {
               style={{
                 marginLeft: 'auto',
                 padding: '6px 12px',
-                background: 'transparent',
-                border: '1px solid #cbd5e1',
+                background: '#ffffff',
+                color: '#0f172a',
+                border: '1px solid #0f172a',
                 borderRadius: 6,
                 fontSize: 12,
-                cursor: 'pointer',
+                fontWeight: 600,
+                cursor: bulkBusy ? 'not-allowed' : 'pointer',
+                opacity: bulkBusy ? 0.5 : 1,
               }}
             >
               Clear selection

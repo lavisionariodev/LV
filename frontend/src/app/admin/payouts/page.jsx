@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { FiArrowUp, FiArrowDown, FiRotateCcw } from 'react-icons/fi'
+import { FiArrowUp, FiArrowDown, FiRotateCcw, FiUnlock } from 'react-icons/fi'
 import { TbCreditCardPay, TbPlayerPause, TbX } from 'react-icons/tb'
 import { LuSettings2 } from 'react-icons/lu'
 
@@ -57,6 +57,26 @@ function txnSortTimestamp(t) {
     if (Number.isFinite(n)) return n
   }
   return 0
+}
+
+/** Same rules as per-row “Release” in EscrowReleasePanel */
+function payoutTxnCanBulkRelease(t) {
+  return (
+    t &&
+    t.payoutStatus === 'escrowed' &&
+    t.paymentStatus === 'paid' &&
+    t.fulfillmentStatus === 'completed'
+  )
+}
+
+function payoutTxnCanBulkUnhold(t) {
+  return t && t.payoutStatus === 'on_hold'
+}
+
+/** Stable Set key for transaction row selection (API may use string or numeric ids). */
+function payoutTxnRowKey(t) {
+  if (t == null || t.id == null) return ''
+  return String(t.id)
 }
 
 function buildPayoutQueryString({
@@ -447,7 +467,6 @@ function useAdminPayoutsPage() {
     transactions,
     sellerOptions,
     commissionSettings,
-    setCommissionSettings,
     activeTab,
     setActiveTab,
     search,
@@ -802,10 +821,7 @@ function EscrowReleasePanel({
     setReleaseModalOpen(false)
   }, [busy])
 
-  const canRelease =
-    t.payoutStatus === 'escrowed' &&
-    t.paymentStatus === 'paid' &&
-    t.fulfillmentStatus === 'completed'
+  const canRelease = payoutTxnCanBulkRelease(t)
 
   const blockers = []
   if (t.paymentStatus !== 'paid') {
@@ -1576,10 +1592,6 @@ function CommissionPanel({
   const [busy, setBusy] = useState(null) // 'global' | sellerId | 'reset' | null
   const [saveError, setSaveError] = useState('')
 
-  useEffect(() => {
-    setGlobalInput(String(settings.global))
-  }, [settings.global])
-
   const customCount = Object.keys(settings.sellers).length
 
   const logEntry = (entry) => {
@@ -2156,7 +2168,6 @@ export default function AdminPayoutsPage() {
     transactions,
     sellerOptions,
     commissionSettings,
-    setCommissionSettings,
     activeTab,
     setActiveTab,
     search,
@@ -2225,6 +2236,81 @@ export default function AdminPayoutsPage() {
     if (!mobileDetailModalId) return null
     return transactions.find((x) => x.id === mobileDetailModalId) ?? null
   }, [transactions, mobileDetailModalId])
+
+  const [payoutsBulkReleaseConfirm, setPayoutsBulkReleaseConfirm] = useState(false)
+  const [payoutsBulkUnholdConfirm, setPayoutsBulkUnholdConfirm] = useState(false)
+  const [payoutsBulkBusy, setPayoutsBulkBusy] = useState(false)
+
+  const selectedPayoutTxns = useMemo(() => {
+    if (selectedRows.size === 0) return []
+    return transactions.filter((t) => {
+      const key = payoutTxnRowKey(t)
+      return key !== '' && selectedRows.has(key)
+    })
+  }, [transactions, selectedRows])
+
+  const bulkReleaseTargets = useMemo(
+    () => selectedPayoutTxns.filter(payoutTxnCanBulkRelease),
+    [selectedPayoutTxns],
+  )
+  const bulkUnholdTargets = useMemo(
+    () => selectedPayoutTxns.filter(payoutTxnCanBulkUnhold),
+    [selectedPayoutTxns],
+  )
+
+  const runBulkRelease = useCallback(async () => {
+    if (bulkReleaseTargets.length === 0) return
+    setPayoutsBulkBusy(true)
+    try {
+      let failed = 0
+      for (const t of bulkReleaseTargets) {
+        try {
+          const orderId = t.orderUuid ?? t.orderId
+          if (!orderId) {
+            failed += 1
+            continue
+          }
+          await releaseOrder(orderId)
+        } catch {
+          failed += 1
+        }
+      }
+      if (failed > 0) {
+        window.alert(`${failed} of ${bulkReleaseTargets.length} release(s) failed.`)
+      }
+    } finally {
+      setPayoutsBulkBusy(false)
+      setPayoutsBulkReleaseConfirm(false)
+      setSelectedRows(new Set())
+    }
+  }, [bulkReleaseTargets, releaseOrder, setSelectedRows])
+
+  const runBulkUnhold = useCallback(async () => {
+    if (bulkUnholdTargets.length === 0) return
+    setPayoutsBulkBusy(true)
+    try {
+      let failed = 0
+      for (const t of bulkUnholdTargets) {
+        try {
+          const orderId = t.orderUuid ?? t.orderId
+          if (!orderId) {
+            failed += 1
+            continue
+          }
+          await unholdOrder(orderId)
+        } catch {
+          failed += 1
+        }
+      }
+      if (failed > 0) {
+        window.alert(`${failed} of ${bulkUnholdTargets.length} unhold(s) failed.`)
+      }
+    } finally {
+      setPayoutsBulkBusy(false)
+      setPayoutsBulkUnholdConfirm(false)
+      setSelectedRows(new Set())
+    }
+  }, [bulkUnholdTargets, unholdOrder, setSelectedRows])
 
   useEffect(() => {
     if (!mobileDetailModalId || !isMobile) return
@@ -2517,6 +2603,90 @@ export default function AdminPayoutsPage() {
           
           </div>
 
+          {selectedRows.size > 0 ? (
+            <div
+              style={{
+                display: 'flex',
+                gap: 8,
+                alignItems: 'center',
+                padding: '10px 12px',
+                background: '#f8fafc',
+                border: '1px solid #cbd5e1',
+                borderRadius: 8,
+                marginBottom: 10,
+                flexWrap: 'wrap',
+              }}
+              aria-live="polite"
+            >
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>
+                {selectedRows.size} selected
+              </span>
+              {bulkReleaseTargets.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setPayoutsBulkReleaseConfirm(true)}
+                  disabled={payoutsBulkBusy || listLoading || Boolean(listError)}
+                  style={{
+                    padding: '6px 12px',
+                    background: '#f0fdf4',
+                    color: '#15803d',
+                    border: '1px solid #16a34a',
+                    borderRadius: 6,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: payoutsBulkBusy || listLoading || listError ? 'not-allowed' : 'pointer',
+                    opacity: payoutsBulkBusy || listLoading || listError ? 0.5 : 1,
+                  }}
+                >
+                  Release payout{bulkReleaseTargets.length === 1 ? '' : 's'} ({bulkReleaseTargets.length})
+                </button>
+              ) : null}
+              {bulkUnholdTargets.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setPayoutsBulkUnholdConfirm(true)}
+                  disabled={payoutsBulkBusy || listLoading || Boolean(listError)}
+                  style={{
+                    padding: '6px 12px',
+                    background: '#f1f5f9',
+                    color: '#0f172a',
+                    border: '1px solid #0f172a',
+                    borderRadius: 6,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: payoutsBulkBusy || listLoading || listError ? 'not-allowed' : 'pointer',
+                    opacity: payoutsBulkBusy || listLoading || listError ? 0.5 : 1,
+                  }}
+                >
+                  Remove hold ({bulkUnholdTargets.length})
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => {
+                  setPayoutsBulkReleaseConfirm(false)
+                  setPayoutsBulkUnholdConfirm(false)
+                  setSelectedRows(new Set())
+                }}
+                disabled={payoutsBulkBusy}
+                style={{
+                  marginLeft: 'auto',
+                  padding: '6px 12px',
+                  background: '#ffffff',
+                  color: '#0f172a',
+                  border: '1px solid #0f172a',
+                  borderRadius: 6,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: payoutsBulkBusy ? 'not-allowed' : 'pointer',
+                  opacity: payoutsBulkBusy ? 0.5 : 1,
+                }}
+              >
+                Clear selection
+              </button>
+            </div>
+          ) : null}
+
           {/* Mobile Card List — hidden on desktop via CSS */}
           <div className={styles.mobileCardList}>
             {listLoading ? (
@@ -2538,8 +2708,35 @@ export default function AdminPayoutsPage() {
                 return (
                   <div key={t.id} className={styles.mobileCard}>
                     <div className={styles.mobileCardTop}>
-                      <div>
-                        <p className={styles.orderId}>{t.orderId}</p>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: 8,
+                          flex: 1,
+                          minWidth: 0,
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          className={styles.rowCheckbox}
+                          checked={selectedRows.has(payoutTxnRowKey(t))}
+                          disabled={listLoading || Boolean(listError)}
+                          onChange={(e) => {
+                            const key = payoutTxnRowKey(t)
+                            if (!key) return
+                            setSelectedRows((prev) => {
+                              const next = new Set(prev)
+                              if (e.target.checked) next.add(key)
+                              else next.delete(key)
+                              return next
+                            })
+                          }}
+                          aria-label={`Select order ${t.orderId || t.orderUuid || ''}`}
+                        />
+                        <div style={{ minWidth: 0 }}>
+                          <p className={styles.orderId}>{t.orderId}</p>
+                        </div>
                       </div>
                       <p className={styles.mobileCardAmount}>{formatPHP(t.amount)}</p>
                     </div>
@@ -2587,13 +2784,26 @@ export default function AdminPayoutsPage() {
                     <input
                       type="checkbox"
                       className={styles.rowCheckbox}
-                      disabled={listLoading || paginatedRows.length === 0}
-                      checked={paginatedRows.length > 0 && paginatedRows.every(t => selectedRows.has(t.id))}
+                      disabled={listLoading || paginatedRows.length === 0 || Boolean(listError)}
+                      checked={
+                        paginatedRows.length > 0 &&
+                        paginatedRows.every((t) => selectedRows.has(payoutTxnRowKey(t)))
+                      }
+                      aria-label="Select all transactions on this page"
                       onChange={e => {
                         setSelectedRows(prev => {
                           const next = new Set(prev)
-                          if (e.target.checked) paginatedRows.forEach(t => next.add(t.id))
-                          else paginatedRows.forEach(t => next.delete(t.id))
+                          if (e.target.checked) {
+                            paginatedRows.forEach((t) => {
+                              const key = payoutTxnRowKey(t)
+                              if (key) next.add(key)
+                            })
+                          } else {
+                            paginatedRows.forEach((t) => {
+                              const key = payoutTxnRowKey(t)
+                              if (key) next.delete(key)
+                            })
+                          }
                           return next
                         })
                       }}
@@ -2658,15 +2868,19 @@ export default function AdminPayoutsPage() {
                           <input
                             type="checkbox"
                             className={styles.rowCheckbox}
-                            checked={selectedRows.has(t.id)}
+                            checked={selectedRows.has(payoutTxnRowKey(t))}
+                            disabled={listLoading || Boolean(listError)}
                             onChange={e => {
+                              const key = payoutTxnRowKey(t)
+                              if (!key) return
                               setSelectedRows(prev => {
                                 const next = new Set(prev)
-                                if (e.target.checked) next.add(t.id)
-                                else next.delete(t.id)
+                                if (e.target.checked) next.add(key)
+                                else next.delete(key)
                                 return next
                               })
                             }}
+                            aria-label={`Select order ${t.orderId || t.orderUuid || ''}`}
                           />
                         </td>
                         <td>
@@ -2772,6 +2986,52 @@ export default function AdminPayoutsPage() {
               </p>
             </div>
           )}
+
+          <ConfirmModal
+            open={payoutsBulkReleaseConfirm && bulkReleaseTargets.length > 0}
+            variant="primary"
+            icon={<TbCreditCardPay size={22} strokeWidth={1.75} aria-hidden />}
+            title={`Release ${bulkReleaseTargets.length} payout${bulkReleaseTargets.length === 1 ? '' : 's'}?`}
+            message={
+              <>
+                This will finalize escrow release for{' '}
+                <strong>{bulkReleaseTargets.length}</strong> paid, completed order
+                {bulkReleaseTargets.length === 1 ? '' : 's'} (other selected rows that are not eligible are skipped).
+                Only use when you intend to complete these payouts.
+              </>
+            }
+            confirmLabel="Release payouts"
+            confirmLoadingLabel="Releasing…"
+            cancelLabel="Cancel"
+            loading={payoutsBulkBusy}
+            onCancel={() => {
+              if (payoutsBulkBusy) return
+              setPayoutsBulkReleaseConfirm(false)
+            }}
+            onConfirm={runBulkRelease}
+          />
+          <ConfirmModal
+            open={payoutsBulkUnholdConfirm && bulkUnholdTargets.length > 0}
+            variant="warning"
+            icon={<FiUnlock size={22} aria-hidden />}
+            title={`Remove hold on ${bulkUnholdTargets.length} order${bulkUnholdTargets.length === 1 ? '' : 's'}?`}
+            message={
+              <>
+                Escrow will return to its prior state for{' '}
+                <strong>{bulkUnholdTargets.length}</strong> on-hold row
+                {bulkUnholdTargets.length === 1 ? '' : 's'}. Other selected rows are unchanged.
+              </>
+            }
+            confirmLabel="Remove holds"
+            confirmLoadingLabel="Removing…"
+            cancelLabel="Cancel"
+            loading={payoutsBulkBusy}
+            onCancel={() => {
+              if (payoutsBulkBusy) return
+              setPayoutsBulkUnholdConfirm(false)
+            }}
+            onConfirm={runBulkUnhold}
+          />
         </div>
       )}
 
