@@ -20,7 +20,7 @@ export default function ConfirmModal({
   loading = false,
   /** Confirm button text while `loading` (present tense + "...", e.g. "Saving..."). */
   confirmLoadingLabel,
-  /** `danger` — red · `primary` — green · `warning` — amber (caution). */
+  /** `danger` — red · `primary` — green · `warning` — amber · `neutral` — slate/gray. */
   variant = 'danger',
   /** Optional node shown inside the header circle instead of "!". */
   icon = null,
@@ -58,11 +58,24 @@ export default function ConfirmModal({
 
   const isPrimary = variant === 'primary'
   const isWarning = variant === 'warning'
+  const isNeutral = variant === 'neutral'
   const iconCircleClass = `${styles.iconCircle} ${
-    isPrimary ? styles.iconCirclePrimary : isWarning ? styles.iconCircleWarning : styles.iconCircleDanger
+    isPrimary
+      ? styles.iconCirclePrimary
+      : isWarning
+        ? styles.iconCircleWarning
+        : isNeutral
+          ? styles.iconCircleNeutral
+          : styles.iconCircleDanger
   }`
   const confirmBtnClass = `${styles.confirmBtn} ${
-    isPrimary ? styles.confirmBtnPrimary : isWarning ? styles.confirmBtnWarning : styles.confirmBtnDanger
+    isPrimary
+      ? styles.confirmBtnPrimary
+      : isWarning
+        ? styles.confirmBtnWarning
+        : isNeutral
+          ? styles.confirmBtnNeutral
+          : styles.confirmBtnDanger
   }`
 
   const subtitleClass =

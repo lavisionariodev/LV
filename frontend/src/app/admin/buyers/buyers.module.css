@@ -604,29 +604,62 @@
 
 .table {
   width: 100%;
+  max-width: 100%;
   border-collapse: collapse;
   font-size: 13px;
   table-layout: fixed;
 }
 
-/* Column widths — narrow checkbox; remaining columns share rest (see colgroup in page.jsx) */
+/*
+ * Column widths: checkbox + actions are px so the 7th column does not inflate past 100%.
+ * Middle columns use % of the table; the engine resolves mixed px + % without horizontal overflow.
+ */
 .colCheck {
-  width: 4%;
+  /* Narrow + fixed; otherwise this column soaks extra width (it’s excluded from max-width:0). */
+  width: 20px;
 }
 .colBuyer {
-  width: 21%;
+  width: 22%;
 }
 .colEmail {
-  width: 25%;
+  width: 28%;
 }
 .colJoined {
   width: 15%;
 }
 .colRole {
-  width: 17.5%;
+  width: 10%;
 }
 .colStatus {
-  width: 17.5%;
+  width: 10%;
+}
+.colActions {
+  width: 50px;
+}
+
+/*
+ * Fixed-layout tables default to min-content width for cells, which blocks ellipsis and causes overflow.
+ * Scoped to desktop only — mobile uses display:block cards on .table/.primaryRow.
+ */
+@media (min-width: 641px) {
+  /* Pin checkbox column — without this, slack width piles into col 1 (only col not on max-width:0). */
+  .table th.checkboxCell,
+  .table td.checkboxCell {
+    width: 36px;
+    min-width: 36px;
+    max-width: 36px;
+    box-sizing: border-box;
+  }
+
+  .table th:not(.checkboxCell):not(:last-child),
+  .table td:not(.checkboxCell):not(:last-child) {
+    max-width: 0;
+    overflow: hidden;
+  }
+
+  .table td:last-child {
+    overflow: visible;
+  }
 }
 
 .table thead tr {
@@ -643,6 +676,7 @@
   border-bottom: 1px solid #e9e9ef;
   white-space: nowrap;
   letter-spacing: 0.01em;
+  min-width: 0;
 }
 
 .table td {
@@ -650,6 +684,7 @@
   vertical-align: middle;
   color: #0f172a;
   font-size: 13px;
+  min-width: 0;
 }
 
 .primaryRow {
@@ -672,7 +707,7 @@
   text-align: center;
   vertical-align: middle;
   padding-left: 12px;
-  padding-right: 2px;
+  padding-right: 12px;
 }
 
 /* Pull Buyer column closer to the checkbox */
@@ -774,6 +809,7 @@
 
 .email {
   display: block;
+  max-width: 100%;
   font-size: 13px;
   color: #475569;
   overflow: hidden;
@@ -853,6 +889,114 @@
 .status_suspended {
   border-color: #fecaca;
   color: #b91c1c;
+}
+
+/* ── Row actions menu (kebab) — matches admin sellers ───────────────────── */
+
+.actionMenuWrap {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+.actionMenuTrigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  line-height: 0;
+  transition: color 0.12s;
+}
+
+.actionMenuTrigger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .actionMenuTrigger:hover:not(:disabled) {
+    color: #0f172a;
+    background: transparent;
+  }
+}
+
+.actionMenuTrigger:focus-visible {
+  outline: 2px solid #94a3b8;
+  outline-offset: 2px;
+}
+
+.actionMenuTriggerIcon {
+  display: block;
+  flex-shrink: 0;
+}
+
+.actionMenu {
+  position: fixed;
+  min-width: 180px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06);
+  z-index: 150;
+  padding: 4px;
+  text-align: left;
+}
+
+.actionMenuItem {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.1s;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .actionMenuItem:hover:not(:disabled) {
+    background: #f1f5f9;
+  }
+}
+
+.actionMenuItem:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.actionMenuItemPrimary {
+  color: #15803d;
+  font-weight: 600;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .actionMenuItemPrimary:hover:not(:disabled) {
+    background: #f0fdf4;
+  }
+}
+
+.actionMenuItemDanger {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .actionMenuItemDanger:hover:not(:disabled) {
+    background: #fef2f2;
+  }
 }
 
 /* Mobile-only inline status (next to Joined date). Hidden on desktop. */
@@ -1268,6 +1412,26 @@
     display: inline-flex;
   }
 
+  /* Kebab — bigger tap area (match sellers) */
+  .actionMenuTrigger {
+    padding: 8px;
+    min-width: 36px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .actionMenu {
+    min-width: 200px;
+  }
+
+  .actionMenuItem {
+    padding: 12px 14px;
+    font-size: 14px;
+    min-height: 46px;
+  }
+
   /* ── Footer ──────────────────────────────────────────────────────────── */
   .tableFooter {
     padding: 12px 14px;
@@ -1280,6 +1444,356 @@
   /* ── Empty state ──────────────────────────────────────────────────────── */
   .emptyState { padding: 40px 20px; background: transparent; }
   .clearBtn   { min-height: 44px; padding: 11px 20px; font-size: 13px; border-radius: 10px; }
+}
+
+/* ── Buyer detail modal (aligned with admin sellers “view details”) ─────── */
+
+.detailModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.detailModal {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 520px;
+  max-height: min(90vh, 720px);
+  overflow: hidden;
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+}
+
+.detailModalHeader {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 52px 14px 24px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fff;
+}
+
+.detailModalHeaderText {
+  min-width: 0;
+  flex: 1;
+}
+
+.detailModalEyebrow {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.detailModalTitle {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.25;
+}
+
+.detailModalClose {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0;
+  line-height: 0;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .detailModalClose:hover {
+    background: #f8fafc;
+    color: #334155;
+  }
+}
+
+.detailModalHero {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 24px 18px;
+  border-bottom: 1px solid #eef2f7;
+  background: linear-gradient(180deg, #f8fafc 0%, #fafbfc 100%);
+}
+
+.detailModalHero .avatar {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+}
+
+.detailModalHeroText {
+  min-width: 0;
+  flex: 1;
+}
+
+.detailModalHeroName {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.detailModalHeroEmail {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+.detailModalBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 24px 18px;
+  background: linear-gradient(180deg, #fafbfc 0%, #fff 40px);
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+.detailModalBody::-webkit-scrollbar {
+  width: 8px;
+}
+
+.detailModalBody::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.detailSection {
+  margin-bottom: 12px;
+  padding: 2px 16px 14px;
+  background: #fff;
+  border: 1px solid #eef2f7;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.detailSection:last-of-type {
+  margin-bottom: 0;
+}
+
+.detailGroup {
+  padding: 12px 0 0;
+}
+
+.detailGroupTitle {
+  margin: 0 0 10px;
+  padding-bottom: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.detailRow {
+  display: grid;
+  grid-template-columns: minmax(112px, 34%) 1fr;
+  column-gap: 16px;
+  align-items: start;
+  padding: 10px 0;
+  border-bottom: 1px solid #f8fafc;
+}
+
+.detailRow:last-child {
+  border-bottom: none;
+  padding-bottom: 2px;
+}
+
+.detailRowLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #94a3b8;
+  line-height: 1.45;
+  padding-top: 1px;
+}
+
+.detailRowValue {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  font-size: 13px;
+  color: #0f172a;
+  line-height: 1.5;
+  word-break: break-word;
+  min-width: 0;
+}
+
+.detailInlineLink {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  text-decoration: none;
+  border-bottom: 1px solid #cbd5e1;
+  padding-bottom: 1px;
+  transition: color 0.12s, border-color 0.12s;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .detailInlineLink:hover {
+    color: #1d4ed8;
+    border-bottom-color: #93c5fd;
+  }
+}
+
+.detailModalFooter {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px 18px;
+  border-top: 1px solid #f1f5f9;
+  background: #fafbfc;
+}
+
+.detailModalBtnPrimary {
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: none;
+  background: #0f172a;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s, opacity 0.12s;
+}
+
+.detailModalBtnPrimary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .detailModalBtnPrimary:not(:disabled):hover {
+    background: #1e293b;
+  }
+}
+
+.detailModalBtnDanger {
+  background: #b91c1c;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .detailModalBtnDanger:not(:disabled):hover {
+    background: #991b1b;
+  }
+}
+
+@media (max-width: 640px) {
+  .detailModalOverlay {
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .detailModal {
+    max-width: 100%;
+    width: 100%;
+    max-height: 90vh;
+    border-radius: 20px 20px 0 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+  }
+
+  .detailModal::before {
+    content: '';
+    display: block;
+    flex-shrink: 0;
+    width: 40px;
+    height: 4px;
+    background: #e2e8f0;
+    border-radius: 99px;
+    margin: 10px auto 0;
+  }
+
+  .detailModalHeader {
+    padding: 12px 52px 12px 20px;
+  }
+
+  .detailModalClose {
+    top: 14px;
+    right: 16px;
+  }
+
+  .detailModalHero {
+    padding: 14px 20px 16px;
+  }
+
+  .detailModalBody {
+    padding: 14px 16px 20px;
+  }
+
+  .detailSection {
+    padding: 2px 14px 12px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+  }
+
+  .detailRow {
+    grid-template-columns: 1fr;
+    row-gap: 4px;
+    column-gap: 0;
+    padding: 12px 0;
+  }
+
+  .detailRowLabel {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #94a3b8;
+    padding-top: 0;
+  }
+
+  .detailRowValue {
+    font-size: 14px;
+  }
+
+  .detailModalFooter {
+    padding: 12px 16px 20px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 /* ── Tiny phones ─────────────────────────────────────────────────────────── */

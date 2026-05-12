@@ -118,7 +118,10 @@ export async function GET(request) {
       ? supabaseAdmin.from('profiles').select('id,full_name').in('id', buyerIds)
       : Promise.resolve({ data: [] }),
     sellerUserIds.length
-      ? supabaseAdmin.from('sellers').select('user_id,business_name,email,phone').in('user_id', sellerUserIds)
+      ? supabaseAdmin
+          .from('sellers')
+          .select('user_id,business_name,email,phone,commission_percent_override')
+          .in('user_id', sellerUserIds)
       : Promise.resolve({ data: [] }),
     orderIds.length
       ? supabaseAdmin.from('order_items').select('order_id,name,quantity').in('order_id', orderIds)
@@ -140,9 +143,13 @@ export async function GET(request) {
 
   const sellersDropdown = sellerUserIds.map((id) => {
     const s = sellerByUserId.get(id)
+    const overrideRaw = s?.commission_percent_override
+    const overrideNum = overrideRaw == null ? null : Number(overrideRaw)
     return {
       id,
       name: s?.business_name || `Seller ${String(id).slice(0, 8)}`,
+      commissionPercentOverride:
+        overrideNum != null && Number.isFinite(overrideNum) ? overrideNum : null,
     }
   })
   sellersDropdown.sort((a, b) => a.name.localeCompare(b.name))
@@ -161,17 +168,6 @@ export async function GET(request) {
     if (from && dateStr && dateStr < from) continue
     if (to && dateStr && dateStr > to) continue
 
-    const orderLabel = ord.order_number || ord.id
-    const txnLabel = e.id
-    if (
-      q &&
-      !orderLabel.toLowerCase().includes(q) &&
-      !String(ord.id).toLowerCase().includes(q) &&
-      !txnLabel.toLowerCase().includes(q)
-    ) {
-      continue
-    }
-
     const sel = sellerByUserId.get(e.seller_user_id)
     const buyerId = ord.buyer_id
     const buyerEmail = emailByBuyer.get(buyerId) || ord.contact_email || ''
@@ -180,6 +176,20 @@ export async function GET(request) {
 
     const items = itemsByOrder.get(ord.id) ?? []
     const service = buildServiceLabel(items)
+
+    const orderLabel = ord.order_number || ord.id
+    const txnLabel = e.id
+    if (
+      q &&
+      !orderLabel.toLowerCase().includes(q) &&
+      !String(ord.id).toLowerCase().includes(q) &&
+      !String(txnLabel).toLowerCase().includes(q) &&
+      !String(buyerId || '').toLowerCase().includes(q) &&
+      !buyerName.toLowerCase().includes(q) &&
+      !buyerEmail.toLowerCase().includes(q)
+    ) {
+      continue
+    }
 
     normalized.push({
       id: e.id,

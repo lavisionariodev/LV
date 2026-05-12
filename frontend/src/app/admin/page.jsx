@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import styles from './admin.module.css'
 import { formatCount, formatPHPMobile } from '@/shared/utils/formatCount'
-import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
+import { fetchCurrentAdminProfile } from '@/features/admin/settings/adminProfile'
 import { searchSellersForAdmin } from '@/lib/sellers/client'
 import { listSellerListingsForAdmin } from '@/lib/seller-listings/client'
 import { hasPendingSellerChanges } from '@/lib/seller-listings/pendingChanges'
@@ -25,6 +25,8 @@ import { LuUserCheck } from 'react-icons/lu'
 import { MdArrowOutward } from 'react-icons/md'
 
 const CHART_ACCENT = '#1F312B'
+const RECENT_ACTIVITY_LIMIT = 6
+const DESKTOP_RECENT_ACTIVITY_LIMIT = 4
 
 const NAV_ACTIONS = [
   { id: 'sellers',  label: 'Sellers',  icon: LuUserCheck,    href: '/admin/sellers' },
@@ -126,6 +128,8 @@ export default function AdminDashboardPage() {
   const [commissionChartSeries, setCommissionChartSeries] = useState(() => utcLast7DaysSeriesZeros())
   const [recentActivityRows, setRecentActivityRows] = useState([])
   const [disputesNeedingAttention, setDisputesNeedingAttention] = useState(0)
+  const [metricsError, setMetricsError] = useState(null)
+  const [metricsRetryTick, setMetricsRetryTick] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -133,9 +137,16 @@ export default function AdminDashboardPage() {
       try {
         const res = await fetch('/api/admin/metrics', { credentials: 'include' })
         const body = await res.json().catch(() => null)
-        if (cancelled || !res.ok || !body?.payoutSummary) {
+        if (cancelled) return
+        if (!res.ok || !body?.payoutSummary) {
+          const msg =
+            typeof body?.error === 'string'
+              ? body.error
+              : 'Could not load dashboard metrics. Figures below may be incomplete.'
+          setMetricsError(msg)
           return
         }
+        setMetricsError(null)
         setPayoutMetrics({
           platformRevenue30d: Number(body.payoutSummary.platformRevenue30d) || 0,
           pendingPayoutAmt: Number(body.payoutSummary.pendingPayoutAmt) || 0,
@@ -146,16 +157,20 @@ export default function AdminDashboardPage() {
           setCommissionChartSeries(body.dailyReleasedCommission)
         }
         if (Array.isArray(body.recentActivity))
-          setRecentActivityRows(body.recentActivity.slice(0, 4))
+          setRecentActivityRows(body.recentActivity.slice(0, RECENT_ACTIVITY_LIMIT))
       } catch {
-        // keep defaults
+        if (!cancelled) {
+          setMetricsError(
+            'Could not load dashboard metrics. Check your connection and try again.',
+          )
+        }
       }
     }
     load()
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [metricsRetryTick])
 
   useEffect(() => {
     let cancelled = false
@@ -211,13 +226,19 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     const q = sellerQuery.trim()
     if (q.length < 2) {
-      setSellerResults([])
-      setSellerLoading(false)
-      return
+      const clearId = window.setTimeout(() => {
+        setSellerResults([])
+        setSellerLoading(false)
+      }, 0)
+      return () => {
+        window.clearTimeout(clearId)
+      }
     }
 
     let cancelled = false
-    setSellerLoading(true)
+    queueMicrotask(() => {
+      if (!cancelled) setSellerLoading(true)
+    })
     const t = setTimeout(async () => {
       try {
         const rows = await searchSellersForAdmin(q, 6)
@@ -288,13 +309,52 @@ export default function AdminDashboardPage() {
           </div>
         </div>
         <div className={styles.dashSkMobileHub}>
-          <div className={styles.dashSkHero}>
-            <span className={`${styles.adminSkBar} ${styles.dashSkLineLg}`} style={{ maxWidth: 200 }} />
-            <span className={`${styles.adminSkBar} ${styles.dashSkStatValue}`} style={{ width: '72%' }} />
-            <span className={`${styles.adminSkBar} ${styles.dashSkLineMd}`} />
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-              <span className={`${styles.adminSkBar} ${styles.dashSkStatCard}`} style={{ minHeight: 72, padding: 0 }} />
-              <span className={`${styles.adminSkBar} ${styles.dashSkStatCard}`} style={{ minHeight: 72, padding: 0 }} />
+          <div className={styles.dashSkMobileHero}>
+            <div className={styles.dashSkMobileHeroTop}>
+              <div className={styles.dashSkMobileHeroLogo}>
+                <span className={`${styles.adminSkBar} ${styles.adminSkBarOnDark} ${styles.dashSkMobileHeroLogoIcon}`} />
+                <span className={`${styles.adminSkBar} ${styles.adminSkBarOnDark} ${styles.dashSkMobileHeroLogoText}`} />
+              </div>
+              <span className={`${styles.adminSkBar} ${styles.adminSkBarOnDark} ${styles.dashSkMobileHeroAvatar}`} />
+            </div>
+            <div className={styles.dashSkMobileHeroBalance}>
+              <span className={`${styles.adminSkBar} ${styles.adminSkBarOnDark} ${styles.dashSkMobileHeroLineSm}`} />
+              <span className={`${styles.adminSkBar} ${styles.adminSkBarOnDark} ${styles.dashSkMobileHeroLineLg}`} />
+              <span className={`${styles.adminSkBar} ${styles.adminSkBarOnDark} ${styles.dashSkMobileHeroLineSub}`} />
+            </div>
+          </div>
+
+          <div className={styles.dashSkMobileNavRow}>
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className={styles.dashSkMobileNavItem}>
+                <span className={`${styles.adminSkBar} ${styles.dashSkMobileNavTile}`} />
+                <span className={`${styles.adminSkBar} ${styles.dashSkMobileNavLabel}`} />
+              </div>
+            ))}
+          </div>
+
+          <div className={styles.dashSkMobileBody}>
+            <span className={`${styles.adminSkBar} ${styles.dashSkMobileSearch}`} />
+            <div className={styles.dashSkMobileHighlight}>
+              <span className={`${styles.adminSkBar} ${styles.dashSkHighlightTitle}`} />
+              <span className={`${styles.adminSkBar} ${styles.dashSkHighlightTextWide}`} />
+              <span className={`${styles.adminSkBar} ${styles.dashSkHighlightTextNarrow}`} />
+              <span className={`${styles.adminSkBar} ${styles.dashSkHighlightLink}`} />
+            </div>
+            <div className={styles.dashSkMobileStatsGrid}>
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className={styles.dashSkMobileStatSk}>
+                  <div className={styles.dashSkMobileStatSkTop}>
+                    <span className={`${styles.adminSkBar} ${styles.dashSkMobileStatSkIcon}`} />
+                    <span className={`${styles.adminSkBar} ${styles.dashSkMobileStatSkTitle}`} />
+                  </div>
+                  <span className={`${styles.adminSkBar} ${styles.dashSkMobileStatSkValue}`} />
+                  <div className={styles.dashSkMobileStatSkFooter}>
+                    <span className={`${styles.adminSkBar} ${styles.dashSkMobileStatSkSub}`} />
+                    <span className={`${styles.adminSkBar} ${styles.dashSkMobileStatSkAction}`} />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -304,6 +364,20 @@ export default function AdminDashboardPage() {
 
   return (
     <div className={styles.dashWrap}>
+      {metricsError ? (
+        <div className={styles.metricsLoadBanner} role="alert">
+          <p className={styles.metricsLoadBannerText}>{metricsError}</p>
+          <div className={styles.metricsLoadBannerActions}>
+            <button
+              type="button"
+              className={styles.metricsLoadBannerBtn}
+              onClick={() => setMetricsRetryTick((n) => n + 1)}
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      ) : null}
       {/* ── Welcome banner ── */}
       <section className={styles.welcomeBanner}>
         <div className={styles.welcomeLeft}>
@@ -318,8 +392,7 @@ export default function AdminDashboardPage() {
           <div>
             <p className={styles.welcomeGreeting}>Welcome, Admin!</p>
             <p className={styles.welcomeSub}>
-              Here's what's happening on your marketplace today — stay on top of
-              pending actions and keep things running smoothly.
+              {`Here's what's happening on your marketplace today — stay on top of pending actions and keep things running smoothly.`}
             </p>
           </div>
         </div>
@@ -574,6 +647,7 @@ export default function AdminDashboardPage() {
                         type="button"
                         className={styles.homeSearchDropdownItem}
                         role="option"
+                        aria-selected={false}
                         onClick={() => goSeller(s)}
                       >
                         <span className={styles.homeSearchResultAvatar} aria-hidden="true">
@@ -653,9 +727,11 @@ export default function AdminDashboardPage() {
         <div className={styles.panel}>
           <div className={styles.panelHead}>
             <p className={styles.panelTitle}>Recent activity</p>
-            <Link href="/admin/analytics" className={styles.smallBtn}>
-              View all
-            </Link>
+            {recentActivityRows.length > DESKTOP_RECENT_ACTIVITY_LIMIT ? (
+              <Link href="/admin/analytics" className={styles.smallBtn}>
+                View all
+              </Link>
+            ) : null}
           </div>
 
           <div className={styles.table}>
@@ -672,7 +748,7 @@ export default function AdminDashboardPage() {
                 </span>
               </div>
             ) : (
-              recentActivityRows.map((item) => (
+              recentActivityRows.slice(0, DESKTOP_RECENT_ACTIVITY_LIMIT).map((item) => (
                 <div className={styles.row} key={item.id}>
                   <span>{item.date}</span>
                   <span>{item.type}</span>

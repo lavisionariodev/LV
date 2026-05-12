@@ -1,10 +1,11 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import layoutStyles from '../../admin.module.css'
 import styles from './detail.module.css'
+import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 
 const STATUS_FLOW = ['open', 'under_review', 'resolved', 'closed']
 
@@ -13,6 +14,43 @@ const STATUS_LABELS = {
   under_review: 'Under review',
   resolved: 'Resolved',
   closed: 'Closed',
+}
+
+const DISPUTE_STAGE_ORDER = { open: 0, under_review: 1, resolved: 2, closed: 3 }
+
+function disputeStatusConfirmVariant(current, next) {
+  if (!current || !next || current === next) return 'warning'
+  const ci = DISPUTE_STAGE_ORDER[current] ?? -1
+  const ni = DISPUTE_STAGE_ORDER[next] ?? -1
+  if (ni < ci) return 'danger'
+  if (next === 'closed') return 'neutral'
+  if (next === 'resolved') return 'primary'
+  return 'warning'
+}
+
+const IMAGE_EXT_RE = /\.(png|jpe?g|gif|webp|bmp|svg|avif)(\?|$)/i
+
+function relativeTime(iso) {
+  if (!iso) return ''
+  const t = new Date(iso).getTime()
+  if (Number.isNaN(t)) return ''
+  const diff = Math.floor((Date.now() - t) / 1000)
+  if (diff < 30) return 'just now'
+  if (diff < 60) return `${diff}s ago`
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
+  if (diff < 86400 * 30) return `${Math.floor(diff / 86400)}d ago`
+  try {
+    return new Date(iso).toLocaleDateString()
+  } catch {
+    return ''
+  }
+}
+
+function fileNameFromPath(path = '') {
+  const s = String(path)
+  const slash = s.lastIndexOf('/')
+  return slash >= 0 ? s.slice(slash + 1) : s
 }
 
 function getInitials(name = '') {
@@ -77,6 +115,24 @@ export default function AdminDisputeDetailPage() {
   const [fetchErr, setFetchErr] = useState('')
   const [resolutionNotes, setResolutionNotes] = useState('')
   const [saving, setSaving] = useState(false)
+  const [statusChangeConfirm, setStatusChangeConfirm] = useState(null)
+  const [events, setEvents] = useState([])
+  const [eventsLoading, setEventsLoading] = useState(false)
+
+  const loadEvents = useCallback(async () => {
+    if (!id) return
+    setEventsLoading(true)
+    try {
+      const res = await fetch(
+        `/api/admin/disputes/${encodeURIComponent(id)}/events`,
+        { cache: 'no-store' },
+      )
+      const body = await res.json().catch(() => null)
+      if (res.ok) setEvents(Array.isArray(body?.events) ? body.events : [])
+    } finally {
+      setEventsLoading(false)
+    }
+  }, [id])
 
   const reload = useCallback(async () => {
     if (!id) return
@@ -94,13 +150,21 @@ export default function AdminDisputeDetailPage() {
     setDispute(d || null)
     setResolutionNotes(d?.resolutionNotes ? String(d.resolutionNotes) : '')
     setLoading(false)
-  }, [id])
+    await loadEvents()
+  }, [id, loadEvents])
 
   useEffect(() => {
     queueMicrotask(() => {
       reload();
     });
   }, [reload]);
+
+  const attachments = useMemo(() => {
+    if (Array.isArray(dispute?.attachments)) return dispute.attachments
+    return Array.isArray(dispute?.attachmentPaths)
+      ? dispute.attachmentPaths.map((p) => ({ path: p, signedUrl: null }))
+      : []
+  }, [dispute])
 
   async function savePatch(nextStatus) {
     if (!id) return
@@ -120,6 +184,9 @@ export default function AdminDisputeDetailPage() {
         return
       }
       await reload()
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('admin:disputes-changed'))
+      }
     } finally {
       setSaving(false)
     }
@@ -207,7 +274,7 @@ export default function AdminDisputeDetailPage() {
 
   const goToNextStatus = () => {
     if (currentIndex === -1 || currentIndex === STATUS_FLOW.length - 1) return
-    savePatch(STATUS_FLOW[currentIndex + 1])
+    setStatusChangeConfirm({ next: STATUS_FLOW[currentIndex + 1] })
   }
 
   return (
@@ -298,7 +365,7 @@ export default function AdminDisputeDetailPage() {
                 </div>
                 <span className={styles.partyName}>{dispute.respondentName}</span>
                 <span className={styles.partyMeta}>
-                  Seller{dispute.respondentEmail ? ` · ${dispute.respondentEmail}` : ''}
+                  Shop{dispute.respondentEmail ? ` · ${dispute.respondentEmail}` : ''}
                 </span>
               </div>
             </div>
@@ -308,6 +375,206 @@ export default function AdminDisputeDetailPage() {
           <div className={styles.section}>
             <p className={styles.sectionTitle}>Description</p>
             <div className={styles.textAreaLike}>{dispute.description || '—'}</div>
+          </div>
+
+          {/* ── Attachments ── */}
+          {attachments.length > 0 && (
+            <div className={styles.section}>
+              <p className={styles.sectionTitle}>
+                Attachments
+                <span style={{ marginLeft: 8, fontWeight: 400, color: '#64748b' }}>
+                  ({attachments.length})
+                </span>
+              </p>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+                  gap: 12,
+                  marginTop: 8,
+                }}
+              >
+                {attachments.map((att, idx) => {
+                  const url = att.signedUrl
+                  const name = fileNameFromPath(att.path)
+                  const isImage = IMAGE_EXT_RE.test(name)
+                  return (
+                    <div
+                      key={att.path || idx}
+                      style={{
+                        border: '1px solid #e2e8f0',
+                        borderRadius: 10,
+                        padding: 8,
+                        background: '#fff',
+                      }}
+                    >
+                      {isImage && url ? (
+                        <a href={url} target="_blank" rel="noreferrer">
+                          {/* eslint-disable-next-line @next/next/no-img-element -- signed URLs from Supabase storage */}
+                          <img
+                            src={url}
+                            alt={name}
+                            style={{
+                              width: '100%',
+                              height: 110,
+                              objectFit: 'cover',
+                              borderRadius: 6,
+                              display: 'block',
+                            }}
+                          />
+                        </a>
+                      ) : (
+                        <div
+                          style={{
+                            height: 110,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: '#f8fafc',
+                            color: '#475569',
+                            borderRadius: 6,
+                            fontSize: 12,
+                          }}
+                        >
+                          File
+                        </div>
+                      )}
+                      <div style={{ marginTop: 6, fontSize: 12 }}>
+                        <p style={{ margin: 0, color: '#0f172a', wordBreak: 'break-all' }}>
+                          {name}
+                        </p>
+                        {url ? (
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={styles.link}
+                          >
+                            Open in new tab
+                          </a>
+                        ) : att.error ? (
+                          <span style={{ color: '#b91c1c' }}>{att.error}</span>
+                        ) : (
+                          <span style={{ color: '#64748b' }}>No preview</span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              {dispute.updatedAtIso ? (
+                <p style={{ marginTop: 10, fontSize: 12, color: '#64748b' }}>
+                  Last updated {relativeTime(dispute.updatedAtIso)}
+                </p>
+              ) : null}
+            </div>
+          )}
+
+          {/* ── Timeline ── */}
+          <div className={styles.section}>
+            <p className={styles.sectionTitle}>
+              Timeline
+              <span style={{ marginLeft: 8, fontWeight: 400, color: '#64748b' }}>
+                ({events.length})
+              </span>
+            </p>
+            {eventsLoading ? (
+              <p style={{ color: '#64748b', fontSize: 13 }}>Loading timeline…</p>
+            ) : events.length === 0 ? (
+              <p style={{ color: '#64748b', fontSize: 13 }}>No events recorded yet.</p>
+            ) : (
+              <ol
+                style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                  borderLeft: '2px solid #e2e8f0',
+                  paddingLeft: 14,
+                }}
+              >
+                {events.map((ev) => (
+                  <li key={ev.id} style={{ position: 'relative' }}>
+                    <span
+                      aria-hidden
+                      style={{
+                        position: 'absolute',
+                        left: -20,
+                        top: 5,
+                        width: 10,
+                        height: 10,
+                        borderRadius: 999,
+                        background:
+                          ev.actorRole === 'admin'
+                            ? '#2563eb'
+                            : ev.actorRole === 'system'
+                              ? '#64748b'
+                              : '#0f766e',
+                      }}
+                    />
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: 8,
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 11,
+                          textTransform: 'uppercase',
+                          letterSpacing: 0.4,
+                          background: '#f1f5f9',
+                          color: '#334155',
+                          padding: '2px 6px',
+                          borderRadius: 4,
+                          fontWeight: 600,
+                        }}
+                      >
+                        {ev.actorRole}
+                      </span>
+                      <span style={{ fontSize: 13, color: '#0f172a' }}>
+                        {ev.actorName || 'Unknown'}
+                      </span>
+                      {ev.eventType === 'status_changed' ? (
+                        <span style={{ fontSize: 13, color: '#0f172a' }}>
+                          changed status{' '}
+                          <span style={{ color: '#475569' }}>
+                            {STATUS_LABELS[ev.fromStatus] ?? ev.fromStatus ?? '—'} →{' '}
+                            {STATUS_LABELS[ev.toStatus] ?? ev.toStatus ?? '—'}
+                          </span>
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: 13, color: '#0f172a' }}>
+                          {ev.eventType.replace(/_/g, ' ')}
+                        </span>
+                      )}
+                      <span
+                        style={{ marginLeft: 'auto', fontSize: 12, color: '#64748b' }}
+                        title={ev.createdAt}
+                      >
+                        {relativeTime(ev.createdAt)}
+                      </span>
+                    </div>
+                    {ev.note ? (
+                      <p
+                        style={{
+                          margin: '4px 0 0',
+                          fontSize: 13,
+                          color: '#334155',
+                          whiteSpace: 'pre-wrap',
+                        }}
+                      >
+                        {ev.note}
+                      </p>
+                    ) : null}
+                  </li>
+                ))}
+              </ol>
+            )}
           </div>
 
         </div>
@@ -336,7 +603,10 @@ export default function AdminDisputeDetailPage() {
                   key={s}
                   type="button"
                   className={`${styles.statusBtn}${active ? ` ${styles.statusBtnActive}` : ''}`}
-                  onClick={() => savePatch(s)}
+                  onClick={() => {
+                    if (s === status) return
+                    setStatusChangeConfirm({ next: s })
+                  }}
                   aria-pressed={active}
                   disabled={saving}
                 >
@@ -350,7 +620,7 @@ export default function AdminDisputeDetailPage() {
               </button>
             )}
           </div>
-          <p className={styles.demoHint}>Status changes are saved immediately. Admin access only.</p>
+          <p className={styles.demoHint}>Status changes require confirmation. Admin access only.</p>
         </div>
 
         <hr className={styles.divider} />
@@ -365,6 +635,32 @@ export default function AdminDisputeDetailPage() {
         </div>
 
       </section>
+
+      <ConfirmModal
+        open={statusChangeConfirm != null}
+        variant={disputeStatusConfirmVariant(status, statusChangeConfirm?.next)}
+        title="Change dispute status?"
+        message={
+          statusChangeConfirm?.next
+            ? `Set this dispute to "${STATUS_LABELS[statusChangeConfirm.next] ?? statusChangeConfirm.next}"? Resolution notes (if any) will be saved with this update.`
+            : ''
+        }
+        confirmLabel="Save status"
+        confirmLoadingLabel="Saving..."
+        cancelLabel="Cancel"
+        loading={saving}
+        subtitleAlign="left"
+        onCancel={() => {
+          if (saving) return
+          setStatusChangeConfirm(null)
+        }}
+        onConfirm={async () => {
+          if (!statusChangeConfirm) return
+          const next = statusChangeConfirm.next
+          await savePatch(next)
+          setStatusChangeConfirm(null)
+        }}
+      />
     </div>
   )
 }

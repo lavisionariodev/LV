@@ -1,4 +1,5 @@
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
+import { shouldSendChannelForType } from '@/lib/notifications/preferencesServer'
 
 const DEDUPE_KEY_MAX = 200
 
@@ -18,6 +19,25 @@ function normalizeDedupeKey(key) {
 export async function notifyUser(supabaseAdmin, p) {
   const userId = String(p.userId || '').trim()
   if (!userId) return
+
+  try {
+    const allowed = await shouldSendChannelForType(
+      supabaseAdmin,
+      userId,
+      p.type,
+      'push',
+    )
+    if (!allowed) {
+      apiLog('user_notification.skipped_by_preference', { type: p.type })
+      return
+    }
+  } catch (prefErr) {
+    apiLog('user_notification.pref_check_failed', {
+      err: errorMessage(prefErr),
+      type: p.type,
+    })
+    // fall through to send (default-allow)
+  }
 
   const dedupeKey = normalizeDedupeKey(p.dedupeKey)
   const row = {

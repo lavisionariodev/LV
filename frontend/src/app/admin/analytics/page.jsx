@@ -19,10 +19,15 @@ import {
 
 const BAR_COLORS = ['#1F312B', '#2D4A38', '#3D683A', '#4A7C47']
 const CHART_ACCENT = '#1F312B'
+const RANGE_OPTIONS = [
+  { value: 7, label: '7d' },
+  { value: 30, label: '30d' },
+  { value: 90, label: '90d' },
+]
 
-function utcLast7DaysSeriesZeros() {
+function utcLastNDaysSeriesZeros(n) {
   const out = []
-  for (let i = 6; i >= 0; i--) {
+  for (let i = n - 1; i >= 0; i--) {
     const d = new Date()
     d.setUTCHours(0, 0, 0, 0)
     d.setUTCDate(d.getUTCDate() - i)
@@ -38,33 +43,53 @@ function formatShortDate(dateStr) {
 
 export default function AdminAnalyticsPage() {
   const [loading, setLoading] = useState(true)
+  const [rangeDays, setRangeDays] = useState(7)
   const [sellersTotal, setSellersTotal] = useState(0)
   const [buyersTotal, setBuyersTotal] = useState(0)
   const [paidOrdersLast30Days, setPaidOrdersLast30Days] = useState(0)
-  const [dailyCollectedGmv, setDailyCollectedGmv] = useState(() => utcLast7DaysSeriesZeros())
+  const [dailyCollectedGmv, setDailyCollectedGmv] = useState(() => utcLastNDaysSeriesZeros(7))
   const [topLineItems, setTopLineItems] = useState([])
   const [recentActivity, setRecentActivity] = useState([])
   const [disputesNeedingAttention, setDisputesNeedingAttention] = useState(0)
+  const [metricsError, setMetricsError] = useState(null)
+  const [metricsRetryTick, setMetricsRetryTick] = useState(0)
 
   useEffect(() => {
     let cancelled = false
     const load = async () => {
       setLoading(true)
+      setMetricsError(null)
       try {
-        const res = await fetch('/api/admin/metrics', { credentials: 'include' })
+        const res = await fetch(`/api/admin/metrics?range=${rangeDays}d`, {
+          credentials: 'include',
+        })
         const body = await res.json().catch(() => null)
-        if (cancelled || !res.ok || !body?.payoutSummary) return
+        if (cancelled) return
+        if (!res.ok || !body?.payoutSummary) {
+          const msg =
+            typeof body?.error === 'string'
+              ? body.error
+              : 'Could not load analytics. Charts and totals below may be incomplete.'
+          setMetricsError(msg)
+          return
+        }
         setSellersTotal(Number(body.sellersTotal) || 0)
         setBuyersTotal(Number(body.buyersTotal) || 0)
         setPaidOrdersLast30Days(Number(body.paidOrdersLast30Days) || 0)
         if (Array.isArray(body.dailyCollectedGmv) && body.dailyCollectedGmv.length > 0) {
           setDailyCollectedGmv(body.dailyCollectedGmv)
+        } else {
+          setDailyCollectedGmv(utcLastNDaysSeriesZeros(rangeDays))
         }
         if (Array.isArray(body.topLineItems)) setTopLineItems(body.topLineItems)
         if (Array.isArray(body.recentActivity)) setRecentActivity(body.recentActivity)
         setDisputesNeedingAttention(Number(body.disputesNeedingAttention) || 0)
       } catch {
-        // keep defaults / zeros
+        if (!cancelled) {
+          setMetricsError(
+            'Could not load analytics. Check your connection and try again.',
+          )
+        }
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -73,7 +98,7 @@ export default function AdminAnalyticsPage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [rangeDays, metricsRetryTick])
 
   if (loading) {
     return (
@@ -98,7 +123,7 @@ export default function AdminAnalyticsPage() {
             <span className={`${layoutStyles.adminSkBar} ${layoutStyles.analyticsSkChart}`} />
           </div>
         </section>
-        <section className={`${layoutStyles.panel} ${layoutStyles.homeDesktopOnly} ${layoutStyles.analyticsSkActivity}`}>
+        <section className={`${layoutStyles.panel} ${layoutStyles.homeDesktopOnly}`}>
           <div className={layoutStyles.panelHead}>
             <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 15, width: 160 }} />
           </div>
@@ -115,12 +140,43 @@ export default function AdminAnalyticsPage() {
             </div>
           ))}
         </section>
+        <section className={`${layoutStyles.panel} ${layoutStyles.homeMobileOnly}`}>
+          <div className={layoutStyles.panelHead}>
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 15, width: 160 }} />
+          </div>
+          <div className={layoutStyles.analyticsSkRowHead}>
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 10 }} />
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 10 }} />
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 10 }} />
+          </div>
+          {[0, 1, 2, 3].map((i) => (
+            <div key={`m-sk-act-${i}`} className={layoutStyles.analyticsSkRow}>
+              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 12 }} />
+              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 12 }} />
+              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 22, borderRadius: 8 }} />
+            </div>
+          ))}
+        </section>
       </div>
     )
   }
 
   return (
     <div className={layoutStyles.dashWrap}>
+      {metricsError ? (
+        <div className={layoutStyles.metricsLoadBanner} role="alert">
+          <p className={layoutStyles.metricsLoadBannerText}>{metricsError}</p>
+          <div className={layoutStyles.metricsLoadBannerActions}>
+            <button
+              type="button"
+              className={layoutStyles.metricsLoadBannerBtn}
+              onClick={() => setMetricsRetryTick((n) => n + 1)}
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      ) : null}
       {/* Stat cards — 4 col desktop, 2 col tablet/mobile */}
       <section className={layoutStyles.analyticsStatsGrid}>
         <div className={layoutStyles.statCard}>
@@ -149,15 +205,45 @@ export default function AdminAnalyticsPage() {
       <section className={layoutStyles.panel}>
         <div className={layoutStyles.panelHead}>
           <p className={layoutStyles.panelTitle}>Revenue overview</p>
+          <div
+            role="group"
+            aria-label="Date range"
+            style={{ display: 'inline-flex', gap: 4, padding: 2, background: '#f1f5f9', borderRadius: 8 }}
+          >
+            {RANGE_OPTIONS.map((opt) => {
+              const active = rangeDays === opt.value
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={layoutStyles.smallBtn}
+                  aria-pressed={active}
+                  onClick={() => setRangeDays(opt.value)}
+                  style={{
+                    background: active ? '#1F312B' : 'transparent',
+                    color: active ? '#fff' : '#334155',
+                    border: 'none',
+                    padding: '4px 10px',
+                    fontSize: 12,
+                    fontWeight: active ? 600 : 500,
+                    borderRadius: 6,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              )
+            })}
+          </div>
         </div>
         <p className={layoutStyles.analyticsSubtitle}>
-          Collected GMV from paid orders (order escrows), last 7 days · UTC day.
+          Collected GMV from paid orders (order escrows), last {rangeDays} days · UTC day.
         </p>
 
         <div className={layoutStyles.analyticsChartGrid}>
-          {/* Area chart — last 7 days GMV */}
+          {/* Area chart — last N days GMV */}
           <div className={layoutStyles.analyticsChartBlock}>
-            <p className={layoutStyles.analyticsChartLabel}>Last 7 days · GMV</p>
+            <p className={layoutStyles.analyticsChartLabel}>Last {rangeDays} days · GMV</p>
             <ResponsiveContainer width="100%" height={220}>
               <AreaChart
                 data={dailyCollectedGmv}
@@ -196,9 +282,11 @@ export default function AdminAnalyticsPage() {
             </ResponsiveContainer>
           </div>
 
-          {/* Bar chart — top line items (30d paid orders) */}
+          {/* Bar chart — top line items (paid orders within selected range) */}
           <div className={layoutStyles.analyticsChartBlock}>
-            <p className={layoutStyles.analyticsChartLabel}>Top paid line items · 30d</p>
+            <p className={layoutStyles.analyticsChartLabel}>
+              Top paid line items · {rangeDays}d
+            </p>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart
                 data={topLineItems.length > 0 ? topLineItems : [{ name: '—', value: 0 }]}
@@ -237,7 +325,7 @@ export default function AdminAnalyticsPage() {
         </div>
       </section>
 
-      {/* Recent activity — full width */}
+      {/* Recent activity — desktop */}
       <section className={`${layoutStyles.panel} ${layoutStyles.homeDesktopOnly}`}>
         <div className={layoutStyles.panelHead}>
           <p className={layoutStyles.panelTitle}>Recent activity</p>
@@ -260,6 +348,38 @@ export default function AdminAnalyticsPage() {
           ) : (
             recentActivity.map((item) => (
               <div className={layoutStyles.row} key={item.id}>
+                <span>{item.date}</span>
+                <span>{item.type}</span>
+                <span className={layoutStyles.badge}>{item.status}</span>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
+      {/* Recent activity — mobile (matches dashboard lower panel pattern) */}
+      <section className={`${layoutStyles.panel} ${layoutStyles.homeMobileOnly}`}>
+        <div className={layoutStyles.panelHead}>
+          <p className={layoutStyles.panelTitle}>Recent activity</p>
+          <Link href="/admin" className={layoutStyles.smallBtn}>
+            Dashboard
+          </Link>
+        </div>
+        <div className={layoutStyles.table}>
+          <div className={layoutStyles.rowHead}>
+            <span>Date</span>
+            <span>Type</span>
+            <span>Status</span>
+          </div>
+          {recentActivity.length === 0 ? (
+            <div className={layoutStyles.row}>
+              <span style={{ gridColumn: '1 / -1', color: '#64748b', fontSize: 13 }}>
+                No recent paid orders yet.
+              </span>
+            </div>
+          ) : (
+            recentActivity.map((item) => (
+              <div className={layoutStyles.row} key={`m-${item.id}`}>
                 <span>{item.date}</span>
                 <span>{item.type}</span>
                 <span className={layoutStyles.badge}>{item.status}</span>

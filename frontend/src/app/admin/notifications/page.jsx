@@ -6,6 +6,7 @@ import { LuShoppingBag, LuUserCheck, LuMegaphone } from 'react-icons/lu'
 import styles from './notifications.module.css'
 import { useInAppNotificationFeed, relativeNotificationTime } from '@/lib/notifications/useInAppNotificationFeed'
 import { adminNotificationFilterBucket, ADMIN_NOTIFICATION_FILTER_TABS } from '@/lib/notifications/types'
+import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 
 const ICON_BY_BUCKET = {
   order: LuShoppingBag,
@@ -31,7 +32,7 @@ function useClickOutside(ref, onClose) {
   }, [ref, onClose])
 }
 
-function HeaderMenu({ onMarkAll, onClearAll, hasUnread, hasNotifs }) {
+function HeaderMenu({ onMarkAll, onRequestClearAll, hasUnread, hasNotifs }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
   const close = useCallback(() => setOpen(false), [])
@@ -65,7 +66,7 @@ function HeaderMenu({ onMarkAll, onClearAll, hasUnread, hasNotifs }) {
             <button
               type="button"
               className={`${styles.menuItem} ${styles.menuItemDanger}`}
-              onClick={() => { onClearAll(); setOpen(false) }}
+              onClick={() => { onRequestClearAll(); setOpen(false) }}
             >
               <TbTrash className={styles.menuItemIcon} />
               Clear all
@@ -130,7 +131,7 @@ function NotificationsLoadingSkeleton({ variant }) {
   )
 }
 
-function NotifMenu({ notifId, isRead, onMarkRead, onDelete }) {
+function NotifMenu({ notifId, isRead, onMarkRead, onRequestDelete }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
   const close = useCallback(() => setOpen(false), [])
@@ -161,7 +162,7 @@ function NotifMenu({ notifId, isRead, onMarkRead, onDelete }) {
           <button
             type="button"
             className={`${styles.menuItem} ${styles.menuItemDanger}`}
-            onClick={(e) => { e.stopPropagation(); onDelete(notifId); setOpen(false) }}
+            onClick={(e) => { e.stopPropagation(); onRequestDelete(notifId); setOpen(false) }}
           >
             <TbTrash className={styles.menuItemIcon} />
             Delete notification
@@ -184,6 +185,8 @@ export default function NotificationsPage() {
   } = useInAppNotificationFeed({ limit: 100, enabled: true })
 
   const [activeFilter, setActiveFilter] = useState('all')
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null)
+  const [clearAllOpen, setClearAllOpen] = useState(false)
 
   const notifications = useMemo(
     () =>
@@ -216,10 +219,6 @@ export default function NotificationsPage() {
     markReadApi(id)
   }
 
-  const deleteNotification = (id) => {
-    deleteOne(id)
-  }
-
   return (
     <div className={styles.page}>
 
@@ -241,7 +240,7 @@ export default function NotificationsPage() {
             hasUnread={unreadCount > 0}
             hasNotifs={notifications.length > 0}
             onMarkAll={markAllRead}
-            onClearAll={clearAll}
+            onRequestClearAll={() => setClearAllOpen(true)}
           />
         </div>
 
@@ -292,7 +291,7 @@ export default function NotificationsPage() {
                         notifId={notif.id}
                         isRead={notif.read}
                         onMarkRead={markRead}
-                        onDelete={deleteNotification}
+                        onRequestDelete={setDeleteConfirmId}
                       />
                     </div>
                   </div>
@@ -320,7 +319,7 @@ export default function NotificationsPage() {
             hasUnread={unreadCount > 0}
             hasNotifs={notifications.length > 0}
             onMarkAll={markAllRead}
-            onClearAll={clearAll}
+            onRequestClearAll={() => setClearAllOpen(true)}
           />
         </div>
 
@@ -369,7 +368,7 @@ export default function NotificationsPage() {
                     notifId={notif.id}
                     isRead={notif.read}
                     onMarkRead={markRead}
-                    onDelete={deleteNotification}
+                    onRequestDelete={setDeleteConfirmId}
                   />
                 </div>
               )
@@ -377,6 +376,38 @@ export default function NotificationsPage() {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        open={deleteConfirmId != null}
+        variant="danger"
+        title="Delete notification?"
+        message="This notification will be removed from your inbox."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onCancel={() => setDeleteConfirmId(null)}
+        onConfirm={() => {
+          if (deleteConfirmId) deleteOne(deleteConfirmId)
+          setDeleteConfirmId(null)
+        }}
+      />
+
+      <ConfirmModal
+        open={clearAllOpen}
+        variant="danger"
+        title="Clear all notifications?"
+        message={
+          notifications.length > 0
+            ? `This will remove all ${notifications.length} notification${notifications.length > 1 ? 's' : ''} from your inbox. This cannot be undone.`
+            : 'Remove every notification from your inbox? This cannot be undone.'
+        }
+        confirmLabel="Clear all"
+        cancelLabel="Cancel"
+        onCancel={() => setClearAllOpen(false)}
+        onConfirm={() => {
+          clearAll()
+          setClearAllOpen(false)
+        }}
+      />
     </div>
   )
 }

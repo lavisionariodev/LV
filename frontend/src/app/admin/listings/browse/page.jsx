@@ -7,7 +7,6 @@ import { FiExternalLink, FiRotateCcw } from 'react-icons/fi'
 import { VscSettings } from 'react-icons/vsc'
 import { LuSettings2 } from 'react-icons/lu'
 import styles from '../listings.module.css'
-import ListingsMobileTabs from '../ListingsMobileTabs'
 import { listSellerListingsForAdmin } from '@/lib/seller-listings/client'
 import { getShopHrefForSellerListingRow } from '@/lib/shop-listings/client'
 import { formatPhpAmount } from '@/lib/cart/formatPhp'
@@ -236,6 +235,8 @@ function ListingCard({ row }) {
 export default function AdminListingsBrowsePage() {
   const router = useRouter()
   const pathname = usePathname()
+  const listingsPathClean = pathname?.split(/[?#]/)[0] || ''
+  const isListingsApprovalsRoute = listingsPathClean.startsWith('/admin/listings/approvals')
   const searchParams = useSearchParams()
   const isMobile = useMediaQuery('(max-width: 860px)')
   const [search, setSearch] = useState(() => readString(searchParams, 'q', ''))
@@ -399,7 +400,22 @@ export default function AdminListingsBrowsePage() {
 
   return (
     <div className={styles.pageRoot}>
-      <ListingsMobileTabs />
+      <nav className={styles.listingsMobileSwitch} aria-label="Listings navigation">
+        <Link
+          href="/admin/listings/browse"
+          className={`${styles.listingsMobileSwitchLink} ${!isListingsApprovalsRoute ? styles.listingsMobileSwitchLinkActive : ''}`}
+          aria-current={!isListingsApprovalsRoute ? 'page' : undefined}
+        >
+          Browse
+        </Link>
+        <Link
+          href="/admin/listings/approvals"
+          className={`${styles.listingsMobileSwitchLink} ${isListingsApprovalsRoute ? styles.listingsMobileSwitchLinkActive : ''}`}
+          aria-current={isListingsApprovalsRoute ? 'page' : undefined}
+        >
+          Approvals
+        </Link>
+      </nav>
 
       <div className={styles.toolbar}>
         <div className={styles.toolbarTopRow}>

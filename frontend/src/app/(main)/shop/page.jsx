@@ -18,18 +18,8 @@ import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/contexts/ToastContext'
 import { formatPhpAmount } from '@/lib/cart/formatPhp'
-import { isUuidLike } from '@/lib/uuidLike'
+import { providerServiceAggPairSegments } from '@/lib/ratings/providerServiceAggPairSegments'
 import styles from './shop.module.css'
-
-/** API `pairs` segment and `aggregatesByPair` lookup key for listing-scoped ratings. */
-function providerServiceAggPairSegments(listing) {
-  const sellerId = String(listing?.providerId ?? '').trim()
-  const serviceId = String(listing?.serviceId ?? '').trim()
-  const lid = String(listing?.id ?? '').trim()
-  if (!sellerId || !serviceId) return null
-  if (isUuidLike(lid)) return { api: `${sellerId}|${serviceId}|${lid}`, lookup: `${sellerId}::${serviceId}::${lid}` }
-  return { api: `${sellerId}|${serviceId}`, lookup: `${sellerId}::${serviceId}` }
-}
 
 function serviceLabelFromId(serviceId) {
   const raw = String(serviceId || '').trim()
@@ -40,6 +30,18 @@ function serviceLabelFromId(serviceId) {
 function normalizeCategoryParam(raw) {
   const t = String(raw || '').trim().toLowerCase()
   return t || 'all'
+}
+
+/** `?seller=` filter — matches listing `providerId` case-insensitively. */
+function readSellerFilterId(searchParams) {
+  const raw = readString(searchParams, 'seller', '').trim()
+  return raw.length ? raw : null
+}
+
+function providerIdsEqual(a, b) {
+  if (a == null && b == null) return true
+  if (a == null || b == null) return false
+  return String(a).trim().toLowerCase() === String(b).trim().toLowerCase()
 }
 
 function listingMatchesSearch(listing, needle, serviceById) {
@@ -231,7 +233,7 @@ export default function ShopPage() {
   /** City/area filter — separate from navbar keyword search (`q`). */
   const [locationQuery, setLocationQuery] = useState(() => readString(searchParams, 'loc', ''))
   const [locationFocused, setLocationFocused] = useState(false)
-  const [selectedProvider, setSelectedProvider] = useState(null)
+  const [selectedProvider, setSelectedProvider] = useState(() => readSellerFilterId(searchParams))
   const [showFiltersModal, setShowFiltersModal] = useState(false)
   const [listingsLoading, setListingsLoading] = useState(true)
   const [providerAggregatesById, setProviderAggregatesById] = useState({})
@@ -322,11 +324,14 @@ export default function ShopPage() {
   }, [normalizeListings])
 
   // Sync state ← URL (back/forward, shared links)
-  // Keep the category/location filters in sync with query params.
+  // Keep the category/location/seller filters in sync with query params.
+  // Do not list `selectedProvider` in deps: internal provider picks update state before URL (debounced),
+  // and including it would re-read stale `seller` from the URL and revert the selection.
   useEffect(() => {
     const nextCategory = normalizeCategoryParam(readString(searchParams, 'category', 'all'))
     const nextLoc = readString(searchParams, 'loc', '')
-    const syncKey = `${nextCategory}|${nextLoc}`
+    const nextSeller = readSellerFilterId(searchParams)
+    const syncKey = `${nextCategory}|${nextLoc}|${nextSeller ?? ''}`
 
     // Prevent state→URL updates from being immediately reverted by this effect.
     // We only need to sync from URL when query params actually changed.
@@ -339,15 +344,20 @@ export default function ShopPage() {
     if (nextLoc !== locationQuery) {
       queueMicrotask(() => setLocationQuery(nextLoc))
     }
-  }, [searchParams, locationQuery, activeCategory, setCategoryAndReset])
+    if (!providerIdsEqual(nextSeller, selectedProvider)) {
+      queueMicrotask(() => setProviderAndReset(nextSeller))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- selectedProvider intentionally omitted; see note above
+  }, [searchParams, locationQuery, activeCategory, setCategoryAndReset, setProviderAndReset])
 
   // Sync URL ← state (debounced typing in location fields — preserves `q` from navbar search)
   useDebouncedEffect(() => {
     replaceUrlQuery(router, pathname, searchParams, {
       category: { value: activeCategory, omitIf: 'all' },
       loc: locationQuery,
+      seller: { value: selectedProvider || '', omitIf: '' },
     })
-  }, [activeCategory, locationQuery, router, pathname, searchParams], 300)
+  }, [activeCategory, locationQuery, selectedProvider, router, pathname, searchParams], 300)
 
   const allProviders = useMemo(() => {
     const byId = new Map()
@@ -424,7 +434,7 @@ export default function ShopPage() {
     }
 
     if (selectedProvider) {
-      list = list.filter((l) => l.providerId === selectedProvider)
+      list = list.filter((l) => providerIdsEqual(l.providerId, selectedProvider))
     }
 
     const keywordNeedle = readString(searchParams, 'q', '').trim().toLowerCase()
@@ -701,8 +711,8 @@ export default function ShopPage() {
                       {filteredProviders.map((provider) => (
                         <button
                           key={provider.id}
-                          className={`${styles.providerItem}${selectedProvider === provider.id ? ` ${styles.providerItemActive}` : ''}`}
-                          onClick={() => setProviderAndReset(selectedProvider === provider.id ? null : provider.id)}
+                          className={`${styles.providerItem}${providerIdsEqual(selectedProvider, provider.id) ? ` ${styles.providerItemActive}` : ''}`}
+                          onClick={() => setProviderAndReset(providerIdsEqual(selectedProvider, provider.id) ? null : provider.id)}
                         >
                           <ShopProviderCircleThumb
                             provider={provider}
@@ -736,7 +746,14 @@ export default function ShopPage() {
               </div>
 
               <div className={styles.filtersModalFooter}>
-                <button className={styles.filtersModalClear} onClick={() => { setCategoryAndReset('all'); setLocationQueryAndReset('') }}>
+                <button
+                  className={styles.filtersModalClear}
+                  onClick={() => {
+                    setCategoryAndReset('all')
+                    setLocationQueryAndReset('')
+                    setProviderAndReset(null)
+                  }}
+                >
                   Clear all
                 </button>
                 <button className={styles.filtersModalApply} onClick={() => setShowFiltersModal(false)}>
@@ -831,8 +848,8 @@ export default function ShopPage() {
                   {filteredProviders.map((provider) => (
                     <button
                       key={provider.id}
-                      className={`${styles.providerItem}${selectedProvider === provider.id ? ` ${styles.providerItemActive}` : ''}`}
-                      onClick={() => setProviderAndReset(selectedProvider === provider.id ? null : provider.id)}
+                      className={`${styles.providerItem}${providerIdsEqual(selectedProvider, provider.id) ? ` ${styles.providerItemActive}` : ''}`}
+                      onClick={() => setProviderAndReset(providerIdsEqual(selectedProvider, provider.id) ? null : provider.id)}
                     >
                       <ShopProviderCircleThumb
                         provider={provider}
@@ -919,7 +936,14 @@ export default function ShopPage() {
                 </div>
                 <p className={styles.emptyTitle}>No services found</p>
                 <p className={styles.emptyText}>Try adjusting your search or browsing a different category.</p>
-                <button className={styles.emptyReset} onClick={() => { setCategoryAndReset('all'); setLocationQueryAndReset('') }}>
+                <button
+                className={styles.emptyReset}
+                onClick={() => {
+                  setCategoryAndReset('all')
+                  setLocationQueryAndReset('')
+                  setProviderAndReset(null)
+                }}
+              >
                   Reset all filters
                 </button>
               </div>

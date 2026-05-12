@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { BsThreeDots } from 'react-icons/bs';
 import { FaRegStar, FaStar } from 'react-icons/fa';
 import { FiRotateCcw } from 'react-icons/fi';
@@ -17,9 +17,11 @@ import { useToast } from '@/contexts/ToastContext';
 import { useMediaQuery } from '@/shared/hooks';
 import { Dropdown } from '@/components/ui';
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal';
+import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDebouncedEffect } from '@/shared/hooks';
 import { readEnum, readString, replaceUrlQuery } from '@/lib/url/queryParams';
+import { bulkStatusActionApplies } from '@/lib/admin/bulkEligibility';
 
 const STATUS_FILTER_OPTIONS = [
   { value: 'all', label: 'All statuses', color: 'slate' },
@@ -40,18 +42,21 @@ const Icon = {
   ),
 };
 
-function SellerAvatar({ name, src }) {
+function SellerAvatar({ name, src, size = 34 }) {
   const [imgError, setImgError] = useState(false);
   const label = name || 'Seller';
   const showImg = typeof src === 'string' && src.trim().length > 0 && !imgError;
 
   if (showImg) {
     return (
-      <img
+      <Image
         src={src.trim()}
         alt=""
+        width={size}
+        height={size}
         className={styles.avatar}
         onError={() => setImgError(true)}
+        unoptimized
       />
     );
   }
@@ -91,6 +96,7 @@ function SellerActionsMenu({
   onViewDetails,
   onStatusChange,
   onRejectRequest,
+  onSuspendRequest,
 }) {
   const [open, setOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
@@ -205,7 +211,7 @@ function SellerActionsMenu({
               className={`${styles.actionMenuItem} ${styles.actionMenuItemWarn}`}
               disabled={isUpdating}
               onClick={() => {
-                onStatusChange(sellerId, 'suspended');
+                onSuspendRequest?.(sellerId, seller);
                 close();
               }}
             >
@@ -241,48 +247,114 @@ function formatDate(raw) {
   }
 }
 
-function DetailRow({ label, value, isLink, href }) {
+function DetailRow({ label, value, isLink, href, multiline }) {
   return (
-    <div className={styles.detailRow}>
+    <div className={`${styles.detailRow} ${multiline ? styles.detailRowMultiline : ''}`}>
       <span className={styles.detailRowLabel}>{label}</span>
-      {isLink
-        ? <a className={`${styles.detailRowValue} ${styles.detailRowLink}`} href={href}>{value}</a>
-        : <span className={styles.detailRowValue}>{value}</span>
-      }
+      {isLink ? (
+        <a className={`${styles.detailRowValue} ${styles.detailRowLink}`} href={href}>
+          {value}
+        </a>
+      ) : (
+        <span className={styles.detailRowValue}>{value}</span>
+      )}
     </div>
   );
 }
 
 function SellerDetailModal({ seller, onClose }) {
+  useEffect(() => {
+    if (!seller) return;
+    function onKeyDown(e) {
+      if (e.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [seller, onClose]);
+
+  const detailModel = useMemo(() => {
+    if (!seller) return null;
+
+    const sellerUuid = seller.user_id || seller.id;
+    const shopUsername = typeof seller.username === 'string' ? seller.username.trim() : '';
+    const publicProfileHref =
+      sellerUuid && shopUsername
+        ? `/seller-profile?seller=${encodeURIComponent(sellerUuid)}`
+        : sellerUuid
+          ? `/seller-profile?seller=${encodeURIComponent(sellerUuid)}`
+          : null;
+    const specialtiesList = Array.isArray(seller.specialties)
+      ? seller.specialties.map((s) => String(s).trim()).filter(Boolean)
+      : [];
+
+    const hasContact = !!(seller.contact_name || seller.email || seller.phone);
+    const hasShopProfile = !!(
+      shopUsername ||
+      (seller.tagline && String(seller.tagline).trim()) ||
+      (seller.business_type_label && String(seller.business_type_label).trim()) ||
+      specialtiesList.length > 0
+    );
+    const hasBusiness = !!(seller.address || seller.business_info);
+    const hasAccount = !!(
+      seller.registered_at ||
+      seller.business_started_at ||
+      seller.approved_at ||
+      seller.listing_count != null
+    );
+    const hasDecision = !!(
+      seller.status === 'rejected' ||
+      (typeof seller.rejection_reason === 'string' && seller.rejection_reason.trim().length > 0)
+    );
+
+    const tabs = [];
+    if (hasContact) tabs.push({ id: 'contact', label: 'Contact' });
+    if (hasShopProfile) tabs.push({ id: 'shop', label: 'Shop & directory' });
+    if (hasBusiness) tabs.push({ id: 'business', label: 'Business' });
+    if (hasDecision) tabs.push({ id: 'decision', label: 'Application' });
+    if (hasAccount) tabs.push({ id: 'account', label: 'Account' });
+
+    return {
+      tabs,
+      sellerUuid,
+      shopUsername,
+      publicProfileHref,
+      specialtiesList,
+      hasContact,
+      hasShopProfile,
+      hasBusiness,
+      hasDecision,
+      hasAccount,
+    };
+  }, [seller]);
+
+  const [pickedTab, setPickedTab] = useState(null);
+
+  const activeTab =
+    !detailModel?.tabs.length
+      ? null
+      : pickedTab && detailModel.tabs.some((t) => t.id === pickedTab)
+        ? pickedTab
+        : detailModel.tabs[0].id;
+
   if (!seller) return null;
 
-  const sellerUuid = seller.user_id || seller.id;
-  const shopUsername = typeof seller.username === 'string' ? seller.username.trim() : '';
-  const publicProfileHref =
-    sellerUuid && shopUsername
-      ? `/seller-profile?seller=${encodeURIComponent(sellerUuid)}`
-      : sellerUuid
-        ? `/seller-profile?seller=${encodeURIComponent(sellerUuid)}`
-        : null;
-  const specialtiesList = Array.isArray(seller.specialties)
-    ? seller.specialties.map((s) => String(s).trim()).filter(Boolean)
-    : [];
+  const {
+    tabs: detailTabs,
+    shopUsername,
+    publicProfileHref,
+    specialtiesList,
+    hasContact,
+    hasShopProfile,
+    hasBusiness,
+    hasDecision,
+    hasAccount,
+  } = detailModel;
 
-  const hasContact = seller.contact_name || seller.email || seller.phone;
-  const hasShopProfile =
-    shopUsername ||
-    (seller.tagline && String(seller.tagline).trim()) ||
-    (seller.business_type_label && String(seller.business_type_label).trim()) ||
-    specialtiesList.length > 0;
-  const hasBusiness = seller.address || seller.business_info;
-  const hasAccount =
-    seller.registered_at ||
-    seller.business_started_at ||
-    seller.approved_at ||
-    seller.listing_count != null;
-  const hasDecision =
-    seller.status === 'rejected' ||
-    (typeof seller.rejection_reason === 'string' && seller.rejection_reason.trim().length > 0);
+  const showTabStrip = detailTabs.length > 1;
+  const panelA11y = (id, longLabel) =>
+    showTabStrip
+      ? { 'aria-labelledby': `seller-detail-tab-${id}` }
+      : { 'aria-label': longLabel };
 
   return (
     <div className={styles.detailModalOverlay} role="presentation" onClick={onClose}>
@@ -296,8 +368,9 @@ function SellerDetailModal({ seller, onClose }) {
         {/* Header */}
         <div className={styles.detailModalHeader}>
           <div className={styles.detailModalHeaderInner}>
-            <SellerAvatar name={seller.business_name} src={seller.avatarUrl} />
-            <div>
+            <SellerAvatar name={seller.business_name} src={seller.avatarUrl} size={48} />
+            <div className={styles.detailModalHeaderText}>
+              <p className={styles.detailModalEyebrow}>Viewing details</p>
               <h2 id="seller-detail-title" className={styles.detailModalTitle}>
                 {seller.business_name || 'Seller details'}
               </h2>
@@ -312,101 +385,160 @@ function SellerDetailModal({ seller, onClose }) {
             </div>
           </div>
           <button type="button" className={styles.detailModalClose} onClick={onClose} aria-label="Close">
-            ×
+            <TbX aria-hidden size={18} strokeWidth={1.75} />
           </button>
         </div>
 
-        {/* Body */}
-        <div className={styles.detailModalBody}>
-
-          {hasContact && (
-            <div className={styles.detailGroup}>
-              <p className={styles.detailGroupTitle}>Contact information</p>
-              {seller.contact_name && <DetailRow label="Name" value={seller.contact_name} />}
-              {seller.email && <DetailRow label="Email" value={seller.email} isLink href={`mailto:${seller.email}`} />}
-              {seller.phone && <DetailRow label="Phone" value={seller.phone} isLink href={`tel:${seller.phone}`} />}
-            </div>
-          )}
-
-          {hasShopProfile && (
-            <div className={styles.detailGroup}>
-              <p className={styles.detailGroupTitle}>Shop &amp; directory</p>
-              {shopUsername ? (
-                publicProfileHref ? (
-                  <DetailRow
-                    label="Shop username"
-                    value={`@${shopUsername.replace(/^@/, '')}`}
-                    isLink
-                    href={publicProfileHref}
-                  />
-                ) : (
-                  <DetailRow
-                    label="Shop username"
-                    value={`@${shopUsername.replace(/^@/, '')}`}
-                  />
-                )
-              ) : null}
-              {seller.tagline && (
-                <DetailRow label="Tagline" value={String(seller.tagline).trim()} />
-              )}
-              {seller.business_type_label && (
-                <DetailRow
-                  label="Directory type"
-                  value={String(seller.business_type_label).trim()}
-                />
-              )}
-              {specialtiesList.length > 0 && (
-                <DetailRow label="Specialties" value={specialtiesList.join(', ')} />
-              )}
-            </div>
-          )}
-
-          {hasBusiness && (
-            <div className={styles.detailGroup}>
-              <p className={styles.detailGroupTitle}>Business information</p>
-              {seller.address && <DetailRow label="Address" value={seller.address} />}
-              {seller.business_info && <DetailRow label="About" value={seller.business_info} />}
-            </div>
-          )}
-
-          {hasDecision && (
-            <div className={styles.detailGroup}>
-              <p className={styles.detailGroupTitle}>Application decision</p>
-              {seller.rejected_at && (
-                <DetailRow label="Rejected on" value={formatDate(seller.rejected_at)} />
-              )}
-              {seller.rejection_reason && (
-                <DetailRow label="Reason" value={String(seller.rejection_reason).trim()} />
-              )}
-            </div>
-          )}
-
-          {hasAccount && (
-            <div className={styles.detailGroup}>
-              <p className={styles.detailGroupTitle}>Account</p>
-              {seller.registered_at && <DetailRow label="Registered" value={formatDate(seller.registered_at)} />}
-              {seller.business_started_at && (
-                <DetailRow label="Business started" value={formatDate(seller.business_started_at)} />
-              )}
-              {seller.approved_at && (
-                <DetailRow label="Approved" value={formatDate(seller.approved_at)} />
-              )}
-              {(seller.partners_featured === true || seller.partners_featured === false) && (
-                <DetailRow
-                  label="Partners spotlight"
-                  value={seller.partners_featured ? 'Featured' : 'Not featured'}
-                />
-              )}
-              {seller.listing_count != null && (
-                <DetailRow label="Listings" value={String(seller.listing_count)} />
-              )}
-            </div>
-          )}
-
-          {!hasContact && !hasShopProfile && !hasBusiness && !hasDecision && !hasAccount && (
+        <div
+          className={`${styles.detailModalBody} ${detailTabs.length === 0 ? styles.detailModalBodyEmpty : ''}`}
+        >
+          {detailTabs.length === 0 ? (
             <p className={styles.detailEmpty}>No details on file for this seller.</p>
-          )}
+          ) : (
+            <>
+              {showTabStrip ? (
+                <div className={styles.detailTabList} role="tablist" aria-label="Seller information sections">
+                  {detailTabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      id={`seller-detail-tab-${tab.id}`}
+                      aria-selected={activeTab === tab.id}
+                      aria-controls={`seller-detail-panel-${tab.id}`}
+                      tabIndex={activeTab === tab.id ? 0 : -1}
+                      className={`${styles.detailTab} ${activeTab === tab.id ? styles.detailTabActive : ''}`}
+                      onClick={() => setPickedTab(tab.id)}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
 
+              <div className={styles.detailTabPanels}>
+                {activeTab === 'contact' && hasContact ? (
+                  <div
+                    role="tabpanel"
+                    id="seller-detail-panel-contact"
+                    className={styles.detailTabPanel}
+                    {...panelA11y('contact', 'Contact information')}
+                  >
+                    <section className={styles.detailSection}>
+                      <div className={`${styles.detailGroup} ${styles.detailGroupTabPanel}`}>
+                        {seller.contact_name && <DetailRow label="Name" value={seller.contact_name} />}
+                        {seller.email && (
+                          <DetailRow label="Email" value={seller.email} isLink href={`mailto:${seller.email}`} />
+                        )}
+                        {seller.phone && (
+                          <DetailRow label="Phone" value={seller.phone} isLink href={`tel:${seller.phone}`} />
+                        )}
+                      </div>
+                    </section>
+                  </div>
+                ) : null}
+
+                {activeTab === 'shop' && hasShopProfile ? (
+                  <div
+                    role="tabpanel"
+                    id="seller-detail-panel-shop"
+                    className={styles.detailTabPanel}
+                    {...panelA11y('shop', 'Shop and directory')}
+                  >
+                    <section className={styles.detailSection}>
+                      <div className={`${styles.detailGroup} ${styles.detailGroupTabPanel}`}>
+                        {shopUsername ? (
+                          publicProfileHref ? (
+                            <DetailRow
+                              label="Shop username"
+                              value={`@${shopUsername.replace(/^@/, '')}`}
+                              isLink
+                              href={publicProfileHref}
+                            />
+                          ) : (
+                            <DetailRow label="Shop username" value={`@${shopUsername.replace(/^@/, '')}`} />
+                          )
+                        ) : null}
+                        {seller.tagline && <DetailRow label="Tagline" value={String(seller.tagline).trim()} />}
+                        {seller.business_type_label && (
+                          <DetailRow label="Directory type" value={String(seller.business_type_label).trim()} />
+                        )}
+                        {specialtiesList.length > 0 && (
+                          <DetailRow label="Specialties" value={specialtiesList.join(', ')} />
+                        )}
+                      </div>
+                    </section>
+                  </div>
+                ) : null}
+
+                {activeTab === 'business' && hasBusiness ? (
+                  <div
+                    role="tabpanel"
+                    id="seller-detail-panel-business"
+                    className={styles.detailTabPanel}
+                    {...panelA11y('business', 'Business information')}
+                  >
+                    <section className={styles.detailSection}>
+                      <div className={`${styles.detailGroup} ${styles.detailGroupTabPanel}`}>
+                        {seller.address && <DetailRow label="Address" value={seller.address} multiline />}
+                        {seller.business_info && (
+                          <DetailRow label="About" value={String(seller.business_info).trim()} multiline />
+                        )}
+                      </div>
+                    </section>
+                  </div>
+                ) : null}
+
+                {activeTab === 'decision' && hasDecision ? (
+                  <div
+                    role="tabpanel"
+                    id="seller-detail-panel-decision"
+                    className={styles.detailTabPanel}
+                    {...panelA11y('decision', 'Application decision')}
+                  >
+                    <section className={styles.detailSection}>
+                      <div className={`${styles.detailGroup} ${styles.detailGroupTabPanel}`}>
+                        {seller.rejected_at && <DetailRow label="Rejected on" value={formatDate(seller.rejected_at)} />}
+                        {seller.rejection_reason && (
+                          <DetailRow label="Reason" value={String(seller.rejection_reason).trim()} multiline />
+                        )}
+                      </div>
+                    </section>
+                  </div>
+                ) : null}
+
+                {activeTab === 'account' && hasAccount ? (
+                  <div
+                    role="tabpanel"
+                    id="seller-detail-panel-account"
+                    className={styles.detailTabPanel}
+                    {...panelA11y('account', 'Account')}
+                  >
+                    <section className={styles.detailSection}>
+                      <div className={`${styles.detailGroup} ${styles.detailGroupTabPanel}`}>
+                        {seller.registered_at && (
+                          <DetailRow label="Registered" value={formatDate(seller.registered_at)} />
+                        )}
+                        {seller.business_started_at && (
+                          <DetailRow label="Business started" value={formatDate(seller.business_started_at)} />
+                        )}
+                        {seller.approved_at && <DetailRow label="Approved" value={formatDate(seller.approved_at)} />}
+                        {(seller.partners_featured === true || seller.partners_featured === false) && (
+                          <DetailRow
+                            label="Partners spotlight"
+                            value={seller.partners_featured ? 'Featured' : 'Not featured'}
+                          />
+                        )}
+                        {seller.listing_count != null && (
+                          <DetailRow label="Listings" value={String(seller.listing_count)} />
+                        )}
+                      </div>
+                    </section>
+                  </div>
+                ) : null}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -441,8 +573,10 @@ export default function AdminSellersPage() {
   useEffect(() => {
     const nextQ = readString(searchParams, 'q', '')
     const nextStatus = readEnum(searchParams, 'status', STATUS_FILTER_OPTIONS.map((o) => o.value), 'all')
-    if (nextQ !== search) setSearch(nextQ)
-    if (nextStatus !== statusFilter) setStatusFilter(nextStatus)
+    queueMicrotask(() => {
+      if (nextQ !== search) setSearch(nextQ)
+      if (nextStatus !== statusFilter) setStatusFilter(nextStatus)
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
@@ -567,11 +701,103 @@ export default function AdminSellersPage() {
         const curId = cur.user_id || cur.id;
         return curId === sellerId ? { ...cur, ...data } : cur;
       });
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('admin:attention-refresh'));
+      }
     } catch (err) {
       console.error('Failed to update seller status:', err);
       toast.error('Failed to update seller status. Please try again.');
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [pendingBulk, setPendingBulk] = useState(null);
+  const [suspendSellerConfirm, setSuspendSellerConfirm] = useState(null);
+
+  const sellerBySelectId = useMemo(() => {
+    const m = new Map();
+    for (const s of sellers) {
+      if (!s) continue;
+      const raw = s.user_id ?? s.id;
+      if (raw == null) continue;
+      m.set(String(raw), s);
+    }
+    return m;
+  }, [sellers]);
+
+  const bulkSellerStatusApplies = useCallback(
+    (nextStatus) => {
+      // Rejecting is the onboarding outcome for pending applications only (see row actions menu).
+      if (nextStatus === 'rejected') {
+        for (const id of selectedRows) {
+          const s = sellerBySelectId.get(String(id));
+          if (s != null && s.status === 'pending') return true;
+        }
+        return false;
+      }
+      return bulkStatusActionApplies(
+        selectedRows,
+        (id) => sellerBySelectId.get(String(id)) ?? null,
+        nextStatus,
+      );
+    },
+    [selectedRows, sellerBySelectId],
+  );
+
+  const requestBulkStatus = (nextStatus) => {
+    if (nextStatus === 'rejected') {
+      const pendingIds = [...selectedRows].filter(
+        (id) => sellerBySelectId.get(String(id))?.status === 'pending',
+      );
+      if (pendingIds.length === 0) return;
+      setPendingBulk({ nextStatus, ids: pendingIds });
+      return;
+    }
+    if (!bulkSellerStatusApplies(nextStatus)) return;
+    const ids = [...selectedRows];
+    if (ids.length === 0) return;
+    setPendingBulk({ nextStatus, ids });
+  };
+
+  const confirmBulkStatus = async () => {
+    if (!pendingBulk) return;
+    const { nextStatus, ids } = pendingBulk;
+    setBulkBusy(true);
+    try {
+      const results = await Promise.allSettled(
+        ids.map((id) => updateSellerStatus(id, nextStatus)),
+      );
+      const updates = new Map();
+      let failed = 0;
+      results.forEach((r, idx) => {
+        if (r.status === 'fulfilled' && r.value?.data?.user_id) {
+          updates.set(ids[idx], r.value.data);
+        } else {
+          failed += 1;
+        }
+      });
+      if (updates.size > 0) {
+        setSellers((prev) =>
+          prev.map((s) => {
+            const id = s?.user_id || s?.id;
+            return updates.has(id) ? { ...s, ...updates.get(id) } : s;
+          }),
+        );
+      }
+      if (failed > 0) {
+        toast.error(`${failed} seller(s) failed to update.`);
+      } else {
+        toast.success(`${ids.length} seller(s) updated.`);
+      }
+      setSelectedRows(new Set());
+      setPendingBulk(null);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('admin:attention-refresh'));
+      }
+    } finally {
+      setBulkBusy(false);
     }
   };
 
@@ -834,6 +1060,76 @@ export default function AdminSellersPage() {
           </div>
         )}
 
+        {selectedRows.size > 0 ? (
+          <div
+            style={{
+              display: 'flex',
+              gap: 8,
+              alignItems: 'center',
+              padding: '10px 12px',
+              background: '#f8fafc',
+              border: '1px solid #cbd5e1',
+              borderRadius: 8,
+              margin: '0 0 10px',
+              flexWrap: 'wrap',
+            }}
+            aria-live="polite"
+          >
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>
+              {selectedRows.size} selected
+            </span>
+            {[
+              { value: 'active', label: 'Set Active' },
+              { value: 'suspended', label: 'Suspend' },
+              { value: 'rejected', label: 'Mark Rejected' },
+            ]
+              .filter((opt) => bulkSellerStatusApplies(opt.value))
+              .map((opt) => {
+                const isNegative = opt.value === 'suspended' || opt.value === 'rejected'
+                return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => requestBulkStatus(opt.value)}
+                  disabled={bulkBusy}
+                  style={{
+                    padding: '6px 12px',
+                    background: isNegative ? '#fef2f2' : '#f1f5f9',
+                    color: isNegative ? '#b91c1c' : '#0f172a',
+                    border: isNegative ? '1px solid #b91c1c' : '1px solid #0f172a',
+                    borderRadius: 6,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: bulkBusy ? 'not-allowed' : 'pointer',
+                    opacity: bulkBusy ? 0.5 : 1,
+                  }}
+                >
+                  {bulkBusy ? 'Working…' : opt.label}
+                </button>
+                )
+              })}
+            <button
+              type="button"
+              onClick={() => setSelectedRows(new Set())}
+              disabled={bulkBusy}
+              style={{
+                marginLeft: 'auto',
+                padding: '6px 12px',
+                background: '#ffffff',
+                color: '#0f172a',
+                border: '1px solid #0f172a',
+                borderRadius: 6,
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: bulkBusy ? 'not-allowed' : 'pointer',
+                opacity: bulkBusy ? 0.5 : 1,
+              }}
+            >
+              Clear selection
+            </button>
+          </div>
+        ) : null}
+
         <div className={styles.tableWrap}>
           {loading ? (
             <table className={styles.table} role="status" aria-live="polite" aria-busy="true" aria-label="Loading sellers">
@@ -1033,6 +1329,15 @@ export default function AdminSellersPage() {
                             isUpdating={isUpdating || rejectSubmitting}
                             onViewDetails={() => setDetailSeller(seller)}
                             onStatusChange={handleStatusChange}
+                            onSuspendRequest={(sid, s) => {
+                              setSuspendSellerConfirm({
+                                sellerId: sid,
+                                name:
+                                  typeof s?.business_name === 'string' && s.business_name.trim()
+                                    ? s.business_name.trim()
+                                    : 'Seller',
+                              });
+                            }}
                             onRejectRequest={(target) => {
                               setRejectDraft({
                                 sellerId: target?.user_id || target?.id,
@@ -1081,8 +1386,68 @@ export default function AdminSellersPage() {
       </section>
 
       {detailSeller && (
-        <SellerDetailModal seller={detailSeller} onClose={() => setDetailSeller(null)} />
+        <SellerDetailModal
+          key={String(detailSeller.user_id ?? detailSeller.id ?? '')}
+          seller={detailSeller}
+          onClose={() => setDetailSeller(null)}
+        />
       )}
+
+      <ConfirmModal
+        open={suspendSellerConfirm != null}
+        variant="danger"
+        title="Suspend seller?"
+        message={
+          suspendSellerConfirm
+            ? `Suspend "${suspendSellerConfirm.name}"? They cannot take new bookings until reactivated.`
+            : ''
+        }
+        confirmLabel="Suspend"
+        confirmLoadingLabel="Suspending..."
+        cancelLabel="Cancel"
+        loading={
+          suspendSellerConfirm != null &&
+          updatingId === suspendSellerConfirm.sellerId
+        }
+        onCancel={() => {
+          if (updatingId) return;
+          setSuspendSellerConfirm(null);
+        }}
+        onConfirm={async () => {
+          if (!suspendSellerConfirm) return;
+          await handleStatusChange(suspendSellerConfirm.sellerId, 'suspended');
+          setSuspendSellerConfirm(null);
+        }}
+      />
+
+      <ConfirmModal
+        open={pendingBulk != null}
+        variant={
+          pendingBulk?.nextStatus === 'suspended' || pendingBulk?.nextStatus === 'rejected'
+            ? 'danger'
+            : 'primary'
+        }
+        title="Update selected sellers?"
+        message={
+          pendingBulk
+            ? (() => {
+                const label =
+                  STATUS_FILTER_OPTIONS.find((o) => o.value === pendingBulk.nextStatus)?.label ||
+                  pendingBulk.nextStatus;
+                return `Set ${pendingBulk.ids.length} selected seller${pendingBulk.ids.length > 1 ? 's' : ''} to ${label}?`;
+              })()
+            : ''
+        }
+        confirmLabel="Apply"
+        confirmLoadingLabel="Updating..."
+        cancelLabel="Cancel"
+        loading={bulkBusy}
+        onCancel={() => {
+          if (bulkBusy) return;
+          setPendingBulk(null);
+        }}
+        onConfirm={confirmBulkStatus}
+      />
 
       <ConfirmModal
         open={featuredConfirm != null}

@@ -165,10 +165,19 @@ export async function countOpenOrReviewDisputes(supabaseAdmin) {
 
 /**
  * Dashboard + analytics payloads (counts, charts, recent paid orders).
+ *
  * @param {import('@supabase/supabase-js').SupabaseClient} supabaseAdmin
+ * @param {{ rangeDays?: number }} [options] - rangeDays may be 7, 30, or 90 (default 7).
+ *   Affects the chart series, paid-orders window, and top line items aggregation.
  */
-export async function getAdminPortalMetrics(supabaseAdmin) {
-  const chartDayKeys = utcDateKeysLastN(7)
+export async function getAdminPortalMetrics(supabaseAdmin, options = {}) {
+  const requestedRange = Number(options?.rangeDays)
+  const ALLOWED_RANGES = [7, 30, 90]
+  const rangeDays = ALLOWED_RANGES.includes(requestedRange) ? requestedRange : 7
+  const chartDayKeys = utcDateKeysLastN(rangeDays)
+  // `cutoff` follows the requested range and is used for chart-window-aware aggregations.
+  const cutoff = new Date(Date.now() - rangeDays * 24 * 60 * 60 * 1000).toISOString()
+  // Keep the "paid orders (30d)" KPI stable regardless of range so the UI hint stays accurate.
   const cutoff30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
   const escrowSelect = `
@@ -210,7 +219,7 @@ export async function getAdminPortalMetrics(supabaseAdmin) {
       .limit(500),
     fetchDailyReleasedCommissionSeries(supabaseAdmin, chartDayKeys),
     fetchDailyCollectedGmvSeries(supabaseAdmin, chartDayKeys),
-    aggregateTopOrderLineItems(supabaseAdmin, cutoff30),
+    aggregateTopOrderLineItems(supabaseAdmin, cutoff),
     supabaseAdmin
       .from('orders')
       .select('id, order_number, subtotal, payment_status, created_at')
@@ -248,6 +257,7 @@ export async function getAdminPortalMetrics(supabaseAdmin) {
     sellersActive: sellersActiveRes.count ?? 0,
     buyersTotal: buyersTotalRes.count ?? 0,
     paidOrdersLast30Days: paidOrders30Res.count ?? 0,
+    rangeDays,
     payoutSummary: {
       platformRevenue30d: payoutAgg.platformRevenue30d,
       pendingPayoutAmt: payoutAgg.pendingPayoutAmt,

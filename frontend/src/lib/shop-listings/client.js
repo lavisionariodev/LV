@@ -180,6 +180,16 @@ function mapRpcRowToListing(row) {
 
   const sellerSocialLinks = row.seller_social_links ?? row.sellerSocialLinks ?? {}
 
+  const sellerStatusRaw = row.seller_status ?? row.sellerStatus
+  const sellerStatus =
+    typeof sellerStatusRaw === 'string' && sellerStatusRaw.trim()
+      ? sellerStatusRaw.trim().toLowerCase()
+      : 'active'
+
+  const turnaroundRaw = row.seller_turnaround ?? row.sellerTurnaround
+  const turnaround =
+    typeof turnaroundRaw === 'string' && turnaroundRaw.trim() ? turnaroundRaw.trim() : null
+
   return {
     id: String(row.listing_id),
     serviceId,
@@ -215,6 +225,8 @@ function mapRpcRowToListing(row) {
       tagline,
       specialties,
       socialLinks: sellerSocialLinks,
+      sellerStatus,
+      turnaround,
     },
     createdAt: row.created_at || new Date().toISOString(),
     source: 'database',

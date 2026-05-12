@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useMemo, useEffect, useLayoutEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import { usePathname, useSearchParams } from 'next/navigation'
 import {
@@ -25,6 +25,7 @@ import { LuUserCheck } from 'react-icons/lu'
 import { BsPerson } from 'react-icons/bs'
 import styles from './AppSidebar.module.css'
 import { useSiteContent } from '@/lib/siteContent/client'
+import { useAdminAttentionCount } from '@/lib/admin/useAdminAttentionCount'
 
 /** Stable empty list when sidebar config is absent (avoid new [] each render). */
 const EMPTY_NAV_ITEMS = []
@@ -92,7 +93,7 @@ const SIDEBAR_CONFIG = {
           { href: '/admin/listings/approvals', label: 'Approvals', icon: TbClipboardCheck },
         ],
       },
-      { href: '/admin/disputes', label: 'Dispute', icon: TbReportSearch },
+      { href: '/admin/disputes', label: 'Disputes', icon: TbReportSearch },
     ],
   },
   seller: {
@@ -144,7 +145,6 @@ export default function AppSidebar({
   const [openGroups, setOpenGroups] = useState({})
   const [collapsedFlyoutLabel, setCollapsedFlyoutLabel] = useState(null)
   const [collapsedFlyoutPos, setCollapsedFlyoutPos] = useState({ top: 0, left: 0 })
-  const [mounted, setMounted] = useState(false)
   const navRef = useRef(null)
   const activeCollapsedTriggerRef = useRef(null)
   const collapsedFlyoutPanelRef = useRef(null)
@@ -154,11 +154,19 @@ export default function AppSidebar({
   const showMobileOpen = Boolean(isMobile && mobileOpen)
   const handleNavClose = isMobile ? onMobileClose : undefined
 
-  useEffect(() => setMounted(true), [])
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  )
 
-  useEffect(() => {
-    if (!showCollapsed) setCollapsedFlyoutLabel(null)
-  }, [showCollapsed])
+  const [prevShowCollapsed, setPrevShowCollapsed] = useState(showCollapsed)
+  if (prevShowCollapsed !== showCollapsed) {
+    setPrevShowCollapsed(showCollapsed)
+    if (!showCollapsed) {
+      setCollapsedFlyoutLabel(null)
+    }
+  }
 
   useLayoutEffect(() => {
     if (!collapsedFlyoutLabel || !mounted || !showCollapsed) return
@@ -212,26 +220,13 @@ export default function AppSidebar({
     return () => document.removeEventListener('pointerdown', down, true)
   }, [collapsedFlyoutLabel, mounted, showCollapsed])
 
-  const [adminDisputesAttention, setAdminDisputesAttention] = useState(0)
+  const { count: adminDisputesAttention, refresh: refreshAdminAttention } =
+    useAdminAttentionCount(variant === 'admin')
 
   useEffect(() => {
     if (variant !== 'admin') return
-    let cancelled = false
-    ;(async () => {
-      try {
-        const res = await fetch('/api/admin/disputes/attention-count', { credentials: 'include' })
-        const body = await res.json().catch(() => null)
-        if (!cancelled && res.ok && body?.count != null) {
-          setAdminDisputesAttention(Number(body.count) || 0)
-        }
-      } catch {
-        // keep 0
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [variant])
+    refreshAdminAttention()
+  }, [variant, pathname, refreshAdminAttention])
 
   const config = SIDEBAR_CONFIG[variant]
   const sidebarNavItems = config?.navItems ?? EMPTY_NAV_ITEMS
@@ -347,7 +342,7 @@ export default function AppSidebar({
                     : undefined
                 }
                 aria-label={
-                  disputeBadge ? 'Dispute, new disputes to review' : undefined
+                  disputeBadge ? 'Disputes, new disputes to review' : undefined
                 }
                 onClick={handleNavClose}
               >

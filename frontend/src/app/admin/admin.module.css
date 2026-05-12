@@ -65,6 +65,56 @@
   gap: 18px;
 }
 
+/* Inline warning when /api/admin/metrics fails (dashboard + analytics) */
+.metricsLoadBanner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid #fcd34d;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.metricsLoadBannerText {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.metricsLoadBannerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.metricsLoadBannerBtn {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #d97706;
+  background: #fff;
+  color: #b45309;
+  cursor: pointer;
+}
+
+.metricsLoadBannerBtn:hover {
+  background: #fff7ed;
+}
+
+.metricsLoadBannerBtn:focus-visible {
+  outline: 2px solid #d97706;
+  outline-offset: 2px;
+}
+
 /* =========================
    DASHBOARD LOADING STATE
    ========================= */
@@ -169,6 +219,17 @@
 
 .homeDesktopOnly {
   display: block;
+}
+
+/* Inverse of .homeDesktopOnly — use for mobile-only blocks (≤860px) */
+.homeMobileOnly {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .homeMobileOnly {
+    display: block;
+  }
 }
 
 .recentMobile {
@@ -1446,19 +1507,9 @@
 }
 
 @media (max-width: 860px) {
-  .analyticsStatsGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .analyticsChartGrid {
     grid-template-columns: 1fr;
     gap: 16px;
-  }
-}
-
-@media (max-width: 640px) {
-  .analyticsStatsGrid {
-    display: none;
   }
 }
 
@@ -1490,10 +1541,27 @@
   animation: adminSkShimmer 1.15s ease-in-out infinite;
 }
 
+/* Shimmer on dark hero (mobile dashboard first paint) */
+.adminSkBarOnDark {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.18) 45%,
+    rgba(255, 255, 255, 0.08) 90%
+  );
+  background-size: 200% 100%;
+  animation: adminSkShimmer 1.15s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .adminSkBar {
     animation: none;
     background: #e8ecf0;
+  }
+
+  .adminSkBarOnDark {
+    animation: none;
+    background: rgba(255, 255, 255, 0.12);
   }
 }
 
@@ -1691,17 +1759,225 @@
 .dashSkMobileHub {
   display: flex;
   flex-direction: column;
+  gap: 0;
+  width: 100%;
+}
+
+/* Mirrors .mobileHeroHeader — gradient card + balance lines */
+.dashSkMobileHero {
+  background: linear-gradient(160deg, #0d2218 0%, #102820 40%, #163a27 100%);
+  border-radius: 22px;
+  padding: 24px 24px 60px;
+  position: relative;
+  overflow: hidden;
+}
+
+.dashSkMobileHeroTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.dashSkMobileHeroLogo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dashSkMobileHeroLogoIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.dashSkMobileHeroLogoText {
+  height: 14px;
+  width: 108px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.dashSkMobileHeroAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dashSkMobileHeroBalance {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dashSkMobileHeroLineSm {
+  height: 10px;
+  width: 56%;
+  max-width: 220px;
+  border-radius: 6px;
+}
+
+.dashSkMobileHeroLineLg {
+  height: 26px;
+  width: 78%;
+  max-width: 260px;
+  border-radius: 8px;
+}
+
+.dashSkMobileHeroLineSub {
+  height: 10px;
+  width: 52%;
+  max-width: 180px;
+  border-radius: 6px;
+}
+
+/* Mirrors .mobileNavCards — four tiles overlapping hero */
+.dashSkMobileNavRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px;
+  margin: -34px 30px 0;
+  position: relative;
+  z-index: 2;
+}
+
+.dashSkMobileNavItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.dashSkMobileNavTile {
+  width: min(62px, 100%);
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+  max-width: 100%;
+}
+
+.dashSkMobileNavLabel {
+  height: 10px;
+  width: 70%;
+  max-width: 52px;
+  border-radius: 5px;
+}
+
+/* Mirrors .mobileBody — search, highlight, 2×2 stats */
+.dashSkMobileBody {
+  padding: 28px 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dashSkMobileSearch {
+  height: 46px;
+  width: 100%;
+  border-radius: 12px;
+}
+
+.dashSkMobileHighlight {
+  border-radius: 16px;
+  border: 1px solid #e8f0eb;
+  background: linear-gradient(135deg, #f6faf7 0%, #ffffff 55%);
+  padding: 16px 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dashSkHighlightTitle {
+  height: 13px;
+  width: 72%;
+  max-width: 240px;
+}
+
+.dashSkHighlightTextWide {
+  height: 10px;
+  width: 100%;
+}
+
+.dashSkHighlightTextNarrow {
+  height: 10px;
+  width: 92%;
+}
+
+.dashSkHighlightLink {
+  height: 12px;
+  width: 96px;
+  margin-top: 2px;
+}
+
+.dashSkMobileStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
-.dashSkHero {
-  border-radius: 14px;
-  border: 1px solid #e9e9ef;
-  padding: 16px;
+.dashSkMobileStatSk {
+  border: 1px solid #eef2f7;
+  border-radius: 16px;
+  padding: 14px 14px 12px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(2, 6, 23, 0.06);
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  background: #fff;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dashSkMobileStatSkTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dashSkMobileStatSkIcon {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.dashSkMobileStatSkTitle {
+  height: 12px;
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.dashSkMobileStatSkValue {
+  height: 20px;
+  width: 55%;
+}
+
+.dashSkMobileStatSkFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.dashSkMobileStatSkSub {
+  height: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.dashSkMobileStatSkAction {
+  height: 10px;
+  width: 44px;
+  flex-shrink: 0;
 }
 
 @media (min-width: 861px) {
@@ -1711,8 +1987,20 @@
 }
 
 @media (max-width: 860px) {
+  .dashSkWelcome {
+    display: none;
+  }
+
   .dashSkDesktopGrid {
     display: none;
+  }
+}
+
+@media (max-width: 400px) {
+  .dashSkMobileNavRow {
+    margin-left: 16px;
+    margin-right: 16px;
+    gap: 12px;
   }
 }
 
@@ -1787,15 +2075,16 @@
   }
 }
 
-@media (max-width: 640px) {
-  .analyticsSkStats {
-    display: none;
-  }
-}
-
 @media (max-width: 860px) {
   .analyticsSkChartGrid {
     grid-template-columns: 1fr;
     gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .analyticsSkStats {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
   }
 }

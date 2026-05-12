@@ -16,9 +16,10 @@ import { TbMessage2Question, TbBell, TbCreditCard } from 'react-icons/tb'
 import { HiOutlineNewspaper } from 'react-icons/hi'
 import { changePasswordWithReauth } from '@/lib/auth/changePassword'
 import { useToast } from '@/contexts/ToastContext'
-import { fetchCurrentAdminProfile } from '@/features/admin/settings/getAdminProfile'
+import { fetchCurrentAdminProfile } from '@/features/admin/settings/adminProfile'
 import { useMediaQuery } from '@/shared/hooks'
 import { normalizeSettingsTab } from '../settings/adminSettingsTabs'
+import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 const AVATARS_BUCKET = 'avatars'
 const MAX_MB = 2
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp']
@@ -95,6 +96,7 @@ export default function AdminProfileClient() {
   const [personalStatus, setPersonalStatus] = useState('')
   const [personalError, setPersonalError] = useState('')
   const [avatarLoading, setAvatarLoading] = useState(false)
+  const [removeAvatarConfirmOpen, setRemoveAvatarConfirmOpen] = useState(false)
 
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -212,7 +214,12 @@ export default function AdminProfileClient() {
     }
   }
 
-  const onRemoveAvatar = async () => {
+  const openRemoveAvatarConfirm = () => {
+    if (!profile || (!profile.avatarPath && !profile.avatarUrl)) return
+    setRemoveAvatarConfirmOpen(true)
+  }
+
+  const executeRemoveAvatar = async () => {
     setPersonalError('')
     setPersonalStatus('')
     if (!profile || (!profile.avatarPath && !profile.avatarUrl)) return
@@ -288,9 +295,12 @@ export default function AdminProfileClient() {
     const trimmedName = [firstName, lastNameRaw].filter(Boolean).join(' ')
     const trimmedEmail = draftEmail.trim()
     const trimmedSms = draftSmsPhone.trim()
+    const emailChanged = trimmedEmail !== (profile.email || '')
     try {
-      const { error: authError } = await supabase.auth.updateUser({ email: trimmedEmail })
-      if (authError) throw authError
+      if (emailChanged) {
+        const { error: authError } = await supabase.auth.updateUser({ email: trimmedEmail })
+        if (authError) throw authError
+      }
       const { error } = await supabase
         .from('admins')
         .update({
@@ -316,6 +326,13 @@ export default function AdminProfileClient() {
       )
       setIsEditingPersonal(false)
       setPersonalStatus('Profile updated successfully.')
+      if (emailChanged) {
+        toast.success(
+          `Verification link sent to ${trimmedEmail}. Email change applies once confirmed.`,
+        )
+      } else {
+        toast.success('Profile updated successfully.')
+      }
     } catch (err) {
       setPersonalError(err.message || 'Failed to update profile.')
     }
@@ -428,11 +445,12 @@ export default function AdminProfileClient() {
 
   useEffect(() => {
     if (!isMobile) return
-    if (searchParams.get('tab') === 'password') {
+    if (searchParams.get('tab') !== 'password') return
+    queueMicrotask(() => {
       setPassError('')
       setShowPasswordSheet(true)
       router.replace('/admin/profile', { scroll: false })
-    }
+    })
   }, [isMobile, searchParams, router])
 
   useEffect(() => {
@@ -700,7 +718,7 @@ export default function AdminProfileClient() {
                         <button
                           type="button"
                           className={styles.dangerBtn}
-                          onClick={onRemoveAvatar}
+                          onClick={openRemoveAvatarConfirm}
                           disabled={avatarLoading}
                           style={{ fontSize: '11px' }}
                         >
@@ -871,7 +889,7 @@ export default function AdminProfileClient() {
                   <button
                     type="button"
                     className={styles.sheetRemoveBtn}
-                    onClick={onRemoveAvatar}
+                    onClick={openRemoveAvatarConfirm}
                     disabled={avatarLoading}
                   >
                     Remove
@@ -1061,6 +1079,29 @@ export default function AdminProfileClient() {
         open={showLogout}
         onCancel={() => setShowLogout(false)}
         onConfirm={handleLogout}
+      />
+
+      <ConfirmModal
+        open={removeAvatarConfirmOpen}
+        variant="danger"
+        title="Remove profile avatar?"
+        message="Your profile photo will be cleared from storage and no longer shown in admin. You can upload a new photo anytime."
+        confirmLabel="Remove"
+        confirmLoadingLabel="Removing..."
+        cancelLabel="Cancel"
+        loading={avatarLoading}
+        subtitleAlign="left"
+        onCancel={() => {
+          if (avatarLoading) return
+          setRemoveAvatarConfirmOpen(false)
+        }}
+        onConfirm={async () => {
+          try {
+            await executeRemoveAvatar()
+          } finally {
+            setRemoveAvatarConfirmOpen(false)
+          }
+        }}
       />
     </div>
   )

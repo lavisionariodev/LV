@@ -1,6 +1,8 @@
 /**
  * Supabase auth middleware: refreshes session (token refresh) so cookies stay up to date.
  * OAuth code exchange is done in app/(auth)/auth/callback/route.js so cookies set correctly in production.
+ *
+ * Also: gates `/admin/**` to authenticated admin users (defense-in-depth; client guard remains).
  */
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
@@ -28,7 +30,35 @@ export async function middleware(request) {
     },
   });
 
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { pathname } = request.nextUrl;
+  const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");
+
+  if (isAdminRoute) {
+    if (!user) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/administrator";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+
+    const { data: adminRow } = await supabase
+      .from("admins")
+      .select("id")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (!adminRow) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/administrator";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+  }
+
   return response;
 }
 

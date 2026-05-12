@@ -8,6 +8,8 @@ import { LuSettings2 } from 'react-icons/lu'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useDebouncedEffect } from '@/shared/hooks'
 import { readEnum, readString, replaceUrlQuery } from '@/lib/url/queryParams'
+import { bulkStatusActionApplies } from '@/lib/admin/bulkEligibility'
+import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'All' },
@@ -19,6 +21,22 @@ const STATUS_OPTIONS = [
 
 const STATUS_LABEL = Object.fromEntries(STATUS_OPTIONS.map((o) => [o.value, o.label]))
 
+/** Light bg + matching border/text for bulk “Set status” actions */
+function disputeBulkActionButtonStyles(statusValue) {
+  switch (statusValue) {
+    case 'open':
+      return { background: '#fef2f2', color: '#b91c1c', border: '1px solid #b91c1c' }
+    case 'under_review':
+      return { background: '#fffbeb', color: '#b45309', border: '1px solid #b45309' }
+    case 'resolved':
+      return { background: '#f0fdf4', color: '#15803d', border: '1px solid #16a34a' }
+    case 'closed':
+      return { background: '#f1f5f9', color: '#475569', border: '1px solid #64748b' }
+    default:
+      return { background: '#f1f5f9', color: '#0f172a', border: '1px solid #0f172a' }
+  }
+}
+
 const Icon = {
   Search: () => (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -28,13 +46,28 @@ const Icon = {
   ),
 }
 
-function getInitials(name = '') {
-  const parts = String(name).trim().split(/\s+/).filter(Boolean)
-  if (parts.length === 0) return 'D'
-  const first = parts[0]?.[0] || ''
-  const second = (parts.length > 1 ? parts[parts.length - 1]?.[0] : parts[0]?.[1]) || ''
-  const initials = `${first}${second}`.toUpperCase()
-  return initials || 'D'
+const UUID_LIKE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** Table-friendly dispute reference (full UUIDs → short tail; compact ids unchanged). */
+function disputeRefShortLabel(id) {
+  const s = String(id ?? '').trim()
+  if (!s) return ''
+  if (UUID_LIKE.test(s)) {
+    const tail = s.replace(/-/g, '').slice(-8)
+    return tail ? `Ref ·${tail}` : ''
+  }
+  if (s.length > 16) return `${s.slice(0, 10)}…`
+  return s
+}
+
+/** YYYY-MM-DD in the Date column — matches admin payouts escrow `t.date` display. */
+function formatDisputeTableDate(iso) {
+  if (iso == null || iso === '') return '—'
+  const s = String(iso).trim()
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10)
+  const t = new Date(s)
+  return Number.isNaN(t.getTime()) ? '—' : t.toISOString().slice(0, 10)
 }
 
 function StatusBadge({ status }) {
@@ -135,6 +168,16 @@ export default function AdminDisputesPage() {
   const [allDisputes, setAllDisputes] = useState([])
   const [listLoading, setListLoading] = useState(true)
   const [listError, setListError] = useState('')
+  const [bulkBusy, setBulkBusy] = useState(false)
+  const [bulkStatusConfirm, setBulkStatusConfirm] = useState(null)
+
+  const disputeById = useMemo(() => {
+    const m = new Map()
+    for (const d of allDisputes) {
+      if (d?.id != null) m.set(String(d.id), d)
+    }
+    return m
+  }, [allDisputes])
 
   const loadDisputes = useCallback(async () => {
     setListError('')
@@ -147,6 +190,60 @@ export default function AdminDisputesPage() {
     }
     setAllDisputes(Array.isArray(body?.disputes) ? body.disputes : [])
   }, [])
+
+  const requestBulkStatus = useCallback(
+    (nextStatus) => {
+      if (
+        !bulkStatusActionApplies(
+          selectedRows,
+          (id) => disputeById.get(String(id)) ?? null,
+          nextStatus,
+        )
+      ) {
+        return
+      }
+      const ids = [...selectedRows]
+      if (ids.length === 0) return
+      setBulkStatusConfirm({ nextStatus, ids })
+    },
+    [selectedRows, disputeById],
+  )
+
+  const confirmBulkStatus = useCallback(async () => {
+    if (!bulkStatusConfirm) return
+    const { nextStatus, ids } = bulkStatusConfirm
+    setBulkBusy(true)
+    try {
+      const results = await Promise.allSettled(
+        ids.map((id) =>
+          fetch(`/api/admin/disputes/${encodeURIComponent(id)}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ status: nextStatus }),
+          }).then(async (res) => {
+            if (!res.ok) {
+              const body = await res.json().catch(() => null)
+              throw new Error(body?.error || 'Failed to update.')
+            }
+            return res
+          }),
+        ),
+      )
+      const failed = results.filter((r) => r.status === 'rejected').length
+      if (failed > 0) {
+        window.alert(`${failed} dispute(s) failed to update.`)
+      }
+      setSelectedRows(new Set())
+      setBulkStatusConfirm(null)
+      await loadDisputes()
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('admin:disputes-changed'))
+      }
+    } finally {
+      setBulkBusy(false)
+    }
+  }, [bulkStatusConfirm, loadDisputes])
 
   useEffect(() => {
     let cancelled = false
@@ -185,11 +282,18 @@ export default function AdminDisputesPage() {
       const q = search.trim().toLowerCase()
       return (
         d.id.toLowerCase().includes(q) ||
+        String(d.orderId ?? '').toLowerCase().includes(q) ||
+        String(d.buyerId ?? '').toLowerCase().includes(q) ||
+        String(d.sellerUserId ?? '').toLowerCase().includes(q) ||
         d.orderRef.toLowerCase().includes(q) ||
         d.complainantName.toLowerCase().includes(q) ||
         d.respondentName.toLowerCase().includes(q) ||
         d.reason.toLowerCase().includes(q) ||
-        d.description.toLowerCase().includes(q)
+        d.description.toLowerCase().includes(q) ||
+        formatDisputeTableDate(d.openedAtIso).toLowerCase().includes(q) ||
+        String(d.openedAtIso ?? '')
+          .toLowerCase()
+          .includes(q)
       )
     })
   }, [allDisputes, statusFilter, search])
@@ -322,6 +426,74 @@ export default function AdminDisputesPage() {
           </div>
         </div>
 
+        {/* ── Bulk action toolbar ── */}
+        {selectedRows.size > 0 ? (
+          <div
+            style={{
+              display: 'flex',
+              gap: 8,
+              alignItems: 'center',
+              padding: '10px 12px',
+              background: '#f8fafc',
+              border: '1px solid #cbd5e1',
+              borderRadius: 8,
+              marginBottom: 10,
+              flexWrap: 'wrap',
+            }}
+            aria-live="polite"
+          >
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>
+              {selectedRows.size} selected
+            </span>
+            {STATUS_OPTIONS.filter((o) => o.value !== 'all')
+              .filter((opt) =>
+                bulkStatusActionApplies(
+                  selectedRows,
+                  (id) => disputeById.get(String(id)) ?? null,
+                  opt.value,
+                ),
+              )
+              .map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => requestBulkStatus(opt.value)}
+                  disabled={bulkBusy}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 6,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: bulkBusy ? 'not-allowed' : 'pointer',
+                    opacity: bulkBusy ? 0.5 : 1,
+                    ...disputeBulkActionButtonStyles(opt.value),
+                  }}
+                >
+                  {bulkBusy ? 'Working…' : `Set ${STATUS_LABEL[opt.value] ?? opt.value}`}
+                </button>
+              ))}
+            <button
+              type="button"
+              onClick={() => setSelectedRows(new Set())}
+              disabled={bulkBusy}
+              style={{
+                marginLeft: 'auto',
+                padding: '6px 12px',
+                background: '#ffffff',
+                color: '#0f172a',
+                border: '1px solid #0f172a',
+                borderRadius: 6,
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: bulkBusy ? 'not-allowed' : 'pointer',
+                opacity: bulkBusy ? 0.5 : 1,
+              }}
+            >
+              Clear selection
+            </button>
+          </div>
+        ) : null}
+
         {/* ── Desktop table (hidden on mobile) ── */}
         <div className={styles.tableWrap}>
           <table className={styles.table} aria-busy={listLoading}>
@@ -347,12 +519,12 @@ export default function AdminDisputesPage() {
                     aria-label="Select all disputes in view"
                   />
                 </th>
-                <th>Filed</th>
-                <th>Order &amp; parties</th>
+                <th>Order</th>
+                <th>Parties</th>
                 <th>Reason</th>
-                <th>Summary</th>
+                <th>Date</th>
                 <th>Status</th>
-                <th className={styles.thRight} />
+                <th className={styles.thActionCol}>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -362,30 +534,42 @@ export default function AdminDisputesPage() {
                     <td className={styles.checkboxCell}>
                       <span className={styles.disputesSkBar} style={{ width: 16, height: 16, borderRadius: 4 }} aria-hidden />
                     </td>
+                    {/* Order: order ref + optional short ref */}
                     <td className={styles.td}>
-                      <span className={styles.disputesSkBar} style={{ height: 12, width: 72, marginBottom: 6 }} aria-hidden />
-                      <span className={styles.disputesSkBar} style={{ height: 10, width: 100 }} aria-hidden />
+                      <span className={styles.disputesSkBar} style={{ height: 13, width: 112, marginBottom: 5 }} aria-hidden />
+                      <span className={styles.disputesSkBar} style={{ height: 9, width: 76 }} aria-hidden />
                     </td>
+                    {/* Parties: chip row (skeleton mimics flex row) */}
                     <td className={styles.td}>
-                      <span className={styles.disputesSkBar} style={{ height: 12, width: 120, marginBottom: 8 }} aria-hidden />
-                      <span className={styles.disputesSkBar} style={{ height: 10, width: '90%' }} aria-hidden />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <span className={styles.disputesSkBar} style={{ width: 22, height: 22, borderRadius: 7, flexShrink: 0 }} aria-hidden />
+                        <span className={styles.disputesSkBar} style={{ height: 11, width: 88, flex: '1 1 60px', minWidth: 48 }} aria-hidden />
+                        <span className={styles.disputesSkBar} style={{ width: 13, height: 13, borderRadius: 2, flexShrink: 0 }} aria-hidden />
+                        <span className={styles.disputesSkBar} style={{ width: 22, height: 22, borderRadius: 7, flexShrink: 0 }} aria-hidden />
+                        <span className={styles.disputesSkBar} style={{ height: 11, width: 100, flex: '1 1 72px', minWidth: 56 }} aria-hidden />
+                      </div>
                     </td>
+                    {/* Reason pill */}
                     <td className={styles.td}>
-                      <span className={styles.disputesSkBar} style={{ height: 22, width: 88, borderRadius: 999 }} aria-hidden />
+                      <span className={styles.disputesSkBar} style={{ height: 24, width: 120, borderRadius: 999 }} aria-hidden />
                     </td>
+                    {/* Date YYYY-MM-DD */}
                     <td className={styles.td}>
-                      <span className={styles.disputesSkBar} style={{ height: 10, width: '100%' }} aria-hidden />
-                      <span className={styles.disputesSkBar} style={{ height: 10, width: '85%', marginTop: 6 }} aria-hidden />
+                      <span className={styles.disputesSkBar} style={{ height: 13, width: 92 }} aria-hidden />
                     </td>
+                    {/* Status badge */}
                     <td className={styles.td}>
-                      <span className={styles.disputesSkBar} style={{ height: 24, width: 96, borderRadius: 999 }} aria-hidden />
+                      <span className={styles.disputesSkBar} style={{ height: 26, width: 88, borderRadius: 999 }} aria-hidden />
                     </td>
-                    <td className={`${styles.td} ${styles.tdRight}`}>
-                      <span className={styles.disputesSkBar} style={{ height: 28, width: 52, borderRadius: 8 }} aria-hidden />
+                    {/* View */}
+                    <td className={`${styles.td} ${styles.tdActionCol}`}>
+                      <span className={styles.disputesSkBar} style={{ height: 30, width: 76, borderRadius: 8 }} aria-hidden />
                     </td>
                   </tr>
                 ))
-              ) : filtered.map((d) => (
+              ) : filtered.map((d) => {
+                const refLbl = disputeRefShortLabel(d.id)
+                return (
                 <tr key={d.id} className={styles.tr}>
                   <td className={styles.checkboxCell}>
                     <input
@@ -400,15 +584,14 @@ export default function AdminDisputesPage() {
                           return next
                         })
                       }}
-                      aria-label={`Select dispute ${d.id}`}
+                      aria-label={`Select dispute, order ${d.orderRef}`}
                     />
                   </td>
                   <td className={styles.td}>
-                    <span className={styles.dateText}>{d.openedAt}</span>
-                    <span className={styles.refText}>{d.id}</span>
+                    <span className={styles.orderRef}>{d.orderRef}</span>
+                    {refLbl ? <span className={styles.refText}>{refLbl}</span> : null}
                   </td>
                   <td className={styles.td}>
-                    <span className={styles.orderRef}>Order {d.orderRef}</span>
                     <div className={styles.parties}>
                       <span className={styles.partyChip} data-role="complainant" title="Complainant">C</span>
                       <span className={styles.partyName}>{d.complainantName}</span>
@@ -423,20 +606,19 @@ export default function AdminDisputesPage() {
                     <span className={styles.reasonTag}>{d.reason}</span>
                   </td>
                   <td className={styles.td}>
-                    <span className={styles.descText}>
-                      {d.description.slice(0, 90)}{d.description.length > 90 ? '…' : ''}
-                    </span>
+                    <span className={styles.dateCell}>{formatDisputeTableDate(d.openedAtIso)}</span>
                   </td>
                   <td className={styles.td}>
                     <StatusBadge status={d.status} />
                   </td>
-                  <td className={`${styles.td} ${styles.tdRight}`}>
+                  <td className={`${styles.td} ${styles.tdActionCol}`}>
                     <Link href={`/admin/disputes/${d.id}`} className={styles.viewBtn} onClick={(e) => e.stopPropagation()}>
                       View
                     </Link>
                   </td>
                 </tr>
-              ))}
+                )
+              })}
             </tbody>
           </table>
 
@@ -457,68 +639,70 @@ export default function AdminDisputesPage() {
           {listLoading ? (
             Array.from({ length: 5 }).map((_, i) => (
               <div key={`dis-m-sk-${i}`} className={styles.disputesSkMobileCardSk}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
-                  <span className={styles.disputesSkBar} style={{ width: 40, height: 40, borderRadius: 999 }} aria-hidden />
-                  <span className={styles.disputesSkBar} style={{ width: 72, height: 24, borderRadius: 999 }} aria-hidden />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span className={styles.disputesSkBar} style={{ display: 'block', height: 14, width: '72%', marginBottom: 6 }} aria-hidden />
+                    <span className={styles.disputesSkBar} style={{ display: 'block', height: 10, width: 100 }} aria-hidden />
+                  </div>
+                  <span className={styles.disputesSkBar} style={{ width: 72, height: 24, borderRadius: 999, flexShrink: 0 }} aria-hidden />
                 </div>
-                <span className={styles.disputesSkBar} style={{ height: 14, width: '70%' }} aria-hidden />
-                <span className={styles.disputesSkBar} style={{ height: 12, width: '50%' }} aria-hidden />
-                <span className={styles.disputesSkBar} style={{ height: 40, width: '100%' }} aria-hidden />
-                <span className={styles.disputesSkBar} style={{ height: 40, width: '100%', borderRadius: 10 }} aria-hidden />
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+                  <span className={styles.disputesSkBar} style={{ width: 22, height: 22, borderRadius: 7, flexShrink: 0 }} aria-hidden />
+                  <span className={styles.disputesSkBar} style={{ height: 11, width: 80, flex: '1 1 72px' }} aria-hidden />
+                  <span className={styles.disputesSkBar} style={{ width: 13, height: 13, flexShrink: 0 }} aria-hidden />
+                  <span className={styles.disputesSkBar} style={{ width: 22, height: 22, borderRadius: 7, flexShrink: 0 }} aria-hidden />
+                  <span className={styles.disputesSkBar} style={{ height: 11, width: 96, flex: '1 1 80px' }} aria-hidden />
+                </div>
+                <span className={styles.disputesSkBar} style={{ height: 24, width: 128, borderRadius: 999 }} aria-hidden />
+                <span className={styles.disputesSkBar} style={{ height: 13, width: 92 }} aria-hidden />
+                <span className={styles.disputesSkBar} style={{ height: 36, width: 120, borderRadius: 8, display: 'block', margin: '0 auto' }} aria-hidden />
               </div>
             ))
-          ) : filtered.map((d) => (
+          ) : filtered.map((d) => {
+            const refLbl = disputeRefShortLabel(d.id)
+            return (
             <div key={d.id} className={styles.mobileCard}>
-              {/* Header: avatar + identity + status badge */}
               <div className={styles.mobileCardHeader}>
-                <div className={styles.mobileIdentity}>
-                  <div className={styles.mobileAvatar} aria-hidden>
-                    {getInitials(d.complainantName)}
-                  </div>
-                  <div className={styles.mobileIdentityText}>
-                    <div className={styles.mobileTitle}>{d.complainantName}</div>
-                    <div className={styles.mobileSubtitle}>
-                      Order {d.orderRef}
-                      <span className={styles.mobileSubtitleDot} aria-hidden>•</span>
-                      {d.id}
-                    </div>
-                  </div>
+                <div className={styles.mobileHeaderMain}>
+                  <div className={styles.mobileTitle}>{d.orderRef}</div>
+                  {refLbl ? <div className={styles.mobileSubtitle}>{refLbl}</div> : null}
                 </div>
                 <div className={styles.mobileBadgeWrap}>
                   <StatusBadge status={d.status} />
                 </div>
               </div>
 
-              {/* Details: Filed / Order / Reason */}
-              <div className={styles.mobileDetails}>
-                <div className={styles.mobileDetailItem}>
-                  <div className={styles.mobileDetailLabel}>Filed</div>
-                  <div className={styles.mobileDetailValue}>{d.openedAt}</div>
+              <div className={styles.mobileCardBody}>
+                <div className={styles.mobileField}>
+                  <div className={styles.mobileFieldLabel}>Parties</div>
+                  <div className={styles.parties}>
+                    <span className={styles.partyChip} data-role="complainant" title="Complainant">C</span>
+                    <span className={styles.partyName}>{d.complainantName}</span>
+                    <svg className={styles.arrowIcon} viewBox="0 0 16 16" fill="none" aria-hidden>
+                      <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <span className={styles.partyChip} data-role="respondent" title="Respondent">R</span>
+                    <span className={styles.partyName}>{d.respondentName}</span>
+                  </div>
                 </div>
-                <div className={styles.mobileDetailItem}>
-                  <div className={styles.mobileDetailLabel}>Order</div>
-                  <div className={styles.mobileDetailValue}>{d.orderRef}</div>
+                <div className={styles.mobileField}>
+                  <div className={styles.mobileFieldLabel}>Reason</div>
+                  <span className={styles.reasonTag}>{d.reason}</span>
                 </div>
-                <div className={styles.mobileDetailItem}>
-                  <div className={styles.mobileDetailLabel}>Reason</div>
-                  <div className={styles.mobileDetailValue}>{d.reason}</div>
+                <div className={styles.mobileField}>
+                  <div className={styles.mobileFieldLabel}>Date</div>
+                  <span className={styles.dateCell}>{formatDisputeTableDate(d.openedAtIso)}</span>
                 </div>
               </div>
 
-              {/* Summary snippet */}
-              <div className={styles.mobileSummary}>
-                {d.description.slice(0, 120)}
-                {d.description.length > 120 ? '…' : ''}
-              </div>
-
-              {/* Action */}
               <div className={styles.mobileActions}>
                 <Link href={`/admin/disputes/${d.id}`} className={`${styles.viewBtn} ${styles.mobileViewBtn}`}>
-                  View details
+                  View
                 </Link>
               </div>
             </div>
-          ))}
+            )
+          })}
 
           {!listLoading && filtered.length === 0 && (
             <div className={styles.emptyState}>
@@ -538,6 +722,40 @@ export default function AdminDisputesPage() {
           </div>
         )}
       </section>
+
+      <ConfirmModal
+        open={bulkStatusConfirm != null}
+        variant={
+          bulkStatusConfirm?.nextStatus === 'closed'
+            ? 'neutral'
+            : bulkStatusConfirm?.nextStatus === 'resolved'
+              ? 'primary'
+              : bulkStatusConfirm?.nextStatus === 'open'
+                ? 'danger'
+                : 'warning'
+        }
+        title="Update selected disputes?"
+        message={
+          bulkStatusConfirm
+            ? (() => {
+                const label =
+                  bulkStatusConfirm.nextStatus === 'under_review'
+                    ? 'under review'
+                    : STATUS_LABEL[bulkStatusConfirm.nextStatus] ?? bulkStatusConfirm.nextStatus
+                return `Set ${bulkStatusConfirm.ids.length} selected dispute${bulkStatusConfirm.ids.length > 1 ? 's' : ''} to "${label}"?`
+              })()
+            : ''
+        }
+        confirmLabel="Apply"
+        confirmLoadingLabel="Updating..."
+        cancelLabel="Cancel"
+        loading={bulkBusy}
+        onCancel={() => {
+          if (bulkBusy) return
+          setBulkStatusConfirm(null)
+        }}
+        onConfirm={confirmBulkStatus}
+      />
 
       {/* Mobile filter slide-up modal */}
       <MobileFilterModal

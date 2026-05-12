@@ -42,9 +42,9 @@ const helpCenterTopics = [
     desc: 'Help when a family and a provider don’t see eye to eye.',
     bullets: [
       'Statuses: Open, Under Review, Resolved, Closed',
-      'Read both sides before you decide—messages, dates, evidence',
-      'Mark Under Review while you are still gathering information',
-      'Close the case when the family and provider have an outcome',
+      'Open each case to view attachments uploaded by both sides',
+      'A timeline records every status change and resolution note for accountability',
+      'Mark Under Review while you are still gathering information, then close once decided',
     ],
   },
   {
@@ -55,7 +55,7 @@ const helpCenterTopics = [
       'Escrow states: Escrowed, On hold, Released',
       'Hold a payout when a dispute or refund is still being reviewed',
       'Release it once the service is complete and there are no issues',
-      'Commission can be set as a default or as a per-provider override',
+      'Commission can be saved as a platform default, per-provider override, or per-order rate',
     ],
   },
 ]
@@ -82,8 +82,16 @@ const helpCenterFaqs = [
     a: 'Suspend a provider when there are repeated complaints, signs of dishonest behavior, or anything that could hurt the families they serve. Suspended providers can be reactivated later if things are resolved.',
   },
   {
+    q: 'How do attachments and the timeline work in a dispute?',
+    a: 'When buyers or providers raise a dispute they can upload photos or documents. Open the case in Disputes and you will see the attachments grid (images render as thumbnails, other files appear as links). Below it, the timeline lists every status change and admin resolution note in order, so anyone reviewing the case can see exactly what happened and who acted.',
+  },
+  {
+    q: 'How do commission rates work now?',
+    a: 'There is one platform-wide default commission (set in Settings → Billing) that applies to every paid order unless overridden. You can save a per-provider override on the Payouts page so a specific seller always uses a different rate. You can also adjust commission on a single order at any time — that rate is stored on the escrow row and used when calculating the seller’s payout.',
+  },
+  {
     q: 'What does the Analytics page actually show?',
-    a: 'It shows day-to-day signals you can trust: how many providers and buyers are on the platform, how many paid bookings happened in the last 30 days, the daily collected sales (GMV) chart, the top booked services, and recent activity. It is meant as a quick health check, not a deep report.',
+    a: 'It shows day-to-day signals you can trust: total providers and buyers, paid bookings in the last 30 days, a daily collected sales (GMV) chart that switches between 7, 30, and 90 day windows, top booked services, and recent activity. It is meant as a quick health check, not a deep report.',
   },
 ]
 
@@ -100,8 +108,9 @@ const helpCenterPlaybooks = [
     title: 'Working through a dispute',
     steps: [
       'Open the case from Disputes and read both sides first.',
+      'Review uploaded attachments and the event timeline to understand the history.',
       'Set the case to Under Review while you collect more information.',
-      'Once you have an outcome, mark it Resolved and close the case.',
+      'Once you have an outcome, add a resolution note, mark it Resolved, and close the case.',
     ],
   },
   {
@@ -110,6 +119,14 @@ const helpCenterPlaybooks = [
       'Open Payouts and find the booking in question.',
       'Put the payout on hold so the money stays in escrow.',
       'Release it once the booking is complete and any disputes are settled.',
+    ],
+  },
+  {
+    title: 'Adjusting commission for a provider or order',
+    steps: [
+      'For a one-off order: open Payouts → Commission, find the order, and save a per-order rate.',
+      'For an ongoing arrangement: set a per-provider override on the same panel so future orders use it automatically.',
+      'To change the baseline for everyone: open Settings → Billing and update the platform default commission.',
     ],
   },
 ]

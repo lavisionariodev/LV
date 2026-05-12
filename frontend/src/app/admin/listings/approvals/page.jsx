@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { BsThreeDots } from 'react-icons/bs'
+import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { usePathname } from 'next/navigation'
 import styles from '../listings.module.css'
-import ListingsMobileTabs from '../ListingsMobileTabs'
 import {
   approveListing,
   listSellerListingsForAdmin,
@@ -16,6 +17,7 @@ import {
   PENDING_CHANGE_KEYS,
 } from '@/lib/seller-listings/pendingChanges'
 import { formatCount } from '@/shared/utils/formatCount'
+import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 
 /** `seller_avatar_url` comes from listSellerListingsForAdmin (batch `profiles.avatar_url`). */
 function SellerAvatarMark({ src, initialsSource, listingStyles: styleMod }) {
@@ -29,7 +31,15 @@ function SellerAvatarMark({ src, initialsSource, listingStyles: styleMod }) {
       title={label}
     >
       {showImg ? (
-        <img src={url} alt="" className={styleMod.sellerAvatarImg} onError={() => setFailed(true)} />
+        <Image
+          src={url}
+          alt=""
+          width={18}
+          height={18}
+          unoptimized
+          className={styleMod.sellerAvatarImg}
+          onError={() => setFailed(true)}
+        />
       ) : (
         label.charAt(0).toUpperCase()
       )}
@@ -581,7 +591,7 @@ function StagedUpdatesSection({
                     </td>
                     <td>
                       <div className={styles.stagedFieldPills}>
-                        {lines.map(({ label, before, after }, idx) => (
+                        {lines.map(({ label, after }, idx) => (
                           <span key={`${row.id}-${label}-${idx}`} className={styles.stagedFieldPill}>
                             <span className={styles.stagedFieldName}>{label}</span>
                             <span className={styles.stagedFieldArrow}>→</span>
@@ -640,8 +650,8 @@ function ApprovalsTableSection({
 
       <div className={styles.tableWrap}>
         {isLoading ? (
-          <>
-            <table className={`${styles.table} ${styles.desktopOnly}`} role="status" aria-live="polite" aria-busy="true" aria-label="Loading listings">
+          <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading listings">
+            <table className={`${styles.table} ${styles.desktopOnly}`} aria-hidden>
               <colgroup>
                 <col className={styles.colListing} />
                 <col className={styles.colSeller} />
@@ -673,7 +683,7 @@ function ApprovalsTableSection({
                 ))}
               </tbody>
             </table>
-            <div className={`${styles.mobileCardList} ${styles.mobileOnly}`} aria-hidden>
+            <div className={`${styles.mobileCardList} ${styles.mobileOnly}`}>
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={`pend-m-sk-${i}`} className={styles.listingsSkMobileCard}>
                   <span className={`${styles.listingsSkBar} ${styles.listingsSkTitle}`} />
@@ -685,7 +695,7 @@ function ApprovalsTableSection({
                 </div>
               ))}
             </div>
-          </>
+          </div>
         ) : rows.length === 0 ? (
           <div className={styles.reviewEmpty}>
             <div className={styles.reviewEmptyIcon}>
@@ -797,6 +807,10 @@ function ApprovalsTableSection({
 }
 
 export default function AdminListingsApprovalsPage() {
+  const pathname = usePathname()
+  const listingsPathClean = pathname?.split(/[?#]/)[0] || ''
+  const isListingsApprovalsRoute = listingsPathClean.startsWith('/admin/listings/approvals')
+
   const [pendingRows, setPendingRows] = useState([])
   const [approvedApproved, setApprovedApproved] = useState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -806,6 +820,7 @@ export default function AdminListingsApprovalsPage() {
   const [rejectReason, setRejectReason] = useState('')
   const [rejectError, setRejectError] = useState(null)
   const [viewingRow, setViewingRow] = useState(null)
+  const [approveConfirmRow, setApproveConfirmRow] = useState(null)
 
   const stagedRows = useMemo(
     () => approvedApproved.filter((row) => hasPendingSellerChanges(row)),
@@ -848,7 +863,13 @@ export default function AdminListingsApprovalsPage() {
     }
   }, [])
 
-  const handleApprove = async (row) => {
+  const openApproveConfirm = (row) => {
+    if (!row?.id) return
+    setRejectError(null)
+    setApproveConfirmRow(row)
+  }
+
+  const performApproveListing = async (row) => {
     if (!row?.id) return
     setRejectError(null)
     setModerationBusyId(row.id)
@@ -870,6 +891,9 @@ export default function AdminListingsApprovalsPage() {
         } else {
           setApprovedApproved((prev) => prev.map((r) => (r.id === data.id ? data : r)))
         }
+      }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('admin:attention-refresh'))
       }
     } finally {
       setModerationBusyId(null)
@@ -906,6 +930,9 @@ export default function AdminListingsApprovalsPage() {
       }
       setRejectingRow(null)
       setRejectReason('')
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('admin:attention-refresh'))
+      }
     } finally {
       setModerationBusyId(null)
     }
@@ -915,7 +942,22 @@ export default function AdminListingsApprovalsPage() {
 
   return (
     <div className={`${styles.pageRoot} ${styles.approvalsPageStack} ${styles.approvalsGreenTheme}`}>
-      <ListingsMobileTabs />
+      <nav className={styles.listingsMobileSwitch} aria-label="Listings navigation">
+        <Link
+          href="/admin/listings/browse"
+          className={`${styles.listingsMobileSwitchLink} ${!isListingsApprovalsRoute ? styles.listingsMobileSwitchLinkActive : ''}`}
+          aria-current={!isListingsApprovalsRoute ? 'page' : undefined}
+        >
+          Browse
+        </Link>
+        <Link
+          href="/admin/listings/approvals"
+          className={`${styles.listingsMobileSwitchLink} ${isListingsApprovalsRoute ? styles.listingsMobileSwitchLinkActive : ''}`}
+          aria-current={isListingsApprovalsRoute ? 'page' : undefined}
+        >
+          Approvals
+        </Link>
+      </nav>
 
       {/* Summary stats strip — skeleton matches disputes stat bar while loading */}
       {!error && (
@@ -1035,6 +1077,10 @@ export default function AdminListingsApprovalsPage() {
                   <div key={`ap-sk-am-${i}`} className={styles.listingsSkMobileCard}>
                     <span className={`${styles.listingsSkBar} ${styles.listingsSkTitle}`} />
                     <span className={`${styles.listingsSkBar} ${styles.listingsSkSub}`} />
+                    <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                      <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} />
+                      <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 80 }} />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1046,7 +1092,7 @@ export default function AdminListingsApprovalsPage() {
               <span className={`${styles.listingsSkBar} ${styles.listingsSkH2}`} style={{ width: 240 }} />
             </div>
             <div className={styles.tableWrap}>
-              <table className={styles.table} aria-hidden>
+              <table className={`${styles.table} ${styles.desktopOnly}`} aria-hidden>
                 <colgroup>
                   <col className={styles.colSeller} />
                   <col className={styles.colListing} />
@@ -1072,6 +1118,18 @@ export default function AdminListingsApprovalsPage() {
                   ))}
                 </tbody>
               </table>
+              <div className={`${styles.mobileCardList} ${styles.mobileOnly}`}>
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={`ap-sk-bm-${i}`} className={styles.listingsSkMobileCard}>
+                    <span className={`${styles.listingsSkBar} ${styles.listingsSkTitle}`} />
+                    <span className={`${styles.listingsSkBar} ${styles.listingsSkSub}`} />
+                    <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+                      <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} />
+                      <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 88 }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
         </div>
@@ -1086,7 +1144,7 @@ export default function AdminListingsApprovalsPage() {
             emptyTitle="Nothing pending approval"
             emptyText="No listings are currently awaiting first-time approval."
             moderationBusyId={moderationBusyId}
-            onApprove={handleApprove}
+            onApprove={openApproveConfirm}
             onReject={handleStartReject}
             onViewDetails={setViewingRow}
             accentClass={pendingRows.length > 0 ? styles.reviewPanelAccentNew : ''}
@@ -1101,7 +1159,7 @@ export default function AdminListingsApprovalsPage() {
             emptyTitle="No staged updates"
             emptyText="No sellers have pending edits to approved listings."
             moderationBusyId={moderationBusyId}
-            onApprove={handleApprove}
+            onApprove={openApproveConfirm}
             onReject={handleStartReject}
             onViewDetails={setViewingRow}
             accentClass={stagedRows.length > 0 ? styles.reviewPanelAccentStaged : ''}
@@ -1122,6 +1180,36 @@ export default function AdminListingsApprovalsPage() {
       <ViewDetailsModal
         row={viewingRow}
         onClose={() => setViewingRow(null)}
+      />
+
+      <ConfirmModal
+        open={approveConfirmRow != null}
+        variant="primary"
+        title="Approve listing?"
+        message={
+          approveConfirmRow
+            ? hasPendingSellerChanges(approveConfirmRow)
+              ? `Publish staged changes for "${approveConfirmRow.listing_name || 'Untitled'}"? Updated fields will go live on the shop for families to see.`
+              : `Approve "${approveConfirmRow.listing_name || 'Untitled'}" for the public shop? Sellers can receive bookings once it is active.`
+            : ''
+        }
+        subtitleAlign="left"
+        confirmLabel="Approve"
+        confirmLoadingLabel="Approving..."
+        cancelLabel="Cancel"
+        loading={Boolean(approveConfirmRow && moderationBusyId === approveConfirmRow.id)}
+        onCancel={() => {
+          if (moderationBusyId) return
+          setApproveConfirmRow(null)
+        }}
+        onConfirm={async () => {
+          if (!approveConfirmRow) return
+          try {
+            await performApproveListing(approveConfirmRow)
+          } finally {
+            setApproveConfirmRow(null)
+          }
+        }}
       />
     </div>
   )

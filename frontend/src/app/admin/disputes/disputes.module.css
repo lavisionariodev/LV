@@ -498,25 +498,73 @@
   }
 }
 
-.thRight {
-  text-align: right;
-  width: 88px;
+.table th.thActionCol,
+.table td.tdActionCol {
+  text-align: center;
 }
 
+/*
+ * Column widths — checkbox + Order, Parties, Reason, Date, Status, Action (= 100%).
+ */
 .table th:nth-child(1),
-.table td:nth-child(1) { width: 44px; }
+.table td:nth-child(1) {
+  width: 4%;
+  min-width: 40px;
+  max-width: 48px;
+}
+
 .table th:nth-child(2),
-.table td:nth-child(2) { width: 12%; min-width: 108px; }
+.table td:nth-child(2) {
+  width: 14%;
+  min-width: 104px;
+}
+
 .table th:nth-child(3),
-.table td:nth-child(3) { width: 26%; }
+.table td:nth-child(3) {
+  width: 28%;
+  min-width: 140px;
+}
+
 .table th:nth-child(4),
-.table td:nth-child(4) { width: 14%; }
+.table td:nth-child(4) {
+  width: 18%;
+  min-width: 112px;
+}
+
 .table th:nth-child(5),
-.table td:nth-child(5) { width: 28%; }
+.table td:nth-child(5) {
+  width: 14%;
+  min-width: 100px;
+}
+
 .table th:nth-child(6),
-.table td:nth-child(6) { width: 14%; }
+.table td:nth-child(6) {
+  width: 13%;
+  min-width: 92px;
+}
+
 .table th:nth-child(7),
-.table td:nth-child(7) { width: 10%; }
+.table td:nth-child(7) {
+  width: 10%;
+  min-width: 76px;
+  max-width: 104px;
+}
+
+/* Order & parties: top-align when rows are tall from wrapped lines */
+.table td:nth-child(2),
+.table td:nth-child(3) {
+  min-width: 0;
+  overflow: hidden;
+  vertical-align: top;
+}
+
+/* Reason + Date: stay middle-aligned to row height (taller neighbors in Order / Parties) */
+.table td:nth-child(4),
+.table td:nth-child(5) {
+  min-width: 0;
+  overflow: hidden;
+  vertical-align: middle;
+}
 
 .tr {
   border-bottom: 1px solid #f1f5f9;
@@ -535,13 +583,19 @@
   vertical-align: middle;
 }
 
-.tdRight { text-align: right; }
-
 .dateText {
   display: block;
   font-weight: 600;
   font-size: 13px;
   color: #0f172a;
+}
+
+/* Same treatment as admin payouts `.dateCell` (escrow date column). */
+.dateCell {
+  font-size: 13px;
+  color: #475569;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .refText {
@@ -557,7 +611,7 @@
   font-weight: 700;
   color: #0f172a;
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .parties {
@@ -606,27 +660,21 @@
 }
 
 .reasonTag {
-  display: inline-flex;
-  align-items: center;
+  display: inline-block;
+  max-width: 100%;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: 10px;
   font-size: 11px;
   font-weight: 600;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   color: #475569;
-  white-space: nowrap;
-}
-
-.descText {
-  font-size: 12px;
-  color: #64748b;
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+  box-sizing: border-box;
+  vertical-align: middle;
 }
 
 /* ── Status badges ───────────────────────────────────────────────────────── */
@@ -976,77 +1024,47 @@
     padding: 16px 16px 14px;
   }
 
-  /* ── Card header: avatar + identity + badge ── */
+  /* ── Card header: Order + short ref + status (matches desktop columns) ── */
   .mobileCardHeader {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
     padding-bottom: 14px;
     border-bottom: 1px solid #f1f5f9;
   }
 
-  .mobileIdentity {
-    display: flex;
-    align-items: center;
-    gap: 11px;
-    min-width: 0;
+  .mobileHeaderMain {
     flex: 1;
-  }
-
-  .mobileAvatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-    color: #334155;
-    background: #eef2f7;
-    border: 1.5px solid #e2e8f0;
-    flex-shrink: 0;
-  }
-
-  .mobileIdentityText {
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    min-width: 0;
+    gap: 4px;
   }
 
   .mobileTitle {
     font-size: 14px;
     font-weight: 700;
     color: #0f172a;
-    line-height: 1.2;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 1.25;
+    word-break: break-word;
+    overflow-wrap: anywhere;
   }
 
   .mobileSubtitle {
     font-size: 12px;
-    font-weight: 400;
+    font-weight: 500;
     color: #94a3b8;
-    line-height: 1.2;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .mobileSubtitleDot {
-    display: inline-block;
-    margin: 0 5px;
-    color: #cbd5e1;
+    line-height: 1.25;
+    word-break: break-word;
+    overflow-wrap: anywhere;
   }
 
   .mobileBadgeWrap {
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
+    padding-top: 1px;
   }
 
   .statusBadge {
@@ -1054,70 +1072,44 @@
     padding: 5px 11px;
   }
 
-  /* ── Details grid: 3 columns ── */
-  .mobileDetails {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* ── Body: Parties, Reason, Date (stacked; matches desktop table) ── */
+  .mobileCardBody {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
     padding: 14px 0 12px;
     border-bottom: 1px solid #f1f5f9;
   }
 
-  .mobileDetailItem {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
+  .mobileField {
     min-width: 0;
-    padding: 0 6px;
   }
 
-  .mobileDetailItem:first-child { padding-left: 0; }
-  .mobileDetailItem:last-child  { padding-right: 0; }
-
-  .mobileDetailLabel {
+  .mobileFieldLabel {
     font-size: 11px;
-    font-weight: 500;
-    color: #94a3b8;
-    line-height: 1;
-    white-space: nowrap;
-  }
-
-  .mobileDetailValue {
-    font-size: 13px;
     font-weight: 600;
-    color: #0f172a;
-    line-height: 1.2;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* ── Summary snippet ── */
-  .mobileSummary {
-    font-size: 12px;
     color: #64748b;
-    line-height: 1.6;
-    padding: 12px 0 14px;
-    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 6px;
+    letter-spacing: 0.02em;
   }
 
-  /* ── Action button ── */
+  .mobileCardBody .partyName {
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  /* ── Action (centered; same control as desktop View) ── */
   .mobileActions {
     display: flex;
+    justify-content: center;
     padding-top: 12px;
   }
 
   .mobileViewBtn {
-    width: 100%;
-    font-size: 13px;
-    font-weight: 600;
-    padding: 10px 12px;
-    border-radius: 10px;
     min-height: 44px;
-    border: 1px solid #d7e1db;
-    background: #ffffff;
-    color: #166534;
-    letter-spacing: 0.01em;
+    min-width: 120px;
+    width: auto;
+    padding: 10px 22px;
   }
 
   /* Hover effects disabled on touch devices */
