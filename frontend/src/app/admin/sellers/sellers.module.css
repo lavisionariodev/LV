@@ -1140,13 +1140,13 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 680px;
-  max-height: min(90vh, 640px);
+  max-width: min(580px, calc(100vw - 48px));
+  max-height: min(88vh, 640px);
   overflow: hidden;
   background: #fff;
-  border-radius: 12px;
-  border: 1px solid #e9e9ef;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
 }
 
 /* Header */
@@ -1165,28 +1165,48 @@
 
 .detailModalHeaderInner {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: flex-start;
+  gap: 14px;
   min-width: 0;
 }
 
+.detailModalHeaderText {
+  min-width: 0;
+  flex: 1;
+}
+
 .detailModalHeaderInner .avatar {
-  width: 38px;
-  height: 38px;
-  font-size: 12px;
+  width: 48px;
+  height: 48px;
+  font-size: 14px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
-.detailModalTitle {
+.detailModalHeaderInner .avatarIcon {
+  width: 20px;
+  height: 20px;
+}
+
+.detailModalEyebrow {
   margin: 0 0 4px;
-  font-size: 14px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.detailModalTitle {
+  margin: 0 0 6px;
+  font-size: 17px;
   font-weight: 600;
   color: #0f172a;
-  line-height: 1.2;
-  white-space: nowrap;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .detailModalBadges {
@@ -1213,19 +1233,19 @@
   top: 18px;
   right: 18px;
   z-index: 2;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border: 1px solid #e2e8f0;
-  border-radius: 7px;
+  border-radius: 8px;
   background: #fff;
-  font-size: 18px;
-  line-height: 1;
-  color: #94a3b8;
+  font-size: 0;
+  line-height: 0;
+  color: #64748b;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.12s, color 0.12s;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -1235,28 +1255,93 @@
   }
 }
 
-/* Body — scrolls inside modal; header stays fixed */
+/* Body: tab strip + scrollable panel */
 .detailModalBody {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+  background: linear-gradient(180deg, #fafbfc 0%, #fff 36px);
+}
+
+.detailTabList {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 2px;
+  padding: 0 16px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.detailTabList::-webkit-scrollbar {
+  display: none;
+}
+
+.detailTab {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 12px 14px 10px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1.2;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .detailTab:hover {
+    color: #334155;
+    background: #f8fafc;
+  }
+}
+
+.detailTabActive {
+  color: #0f172a;
+  font-weight: 600;
+  border-bottom-color: #0f172a;
+}
+
+.detailTab:focus-visible {
+  outline: 2px solid #94a3b8;
+  outline-offset: -2px;
+  border-radius: 6px 6px 0 0;
+}
+
+.detailTabPanels {
   flex: 1 1 auto;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 0 24px 20px;
+  padding: 16px 24px 22px;
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
   -webkit-overflow-scrolling: touch;
 }
 
-.detailModalBody::-webkit-scrollbar {
+.detailTabPanels::-webkit-scrollbar {
   width: 8px;
 }
 
-.detailModalBody::-webkit-scrollbar-track {
+.detailTabPanels::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.detailModalBody::-webkit-scrollbar-thumb {
+.detailTabPanels::-webkit-scrollbar-thumb {
   background-color: #cbd5e1;
   border-radius: 8px;
   border: 2px solid transparent;
@@ -1264,60 +1349,95 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .detailModalBody::-webkit-scrollbar-thumb:hover {
+  .detailTabPanels::-webkit-scrollbar-thumb:hover {
     background-color: #94a3b8;
   }
 }
 
-/* Field groups */
-.detailGroup {
-  padding: 14px 0 2px;
-  border-bottom: 1px solid #f1f5f9;
+.detailTabPanel {
+  min-height: 0;
 }
 
-.detailGroup:last-child {
+.detailGroupTabPanel {
+  padding-top: 4px;
+}
+
+.detailModalBodyEmpty {
+  padding: 20px 24px 28px;
+  overflow-y: auto;
+}
+
+/* Grouped “cards” inside the modal body */
+.detailSection {
+  margin-bottom: 12px;
+  padding: 2px 16px 14px;
+  background: #fff;
+  border: 1px solid #eef2f7;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.detailSection:last-of-type {
+  margin-bottom: 0;
+}
+
+/* Field groups */
+.detailGroup {
+  padding: 12px 0 0;
   border-bottom: none;
 }
 
 .detailGroupTitle {
-  margin: 0 0 8px;
-  font-size: 10px;
+  margin: 0 0 10px;
+  padding-bottom: 8px;
+  font-size: 11px;
   font-weight: 700;
-  color: #94a3b8;
+  color: #64748b;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid #f1f5f9;
 }
 
-/* Each label–value row */
+/* Each label–value row — aligned grid feel */
 .detailRow {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  padding: 8px 0;
+  display: grid;
+  grid-template-columns: minmax(112px, 34%) 1fr;
+  column-gap: 16px;
+  align-items: start;
+  padding: 10px 0;
   border-bottom: 1px solid #f8fafc;
 }
 
 .detailRow:last-child {
   border-bottom: none;
+  padding-bottom: 2px;
+}
+
+.detailRowMultiline .detailRowValue {
+  white-space: pre-wrap;
 }
 
 .detailRowLabel {
-  flex-shrink: 0;
-  width: 100px;
   font-size: 12px;
+  font-weight: 500;
   color: #94a3b8;
-  line-height: 1.4;
+  line-height: 1.45;
+  padding-top: 1px;
 }
 
 .detailRowValue {
-  flex: 1;
   font-size: 13px;
-  color: #1e293b;
+  color: #0f172a;
   line-height: 1.5;
   word-break: break-word;
+  min-width: 0;
 }
 
 .detailRowLink {
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-word;
   color: #1e293b;
   text-decoration: none;
 }
@@ -1330,10 +1450,15 @@
 }
 
 .detailEmpty {
-  padding: 24px 0;
+  margin: 8px 0 0;
+  padding: 28px 16px;
   font-size: 13px;
   color: #94a3b8;
+  text-align: center;
   font-style: italic;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px dashed #e2e8f0;
 }
 
 /* ── Loading state ──────────────────────────────────────────────────────── */
@@ -1922,20 +2047,53 @@
     height: 32px;
   }
 
-  .detailModalBody { padding: 0 20px 32px; }
+  .detailModalBody {
+    padding: 0;
+  }
 
-  .detailRow { flex-direction: column; gap: 2px; padding: 10px 0; }
+  .detailTabList {
+    padding: 0 12px;
+  }
+
+  .detailTab {
+    padding: 12px 12px 10px;
+    font-size: 13px;
+  }
+
+  .detailTabPanels {
+    padding: 14px 16px calc(28px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .detailModalBodyEmpty {
+    padding: 20px 16px calc(28px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .detailSection {
+    padding: 2px 14px 12px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+  }
+
+  .detailRow {
+    grid-template-columns: 1fr;
+    row-gap: 4px;
+    column-gap: 0;
+    padding: 12px 0;
+  }
 
   .detailRowLabel {
-    width: auto;
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: #94a3b8;
+    padding-top: 0;
   }
 
-  .detailRowValue { font-size: 14px; }
+  .detailRowValue,
+  .detailRowLink {
+    font-size: 14px;
+  }
 
   /* ── Footer ──────────────────────────────────────────────────────────── */
   .tableFooter {

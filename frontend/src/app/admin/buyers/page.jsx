@@ -1,9 +1,10 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import { BsThreeDots } from 'react-icons/bs'
 import { FiRotateCcw } from 'react-icons/fi'
-import { TbX, TbDots } from 'react-icons/tb'
+import { TbX } from 'react-icons/tb'
 import { LuSettings2 } from 'react-icons/lu'
 import styles from './buyers.module.css'
 import { useDebouncedEffect, useMediaQuery } from '@/shared/hooks'
@@ -64,81 +65,94 @@ function Avatar({ name, src }) {
 
 function BuyerActionsMenu({ buyer, onView, onSuspend, onReactivate, busy }) {
   const [open, setOpen] = useState(false)
-  const ref = useRef(null)
+  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 })
+  const wrapRef = useRef(null)
+  const triggerRef = useRef(null)
+
+  function placeMenu() {
+    const el = triggerRef.current
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    setMenuPos({ top: r.bottom + 6, right: window.innerWidth - r.right })
+  }
+
+  useLayoutEffect(() => {
+    if (!open) return
+    placeMenu()
+  }, [open])
 
   useEffect(() => {
     if (!open) return
-    const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    function handle(e) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false)
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    document.addEventListener('mousedown', handle)
+    window.addEventListener('scroll', placeMenu, true)
+    window.addEventListener('resize', placeMenu)
+    return () => {
+      document.removeEventListener('mousedown', handle)
+      window.removeEventListener('scroll', placeMenu, true)
+      window.removeEventListener('resize', placeMenu)
+    }
   }, [open])
 
   const isSuspended = buyer.status === 'suspended'
+  const close = () => setOpen(false)
 
   return (
-    <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
+    <div className={styles.actionMenuWrap} ref={wrapRef}>
       <button
+        ref={triggerRef}
         type="button"
+        className={styles.actionMenuTrigger}
         onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-haspopup="menu"
         aria-label={`Actions for ${buyer.fullName}`}
         disabled={busy}
-        style={{
-          background: 'transparent',
-          border: '1px solid #e2e8f0',
-          padding: '6px 8px',
-          borderRadius: 6,
-          cursor: busy ? 'not-allowed' : 'pointer',
-          opacity: busy ? 0.6 : 1,
-        }}
       >
-        <TbDots aria-hidden />
+        <BsThreeDots className={styles.actionMenuTriggerIcon} aria-hidden size={16} />
       </button>
       {open ? (
         <div
-          style={{
-            position: 'absolute',
-            right: 0,
-            top: 'calc(100% + 4px)',
-            background: '#fff',
-            border: '1px solid #e2e8f0',
-            borderRadius: 8,
-            boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08)',
-            zIndex: 5,
-            minWidth: 180,
-            padding: 4,
-          }}
+          className={styles.actionMenu}
+          role="menu"
+          style={{ top: menuPos.top, right: menuPos.right }}
         >
           <button
             type="button"
+            role="menuitem"
+            className={styles.actionMenuItem}
             onClick={() => {
-              setOpen(false)
               onView?.(buyer)
+              close()
             }}
-            style={menuItemStyle}
           >
             View details
           </button>
           {isSuspended ? (
             <button
               type="button"
+              role="menuitem"
+              className={`${styles.actionMenuItem} ${styles.actionMenuItemPrimary}`}
+              disabled={busy}
               onClick={() => {
-                setOpen(false)
                 onReactivate?.(buyer)
+                close()
               }}
-              style={menuItemStyle}
             >
               Reactivate
             </button>
           ) : (
             <button
               type="button"
+              role="menuitem"
+              className={`${styles.actionMenuItem} ${styles.actionMenuItemDanger}`}
+              disabled={busy}
               onClick={() => {
-                setOpen(false)
                 onSuspend?.(buyer)
+                close()
               }}
-              style={{ ...menuItemStyle, color: '#b91c1c' }}
             >
               Suspend
             </button>
@@ -149,121 +163,117 @@ function BuyerActionsMenu({ buyer, onView, onSuspend, onReactivate, busy }) {
   )
 }
 
-const menuItemStyle = {
-  display: 'block',
-  width: '100%',
-  textAlign: 'left',
-  padding: '8px 10px',
-  background: 'transparent',
-  border: 0,
-  borderRadius: 6,
-  cursor: 'pointer',
-  fontSize: 13,
+function BuyerDetailRow({ label, children }) {
+  return (
+    <div className={styles.detailRow}>
+      <span className={styles.detailRowLabel}>{label}</span>
+      <div className={styles.detailRowValue}>{children}</div>
+    </div>
+  )
 }
 
 function BuyerDetailModal({ buyer, onClose, onSuspend, onReactivate, busy }) {
+  useEffect(() => {
+    if (!buyer) return
+    function onKeyDown(e) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [buyer, onClose])
+
   if (!buyer) return null
+
+  const suspended = buyer.status === 'suspended'
+
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Buyer details"
-      onClick={onClose}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(15, 23, 42, 0.45)',
-        zIndex: 50,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 16,
-      }}
-    >
+    <div className={styles.detailModalOverlay} role="presentation" onClick={onClose}>
       <div
+        className={styles.detailModal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="buyer-detail-title"
         onClick={(e) => e.stopPropagation()}
-        style={{
-          background: '#fff',
-          borderRadius: 12,
-          maxWidth: 520,
-          width: '100%',
-          padding: 20,
-          boxShadow: '0 24px 60px rgba(15, 23, 42, 0.25)',
-        }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h3 style={{ margin: 0, fontSize: 16 }}>Buyer details</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            style={{ background: 'transparent', border: 0, fontSize: 22, cursor: 'pointer' }}
-          >
-            ×
+        <div className={styles.detailModalHeader}>
+          <div className={styles.detailModalHeaderText}>
+            <p className={styles.detailModalEyebrow}>Viewing details</p>
+            <h2 id="buyer-detail-title" className={styles.detailModalTitle}>
+              Buyer record
+            </h2>
+          </div>
+          <button type="button" className={styles.detailModalClose} onClick={onClose} aria-label="Close">
+            <TbX aria-hidden size={18} strokeWidth={1.75} />
           </button>
         </div>
 
-        <div style={{ display: 'flex', gap: 12, marginTop: 14, alignItems: 'center' }}>
+        <div className={styles.detailModalHero}>
           <Avatar name={buyer.fullName} src={buyer.avatarUrl} />
-          <div>
-            <p style={{ margin: 0, fontWeight: 600 }}>{buyer.fullName}</p>
-            <p style={{ margin: '2px 0 0', color: '#475569', fontSize: 13 }}>{buyer.email}</p>
+          <div className={styles.detailModalHeroText}>
+            <p className={styles.detailModalHeroName}>{buyer.fullName}</p>
+            <p className={styles.detailModalHeroEmail}>{buyer.email}</p>
           </div>
         </div>
 
-        <dl style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '120px 1fr', rowGap: 8 }}>
-          <dt style={dtStyle}>Status</dt>
-          <dd style={ddStyle}>
-            <span
-              className={`${styles.statusBadge} ${styles[`status_${buyer.status}`] || ''}`}
-              style={{ textTransform: 'capitalize' }}
-            >
-              <span className={styles.statusDot} />
-              {buyer.status}
-            </span>
-          </dd>
-          <dt style={dtStyle}>Phone</dt>
-          <dd style={ddStyle}>{buyer.phone || '—'}</dd>
-          <dt style={dtStyle}>Joined</dt>
-          <dd style={ddStyle}>{buyer.joinedAt}</dd>
-          <dt style={dtStyle}>Orders</dt>
-          <dd style={ddStyle}>
-            {buyer.orderCount}{' '}
-            <Link
-              href={`/admin/payouts?q=${encodeURIComponent(buyer.id)}`}
-              style={{ marginLeft: 8 }}
-            >
-              View in payouts →
-            </Link>
-          </dd>
-          <dt style={dtStyle}>Disputes</dt>
-          <dd style={ddStyle}>
-            <Link href={`/admin/disputes?q=${encodeURIComponent(buyer.id)}`}>
-              Search disputes →
-            </Link>
-          </dd>
-          <dt style={dtStyle}>Buyer ID</dt>
-          <dd style={{ ...ddStyle, fontFamily: 'monospace', wordBreak: 'break-all' }}>
-            {buyer.id}
-          </dd>
-        </dl>
+        <div className={styles.detailModalBody}>
+          <section className={styles.detailSection} aria-labelledby="buyer-detail-profile">
+            <div className={styles.detailGroup}>
+              <p id="buyer-detail-profile" className={styles.detailGroupTitle}>
+                Profile
+              </p>
+              <BuyerDetailRow label="Status">
+                <span
+                  className={`${styles.statusBadge} ${styles[`status_${buyer.status}`] || ''}`}
+                  style={{ textTransform: 'capitalize' }}
+                >
+                  <span className={styles.statusDot} />
+                  {buyer.status}
+                </span>
+              </BuyerDetailRow>
+              <BuyerDetailRow label="Phone">{buyer.phone || '—'}</BuyerDetailRow>
+              <BuyerDetailRow label="Joined">{buyer.joinedAt}</BuyerDetailRow>
+            </div>
+          </section>
 
-        <div style={{ marginTop: 18, display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-          {buyer.status === 'suspended' ? (
+          <section className={styles.detailSection} aria-labelledby="buyer-detail-activity">
+            <div className={styles.detailGroup}>
+              <p id="buyer-detail-activity" className={styles.detailGroupTitle}>
+                Activity &amp; admin links
+              </p>
+              <BuyerDetailRow label="Orders">
+                <span>{buyer.orderCount}</span>
+                <Link
+                  href={`/admin/payouts?q=${encodeURIComponent(buyer.id)}`}
+                  className={styles.detailInlineLink}
+                >
+                  View in payouts
+                </Link>
+              </BuyerDetailRow>
+              <BuyerDetailRow label="Disputes">
+                <Link href={`/admin/disputes?q=${encodeURIComponent(buyer.id)}`} className={styles.detailInlineLink}>
+                  Search disputes
+                </Link>
+              </BuyerDetailRow>
+            </div>
+          </section>
+        </div>
+
+        <div className={styles.detailModalFooter}>
+          {suspended ? (
             <button
               type="button"
+              className={styles.detailModalBtnPrimary}
               onClick={() => onReactivate?.(buyer)}
               disabled={busy}
-              style={primaryBtnStyle}
             >
               {busy ? 'Working…' : 'Reactivate buyer'}
             </button>
           ) : (
             <button
               type="button"
+              className={`${styles.detailModalBtnPrimary} ${styles.detailModalBtnDanger}`}
               onClick={() => onSuspend?.(buyer)}
               disabled={busy}
-              style={{ ...primaryBtnStyle, background: '#b91c1c' }}
             >
               {busy ? 'Working…' : 'Suspend buyer'}
             </button>
@@ -272,18 +282,6 @@ function BuyerDetailModal({ buyer, onClose, onSuspend, onReactivate, busy }) {
       </div>
     </div>
   )
-}
-
-const dtStyle = { fontSize: 12, color: '#64748b', margin: 0 }
-const ddStyle = { fontSize: 13, color: '#0f172a', margin: 0 }
-const primaryBtnStyle = {
-  padding: '8px 14px',
-  borderRadius: 8,
-  border: 0,
-  background: '#0f172a',
-  color: '#fff',
-  fontWeight: 600,
-  cursor: 'pointer',
 }
 
 export default function AdminBuyersPage() {
