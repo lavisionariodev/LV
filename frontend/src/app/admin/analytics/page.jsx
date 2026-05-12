@@ -108,7 +108,7 @@ export default function AdminAnalyticsPage() {
             <span className={`${layoutStyles.adminSkBar} ${layoutStyles.analyticsSkChart}`} />
           </div>
         </section>
-        <section className={`${layoutStyles.panel} ${layoutStyles.homeDesktopOnly} ${layoutStyles.analyticsSkActivity}`}>
+        <section className={`${layoutStyles.panel} ${layoutStyles.homeDesktopOnly}`}>
           <div className={layoutStyles.panelHead}>
             <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 15, width: 160 }} />
           </div>
@@ -119,6 +119,23 @@ export default function AdminAnalyticsPage() {
           </div>
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className={layoutStyles.analyticsSkRow}>
+              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 12 }} />
+              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 12 }} />
+              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 22, borderRadius: 8 }} />
+            </div>
+          ))}
+        </section>
+        <section className={`${layoutStyles.panel} ${layoutStyles.homeMobileOnly}`}>
+          <div className={layoutStyles.panelHead}>
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 15, width: 160 }} />
+          </div>
+          <div className={layoutStyles.analyticsSkRowHead}>
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 10 }} />
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 10 }} />
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 10 }} />
+          </div>
+          {[0, 1, 2, 3].map((i) => (
+            <div key={`m-sk-act-${i}`} className={layoutStyles.analyticsSkRow}>
               <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 12 }} />
               <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 12 }} />
               <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 22, borderRadius: 8 }} />
@@ -279,7 +296,7 @@ export default function AdminAnalyticsPage() {
         </div>
       </section>
 
-      {/* Recent activity — full width */}
+      {/* Recent activity — desktop */}
       <section className={`${layoutStyles.panel} ${layoutStyles.homeDesktopOnly}`}>
         <div className={layoutStyles.panelHead}>
           <p className={layoutStyles.panelTitle}>Recent activity</p>
@@ -302,6 +319,38 @@ export default function AdminAnalyticsPage() {
           ) : (
             recentActivity.map((item) => (
               <div className={layoutStyles.row} key={item.id}>
+                <span>{item.date}</span>
+                <span>{item.type}</span>
+                <span className={layoutStyles.badge}>{item.status}</span>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
+      {/* Recent activity — mobile (matches dashboard lower panel pattern) */}
+      <section className={`${layoutStyles.panel} ${layoutStyles.homeMobileOnly}`}>
+        <div className={layoutStyles.panelHead}>
+          <p className={layoutStyles.panelTitle}>Recent activity</p>
+          <Link href="/admin" className={layoutStyles.smallBtn}>
+            Dashboard
+          </Link>
+        </div>
+        <div className={layoutStyles.table}>
+          <div className={layoutStyles.rowHead}>
+            <span>Date</span>
+            <span>Type</span>
+            <span>Status</span>
+          </div>
+          {recentActivity.length === 0 ? (
+            <div className={layoutStyles.row}>
+              <span style={{ gridColumn: '1 / -1', color: '#64748b', fontSize: 13 }}>
+                No recent paid orders yet.
+              </span>
+            </div>
+          ) : (
+            recentActivity.map((item) => (
+              <div className={layoutStyles.row} key={`m-${item.id}`}>
                 <span>{item.date}</span>
                 <span>{item.type}</span>
                 <span className={layoutStyles.badge}>{item.status}</span>

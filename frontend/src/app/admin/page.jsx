@@ -212,13 +212,19 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     const q = sellerQuery.trim()
     if (q.length < 2) {
-      setSellerResults([])
-      setSellerLoading(false)
-      return
+      const clearId = window.setTimeout(() => {
+        setSellerResults([])
+        setSellerLoading(false)
+      }, 0)
+      return () => {
+        window.clearTimeout(clearId)
+      }
     }
 
     let cancelled = false
-    setSellerLoading(true)
+    queueMicrotask(() => {
+      if (!cancelled) setSellerLoading(true)
+    })
     const t = setTimeout(async () => {
       try {
         const rows = await searchSellersForAdmin(q, 6)
@@ -289,13 +295,52 @@ export default function AdminDashboardPage() {
           </div>
         </div>
         <div className={styles.dashSkMobileHub}>
-          <div className={styles.dashSkHero}>
-            <span className={`${styles.adminSkBar} ${styles.dashSkLineLg}`} style={{ maxWidth: 200 }} />
-            <span className={`${styles.adminSkBar} ${styles.dashSkStatValue}`} style={{ width: '72%' }} />
-            <span className={`${styles.adminSkBar} ${styles.dashSkLineMd}`} />
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-              <span className={`${styles.adminSkBar} ${styles.dashSkStatCard}`} style={{ minHeight: 72, padding: 0 }} />
-              <span className={`${styles.adminSkBar} ${styles.dashSkStatCard}`} style={{ minHeight: 72, padding: 0 }} />
+          <div className={styles.dashSkMobileHero}>
+            <div className={styles.dashSkMobileHeroTop}>
+              <div className={styles.dashSkMobileHeroLogo}>
+                <span className={`${styles.adminSkBar} ${styles.adminSkBarOnDark} ${styles.dashSkMobileHeroLogoIcon}`} />
+                <span className={`${styles.adminSkBar} ${styles.adminSkBarOnDark} ${styles.dashSkMobileHeroLogoText}`} />
+              </div>
+              <span className={`${styles.adminSkBar} ${styles.adminSkBarOnDark} ${styles.dashSkMobileHeroAvatar}`} />
+            </div>
+            <div className={styles.dashSkMobileHeroBalance}>
+              <span className={`${styles.adminSkBar} ${styles.adminSkBarOnDark} ${styles.dashSkMobileHeroLineSm}`} />
+              <span className={`${styles.adminSkBar} ${styles.adminSkBarOnDark} ${styles.dashSkMobileHeroLineLg}`} />
+              <span className={`${styles.adminSkBar} ${styles.adminSkBarOnDark} ${styles.dashSkMobileHeroLineSub}`} />
+            </div>
+          </div>
+
+          <div className={styles.dashSkMobileNavRow}>
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className={styles.dashSkMobileNavItem}>
+                <span className={`${styles.adminSkBar} ${styles.dashSkMobileNavTile}`} />
+                <span className={`${styles.adminSkBar} ${styles.dashSkMobileNavLabel}`} />
+              </div>
+            ))}
+          </div>
+
+          <div className={styles.dashSkMobileBody}>
+            <span className={`${styles.adminSkBar} ${styles.dashSkMobileSearch}`} />
+            <div className={styles.dashSkMobileHighlight}>
+              <span className={`${styles.adminSkBar} ${styles.dashSkHighlightTitle}`} />
+              <span className={`${styles.adminSkBar} ${styles.dashSkHighlightTextWide}`} />
+              <span className={`${styles.adminSkBar} ${styles.dashSkHighlightTextNarrow}`} />
+              <span className={`${styles.adminSkBar} ${styles.dashSkHighlightLink}`} />
+            </div>
+            <div className={styles.dashSkMobileStatsGrid}>
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className={styles.dashSkMobileStatSk}>
+                  <div className={styles.dashSkMobileStatSkTop}>
+                    <span className={`${styles.adminSkBar} ${styles.dashSkMobileStatSkIcon}`} />
+                    <span className={`${styles.adminSkBar} ${styles.dashSkMobileStatSkTitle}`} />
+                  </div>
+                  <span className={`${styles.adminSkBar} ${styles.dashSkMobileStatSkValue}`} />
+                  <div className={styles.dashSkMobileStatSkFooter}>
+                    <span className={`${styles.adminSkBar} ${styles.dashSkMobileStatSkSub}`} />
+                    <span className={`${styles.adminSkBar} ${styles.dashSkMobileStatSkAction}`} />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -319,8 +364,7 @@ export default function AdminDashboardPage() {
           <div>
             <p className={styles.welcomeGreeting}>Welcome, Admin!</p>
             <p className={styles.welcomeSub}>
-              Here's what's happening on your marketplace today — stay on top of
-              pending actions and keep things running smoothly.
+              {`Here's what's happening on your marketplace today — stay on top of pending actions and keep things running smoothly.`}
             </p>
           </div>
         </div>
@@ -575,6 +619,7 @@ export default function AdminDashboardPage() {
                         type="button"
                         className={styles.homeSearchDropdownItem}
                         role="option"
+                        aria-selected={false}
                         onClick={() => goSeller(s)}
                       >
                         <span className={styles.homeSearchResultAvatar} aria-hidden="true">

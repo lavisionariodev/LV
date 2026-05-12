@@ -649,8 +649,8 @@ function ApprovalsTableSection({
 
       <div className={styles.tableWrap}>
         {isLoading ? (
-          <>
-            <table className={`${styles.table} ${styles.desktopOnly}`} role="status" aria-live="polite" aria-busy="true" aria-label="Loading listings">
+          <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading listings">
+            <table className={`${styles.table} ${styles.desktopOnly}`} aria-hidden>
               <colgroup>
                 <col className={styles.colListing} />
                 <col className={styles.colSeller} />
@@ -682,7 +682,7 @@ function ApprovalsTableSection({
                 ))}
               </tbody>
             </table>
-            <div className={`${styles.mobileCardList} ${styles.mobileOnly}`} aria-hidden>
+            <div className={`${styles.mobileCardList} ${styles.mobileOnly}`}>
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={`pend-m-sk-${i}`} className={styles.listingsSkMobileCard}>
                   <span className={`${styles.listingsSkBar} ${styles.listingsSkTitle}`} />
@@ -694,7 +694,7 @@ function ApprovalsTableSection({
                 </div>
               ))}
             </div>
-          </>
+          </div>
         ) : rows.length === 0 ? (
           <div className={styles.reviewEmpty}>
             <div className={styles.reviewEmptyIcon}>
@@ -1069,6 +1069,10 @@ export default function AdminListingsApprovalsPage() {
                   <div key={`ap-sk-am-${i}`} className={styles.listingsSkMobileCard}>
                     <span className={`${styles.listingsSkBar} ${styles.listingsSkTitle}`} />
                     <span className={`${styles.listingsSkBar} ${styles.listingsSkSub}`} />
+                    <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                      <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} />
+                      <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 80 }} />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1080,7 +1084,7 @@ export default function AdminListingsApprovalsPage() {
               <span className={`${styles.listingsSkBar} ${styles.listingsSkH2}`} style={{ width: 240 }} />
             </div>
             <div className={styles.tableWrap}>
-              <table className={styles.table} aria-hidden>
+              <table className={`${styles.table} ${styles.desktopOnly}`} aria-hidden>
                 <colgroup>
                   <col className={styles.colSeller} />
                   <col className={styles.colListing} />
@@ -1106,6 +1110,18 @@ export default function AdminListingsApprovalsPage() {
                   ))}
                 </tbody>
               </table>
+              <div className={`${styles.mobileCardList} ${styles.mobileOnly}`}>
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={`ap-sk-bm-${i}`} className={styles.listingsSkMobileCard}>
+                    <span className={`${styles.listingsSkBar} ${styles.listingsSkTitle}`} />
+                    <span className={`${styles.listingsSkBar} ${styles.listingsSkSub}`} />
+                    <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+                      <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} />
+                      <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 88 }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
         </div>
