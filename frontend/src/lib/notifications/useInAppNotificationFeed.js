@@ -102,6 +102,11 @@ export function useInAppNotificationFeed(opts = {}) {
     [notifications],
   )
 
+  const unresolvedCount = useMemo(
+    () => notifications.filter((n) => !n.resolvedAt).length,
+    [notifications],
+  )
+
   const markRead = useCallback(async (id) => {
     const sid = String(id).trim()
     if (!sid) return
@@ -126,6 +131,40 @@ export function useInAppNotificationFeed(opts = {}) {
     setNotifications((prev) => prev.map((r) => ({ ...r, readAt: r.readAt || nowIso })))
   }, [])
 
+  const resolveOne = useCallback(async (id) => {
+    const sid = String(id).trim()
+    if (!sid) return
+    await fetch('/api/notifications', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: sid, resolve: true }),
+    })
+    const nowIso = new Date().toISOString()
+    setNotifications((prev) =>
+      prev.map((r) =>
+        String(r.id) === sid
+          ? { ...r, readAt: r.readAt || nowIso, resolvedAt: r.resolvedAt || nowIso }
+          : r,
+      ),
+    )
+  }, [])
+
+  const markAllResolved = useCallback(async () => {
+    await fetch('/api/notifications', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ markAllResolved: true }),
+    })
+    const nowIso = new Date().toISOString()
+    setNotifications((prev) =>
+      prev.map((r) => ({
+        ...r,
+        readAt: r.readAt || nowIso,
+        resolvedAt: r.resolvedAt || nowIso,
+      })),
+    )
+  }, [])
+
   const deleteOne = useCallback(async (id) => {
     const sid = String(id).trim()
     if (!sid) return
@@ -142,14 +181,27 @@ export function useInAppNotificationFeed(opts = {}) {
     setNotifications([])
   }, [])
 
+  const clearResolved = useCallback(async () => {
+    await fetch('/api/notifications', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clearResolved: true }),
+    })
+    setNotifications((prev) => prev.filter((r) => !r.resolvedAt))
+  }, [])
+
   return {
     notifications,
     loading,
     unreadCount,
+    unresolvedCount,
     refresh: load,
     markRead,
     markAllRead,
+    resolveOne,
+    markAllResolved,
     deleteOne,
     clearAll,
+    clearResolved,
   }
 }

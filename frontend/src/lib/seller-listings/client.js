@@ -111,18 +111,20 @@ export async function createSellerListing(payload) {
 }
 
 export async function updateSellerListing(id, payload) {
-  const { data, error } = await supabase
-    .from('seller_listings')
-    .update(payload)
-    .eq('id', id)
-    .select('*')
-    .maybeSingle()
-
-  if (error) {
-    return { data: null, error: error.message || 'Failed to update listing.' }
+  try {
+    const res = await fetch(`/api/seller/listings/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload || {}),
+    })
+    const body = await res.json().catch(() => null)
+    if (!res.ok) {
+      return { data: null, error: body?.error || 'Failed to update listing.' }
+    }
+    return { data: body?.data ? normalizeListingRow(body.data) : null, error: null }
+  } catch (e) {
+    return { data: null, error: e?.message || 'Failed to update listing.' }
   }
-
-  return { data: normalizeListingRow(data), error: null }
 }
 
 /** Seller: submit an existing listing for admin review (server route notifies admins). */
@@ -181,13 +183,18 @@ export async function rejectListing(id, reason) {
 }
 
 export async function deleteSellerListing(id) {
-  const { error } = await supabase.from('seller_listings').delete().eq('id', id)
-
-  if (error) {
-    return { error: error.message || 'Failed to remove listing.' }
+  try {
+    const res = await fetch(`/api/seller/listings/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    })
+    const body = await res.json().catch(() => null)
+    if (!res.ok) {
+      return { error: body?.error || 'Failed to remove listing.' }
+    }
+    return { error: null }
+  } catch (e) {
+    return { error: e?.message || 'Failed to remove listing.' }
   }
-
-  return { error: null }
 }
 
 /**

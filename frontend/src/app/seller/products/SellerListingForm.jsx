@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { createPortal } from 'react-dom'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Check } from 'lucide-react'
@@ -585,9 +586,12 @@ export function SellerListingFormFields({
                     <div className={styles.productModalUploadList}>
                       {editGallery.map((entry, idx) => (
                         <div key={idx} className={styles.productModalUploadPreview}>
-                          <img
+                          <Image
                             src={entry.url}
                             alt={`${asInputValue(getFieldValue('listing_name')) || 'Listing'} ${idx + 1}`}
+                            fill
+                            sizes="120px"
+                            unoptimized
                           />
                           <button
                             type="button"
@@ -944,9 +948,9 @@ export function SellerListingFileInput({ fileInputRef, onFilesSelected, accept =
 
 // --- New listing page ---------------------------------------------------------------------------------
 
-const ALLOWED_IMAGE_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+export const ALLOWED_IMAGE_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
 
-const LISTING_IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,image/gif'
+export const LISTING_IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,image/gif'
 
 const STATIC_SECTIONS = [
   { id: 'basic', label: 'Basic information' },
@@ -1090,7 +1094,7 @@ export default function NewListingClient() {
   useEffect(() => {
     const k = searchParams.get('kind')
     if (k === 'service' || k === 'package') {
-      setFormValues((prev) => ({ ...prev, kind: k }))
+      queueMicrotask(() => setFormValues((prev) => ({ ...prev, kind: k })))
     }
   }, [searchParams])
 

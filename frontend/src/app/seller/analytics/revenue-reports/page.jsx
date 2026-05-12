@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { TbCurrencyPeso, TbDownload } from 'react-icons/tb'
 import styles from '../analytics.module.css'
 import { useSellerAnalyticsData } from '@/lib/seller/useSellerAnalyticsData'
@@ -8,7 +8,6 @@ import {
   averagePaidBookingValueLastNMonths,
   bestMonthLabelLastNMonths,
   monthlyPaidRevenueBarPercents,
-  outstandingPaidPendingConfirmation,
   percentChange,
   revenueThisCalendarMonth,
   revenuePreviousCalendarMonth,
@@ -73,13 +72,35 @@ function SellerAnalyticsRevenueReportsSkeleton() {
 
 export default function SellerAnalyticsRevenueReportsPage() {
   const { orders, loading, error } = useSellerAnalyticsData()
+  const [escrowSummary, setEscrowSummary] = useState(null)
+  const [escrowError, setEscrowError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadEscrow() {
+      try {
+        const res = await fetch('/api/seller/escrow-summary', { cache: 'no-store' })
+        const body = await res.json().catch(() => null)
+        if (!res.ok) throw new Error(body?.error || 'Failed to load escrow report.')
+        if (!cancelled) {
+          setEscrowSummary(body?.summary || null)
+          setEscrowError('')
+        }
+      } catch (err) {
+        if (!cancelled) setEscrowError(err?.message || 'Failed to load escrow report.')
+      }
+    }
+    loadEscrow()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const thisMonth = revenueThisCalendarMonth(orders)
   const prevMonth = revenuePreviousCalendarMonth(orders)
   const monthDelta = percentChange(thisMonth, prevMonth)
 
   const best = bestMonthLabelLastNMonths(orders, 12)
-  const outstanding = outstandingPaidPendingConfirmation(orders)
   const avg12 = averagePaidBookingValueLastNMonths(orders, 12)
 
   const monthlyBars = useMemo(() => monthlyPaidRevenueBarPercents(orders, 6), [orders])
@@ -95,22 +116,22 @@ export default function SellerAnalyticsRevenueReportsPage() {
   return (
     <div className={styles.pageWrap}>
       {error ? <p className={styles.pageError}>{error}</p> : null}
+      {escrowError ? <p className={styles.pageError}>{escrowError}</p> : null}
 
       <div className={styles.downloadRow}>
-        <button
-          type="button"
+        <a
+          href="/api/seller/escrow-summary?format=csv"
           className={styles.downloadButton}
-          onClick={() => window.print()}
-          aria-label="Download revenue report"
+          aria-label="Download escrow revenue CSV"
         >
           <TbDownload size={14} aria-hidden />
-          <span>Download report</span>
-        </button>
+          <span>Download escrow CSV</span>
+        </a>
       </div>
 
       <section aria-label="Revenue summary" className={styles.summaryStrip}>
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftGreen}`}>
-          <p className={styles.summaryLabel}>Revenue this month</p>
+          <p className={styles.summaryLabel}>Gross revenue this month</p>
           <div className={styles.summaryValueRow}>
             <p className={styles.summaryValue}>{formatPhp(thisMonth)}</p>
             <span
@@ -124,30 +145,40 @@ export default function SellerAnalyticsRevenueReportsPage() {
           <p className={styles.summaryHint}>Paid orders only · vs last calendar month</p>
         </article>
 
-        <article className={`${styles.summaryCard} ${styles.summaryCardSoftIndigo}`}>
-          <p className={styles.summaryLabel}>Avg booking value (12 mo)</p>
+        <article className={`${styles.summaryCard} ${styles.summaryCardSoftGreen}`}>
+          <p className={styles.summaryLabel}>Net payable</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>{formatPhp(avg12)}</p>
+            <p className={styles.summaryValue}>{formatPhp(escrowSummary?.net || 0)}</p>
           </div>
-          <p className={styles.summaryHint}>Paid orders in the trailing year</p>
+          <p className={styles.summaryHint}>
+            Gross {formatPhp(escrowSummary?.gross || 0)} less commission {formatPhp(escrowSummary?.commission || 0)}
+          </p>
+        </article>
+
+        <article className={`${styles.summaryCard} ${styles.summaryCardSoftIndigo}`}>
+          <p className={styles.summaryLabel}>Released payouts</p>
+          <div className={styles.summaryValueRow}>
+            <p className={styles.summaryValue}>{formatPhp(escrowSummary?.releasedNet || 0)}</p>
+          </div>
+          <p className={styles.summaryHint}>Net amount released by admin</p>
         </article>
 
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftBlue}`}>
-          <p className={styles.summaryLabel}>Best month (12 months)</p>
+          <p className={styles.summaryLabel}>Held in escrow</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>{best.label}</p>
+            <p className={styles.summaryValue}>{formatPhp((escrowSummary?.escrowedNet || 0) + (escrowSummary?.heldNet || 0))}</p>
           </div>
           <p className={styles.summaryHint}>
-            {best.amount > 0 ? `${formatPhp(best.amount)} collected` : 'No paid revenue yet'}
+            Escrowed {formatPhp(escrowSummary?.escrowedNet || 0)} · on hold {formatPhp(escrowSummary?.heldNet || 0)}
           </p>
         </article>
 
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftAmber}`}>
-          <p className={styles.summaryLabel}>Awaiting confirmation</p>
+          <p className={styles.summaryLabel}>Avg booking value</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>{formatPhp(outstanding)}</p>
+            <p className={styles.summaryValue}>{formatPhp(avg12)}</p>
           </div>
-          <p className={styles.summaryHint}>Paid bookings still pending your confirmation</p>
+          <p className={styles.summaryHint}>Best month: {best.amount > 0 ? `${best.label} · ${formatPhp(best.amount)}` : 'No paid revenue yet'}</p>
         </article>
       </section>
 
@@ -157,8 +188,8 @@ export default function SellerAnalyticsRevenueReportsPage() {
             <div className={styles.chartTitleGroup}>
               <h2 className={styles.chartTitle}>Monthly paid revenue</h2>
               <p className={styles.chartSubtitle}>
-                Last 6 months · gross collected on paid orders. Payout series will appear here when
-                seller escrow data is exposed via API.
+                Last 6 months · gross collected on paid orders. Seller payout totals above come from
+                escrow snapshots including commission, holds, releases, and refunds.
               </p>
             </div>
             <span className={styles.chartBadge}>

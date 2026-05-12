@@ -8,8 +8,11 @@ import styles from './products.module.css'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   buildSellerListingPayload,
+  ALLOWED_IMAGE_MIME,
   FALLBACK_IMAGE,
   findFirstMissingRequiredField,
+  LISTING_IMAGE_ACCEPT,
+  MAX_LISTING_IMAGES,
   listingRowToFormValues,
   normalizePackageOptionsFromDb,
   resolvePersistedImageUrls,
@@ -235,7 +238,7 @@ export default function ProductsContent({ initialKind = 'all' }) {
 
   useEffect(() => {
     if (initialKind && TYPE_FILTERS.some((t) => t.id === initialKind)) {
-      setTypeFilter(initialKind)
+      queueMicrotask(() => setTypeFilter(initialKind))
     }
   }, [initialKind])
 
@@ -243,8 +246,10 @@ export default function ProductsContent({ initialKind = 'all' }) {
   useEffect(() => {
     const nextQ = readString(searchParams, 'q', '')
     const nextKind = readEnum(searchParams, 'kind', allowedKinds, defaultKind)
-    if (nextQ !== searchQuery) setSearchQuery(nextQ)
-    if (nextKind !== typeFilter) setTypeFilter(nextKind)
+    queueMicrotask(() => {
+      if (nextQ !== searchQuery) setSearchQuery(nextQ)
+      if (nextKind !== typeFilter) setTypeFilter(nextKind)
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
@@ -344,6 +349,11 @@ export default function ProductsContent({ initialKind = 'all' }) {
   )
 
   const handleUploadClick = () => {
+    if (editGallery.length >= MAX_LISTING_IMAGES) {
+      setFormError(`Maximum ${MAX_LISTING_IMAGES} images. Remove one to add more.`)
+      return
+    }
+    setFormError('')
     if (fileInputRef.current) {
       fileInputRef.current.click()
     }
@@ -351,10 +361,47 @@ export default function ProductsContent({ initialKind = 'all' }) {
 
   const handleFilesSelected = (event) => {
     const files = Array.from(event.target.files || [])
+    event.target.value = ''
     if (!files.length) return
-    const entries = files.map((file) => ({ url: URL.createObjectURL(file), file }))
-    setPendingImageFiles((prev) => [...prev, ...files])
+
+    const room = Math.max(0, MAX_LISTING_IMAGES - editGallery.length)
+    const validFiles = files.filter((file) => ALLOWED_IMAGE_MIME.has(file.type))
+    const invalidCount = files.length - validFiles.length
+    const toAdd = validFiles.slice(0, room)
+    const droppedForLimit = validFiles.length - toAdd.length
+
+    if (room <= 0) {
+      setFormError(`Maximum ${MAX_LISTING_IMAGES} images. Remove one to add more.`)
+      return
+    }
+
+    if (!toAdd.length) {
+      setFormError(
+        invalidCount > 0
+          ? 'No images added — only JPEG, PNG, WebP, or GIF are allowed.'
+          : `Maximum ${MAX_LISTING_IMAGES} images. Remove one to add more.`,
+      )
+      return
+    }
+
+    const notes = []
+    if (invalidCount > 0) {
+      notes.push(
+        invalidCount === 1
+          ? '1 file was skipped — only JPEG, PNG, WebP, or GIF are allowed.'
+          : `${invalidCount} files were skipped — only JPEG, PNG, WebP, or GIF are allowed.`,
+      )
+    }
+    if (droppedForLimit > 0) {
+      notes.push(
+        `Only ${toAdd.length} more image${toAdd.length !== 1 ? 's' : ''} fit (${MAX_LISTING_IMAGES} maximum per listing).`,
+      )
+    }
+
+    const entries = toAdd.map((file) => ({ url: URL.createObjectURL(file), file }))
+    setPendingImageFiles((prev) => [...prev, ...toAdd])
     setEditGallery((prev) => [...prev, ...entries])
+    setFormError(notes.join(' '))
   }
 
   const handleRemoveImage = (index) => {
@@ -877,8 +924,13 @@ export default function ProductsContent({ initialKind = 'all' }) {
                     editGallery={editGallery}
                     onUploadClick={handleUploadClick}
                     onRemoveImage={handleRemoveImage}
+                    imageUploadSubtitle={`(${editGallery.length}/${MAX_LISTING_IMAGES})`}
                   />
-                  <SellerListingFileInput fileInputRef={fileInputRef} onFilesSelected={handleFilesSelected} />
+                  <SellerListingFileInput
+                    fileInputRef={fileInputRef}
+                    onFilesSelected={handleFilesSelected}
+                    accept={LISTING_IMAGE_ACCEPT}
+                  />
                 </>
               )}
             </div>

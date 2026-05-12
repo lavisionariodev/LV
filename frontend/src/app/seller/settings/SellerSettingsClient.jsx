@@ -164,6 +164,18 @@ function shopStatusPillClass(status) {
 const AVATARS_BUCKET = 'avatars'
 const MAX_MB = 2
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp']
+const DOC_ALLOWED = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp']
+
+const EMPTY_PAYOUT_FORM = {
+  payoutMethod: 'bank',
+  accountHolderName: '',
+  bankName: '',
+  accountNumber: '',
+  gcashName: '',
+  gcashNumber: '',
+  payoutEmail: '',
+  notes: '',
+}
 
 /** Path in `avatars` bucket from a public object URL. */
 function pathFromAvatarsPublicUrl(url) {
@@ -205,11 +217,17 @@ export default function SellerSettingsClient() {
   const [shopSaving, setShopSaving] = useState(false)
   const [coverLoading, setCoverLoading] = useState(false)
   const [shopSubTab, setShopSubTab] = useState('storefront')
+  const documentFileRef = useRef(null)
+  const [payoutForm, setPayoutForm] = useState(EMPTY_PAYOUT_FORM)
+  const [payoutSaving, setPayoutSaving] = useState(false)
+  const [documents, setDocuments] = useState([])
+  const [documentType, setDocumentType] = useState('business_permit')
+  const [documentUploading, setDocumentUploading] = useState(false)
 
-  const goTab = (tabId) => {
+  const goTab = useCallback((tabId) => {
     const next = normalizeSellerSettingsTab(tabId)
     router.replace(`/seller/settings?tab=${next}`, { scroll: false })
-  }
+  }, [router])
 
   const notifyToast = useCallback((type, message) => {
     const msg = typeof message === 'string' ? message.trim() : String(message ?? '').trim()
@@ -239,6 +257,20 @@ export default function SellerSettingsClient() {
         setSeller(sellerRow)
         setShopForm(mapSellerToShopForm(sellerRow, data, email))
         setIsEditingShop(false)
+        const [payoutRes, docsRes] = await Promise.all([
+          fetch('/api/seller/payout-settings', { cache: 'no-store' }),
+          fetch('/api/seller/documents', { cache: 'no-store' }),
+        ])
+        const [payoutBody, docsBody] = await Promise.all([
+          payoutRes.json().catch(() => null),
+          docsRes.json().catch(() => null),
+        ])
+        if (!cancelled && payoutRes.ok && payoutBody?.settings) {
+          setPayoutForm({ ...EMPTY_PAYOUT_FORM, ...payoutBody.settings })
+        }
+        if (!cancelled && docsRes.ok) {
+          setDocuments(Array.isArray(docsBody?.documents) ? docsBody.documents : [])
+        }
       } catch (err) {
         if (!cancelled) notifyToast('error', err.message || 'Failed to load profile.')
       } finally {
@@ -258,7 +290,7 @@ export default function SellerSettingsClient() {
     if (sellerCanChangePassword === false && activeTab === 'password') {
       goTab('profile')
     }
-  }, [sellerCanChangePassword, activeTab])
+  }, [sellerCanChangePassword, activeTab, goTab])
 
   useEffect(() => {
     if (!toast) return
@@ -289,6 +321,84 @@ export default function SellerSettingsClient() {
   }
 
   const canEditShop = !seller || seller.status !== 'suspended'
+
+  const onPayoutFieldChange = (field, value) => {
+    setPayoutForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleSavePayout = async (e) => {
+    e.preventDefault()
+    setPayoutSaving(true)
+    setToast(null)
+    try {
+      const res = await fetch('/api/seller/payout-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payoutForm),
+      })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(body?.error || 'Failed to save payout settings.')
+      setPayoutForm({ ...EMPTY_PAYOUT_FORM, ...(body?.settings || {}) })
+      notifyToast('success', 'Payout settings saved.')
+    } catch (err) {
+      notifyToast('error', err.message || 'Failed to save payout settings.')
+    } finally {
+      setPayoutSaving(false)
+    }
+  }
+
+  const validateDocument = (file) => {
+    if (!file) return 'Select a document to upload.'
+    if (!DOC_ALLOWED.includes(file.type)) return 'Only PDF, PNG, JPG, or WEBP files are allowed.'
+    const mb = file.size / (1024 * 1024)
+    if (mb > 8) return 'Document must be 8MB or less.'
+    return ''
+  }
+
+  const handleUploadDocument = async (e) => {
+    e.preventDefault()
+    const file = documentFileRef.current?.files?.[0]
+    const err = validateDocument(file)
+    if (err) {
+      notifyToast('error', err)
+      return
+    }
+    setDocumentUploading(true)
+    setToast(null)
+    try {
+      const form = new FormData()
+      form.append('documentType', documentType)
+      form.append('file', file)
+
+      const res = await fetch('/api/seller/documents', {
+        method: 'POST',
+        body: form,
+      })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(body?.error || 'Failed to save document metadata.')
+      setDocuments((prev) => [body.document, ...prev].filter(Boolean))
+      if (documentFileRef.current) documentFileRef.current.value = ''
+      notifyToast('success', 'Document uploaded for review.')
+    } catch (uploadErr) {
+      notifyToast('error', uploadErr.message || 'Failed to upload document.')
+    } finally {
+      setDocumentUploading(false)
+    }
+  }
+
+  const handleDeleteDocument = async (docId) => {
+    if (!docId) return
+    setToast(null)
+    try {
+      const res = await fetch(`/api/seller/documents?id=${encodeURIComponent(docId)}`, { method: 'DELETE' })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(body?.error || 'Failed to remove document.')
+      setDocuments((prev) => prev.filter((doc) => doc.id !== docId))
+      notifyToast('success', 'Document removed.')
+    } catch (err) {
+      notifyToast('error', err.message || 'Failed to remove document.')
+    }
+  }
 
   const onShopFieldChange = (field, value) => {
     setShopForm((prev) => ({ ...prev, [field]: value }))
@@ -650,15 +760,19 @@ export default function SellerSettingsClient() {
   const profileTabId = 'seller-settings-tab-profile'
   const passwordTabId = 'seller-settings-tab-password'
   const shopTabId = 'seller-settings-tab-shop'
+  const payoutsTabId = 'seller-settings-tab-payouts'
+  const documentsTabId = 'seller-settings-tab-documents'
   const profilePanelId = 'seller-settings-panel-profile'
   const passwordPanelId = 'seller-settings-panel-password'
   const shopPanelId = 'seller-settings-panel-shop'
+  const payoutsPanelId = 'seller-settings-panel-payouts'
+  const documentsPanelId = 'seller-settings-panel-documents'
 
   if (loading) {
     return (
       <div className={styles.page}>
         <nav className={styles.tabBar} aria-label="Settings sections">
-          {['profile', 'password', 'shop'].map((tab) => (
+          {['profile', 'password', 'shop', 'payouts', 'documents'].map((tab) => (
             <button
               key={tab}
               type="button"
@@ -666,7 +780,15 @@ export default function SellerSettingsClient() {
               className={`${styles.tabItem} ${activeTab === tab ? styles.tabItemActive : ''}`}
             >
               <span className={styles.tabLabel}>
-                {tab === 'profile' ? 'Profile' : tab === 'password' ? 'Password' : 'Shop information'}
+                {tab === 'profile'
+                  ? 'Profile'
+                  : tab === 'password'
+                    ? 'Password'
+                    : tab === 'shop'
+                      ? 'Shop information'
+                      : tab === 'payouts'
+                        ? 'Payouts'
+                        : 'Documents'}
               </span>
             </button>
           ))}
@@ -734,9 +856,167 @@ export default function SellerSettingsClient() {
         >
           <span className={styles.tabLabel}>Shop information</span>
         </button>
+        <button
+          type="button"
+          id={payoutsTabId}
+          className={`${styles.tabItem} ${activeTab === 'payouts' ? styles.tabItemActive : ''}`}
+          onClick={() => goTab('payouts')}
+          aria-current={activeTab === 'payouts' ? 'page' : undefined}
+        >
+          <span className={styles.tabLabel}>Payouts</span>
+        </button>
+        <button
+          type="button"
+          id={documentsTabId}
+          className={`${styles.tabItem} ${activeTab === 'documents' ? styles.tabItemActive : ''}`}
+          onClick={() => goTab('documents')}
+          aria-current={activeTab === 'documents' ? 'page' : undefined}
+        >
+          <span className={styles.tabLabel}>Documents</span>
+        </button>
       </nav>
 
       <div className={`${styles.contentArea} ${styles.grid}`}>
+        {activeTab === 'payouts' && (
+          <section
+            id={payoutsPanelId}
+            role="tabpanel"
+            aria-labelledby={payoutsTabId}
+            className={`${styles.card} ${styles.full}`}
+          >
+            <div className={styles.tabDetailHead}>
+              <div className={styles.tabDetailHeadRow}>
+                <div className={styles.tabDetailHeadText}>
+                  <h2 className={styles.tabDetailTitle}>Payout settings</h2>
+                  <p className={styles.tabDetailSubtitle}>
+                    Add the account details admins need to release seller payouts.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <form className={styles.form} onSubmit={handleSavePayout}>
+              <label className={styles.field}>
+                <span className={styles.label}>Payout method</span>
+                <select
+                  className={styles.input}
+                  value={payoutForm.payoutMethod}
+                  onChange={(e) => onPayoutFieldChange('payoutMethod', e.target.value)}
+                >
+                  <option value="bank">Bank transfer</option>
+                  <option value="gcash">GCash</option>
+                  <option value="manual">Manual / other</option>
+                </select>
+              </label>
+              {payoutForm.payoutMethod === 'bank' && (
+                <>
+                  <label className={styles.field}>
+                    <span className={styles.label}>Account holder name</span>
+                    <input className={styles.input} value={payoutForm.accountHolderName} onChange={(e) => onPayoutFieldChange('accountHolderName', e.target.value)} />
+                  </label>
+                  <label className={styles.field}>
+                    <span className={styles.label}>Bank name</span>
+                    <input className={styles.input} value={payoutForm.bankName} onChange={(e) => onPayoutFieldChange('bankName', e.target.value)} />
+                  </label>
+                  <label className={styles.field}>
+                    <span className={styles.label}>Account number</span>
+                    <input className={styles.input} value={payoutForm.accountNumber} onChange={(e) => onPayoutFieldChange('accountNumber', e.target.value)} />
+                  </label>
+                </>
+              )}
+              {payoutForm.payoutMethod === 'gcash' && (
+                <>
+                  <label className={styles.field}>
+                    <span className={styles.label}>GCash account name</span>
+                    <input className={styles.input} value={payoutForm.gcashName} onChange={(e) => onPayoutFieldChange('gcashName', e.target.value)} />
+                  </label>
+                  <label className={styles.field}>
+                    <span className={styles.label}>GCash number</span>
+                    <input className={styles.input} value={payoutForm.gcashNumber} onChange={(e) => onPayoutFieldChange('gcashNumber', e.target.value)} />
+                  </label>
+                </>
+              )}
+              <label className={styles.field}>
+                <span className={styles.label}>Payout email</span>
+                <input className={styles.input} type="email" value={payoutForm.payoutEmail} onChange={(e) => onPayoutFieldChange('payoutEmail', e.target.value)} />
+              </label>
+              <label className={styles.field}>
+                <span className={styles.label}>Admin notes</span>
+                <textarea className={`${styles.input} ${styles.textarea}`} value={payoutForm.notes} onChange={(e) => onPayoutFieldChange('notes', e.target.value)} />
+              </label>
+              <div className={styles.headActions}>
+                <button type="submit" className={styles.primaryBtn} disabled={payoutSaving}>
+                  <FiSave /> {payoutSaving ? 'Saving...' : 'Save payout settings'}
+                </button>
+              </div>
+            </form>
+          </section>
+        )}
+
+        {activeTab === 'documents' && (
+          <section
+            id={documentsPanelId}
+            role="tabpanel"
+            aria-labelledby={documentsTabId}
+            className={`${styles.card} ${styles.full}`}
+          >
+            <div className={styles.tabDetailHead}>
+              <div className={styles.tabDetailHeadRow}>
+                <div className={styles.tabDetailHeadText}>
+                  <h2 className={styles.tabDetailTitle}>Compliance documents</h2>
+                  <p className={styles.tabDetailSubtitle}>
+                    Upload business permits, IDs, and payout verification files for admin review.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <form className={styles.form} onSubmit={handleUploadDocument}>
+              <label className={styles.field}>
+                <span className={styles.label}>Document type</span>
+                <select className={styles.input} value={documentType} onChange={(e) => setDocumentType(e.target.value)}>
+                  <option value="business_permit">Business permit</option>
+                  <option value="valid_id">Valid ID</option>
+                  <option value="bank_proof">Bank proof</option>
+                  <option value="other">Other</option>
+                </select>
+              </label>
+              <label className={styles.field}>
+                <span className={styles.label}>File</span>
+                <input ref={documentFileRef} className={styles.input} type="file" accept=".pdf,image/png,image/jpeg,image/webp" />
+              </label>
+              <div className={styles.headActions}>
+                <button type="submit" className={styles.primaryBtn} disabled={documentUploading}>
+                  <FaUpload /> {documentUploading ? 'Uploading...' : 'Upload document'}
+                </button>
+              </div>
+            </form>
+            <div className={styles.profileDetails} style={{ marginTop: 18 }}>
+              {documents.length === 0 ? (
+                <p className={styles.loadingText}>No documents uploaded yet.</p>
+              ) : (
+                documents.map((doc) => (
+                  <div key={doc.id} className={styles.settingsRow}>
+                    <div className={styles.settingsRowMeta}>
+                      <div className={styles.settingsRowTitleRow}>
+                        <h3 className={styles.settingsRowTitle}>{doc.displayName}</h3>
+                      </div>
+                      <p className={styles.settingsRowDesc}>
+                        {doc.documentType.replace(/_/g, ' ')} · {doc.status}
+                      </p>
+                    </div>
+                    <div className={`${styles.settingsRowControl} ${styles.headActions}`}>
+                      {doc.status !== 'approved' && (
+                        <button type="button" className={styles.dangerBtn} onClick={() => handleDeleteDocument(doc.id)}>
+                          <TbTrash /> Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+        )}
+
         {activeTab === 'shop' && (
           <section
             id={shopPanelId}

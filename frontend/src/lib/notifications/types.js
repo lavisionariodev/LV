@@ -52,3 +52,31 @@ export const ADMIN_NOTIFICATION_FILTER_TABS = [
   { id: 'alert', label: 'Alerts' },
   { id: 'announcement', label: 'Announcements' },
 ]
+
+/**
+ * Seller notifications page filter buckets.
+ * @param {string} apiType from user_notifications.type
+ */
+export function sellerNotificationFilterBucket(apiType) {
+  const t = String(apiType || '')
+  if (t === 'payment_success' || t === 'payment_failed' || t === 'payment_refund') return 'payment'
+  if (t === 'listing_approval' || t === 'listing_rejected' || t === 'listing_pending_review') return 'listing'
+  if (t === 'message') return 'message'
+  if (t === 'alerts' || t === 'service_alert' || t === 'reminder') return 'alert'
+  if (t.startsWith('service')) return 'order'
+  if (t === 'system' || t === 'account') return 'system'
+  return 'alert'
+}
+
+/** Filter tabs for `/seller/notifications` (bucket ids match `sellerNotificationFilterBucket`). */
+export const SELLER_NOTIFICATION_FILTER_TABS = [
+  { id: 'all', label: 'All' },
+  { id: 'unread', label: 'Unread' },
+  { id: 'unresolved', label: 'Unresolved' },
+  { id: 'order', label: 'Orders' },
+  { id: 'payment', label: 'Payments' },
+  { id: 'listing', label: 'Listings' },
+  { id: 'message', label: 'Messages' },
+  { id: 'alert', label: 'Alerts' },
+  { id: 'system', label: 'System' },
+]

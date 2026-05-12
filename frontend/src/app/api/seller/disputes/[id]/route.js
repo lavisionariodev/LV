@@ -3,6 +3,88 @@ import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { notifyUser } from '@/lib/notifications/inAppServer'
 
+const DISPUTE_ATTACHMENT_BUCKET = 'dispute-attachments'
+const SIGNED_URL_TTL_SECONDS = 600
+
+async function buildAttachments(supabaseAdmin, paths) {
+  const list = Array.isArray(paths) ? paths.filter(Boolean) : []
+  return Promise.all(
+    list.map(async (path) => {
+      const safePath = String(path)
+      try {
+        const { data, error } = await supabaseAdmin.storage
+          .from(DISPUTE_ATTACHMENT_BUCKET)
+          .createSignedUrl(safePath, SIGNED_URL_TTL_SECONDS)
+        return {
+          path: safePath,
+          signedUrl: data?.signedUrl || null,
+          expiresAt: new Date(Date.now() + SIGNED_URL_TTL_SECONDS * 1000).toISOString(),
+          error: error?.message || null,
+        }
+      } catch (err) {
+        return {
+          path: safePath,
+          signedUrl: null,
+          expiresAt: null,
+          error: err instanceof Error ? err.message : 'Unable to sign attachment URL.',
+        }
+      }
+    }),
+  )
+}
+
+export async function GET(_request, context) {
+  const supabase = await createClient()
+  const supabaseAdmin = getSupabaseAdmin()
+
+  const {
+    data: { user },
+    error: userErr,
+  } = await supabase.auth.getUser()
+
+  if (userErr || !user) {
+    return NextResponse.json({ error: 'You must be signed in to view requests.' }, { status: 401 })
+  }
+
+  const params = await context.params
+  const id = String(params?.id ?? '').trim()
+  if (!id) {
+    return NextResponse.json({ error: 'Missing request id.' }, { status: 400 })
+  }
+
+  const { data: dispute, error: disputeErr } = await supabaseAdmin
+    .from('disputes')
+    .select('id,order_id,buyer_id,seller_user_id,reason,description,status,opened_at,resolution_notes,attachment_paths')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (disputeErr || !dispute) {
+    return NextResponse.json({ error: 'Request not found.' }, { status: 404 })
+  }
+
+  if (dispute.seller_user_id !== user.id) {
+    return NextResponse.json({ error: 'You are not authorized to view this request.' }, { status: 403 })
+  }
+
+  const attachments = await buildAttachments(supabaseAdmin, dispute.attachment_paths ?? [])
+  return NextResponse.json(
+    {
+      dispute: {
+        id: dispute.id,
+        orderId: dispute.order_id,
+        reason: dispute.reason,
+        description: dispute.description || '',
+        status: dispute.status,
+        openedAt: dispute.opened_at,
+        resolutionNotes: dispute.resolution_notes || '',
+        attachmentPaths: dispute.attachment_paths ?? [],
+        attachments,
+      },
+    },
+    { status: 200 },
+  )
+}
+
 export async function PATCH(request, context) {
   const supabase = await createClient()
   const supabaseAdmin = getSupabaseAdmin()
