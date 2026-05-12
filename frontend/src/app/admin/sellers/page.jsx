@@ -17,6 +17,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { useMediaQuery } from '@/shared/hooks';
 import { Dropdown } from '@/components/ui';
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal';
+import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDebouncedEffect } from '@/shared/hooks';
 import { readEnum, readString, replaceUrlQuery } from '@/lib/url/queryParams';
@@ -47,11 +48,14 @@ function SellerAvatar({ name, src }) {
 
   if (showImg) {
     return (
-      <img
+      <Image
         src={src.trim()}
         alt=""
+        width={34}
+        height={34}
         className={styles.avatar}
         onError={() => setImgError(true)}
+        unoptimized
       />
     );
   }
@@ -91,6 +95,7 @@ function SellerActionsMenu({
   onViewDetails,
   onStatusChange,
   onRejectRequest,
+  onSuspendRequest,
 }) {
   const [open, setOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
@@ -205,7 +210,7 @@ function SellerActionsMenu({
               className={`${styles.actionMenuItem} ${styles.actionMenuItemWarn}`}
               disabled={isUpdating}
               onClick={() => {
-                onStatusChange(sellerId, 'suspended');
+                onSuspendRequest?.(sellerId, seller);
                 close();
               }}
             >
@@ -441,8 +446,10 @@ export default function AdminSellersPage() {
   useEffect(() => {
     const nextQ = readString(searchParams, 'q', '')
     const nextStatus = readEnum(searchParams, 'status', STATUS_FILTER_OPTIONS.map((o) => o.value), 'all')
-    if (nextQ !== search) setSearch(nextQ)
-    if (nextStatus !== statusFilter) setStatusFilter(nextStatus)
+    queueMicrotask(() => {
+      if (nextQ !== search) setSearch(nextQ)
+      if (nextStatus !== statusFilter) setStatusFilter(nextStatus)
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
@@ -579,17 +586,18 @@ export default function AdminSellersPage() {
   };
 
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [pendingBulk, setPendingBulk] = useState(null);
+  const [suspendSellerConfirm, setSuspendSellerConfirm] = useState(null);
 
-  const handleBulkStatus = async (nextStatus) => {
+  const requestBulkStatus = (nextStatus) => {
     const ids = [...selectedRows];
     if (ids.length === 0) return;
-    if (
-      !window.confirm(
-        `Set ${ids.length} selected seller${ids.length > 1 ? 's' : ''} to "${nextStatus}"?`,
-      )
-    ) {
-      return;
-    }
+    setPendingBulk({ nextStatus, ids });
+  };
+
+  const confirmBulkStatus = async () => {
+    if (!pendingBulk) return;
+    const { nextStatus, ids } = pendingBulk;
     setBulkBusy(true);
     try {
       const results = await Promise.allSettled(
@@ -618,6 +626,7 @@ export default function AdminSellersPage() {
         toast.success(`${ids.length} seller(s) updated.`);
       }
       setSelectedRows(new Set());
+      setPendingBulk(null);
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('admin:attention-refresh'));
       }
@@ -912,7 +921,7 @@ export default function AdminSellersPage() {
               <button
                 key={opt.value}
                 type="button"
-                onClick={() => handleBulkStatus(opt.value)}
+                onClick={() => requestBulkStatus(opt.value)}
                 disabled={bulkBusy}
                 style={{
                   padding: '6px 12px',
@@ -1146,6 +1155,15 @@ export default function AdminSellersPage() {
                             isUpdating={isUpdating || rejectSubmitting}
                             onViewDetails={() => setDetailSeller(seller)}
                             onStatusChange={handleStatusChange}
+                            onSuspendRequest={(sid, s) => {
+                              setSuspendSellerConfirm({
+                                sellerId: sid,
+                                name:
+                                  typeof s?.business_name === 'string' && s.business_name.trim()
+                                    ? s.business_name.trim()
+                                    : 'Seller',
+                              });
+                            }}
                             onRejectRequest={(target) => {
                               setRejectDraft({
                                 sellerId: target?.user_id || target?.id,
@@ -1196,6 +1214,64 @@ export default function AdminSellersPage() {
       {detailSeller && (
         <SellerDetailModal seller={detailSeller} onClose={() => setDetailSeller(null)} />
       )}
+
+      <ConfirmModal
+        open={suspendSellerConfirm != null}
+        variant="danger"
+        title="Suspend seller?"
+        message={
+          suspendSellerConfirm
+            ? `Suspend "${suspendSellerConfirm.name}"? They cannot take new bookings until reactivated.`
+            : ''
+        }
+        confirmLabel="Suspend"
+        confirmLoadingLabel="Suspending..."
+        cancelLabel="Cancel"
+        loading={
+          suspendSellerConfirm != null &&
+          updatingId === suspendSellerConfirm.sellerId
+        }
+        onCancel={() => {
+          if (updatingId) return;
+          setSuspendSellerConfirm(null);
+        }}
+        onConfirm={async () => {
+          if (!suspendSellerConfirm) return;
+          await handleStatusChange(suspendSellerConfirm.sellerId, 'suspended');
+          setSuspendSellerConfirm(null);
+        }}
+      />
+
+      <ConfirmModal
+        open={pendingBulk != null}
+        variant={
+          pendingBulk?.nextStatus === 'suspended' || pendingBulk?.nextStatus === 'rejected'
+            ? 'danger'
+            : pendingBulk?.nextStatus === 'active'
+              ? 'primary'
+              : 'warning'
+        }
+        title="Update selected sellers?"
+        message={
+          pendingBulk
+            ? (() => {
+                const label =
+                  STATUS_FILTER_OPTIONS.find((o) => o.value === pendingBulk.nextStatus)?.label ||
+                  pendingBulk.nextStatus;
+                return `Set ${pendingBulk.ids.length} selected seller${pendingBulk.ids.length > 1 ? 's' : ''} to ${label}?`;
+              })()
+            : ''
+        }
+        confirmLabel="Apply"
+        confirmLoadingLabel="Updating..."
+        cancelLabel="Cancel"
+        loading={bulkBusy}
+        onCancel={() => {
+          if (bulkBusy) return;
+          setPendingBulk(null);
+        }}
+        onConfirm={confirmBulkStatus}
+      />
 
       <ConfirmModal
         open={featuredConfirm != null}

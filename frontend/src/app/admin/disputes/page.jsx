@@ -8,6 +8,7 @@ import { LuSettings2 } from 'react-icons/lu'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useDebouncedEffect } from '@/shared/hooks'
 import { readEnum, readString, replaceUrlQuery } from '@/lib/url/queryParams'
+import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'All' },
@@ -136,6 +137,7 @@ export default function AdminDisputesPage() {
   const [listLoading, setListLoading] = useState(true)
   const [listError, setListError] = useState('')
   const [bulkBusy, setBulkBusy] = useState(false)
+  const [bulkStatusConfirm, setBulkStatusConfirm] = useState(null)
 
   const loadDisputes = useCallback(async () => {
     setListError('')
@@ -149,52 +151,50 @@ export default function AdminDisputesPage() {
     setAllDisputes(Array.isArray(body?.disputes) ? body.disputes : [])
   }, [])
 
-  const handleBulkStatus = useCallback(
-    async (nextStatus) => {
+  const requestBulkStatus = useCallback(
+    (nextStatus) => {
       const ids = [...selectedRows]
       if (ids.length === 0) return
-      const label =
-        nextStatus === 'under_review' ? 'under review' : nextStatus
-      if (
-        !window.confirm(
-          `Set ${ids.length} selected dispute${ids.length > 1 ? 's' : ''} to "${label}"?`,
-        )
-      ) {
-        return
-      }
-      setBulkBusy(true)
-      try {
-        const results = await Promise.allSettled(
-          ids.map((id) =>
-            fetch(`/api/admin/disputes/${encodeURIComponent(id)}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'include',
-              body: JSON.stringify({ status: nextStatus }),
-            }).then(async (res) => {
-              if (!res.ok) {
-                const body = await res.json().catch(() => null)
-                throw new Error(body?.error || 'Failed to update.')
-              }
-              return res
-            }),
-          ),
-        )
-        const failed = results.filter((r) => r.status === 'rejected').length
-        if (failed > 0) {
-          window.alert(`${failed} dispute(s) failed to update.`)
-        }
-        setSelectedRows(new Set())
-        await loadDisputes()
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new Event('admin:disputes-changed'))
-        }
-      } finally {
-        setBulkBusy(false)
-      }
+      setBulkStatusConfirm({ nextStatus, ids })
     },
-    [loadDisputes, selectedRows],
+    [selectedRows],
   )
+
+  const confirmBulkStatus = useCallback(async () => {
+    if (!bulkStatusConfirm) return
+    const { nextStatus, ids } = bulkStatusConfirm
+    setBulkBusy(true)
+    try {
+      const results = await Promise.allSettled(
+        ids.map((id) =>
+          fetch(`/api/admin/disputes/${encodeURIComponent(id)}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ status: nextStatus }),
+          }).then(async (res) => {
+            if (!res.ok) {
+              const body = await res.json().catch(() => null)
+              throw new Error(body?.error || 'Failed to update.')
+            }
+            return res
+          }),
+        ),
+      )
+      const failed = results.filter((r) => r.status === 'rejected').length
+      if (failed > 0) {
+        window.alert(`${failed} dispute(s) failed to update.`)
+      }
+      setSelectedRows(new Set())
+      setBulkStatusConfirm(null)
+      await loadDisputes()
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('admin:disputes-changed'))
+      }
+    } finally {
+      setBulkBusy(false)
+    }
+  }, [bulkStatusConfirm, loadDisputes])
 
   useEffect(() => {
     let cancelled = false
@@ -393,7 +393,7 @@ export default function AdminDisputesPage() {
               <button
                 key={opt.value}
                 type="button"
-                onClick={() => handleBulkStatus(opt.value)}
+                onClick={() => requestBulkStatus(opt.value)}
                 disabled={bulkBusy}
                 style={{
                   padding: '6px 12px',
@@ -644,6 +644,38 @@ export default function AdminDisputesPage() {
           </div>
         )}
       </section>
+
+      <ConfirmModal
+        open={bulkStatusConfirm != null}
+        variant={
+          bulkStatusConfirm?.nextStatus === 'resolved' || bulkStatusConfirm?.nextStatus === 'closed'
+            ? 'primary'
+            : bulkStatusConfirm?.nextStatus === 'open'
+              ? 'danger'
+              : 'warning'
+        }
+        title="Update selected disputes?"
+        message={
+          bulkStatusConfirm
+            ? (() => {
+                const label =
+                  bulkStatusConfirm.nextStatus === 'under_review'
+                    ? 'under review'
+                    : STATUS_LABEL[bulkStatusConfirm.nextStatus] ?? bulkStatusConfirm.nextStatus
+                return `Set ${bulkStatusConfirm.ids.length} selected dispute${bulkStatusConfirm.ids.length > 1 ? 's' : ''} to "${label}"?`
+              })()
+            : ''
+        }
+        confirmLabel="Apply"
+        confirmLoadingLabel="Updating..."
+        cancelLabel="Cancel"
+        loading={bulkBusy}
+        onCancel={() => {
+          if (bulkBusy) return
+          setBulkStatusConfirm(null)
+        }}
+        onConfirm={confirmBulkStatus}
+      />
 
       {/* Mobile filter slide-up modal */}
       <MobileFilterModal

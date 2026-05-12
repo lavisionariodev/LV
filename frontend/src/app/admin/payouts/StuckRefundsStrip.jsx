@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import styles from './payouts.module.css'
+import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 
 function formatMoney(n) {
   const v = Number(n) || 0
@@ -17,6 +18,7 @@ export default function StuckRefundsStrip() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [err, setErr] = useState('')
   const [busyId, setBusyId] = useState(null)
+  const [manualRefundConfirmId, setManualRefundConfirmId] = useState(null)
   const [total, setTotal] = useState(0)
   const [hasMore, setHasMore] = useState(false)
 
@@ -163,7 +165,8 @@ export default function StuckRefundsStrip() {
   if (!orders.length) return null
 
   return (
-    <section className={styles.stuckRefundsWrap} aria-labelledby="stuck-refunds-title">
+    <>
+      <section className={styles.stuckRefundsWrap} aria-labelledby="stuck-refunds-title">
       <div className={styles.stuckRefundsHead}>
         <p id="stuck-refunds-title" className={styles.stuckRefundsTitle}>
           Refunds requiring attention{' '}
@@ -213,16 +216,7 @@ export default function StuckRefundsStrip() {
                     type="button"
                     className={styles.stuckRefundsBtnDanger}
                     disabled={busyId === o.id}
-                    onClick={() => {
-                      if (
-                        !window.confirm(
-                          'This will mark the order as refunded in the platform only, without contacting the payment provider. Use this only if the funds have already been returned through another channel. Proceed?',
-                        )
-                      ) {
-                        return
-                      }
-                      runAction(o.id, 'force_complete_manual')
-                    }}
+                    onClick={() => setManualRefundConfirmId(o.id)}
                   >
                     Mark refunded manually
                   </button>
@@ -247,6 +241,32 @@ export default function StuckRefundsStrip() {
           </button>
         </div>
       ) : null}
-    </section>
+      </section>
+
+      <ConfirmModal
+        open={manualRefundConfirmId != null}
+        variant="danger"
+        title="Mark refunded manually?"
+        message="This marks the order as refunded in the platform only, without contacting the payment provider. Use this only if the funds have already been returned through another channel."
+        confirmLabel="Mark refunded"
+        confirmLoadingLabel="Applying..."
+        cancelLabel="Cancel"
+        loading={
+          manualRefundConfirmId != null && busyId === manualRefundConfirmId
+        }
+        onCancel={() => {
+          if (busyId) return
+          setManualRefundConfirmId(null)
+        }}
+        onConfirm={async () => {
+          if (manualRefundConfirmId == null) return
+          try {
+            await runAction(manualRefundConfirmId, 'force_complete_manual')
+          } finally {
+            setManualRefundConfirmId(null)
+          }
+        }}
+      />
+    </>
   )
 }

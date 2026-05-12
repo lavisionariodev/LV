@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import layoutStyles from '../../admin.module.css'
 import styles from './detail.module.css'
+import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 
 const STATUS_FLOW = ['open', 'under_review', 'resolved', 'closed']
 
@@ -13,6 +14,17 @@ const STATUS_LABELS = {
   under_review: 'Under review',
   resolved: 'Resolved',
   closed: 'Closed',
+}
+
+const DISPUTE_STAGE_ORDER = { open: 0, under_review: 1, resolved: 2, closed: 3 }
+
+function disputeStatusConfirmVariant(current, next) {
+  if (!current || !next || current === next) return 'warning'
+  const ci = DISPUTE_STAGE_ORDER[current] ?? -1
+  const ni = DISPUTE_STAGE_ORDER[next] ?? -1
+  if (ni < ci) return 'danger'
+  if (next === 'resolved' || next === 'closed') return 'primary'
+  return 'warning'
 }
 
 const IMAGE_EXT_RE = /\.(png|jpe?g|gif|webp|bmp|svg|avif)(\?|$)/i
@@ -102,6 +114,7 @@ export default function AdminDisputeDetailPage() {
   const [fetchErr, setFetchErr] = useState('')
   const [resolutionNotes, setResolutionNotes] = useState('')
   const [saving, setSaving] = useState(false)
+  const [statusChangeConfirm, setStatusChangeConfirm] = useState(null)
   const [events, setEvents] = useState([])
   const [eventsLoading, setEventsLoading] = useState(false)
 
@@ -260,7 +273,7 @@ export default function AdminDisputeDetailPage() {
 
   const goToNextStatus = () => {
     if (currentIndex === -1 || currentIndex === STATUS_FLOW.length - 1) return
-    savePatch(STATUS_FLOW[currentIndex + 1])
+    setStatusChangeConfirm({ next: STATUS_FLOW[currentIndex + 1] })
   }
 
   return (
@@ -589,7 +602,10 @@ export default function AdminDisputeDetailPage() {
                   key={s}
                   type="button"
                   className={`${styles.statusBtn}${active ? ` ${styles.statusBtnActive}` : ''}`}
-                  onClick={() => savePatch(s)}
+                  onClick={() => {
+                    if (s === status) return
+                    setStatusChangeConfirm({ next: s })
+                  }}
                   aria-pressed={active}
                   disabled={saving}
                 >
@@ -603,7 +619,7 @@ export default function AdminDisputeDetailPage() {
               </button>
             )}
           </div>
-          <p className={styles.demoHint}>Status changes are saved immediately. Admin access only.</p>
+          <p className={styles.demoHint}>Status changes require confirmation. Admin access only.</p>
         </div>
 
         <hr className={styles.divider} />
@@ -618,6 +634,32 @@ export default function AdminDisputeDetailPage() {
         </div>
 
       </section>
+
+      <ConfirmModal
+        open={statusChangeConfirm != null}
+        variant={disputeStatusConfirmVariant(status, statusChangeConfirm?.next)}
+        title="Change dispute status?"
+        message={
+          statusChangeConfirm?.next
+            ? `Set this dispute to "${STATUS_LABELS[statusChangeConfirm.next] ?? statusChangeConfirm.next}"? Resolution notes (if any) will be saved with this update.`
+            : ''
+        }
+        confirmLabel="Save status"
+        confirmLoadingLabel="Saving..."
+        cancelLabel="Cancel"
+        loading={saving}
+        subtitleAlign="left"
+        onCancel={() => {
+          if (saving) return
+          setStatusChangeConfirm(null)
+        }}
+        onConfirm={async () => {
+          if (!statusChangeConfirm) return
+          const next = statusChangeConfirm.next
+          await savePatch(next)
+          setStatusChangeConfirm(null)
+        }}
+      />
     </div>
   )
 }

@@ -26,6 +26,7 @@ import { MdArrowOutward } from 'react-icons/md'
 
 const CHART_ACCENT = '#1F312B'
 const RECENT_ACTIVITY_LIMIT = 6
+const DESKTOP_RECENT_ACTIVITY_LIMIT = 4
 
 const NAV_ACTIONS = [
   { id: 'sellers',  label: 'Sellers',  icon: LuUserCheck,    href: '/admin/sellers' },
@@ -699,7 +700,7 @@ export default function AdminDashboardPage() {
         <div className={styles.panel}>
           <div className={styles.panelHead}>
             <p className={styles.panelTitle}>Recent activity</p>
-            {recentActivityRows.length >= RECENT_ACTIVITY_LIMIT ? (
+            {recentActivityRows.length > DESKTOP_RECENT_ACTIVITY_LIMIT ? (
               <Link href="/admin/analytics" className={styles.smallBtn}>
                 View all
               </Link>
@@ -720,7 +721,7 @@ export default function AdminDashboardPage() {
                 </span>
               </div>
             ) : (
-              recentActivityRows.map((item) => (
+              recentActivityRows.slice(0, DESKTOP_RECENT_ACTIVITY_LIMIT).map((item) => (
                 <div className={styles.row} key={item.id}>
                   <span>{item.date}</span>
                   <span>{item.type}</span>

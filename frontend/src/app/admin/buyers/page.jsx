@@ -8,6 +8,7 @@ import { LuSettings2 } from 'react-icons/lu'
 import styles from './buyers.module.css'
 import { useDebouncedEffect, useMediaQuery } from '@/shared/hooks'
 import { Dropdown } from '@/components/ui'
+import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { readEnum, readString, replaceUrlQuery } from '@/lib/url/queryParams'
 
@@ -301,6 +302,7 @@ export default function AdminBuyersPage() {
   const [detailBuyer, setDetailBuyer] = useState(null)
   const [busyId, setBusyId] = useState(null)
   const [bulkBusy, setBulkBusy] = useState(false)
+  const [statusConfirm, setStatusConfirm] = useState(null)
 
   useEffect(() => {
     const nextQ = readString(searchParams, 'q', '')
@@ -310,8 +312,10 @@ export default function AdminBuyersPage() {
       STATUS_FILTER_OPTIONS.map((o) => o.value),
       'all',
     )
-    if (nextQ !== search) setSearch(nextQ)
-    if (nextStatus !== statusFilter) setStatusFilter(nextStatus)
+    queueMicrotask(() => {
+      if (nextQ !== search) setSearch(nextQ)
+      if (nextStatus !== statusFilter) setStatusFilter(nextStatus)
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
@@ -370,7 +374,9 @@ export default function AdminBuyersPage() {
   }, [])
 
   useEffect(() => {
-    loadBuyers()
+    queueMicrotask(() => {
+      loadBuyers()
+    })
   }, [loadBuyers])
 
   const updateStatus = useCallback(
@@ -393,10 +399,29 @@ export default function AdminBuyersPage() {
     [],
   )
 
-  const handleSuspend = useCallback(
-    async (buyer) => {
-      if (!buyer?.id) return
-      if (!window.confirm(`Suspend buyer ${buyer.fullName}?`)) return
+  const requestSuspendBuyer = useCallback((buyer) => {
+    if (!buyer?.id) return
+    setStatusConfirm({ kind: 'suspend', buyer })
+  }, [])
+
+  const requestReactivateBuyer = useCallback((buyer) => {
+    if (!buyer?.id) return
+    setStatusConfirm({ kind: 'reactivate', buyer })
+  }, [])
+
+  const requestBulkBuyerStatus = useCallback(
+    (nextStatus) => {
+      const ids = [...selectedRows]
+      if (ids.length === 0) return
+      setStatusConfirm({ kind: 'bulk', nextStatus, ids })
+    },
+    [selectedRows],
+  )
+
+  const handleStatusConfirm = useCallback(async () => {
+    if (!statusConfirm) return
+    if (statusConfirm.kind === 'suspend') {
+      const { buyer } = statusConfirm
       setBusyId(buyer.id)
       try {
         await updateStatus(buyer.id, 'suspended')
@@ -404,18 +429,16 @@ export default function AdminBuyersPage() {
           prev.map((b) => (b.id === buyer.id ? { ...b, status: 'suspended' } : b)),
         )
         setDetailBuyer((d) => (d?.id === buyer.id ? { ...d, status: 'suspended' } : d))
+        setStatusConfirm(null)
       } catch (err) {
         window.alert(err?.message || 'Failed to suspend buyer.')
       } finally {
         setBusyId(null)
       }
-    },
-    [updateStatus],
-  )
-
-  const handleReactivate = useCallback(
-    async (buyer) => {
-      if (!buyer?.id) return
+      return
+    }
+    if (statusConfirm.kind === 'reactivate') {
+      const { buyer } = statusConfirm
       setBusyId(buyer.id)
       try {
         await updateStatus(buyer.id, 'active')
@@ -423,55 +446,37 @@ export default function AdminBuyersPage() {
           prev.map((b) => (b.id === buyer.id ? { ...b, status: 'active' } : b)),
         )
         setDetailBuyer((d) => (d?.id === buyer.id ? { ...d, status: 'active' } : d))
+        setStatusConfirm(null)
       } catch (err) {
         window.alert(err?.message || 'Failed to reactivate buyer.')
       } finally {
         setBusyId(null)
       }
-    },
-    [updateStatus],
-  )
-
-  const handleBulk = useCallback(
-    async (nextStatus) => {
-      const ids = [...selectedRows]
-      if (ids.length === 0) return
-      if (
-        !window.confirm(
-          nextStatus === 'suspended'
-            ? `Suspend ${ids.length} selected buyer${ids.length > 1 ? 's' : ''}?`
-            : `Reactivate ${ids.length} selected buyer${ids.length > 1 ? 's' : ''}?`,
+      return
+    }
+    const { nextStatus, ids } = statusConfirm
+    setBulkBusy(true)
+    try {
+      const results = await Promise.allSettled(ids.map((id) => updateStatus(id, nextStatus)))
+      const okIds = []
+      results.forEach((r, idx) => {
+        if (r.status === 'fulfilled') okIds.push(ids[idx])
+      })
+      if (okIds.length > 0) {
+        setBuyers((prev) =>
+          prev.map((b) => (okIds.includes(b.id) ? { ...b, status: nextStatus } : b)),
         )
-      ) {
-        return
       }
-      setBulkBusy(true)
-      try {
-        const results = await Promise.allSettled(
-          ids.map((id) => updateStatus(id, nextStatus)),
-        )
-        const okIds = []
-        results.forEach((r, idx) => {
-          if (r.status === 'fulfilled') okIds.push(ids[idx])
-        })
-        if (okIds.length > 0) {
-          setBuyers((prev) =>
-            prev.map((b) =>
-              okIds.includes(b.id) ? { ...b, status: nextStatus } : b,
-            ),
-          )
-        }
-        const failed = results.length - okIds.length
-        if (failed > 0) {
-          window.alert(`${failed} buyer(s) failed to update.`)
-        }
-        setSelectedRows(new Set())
-      } finally {
-        setBulkBusy(false)
+      const failed = results.length - okIds.length
+      if (failed > 0) {
+        window.alert(`${failed} buyer(s) failed to update.`)
       }
-    },
-    [selectedRows, updateStatus],
-  )
+      setSelectedRows(new Set())
+      setStatusConfirm(null)
+    } finally {
+      setBulkBusy(false)
+    }
+  }, [statusConfirm, updateStatus])
 
   const filtered = useMemo(() => {
     return buyers.filter((buyer) => {
@@ -630,7 +635,7 @@ export default function AdminBuyersPage() {
               </span>
               <button
                 type="button"
-                onClick={() => handleBulk('suspended')}
+                onClick={() => requestBulkBuyerStatus('suspended')}
                 disabled={bulkBusy}
                 style={{
                   padding: '6px 12px',
@@ -646,7 +651,7 @@ export default function AdminBuyersPage() {
               </button>
               <button
                 type="button"
-                onClick={() => handleBulk('active')}
+                onClick={() => requestBulkBuyerStatus('active')}
                 disabled={bulkBusy}
                 style={{
                   padding: '6px 12px',
@@ -983,8 +988,8 @@ export default function AdminBuyersPage() {
                       <BuyerActionsMenu
                         buyer={buyer}
                         onView={(b) => setDetailBuyer(b)}
-                        onSuspend={handleSuspend}
-                        onReactivate={handleReactivate}
+                        onSuspend={requestSuspendBuyer}
+                        onReactivate={requestReactivateBuyer}
                         busy={busyId === buyer.id}
                       />
                     </td>
@@ -1025,9 +1030,67 @@ export default function AdminBuyersPage() {
       <BuyerDetailModal
         buyer={detailBuyer}
         onClose={() => setDetailBuyer(null)}
-        onSuspend={handleSuspend}
-        onReactivate={handleReactivate}
+        onSuspend={requestSuspendBuyer}
+        onReactivate={requestReactivateBuyer}
         busy={detailBuyer && busyId === detailBuyer.id}
+      />
+
+      <ConfirmModal
+        open={statusConfirm != null}
+        title={
+          statusConfirm?.kind === 'suspend'
+            ? 'Suspend buyer?'
+            : statusConfirm?.kind === 'reactivate'
+              ? 'Reactivate buyer?'
+              : statusConfirm?.nextStatus === 'suspended'
+                ? 'Suspend selected buyers?'
+                : 'Reactivate selected buyers?'
+        }
+        message={
+          statusConfirm?.kind === 'suspend'
+            ? `${statusConfirm.buyer.fullName} will not be able to place new orders until reactivated.`
+            : statusConfirm?.kind === 'reactivate'
+              ? `Restore full access for ${statusConfirm.buyer.fullName}?`
+              : statusConfirm?.nextStatus === 'suspended'
+                ? `Suspend ${statusConfirm.ids.length} selected buyer${statusConfirm.ids.length > 1 ? 's' : ''}? They will not be able to place new orders until reactivated.`
+                : `Reactivate ${statusConfirm?.ids?.length ?? 0} selected buyer${(statusConfirm?.ids?.length ?? 0) > 1 ? 's' : ''} and restore full access?`
+        }
+        variant={
+          statusConfirm?.kind === 'reactivate' ||
+          (statusConfirm?.kind === 'bulk' && statusConfirm.nextStatus === 'active')
+            ? 'primary'
+            : 'danger'
+        }
+        confirmLabel={
+          statusConfirm?.kind === 'reactivate'
+            ? 'Reactivate'
+            : statusConfirm?.kind === 'bulk'
+              ? statusConfirm.nextStatus === 'active'
+                ? 'Reactivate'
+                : 'Suspend'
+              : 'Suspend'
+        }
+        confirmLoadingLabel={
+          statusConfirm?.kind === 'reactivate'
+            ? 'Reactivating...'
+            : statusConfirm?.kind === 'bulk'
+              ? statusConfirm.nextStatus === 'active'
+                ? 'Reactivating...'
+                : 'Suspending...'
+              : 'Suspending...'
+        }
+        cancelLabel="Cancel"
+        loading={
+          (statusConfirm?.kind === 'bulk' && bulkBusy) ||
+          (statusConfirm?.kind !== 'bulk' &&
+            statusConfirm?.buyer?.id != null &&
+            busyId === statusConfirm.buyer.id)
+        }
+        onCancel={() => {
+          if (bulkBusy || busyId) return
+          setStatusConfirm(null)
+        }}
+        onConfirm={handleStatusConfirm}
       />
     </div>
   )

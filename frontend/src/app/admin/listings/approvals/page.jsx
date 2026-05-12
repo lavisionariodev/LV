@@ -17,6 +17,7 @@ import {
   PENDING_CHANGE_KEYS,
 } from '@/lib/seller-listings/pendingChanges'
 import { formatCount } from '@/shared/utils/formatCount'
+import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 
 /** `seller_avatar_url` comes from listSellerListingsForAdmin (batch `profiles.avatar_url`). */
 function SellerAvatarMark({ src, initialsSource, listingStyles: styleMod }) {
@@ -819,6 +820,7 @@ export default function AdminListingsApprovalsPage() {
   const [rejectReason, setRejectReason] = useState('')
   const [rejectError, setRejectError] = useState(null)
   const [viewingRow, setViewingRow] = useState(null)
+  const [approveConfirmRow, setApproveConfirmRow] = useState(null)
 
   const stagedRows = useMemo(
     () => approvedApproved.filter((row) => hasPendingSellerChanges(row)),
@@ -861,7 +863,13 @@ export default function AdminListingsApprovalsPage() {
     }
   }, [])
 
-  const handleApprove = async (row) => {
+  const openApproveConfirm = (row) => {
+    if (!row?.id) return
+    setRejectError(null)
+    setApproveConfirmRow(row)
+  }
+
+  const performApproveListing = async (row) => {
     if (!row?.id) return
     setRejectError(null)
     setModerationBusyId(row.id)
@@ -1136,7 +1144,7 @@ export default function AdminListingsApprovalsPage() {
             emptyTitle="Nothing pending approval"
             emptyText="No listings are currently awaiting first-time approval."
             moderationBusyId={moderationBusyId}
-            onApprove={handleApprove}
+            onApprove={openApproveConfirm}
             onReject={handleStartReject}
             onViewDetails={setViewingRow}
             accentClass={pendingRows.length > 0 ? styles.reviewPanelAccentNew : ''}
@@ -1151,7 +1159,7 @@ export default function AdminListingsApprovalsPage() {
             emptyTitle="No staged updates"
             emptyText="No sellers have pending edits to approved listings."
             moderationBusyId={moderationBusyId}
-            onApprove={handleApprove}
+            onApprove={openApproveConfirm}
             onReject={handleStartReject}
             onViewDetails={setViewingRow}
             accentClass={stagedRows.length > 0 ? styles.reviewPanelAccentStaged : ''}
@@ -1172,6 +1180,36 @@ export default function AdminListingsApprovalsPage() {
       <ViewDetailsModal
         row={viewingRow}
         onClose={() => setViewingRow(null)}
+      />
+
+      <ConfirmModal
+        open={approveConfirmRow != null}
+        variant="primary"
+        title="Approve listing?"
+        message={
+          approveConfirmRow
+            ? hasPendingSellerChanges(approveConfirmRow)
+              ? `Publish staged changes for "${approveConfirmRow.listing_name || 'Untitled'}"? Updated fields will go live on the shop for families to see.`
+              : `Approve "${approveConfirmRow.listing_name || 'Untitled'}" for the public shop? Sellers can receive bookings once it is active.`
+            : ''
+        }
+        subtitleAlign="left"
+        confirmLabel="Approve"
+        confirmLoadingLabel="Approving..."
+        cancelLabel="Cancel"
+        loading={Boolean(approveConfirmRow && moderationBusyId === approveConfirmRow.id)}
+        onCancel={() => {
+          if (moderationBusyId) return
+          setApproveConfirmRow(null)
+        }}
+        onConfirm={async () => {
+          if (!approveConfirmRow) return
+          try {
+            await performApproveListing(approveConfirmRow)
+          } finally {
+            setApproveConfirmRow(null)
+          }
+        }}
       />
     </div>
   )

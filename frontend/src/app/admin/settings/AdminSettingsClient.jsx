@@ -23,6 +23,7 @@ import { useMediaQuery } from '@/shared/hooks'
 import { useSiteContent, upsertSiteContent } from '@/lib/siteContent/client'
 import { useToast } from '@/contexts/ToastContext'
 import { normalizeSettingsTab } from './adminSettingsTabs'
+import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Constants
@@ -1577,6 +1578,7 @@ export default function AdminSettingsClient() {
   const [personalStatus, setPersonalStatus] = useState('')
   const [personalError, setPersonalError] = useState('')
   const [avatarLoading, setAvatarLoading] = useState(false)
+  const [removeAvatarConfirmOpen, setRemoveAvatarConfirmOpen] = useState(false)
 
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -1706,7 +1708,12 @@ export default function AdminSettingsClient() {
     }
   }
 
-  const onRemoveAvatar = async () => {
+  const openRemoveAvatarConfirm = () => {
+    if (!profile || (!profile.avatarPath && !profile.avatarUrl)) return
+    setRemoveAvatarConfirmOpen(true)
+  }
+
+  const executeRemoveAvatar = async () => {
     setPersonalError('')
     setPersonalStatus('')
     if (!profile || (!profile.avatarPath && !profile.avatarUrl)) return
@@ -2092,7 +2099,7 @@ export default function AdminSettingsClient() {
                         <button
                           type="button"
                           className={styles.dangerBtn}
-                          onClick={onRemoveAvatar}
+                          onClick={openRemoveAvatarConfirm}
                           disabled={avatarLoading}
                           style={{ fontSize: '11px' }}
                         >
@@ -2311,6 +2318,29 @@ export default function AdminSettingsClient() {
 
         {activeTab === 'content' && <AdminSiteContentPanel />}
       </div>
+
+      <ConfirmModal
+        open={removeAvatarConfirmOpen}
+        variant="danger"
+        title="Remove profile avatar?"
+        message="Your profile photo will be cleared from storage and no longer shown in admin. You can upload a new photo anytime."
+        confirmLabel="Remove"
+        confirmLoadingLabel="Removing..."
+        cancelLabel="Cancel"
+        loading={avatarLoading}
+        subtitleAlign="left"
+        onCancel={() => {
+          if (avatarLoading) return
+          setRemoveAvatarConfirmOpen(false)
+        }}
+        onConfirm={async () => {
+          try {
+            await executeRemoveAvatar()
+          } finally {
+            setRemoveAvatarConfirmOpen(false)
+          }
+        }}
+      />
     </div>
   )
 }
