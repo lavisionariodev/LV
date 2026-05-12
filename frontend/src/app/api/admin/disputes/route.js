@@ -35,31 +35,49 @@ export async function GET() {
   const list = rows ?? []
   const orderIds = [...new Set(list.map((r) => r.order_id).filter(Boolean))]
   const userIds = [...new Set([...list.map((r) => r.buyer_id), ...list.map((r) => r.seller_user_id)].filter(Boolean))]
+  const sellerUserIds = [...new Set(list.map((r) => r.seller_user_id).filter(Boolean))]
 
   const { data: orders } =
     orderIds.length > 0
       ? await supabaseAdmin.from('orders').select('id,order_number,contact_name').in('id', orderIds)
       : { data: [] }
 
-  const { data: profiles } =
-    userIds.length > 0
-      ? await supabaseAdmin.from('profiles').select('id,full_name,email').in('id', userIds)
-      : { data: [] }
+  const [{ data: profiles }, { data: sellerRows }] = await Promise.all([
+    userIds.length
+      ? supabaseAdmin.from('profiles').select('id,full_name,email').in('id', userIds)
+      : Promise.resolve({ data: [] }),
+    sellerUserIds.length
+      ? supabaseAdmin.from('sellers').select('user_id,business_name,email').in('user_id', sellerUserIds)
+      : Promise.resolve({ data: [] }),
+  ])
 
   const orderMap = Object.fromEntries((orders ?? []).map((o) => [o.id, o]))
   const profileMap = Object.fromEntries((profiles ?? []).map((p) => [p.id, p]))
+  const sellerShopByUserId = Object.fromEntries(
+    (sellerRows ?? []).map((s) => [s.user_id, s]),
+  )
 
   const mapped = list.map((d) => {
     const ord = orderMap[d.order_id]
     const buyer = profileMap[d.buyer_id]
-    const seller = profileMap[d.seller_user_id]
+    const sellerPerson = profileMap[d.seller_user_id]
+    const shop = sellerShopByUserId[d.seller_user_id]
+    const shopName = String(shop?.business_name || '').trim()
+    const shopEmail = String(shop?.email || '').trim()
     const orderRef = ord?.order_number || String(d.order_id).slice(0, 8)
     const complainantName = buyer?.full_name || buyer?.email || 'Buyer'
-    const respondentName = seller?.full_name || seller?.email || 'Seller'
+    const respondentName =
+      shopName ||
+      shopEmail ||
+      sellerPerson?.full_name ||
+      sellerPerson?.email ||
+      'Seller'
     return {
       id: d.id,
       orderRef,
       orderId: d.order_id,
+      buyerId: d.buyer_id,
+      sellerUserId: d.seller_user_id,
       complainantName,
       respondentName,
       reason: d.reason,

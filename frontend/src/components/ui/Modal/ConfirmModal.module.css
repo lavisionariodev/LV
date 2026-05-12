@@ -64,6 +64,11 @@
   color: #d97706;
 }
 
+.iconCircleNeutral {
+  background: #f1f5f9;
+  color: #475569;
+}
+
 .iconCircle svg {
   display: block;
 }
@@ -239,6 +244,12 @@
   border: 1px solid #d97706;
   background: #d97706;
   box-shadow: 0 10px 22px rgba(217, 119, 6, 0.28);
+}
+
+.confirmBtnNeutral {
+  border: 1px solid #64748b;
+  background: #475569;
+  box-shadow: 0 10px 22px rgba(71, 85, 105, 0.28);
 }
 
 .confirmBtn:hover:not(:disabled) {

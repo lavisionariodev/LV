@@ -168,17 +168,6 @@ export async function GET(request) {
     if (from && dateStr && dateStr < from) continue
     if (to && dateStr && dateStr > to) continue
 
-    const orderLabel = ord.order_number || ord.id
-    const txnLabel = e.id
-    if (
-      q &&
-      !orderLabel.toLowerCase().includes(q) &&
-      !String(ord.id).toLowerCase().includes(q) &&
-      !txnLabel.toLowerCase().includes(q)
-    ) {
-      continue
-    }
-
     const sel = sellerByUserId.get(e.seller_user_id)
     const buyerId = ord.buyer_id
     const buyerEmail = emailByBuyer.get(buyerId) || ord.contact_email || ''
@@ -187,6 +176,20 @@ export async function GET(request) {
 
     const items = itemsByOrder.get(ord.id) ?? []
     const service = buildServiceLabel(items)
+
+    const orderLabel = ord.order_number || ord.id
+    const txnLabel = e.id
+    if (
+      q &&
+      !orderLabel.toLowerCase().includes(q) &&
+      !String(ord.id).toLowerCase().includes(q) &&
+      !String(txnLabel).toLowerCase().includes(q) &&
+      !String(buyerId || '').toLowerCase().includes(q) &&
+      !buyerName.toLowerCase().includes(q) &&
+      !buyerEmail.toLowerCase().includes(q)
+    ) {
+      continue
+    }
 
     normalized.push({
       id: e.id,

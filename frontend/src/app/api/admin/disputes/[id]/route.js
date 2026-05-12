@@ -80,11 +80,20 @@ export async function GET(_request, context) {
     .eq('id', d.buyer_id)
     .maybeSingle()
 
-  const { data: seller } = await supabaseAdmin
-    .from('profiles')
-    .select('id,full_name,email')
-    .eq('id', d.seller_user_id)
-    .maybeSingle()
+  const [{ data: seller }, { data: sellerShop }] = await Promise.all([
+    supabaseAdmin.from('profiles').select('id,full_name,email').eq('id', d.seller_user_id).maybeSingle(),
+    supabaseAdmin
+      .from('sellers')
+      .select('user_id,business_name,email')
+      .eq('user_id', d.seller_user_id)
+      .maybeSingle(),
+  ])
+
+  const shopName = String(sellerShop?.business_name || '').trim()
+  const shopEmail = String(sellerShop?.email || '').trim()
+  const respondentName =
+    shopName || shopEmail || seller?.full_name || seller?.email || 'Seller'
+  const respondentEmail = shopEmail || (!sellerShop ? seller?.email || '' : '')
 
   const attachments = await buildAttachments(supabaseAdmin, d.attachment_paths ?? [])
 
@@ -100,8 +109,8 @@ export async function GET(_request, context) {
         orderContactName: ord?.contact_name,
         complainantName: buyer?.full_name || buyer?.email || 'Buyer',
         complainantEmail: buyer?.email || '',
-        respondentName: seller?.full_name || seller?.email || 'Seller',
-        respondentEmail: seller?.email || '',
+        respondentName,
+        respondentEmail,
         reason: d.reason,
         description: d.description || '',
         status: d.status,

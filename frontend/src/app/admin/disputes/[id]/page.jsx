@@ -23,7 +23,8 @@ function disputeStatusConfirmVariant(current, next) {
   const ci = DISPUTE_STAGE_ORDER[current] ?? -1
   const ni = DISPUTE_STAGE_ORDER[next] ?? -1
   if (ni < ci) return 'danger'
-  if (next === 'resolved' || next === 'closed') return 'primary'
+  if (next === 'closed') return 'neutral'
+  if (next === 'resolved') return 'primary'
   return 'warning'
 }
 
@@ -364,7 +365,7 @@ export default function AdminDisputeDetailPage() {
                 </div>
                 <span className={styles.partyName}>{dispute.respondentName}</span>
                 <span className={styles.partyMeta}>
-                  Seller{dispute.respondentEmail ? ` · ${dispute.respondentEmail}` : ''}
+                  Shop{dispute.respondentEmail ? ` · ${dispute.respondentEmail}` : ''}
                 </span>
               </div>
             </div>
