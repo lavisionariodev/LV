@@ -265,6 +265,15 @@ export async function upsertSellerForUser(user, payload) {
         ? String(existing.cover_photo_url).trim()
         : null;
 
+  const turnaround =
+    payload.turnaround !== undefined
+      ? payload.turnaround == null || !String(payload.turnaround).trim()
+        ? null
+        : String(payload.turnaround).trim().slice(0, 160)
+      : existing?.turnaround != null && String(existing.turnaround).trim()
+        ? String(existing.turnaround).trim().slice(0, 160)
+        : null;
+
   const sellerData = {
     user_id: user.id,
     email: payload.email || user.email || null,
@@ -285,6 +294,7 @@ export async function upsertSellerForUser(user, payload) {
       : [],
     social_links: socialLinks,
     cover_photo_url: coverPhotoUrl,
+    turnaround,
     // documents field is not yet in schema (future update)
     // documents: payload.documents || null,
   };

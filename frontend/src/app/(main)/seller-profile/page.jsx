@@ -12,6 +12,7 @@ import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/contexts/ToastContext'
 import ContactSellerModal from '@/components/ui/Modal/ContactSellerModal'
+import { providerServiceAggPairSegments } from '@/lib/ratings/providerServiceAggPairSegments'
 import styles from './seller-profile.module.css'
 
 // ─── Sample Data ──────────────────────────────────────────────────────────────
@@ -30,6 +31,9 @@ const SAMPLE_SELLER = {
   reviewCount: 87,
   memberSince: 'Mar 2020',
   turnaround: '24 hours',
+  /** Marketplace row: `active` = admin-approved (see `sellers.status`). */
+  sellerStatus: 'active',
+  verifiedSeller: true,
   specialties: ['Traditional Funeral Rites', 'Memorial Planning', 'Casket & Urn Selection', 'Embalming Services', 'Cremation', 'Lifestream / Online Wake'],
   extendedBio:
     'Sereno Memorial Services has been a trusted partner to Filipino families during their most difficult moments since 2003. Founded by the Sereno family, our team of licensed funeral directors and grief support staff are available around the clock. We believe every life deserves a meaningful farewell, and we work closely with each family to honour the unique story of their loved one — from traditional Catholic rites to contemporary celebration-of-life ceremonies.',
@@ -147,23 +151,19 @@ const SAMPLE_REVIEWS = [
 ]
 
 /**
- * When `?seller=<uuid>` loads a real storefront, UI fields backed only by SAMPLE_* /
- * seeded reviews (nothing in DB yet — see docs below).
+ * When `?seller=<uuid>` loads a real storefront, remaining placeholders are documented below.
  */
-/** Fields still SAMPLE_* / mock for `?seller=<uuid>` (real data comes via Supabase `get_active_shop_listings` only — no Next.js API route). */
+/** Notes on seller-profile data sources (see `buildSellerViewModel` + `resolved` in this file). */
 export const MOCK_SELLER_PROFILE_FIELDS = /** @type {const} */ ([
-  'bannerUrl',
-  'badge — "Top Provider" only when this seller is #1 by avg rating in `get_active_partners_directory` (ties: review count, id)',
-  'rating',
-  'reviewCount',
-  'turnaround',
-  'avatarUrl — profiles.avatar_url via `get_active_shop_listings.seller_avatar_url` (SECURITY DEFINER)',
-  'Verified chip — always shown; not wired to sellers row',
-  'reviews tab — SAMPLE_REVIEWS until order reviews ship',
-  'listing.rating — per-card sort placeholder (not persisted per listing)',
-  'specialties — sellers.specialties via RPC (`seller_specialties`); fallback to dedup listing package-option labels when empty',
-  'Real from RPC (migration 078+ includes avatar): name, location, listings, sellers.username (@handle), tagline (`seller_tagline`), business_info about (`seller_business_info`), member since (`seller_business_started_at`), specialties (`seller_specialties`), seller_avatar_url',
-  'No listings: same fields via `get_public_seller_profile` (active sellers only) when catalog has no rows for `?seller=`',
+  'bannerUrl — sample hero image only (not from DB; intentional)',
+  'badge — "Top Provider" when #1 in `get_active_partners_directory` by avg rating',
+  'rating / reviewCount (header) — `/api/seller/:id/reviews` aggregates when `?seller=` is UUID',
+  'turnaround — `sellers.turnaround` via shop + public profile RPCs (migration 097+)',
+  'verified chip — `sellers.status === active` (admin-approved marketplace seller)',
+  'listing.rating — `/api/ratings/aggregates` per listing pair when `?seller=` is UUID',
+  'specialties — sellers.specialties via RPC; fallback to listing package-option labels',
+  'Real from RPC: name, location, listings, username, tagline, business_info, member since, avatar, social_links',
+  'No listings: same storefront fields via `get_public_seller_profile` (active sellers only)',
 ])
 
 /**
@@ -193,6 +193,12 @@ function providerFromPublicSellerProfileRow(row) {
   const sellerAvatarUrl =
     typeof avatarRaw === 'string' && avatarRaw.trim() ? avatarRaw.trim() : null
   const socialLinks = row.seller_social_links ?? row.sellerSocialLinks ?? {}
+  const statusRaw = row.seller_status ?? row.sellerStatus
+  const sellerStatus =
+    typeof statusRaw === 'string' && statusRaw.trim() ? statusRaw.trim().toLowerCase() : 'active'
+  const turnaroundRaw = row.seller_turnaround ?? row.sellerTurnaround
+  const turnaround =
+    typeof turnaroundRaw === 'string' && turnaroundRaw.trim() ? turnaroundRaw.trim() : null
   const name =
     typeof row.business_name === 'string' && row.business_name.trim()
       ? row.business_name.trim()
@@ -214,6 +220,8 @@ function providerFromPublicSellerProfileRow(row) {
     tagline,
     specialties,
     socialLinks,
+    sellerStatus,
+    turnaround,
   }
 }
 
@@ -300,6 +308,22 @@ function buildSellerViewModel(sellerUserId, shopRows, publicProfileRow) {
     taglineFromSeller ||
     (businessInfoFull ? teaserFromBusinessDescription(businessInfoFull) : undefined)
 
+  const turnaroundCandidates = []
+  for (const r of rows) {
+    const t = r?.provider?.turnaround
+    if (typeof t === 'string' && t.trim()) turnaroundCandidates.push(t.trim())
+  }
+  const provTurn =
+    typeof prov?.turnaround === 'string' && prov.turnaround.trim() ? prov.turnaround.trim() : null
+  const turnaround = turnaroundCandidates[0] ?? provTurn ?? null
+
+  const statusFromRow =
+    typeof rows[0]?.provider?.sellerStatus === 'string' ? rows[0].provider.sellerStatus.trim() : ''
+  const statusFromProv =
+    typeof prov?.sellerStatus === 'string' ? prov.sellerStatus.trim() : ''
+  const sellerStatus = (statusFromRow || statusFromProv || 'active').toLowerCase()
+  const verifiedSeller = sellerStatus === 'active'
+
   return {
     id: sellerUserId,
     name,
@@ -311,7 +335,9 @@ function buildSellerViewModel(sellerUserId, shopRows, publicProfileRow) {
     rating: SAMPLE_SELLER.rating,
     reviewCount: SAMPLE_SELLER.reviewCount,
     memberSince,
-    turnaround: SAMPLE_SELLER.turnaround,
+    turnaround,
+    sellerStatus,
+    verifiedSeller,
     specialties:
       specialtiesFromSeller.length > 0
         ? specialtiesFromSeller
@@ -324,19 +350,15 @@ function buildSellerViewModel(sellerUserId, shopRows, publicProfileRow) {
   }
 }
 
-function listingsFromShopRows(shopRows) {
-  const fallbackRating = SAMPLE_SELLER.rating
-  return (shopRows ?? []).map((row) => ({
-    id: row.id,
-    serviceId: row.serviceId,
-    name: row.name,
-    price: row.price,
-    rating: fallbackRating,
-    inStock: row.inStock,
-    imageUrl: row.imageUrl,
-    imageUrls: row.imageUrls,
-    createdAt: row.createdAt,
-  }))
+function listingsFromShopRows(shopRows, aggregatesByPair = {}) {
+  return (shopRows ?? []).map((row) => {
+    const pair = providerServiceAggPairSegments(row)
+    const agg = pair && aggregatesByPair?.[pair.lookup] ? aggregatesByPair[pair.lookup] : null
+    const avg = agg?.avgRating
+    const rating =
+      avg != null && Number.isFinite(Number(avg)) ? Number(Number(avg).toFixed(1)) : null
+    return { ...row, rating }
+  })
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -348,6 +370,8 @@ function formatPhp(amount) {
 // ─── Star Helper ──────────────────────────────────────────────────────────────
 
 function StarRow({ rating, size = 11 }) {
+  const n = Number(rating)
+  const rounded = Number.isFinite(n) ? Math.round(n) : 0
   return (
     <div className={styles.reviewStars}>
       {[1, 2, 3, 4, 5].map((s) => (
@@ -356,7 +380,7 @@ function StarRow({ rating, size = 11 }) {
           width={size}
           height={size}
           viewBox="0 0 12 12"
-          fill={s <= Math.round(rating) ? '#E8A020' : '#ddd'}
+          fill={s <= rounded ? '#E8A020' : '#ddd'}
         >
           <path d="M6 1l1.35 2.73L10.5 4.2l-2.25 2.19.53 3.1L6 7.9l-2.78 1.6.53-3.1L1.5 4.2l3.15-.47z" />
         </svg>
@@ -391,6 +415,7 @@ function SellerProfileView({
   listings = SAMPLE_LISTINGS,
   reviews  = SAMPLE_REVIEWS,
 }) {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState('listings')
   const [sortBy, setSortBy] = useState('newest')
   const [currentPage, setCurrentPage] = useState(1)
@@ -405,7 +430,11 @@ function SellerProfileView({
       : [...listings]
     if (sortBy === 'price-asc') filtered.sort((a, b) => a.price - b.price)
     else if (sortBy === 'price-desc') filtered.sort((a, b) => b.price - a.price)
-    else if (sortBy === 'rating') filtered.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+    else if (sortBy === 'rating') {
+      filtered.sort(
+        (a, b) => (b.rating != null ? b.rating : -1) - (a.rating != null ? a.rating : -1),
+      )
+    }
     else filtered.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
     return filtered
   }, [listings, sortBy, searchQuery])
@@ -470,7 +499,9 @@ function SellerProfileView({
                 {seller?.badge && (
                   <span className={styles.badgeChip}>{seller.badge}</span>
                 )}
-                <span className={`${styles.badgeChip} ${styles.verifiedChip}`}>Verified</span>
+                {seller?.verifiedSeller ? (
+                  <span className={`${styles.badgeChip} ${styles.verifiedChip}`}>Verified</span>
+                ) : null}
               </div>
               <div className={styles.locationRow}>
                 <PinIcon />
@@ -491,11 +522,19 @@ function SellerProfileView({
                 </svg>
                 Message
               </button>
-              <button className={styles.btnInquire} type="button">
+              <button
+                className={styles.btnInquire}
+                type="button"
+                onClick={() => {
+                  const id = seller?.id != null ? String(seller.id).trim() : ''
+                  if (!id) return
+                  router.push(`/shop?seller=${encodeURIComponent(id)}`)
+                }}
+              >
                 <svg viewBox="0 0 14 14" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M7 1v6M4 4l3-3 3 3M1 9v2a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V9" />
                 </svg>
-                Inquire / Book
+                Inquire Now
               </button>
             </div>
           </div>
@@ -967,6 +1006,37 @@ export default function SellerProfilePage() {
     return allShopListings.filter((l) => String(l.providerId).toLowerCase() === id)
   }, [realSellerId, allShopListings])
 
+  const [pairAggregates, setPairAggregates] = useState({})
+
+  useEffect(() => {
+    if (!realSellerId) return
+    const rows = shopRowsForSeller
+    if (!rows.length) return
+    let cancelled = false
+    const pairKeys = [
+      ...new Set(rows.map((l) => providerServiceAggPairSegments(l)?.api).filter(Boolean)),
+    ]
+    if (!pairKeys.length) return
+    const qs = new URLSearchParams()
+    qs.set('pairs', pairKeys.join(','))
+    fetch(`/api/ratings/aggregates?${qs.toString()}`, { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((body) => {
+        if (cancelled) return
+        const next =
+          body?.aggregatesByPair && typeof body.aggregatesByPair === 'object'
+            ? body.aggregatesByPair
+            : {}
+        setPairAggregates(next)
+      })
+      .catch(() => {
+        if (!cancelled) setPairAggregates({})
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [realSellerId, shopRowsForSeller])
+
   const resolved = useMemo(() => {
     if (!realSellerId) {
       return { seller: SAMPLE_SELLER, listings: SAMPLE_LISTINGS, reviews: SAMPLE_REVIEWS }
@@ -987,7 +1057,7 @@ export default function SellerProfilePage() {
         reviewCount,
         badge: showTopProviderBadge ? 'Top Provider' : null,
       },
-      listings: listingsFromShopRows(shopRowsForSeller),
+      listings: listingsFromShopRows(shopRowsForSeller, pairAggregates),
       reviews: Array.isArray(sellerReviewsPayload?.reviews) ? sellerReviewsPayload.reviews : [],
     }
   }, [
@@ -996,6 +1066,7 @@ export default function SellerProfilePage() {
     publicSellerProfile,
     sellerReviewsPayload,
     topRatedSellerUserId,
+    pairAggregates,
   ])
 
   if (realSellerId && loading) {

@@ -49,6 +49,7 @@ function mapSellerToShopForm(sellerRow, profile, sessionEmail) {
     businessStartedAt: sellerRow?.business_started_at
       ? String(sellerRow.business_started_at).slice(0, 10)
       : '',
+    shopTurnaround: typeof sellerRow?.turnaround === 'string' ? sellerRow.turnaround : '',
     socialPhoneEnabled: Boolean(socials.phone),
     socialPhone: socials.phone,
     socialWhatsappEnabled: Boolean(socials.whatsapp),
@@ -79,6 +80,9 @@ function validateShopForm(form) {
   if (!form.email.trim()) return 'Please enter a business email.'
   if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) return 'Please enter a valid email format.'
   if (!form.businessStartedAt?.trim()) return 'Please select when your business began operations.'
+
+  const turn = String(form.shopTurnaround ?? '').trim()
+  if (turn.length > 160) return 'Typical response time must be 160 characters or fewer.'
 
   const socialLinks = normalizeSellerSocialLinks({
     phone: form.socialPhoneEnabled ? form.socialPhone : '',
@@ -434,6 +438,7 @@ export default function SellerSettingsClient() {
         specialties: shopForm.shopSpecialties ?? '',
         address: shopForm.address.trim(),
         businessStartedAt: shopForm.businessStartedAt.trim(),
+        turnaround: shopForm.shopTurnaround?.trim() ? shopForm.shopTurnaround.trim() : '',
         status: seller?.status ?? 'pending',
         registeredAt: seller?.registered_at,
         socialLinks,
@@ -894,6 +899,24 @@ export default function SellerSettingsClient() {
                       />
                       <p className={styles.shopGridHint}>
                         Short summary under your stats — separate from the full &quot;Business description&quot; (About tab). Maximum 500 characters.
+                      </p>
+                    </div>
+                    <div className={`${styles.shopGridField} ${styles.shopFieldGridFull}`}>
+                      <label htmlFor={shopId('turnaround')} className={styles.shopGridLabel}>
+                        Typical response / lead time
+                      </label>
+                      <input
+                        id={shopId('turnaround')}
+                        type="text"
+                        value={shopForm.shopTurnaround}
+                        onChange={(e) => onShopFieldChange('shopTurnaround', e.target.value)}
+                        className={`${styles.input} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
+                        disabled={!isEditingShop || !canEditShop}
+                        placeholder='e.g. "Within 24 hours", "Same day", "1–2 business days"'
+                        maxLength={160}
+                      />
+                      <p className={styles.shopGridHint}>
+                        Optional. Shown on your public seller profile as average turnaround (buyers know how quickly you usually reply or start service).
                       </p>
                     </div>
                   </div>
