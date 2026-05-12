@@ -1188,6 +1188,55 @@
   gap: 0.65rem;
 }
 
+.declineConfirmActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.declineConfirmSecondary,
+.declineConfirmDanger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.declineConfirmSecondary {
+  color: var(--color-text-primary);
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+}
+
+.declineConfirmSecondary:hover:not(:disabled) {
+  background: #f8fafc;
+}
+
+.declineConfirmDanger {
+  color: #ffffff;
+  background: #b42318;
+  border: 1px solid #b42318;
+}
+
+.declineConfirmDanger:hover:not(:disabled) {
+  background: #991b1b;
+  border-color: #991b1b;
+}
+
+.declineConfirmSecondary:disabled,
+.declineConfirmDanger:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 .updateStatusBtn {
   display: flex;
   align-items: center;

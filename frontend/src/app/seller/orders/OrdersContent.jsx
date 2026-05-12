@@ -82,7 +82,16 @@ function sellerPaymentBadge(paymentStatus) {
 }
 
 function isPaidOrder(order) {
-  return order?.paymentStatus === 'paid' || order?.paymentStatus === 'refund_pending'
+  return order?.paymentStatus === 'paid'
+}
+
+function canDeclineOrder(order) {
+  return (
+    isPaidOrder(order) &&
+    order?.orderStatus !== 'completed' &&
+    order?.refundStage !== 'requested' &&
+    order?.refundStage !== 'processing'
+  )
 }
 
 function paymentMethodLabel(payment) {
@@ -254,6 +263,8 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [orderForUpdateStatus, setOrderForUpdateStatus] = useState(null)
   const [showUpdateStatus, setShowUpdateStatus] = useState(false)
+  const [declineOrder, setDeclineOrder] = useState(null)
+  const [declineBusy, setDeclineBusy] = useState(false)
   const [orders, setOrders] = useState([])
   const [ordersReady, setOrdersReady] = useState(false)
   const [orderNotice, setOrderNotice] = useState(null)
@@ -577,14 +588,46 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
   }
 
   const handleDeclineOrder = (order) => {
-    if (isPaidOrder(order)) {
-      showOrderNotice('error', 'Paid orders cannot be declined here. Handle them through the refund flow.')
+    if (!canDeclineOrder(order)) {
+      showOrderNotice('error', 'Only paid non-completed orders can be declined for automatic refund.')
       return
     }
-    handleUpdateStatus(order, 'cancelled')
+    setShowUpdateStatus(false)
+    setOrderForUpdateStatus(null)
+    setDeclineOrder(order)
+  }
+
+  const handleConfirmDeclineOrder = async () => {
+    if (!declineOrder || declineBusy) return
+    setDeclineBusy(true)
+    try {
+      const res = await fetch('/api/seller/orders/decline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: declineOrder.id }),
+      })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) {
+        showOrderNotice('error', body?.error || 'Unable to decline this order. Please try again.')
+        return
+      }
+      await loadOrders()
+      setSelectedOrder((prev) => (prev?.id === declineOrder.id ? null : prev))
+      setDeclineOrder(null)
+      clearOrderDeepLinkParams()
+      showOrderNotice('success', 'Order declined. The buyer refund has been initiated.')
+    } catch (err) {
+      showOrderNotice('error', err?.message || 'Unable to decline this order. Please try again.')
+    } finally {
+      setDeclineBusy(false)
+    }
   }
 
   const handleUpdateStatus = async (order, newStatus) => {
+    if (newStatus === 'cancelled') {
+      handleDeclineOrder(order)
+      return
+    }
     try {
       // Only fulfillment statuses are persisted via the API.
       if (['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'].includes(newStatus)) {
@@ -1085,12 +1128,12 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                           <TbCheck size={16} />
                         </button>
                       )}
-                      {order.orderStatus === 'pending' && order.paymentStatus !== 'paid' && (
+                      {canDeclineOrder(order) && (
                         <button
                           type="button"
                           className={`${styles.btnIcon} ${styles.btnIconDecline} ${styles.hideOnMobile}`}
                           onClick={() => handleDeclineOrder(order)}
-                          title="Decline unpaid order"
+                          title="Decline and refund"
                         >
                           <TbCircleX size={16} />
                         </button>
@@ -1495,7 +1538,7 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                   { status: 'completed', label: 'Completed', icon: TbCircleCheck, iconClass: styles.updateStatusBtnIconCompleted, btnClass: styles.updateStatusBtnCompleted },
                   { status: 'cancelled', label: 'Decline', icon: TbCircleX, iconClass: styles.updateStatusBtnIconDecline, btnClass: styles.updateStatusBtnDecline },
                 ]
-                  .filter((option) => option.status !== 'cancelled' || !isPaidOrder(orderForUpdateStatus))
+                  .filter((option) => option.status !== 'cancelled' || canDeclineOrder(orderForUpdateStatus))
                   .map(({ status, label, icon: Icon, iconClass, btnClass }) => (
                   <button
                     key={status}
@@ -1510,11 +1553,66 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
                   </button>
                 ))}
               </div>
-              {isPaidOrder(orderForUpdateStatus) ? (
+              {canDeclineOrder(orderForUpdateStatus) ? (
                 <p className={styles.updateStatusNote}>
-                  Paid orders cannot be declined here. Use the refund flow when cancellation requires returning funds.
+                  Declining this paid order will cancel the booking, refund the buyer, and prevent seller payout.
                 </p>
               ) : null}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {declineOrder && (
+        <div
+          className={styles.updateStatusWrap}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="decline-order-title"
+          onClick={() => {
+            if (!declineBusy) setDeclineOrder(null)
+          }}
+        >
+          <div className={styles.updateStatusCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.updateStatusHeader}>
+              <h2 id="decline-order-title" className={styles.updateStatusTitle}>
+                Decline and refund order
+              </h2>
+              <button
+                type="button"
+                className={styles.modalClose}
+                onClick={() => setDeclineOrder(null)}
+                disabled={declineBusy}
+                aria-label="Close"
+              >
+                <TbX size={22} />
+              </button>
+            </div>
+            <div className={styles.updateStatusBody}>
+              <p className={styles.updateStatusPrompt}>
+                Declining order <span className={styles.updateStatusOrderId}>{declineOrder.displayId || declineOrder.id}</span> will cancel the booking, initiate a buyer refund to the original payment method, and prevent seller payout for this order.
+              </p>
+              <p className={styles.updateStatusNote}>
+                Refund completion depends on the payment provider webhook. The order will stay refund pending until PayMongo confirms the refund.
+              </p>
+              <div className={styles.declineConfirmActions}>
+                <button
+                  type="button"
+                  className={styles.declineConfirmSecondary}
+                  onClick={() => setDeclineOrder(null)}
+                  disabled={declineBusy}
+                >
+                  Keep order
+                </button>
+                <button
+                  type="button"
+                  className={styles.declineConfirmDanger}
+                  onClick={handleConfirmDeclineOrder}
+                  disabled={declineBusy}
+                >
+                  {declineBusy ? 'Starting refund...' : 'Decline and refund buyer'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
