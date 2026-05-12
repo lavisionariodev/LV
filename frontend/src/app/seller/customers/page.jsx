@@ -9,109 +9,14 @@ import { useDebouncedEffect } from '@/shared/hooks'
 import { readString, replaceUrlQuery } from '@/lib/url/queryParams'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase/client'
+import {
+  aggregateSellerCustomers,
+  SELLER_CUSTOMER_ORDER_SELECT,
+} from '@/lib/seller/sellerOrderAnalytics'
 
 function formatDate(dateString) {
   if (!dateString) return '—'
   return new Date(dateString + 'T00:00:00').toLocaleDateString('en-PH', { dateStyle: 'medium' })
-}
-
-function sliceServiceDate(order) {
-  const raw = order.preferred_date || order.created_at
-  if (!raw) return null
-  return String(raw).slice(0, 10)
-}
-
-function fulfillmentLabel(fulfillmentStatus) {
-  switch (fulfillmentStatus) {
-    case 'confirmed':
-      return 'Confirmed'
-    case 'in_progress':
-      return 'In progress'
-    case 'completed':
-      return 'Completed'
-    case 'cancelled':
-      return 'Cancelled'
-    default:
-      return 'Pending'
-  }
-}
-
-function mapOrderToBooking(o) {
-  const items = o.order_items ?? []
-  const servicePackage =
-    items.length === 1
-      ? items[0].name
-      : items.length > 1
-        ? `${items.length} items`
-        : 'Booking'
-  const displayId = o.order_number || String(o.id).slice(0, 8)
-  const dateSlice = sliceServiceDate(o)
-
-  return {
-    id: o.id,
-    displayId,
-    servicePackage,
-    dateOfService: dateSlice || '',
-    location: o.service_location?.trim() || '—',
-    status: fulfillmentLabel(o.fulfillment_status),
-  }
-}
-
-function aggregateCustomers(rows) {
-  const byBuyer = new Map()
-
-  for (const o of rows) {
-    if (!o?.buyer_id) continue
-    let list = byBuyer.get(o.buyer_id)
-    if (!list) {
-      list = []
-      byBuyer.set(o.buyer_id, list)
-    }
-    list.push(o)
-  }
-
-  const out = []
-
-  for (const [buyerId, orders] of byBuyer) {
-    const sortedByCreatedDesc = [...orders].sort((a, b) => {
-      const ta = new Date(a.created_at).getTime()
-      const tb = new Date(b.created_at).getTime()
-      return tb - ta
-    })
-    const latest = sortedByCreatedDesc[0]
-    const name =
-      latest.contact_name?.trim() ||
-      latest.contact_email?.trim() ||
-      'Buyer'
-    const phone = latest.contact_phone?.trim() || '—'
-    const email = latest.contact_email?.trim() || '—'
-
-    const serviceDateStrs = orders
-      .map((order) => sliceServiceDate(order))
-      .filter(Boolean)
-      .sort()
-    const firstServiceDate = serviceDateStrs.length ? serviceDateStrs[0] : null
-    const lastServiceDate = serviceDateStrs.length ? serviceDateStrs[serviceDateStrs.length - 1] : null
-
-    const bookings = sortedByCreatedDesc.map(mapOrderToBooking)
-
-    out.push({
-      id: buyerId,
-      name,
-      phone,
-      email,
-      lastServiceDate,
-      firstServiceDate,
-      bookings,
-    })
-  }
-
-  out.sort((a, b) => {
-    const ad = (a.lastServiceDate || '').localeCompare(b.lastServiceDate || '')
-    return ad ? -ad : a.name.localeCompare(b.name)
-  })
-
-  return out
 }
 
 /**
@@ -147,6 +52,7 @@ function SellerCustomersPageContent() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { user, authLoading, isSeller } = useAuth()
+  const userId = user?.id
 
   const [customers, setCustomers] = useState([])
   const [customersLoading, setCustomersLoading] = useState(true)
@@ -160,18 +66,15 @@ function SellerCustomersPageContent() {
 
   const loadCustomers = useCallback(
     async ({ signal, showLoading = false } = {}) => {
-      if (!user?.id || !isSeller) return
+      if (!userId || !isSeller) return
 
       if (showLoading) setCustomersLoading(true)
       setCustomersError(null)
 
       const { data, error } = await supabase
         .from('orders')
-        .select(
-          'id,buyer_id,order_number,created_at,preferred_date,fulfillment_status,' +
-            'contact_name,contact_email,contact_phone,service_location,order_items(name,quantity)',
-        )
-        .eq('seller_user_id', user.id)
+        .select(SELLER_CUSTOMER_ORDER_SELECT)
+        .eq('seller_user_id', userId)
         .order('created_at', { ascending: false })
         .abortSignal?.(signal)
 
@@ -186,7 +89,7 @@ function SellerCustomersPageContent() {
         return
       }
 
-      const next = aggregateCustomers(data ?? [])
+      const next = aggregateSellerCustomers(data ?? [])
       setCustomers(next)
       hasLoadedOnce.current = true
       setCustomersLoading(false)
@@ -194,22 +97,28 @@ function SellerCustomersPageContent() {
       setSelectedCustomer((prev) => (prev ? next.find((c) => c.id === prev.id) ?? prev : null))
       setCustomerForMessage((prev) => (prev ? next.find((c) => c.id === prev.id) ?? prev : null))
     },
-    [user?.id, isSeller],
+    [userId, isSeller],
   )
 
   useEffect(() => {
     if (authLoading) return
     const controller = new AbortController()
 
-    if (!user?.id || !isSeller) {
-      setCustomers([])
-      setCustomersLoading(false)
-      setCustomersError(null)
-      hasLoadedOnce.current = false
+    if (!userId || !isSeller) {
+      queueMicrotask(() => {
+        setCustomers([])
+        setCustomersLoading(false)
+        setCustomersError(null)
+        hasLoadedOnce.current = false
+      })
       return () => controller.abort()
     }
 
-    loadCustomers({ signal: controller.signal, showLoading: true })
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) {
+        loadCustomers({ signal: controller.signal, showLoading: true })
+      }
+    })
 
     const onFocus = () => loadCustomers({ signal: controller.signal, showLoading: false })
     window.addEventListener('focus', onFocus)
@@ -225,11 +134,13 @@ function SellerCustomersPageContent() {
       window.removeEventListener('focus', onFocus)
       window.clearInterval(interval)
     }
-  }, [authLoading, user?.id, isSeller, loadCustomers])
+  }, [authLoading, userId, isSeller, loadCustomers])
 
   useEffect(() => {
     const nextQ = readString(searchParams, 'q', '')
-    if (nextQ !== searchQuery) setSearchQuery(nextQ)
+    if (nextQ !== searchQuery) {
+      queueMicrotask(() => setSearchQuery(nextQ))
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 

@@ -6,68 +6,98 @@ import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/contexts/ToastContext'
 import styles from './help.module.css'
 
-const CATEGORY_TABS = ['Getting Started', 'Orders & Shipping', 'Payments', 'Products', 'Usage Guides']
+const CATEGORY_TABS = [
+  'Getting Started',
+  'Bookings & Service Dates',
+  'Refunds & Disputes',
+  'Listings & Approval',
+  'Payouts & Escrow',
+  'Account & Compliance',
+]
 
 const FAQ_BY_TAB = {
   'Getting Started': [
     {
       id: 'gs_1',
-      question: 'What should I set up first as a new seller?',
-      answer: 'Complete your profile, payout method, shipping settings, and add your first 3 products.',
+      question: 'What should I complete before accepting bookings?',
+      answer:
+        'Finish seller onboarding, keep your business profile accurate, add payout details, upload required compliance documents, and submit service listings for admin approval.',
     },
     {
       id: 'gs_2',
-      question: 'How do I improve visibility quickly?',
-      answer: 'Use clear product titles, complete attributes, and upload high-quality images.',
-    },
-  ],
-  'Orders & Shipping': [
-    {
-      id: 'os_1',
-      question: 'How can I track my order?',
+      question: 'When can families book my services?',
       answer:
-        'Go to Orders, open the order details, and click the tracking number to view live delivery updates.',
-    },
-    {
-      id: 'os_2',
-      question: 'How can I cancel an order?',
-      answer: 'You can cancel before shipment from the order details page. The buyer is notified automatically.',
+        'Families can book approved listings once your seller account is active. Draft, rejected, or pending listings are not treated as bookable services.',
     },
   ],
-  Payments: [
+  'Bookings & Service Dates': [
     {
-      id: 'pay_1',
-      question: 'How do I withdraw my earnings?',
-      answer: 'Open Payments, select Withdraw, and confirm your payout account.',
+      id: 'book_1',
+      question: 'How do booking statuses work?',
+      answer:
+        'New paid bookings start as pending. Confirm the booking when you can serve the requested date, move it to in progress when preparation or service work begins, and mark it completed only after the service is fulfilled.',
     },
     {
-      id: 'pay_2',
-      question: 'Why is my payout pending?',
-      answer: 'Pending payouts are usually due to verification checks or bank processing windows.',
-    },
-  ],
-  Products: [
-    {
-      id: 'prod_1',
-      question: 'Why was my product rejected?',
-      answer: 'Rejections usually happen due to missing attributes, restricted content, or low image quality.',
-    },
-    {
-      id: 'prod_2',
-      question: 'How do I edit stock for multiple products?',
-      answer: 'Use the inventory table bulk edit tools to update quantity and status quickly.',
+      id: 'book_2',
+      question: 'What should I check before confirming a booking?',
+      answer:
+        'Review the requested service date, location, deceased details, family contact information, add-ons, and special notes. If you cannot fulfill the booking, decline it so the buyer refund process can start.',
     },
   ],
-  'Usage Guides': [
+  'Refunds & Disputes': [
     {
-      id: 'ug_1',
-      question: 'Where can I find platform usage guides?',
-      answer: 'Open Seller Help and browse Usage Guides for onboarding, operations, and marketing steps.',
+      id: 'refund_1',
+      question: 'What happens when I decline a paid booking?',
+      answer:
+        'Declining a non-completed paid booking cancels it and starts a buyer refund to the original payment method. The order is held out of seller payout while the payment provider processes the refund.',
     },
     {
-      id: 'ug_2',
-      question: 'How often are guides updated?',
-      answer: 'Guides are refreshed regularly whenever there are feature or policy changes.',
+      id: 'refund_2',
+      question: 'How should I handle buyer refund or help requests?',
+      answer:
+        'Open the order details from the Orders page, review the buyer reason and attachments, then approve, decline, or mark the request under review based on the case. Refund completion is finalized by the payment provider webhook.',
+    },
+  ],
+  'Listings & Approval': [
+    {
+      id: 'listing_1',
+      question: 'Why is my service listing pending or rejected?',
+      answer:
+        'Listings may wait for admin review when newly submitted or edited. Rejections usually mean required service details, pricing, images, or policy requirements need correction before families can book it.',
+    },
+    {
+      id: 'listing_2',
+      question: 'Can I edit an approved listing?',
+      answer:
+        'Yes. Changes to approved listings may create pending changes for review, so keep descriptions, package inclusions, images, and prices clear before submitting.',
+    },
+  ],
+  'Payouts & Escrow': [
+    {
+      id: 'escrow_1',
+      question: 'Why are paid bookings held in escrow?',
+      answer:
+        'Buyer payments are held while the service is pending, in progress, disputed, or refunding. Eligible completed bookings can move toward payout after platform commission and any holds are applied.',
+    },
+    {
+      id: 'escrow_2',
+      question: 'Where do I manage payout details?',
+      answer:
+        'Open Seller Settings, then Payouts, to keep bank or payment account details current. Incorrect payout details may delay release of eligible escrow funds.',
+    },
+  ],
+  'Account & Compliance': [
+    {
+      id: 'acct_1',
+      question: 'Which documents should I upload?',
+      answer:
+        'Upload the required business or compliance documents requested in Seller Settings. Admin may use these documents to verify your funeral service provider account.',
+    },
+    {
+      id: 'acct_2',
+      question: 'Why was I redirected to onboarding?',
+      answer:
+        'Seller accounts that are pending, rejected, suspended, or missing required approval steps may be routed to onboarding until the account is ready for the full seller portal.',
     },
   ],
 }
@@ -75,8 +105,8 @@ const FAQ_BY_TAB = {
 export default function SellerHelpPage() {
   const toast = useToast()
   const [query, setQuery] = useState('')
-  const [activeTab, setActiveTab] = useState('Orders & Shipping')
-  const [openFaqs, setOpenFaqs] = useState({ os_1: true })
+  const [activeTab, setActiveTab] = useState('Bookings & Service Dates')
+  const [openFaqs, setOpenFaqs] = useState({ book_1: true })
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false)
   const [emailSubject, setEmailSubject] = useState('Seller Help Request')
   const [emailMessage, setEmailMessage] = useState('')
@@ -150,7 +180,7 @@ export default function SellerHelpPage() {
           <TbSearch className={styles.searchIcon} />
           <input
             className={styles.searchInput}
-            placeholder="Search for help, orders, or issues"
+            placeholder="Search bookings, refunds, listings, payouts, or documents"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />

@@ -73,6 +73,7 @@ export const SELLER_NOTIFICATION_FILTER_TABS = [
   { id: 'all', label: 'All' },
   { id: 'unread', label: 'Unread' },
   { id: 'unresolved', label: 'Unresolved' },
+  { id: 'high', label: 'High priority' },
   { id: 'order', label: 'Orders' },
   { id: 'payment', label: 'Payments' },
   { id: 'listing', label: 'Listings' },

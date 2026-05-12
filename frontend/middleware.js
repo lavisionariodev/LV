@@ -2,7 +2,7 @@
  * Supabase auth middleware: refreshes session (token refresh) so cookies stay up to date.
  * OAuth code exchange is done in app/(auth)/auth/callback/route.js so cookies set correctly in production.
  *
- * Also: gates `/admin/**` to authenticated admin users (defense-in-depth; client guard remains).
+ * Also gates `/admin/**` and protected `/seller/**` routes (defense-in-depth; client guards remain).
  */
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
@@ -36,6 +36,13 @@ export async function middleware(request) {
 
   const { pathname } = request.nextUrl;
   const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");
+  const isSellerRoute = pathname === "/seller" || pathname.startsWith("/seller/");
+  const isPublicSellerRoute =
+    pathname === "/seller/login" ||
+    pathname === "/seller/signup" ||
+    pathname === "/seller/register" ||
+    pathname === "/seller/need_help" ||
+    pathname === "/seller/onboarding";
 
   if (isAdminRoute) {
     if (!user) {
@@ -54,6 +61,42 @@ export async function middleware(request) {
     if (!adminRow) {
       const url = request.nextUrl.clone();
       url.pathname = "/administrator";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+  }
+
+  if (isSellerRoute && !isPublicSellerRoute) {
+    if (!user) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/seller/login";
+      url.searchParams.set("redirect", `${pathname}${request.nextUrl.search}`);
+      return NextResponse.redirect(url);
+    }
+
+    const [{ data: roleRow }, { data: sellerRow }] = await Promise.all([
+      supabase.from("users").select("role").eq("id", user.id).maybeSingle(),
+      supabase.from("sellers").select("status").eq("user_id", user.id).maybeSingle(),
+    ]);
+
+    if (roleRow?.role !== "seller") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/seller/login";
+      url.searchParams.set("redirect", `${pathname}${request.nextUrl.search}`);
+      return NextResponse.redirect(url);
+    }
+
+    const sellerStatus = String(sellerRow?.status || "").toLowerCase();
+    if (sellerStatus === "pending" || sellerStatus === "rejected") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/seller/onboarding";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+
+    if (sellerStatus === "suspended") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/seller/login";
       url.search = "";
       return NextResponse.redirect(url);
     }

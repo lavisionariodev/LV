@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+function normalizePriority(value) {
+  const p = String(value || '').trim().toLowerCase()
+  if (p === 'high' || p === 'urgent' || p === 'critical') return 'high'
+  if (p === 'medium' || p === 'normal') return 'medium'
+  return 'low'
+}
+
 function mapRow(row) {
   const meta = row.metadata && typeof row.metadata === 'object' ? row.metadata : {}
   return {
@@ -11,6 +18,7 @@ function mapRow(row) {
     readAt: row.read_at,
     resolvedAt: row.resolved_at,
     createdAt: row.created_at,
+    priority: normalizePriority(meta.priority),
     metadata: meta,
   }
 }

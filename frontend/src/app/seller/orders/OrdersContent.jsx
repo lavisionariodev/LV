@@ -27,6 +27,10 @@ import { supabase } from '@/lib/supabase/client'
 import { formatCount } from '@/shared/utils/formatCount'
 import { useDebouncedEffect } from '@/shared/hooks'
 import { readEnum, readString, replaceUrlQuery } from '@/lib/url/queryParams'
+import {
+  mapSellerOrderForOrdersPage,
+  SELLER_ORDER_DETAIL_SELECT,
+} from '@/lib/seller/sellerOrderAnalytics'
 
 const ORDER_STATUSES = [
   { id: 'all', label: 'All Orders' },
@@ -283,9 +287,7 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
     try {
       const { data, error } = await supabase
       .from('orders')
-      .select(
-        'id,order_number,status,fulfillment_status,payment_status,subtotal,created_at,preferred_date,refund_status,refund_requested_at,contact_name,contact_email,contact_phone,notes,service_location,deceased_name,date_of_death,wake_duration_days,order_items(name,quantity)',
-      )
+      .select(SELLER_ORDER_DETAIL_SELECT)
       .eq('seller_user_id', user.id)
       .order('created_at', { ascending: false })
       .abortSignal?.(signal)
@@ -335,83 +337,11 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
         const helpRequest = disputeByOrder.get(o.id) ?? null
         const helpAttachments = mapDisputeAttachmentPaths(helpRequest)
         const payment = paymentByOrder.get(o.id) ?? null
-        const items = o.order_items ?? []
-        const servicePackage =
-          items.length === 1
-            ? items[0].name
-            : items.length > 1
-              ? `${items.length} items`
-              : 'Booking'
-
-        const paymentStatus =
-          o.payment_status ||
-          (o.status === 'paid' ? 'paid' : o.status === 'failed' ? 'failed' : 'unpaid')
-
-        const fulfillmentStatus = o.fulfillment_status || 'pending'
-
-        const orderStatus =
-          fulfillmentStatus === 'confirmed'
-            ? 'confirmed'
-            : fulfillmentStatus === 'in_progress'
-              ? 'in_progress'
-              : fulfillmentStatus === 'completed'
-                ? 'completed'
-                : fulfillmentStatus === 'cancelled'
-                  ? 'cancelled'
-                  : 'pending'
-
-        const rs = o.refund_status ? String(o.refund_status) : ''
-        const refundStage =
-          rs === 'requested' || rs === 'processing'
-            ? /** @type {'requested' | 'processing'} */ (rs)
-            : null
-        const refundRequested = Boolean(refundStage)
-        const refundReason =
-          refundStage === 'processing'
-            ? 'Refund approved and being processed by the payment provider. Completion is automatic and typically takes a few business days.'
-            : refundStage === 'requested'
-              ? 'Buyer cancelled this booking before confirmation and has requested a refund. Approve to initiate the refund, or decline to keep the booking active.'
-              : null
-
-        return {
-          id: o.id,
-          displayId: o.order_number || o.id,
-          customerName: o.contact_name || 'Buyer',
-          servicePackage,
-          dateOfService: (o.preferred_date || o.created_at || '').slice(0, 10),
-          location: o.service_location || '—',
-          totalPrice: Number(o.subtotal) || 0,
-          paymentStatus,
-          orderStatus,
-          customerPhone: o.contact_phone || '—',
-          customerEmail: o.contact_email || '—',
-          deceasedName: o.deceased_name || null,
-          dateOfDeath: o.date_of_death ? String(o.date_of_death) : null,
-          specialRequests: o.notes || null,
-          addOns: items.map((it) => `${it.name} ×${it.quantity ?? 1}`),
-          wakeDuration:
-            typeof o.wake_duration_days === 'number'
-              ? `${o.wake_duration_days} day${o.wake_duration_days === 1 ? '' : 's'}`
-              : '—',
-          burialLocation: o.service_location || '—',
+        return mapSellerOrderForOrdersPage(o, {
           paymentMethod: paymentMethodLabel(payment),
-          refundRequested,
-          refundStage,
-          refundRequestedAt: o.refund_requested_at ? String(o.refund_requested_at) : null,
-          refundReason,
-          refundAttachments: helpAttachments,
-          helpRequest: helpRequest
-            ? {
-                id: helpRequest.id,
-                reason: helpRequest.reason,
-                description: helpRequest.description || '',
-                status: helpRequest.status,
-                openedAt: helpRequest.opened_at,
-                resolutionNotes: helpRequest.resolution_notes || '',
-                attachments: helpAttachments,
-              }
-            : null,
-        }
+          helpRequest,
+          helpAttachments,
+        })
       })
 
     setOrders(mapped)

@@ -43,6 +43,14 @@ const COLOR_BY_BUCKET = {
   system: 'gold',
 }
 
+function normalizePriority(value, bucket) {
+  const p = String(value || '').trim().toLowerCase()
+  if (p === 'high' || p === 'urgent' || p === 'critical') return 'high'
+  if (p === 'medium' || p === 'normal') return 'medium'
+  if (bucket === 'alert' || bucket === 'payment') return 'medium'
+  return 'low'
+}
+
 function notificationHref(row) {
   const meta = row?.metadata && typeof row.metadata === 'object' ? row.metadata : {}
   const orderId = meta.orderId || meta.order_id
@@ -265,6 +273,11 @@ function NotificationRow({ notif, variant, isLast, onMarkRead, onResolve, onRequ
           {variant === 'mobile' && !notif.read ? <span className={styles.unreadDot} /> : null}
         </div>
         <p className={styles.notifMessage}>{notif.message}</p>
+        {notif.priority === 'high' ? (
+          <p className={styles.notifMessage} style={{ marginTop: 4, color: '#b91c1c', fontWeight: 700 }}>
+            High priority
+          </p>
+        ) : null}
         {notif.resolved ? (
           <p className={styles.notifMessage} style={{ marginTop: 4, color: '#16a34a', fontWeight: 700 }}>
             Resolved
@@ -320,6 +333,7 @@ export default function SellerNotificationsPage() {
       apiRows.map((row) => {
         const bucket = sellerNotificationFilterBucket(row.type)
         const Icon = ICON_BY_BUCKET[bucket] || TbAlertTriangle
+        const priority = normalizePriority(row.priority || row.metadata?.priority, bucket)
         return {
           id: row.id,
           filterBucket: bucket,
@@ -328,6 +342,7 @@ export default function SellerNotificationsPage() {
           time: relativeNotificationTime(row.createdAt),
           read: Boolean(row.readAt),
           resolved: Boolean(row.resolvedAt),
+          priority,
           icon: Icon,
           iconColor: COLOR_BY_BUCKET[bucket] || 'red',
           href: notificationHref(row),
@@ -341,11 +356,13 @@ export default function SellerNotificationsPage() {
       if (activeFilter === 'all') return true
       if (activeFilter === 'unread') return !n.read
       if (activeFilter === 'unresolved') return !n.resolved
+      if (activeFilter === 'high') return n.priority === 'high'
       return n.filterBucket === activeFilter
     })
   }, [notifications, activeFilter])
 
   const resolvedCount = notifications.filter((n) => n.resolved).length
+  const highPriorityCount = notifications.filter((n) => n.priority === 'high').length
 
   return (
     <div className={styles.page}>
@@ -358,6 +375,8 @@ export default function SellerNotificationsPage() {
             <p className={styles.headerSub}>
               {unreadCount > 0
                 ? `You have ${unreadCount} unread seller notification${unreadCount > 1 ? 's' : ''}.`
+                : highPriorityCount > 0
+                  ? `${highPriorityCount} high-priority notification${highPriorityCount > 1 ? 's' : ''} need attention.`
                 : unresolvedCount > 0
                   ? `${unresolvedCount} notification${unresolvedCount > 1 ? 's' : ''} still need resolution.`
                   : `You're all caught up.`}
@@ -422,7 +441,11 @@ export default function SellerNotificationsPage() {
               <TbBellRinging />
             </div>
             <p className={styles.headerSub}>
-              {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}.` : `You're all caught up.`}
+              {unreadCount > 0
+                ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}.`
+                : highPriorityCount > 0
+                  ? `${highPriorityCount} high-priority notification${highPriorityCount > 1 ? 's' : ''}.`
+                  : `You're all caught up.`}
             </p>
           </div>
           <HeaderMenu
