@@ -21,7 +21,7 @@ import { changePasswordWithReauth } from '@/lib/auth/changePassword'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/adminProfile'
 import { useMediaQuery } from '@/shared/hooks'
 import { useSiteContent, upsertSiteContent } from '@/lib/siteContent/client'
-import { useToast } from '@/contexts/ToastContext'
+import { useAuthToast } from '@/contexts/ToastContext'
 import { normalizeSettingsTab } from './adminSettingsTabs'
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 
@@ -1001,7 +1001,7 @@ export function AdminSiteContentPanel({
   const [modal, setModal] = useState(null)
   const [modalValue, setModalValue] = useState('')
   const { data: loadedContent, isLoading, error } = useSiteContent()
-  const toast = useToast()
+  const toast = useAuthToast()
   const contentRefs = useRef(null)
   // Track edit-mode in a ref so the loadedContent-sync effect can read the
   // latest value without listing `isEditing` as a dep (intentional: we don't
@@ -1565,7 +1565,7 @@ export default function AdminSettingsClient() {
   const searchParams = useSearchParams()
   const fileRef = useRef(null)
   const avatarPreviewRef = useRef('')
-  const toast = useToast()
+  const toast = useAuthToast()
 
   const [loading, setLoading] = useState(true)
   const [isEditingPersonal, setIsEditingPersonal] = useState(false)

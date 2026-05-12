@@ -15,7 +15,7 @@ import { MdCheckCircle, MdErrorOutline } from 'react-icons/md'
 import { TbMessage2Question, TbBell, TbCreditCard } from 'react-icons/tb'
 import { HiOutlineNewspaper } from 'react-icons/hi'
 import { changePasswordWithReauth } from '@/lib/auth/changePassword'
-import { useToast } from '@/contexts/ToastContext'
+import { useAuthToast } from '@/contexts/ToastContext'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/adminProfile'
 import { useMediaQuery } from '@/shared/hooks'
 import { normalizeSettingsTab } from '../settings/adminSettingsTabs'
@@ -81,7 +81,7 @@ function ProfileMobileTabBar({ onPasswordTab, passwordSheetOpen = false }) {
 export default function AdminProfileClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const toast = useToast()
+  const toast = useAuthToast()
   const fileRef = useRef(null)
   const avatarPreviewRef = useRef('')
 

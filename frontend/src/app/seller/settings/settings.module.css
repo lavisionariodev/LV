@@ -994,7 +994,7 @@
 .shopBody {
   margin: 0 -26px -26px;
   padding: 20px 26px 26px;
-  background: color-mix(in srgb, var(--color-cream) 45%, #f4f4f2 55%);
+  background: #ffffff;
   border-radius: 0 0 11px 11px;
 }
 
