@@ -777,7 +777,7 @@ export default function AdminBuyersPage() {
                 <col className={styles.colJoined} />
                 <col className={styles.colRole} />
                 <col className={styles.colStatus} />
-                <col />
+                <col className={styles.colActions} />
               </colgroup>
               <thead>
                 <tr>
@@ -822,7 +822,7 @@ export default function AdminBuyersPage() {
                     <td>
                       <span
                         className={`${styles.buyersSkBar} ${styles.buyersSkEmail}`}
-                        style={{ width: 200 }}
+                        style={{ width: '100%', maxWidth: '100%' }}
                         aria-hidden
                       />
                     </td>
@@ -866,7 +866,7 @@ export default function AdminBuyersPage() {
                 <col className={styles.colJoined} />
                 <col className={styles.colRole} />
                 <col className={styles.colStatus} />
-                <col />
+                <col className={styles.colActions} />
               </colgroup>
               <thead>
                 <tr>

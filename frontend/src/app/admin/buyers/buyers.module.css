@@ -604,29 +604,62 @@
 
 .table {
   width: 100%;
+  max-width: 100%;
   border-collapse: collapse;
   font-size: 13px;
   table-layout: fixed;
 }
 
-/* Column widths — narrow checkbox; remaining columns share rest (see colgroup in page.jsx) */
+/*
+ * Column widths: checkbox + actions are px so the 7th column does not inflate past 100%.
+ * Middle columns use % of the table; the engine resolves mixed px + % without horizontal overflow.
+ */
 .colCheck {
-  width: 4%;
+  /* Narrow + fixed; otherwise this column soaks extra width (it’s excluded from max-width:0). */
+  width: 20px;
 }
 .colBuyer {
-  width: 21%;
+  width: 22%;
 }
 .colEmail {
-  width: 25%;
+  width: 28%;
 }
 .colJoined {
   width: 15%;
 }
 .colRole {
-  width: 17.5%;
+  width: 10%;
 }
 .colStatus {
-  width: 17.5%;
+  width: 10%;
+}
+.colActions {
+  width: 50px;
+}
+
+/*
+ * Fixed-layout tables default to min-content width for cells, which blocks ellipsis and causes overflow.
+ * Scoped to desktop only — mobile uses display:block cards on .table/.primaryRow.
+ */
+@media (min-width: 641px) {
+  /* Pin checkbox column — without this, slack width piles into col 1 (only col not on max-width:0). */
+  .table th.checkboxCell,
+  .table td.checkboxCell {
+    width: 36px;
+    min-width: 36px;
+    max-width: 36px;
+    box-sizing: border-box;
+  }
+
+  .table th:not(.checkboxCell):not(:last-child),
+  .table td:not(.checkboxCell):not(:last-child) {
+    max-width: 0;
+    overflow: hidden;
+  }
+
+  .table td:last-child {
+    overflow: visible;
+  }
 }
 
 .table thead tr {
@@ -643,6 +676,7 @@
   border-bottom: 1px solid #e9e9ef;
   white-space: nowrap;
   letter-spacing: 0.01em;
+  min-width: 0;
 }
 
 .table td {
@@ -650,6 +684,7 @@
   vertical-align: middle;
   color: #0f172a;
   font-size: 13px;
+  min-width: 0;
 }
 
 .primaryRow {
@@ -672,7 +707,7 @@
   text-align: center;
   vertical-align: middle;
   padding-left: 12px;
-  padding-right: 2px;
+  padding-right: 12px;
 }
 
 /* Pull Buyer column closer to the checkbox */
@@ -774,6 +809,7 @@
 
 .email {
   display: block;
+  max-width: 100%;
   font-size: 13px;
   color: #475569;
   overflow: hidden;
