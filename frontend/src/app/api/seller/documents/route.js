@@ -1,36 +1,14 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { mapSellerDocumentRow } from '@/lib/sellers/sellerDocuments'
 
 const BUCKET = 'seller-documents'
 const DOC_ALLOWED = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp'])
 const MAX_DOC_BYTES = 8 * 1024 * 1024
 
 async function mapDoc(row, supabaseAdmin) {
-  let signedUrl = null
-  if (row.storage_path && supabaseAdmin) {
-    const { data } = await supabaseAdmin.storage
-      .from(row.storage_bucket || BUCKET)
-      .createSignedUrl(row.storage_path, 60 * 10, {
-        download: false,
-      })
-    signedUrl = data?.signedUrl || null
-  }
-  return {
-    id: row.id,
-    documentType: row.document_type,
-    displayName: row.display_name,
-    storageBucket: row.storage_bucket,
-    storagePath: row.storage_path,
-    mimeType: row.mime_type,
-    fileSize: row.file_size,
-    status: row.status,
-    rejectionReason: row.rejection_reason,
-    submittedAt: row.submitted_at,
-    reviewedAt: row.reviewed_at,
-    previewUrl: signedUrl,
-    downloadUrl: signedUrl,
-  }
+  return mapSellerDocumentRow(row, supabaseAdmin)
 }
 
 async function requireSeller(userId) {

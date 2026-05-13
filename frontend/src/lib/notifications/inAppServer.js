@@ -1,5 +1,13 @@
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
 import { shouldSendChannelForType } from '@/lib/notifications/preferencesServer'
+import { sendEmailIfAllowed } from '@/lib/notifications/emailServer'
+import {
+  defaultNotificationInboxPath,
+  notificationActionUrlFromMetadata,
+  sendNotificationEmail,
+} from '@/lib/email/sendNotificationEmail'
+import { getAppBaseUrl } from '@/lib/email/appBaseUrl'
+import { resolveNotificationRecipientEmail } from '@/lib/notifications/resolveNotificationRecipientEmail'
 
 const DEDUPE_KEY_MAX = 200
 
@@ -8,6 +16,52 @@ function normalizeDedupeKey(key) {
   const s = String(key).trim()
   if (!s) return null
   return s.length > DEDUPE_KEY_MAX ? s.slice(0, DEDUPE_KEY_MAX) : s
+}
+
+async function channelAllowed(supabaseAdmin, userId, type, channel) {
+  try {
+    return await shouldSendChannelForType(supabaseAdmin, userId, type, channel)
+  } catch (prefErr) {
+    apiLog(`user_notification.${channel}_pref_check_failed`, {
+      err: errorMessage(prefErr),
+      type,
+    })
+    return true
+  }
+}
+
+async function maybeSendNotificationEmail(supabaseAdmin, p) {
+  const userId = String(p.userId || '').trim()
+  if (!userId) return
+
+  const allowed = await channelAllowed(supabaseAdmin, userId, p.type, 'email')
+  if (!allowed) {
+    apiLog('user_notification.email_skipped_by_preference', { type: p.type })
+    return
+  }
+
+  const metadata = p.metadata && typeof p.metadata === 'object' ? p.metadata : {}
+  const actionUrl =
+    notificationActionUrlFromMetadata(metadata) ||
+    `${getAppBaseUrl()}${defaultNotificationInboxPath(metadata)}`
+  const title = String(p.title || 'Notification').trim() || 'Notification'
+  const body = String(p.body || '').trim()
+  const text = body ? `${title}\n\n${body}` : title
+
+  await sendEmailIfAllowed(supabaseAdmin, userId, p.type, async () => {
+    const to = await resolveNotificationRecipientEmail(supabaseAdmin, userId)
+    if (!to) {
+      apiLog('user_notification.email_skipped', { reason: 'no_recipient', type: p.type })
+      return { sent: false, reason: 'no_recipient' }
+    }
+    return sendNotificationEmail({
+      to,
+      subject: title,
+      text,
+      actionUrl,
+      actionLabel: 'View notification',
+    })
+  })
 }
 
 /**
@@ -20,42 +74,28 @@ export async function notifyUser(supabaseAdmin, p) {
   const userId = String(p.userId || '').trim()
   if (!userId) return
 
-  try {
-    const allowed = await shouldSendChannelForType(
-      supabaseAdmin,
-      userId,
-      p.type,
-      'push',
-    )
-    if (!allowed) {
-      apiLog('user_notification.skipped_by_preference', { type: p.type })
-      return
-    }
-  } catch (prefErr) {
-    apiLog('user_notification.pref_check_failed', {
-      err: errorMessage(prefErr),
+  const pushAllowed = await channelAllowed(supabaseAdmin, userId, p.type, 'push')
+
+  if (pushAllowed) {
+    const dedupeKey = normalizeDedupeKey(p.dedupeKey)
+    const row = {
+      user_id: userId,
       type: p.type,
-    })
-    // fall through to send (default-allow)
+      title: p.title,
+      body: p.body ?? null,
+      metadata: p.metadata && typeof p.metadata === 'object' ? p.metadata : {},
+      ...(dedupeKey ? { dedupe_key: dedupeKey } : {}),
+    }
+
+    const { error } = await supabaseAdmin.from('user_notifications').insert(row)
+    if (error && error.code !== '23505') {
+      apiLog('user_notification.insert_failed', { err: errorMessage(error), type: p.type })
+    }
+  } else {
+    apiLog('user_notification.skipped_by_preference', { type: p.type, channel: 'push' })
   }
 
-  const dedupeKey = normalizeDedupeKey(p.dedupeKey)
-  const row = {
-    user_id: userId,
-    type: p.type,
-    title: p.title,
-    body: p.body ?? null,
-    metadata: p.metadata && typeof p.metadata === 'object' ? p.metadata : {},
-    ...(dedupeKey ? { dedupe_key: dedupeKey } : {}),
-  }
-
-  const { error } = await supabaseAdmin.from('user_notifications').insert(row)
-  if (!error) return
-
-  if (error.code === '23505') {
-    return
-  }
-  apiLog('user_notification.insert_failed', { err: errorMessage(error), type: p.type })
+  await maybeSendNotificationEmail(supabaseAdmin, p)
 }
 
 /**

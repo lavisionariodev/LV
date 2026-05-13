@@ -1447,6 +1447,9 @@ export default function SellerSettingsClient() {
                       </div>
                       <p className={styles.settingsRowDesc}>
                         {doc.documentType.replace(/_/g, ' ')} · {doc.status}
+                        {doc.status === 'rejected' && doc.rejectionReason
+                          ? ` · ${doc.rejectionReason}`
+                          : ''}
                       </p>
                     </div>
                     <div className={`${styles.settingsRowControl} ${styles.headActions}`}>

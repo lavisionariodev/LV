@@ -9,7 +9,6 @@ const FILTERS = [
   { id: 'all', label: 'All' },
   { id: 'service', label: 'Service updates' },
   { id: 'payment', label: 'Payments' },
-  { id: 'message', label: 'Messages' },
   { id: 'reminder', label: 'Reminders' },
   { id: 'account', label: 'Account' },
 ];
@@ -125,7 +124,6 @@ function mapApiRowToBuyerNotification(row) {
   else if (t === 'service_confirmed') iconKey = 'service_scheduled';
   else if (t.startsWith('service')) iconKey = 'service_inprogress';
   else if (t === 'reminder') iconKey = 'reminder';
-  else if (t === 'message') iconKey = 'message';
   else if (t === 'alerts') iconKey = 'alerts';
   else if (t === 'listing_approval' || t === 'listing_rejected') iconKey = 'account_profile';
 
@@ -133,7 +131,6 @@ function mapApiRowToBuyerNotification(row) {
   if (t.startsWith('payment') || t === 'payment_refund') variant = t.includes('fail') ? 'red' : 'blue';
   else if (t === 'service_alert' || t.includes('alert')) variant = 'red';
   else if (t === 'service' || t.startsWith('service')) variant = 'green';
-  else if (t === 'message') variant = 'purple';
   else if (t === 'reminder') variant = 'amber';
   else if (t === 'account' || t === 'alerts') variant = 'red';
   else if (t === 'listing_rejected') variant = 'red';
@@ -142,7 +139,6 @@ function mapApiRowToBuyerNotification(row) {
   let filterType = 'account';
   if (t.startsWith('payment') || t === 'payment_refund') filterType = 'payment';
   else if (t === 'service_alert' || t.startsWith('service')) filterType = 'service';
-  else if (t === 'message') filterType = 'message';
   else if (t === 'reminder') filterType = 'reminder';
   else if (t === 'listing_approval' || t === 'listing_rejected') filterType = 'account';
 
@@ -155,9 +151,7 @@ function mapApiRowToBuyerNotification(row) {
           ? 'Alert'
           : t.startsWith('service')
             ? 'Service'
-            : t === 'message'
-              ? 'Message'
-              : t === 'reminder'
+            : t === 'reminder'
                 ? 'Reminder'
                 : t === 'listing_approval'
                   ? 'Listing'
