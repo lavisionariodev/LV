@@ -3,6 +3,10 @@
 import { useEffect, useState } from 'react'
 import { GiReceiveMoney } from 'react-icons/gi'
 import { useToast } from '@/contexts/ToastContext'
+import {
+  createSellerPayoutRequest,
+  listSellerPayoutRequests,
+} from '@/lib/seller/payoutRequestsClient'
 import styles from '../analytics/analytics.module.css'
 
 function formatDate(value) {
@@ -25,10 +29,8 @@ export default function SellerPayoutRequestsPanel({ className = '' }) {
     async function load() {
       setLoading(true)
       try {
-        const res = await fetch('/api/seller/payout-requests', { cache: 'no-store' })
-        const body = await res.json().catch(() => null)
-        if (!res.ok) throw new Error(body?.error || 'Failed to load payout requests.')
-        if (!cancelled) setRequests(Array.isArray(body?.requests) ? body.requests : [])
+        const requests = await listSellerPayoutRequests()
+        if (!cancelled) setRequests(requests)
       } catch (err) {
         if (!cancelled) {
           toast.error(err?.message || 'Failed to load payout requests.')
@@ -47,10 +49,8 @@ export default function SellerPayoutRequestsPanel({ className = '' }) {
   const reloadRequests = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/seller/payout-requests', { cache: 'no-store' })
-      const body = await res.json().catch(() => null)
-      if (!res.ok) throw new Error(body?.error || 'Failed to load payout requests.')
-      setRequests(Array.isArray(body?.requests) ? body.requests : [])
+      const requests = await listSellerPayoutRequests()
+      setRequests(requests)
     } catch (err) {
       toast.error(err?.message || 'Failed to load payout requests.')
       setRequests([])
@@ -74,16 +74,10 @@ export default function SellerPayoutRequestsPanel({ className = '' }) {
 
     setSubmitting(true)
     try {
-      const res = await fetch('/api/seller/payout-requests', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          note: trimmedNote,
-          requestedAmount: requestedAmount.trim() === '' ? null : requestedAmount,
-        }),
+      await createSellerPayoutRequest({
+        note: trimmedNote,
+        requestedAmount: requestedAmount.trim() === '' ? null : requestedAmount,
       })
-      const body = await res.json().catch(() => null)
-      if (!res.ok) throw new Error(body?.error || 'Failed to submit payout request.')
       toast.success('Payout request sent to admin review.')
       setNote('')
       setRequestedAmount('')

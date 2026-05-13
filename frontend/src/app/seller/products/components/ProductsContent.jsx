@@ -47,7 +47,7 @@ import { formatPhpAmount, roundPhpAmount } from '@/lib/cart/formatPhp'
 import { hasPendingSellerChanges, mergePendingChangesIntoListingRow, getPendingChangeFieldLabels } from '@/lib/seller-listings/pendingChanges'
 import { formatCount } from '@/shared/utils/formatCount'
 import { useDebouncedEffect } from '@/shared/hooks'
-import { readEnum, readString, replaceUrlQuery } from '@/lib/url/queryParams'
+import { readEnum, readString, replaceUrlQuery } from '@/shared/utils/queryParams'
 
 // ---------------------------------------------------------------------------
 // Listing form utilities (products list + edit modal)

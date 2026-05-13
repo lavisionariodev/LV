@@ -4,6 +4,7 @@
  */
 
 import { hasPendingSellerChanges } from '@/lib/seller-listings/pendingChanges'
+import { formatPhpWholeAmount } from '@/lib/cart/formatPhp'
 
 /** @typedef {{ id: string, buyer_id?: string|null, order_number?: string|null, created_at: string, preferred_date?: string|null, fulfillment_status?: string|null, payment_status?: string|null, status?: string|null, subtotal?: number|null, refund_status?: string|null, refund_requested_at?: string|null, contact_name?: string|null, order_items?: { name?: string|null, quantity?: number|null }[]|null }} SellerOrderRow */
 
@@ -976,7 +977,7 @@ export function buildSmartAlerts(orders, listings) {
     alerts.push({
       id: `hv-${id}`,
       type: 'High-value booking',
-      message: `Paid order ${o.order_number || id.slice(0, 8)} (${formatPhp(orderSubtotal(o))}) is awaiting your confirmation.`,
+      message: `Paid order ${o.order_number || id.slice(0, 8)} (${formatPhpWholeAmount(orderSubtotal(o))}) is awaiting your confirmation.`,
       priority: 'high',
       orderId: id,
       href: `/seller/orders?tab=${encodeURIComponent(tab)}&orderId=${encodeURIComponent(id)}&action=view`,
@@ -993,13 +994,4 @@ export function buildSmartAlerts(orders, listings) {
     })
   }
   return alerts
-}
-
-function formatPhp(n) {
-  return new Intl.NumberFormat('en-PH', {
-    style: 'currency',
-    currency: 'PHP',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(n)
 }

@@ -20,7 +20,7 @@ import ConfirmModal from '@/components/ui/Modal/ConfirmModal';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDebouncedEffect } from '@/shared/hooks';
-import { readEnum, readString, replaceUrlQuery } from '@/lib/url/queryParams';
+import { readEnum, readString, replaceUrlQuery } from '@/shared/utils/queryParams';
 import { bulkStatusActionApplies } from '@/lib/admin/bulkEligibility';
 
 const STATUS_FILTER_OPTIONS = [

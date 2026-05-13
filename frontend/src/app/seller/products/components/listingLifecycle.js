@@ -1,5 +1,5 @@
 import { hasPendingSellerChanges } from '@/lib/seller-listings/pendingChanges'
-import { readEnum } from '@/lib/url/queryParams'
+import { readEnum } from '@/shared/utils/queryParams'
 
 export const LISTING_TAB_IDS = ['active', 'under_review', 'updates_pending']
 

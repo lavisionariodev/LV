@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
-import { isUuidLike } from '@/lib/uuidLike'
+import { isUuidLike } from '@/shared/utils/uuidLike'
 import { listingIdFromOrderItemProductId } from '@/lib/orders/listingIdFromProductId'
 
 const SERVICE_ID_ALLOWED = new Set(['cremation', 'traditional-burial', 'memorial-planning'])

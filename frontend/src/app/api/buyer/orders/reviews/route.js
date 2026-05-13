@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
 import { getClientIp, takeToken } from '@/lib/rate-limit/memoryRateLimit'
-import { isUuidLike } from '@/lib/uuidLike'
+import { isUuidLike } from '@/shared/utils/uuidLike'
 
 const ALLOWED_RATING_MIN = 1
 const ALLOWED_RATING_MAX = 5

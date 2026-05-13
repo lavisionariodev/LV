@@ -5,20 +5,12 @@ import { useMemo } from 'react'
 import { TbChartLine, TbCurrencyPeso, TbUsers, TbChartBar } from 'react-icons/tb'
 import styles from './analytics.module.css'
 import { useSellerAnalyticsData } from '@/lib/seller/useSellerAnalyticsData'
+import { formatPhpWholeAmount } from '@/lib/cart/formatPhp'
 import {
   listingsApprovedCount,
   totalPaidRevenueAllTime,
   uniqueBuyerCount,
 } from '@/lib/seller/sellerOrderAnalytics'
-
-function formatPhp(n) {
-  return new Intl.NumberFormat('en-PH', {
-    style: 'currency',
-    currency: 'PHP',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(n)
-}
 
 const ANALYTICS_HUB_SUMMARY_SOFT = [
   styles.summaryCardSoftGreen,
@@ -71,7 +63,7 @@ export default function SellerAnalyticsPage() {
   const { orders, listings, loading, error } = useSellerAnalyticsData()
 
   const totalOrders = orders.length
-  const totalRevenue = formatPhp(totalPaidRevenueAllTime(orders))
+  const totalRevenue = formatPhpWholeAmount(totalPaidRevenueAllTime(orders))
   const activeServices = listingsApprovedCount(listings)
   const totalCustomers = uniqueBuyerCount(orders)
 

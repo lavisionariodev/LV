@@ -10,7 +10,7 @@ import LogoutModal from '@/components/ui/Modal/Logout'
 import styles from './PublicNavbar.module.css'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSiteContent } from '@/lib/siteContent/client'
-import { readString, replaceUrlQuery } from '@/lib/url/queryParams'
+import { readString, replaceUrlQuery } from '@/shared/utils/queryParams'
 import InstallAppControl from '@/components/pwa/InstallAppControl'
 import { useInAppNotificationFeed, relativeNotificationTime } from '@/lib/notifications/useInAppNotificationFeed'
 

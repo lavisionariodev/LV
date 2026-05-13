@@ -28,6 +28,7 @@ import {
   monthlyRevenueBarsLastNMonths,
   topPackageThisMonth,
 } from '@/lib/seller/sellerOrderAnalytics'
+import { formatPhpWholeAmount } from '@/lib/cart/formatPhp'
 
 const SELLER_BAR_COLORS = ['#1F312B', '#2D4A38', '#3D683A', '#4A7C47']
 const SELLER_CHART_ACCENT = '#1F312B'
@@ -37,15 +38,6 @@ function formatShortDate(dateStr) {
   const d = new Date(dateStr + 'T12:00:00')
   if (Number.isNaN(d.getTime())) return dateStr
   return `${d.getMonth() + 1}/${d.getDate()}`
-}
-
-function formatPhp(n) {
-  return new Intl.NumberFormat('en-PH', {
-    style: 'currency',
-    currency: 'PHP',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(n)
 }
 
 const SALES_SUMMARY_SOFT = [
@@ -142,7 +134,7 @@ export default function SellerAnalyticsSalesOverviewPage() {
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftGreen}`}>
           <p className={styles.summaryLabel}>Revenue (7 days)</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>{formatPhp(rev7)}</p>
+            <p className={styles.summaryValue}>{formatPhpWholeAmount(rev7)}</p>
             <span
               className={`${styles.summaryDelta} ${
                 revDelta.up ? styles.summaryDeltaPositive : styles.summaryDeltaNegative
@@ -157,7 +149,7 @@ export default function SellerAnalyticsSalesOverviewPage() {
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftBlue}`}>
           <p className={styles.summaryLabel}>Average booking value</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>{formatPhp(averagePaidBookingValue(orders))}</p>
+            <p className={styles.summaryValue}>{formatPhpWholeAmount(averagePaidBookingValue(orders))}</p>
           </div>
           <p className={styles.summaryHint}>All paid orders</p>
         </article>

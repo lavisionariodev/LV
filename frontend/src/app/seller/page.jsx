@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import styles from './seller.module.css'
 import { useSellerAnalyticsData } from '@/lib/seller/useSellerAnalyticsData'
+import { formatPhpWholeAmount } from '@/lib/cart/formatPhp'
 import {
   buildSmartAlerts,
   newBuyersPreviousMonthCount,
@@ -35,15 +36,6 @@ const quickActions = [
   { label: 'Create Promotion', href: '/seller/marketing/campaign', icon: 'promo' },
   { label: 'Notifications', href: '/seller/notifications', icon: 'messages' },
 ]
-
-function formatPhp(n) {
-  return new Intl.NumberFormat('en-PH', {
-    style: 'currency',
-    currency: 'PHP',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(n)
-}
 
 function getStatusClassFromOrder(row) {
   const rs = String(row.refund_status || '').toLowerCase()
@@ -291,7 +283,7 @@ export default function SellerDashboardPage() {
     return [
       {
         label: 'Total revenue (paid)',
-        value: formatPhp(totalRev),
+        value: formatPhpWholeAmount(totalRev),
         trend: revTrend.text,
         trendUp: revTrend.up,
       },
@@ -355,7 +347,7 @@ export default function SellerDashboardPage() {
       displayId: o.order_number || String(o.id).slice(0, 8),
       customer: o.contact_name?.trim() || 'Buyer',
       status: orderStatusLabel(o),
-      total: formatPhp(orderSubtotal(o)),
+      total: formatPhpWholeAmount(orderSubtotal(o)),
       tab: orderTabForUrl(o),
       statusClass: getStatusClassFromOrder(o),
     }))
@@ -365,7 +357,7 @@ export default function SellerDashboardPage() {
     return topPackagesByPaidRevenue(orders, 4).map((p) => ({
       name: p.name,
       units: p.units,
-      revenue: formatPhp(p.revenue),
+      revenue: formatPhpWholeAmount(p.revenue),
     }))
   }, [orders])
 
@@ -510,7 +502,7 @@ export default function SellerDashboardPage() {
                 <div
                   className={styles.chartBar}
                   style={{ height: `${Math.max((value / maxChartValue) * 100, 6)}%` }}
-                  aria-label={`Paid revenue ${formatPhp(value)}`}
+                  aria-label={`Paid revenue ${formatPhpWholeAmount(value)}`}
                 />
                 <span className={styles.chartLabel}>{chartLabels[chartFilter][idx]}</span>
               </div>

@@ -11,7 +11,7 @@ import { useDebouncedEffect, useMediaQuery } from '@/shared/hooks'
 import { Dropdown } from '@/components/ui'
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { readEnum, readString, replaceUrlQuery } from '@/lib/url/queryParams'
+import { readEnum, readString, replaceUrlQuery } from '@/shared/utils/queryParams'
 import { bulkStatusActionApplies } from '@/lib/admin/bulkEligibility'
 
 const STATUS_FILTER_OPTIONS = [

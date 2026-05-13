@@ -6,7 +6,7 @@ import { FiArrowUp, FiArrowDown, FiRotateCcw, FiUnlock } from 'react-icons/fi'
 import { TbCreditCardPay, TbPlayerPause, TbX } from 'react-icons/tb'
 import { LuSettings2 } from 'react-icons/lu'
 
-import { readEnum, readInt, readString, replaceUrlQuery } from '@/lib/url/queryParams'
+import { readEnum, readInt, readString, replaceUrlQuery } from '@/shared/utils/queryParams'
 import { useDebouncedEffect } from '@/shared/hooks/useDebouncedEffect'
 import {
   formatPHP,
