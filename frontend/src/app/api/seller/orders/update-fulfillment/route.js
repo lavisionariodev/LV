@@ -2,16 +2,10 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { notifyUser } from '@/lib/notifications/inAppServer'
-
-const ALLOWED = new Set(['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'])
-
-const LEGAL_TRANSITIONS = {
-  pending: new Set(['confirmed', 'cancelled']),
-  confirmed: new Set(['in_progress', 'cancelled']),
-  in_progress: new Set(['completed', 'cancelled']),
-  completed: new Set([]),
-  cancelled: new Set([]),
-}
+import {
+  ALLOWED_FULFILLMENT_STATUSES,
+  LEGAL_TRANSITIONS,
+} from '@/lib/orders/fulfillmentTransitions'
 
 export async function POST(request) {
   const supabase = await createClient()
@@ -31,7 +25,7 @@ export async function POST(request) {
   const fulfillmentStatus = String(body?.fulfillment_status ?? '').trim()
 
   if (!orderId) return NextResponse.json({ error: 'Missing orderId.' }, { status: 400 })
-  if (!ALLOWED.has(fulfillmentStatus)) {
+  if (!ALLOWED_FULFILLMENT_STATUSES.has(fulfillmentStatus)) {
     return NextResponse.json({ error: 'Invalid fulfillment status.' }, { status: 400 })
   }
 
