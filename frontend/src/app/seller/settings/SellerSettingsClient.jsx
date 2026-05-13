@@ -18,7 +18,6 @@ import {
   businessTypeLabelFromFormState,
   businessTypeLabelToFormState,
   getSellerByUserId,
-  upsertSellerForUser,
   // social links live under sellers.social_links; normalized in lib/sellers/socialLinks
   validateSellerBusinessTypeForm,
   normalizeSellerSpecialties,
@@ -161,7 +160,6 @@ function shopStatusPillClass(status) {
   return ''
 }
 
-const AVATARS_BUCKET = 'avatars'
 const MAX_MB = 2
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp']
 const DOC_ALLOWED = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp']
@@ -175,13 +173,6 @@ const EMPTY_PAYOUT_FORM = {
   gcashNumber: '',
   payoutEmail: '',
   notes: '',
-}
-
-/** Path in `avatars` bucket from a public object URL. */
-function pathFromAvatarsPublicUrl(url) {
-  if (!url || typeof url !== 'string') return null
-  const match = url.split('/avatars/')[1]
-  return match ? match.split('?')[0] : null
 }
 
 export default function SellerSettingsClient() {
@@ -326,8 +317,32 @@ export default function SellerSettingsClient() {
     setPayoutForm((prev) => ({ ...prev, [field]: value }))
   }
 
+  const validatePayoutForm = () => {
+    if (payoutForm.payoutMethod === 'bank') {
+      if (!payoutForm.accountHolderName.trim()) return 'Account holder name is required for bank payouts.'
+      if (!payoutForm.bankName.trim()) return 'Bank name is required for bank payouts.'
+      if (!payoutForm.accountNumber.trim()) return 'Account number is required for bank payouts.'
+    }
+    if (payoutForm.payoutMethod === 'gcash') {
+      if (!payoutForm.gcashName.trim()) return 'GCash account name is required.'
+      if (!payoutForm.gcashNumber.trim()) return 'GCash number is required.'
+    }
+    if (payoutForm.payoutMethod === 'manual' && !payoutForm.notes.trim()) {
+      return 'Please add admin notes for manual payout instructions.'
+    }
+    if (payoutForm.payoutEmail.trim() && !/^\S+@\S+\.\S+$/.test(payoutForm.payoutEmail.trim())) {
+      return 'Please enter a valid payout email.'
+    }
+    return ''
+  }
+
   const handleSavePayout = async (e) => {
     e.preventDefault()
+    const validationError = validatePayoutForm()
+    if (validationError) {
+      notifyToast('error', validationError)
+      return
+    }
     setPayoutSaving(true)
     setToast(null)
     try {
@@ -433,39 +448,14 @@ export default function SellerSettingsClient() {
     }
     if (!canEditShop) return
     try {
-      const { data: auth } = await supabase.auth.getUser()
-      const user = auth?.user
-      if (!user?.id) {
-        notifyToast('error', 'You must be signed in to update your shop cover.')
-        return
-      }
       setCoverLoading(true)
-      const fileExt = file.name.split('.').pop()
-      const fileName = `cover-${Date.now()}.${fileExt}`
-      const filePath = `${user.id}/${fileName}`
-      const prevPath = seller?.cover_photo_url
-        ? pathFromAvatarsPublicUrl(String(seller.cover_photo_url))
-        : null
-      const { error: uploadError } = await supabase.storage
-        .from(AVATARS_BUCKET)
-        .upload(filePath, file, { upsert: true, cacheControl: '3600' })
-      if (uploadError) throw uploadError
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from(AVATARS_BUCKET).getPublicUrl(filePath)
-      const { error: updateError } = await supabase
-        .from('sellers')
-        .update({ cover_photo_url: publicUrl, updated_at: new Date().toISOString() })
-        .eq('user_id', user.id)
-      if (updateError) {
-        await supabase.storage.from(AVATARS_BUCKET).remove([filePath])
-        throw updateError
-      }
-      if (prevPath && prevPath !== filePath) {
-        await supabase.storage.from(AVATARS_BUCKET).remove([prevPath])
-      }
-      const refreshed = await getSellerByUserId(user.id)
-      setSeller(refreshed)
+      const form = new FormData()
+      form.append('kind', 'cover')
+      form.append('file', file)
+      const res = await fetch('/api/seller/settings', { method: 'POST', body: form })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(body?.error || 'Failed to upload shop cover.')
+      setSeller(body?.seller || seller)
       notifyToast('success', 'Shop cover photo updated.')
     } catch (err) {
       notifyToast('error', err.message || 'Failed to upload shop cover.')
@@ -479,24 +469,11 @@ export default function SellerSettingsClient() {
     setToast(null)
     if (!seller?.cover_photo_url || !canEditShop) return
     try {
-      const { data: auth } = await supabase.auth.getUser()
-      const user = auth?.user
-      if (!user?.id) {
-        notifyToast('error', 'You must be signed in to remove your shop cover.')
-        return
-      }
       setCoverLoading(true)
-      const prevPath = pathFromAvatarsPublicUrl(String(seller.cover_photo_url))
-      const { error: updateError } = await supabase
-        .from('sellers')
-        .update({ cover_photo_url: null, updated_at: new Date().toISOString() })
-        .eq('user_id', user.id)
-      if (updateError) throw updateError
-      if (prevPath) {
-        await supabase.storage.from(AVATARS_BUCKET).remove([prevPath])
-      }
-      const refreshed = await getSellerByUserId(user.id)
-      setSeller(refreshed)
+      const res = await fetch('/api/seller/settings?kind=cover', { method: 'DELETE' })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(body?.error || 'Failed to remove shop cover.')
+      setSeller(body?.seller || null)
       notifyToast('success', 'Shop cover photo removed.')
     } catch (err) {
       notifyToast('error', err.message || 'Failed to remove shop cover.')
@@ -518,12 +495,6 @@ export default function SellerSettingsClient() {
       return
     }
     try {
-      const { data: auth } = await supabase.auth.getUser()
-      const user = auth?.user
-      if (!user) {
-        notifyToast('error', 'You must be signed in to save shop information.')
-        return
-      }
       setShopSaving(true)
       const socialLinks = normalizeSellerSocialLinks({
         phone: shopForm.socialPhoneEnabled ? shopForm.socialPhone : '',
@@ -532,34 +503,37 @@ export default function SellerSettingsClient() {
         facebook: shopForm.socialFacebookEnabled ? shopForm.socialFacebook : '',
         messenger: shopForm.socialMessengerEnabled ? shopForm.socialMessenger : '',
       })
-      const { data: saved, error } = await upsertSellerForUser(user, {
-        businessName: shopForm.businessName.trim(),
-        username: shopForm.shopUsername?.trim() ? shopForm.shopUsername : '',
-        tagline: shopForm.shopTagline?.trim() ? shopForm.shopTagline : '',
-        businessTypeLabel:
-          businessTypeLabelFromFormState(
-            shopForm.shopBusinessTypeChoice,
-            shopForm.shopBusinessTypeOtherSpecify,
-          ) ?? '',
-        contactName: shopForm.contactName.trim(),
-        email: shopForm.email.trim(),
-        phone: shopForm.phone.trim(),
-        businessInfo: shopForm.businessInfo.trim(),
-        specialties: shopForm.shopSpecialties ?? '',
-        address: shopForm.address.trim(),
-        businessStartedAt: shopForm.businessStartedAt.trim(),
-        turnaround: shopForm.shopTurnaround?.trim() ? shopForm.shopTurnaround.trim() : '',
-        status: seller?.status ?? 'pending',
-        registeredAt: seller?.registered_at,
-        socialLinks,
+      const res = await fetch('/api/seller/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'shop',
+          shop: {
+            businessName: shopForm.businessName.trim(),
+            username: shopForm.shopUsername?.trim() ? shopForm.shopUsername : '',
+            tagline: shopForm.shopTagline?.trim() ? shopForm.shopTagline : '',
+            businessTypeLabel:
+              businessTypeLabelFromFormState(
+                shopForm.shopBusinessTypeChoice,
+                shopForm.shopBusinessTypeOtherSpecify,
+              ) ?? '',
+            contactName: shopForm.contactName.trim(),
+            email: shopForm.email.trim(),
+            phone: shopForm.phone.trim(),
+            businessInfo: shopForm.businessInfo.trim(),
+            specialties: shopForm.shopSpecialties ?? '',
+            address: shopForm.address.trim(),
+            businessStartedAt: shopForm.businessStartedAt.trim(),
+            turnaround: shopForm.shopTurnaround?.trim() ? shopForm.shopTurnaround.trim() : '',
+            status: seller?.status ?? 'pending',
+            registeredAt: seller?.registered_at,
+            socialLinks,
+          },
+        }),
       })
-      if (error) {
-        notifyToast(
-          'error',
-          typeof error === 'string' ? error : error.message || 'Failed to save shop information.',
-        )
-        return
-      }
+      const body = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(body?.error || 'Failed to save shop information.')
+      const saved = body?.seller
       if (saved) {
         setSeller(saved)
         setShopForm(mapSellerToShopForm(saved, profile, sessionEmail))
@@ -592,23 +566,15 @@ export default function SellerSettingsClient() {
     setAvatarPreview(url)
     try {
       setAvatarLoading(true)
-      const fileExt = file.name.split('.').pop()
-      const fileName = `avatar-${Date.now()}.${fileExt}`
-      const filePath = `${profile.id}/${fileName}`
-      if (profile.avatarPath) {
-        await supabase.storage.from(AVATARS_BUCKET).remove([profile.avatarPath])
-      }
-      const { error: uploadError } = await supabase.storage
-        .from(AVATARS_BUCKET)
-        .upload(filePath, file, { upsert: true, cacheControl: '3600' })
-      if (uploadError) throw uploadError
-      const { data: { publicUrl } } = supabase.storage.from(AVATARS_BUCKET).getPublicUrl(filePath)
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
-        .eq('id', profile.id)
-      if (updateError) throw updateError
-      setProfile((prev) => (prev ? { ...prev, avatarPath: filePath, avatarUrl: publicUrl } : prev))
+      const form = new FormData()
+      form.append('kind', 'avatar')
+      form.append('file', file)
+      const res = await fetch('/api/seller/settings', { method: 'POST', body: form })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(body?.error || 'Failed to upload avatar.')
+      setProfile((prev) =>
+        prev ? { ...prev, avatarPath: body?.avatarPath || null, avatarUrl: body?.avatarUrl || null } : prev,
+      )
       notifyToast('success', 'Avatar updated successfully.')
     } catch (err) {
       notifyToast('error', err.message || 'Failed to upload avatar.')
@@ -628,14 +594,9 @@ export default function SellerSettingsClient() {
     if (fileRef.current) fileRef.current.value = ''
     try {
       setAvatarLoading(true)
-      if (profile.avatarPath) {
-        await supabase.storage.from(AVATARS_BUCKET).remove([profile.avatarPath])
-      }
-      const { error } = await supabase
-        .from('profiles')
-        .update({ avatar_url: null, updated_at: new Date().toISOString() })
-        .eq('id', profile.id)
-      if (error) throw error
+      const res = await fetch('/api/seller/settings?kind=avatar', { method: 'DELETE' })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(body?.error || 'Failed to remove avatar.')
       setProfile((prev) => (prev ? { ...prev, avatarPath: null, avatarUrl: null } : prev))
       notifyToast('success', 'Avatar removed.')
     } catch (err) {
@@ -672,17 +633,13 @@ export default function SellerSettingsClient() {
     const trimmedName = draftName.trim()
     const trimmedEmail = draftEmail.trim()
     try {
-      const { error: authError } = await supabase.auth.updateUser({ email: trimmedEmail })
-      if (authError) throw authError
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: trimmedName,
-          email: trimmedEmail,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', profile.id)
-      if (error) throw error
+      const res = await fetch('/api/seller/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'profile', fullName: trimmedName, email: trimmedEmail }),
+      })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(body?.error || 'Failed to update personal information.')
       setProfile((prev) => (prev ? { ...prev, fullName: trimmedName, email: trimmedEmail } : prev))
       setIsEditingPersonal(false)
       notifyToast('success', 'Personal information updated successfully.')
@@ -919,7 +876,13 @@ export default function SellerSettingsClient() {
                   </label>
                   <label className={styles.field}>
                     <span className={styles.label}>Account number</span>
-                    <input className={styles.input} value={payoutForm.accountNumber} onChange={(e) => onPayoutFieldChange('accountNumber', e.target.value)} />
+                    <input
+                      className={styles.input}
+                      type="password"
+                      autoComplete="off"
+                      value={payoutForm.accountNumber}
+                      onChange={(e) => onPayoutFieldChange('accountNumber', e.target.value)}
+                    />
                   </label>
                 </>
               )}
@@ -931,7 +894,13 @@ export default function SellerSettingsClient() {
                   </label>
                   <label className={styles.field}>
                     <span className={styles.label}>GCash number</span>
-                    <input className={styles.input} value={payoutForm.gcashNumber} onChange={(e) => onPayoutFieldChange('gcashNumber', e.target.value)} />
+                    <input
+                      className={styles.input}
+                      type="password"
+                      autoComplete="off"
+                      value={payoutForm.gcashNumber}
+                      onChange={(e) => onPayoutFieldChange('gcashNumber', e.target.value)}
+                    />
                   </label>
                 </>
               )}
@@ -1004,6 +973,16 @@ export default function SellerSettingsClient() {
                       </p>
                     </div>
                     <div className={`${styles.settingsRowControl} ${styles.headActions}`}>
+                      {doc.previewUrl && (
+                        <a
+                          className={styles.secondaryBtn}
+                          href={doc.previewUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Preview
+                        </a>
+                      )}
                       {doc.status !== 'approved' && (
                         <button type="button" className={styles.dangerBtn} onClick={() => handleDeleteDocument(doc.id)}>
                           <TbTrash /> Remove

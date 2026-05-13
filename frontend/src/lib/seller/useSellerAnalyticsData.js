@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase/client'
-import { SELLER_ANALYTICS_ORDER_SELECT } from './sellerOrderAnalytics'
 
 /**
  * Loads seller orders (analytics shape) + minimal listing rows for dashboard alerts.
+ * The server route centralizes the query shape so dashboard/analytics do not drift.
  */
 export function useSellerAnalyticsData() {
   const { user, authLoading, isSeller } = useAuth()
@@ -21,35 +21,18 @@ export function useSellerAnalyticsData() {
 
       setError('')
 
-      const orderChain = supabase
-        .from('orders')
-        .select(SELLER_ANALYTICS_ORDER_SELECT)
-        .eq('seller_user_id', user.id)
-        .order('created_at', { ascending: false })
-
-      const listingChain = supabase
-        .from('seller_listings')
-        .select('id,approval_status')
-        .eq('seller_user_id', user.id)
-
-      const [orRes, liRes] = await Promise.all([
-        orderChain.abortSignal?.(signal) ?? orderChain,
-        listingChain.abortSignal?.(signal) ?? listingChain,
-      ])
+      const res = await fetch('/api/seller/orders/analytics', { cache: 'no-store', signal })
+      const body = await res.json().catch(() => null)
 
       if (signal?.aborted) return
 
-      if (orRes.error) {
+      if (!res.ok) {
         setOrders([])
-        setError(orRes.error.message || 'Could not load orders.')
-      } else {
-        setOrders(orRes.data || [])
-      }
-
-      if (liRes.error) {
         setListings([])
+        setError(body?.error || 'Could not load orders.')
       } else {
-        setListings(liRes.data || [])
+        setOrders(Array.isArray(body?.orders) ? body.orders : [])
+        setListings(Array.isArray(body?.listings) ? body.listings : [])
       }
     },
     [user, isSeller],
@@ -86,9 +69,27 @@ export function useSellerAnalyticsData() {
       })
     })
 
+    const refresh = () => {
+      load({ signal: controller.signal }).catch(() => {})
+    }
+    const channel = supabase
+      .channel(`seller-analytics:${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders', filter: `seller_user_id=eq.${user.id}` },
+        refresh,
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'seller_listings', filter: `seller_user_id=eq.${user.id}` },
+        refresh,
+      )
+      .subscribe()
+
     return () => {
       cancelled = true
       controller.abort()
+      supabase.removeChannel(channel)
     }
   }, [authLoading, user, isSeller, load])
 

@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react'
 import { TbChevronDown, TbMail, TbSearch } from 'react-icons/tb'
-import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/contexts/ToastContext'
 import styles from './help.module.css'
 
@@ -133,43 +132,27 @@ export default function SellerHelpPage() {
 
     setIsSubmittingEmail(true)
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    try {
+      const res = await fetch('/api/seller/support', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject, message: body }),
+      })
+      const responseBody = await res.json().catch(() => null)
+      if (!res.ok) {
+        toast.error(responseBody?.error || 'Unable to submit right now. Please try again in a moment.')
+        return
+      }
 
-    const senderEmail = user?.email || null
-    const senderId = user?.id || null
-
-    const { error } = await supabase.from('notifications').insert({
-      title: `Support Request: ${subject}`,
-      body,
-      type: 'system',
-      priority: 'medium',
-      read: false,
-      resolved: false,
-      payload: {
-        source: 'seller_help_email_support',
-        recipientRole: 'admin',
-        senderRole: 'seller',
-        senderId,
-        senderEmail,
-        subject,
-        message: body,
-      },
-      timestamp_label: 'Just now',
-    })
-
-    setIsSubmittingEmail(false)
-
-    if (error) {
+      toast.success('Message sent. Admin has been notified.')
+      setEmailSubject('Seller Help Request')
+      setEmailMessage('')
+      setIsEmailModalOpen(false)
+    } catch {
       toast.error('Unable to submit right now. Please try again in a moment.')
-      return
+    } finally {
+      setIsSubmittingEmail(false)
     }
-
-    toast.success('Message sent. Admin has been notified.')
-    setEmailSubject('Seller Help Request')
-    setEmailMessage('')
-    setIsEmailModalOpen(false)
   }
 
   return (

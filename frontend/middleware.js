@@ -86,7 +86,14 @@ export async function middleware(request) {
       return NextResponse.redirect(url);
     }
 
-    const sellerStatus = String(sellerRow?.status || "").toLowerCase();
+    if (!sellerRow?.status) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/seller/onboarding";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+
+    const sellerStatus = String(sellerRow.status).toLowerCase();
     if (sellerStatus === "pending" || sellerStatus === "rejected") {
       const url = request.nextUrl.clone();
       url.pathname = "/seller/onboarding";
