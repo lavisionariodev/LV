@@ -16,6 +16,34 @@ export const PENDING_CHANGE_KEYS = [
   'image_urls',
 ]
 
+export const PENDING_FIELD_LABELS = {
+  listing_name: 'Title',
+  category: 'Category',
+  funeral_category: 'Funeral category',
+  description: 'Description',
+  duration: 'Duration',
+  location: 'Location',
+  listing_kind: 'Listing type',
+  base_price: 'Price',
+  package_options: 'Package options',
+  stock_status: 'Stock',
+  inclusions: 'Inclusions',
+  who_this_is_for: 'Who this is for',
+  important_notes: 'Important notes',
+  image_urls: 'Images',
+}
+
+/**
+ * @param {unknown} pending
+ * @returns {string[]}
+ */
+export function getPendingChangeFieldLabels(pending) {
+  const p = pending && typeof pending === 'object' && !Array.isArray(pending) ? pending : {}
+  return PENDING_CHANGE_KEYS.filter((key) => Object.prototype.hasOwnProperty.call(p, key)).map(
+    (key) => PENDING_FIELD_LABELS[key] || key.replace(/_/g, ' '),
+  )
+}
+
 /**
  * @param {unknown} row
  * @returns {boolean}

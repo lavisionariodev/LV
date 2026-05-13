@@ -1,5 +1,5 @@
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
-import { insertUserNotification } from '@/lib/notifications/inAppServer'
+import { insertUserNotification, notifySeller } from '@/lib/notifications/inAppServer'
 
 export { insertUserNotification }
 
@@ -92,8 +92,7 @@ export async function applyTerminalRefundToOrder(supabaseAdmin, p) {
   }
 
   if (order.seller_user_id) {
-    await insertUserNotification(supabaseAdmin, {
-      userId: order.seller_user_id,
+    await notifySeller(supabaseAdmin, order.seller_user_id, {
       type: 'payment_refund',
       title: 'Refund completed for your booking',
       body: `Order ${ordRef}: the buyer’s refund (${amountLabel}) has been completed. This booking is closed and will not receive a payout.`,

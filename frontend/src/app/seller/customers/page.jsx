@@ -7,7 +7,7 @@ import { TbSearch, TbUser, TbPhone, TbMail, TbX, TbReceipt } from 'react-icons/t
 import styles from './customers.module.css'
 import { formatCount } from '@/shared/utils/formatCount'
 import { useDebouncedEffect } from '@/shared/hooks'
-import { readString, replaceUrlQuery } from '@/lib/url/queryParams'
+import { readString, replaceUrlQuery } from '@/shared/utils/queryParams'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase/client'
 import {

@@ -196,20 +196,20 @@
 .supportTitle {
   margin: 0;
   color: var(--primary, var(--color-main-accent));
-  font-size: 1.35rem;
+  font-size: 1rem;
   font-weight: 700;
 }
 
 .supportSubtitle {
   margin: 6px 0 0;
   color: var(--muted, var(--color-text-secondary));
-  font-size: 0.86rem;
+  font-size: 0.78rem;
 }
 
 .supportMeta {
   margin: 6px 0 0;
   color: var(--accent, var(--color-secondary-accent));
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 600;
 }
 
@@ -230,7 +230,7 @@
   align-items: center;
   gap: 8px;
   padding: 0 10px;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
@@ -460,7 +460,7 @@
 
   .supportOption {
     height: 38px;
-    font-size: 0.85rem;
+    font-size: 0.78rem;
   }
 
   .modalCard {
@@ -606,7 +606,7 @@
 .supportHistoryMessage {
   margin: 0;
   color: var(--muted, var(--color-text-secondary));
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   line-height: 1.45;
 }
 

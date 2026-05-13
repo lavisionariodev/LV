@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
 import { getClientIp, takeToken } from '@/lib/rate-limit/memoryRateLimit'
 import { insertOrderRefundEvent, insertUserNotification } from '@/lib/payments/refundReconcile'
+import { notifySeller } from '@/lib/notifications/inAppServer'
 
 /**
  * Buyer cancels purchase while provider has not confirmed (fulfillment pending).
@@ -179,8 +180,7 @@ export async function POST(request) {
       })
 
       if (order.seller_user_id) {
-        await insertUserNotification(supabaseAdmin, {
-          userId: order.seller_user_id,
+        await notifySeller(supabaseAdmin, order.seller_user_id, {
           type: 'alerts',
           title: 'Refund request received',
           body: `A buyer cancelled their booking before confirmation and has requested a refund. Please review and approve or decline.${refundReason ? ` Buyer note: ${refundReason}` : ''}`,

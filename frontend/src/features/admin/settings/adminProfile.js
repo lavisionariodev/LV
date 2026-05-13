@@ -2,16 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase as browserSupabase } from '@/lib/supabase/client'
-
-const AVATARS_BUCKET = 'avatars'
+import { removeAdminAvatar, uploadAdminAvatar } from '@/lib/admin/adminAvatar'
+import { validateAvatarImage, resolveStoredAvatar } from '@/shared/utils/avatarImage'
 
 /**
  * Loads the current admin row + avatar public URL for topbar / settings / dashboard.
  * Uses the shared browser Supabase client.
  */
 export async function fetchCurrentAdminProfile() {
-  // `getUser()` makes a network call; `getSession()` is usually instant (cached).
-  // For above-the-fold UI like avatars, prefer session and fall back to getUser.
   const {
     data: { session },
   } = await browserSupabase.auth.getSession()
@@ -36,11 +34,7 @@ export async function fetchCurrentAdminProfile() {
     throw error
   }
 
-  const avatarPath = data.avatar_url || null
-
-  const avatarUrl = avatarPath
-    ? browserSupabase.storage.from(AVATARS_BUCKET).getPublicUrl(avatarPath).data.publicUrl
-    : null
+  const { avatarPath, avatarUrl } = resolveStoredAvatar(browserSupabase, data.avatar_url)
 
   const firstName = data.first_name || ''
   const lastName = data.last_name || ''
@@ -58,19 +52,50 @@ export async function fetchCurrentAdminProfile() {
   }
 }
 
+export function validateAdminFirstName(value) {
+  const v = String(value || '').trim()
+  if (!v) return 'Please enter your first name.'
+  if (v.length < 2) return 'First name is too short.'
+  return ''
+}
+
+export function validateAdminEmail(value) {
+  const v = String(value || '').trim()
+  if (!v) return 'Please enter a valid email.'
+  if (!/^\S+@\S+\.\S+$/.test(v)) return 'Please enter a valid email format.'
+  return ''
+}
+
+export function validateAdminSmsPhone(value) {
+  const v = String(value || '').trim()
+  if (!v) return ''
+  const digits = v.replace(/\D/g, '')
+  if (digits.length < 7) return 'Enter a valid phone number (at least 7 digits).'
+  if (digits.length > 15) return 'Phone number is too long.'
+  return ''
+}
+
+function splitNameParts(profile) {
+  const firstName =
+    profile?.firstName || (profile?.fullName || '').trim().split(' ')[0] || ''
+  const lastName =
+    profile?.lastName ||
+    (() => {
+      const parts = (profile?.fullName || '').trim().split(' ').filter(Boolean)
+      return parts.length > 1 ? parts.slice(1).join(' ') : ''
+    })()
+  return { firstName, lastName }
+}
+
 /**
  * Shared logic for the admin personal-info form.
  *
- * Both `AdminSettingsClient` (desktop) and `AdminProfileClient` (mobile)
- * previously duplicated load / save / validate logic. This hook centralizes
- * the data layer; the JSX stays in each variant because of layout differences.
- *
  * @param {{
- *   supabase: import('@supabase/supabase-js').SupabaseClient,
+ *   supabase?: import('@supabase/supabase-js').SupabaseClient,
  *   toast?: { success?: (m: string) => void, error?: (m: string) => void },
  * }} opts
  */
-export function useAdminProfileForm({ supabase, toast } = {}) {
+export function useAdminProfileForm({ supabase = browserSupabase, toast } = {}) {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
@@ -83,6 +108,14 @@ export function useAdminProfileForm({ supabase, toast } = {}) {
   const [emailVerificationPending, setEmailVerificationPending] = useState(false)
   const cancelledRef = useRef(false)
 
+  const syncDraftFromProfile = useCallback((nextProfile) => {
+    const { firstName, lastName } = splitNameParts(nextProfile)
+    setDraftFirstName(firstName)
+    setDraftLastName(lastName)
+    setDraftEmail(nextProfile?.email || '')
+    setDraftSmsPhone(nextProfile?.smsPhone || '')
+  }, [])
+
   useEffect(() => {
     cancelledRef.current = false
     return () => {
@@ -94,35 +127,10 @@ export function useAdminProfileForm({ supabase, toast } = {}) {
     setLoading(true)
     setSaveError('')
     try {
-      const {
-        data: { user },
-        error: userErr,
-      } = await supabase.auth.getUser()
-      if (userErr || !user) throw new Error('Not authenticated.')
-
-      const { data, error } = await supabase
-        .from('admins')
-        .select('id, first_name, last_name, email, sms_phone, avatar_url')
-        .eq('id', user.id)
-        .single()
-
-      if (error) throw error
+      const data = await fetchCurrentAdminProfile()
       if (cancelledRef.current) return
-
-      const profileObj = {
-        id: data.id,
-        firstName: data.first_name || '',
-        lastName: data.last_name || '',
-        fullName: [data.first_name, data.last_name].filter(Boolean).join(' '),
-        email: data.email || user.email || '',
-        smsPhone: data.sms_phone || '',
-        avatarUrl: data.avatar_url || null,
-      }
-      setProfile(profileObj)
-      setDraftFirstName(profileObj.firstName)
-      setDraftLastName(profileObj.lastName)
-      setDraftEmail(profileObj.email)
-      setDraftSmsPhone(profileObj.smsPhone)
+      setProfile(data)
+      syncDraftFromProfile(data)
     } catch (err) {
       if (!cancelledRef.current) {
         setSaveError(err?.message || 'Failed to load profile.')
@@ -130,7 +138,7 @@ export function useAdminProfileForm({ supabase, toast } = {}) {
     } finally {
       if (!cancelledRef.current) setLoading(false)
     }
-  }, [supabase])
+  }, [syncDraftFromProfile])
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -139,46 +147,47 @@ export function useAdminProfileForm({ supabase, toast } = {}) {
   }, [load])
 
   const startEdit = useCallback(() => {
-    if (profile) {
-      setDraftFirstName(profile.firstName)
-      setDraftLastName(profile.lastName)
-      setDraftEmail(profile.email)
-      setDraftSmsPhone(profile.smsPhone)
-    }
+    if (profile) syncDraftFromProfile(profile)
     setSaveError('')
     setSaveStatus('')
     setEmailVerificationPending(false)
     setIsEditing(true)
-  }, [profile])
+  }, [profile, syncDraftFromProfile])
 
   const cancelEdit = useCallback(() => {
-    if (profile) {
-      setDraftFirstName(profile.firstName)
-      setDraftLastName(profile.lastName)
-      setDraftEmail(profile.email)
-      setDraftSmsPhone(profile.smsPhone)
-    }
+    if (profile) syncDraftFromProfile(profile)
     setIsEditing(false)
     setSaveError('')
     setSaveStatus('')
-  }, [profile])
+  }, [profile, syncDraftFromProfile])
 
   const save = useCallback(async () => {
     if (!profile) {
       setSaveError('Profile is not loaded yet.')
       return false
     }
+
+    const firstErr = validateAdminFirstName(draftFirstName)
+    if (firstErr) {
+      setSaveError(firstErr)
+      return false
+    }
+    const emailErr = validateAdminEmail(draftEmail)
+    if (emailErr) {
+      setSaveError(emailErr)
+      return false
+    }
+    const phoneErr = validateAdminSmsPhone(draftSmsPhone)
+    if (phoneErr) {
+      setSaveError(phoneErr)
+      return false
+    }
+
     const firstName = String(draftFirstName || '').trim()
-    if (!firstName) {
-      setSaveError('First name is required.')
-      return false
-    }
     const lastNameRaw = String(draftLastName || '').trim()
+    const lastName = lastNameRaw ? lastNameRaw : null
+    const trimmedName = [firstName, lastNameRaw].filter(Boolean).join(' ')
     const trimmedEmail = String(draftEmail || '').trim()
-    if (!/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
-      setSaveError('Enter a valid email.')
-      return false
-    }
     const trimmedSms = String(draftSmsPhone || '').trim()
     const emailChanged = trimmedEmail !== (profile.email || '')
 
@@ -194,14 +203,13 @@ export function useAdminProfileForm({ supabase, toast } = {}) {
         .from('admins')
         .update({
           first_name: firstName,
-          last_name: lastNameRaw || null,
+          last_name: lastName,
           email: trimmedEmail,
           sms_phone: trimmedSms || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', profile.id)
       if (error) throw error
-      const trimmedName = [firstName, lastNameRaw].filter(Boolean).join(' ')
       setProfile((prev) =>
         prev
           ? {
@@ -219,7 +227,7 @@ export function useAdminProfileForm({ supabase, toast } = {}) {
       if (emailChanged) {
         setEmailVerificationPending(true)
         toast?.success?.(
-          `We sent a verification link to ${trimmedEmail}. The email change applies once confirmed.`,
+          `Verification link sent to ${trimmedEmail}. Email change applies once confirmed.`,
         )
       } else {
         toast?.success?.('Profile updated successfully.')
@@ -231,7 +239,7 @@ export function useAdminProfileForm({ supabase, toast } = {}) {
       toast?.error?.(message)
       return false
     }
-  }, [draftFirstName, draftLastName, draftEmail, draftSmsPhone, profile, supabase, toast])
+  }, [draftEmail, draftFirstName, draftLastName, draftSmsPhone, profile, supabase, toast])
 
   return {
     profile,
@@ -248,12 +256,145 @@ export function useAdminProfileForm({ supabase, toast } = {}) {
     draftSmsPhone,
     setDraftSmsPhone,
     saveError,
+    setSaveError,
     saveStatus,
+    setSaveStatus,
     emailVerificationPending,
     setEmailVerificationPending,
     startEdit,
     cancelEdit,
     save,
     reload: load,
+  }
+}
+
+/**
+ * Personal profile + avatar state for admin settings/profile surfaces.
+ *
+ * @param {{
+ *   supabase?: import('@supabase/supabase-js').SupabaseClient,
+ *   toast?: { success?: (m: string) => void, error?: (m: string) => void },
+ * }} opts
+ */
+export function useAdminPersonalProfile({ supabase = browserSupabase, toast } = {}) {
+  const fileRef = useRef(null)
+  const avatarPreviewRef = useRef('')
+  const form = useAdminProfileForm({ supabase, toast })
+  const [avatarPreview, setAvatarPreview] = useState('')
+  const [avatarLoading, setAvatarLoading] = useState(false)
+  const [removeAvatarConfirmOpen, setRemoveAvatarConfirmOpen] = useState(false)
+
+  useEffect(
+    () => () => {
+      if (avatarPreviewRef.current) URL.revokeObjectURL(avatarPreviewRef.current)
+    },
+    [],
+  )
+
+  const resetAvatarPreview = useCallback(() => {
+    if (avatarPreviewRef.current) {
+      URL.revokeObjectURL(avatarPreviewRef.current)
+      avatarPreviewRef.current = ''
+    }
+    setAvatarPreview('')
+    if (fileRef.current) fileRef.current.value = ''
+  }, [])
+
+  const onPickAvatar = useCallback(
+    async (e) => {
+      form.setSaveError('')
+      form.setSaveStatus('')
+      const file = e.target.files?.[0]
+      if (!file) return
+      const error = validateAvatarImage(file)
+      if (error) {
+        form.setSaveError(error)
+        return
+      }
+      if (!form.profile) {
+        form.setSaveError('Profile is not loaded yet.')
+        return
+      }
+      resetAvatarPreview()
+      const url = URL.createObjectURL(file)
+      avatarPreviewRef.current = url
+      setAvatarPreview(url)
+      try {
+        setAvatarLoading(true)
+        const nextAvatar = await uploadAdminAvatar(supabase, form.profile, file)
+        form.setProfile((prev) => (prev ? { ...prev, ...nextAvatar } : prev))
+        resetAvatarPreview()
+        form.setSaveStatus('Avatar updated successfully.')
+      } catch (err) {
+        form.setSaveError(err?.message || 'Failed to upload avatar.')
+      } finally {
+        setAvatarLoading(false)
+      }
+    },
+    [form, resetAvatarPreview, supabase],
+  )
+
+  const openRemoveAvatarConfirm = useCallback(() => {
+    if (!form.profile || (!form.profile.avatarPath && !form.profile.avatarUrl)) return
+    setRemoveAvatarConfirmOpen(true)
+  }, [form.profile])
+
+  const executeRemoveAvatar = useCallback(async () => {
+    form.setSaveError('')
+    if (!form.profile || (!form.profile.avatarPath && !form.profile.avatarUrl)) return
+    resetAvatarPreview()
+    try {
+      setAvatarLoading(true)
+      await removeAdminAvatar(supabase, form.profile)
+      form.setProfile((prev) => (prev ? { ...prev, avatarPath: null, avatarUrl: null } : prev))
+      form.setSaveStatus('Avatar removed.')
+    } catch (err) {
+      form.setSaveError(err?.message || 'Failed to remove avatar.')
+    } finally {
+      setAvatarLoading(false)
+    }
+  }, [form, resetAvatarPreview, supabase])
+
+  const onStartPersonalEdit = useCallback(() => {
+    form.startEdit()
+  }, [form])
+
+  const onSavePersonal = useCallback(async () => {
+    await form.save()
+  }, [form])
+
+  const onCancelPersonalEdit = useCallback(() => {
+    form.cancelEdit()
+    resetAvatarPreview()
+  }, [form, resetAvatarPreview])
+
+  return {
+    fileRef,
+    loading: form.loading,
+    profile: form.profile,
+    setProfile: form.setProfile,
+    draftFirstName: form.draftFirstName,
+    setDraftFirstName: form.setDraftFirstName,
+    draftLastName: form.draftLastName,
+    setDraftLastName: form.setDraftLastName,
+    draftEmail: form.draftEmail,
+    setDraftEmail: form.setDraftEmail,
+    draftSmsPhone: form.draftSmsPhone,
+    setDraftSmsPhone: form.setDraftSmsPhone,
+    avatarPreview,
+    personalStatus: form.saveStatus,
+    personalError: form.saveError,
+    setPersonalError: form.setSaveError,
+    setPersonalStatus: form.setSaveStatus,
+    avatarLoading,
+    removeAvatarConfirmOpen,
+    setRemoveAvatarConfirmOpen,
+    isEditingPersonal: form.isEditing,
+    onPickAvatar,
+    openRemoveAvatarConfirm,
+    executeRemoveAvatar,
+    onStartPersonalEdit,
+    onSavePersonal,
+    onCancelPersonalEdit,
   }
 }

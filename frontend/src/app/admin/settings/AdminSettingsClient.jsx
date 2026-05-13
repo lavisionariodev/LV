@@ -4,7 +4,6 @@ import {
   forwardRef,
   useCallback,
   useEffect,
-  useImperativeHandle,
   useLayoutEffect,
   useRef,
   useState,
@@ -18,21 +17,33 @@ import { FaUser } from 'react-icons/fa6'
 import { FiEdit, FiUpload } from 'react-icons/fi'
 import { MdCheckCircle, MdErrorOutline } from 'react-icons/md'
 import { changePasswordWithReauth } from '@/lib/auth/changePassword'
-import { fetchCurrentAdminProfile } from '@/features/admin/settings/adminProfile'
-import { useMediaQuery } from '@/shared/hooks'
+import { useAdminPersonalProfile } from '@/features/admin/settings/adminProfile'
+import { AVATAR_ALLOWED_TYPES, shouldUseUnoptimizedAvatarSrc } from '@/shared/utils/avatarImage'
 import { useSiteContent, upsertSiteContent } from '@/lib/siteContent/client'
 import { validateSellerHelpFaq } from '@/lib/siteContent/mapping'
 import { useAuthToast } from '@/contexts/ToastContext'
+import {
+  ADMIN_NOTIFICATION_BUCKETS,
+  defaultBucketChannels,
+  mergeAdminNotificationPreferences,
+} from '@/lib/notifications/preferenceSchema'
+import {
+  fetchAdminNotificationPreferences,
+  saveAdminNotificationPreferences,
+} from '@/lib/notifications/preferencesClient'
+import { NOTIFICATION_PREFERENCE_CHANNELS } from '@/lib/notifications/notificationPreferenceChannels'
+import { NotificationPrefSwitch } from '@/lib/notifications/NotificationPrefSwitch'
+import {
+  useNotificationPreferences,
+  useNotificationPreferencesImperativeHandle,
+} from '@/lib/notifications/useNotificationPreferences'
+import { useMediaQuery } from '@/shared/hooks'
 import { normalizeSettingsTab } from './adminSettingsTabs'
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Constants
    ───────────────────────────────────────────────────────────────────────────── */
-
-const AVATARS_BUCKET = 'avatars'
-const MAX_MB = 2
-const ALLOWED = ['image/jpeg', 'image/png', 'image/webp']
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Billing Settings Panel
@@ -558,7 +569,7 @@ export function AdminBillingSettingsPanel({ variant = 'default' }) {
    Notification Preferences Panel
    ───────────────────────────────────────────────────────────────────────────── */
 
-const CATEGORY_KEYS = ['order', 'approval', 'alert', 'announcement']
+const CATEGORY_KEYS = ADMIN_NOTIFICATION_BUCKETS
 
 const CATEGORIES = [
   {
@@ -587,52 +598,16 @@ const CATEGORIES = [
   },
 ]
 
-const CHANNELS = [
-  { id: 'push', label: 'Push', hint: 'In-app notification' },
-  { id: 'email', label: 'Email', hint: null },
-]
-
-const SMS_DISCLAIMER =
-  'SMS delivery is not connected yet — only push and email channels are honored.'
-
 function defaultPrefs() {
   const o = {}
   for (const key of CATEGORY_KEYS) {
-    o[key] = { push: true, email: true, sms: false }
+    o[key] = defaultBucketChannels()
   }
   return o
 }
 
 function mergePrefs(raw) {
-  const base = defaultPrefs()
-  if (!raw || typeof raw !== 'object') return base
-  for (const key of CATEGORY_KEYS) {
-    const row = raw[key]
-    if (row && typeof row === 'object') {
-      base[key] = {
-        push: Boolean(row.push),
-        email: Boolean(row.email),
-        sms: false,
-      }
-    }
-  }
-  return base
-}
-
-function PrefSwitch({ checked, onToggle, disabled, labelledBy }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-labelledby={labelledBy}
-      disabled={disabled}
-      className={`${styles.notifPrefSwitch} ${checked ? styles.notifPrefSwitchOn : ''} ${disabled ? styles.notifPrefSwitchDisabled : ''}`}
-      onClick={() => !disabled && onToggle(!checked)}
-    >
-      <span className={styles.notifPrefSwitchThumb} aria-hidden />
-    </button>
-  )
+  return mergeAdminNotificationPreferences(raw)
 }
 
 export const AdminNotificationPreferencesPanel = forwardRef(function AdminNotificationPreferencesPanel(
@@ -641,121 +616,18 @@ export const AdminNotificationPreferencesPanel = forwardRef(function AdminNotifi
 ) {
   const isSheet = variant === 'sheet'
   const isProfileDetail = variant === 'profileDetail'
-  const [prefs, setPrefs] = useState(() => defaultPrefs())
-  const prefsRef = useRef(prefs)
-  const [loading, setLoading] = useState(true)
-  const [saveError, setSaveError] = useState('')
-  const adminIdRef = useRef(null)
-  const saveTimerRef = useRef(null)
+  const prefsState = useNotificationPreferences({
+    fetchPreferences: fetchAdminNotificationPreferences,
+    savePreferences: saveAdminNotificationPreferences,
+    mergePreferences: mergePrefs,
+    defaultPreferences: defaultPrefs,
+    debounceMs: 350,
+    loadErrorMessage: 'Failed to load preferences.',
+    saveErrorMessage: 'Could not save preferences.',
+  })
+  const { prefs, loading, saveError, setChannel } = prefsState
 
-  // Keep the ref in sync with state so `flushPendingSave` (called via the
-  // imperative handle) always sees the latest preferences without re-binding.
-  useEffect(() => {
-    prefsRef.current = prefs
-  }, [prefs])
-
-  useImperativeHandle(
-    ref,
-    () => ({
-      async flushPendingSave() {
-        const id = adminIdRef.current
-        if (!id) return
-        if (saveTimerRef.current) {
-          clearTimeout(saveTimerRef.current)
-          saveTimerRef.current = null
-        }
-        setSaveError('')
-        const next = prefsRef.current
-        const { error } = await supabase
-          .from('admins')
-          .update({
-            notification_preferences: next,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', id)
-        if (error) {
-          setSaveError(error.message || 'Could not save preferences.')
-          throw error
-        }
-      },
-    }),
-    [],
-  )
-
-  useEffect(() => {
-    let cancelled = false
-    async function load() {
-      setSaveError('')
-      try {
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser()
-        if (userError || !user) throw new Error('Not authenticated.')
-        adminIdRef.current = user.id
-
-        const { data, error } = await supabase
-          .from('admins')
-          .select('notification_preferences')
-          .eq('id', user.id)
-          .single()
-
-        if (error) throw error
-        if (!cancelled) {
-          setPrefs(mergePrefs(data?.notification_preferences))
-        }
-      } catch (e) {
-        if (!cancelled) setSaveError(e.message || 'Failed to load preferences.')
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-    queueMicrotask(() => {
-      load()
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  const persist = useCallback((next) => {
-    const id = adminIdRef.current
-    if (!id) return
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-    saveTimerRef.current = setTimeout(async () => {
-      setSaveError('')
-      const { error } = await supabase
-        .from('admins')
-        .update({
-          notification_preferences: next,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', id)
-      if (error) setSaveError(error.message || 'Could not save preferences.')
-    }, 350)
-  }, [])
-
-  useEffect(
-    () => () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-    },
-    [],
-  )
-
-  const setChannel = (categoryKey, channelId, value) => {
-    if (channelId === 'sms') return
-    setPrefs((prev) => {
-      const next = {
-        ...prev,
-        [categoryKey]: {
-          ...prev[categoryKey],
-          [channelId]: value,
-        },
-      }
-      persist(next)
-      return next
-    })
-  }
+  useNotificationPreferencesImperativeHandle(prefsState, ref)
 
   const wrapClass = isSheet
     ? styles.settingsSheetEmbed
@@ -818,7 +690,7 @@ export const AdminNotificationPreferencesPanel = forwardRef(function AdminNotifi
               <p className={styles.notifPrefDesc}>{cat.description}</p>
             </div>
             <div className={styles.notifPrefControls} role="group" aria-label={`${cat.title} channels`}>
-              {CHANNELS.map((ch) => {
+              {NOTIFICATION_PREFERENCE_CHANNELS.map((ch) => {
                 const switchId = `notif_${cat.key}_${ch.id}`
                 const checked = Boolean(prefs[cat.key]?.[ch.id])
                 return (
@@ -831,11 +703,12 @@ export const AdminNotificationPreferencesPanel = forwardRef(function AdminNotifi
                         <span className={styles.notifPrefChannelHint}>{ch.hint}</span>
                       ) : null}
                     </div>
-                    <PrefSwitch
+                    <NotificationPrefSwitch
                       labelledBy={switchId}
                       checked={ch.disabled ? false : checked}
                       disabled={ch.disabled}
                       onToggle={(v) => setChannel(cat.key, ch.id, v)}
+                      styles={styles}
                     />
                   </div>
                 )
@@ -850,10 +723,6 @@ export const AdminNotificationPreferencesPanel = forwardRef(function AdminNotifi
           {saveError}
         </p>
       ) : null}
-
-      <p className={styles.notifPrefDesc} style={{ marginTop: 12, fontStyle: 'italic' }}>
-        {SMS_DISCLAIMER}
-      </p>
 
       <div className={styles.notifPrefFooter}>
         <Link href="/admin/notifications" className={styles.notificationsCta}>
@@ -1610,22 +1479,33 @@ export function AdminSiteContentPanel({
 export default function AdminSettingsClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const fileRef = useRef(null)
-  const avatarPreviewRef = useRef('')
   const toast = useAuthToast()
-
-  const [loading, setLoading] = useState(true)
-  const [isEditingPersonal, setIsEditingPersonal] = useState(false)
-  const [profile, setProfile] = useState(null)
-  const [draftFirstName, setDraftFirstName] = useState('')
-  const [draftLastName, setDraftLastName] = useState('')
-  const [draftEmail, setDraftEmail] = useState('')
-  const [draftSmsPhone, setDraftSmsPhone] = useState('')
-  const [avatarPreview, setAvatarPreview] = useState('')
-  const [personalStatus, setPersonalStatus] = useState('')
-  const [personalError, setPersonalError] = useState('')
-  const [avatarLoading, setAvatarLoading] = useState(false)
-  const [removeAvatarConfirmOpen, setRemoveAvatarConfirmOpen] = useState(false)
+  const {
+    fileRef,
+    loading,
+    profile,
+    draftFirstName,
+    setDraftFirstName,
+    draftLastName,
+    setDraftLastName,
+    draftEmail,
+    setDraftEmail,
+    draftSmsPhone,
+    setDraftSmsPhone,
+    avatarPreview,
+    personalStatus,
+    personalError,
+    avatarLoading,
+    removeAvatarConfirmOpen,
+    setRemoveAvatarConfirmOpen,
+    isEditingPersonal,
+    onPickAvatar,
+    openRemoveAvatarConfirm,
+    executeRemoveAvatar,
+    onStartPersonalEdit,
+    onSavePersonal,
+    onCancelPersonalEdit,
+  } = useAdminPersonalProfile({ supabase, toast })
 
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -1642,268 +1522,6 @@ export default function AdminSettingsClient() {
     const q = searchParams.toString()
     router.replace(q ? `/admin/profile?${q}` : '/admin/profile', { scroll: false })
   }, [isMobile, router, searchParams])
-
-  useEffect(() => {
-    let cancelled = false
-    async function loadProfile() {
-      setLoading(true)
-      setPersonalError('')
-      setPersonalStatus('')
-      try {
-        const data = await fetchCurrentAdminProfile()
-        if (cancelled) return
-        setProfile(data)
-        setDraftFirstName(data.firstName || (data.fullName || '').trim().split(' ')[0] || '')
-        setDraftLastName(
-          data.lastName ||
-            (() => {
-              const parts = (data.fullName || '').trim().split(' ').filter(Boolean)
-              return parts.length > 1 ? parts.slice(1).join(' ') : ''
-            })(),
-        )
-        setDraftEmail(data.email || '')
-        setDraftSmsPhone(data.smsPhone || '')
-      } catch (err) {
-        if (!cancelled) setPersonalError(err.message || 'Failed to load profile.')
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-    queueMicrotask(() => {
-      loadProfile()
-    })
-    return () => {
-      cancelled = true
-      if (avatarPreviewRef.current) URL.revokeObjectURL(avatarPreviewRef.current)
-    }
-  }, [])
-
-  const validateImage = (file) => {
-    if (!file) return 'No file selected.'
-    if (!ALLOWED.includes(file.type)) return 'Only PNG, JPG, or WEBP images are allowed.'
-    const mb = file.size / (1024 * 1024)
-    if (mb > MAX_MB) return `Image must be ${MAX_MB}MB or less.`
-    return ''
-  }
-
-  const validateEmail = (value) => {
-    const v = value.trim()
-    if (!v) return 'Please enter a valid email.'
-    if (!/^\S+@\S+\.\S+$/.test(v)) return 'Please enter a valid email format.'
-    return ''
-  }
-
-  const validateFirstName = (value) => {
-    const v = String(value || '').trim()
-    if (!v) return 'Please enter your first name.'
-    if (v.length < 2) return 'First name is too short.'
-    return ''
-  }
-
-  const validateSmsPhone = (value) => {
-    const v = value.trim()
-    if (!v) return ''
-    const digits = v.replace(/\D/g, '')
-    if (digits.length < 7) return 'Enter a valid phone number (at least 7 digits).'
-    if (digits.length > 15) return 'Phone number is too long.'
-    return ''
-  }
-
-  const onPickAvatar = async (e) => {
-    setPersonalError('')
-    setPersonalStatus('')
-    const file = e.target.files?.[0]
-    if (!file) return
-    const error = validateImage(file)
-    if (error) {
-      setPersonalError(error)
-      return
-    }
-    if (!profile) {
-      setPersonalError('Profile is not loaded yet.')
-      return
-    }
-    if (avatarPreviewRef.current) URL.revokeObjectURL(avatarPreviewRef.current)
-    const url = URL.createObjectURL(file)
-    avatarPreviewRef.current = url
-    setAvatarPreview(url)
-    try {
-      setAvatarLoading(true)
-      const fileExt = file.name.split('.').pop()
-      const fileName = `avatar-${Date.now()}.${fileExt}`
-      const filePath = `${profile.id}/${fileName}`
-      if (profile.avatarPath) {
-        await supabase.storage.from(AVATARS_BUCKET).remove([profile.avatarPath])
-      }
-      const { error: uploadError } = await supabase.storage
-        .from(AVATARS_BUCKET)
-        .upload(filePath, file, { upsert: true, cacheControl: '3600' })
-      if (uploadError) throw uploadError
-      const { error: updateError } = await supabase
-        .from('admins')
-        .update({ avatar_url: filePath, updated_at: new Date().toISOString() })
-        .eq('id', profile.id)
-      if (updateError) throw updateError
-      const { data: { publicUrl } } = supabase.storage.from(AVATARS_BUCKET).getPublicUrl(filePath)
-      await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', profile.id)
-      setProfile((prev) => (prev ? { ...prev, avatarPath: filePath, avatarUrl: publicUrl } : prev))
-      setPersonalStatus('Avatar updated successfully.')
-    } catch (err) {
-      setPersonalError(err.message || 'Failed to upload avatar.')
-    } finally {
-      setAvatarLoading(false)
-    }
-  }
-
-  const openRemoveAvatarConfirm = () => {
-    if (!profile || (!profile.avatarPath && !profile.avatarUrl)) return
-    setRemoveAvatarConfirmOpen(true)
-  }
-
-  const executeRemoveAvatar = async () => {
-    setPersonalError('')
-    setPersonalStatus('')
-    if (!profile || (!profile.avatarPath && !profile.avatarUrl)) return
-    if (avatarPreviewRef.current) {
-      URL.revokeObjectURL(avatarPreviewRef.current)
-      avatarPreviewRef.current = ''
-      setAvatarPreview('')
-    }
-    if (fileRef.current) fileRef.current.value = ''
-    try {
-      setAvatarLoading(true)
-      if (profile.avatarPath) {
-        await supabase.storage.from(AVATARS_BUCKET).remove([profile.avatarPath])
-      }
-      const { error } = await supabase
-        .from('admins')
-        .update({ avatar_url: null, updated_at: new Date().toISOString() })
-        .eq('id', profile.id)
-      if (error) throw error
-      await supabase.from('profiles').update({ avatar_url: null }).eq('id', profile.id)
-      setProfile((prev) => (prev ? { ...prev, avatarPath: null, avatarUrl: null } : prev))
-      setPersonalStatus('Avatar removed.')
-    } catch (err) {
-      setPersonalError(err.message || 'Failed to remove avatar.')
-    } finally {
-      setAvatarLoading(false)
-    }
-  }
-
-  const onStartPersonalEdit = () => {
-    setPersonalError('')
-    setPersonalStatus('')
-    if (profile) {
-      setDraftFirstName(profile.firstName || (profile.fullName || '').trim().split(' ')[0] || '')
-      setDraftLastName(
-        profile.lastName ||
-          (() => {
-            const parts = (profile.fullName || '').trim().split(' ').filter(Boolean)
-            return parts.length > 1 ? parts.slice(1).join(' ') : ''
-          })(),
-      )
-      setDraftEmail(profile.email || '')
-      setDraftSmsPhone(profile.smsPhone || '')
-    }
-    setIsEditingPersonal(true)
-  }
-
-  const onSavePersonal = async () => {
-    setPersonalError('')
-    setPersonalStatus('')
-    const firstErr = validateFirstName(draftFirstName)
-    if (firstErr) {
-      setPersonalError(firstErr)
-      return
-    }
-    const emailErr = validateEmail(draftEmail)
-    if (emailErr) {
-      setPersonalError(emailErr)
-      return
-    }
-    const phoneErr = validateSmsPhone(draftSmsPhone)
-    if (phoneErr) {
-      setPersonalError(phoneErr)
-      return
-    }
-    if (!profile) {
-      setPersonalError('Profile is not loaded yet.')
-      return
-    }
-    const firstName = String(draftFirstName || '').trim()
-    const lastNameRaw = String(draftLastName || '').trim()
-    const lastName = lastNameRaw ? lastNameRaw : null
-    const trimmedName = [firstName, lastNameRaw].filter(Boolean).join(' ')
-    const trimmedEmail = draftEmail.trim()
-    const trimmedSms = draftSmsPhone.trim()
-    const emailChanged = trimmedEmail !== (profile.email || '')
-    try {
-      if (emailChanged) {
-        const { error: authError } = await supabase.auth.updateUser({ email: trimmedEmail })
-        if (authError) throw authError
-      }
-      const { error } = await supabase
-        .from('admins')
-        .update({
-          first_name: firstName,
-          last_name: lastName,
-          email: trimmedEmail,
-          sms_phone: trimmedSms || null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', profile.id)
-      if (error) throw error
-      setProfile((prev) =>
-        prev
-          ? {
-              ...prev,
-              firstName,
-              lastName,
-              fullName: trimmedName,
-              email: trimmedEmail,
-              smsPhone: trimmedSms,
-            }
-          : prev,
-      )
-      setIsEditingPersonal(false)
-      setPersonalStatus('Profile updated successfully.')
-      if (emailChanged) {
-        toast.success(
-          `Verification link sent to ${trimmedEmail}. Email change applies once confirmed.`,
-        )
-      } else {
-        toast.success('Profile updated successfully.')
-      }
-    } catch (err) {
-      const message = err.message || 'Failed to update profile.'
-      setPersonalError(message)
-      toast.error(message)
-    }
-  }
-
-  const onCancelPersonalEdit = () => {
-    setPersonalError('')
-    setPersonalStatus('')
-    if (profile) {
-      setDraftFirstName(profile.firstName || (profile.fullName || '').trim().split(' ')[0] || '')
-      setDraftLastName(
-        profile.lastName ||
-          (() => {
-            const parts = (profile.fullName || '').trim().split(' ').filter(Boolean)
-            return parts.length > 1 ? parts.slice(1).join(' ') : ''
-          })(),
-      )
-      setDraftEmail(profile.email || '')
-      setDraftSmsPhone(profile.smsPhone || '')
-    }
-    if (avatarPreviewRef.current) {
-      URL.revokeObjectURL(avatarPreviewRef.current)
-      avatarPreviewRef.current = ''
-    }
-    setAvatarPreview('')
-    if (fileRef.current) fileRef.current.value = ''
-    setIsEditingPersonal(false)
-  }
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault()
@@ -1959,7 +1577,7 @@ export default function AdminSettingsClient() {
   }
 
   const shownAvatar = avatarPreview || profile?.avatarUrl || ''
-  const shownAvatarIsBlob = Boolean(shownAvatar && shownAvatar.startsWith('blob:'))
+  const shownAvatarIsBlob = shouldUseUnoptimizedAvatarSrc(shownAvatar)
   const formId = 'adminPasswordForm'
   const id = (name) => `admin_${name}`
 
@@ -2158,7 +1776,7 @@ export default function AdminSettingsClient() {
                   <input
                     ref={fileRef}
                     type="file"
-                    accept={ALLOWED.join(',')}
+                    accept={AVATAR_ALLOWED_TYPES.join(',')}
                     className={styles.fileInput}
                     onChange={onPickAvatar}
                   />

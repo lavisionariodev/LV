@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { fetchActiveShopListings, mergeShopListings } from '@/lib/shop-listings/client'
 import { fetchPublicSellerProfile, normalizeSellerSpecialties } from '@/lib/sellers/client'
 import { fetchActivePartnersDirectory, pickTopRatedSellerUserIdFromDirectory } from '@/lib/partners/client'
-import { isUuidLike } from '@/lib/uuidLike'
+import { isUuidLike } from '@/shared/utils/uuidLike'
 import { buildCartPayloadFromListing } from '@/lib/cart/fromListing'
 import { assertListingReadyForCart } from '@/lib/cart/bookNow'
 import { useCart } from '@/contexts/CartContext'
@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/contexts/ToastContext'
 import ContactSellerModal from '@/components/ui/Modal/ContactSellerModal'
 import { providerServiceAggPairSegments } from '@/lib/ratings/providerServiceAggPairSegments'
+import { formatPhpWholeAmount } from '@/lib/cart/formatPhp'
 import styles from './seller-profile.module.css'
 
 // ─── Sample Data ──────────────────────────────────────────────────────────────
@@ -359,12 +360,6 @@ function listingsFromShopRows(shopRows, aggregatesByPair = {}) {
       avg != null && Number.isFinite(Number(avg)) ? Number(Number(avg).toFixed(1)) : null
     return { ...row, rating }
   })
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatPhp(amount) {
-  return '₱' + Number(amount).toLocaleString('en-PH', { minimumFractionDigits: 0 })
 }
 
 // ─── Star Helper ──────────────────────────────────────────────────────────────
@@ -1150,7 +1145,7 @@ function ListingCard({ listing, styles }) {
             <h3 className={styles.cardTitle}>{listing.name}</h3>
             <div className={styles.priceBlock}>
               <span className={styles.priceLabel}>From</span>
-              <span className={styles.price}>{formatPhp(listing.price)}</span>
+              <span className={styles.price}>{formatPhpWholeAmount(listing.price)}</span>
             </div>
           </div>
         </div>

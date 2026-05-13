@@ -3,8 +3,22 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { TbPlus, TbSearch, TbTrash } from 'react-icons/tb'
-import styles from './products.module.css'
+import { TbCircleX, TbPlus, TbTrash } from 'react-icons/tb'
+import styles from '../products.module.css'
+import ProductsListToolbar from './ProductsListToolbar'
+import ProductsLifecycleTabs from './ProductsLifecycleTabs'
+import ProductsActiveGrid from './ProductsActiveGrid'
+import ProductsReviewTable, { ProductsReviewTableSkeleton } from './ProductsReviewTable'
+import {
+  awaitingAdminCount,
+  countByTab,
+  DEFAULT_LISTING_TAB,
+  filterByTab,
+  isProductShopActive,
+  LISTING_TAB_IDS,
+  productStateLabel,
+  readListingTab,
+} from './listingLifecycle'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   buildSellerListingPayload,
@@ -16,6 +30,7 @@ import {
   listingRowToFormValues,
   normalizePackageOptionsFromDb,
   resolvePersistedImageUrls,
+  shouldUnoptimizeListingImage,
   SellerListingFileInput,
   SellerListingFormFields,
 } from './SellerListingForm'
@@ -24,14 +39,15 @@ import {
   submitListingForReview,
   updateSellerListing,
   deleteSellerListing,
+  cancelListingReviewRequest,
 } from '@/lib/seller-listings/client'
 import { getSellerByUserId } from '@/lib/sellers/client'
 import { supabase } from '@/lib/supabase/client'
 import { formatPhpAmount, roundPhpAmount } from '@/lib/cart/formatPhp'
-import { hasPendingSellerChanges, mergePendingChangesIntoListingRow } from '@/lib/seller-listings/pendingChanges'
+import { hasPendingSellerChanges, mergePendingChangesIntoListingRow, getPendingChangeFieldLabels } from '@/lib/seller-listings/pendingChanges'
 import { formatCount } from '@/shared/utils/formatCount'
 import { useDebouncedEffect } from '@/shared/hooks'
-import { readEnum, readString, replaceUrlQuery } from '@/lib/url/queryParams'
+import { readEnum, readString, replaceUrlQuery } from '@/shared/utils/queryParams'
 
 // ---------------------------------------------------------------------------
 // Listing form utilities (products list + edit modal)
@@ -183,6 +199,9 @@ function normalizeListingRowToProduct(row) {
     stockStatus: effective.stock_status ?? null,
     hasPendingUpdate: hasPendingSellerChanges(row),
     stagedRejectionReason: row?.staged_rejection_reason ?? row?.stagedRejectionReason ?? null,
+    pendingChangesSubmittedAt:
+      row?.pending_changes_submitted_at ?? row?.pendingChangesSubmittedAt ?? null,
+    pendingChangeFields: getPendingChangeFieldLabels(row?.pending_changes),
   }
 }
 
@@ -190,28 +209,13 @@ function normalizeListingRowToProduct(row) {
 // Products list + view/edit modals
 // ---------------------------------------------------------------------------
 
-function isProductShopActive(p) {
-  return p?.status === 'active' && p?.approvalStatus === 'approved'
-}
-
-function productStateLabel(p) {
-  const approval = String(p?.approvalStatus || 'draft').toLowerCase()
-  const status = String(p?.status || 'draft').toLowerCase()
-  if (approval === 'pending') return 'Pending review'
-  if (approval === 'rejected') return 'Rejected'
-  if (status === 'archived') return 'Archived'
-  if (approval === 'approved' && p?.hasPendingUpdate) return 'Changes pending review'
-  if (isProductShopActive(p)) return 'Active'
-  return 'Draft'
-}
-
 const TYPE_FILTERS = [
   { id: 'all', label: 'All types' },
   { id: 'service', label: 'Services' },
   { id: 'package', label: 'Packages' },
 ]
 
-export default function ProductsContent({ initialKind = 'all' }) {
+export default function ProductsContent({ initialKind = 'all', listingScope = 'active' }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -220,6 +224,7 @@ export default function ProductsContent({ initialKind = 'all' }) {
   const defaultKind = allowedKinds.includes(initialKind) ? initialKind : 'all'
   const [searchQuery, setSearchQuery] = useState(() => readString(searchParams, 'q', ''))
   const [typeFilter, setTypeFilter] = useState(() => readEnum(searchParams, 'kind', allowedKinds, defaultKind))
+  const [activeTab, setActiveTab] = useState(() => readListingTab(searchParams, LISTING_TAB_IDS))
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [modalMode, setModalMode] = useState(null) // 'view' | 'edit'
   const [editGallery, setEditGallery] = useState([])
@@ -228,10 +233,14 @@ export default function ProductsContent({ initialKind = 'all' }) {
   const [productPendingRemoval, setProductPendingRemoval] = useState(null)
   const [removeInProgress, setRemoveInProgress] = useState(false)
   const [removeError, setRemoveError] = useState(null)
+  const [productPendingCancel, setProductPendingCancel] = useState(null)
+  const [cancelInProgress, setCancelInProgress] = useState(false)
+  const [cancelError, setCancelError] = useState(null)
   const [archiveBusyId, setArchiveBusyId] = useState(null)
   const fileInputRef = useRef(null)
   const [formValues, setFormValues] = useState({})
   const [formError, setFormError] = useState('')
+  const [saveInProgress, setSaveInProgress] = useState(false)
   const [loadingData, setLoadingData] = useState(true)
   /** `sellers.status` — shop only shows listings when this is `active`. */
   const [sellerAccountStatus, setSellerAccountStatus] = useState(null)
@@ -246,9 +255,11 @@ export default function ProductsContent({ initialKind = 'all' }) {
   useEffect(() => {
     const nextQ = readString(searchParams, 'q', '')
     const nextKind = readEnum(searchParams, 'kind', allowedKinds, defaultKind)
+    const nextTab = readListingTab(searchParams, LISTING_TAB_IDS)
     queueMicrotask(() => {
       if (nextQ !== searchQuery) setSearchQuery(nextQ)
       if (nextKind !== typeFilter) setTypeFilter(nextKind)
+      if (nextTab !== activeTab) setActiveTab(nextTab)
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
@@ -258,8 +269,9 @@ export default function ProductsContent({ initialKind = 'all' }) {
     replaceUrlQuery(router, pathname, searchParams, {
       q: searchQuery,
       kind: { value: typeFilter, omitIf: defaultKind },
+      tab: { value: activeTab, omitIf: DEFAULT_LISTING_TAB },
     })
-  }, [searchQuery, typeFilter, router, pathname, searchParams], 300)
+  }, [searchQuery, typeFilter, activeTab, router, pathname, searchParams], 300)
 
   useEffect(() => {
     let mounted = true
@@ -313,20 +325,37 @@ export default function ProductsContent({ initialKind = 'all' }) {
 
     setup()
 
-    const onFocus = () => {
+    const onVisible = () => {
       if (document.visibilityState === 'visible') load()
     }
-    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVisible)
 
     return () => {
       mounted = false
-      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVisible)
       if (channel) supabase.removeChannel(channel)
     }
   }, [])
 
+  const isArchiveView = listingScope === 'archived'
+  const showLifecycleTabs = !isArchiveView
+
+  const scopedProducts = useMemo(() => {
+    if (isArchiveView) {
+      return products.filter((p) => String(p?.status || '').toLowerCase() === 'archived')
+    }
+    return products.filter((p) => String(p?.status || '').toLowerCase() !== 'archived')
+  }, [products, isArchiveView])
+
+  const tabCounts = useMemo(() => countByTab(scopedProducts), [scopedProducts])
+
+  const tabProducts = useMemo(() => {
+    if (isArchiveView) return scopedProducts
+    return filterByTab(scopedProducts, activeTab)
+  }, [scopedProducts, activeTab, isArchiveView])
+
   const filteredProducts = useMemo(() => {
-    let list = [...products]
+    let list = [...tabProducts]
 
     if (typeFilter !== 'all') {
       list = list.filter((p) => p.kind === typeFilter)
@@ -337,12 +366,14 @@ export default function ProductsContent({ initialKind = 'all' }) {
     }
 
     return list
-  }, [products, typeFilter, searchQuery])
+  }, [tabProducts, typeFilter, searchQuery])
 
-  const total = products.length
-  const activeCount = products.filter((p) => isProductShopActive(p)).length
-  const pendingCount = products.filter((p) => String(p?.approvalStatus || '').toLowerCase() === 'pending').length
-  const draftCount = products.filter((p) => productStateLabel(p) === 'Draft').length
+  const total = scopedProducts.length
+  const activeCount = scopedProducts.filter((p) => isProductShopActive(p)).length
+  const pendingCount = awaitingAdminCount(scopedProducts)
+  const draftCount = scopedProducts.filter((p) => productStateLabel(p) === 'Draft').length
+  const archivedServicesCount = scopedProducts.filter((p) => p.kind === 'service').length
+  const archivedPackagesCount = scopedProducts.filter((p) => p.kind === 'package').length
 
   const handleOpenView = (product) => {
     setSelectedProduct(product)
@@ -480,6 +511,45 @@ export default function ProductsContent({ initialKind = 'all' }) {
     }
   }
 
+  const handleRequestCancelReview = (product) => {
+    setCancelError(null)
+    handleCloseModal()
+    setProductPendingCancel(product)
+  }
+
+  const handleCancelCancelReview = () => {
+    if (cancelInProgress) return
+    setCancelError(null)
+    setProductPendingCancel(null)
+  }
+
+  const handleConfirmCancelReview = async () => {
+    if (!productPendingCancel || cancelInProgress) return
+
+    setCancelError(null)
+    setCancelInProgress(true)
+    try {
+      const id = productPendingCancel.id
+      const { data, error } = await cancelListingReviewRequest(id)
+      if (error || !data) {
+        setCancelError(error || 'Failed to cancel review request.')
+        return
+      }
+
+      setProducts((prev) =>
+        prev.map((p) => (p.id === id ? normalizeListingRowToProduct(data) : p)),
+      )
+
+      if (selectedProduct?.id === id) {
+        setSelectedProduct(normalizeListingRowToProduct(data))
+      }
+
+      setProductPendingCancel(null)
+    } finally {
+      setCancelInProgress(false)
+    }
+  }
+
   const getFieldValue = (fieldId) => formValues?.[fieldId]
 
   const setFieldValue = (fieldId, value) => {
@@ -488,7 +558,7 @@ export default function ProductsContent({ initialKind = 'all' }) {
   }
 
   const handleSaveProduct = async () => {
-    if (!selectedProduct) return
+    if (!selectedProduct || saveInProgress) return
 
     const missingRequired = findFirstMissingRequiredField(formValues, editGallery)
     if (missingRequired) {
@@ -496,31 +566,36 @@ export default function ProductsContent({ initialKind = 'all' }) {
       return
     }
 
-    const { error: uploadErr, persistedImageUrls } = await resolvePersistedImageUrls(
-      editGallery,
-      pendingImageFiles,
-    )
-    if (uploadErr) {
-      setFormError(uploadErr)
-      return
+    setSaveInProgress(true)
+    try {
+      const { error: uploadErr, persistedImageUrls } = await resolvePersistedImageUrls(
+        editGallery,
+        pendingImageFiles,
+      )
+      if (uploadErr) {
+        setFormError(uploadErr)
+        return
+      }
+
+      const payload = buildSellerListingPayload({
+        formValues,
+        selectedProduct,
+        persistedImageUrls,
+      })
+
+      const { data, error } = await updateSellerListing(selectedProduct.id, payload)
+      if (error || !data) {
+        setFormError(error || 'Failed to save listing.')
+        return
+      }
+      setProducts((prev) =>
+        prev.map((p) => (p.id === selectedProduct.id ? normalizeListingRowToProduct(data) : p)),
+      )
+
+      handleCloseModal()
+    } finally {
+      setSaveInProgress(false)
     }
-
-    const payload = buildSellerListingPayload({
-      formValues,
-      selectedProduct,
-      persistedImageUrls,
-    })
-
-    const { data, error } = await updateSellerListing(selectedProduct.id, payload)
-    if (error || !data) {
-      setFormError(error || 'Failed to save listing.')
-      return
-    }
-    setProducts((prev) =>
-      prev.map((p) => (p.id === selectedProduct.id ? normalizeListingRowToProduct(data) : p)),
-    )
-
-    handleCloseModal()
   }
 
   const handleSubmitForReview = async (product) => {
@@ -580,170 +655,163 @@ export default function ProductsContent({ initialKind = 'all' }) {
           )}
         </div>
       ) : null}
-      <section className={styles.filtersRow} aria-label="Search products">
-        <form
-          className={styles.searchWrap}
-          role="search"
-          onSubmit={(e) => {
-            e.preventDefault()
-          }}
-        >
-          <TbSearch className={styles.searchIcon} size={18} aria-hidden />
-          <input
-            type="search"
-            name="q"
-            className={styles.searchBox}
-            placeholder="Search by name, category, area, description, duration…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            aria-label="Search listings by text"
-            autoComplete="off"
-            spellCheck={false}
-          />
-        </form>
-        <Link href="/seller/products/new-listing" className={styles.addListingMobile}>
-          <TbPlus size={18} aria-hidden />
-          Add New Listing
-        </Link>
+      <ProductsListToolbar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        showTypeFilter={defaultKind === 'all'}
+        typeFilter={typeFilter}
+        typeOptions={TYPE_FILTERS}
+        onTypeFilterChange={setTypeFilter}
+        rightSlot={
+          <Link href="/seller/products/new-listing" className={styles.addListingMobile}>
+            <TbPlus size={18} aria-hidden />
+            Add New Listing
+          </Link>
+        }
+      />
+
+      <section className={styles.statsStrip} aria-label={isArchiveView ? 'Archived listing overview' : 'Listing overview'}>
+        {isArchiveView ? (
+          <>
+            <div className={styles.statCard}>
+              <p className={styles.statLabel}>Archived listings</p>
+              <p className={styles.statValue}>{formatCount(total)}</p>
+              <p className={styles.statHint}>Hidden from your active catalog</p>
+            </div>
+            <div className={styles.statCard}>
+              <p className={styles.statLabel}>Services</p>
+              <p className={styles.statValue}>{formatCount(archivedServicesCount)}</p>
+              <p className={styles.statHint}>Archived service listings</p>
+            </div>
+            <div className={styles.statCard}>
+              <p className={styles.statLabel}>Packages</p>
+              <p className={styles.statValue}>{formatCount(archivedPackagesCount)}</p>
+              <p className={styles.statHint}>Archived package listings</p>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className={styles.statCard}>
+              <p className={styles.statLabel}>Total listings</p>
+              <p className={styles.statValue}>{formatCount(total)}</p>
+              <p className={styles.statHint}>Services &amp; packages</p>
+            </div>
+            <div className={styles.statCard}>
+              <p className={styles.statLabel}>Active</p>
+              <p className={styles.statValue}>{formatCount(activeCount)}</p>
+              <p className={styles.statHint}>Visible to buyers</p>
+            </div>
+            <div className={styles.statCard}>
+              <p className={styles.statLabel}>Draft</p>
+              <p className={styles.statValue}>{formatCount(draftCount)}</p>
+              <p className={styles.statHint}>Not submitted</p>
+            </div>
+            <div className={styles.statCard}>
+              <p className={styles.statLabel}>Awaiting admin</p>
+              <p className={styles.statValue}>{formatCount(pendingCount)}</p>
+              <p className={styles.statHint}>Under review or updates pending</p>
+            </div>
+          </>
+        )}
       </section>
 
-      <section className={styles.statsStrip} aria-label="Listing overview">
-        <div className={styles.statCard}>
-          <p className={styles.statLabel}>Total listings</p>
-          <p className={styles.statValue}>{formatCount(total)}</p>
-          <p className={styles.statHint}>Services &amp; packages</p>
-        </div>
-        <div className={styles.statCard}>
-          <p className={styles.statLabel}>Active</p>
-          <p className={styles.statValue}>{formatCount(activeCount)}</p>
-          <p className={styles.statHint}>Visible to buyers</p>
-        </div>
-        <div className={styles.statCard}>
-          <p className={styles.statLabel}>Draft</p>
-          <p className={styles.statValue}>{formatCount(draftCount)}</p>
-          <p className={styles.statHint}>Not submitted</p>
-        </div>
-        <div className={styles.statCard}>
-          <p className={styles.statLabel}>Pending</p>
-          <p className={styles.statValue}>{formatCount(pendingCount)}</p>
-          <p className={styles.statHint}>Under review</p>
-        </div>
-      </section>
+      {showLifecycleTabs ? (
+        <ProductsLifecycleTabs
+          activeTab={activeTab}
+          counts={tabCounts}
+          onTabChange={setActiveTab}
+        />
+      ) : null}
 
-      <section className={styles.productsSection} aria-label="Products list">
+      <section
+        className={styles.productsSection}
+        aria-label={
+          isArchiveView
+            ? 'Archived listings'
+            : activeTab === 'under_review'
+              ? 'Listings under review'
+              : activeTab === 'updates_pending'
+                ? 'Updates pending approval'
+                : 'Active listings'
+        }
+        id={showLifecycleTabs ? `products-panel-${activeTab}` : undefined}
+        role={showLifecycleTabs ? 'tabpanel' : undefined}
+        aria-labelledby={showLifecycleTabs ? `products-tab-${activeTab}` : undefined}
+      >
         {loadingData ? (
-          <div
-            className={styles.catalogSkGrid}
-            role="status"
-            aria-live="polite"
-            aria-busy="true"
-            aria-label="Loading listings"
-          >
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={`listing-sk-${i}`} className={styles.catalogSkCard} aria-hidden>
-                <div className={styles.skeletonBlock} style={{ height: 148, borderRadius: 0 }} />
-                <div className={styles.catalogSkLines}>
-                  <div className={`${styles.skeletonLine} ${styles.skeletonTitle}`} />
-                  <div className={`${styles.skeletonLine} ${styles.skeletonMedium}`} />
-                  <div className={`${styles.skeletonLine} ${styles.skeletonShort}`} />
+          isArchiveView || activeTab === 'active' ? (
+            <div
+              className={styles.catalogSkGrid}
+              role="status"
+              aria-live="polite"
+              aria-busy="true"
+              aria-label="Loading listings"
+            >
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={`listing-sk-${i}`} className={styles.catalogSkCard} aria-hidden>
+                  <div className={styles.skeletonBlock} style={{ height: 148, borderRadius: 0 }} />
+                  <div className={styles.catalogSkLines}>
+                    <div className={`${styles.skeletonLine} ${styles.skeletonTitle}`} />
+                    <div className={`${styles.skeletonLine} ${styles.skeletonMedium}`} />
+                    <div className={`${styles.skeletonLine} ${styles.skeletonShort}`} />
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <ProductsReviewTableSkeleton rows={6} />
+          )
         ) : filteredProducts.length === 0 ? (
           <div className={styles.emptyState}>
-            <p className={styles.emptyTitle}>No listings match your filters</p>
+            <p className={styles.emptyTitle}>
+              {isArchiveView
+                ? 'No archived listings match your filters'
+                : activeTab === 'under_review'
+                  ? 'No listings under review match your filters'
+                  : activeTab === 'updates_pending'
+                    ? 'No updates pending approval match your filters'
+                    : 'No listings match your filters'}
+            </p>
             <p className={styles.emptyText}>
-              Adjust the search or type filter to see more of your services and packages, or{' '}
-              <Link href="/seller/products/new-listing" className={styles.emptyStateLink}>
-                Add New Listing
-              </Link>
-              .
+              {isArchiveView ? (
+                'Adjust the search or type filter to find archived services and packages.'
+              ) : activeTab === 'under_review' ? (
+                'Submitted and rejected listings awaiting administrator review appear here.'
+              ) : activeTab === 'updates_pending' ? (
+                'Approved listings with staged edits waiting for administrator approval appear here.'
+              ) : (
+                <>
+                  Adjust the search or type filter to see more of your services and packages, or{' '}
+                  <Link href="/seller/products/new-listing" className={styles.emptyStateLink}>
+                    Add New Listing
+                  </Link>
+                  .
+                </>
+              )}
             </p>
           </div>
+        ) : isArchiveView ? (
+          <ProductsActiveGrid
+            products={filteredProducts}
+            onOpenEdit={handleOpenEdit}
+            onOpenView={handleOpenView}
+            onRequestRemove={handleRequestRemove}
+          />
+        ) : activeTab === 'active' ? (
+          <ProductsActiveGrid
+            products={filteredProducts}
+            onOpenEdit={handleOpenEdit}
+            onOpenView={handleOpenView}
+            onRequestRemove={handleRequestRemove}
+          />
         ) : (
-          <div className={styles.productsGrid}>
-            {filteredProducts.map((product) => (
-              <article key={product.id} className={styles.productCard}>
-                <div className={styles.productHeader}>
-                  <div className={styles.productBadges}>
-                    <span className={styles.productKindBadge}>
-                      {product.kind === 'service' ? 'Service' : 'Package'}
-                    </span>
-                    <span className={styles.productCategoryBadge}>{product.category}</span>
-                  </div>
-                  <span
-                    className={`${styles.statusPill} ${
-                      isProductShopActive(product)
-                        ? styles.statusPillActive
-                        : styles.statusPillInactive
-                    }`}
-                  >
-                    {productStateLabel(product)}
-                  </span>
-                </div>
-
-                {product.approvalStatus && product.approvalStatus !== 'approved' ? (
-                  <div className={styles.productMeta} style={{ marginTop: 6 }}>
-                    <p style={{ margin: 0, fontSize: 12, color: '#475569' }}>
-                      Approval: <strong>{product.approvalStatus === 'pending' ? 'Pending review' : product.approvalStatus}</strong>
-                      {product.approvalStatus === 'rejected' && product.rejectionReason ? (
-                        <> · <span title={product.rejectionReason}>Rejected</span></>
-                      ) : null}
-                    </p>
-                  </div>
-                ) : null}
-
-                <div className={styles.productImageWrap}>
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 960px) 50vw, 320px"
-                    className={styles.productImage}
-                  />
-                </div>
-
-                <h2 className={styles.productTitle}>{product.name}</h2>
-
-                <div className={styles.productMeta}>
-                  <p className={styles.productPrice}>
-                    <span className={styles.productPriceLabel}>Starting at</span>{' '}
-                    <span className={styles.productPriceValue}>
-                      {formatPhpAmount(product.startingPrice)}
-                    </span>
-                  </p>
-                  <p className={styles.productLocation}>{product.city}</p>
-                  <p className={styles.productAvailability}>{product.availability}</p>
-                </div>
-
-                <div className={styles.productActions}>
-                  <button
-                    type="button"
-                    className={styles.productActionPrimary}
-                    onClick={() => handleOpenEdit(product)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.productActionGhost}
-                    onClick={() => handleOpenView(product)}
-                  >
-                    View
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.productActionDanger}
-                    onClick={() => handleRequestRemove(product)}
-                    aria-haspopup="dialog"
-                  >
-                    Remove
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
+          <ProductsReviewTable
+            variant={activeTab}
+            products={filteredProducts}
+            onOpenView={handleOpenView}
+            onOpenEdit={handleOpenEdit}
+            onCancelRequest={handleRequestCancelReview}
+          />
         )}
       </section>
 
@@ -807,6 +875,7 @@ export default function ProductsContent({ initialKind = 'all' }) {
                         fill
                         sizes="(max-width: 800px) 100vw, 460px"
                         className={styles.productModalImage}
+                        unoptimized={shouldUnoptimizeListingImage(selectedProduct.image)}
                       />
                     </div>
                   </div>
@@ -1010,8 +1079,9 @@ export default function ProductsContent({ initialKind = 'all' }) {
                   type="button"
                   className={styles.productModalPrimary}
                   onClick={handleSaveProduct}
+                  disabled={saveInProgress}
                 >
-                  Save changes
+                  {saveInProgress ? 'Saving…' : 'Save changes'}
                 </button>
               )}
             </div>
@@ -1073,7 +1143,64 @@ export default function ProductsContent({ initialKind = 'all' }) {
           </div>
         </div>
       )}
+      {productPendingCancel ? (
+        <div
+          className={styles.removeConfirmOverlay}
+          onClick={(e) => {
+            if (cancelInProgress) return
+            if (e.target === e.currentTarget) handleCancelCancelReview()
+          }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cancel-review-confirm-title"
+          aria-describedby="cancel-review-confirm-desc"
+        >
+          <div className={styles.removeConfirmCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.removeConfirmCardBody}>
+              <div className={styles.removeConfirmHeader}>
+                <div className={styles.removeConfirmIconBadge} aria-hidden>
+                  <TbCircleX size={16} strokeWidth={1.65} />
+                </div>
+                <h2 id="cancel-review-confirm-title" className={styles.removeConfirmTitle}>
+                  {productPendingCancel.hasPendingUpdate
+                    ? 'Cancel update request?'
+                    : 'Cancel submission?'}
+                </h2>
+              </div>
+              <p id="cancel-review-confirm-desc" className={styles.removeConfirmText}>
+                {productPendingCancel.hasPendingUpdate
+                  ? 'Your proposed changes will be withdrawn. The live listing stays on the shop and will no longer appear in the admin review queue.'
+                  : 'This listing will return to draft and will no longer appear in the admin review queue.'}
+              </p>
+              {cancelError ? (
+                <p className={styles.removeConfirmError} role="alert">
+                  {cancelError}
+                </p>
+              ) : null}
+            </div>
+            <div className={styles.removeConfirmFooter}>
+              <div className={styles.removeConfirmActions}>
+                <button
+                  type="button"
+                  className={styles.removeConfirmCancel}
+                  onClick={handleCancelCancelReview}
+                  disabled={cancelInProgress}
+                >
+                  Keep request
+                </button>
+                <button
+                  type="button"
+                  className={styles.removeConfirmDelete}
+                  onClick={handleConfirmCancelReview}
+                  disabled={cancelInProgress}
+                >
+                  {cancelInProgress ? 'Cancelling…' : 'Yes, cancel request'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
-

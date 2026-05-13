@@ -12,15 +12,7 @@ import {
   returningBuyerRate,
   topPackagesByPaidRevenue,
 } from '@/lib/seller/sellerOrderAnalytics'
-
-function formatPhp(n) {
-  return new Intl.NumberFormat('en-PH', {
-    style: 'currency',
-    currency: 'PHP',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(n)
-}
+import { formatPhpWholeAmount } from '@/lib/cart/formatPhp'
 
 const PRODUCT_PERF_SUMMARY_SOFT = [
   styles.summaryCardSoftGreen,
@@ -107,7 +99,7 @@ export default function SellerAnalyticsProductPerformancePage() {
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftGreen}`}>
           <p className={styles.summaryLabel}>Revenue from top line item</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>{formatPhp(topRevenue)}</p>
+            <p className={styles.summaryValue}>{formatPhpWholeAmount(topRevenue)}</p>
           </div>
           <p className={styles.summaryHint}>
             {topPaid ? `${topName} · last 12 months, paid orders` : 'No paid bookings in the last year'}
@@ -128,7 +120,7 @@ export default function SellerAnalyticsProductPerformancePage() {
             <p className={styles.summaryValue}>{best.label}</p>
           </div>
           <p className={styles.summaryHint}>
-            {best.amount > 0 ? `${formatPhp(best.amount)} paid in that month` : '—'}
+            {best.amount > 0 ? `${formatPhpWholeAmount(best.amount)} paid in that month` : '—'}
           </p>
         </article>
 
@@ -138,7 +130,7 @@ export default function SellerAnalyticsProductPerformancePage() {
             <p className={styles.summaryValue}>{attention}</p>
           </div>
           <p className={styles.summaryHint}>
-            Line items with under 2 bookings in the last 6 months · avg paid ticket {formatPhp(avg12)}
+            Line items with under 2 bookings in the last 6 months · avg paid ticket {formatPhpWholeAmount(avg12)}
           </p>
         </article>
       </section>

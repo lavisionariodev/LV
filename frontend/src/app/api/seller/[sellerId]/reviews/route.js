@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { isUuidLike } from '@/lib/uuidLike'
+import { isUuidLike } from '@/shared/utils/uuidLike'
 import { loadSellerReviews } from '@/lib/seller/sellerReviews'
 
 export async function GET(request, { params }) {

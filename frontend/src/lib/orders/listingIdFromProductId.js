@@ -1,4 +1,4 @@
-import { isUuidLike } from '@/lib/uuidLike'
+import { isUuidLike } from '@/shared/utils/uuidLike'
 
 /**
  * `order_items.product_id` stores listing UUID, optionally suffixed with `::pkg::<option>`.

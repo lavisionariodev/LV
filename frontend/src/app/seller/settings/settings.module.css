@@ -740,6 +740,10 @@
     grid-template-columns: 1fr;
   }
 
+  .payoutFieldRow {
+    grid-template-columns: 1fr;
+  }
+
   .settingsRow {
     grid-template-columns: 1fr;
     gap: 12px;
@@ -913,6 +917,30 @@
     padding-left: 14px;
     padding-right: 14px;
     padding-bottom: 14px;
+  }
+
+  .notifPrefRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .notifPrefControls {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .identityRow {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .identityActions {
+    width: 100%;
+  }
+
+  .payoutRequestsEmbed {
+    margin-top: 14px;
   }
 }
 
@@ -1187,6 +1215,22 @@
   .shopSpecialtyGrid {
     grid-template-columns: 1fr;
   }
+
+  .shopSpecialtyAddBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .shopCoverToolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .shopCoverToolbar .primaryBtn,
+  .shopCoverToolbar .dangerBtn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 /* ── Settings loading skeleton ── */
@@ -1278,9 +1322,229 @@
   }
 }
 
-.identityList {
+.settingsSkHeadAction {
+  height: 34px;
+  width: 72px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.settingsSkSettingsRow {
+  display: grid;
+  grid-template-columns: minmax(0, 0.4fr) minmax(0, 0.6fr);
+  gap: 24px 32px;
+  align-items: flex-start;
+  padding: 22px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 65%, #ffffff 35%);
+}
+
+.settingsSkRowMeta {
+  min-width: 0;
+}
+
+.settingsSkRowTitle {
+  height: 12px;
+  width: 88px;
+  max-width: 40%;
+}
+
+.settingsSkRowDesc {
+  height: 10px;
+  width: 78%;
+  max-width: 320px;
+  margin-top: 8px;
+}
+
+.settingsSkFieldFlush {
+  margin-top: 0;
+  max-width: 520px;
+}
+
+.settingsSkIdentityStack {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  max-width: 520px;
+}
+
+.settingsSkIdentityRow {
+  height: 42px;
+  width: 100%;
+  border-radius: 6px;
+}
+
+.settingsSkPassGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.settingsSkSubTabBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.settingsSkSubTab {
+  height: 34px;
+  width: 96px;
+  border-radius: 6px;
+}
+
+.settingsSkCardBlock {
+  margin-top: 16px;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--background, #fff) 96%, #f8f8f8);
+}
+
+.settingsSkCardTitle {
+  display: block;
+  height: 14px;
+  width: 42%;
+  max-width: 220px;
+  margin-bottom: 16px;
+}
+
+.settingsSkFieldGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px 20px;
+}
+
+.settingsSkFormStack {
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.settingsSkFieldTall {
+  display: block;
+  height: 100px;
+  width: 100%;
+  max-width: 520px;
+  border-radius: 8px;
+}
+
+.settingsSkPrimaryBtn {
+  display: block;
+  height: 36px;
+  width: 168px;
+  border-radius: 6px;
+}
+
+.settingsSkEmbeddedCard {
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--background, #fff) 96%, #f8f8f8);
+}
+
+.settingsSkEmbeddedHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.settingsSkEmbeddedTitle {
+  height: 14px;
+  width: 46%;
+  max-width: 240px;
+}
+
+.settingsSkEmbeddedButton {
+  height: 34px;
+  width: 148px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.settingsSkListStack {
   display: grid;
   gap: 10px;
+  margin-top: 18px;
+}
+
+.settingsSkListRow {
+  display: block;
+  height: 72px;
+  width: 100%;
+  border-radius: 12px;
+}
+
+.settingsSkDisclaimer {
+  display: block;
+  height: 12px;
+  width: 72%;
+  max-width: 420px;
+  margin-top: 8px;
+}
+
+.settingsSkPrefStack {
+  display: grid;
+  gap: 0;
+  margin-top: 12px;
+}
+
+.settingsSkPrefRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.settingsSkPrefMeta {
+  flex: 1;
+  min-width: 0;
+}
+
+.settingsSkSwitch {
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+  .settingsSkSettingsRow {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 18px 0;
+  }
+
+  .settingsSkPassGrid,
+  .settingsSkFieldGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .settingsSkEmbeddedHead {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .settingsSkEmbeddedButton,
+  .settingsSkPrimaryBtn {
+    width: 100%;
+    max-width: none;
+  }
+
+  .settingsSkPrefRow {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+.identityList {
+  display: grid;
+  gap: 12px;
   width: 100%;
 }
 
@@ -1289,27 +1553,69 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 12px;
-  border: 1px solid var(--border, var(--color-light-gray));
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--background, #fff) 96%, #f8f8f8);
+  min-height: 42px;
+  height: auto;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-cream) 30%, #ffffff 70%);
+  font-size: 13px;
 }
 
 .identityProvider {
+  flex: 1;
+  min-width: 0;
   font-weight: 600;
   text-transform: capitalize;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .identityBadge {
-  font-size: 0.8rem;
-  color: var(--muted, var(--color-text-secondary));
+  font-size: 12px;
+  color: var(--color-text-secondary);
 }
 
 .identityActions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.identityActionLink {
+  border: 0;
+  background: none;
+  padding: 4px 0;
+  font: inherit;
+  font-size: 13px;
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.identityActionLink:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.identityActionLink:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.payoutFieldRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+  align-items: start;
+}
+
+.payoutFieldRow > .field:only-child {
+  grid-column: 1 / -1;
 }
 
 .payoutRequestsEmbed {

@@ -97,7 +97,7 @@
   /*
    * /seller/products/new-listing — full-page form uses its own fixed footer; trim layout padding.
    */
-  .content:has([class*='newListingPage']) {
+  .content:has([class*='newListingLayout'], [class*='loadingRoot']) {
     padding-bottom: max(12px, env(safe-area-inset-bottom));
   }
 }
@@ -107,7 +107,7 @@
     padding: 14px 14px 92px;
   }
 
-  .content:has([class*='newListingPage']) {
+  .content:has([class*='newListingLayout'], [class*='loadingRoot']) {
     padding-bottom: max(12px, env(safe-area-inset-bottom));
   }
 }

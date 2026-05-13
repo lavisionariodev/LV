@@ -90,3 +90,23 @@ export function formatPhpInputString(value) {
   const s = n.toFixed(2)
   return s.replace(/\.00$/, '').replace(/(\.\d)0$/, '$1')
 }
+
+/**
+ * Whole-peso display for seller analytics and dashboards (no centavos).
+ *
+ * @param {number|null|undefined} amount
+ * @param {{ placeholder?: string }} [opts]
+ * @returns {string}
+ */
+export function formatPhpWholeAmount(amount, opts = {}) {
+  const { placeholder = '—' } = opts
+  if (amount == null || amount === '') return placeholder
+  const n = roundPhpAmount(amount)
+  if (!Number.isFinite(n)) return placeholder
+  return new Intl.NumberFormat('en-PH', {
+    style: 'currency',
+    currency: 'PHP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(n)
+}

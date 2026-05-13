@@ -1,22 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
-
-const SELLER_BUCKETS = ['order', 'payment', 'listing', 'alert', 'system']
-
-function mergePrefs(raw) {
-  const src = raw && typeof raw === 'object' ? raw : {}
-  const out = {}
-  for (const bucket of SELLER_BUCKETS) {
-    const row = src[bucket] && typeof src[bucket] === 'object' ? src[bucket] : {}
-    out[bucket] = {
-      push: row.push !== false,
-      email: row.email !== false,
-      sms: false,
-    }
-  }
-  return out
-}
+import { mergeSellerNotificationPreferences } from '@/lib/notifications/preferenceSchema'
 
 async function requireSellerUser(supabase, userId) {
   const supabaseAdmin = getSupabaseAdmin()
@@ -43,7 +28,7 @@ export async function GET() {
   if (auth.response) return auth.response
 
   return NextResponse.json(
-    { preferences: mergePrefs(auth.seller.notification_preferences) },
+    { preferences: mergeSellerNotificationPreferences(auth.seller.notification_preferences) },
     { status: 200 },
   )
 }
@@ -61,15 +46,7 @@ export async function PATCH(request) {
 
   const body = await request.json().catch(() => ({}))
   const incoming = body?.preferences && typeof body.preferences === 'object' ? body.preferences : {}
-  const next = mergePrefs(auth.seller.notification_preferences)
-  for (const bucket of SELLER_BUCKETS) {
-    if (!incoming[bucket] || typeof incoming[bucket] !== 'object') continue
-    next[bucket] = {
-      push: incoming[bucket].push !== false,
-      email: incoming[bucket].email !== false,
-      sms: false,
-    }
-  }
+  const next = mergeSellerNotificationPreferences(auth.seller.notification_preferences, incoming)
 
   const supabaseAdmin = getSupabaseAdmin()
   const { data, error } = await supabaseAdmin
@@ -83,5 +60,8 @@ export async function PATCH(request) {
     return NextResponse.json({ error: error.message || 'Failed to save notification preferences.' }, { status: 500 })
   }
 
-  return NextResponse.json({ preferences: mergePrefs(data?.notification_preferences) }, { status: 200 })
+  return NextResponse.json(
+    { preferences: mergeSellerNotificationPreferences(data?.notification_preferences) },
+    { status: 200 },
+  )
 }

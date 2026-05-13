@@ -23,4 +23,3 @@ export function safeExternalHref(raw) {
 
   return ''
 }
-

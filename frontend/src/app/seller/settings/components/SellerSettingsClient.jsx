@@ -1,11 +1,13 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
-import styles from './settings.module.css'
+import styles from '../settings.module.css'
+import productSelectStyles from '../../products/products.module.css'
 import { FaUser, FaUpload } from 'react-icons/fa6'
 import { TbCamera, TbTrash } from 'react-icons/tb'
 import { FiEdit, FiPlus, FiSave } from 'react-icons/fi'
@@ -30,6 +32,203 @@ import {
 } from '@/lib/sellers/client'
 import { normalizeSellerSocialLinks, validateSellerSocialLinks } from '@/lib/sellers/socialLinks'
 import { normalizeSellerSettingsTab } from './sellerSettingsTabs'
+import { shouldUseUnoptimizedAvatarSrc } from '@/shared/utils/avatarImage'
+import { useMediaQuery } from '@/shared/hooks'
+
+const PAYOUT_METHOD_OPTIONS = [
+  { value: 'bank', label: 'Bank transfer' },
+  { value: 'gcash', label: 'GCash' },
+  { value: 'manual', label: 'Manual / other' },
+]
+
+const DOCUMENT_TYPE_OPTIONS = [
+  { value: 'business_permit', label: 'Business permit' },
+  { value: 'valid_id', label: 'Valid ID' },
+  { value: 'bank_proof', label: 'Bank proof' },
+  { value: 'other', label: 'Other' },
+]
+
+const SHOP_BUSINESS_TYPE_OPTIONS = [
+  { value: '', label: 'Not set (optional)' },
+  ...SELLER_BUSINESS_TYPE_PRESETS.map((label) => ({ value: label, label })),
+  { value: SELLER_BUSINESS_TYPE_OTHER, label: 'Others, please specify' },
+]
+
+function asPortalSelectValue(value) {
+  if (value == null) return ''
+  return String(value)
+}
+
+function SellerPortalSelect({
+  label,
+  value,
+  options,
+  onChange,
+  placeholder = 'Select',
+  disabled = false,
+  className = '',
+}) {
+  const isNarrow = useMediaQuery('(max-width: 640px)')
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [desktopOpen, setDesktopOpen] = useState(false)
+  const desktopDropdownRef = useRef(null)
+  const rawValue = asPortalSelectValue(value)
+  const opts = Array.isArray(options) ? options : []
+
+  useEffect(() => {
+    if (!sheetOpen) return
+    const onKey = (event) => {
+      if (event.key === 'Escape') setSheetOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [sheetOpen])
+
+  useEffect(() => {
+    if (!desktopOpen || isNarrow) return
+    const handleClickOutside = (event) => {
+      if (desktopDropdownRef.current && !desktopDropdownRef.current.contains(event.target)) {
+        setDesktopOpen(false)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [desktopOpen, isNarrow])
+
+  useEffect(() => {
+    if (!sheetOpen) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [sheetOpen])
+
+  const selectedLabel = opts.find((option) => option.value === rawValue)?.label || placeholder
+
+  const handleSelect = (nextValue) => {
+    if (disabled) return
+    onChange(nextValue)
+    setDesktopOpen(false)
+    setSheetOpen(false)
+  }
+
+  if (!isNarrow) {
+    return (
+      <div
+        className={`${productSelectStyles.filterDropdownWrap} ${productSelectStyles.modalDropdownWrap} ${
+          desktopOpen ? productSelectStyles.filterDropdownOpen : ''
+        } ${className}`.trim()}
+        ref={desktopDropdownRef}
+      >
+        <button
+          type="button"
+          className={productSelectStyles.filterDropdownTrigger}
+          onClick={() => {
+            if (disabled) return
+            setDesktopOpen((prev) => !prev)
+          }}
+          aria-haspopup="listbox"
+          aria-expanded={desktopOpen}
+          aria-label={label}
+          disabled={disabled}
+        >
+          <span className={productSelectStyles.filterDropdownLabel}>{selectedLabel}</span>
+          <span className={productSelectStyles.filterDropdownChevron} aria-hidden>
+            ▾
+          </span>
+        </button>
+        {desktopOpen && !disabled ? (
+          <div className={productSelectStyles.filterDropdownPanel} role="listbox" aria-label={`${label} options`}>
+            {opts.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                role="option"
+                aria-selected={rawValue === option.value}
+                className={`${productSelectStyles.filterDropdownOption} ${
+                  rawValue === option.value ? productSelectStyles.filterDropdownOptionSelected : ''
+                }`}
+                onClick={() => handleSelect(option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    )
+  }
+
+  const sheet = sheetOpen ? (
+    <div className={productSelectStyles.listingFormSelectSheetRoot}>
+      <button
+        type="button"
+        className={productSelectStyles.listingFormSelectSheetBackdrop}
+        onClick={() => setSheetOpen(false)}
+        tabIndex={-1}
+        aria-label="Dismiss"
+      />
+      <div
+        className={productSelectStyles.listingFormSelectSheet}
+        role="dialog"
+        aria-modal="true"
+        aria-label={label}
+      >
+        <div className={productSelectStyles.listingFormSelectSheetHeader}>
+          <span className={productSelectStyles.listingFormSelectSheetTitle}>{label}</span>
+          <button
+            type="button"
+            className={productSelectStyles.listingFormSelectSheetClose}
+            onClick={() => setSheetOpen(false)}
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+        <div className={productSelectStyles.listingFormSelectSheetList} role="listbox">
+          {opts.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="option"
+              aria-selected={rawValue === option.value}
+              className={`${productSelectStyles.listingFormSelectSheetRow} ${
+                rawValue === option.value ? productSelectStyles.listingFormSelectSheetRowActive : ''
+              }`}
+              onClick={() => handleSelect(option.value)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  ) : null
+
+  return (
+    <>
+      <button
+        type="button"
+        className={`${productSelectStyles.listingFormSelect} ${productSelectStyles.listingFormSelectTrigger} ${className}`.trim()}
+        onClick={() => {
+          if (disabled) return
+          setSheetOpen(true)
+        }}
+        aria-haspopup="listbox"
+        aria-expanded={sheetOpen}
+        aria-label={label}
+        disabled={disabled}
+      >
+        <span className={productSelectStyles.listingFormSelectTriggerLabel}>{selectedLabel}</span>
+        <span className={productSelectStyles.listingFormSelectTriggerCaret} aria-hidden>
+          ▾
+        </span>
+      </button>
+      {typeof document !== 'undefined' && sheet ? createPortal(sheet, document.body) : null}
+    </>
+  )
+}
 
 function mapSellerToShopForm(sellerRow, profile, sessionEmail) {
   const bizType = businessTypeLabelToFormState(sellerRow?.business_type_label)
@@ -176,6 +375,190 @@ const EMPTY_PAYOUT_FORM = {
   gcashNumber: '',
   payoutEmail: '',
   notes: '',
+}
+
+function SellerSettingsSkeletonHead({ showAction = false }) {
+  return (
+    <div className={styles.tabDetailHead} aria-hidden>
+      <div className={styles.tabDetailHeadRow}>
+        <div className={styles.tabDetailHeadText}>
+          <span className={`${styles.settingsSkBar} ${styles.settingsSkHeadTitle}`} />
+          <span className={`${styles.settingsSkBar} ${styles.settingsSkHeadSub}`} />
+        </div>
+        {showAction ? <span className={`${styles.settingsSkBar} ${styles.settingsSkHeadAction}`} /> : null}
+      </div>
+    </div>
+  )
+}
+
+function SellerSettingsSkeletonField({ className = '' }) {
+  return <span className={`${styles.settingsSkBar} ${styles.settingsSkField} ${className}`.trim()} />
+}
+
+function SellerSettingsSkeletonSettingsRow({ withDesc = false }) {
+  return (
+    <div className={styles.settingsSkSettingsRow}>
+      <div className={styles.settingsSkRowMeta}>
+        <span className={`${styles.settingsSkBar} ${styles.settingsSkRowTitle}`} />
+        {withDesc ? <span className={`${styles.settingsSkBar} ${styles.settingsSkRowDesc}`} /> : null}
+      </div>
+      <SellerSettingsSkeletonField className={styles.settingsSkFieldFlush} />
+    </div>
+  )
+}
+
+function SellerSettingsProfileSkeleton() {
+  return (
+    <>
+      <SellerSettingsSkeletonHead showAction />
+      <div className={styles.profileDetails}>
+        <div className={styles.settingsSkSettingsRow}>
+          <div className={styles.settingsSkRowMeta}>
+            <span className={`${styles.settingsSkBar} ${styles.settingsSkRowTitle}`} />
+            <span className={`${styles.settingsSkBar} ${styles.settingsSkRowDesc}`} />
+          </div>
+          <div className={styles.settingsSkProfileRow}>
+            <span className={`${styles.settingsSkBar} ${styles.settingsSkAvatar}`} />
+          </div>
+        </div>
+        <SellerSettingsSkeletonSettingsRow />
+        <SellerSettingsSkeletonSettingsRow withDesc />
+        <div className={styles.settingsSkSettingsRow}>
+          <div className={styles.settingsSkRowMeta}>
+            <span className={`${styles.settingsSkBar} ${styles.settingsSkRowTitle}`} />
+            <span className={`${styles.settingsSkBar} ${styles.settingsSkRowDesc}`} />
+          </div>
+          <div className={styles.settingsSkIdentityStack}>
+            <span className={`${styles.settingsSkBar} ${styles.settingsSkIdentityRow}`} />
+            <span className={`${styles.settingsSkBar} ${styles.settingsSkIdentityRow}`} />
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
+function SellerSettingsPasswordSkeleton() {
+  return (
+    <>
+      <SellerSettingsSkeletonHead showAction />
+      <div className={styles.settingsSkPassGrid}>
+        <SellerSettingsSkeletonField className={styles.settingsSkFieldFlush} />
+        <SellerSettingsSkeletonField className={styles.settingsSkFieldFlush} />
+        <SellerSettingsSkeletonField className={styles.settingsSkFieldFlush} />
+      </div>
+    </>
+  )
+}
+
+function SellerSettingsShopSkeleton() {
+  return (
+    <>
+      <SellerSettingsSkeletonHead showAction />
+      <div className={styles.settingsSkSubTabBar}>
+        {[0, 1, 2, 3].map((index) => (
+          <span key={index} className={`${styles.settingsSkBar} ${styles.settingsSkSubTab}`} />
+        ))}
+      </div>
+      <div className={styles.settingsSkCardBlock}>
+        <span className={`${styles.settingsSkBar} ${styles.settingsSkCardTitle}`} />
+        <div className={styles.settingsSkFieldGrid}>
+          <SellerSettingsSkeletonField className={styles.settingsSkFieldFlush} />
+          <SellerSettingsSkeletonField className={styles.settingsSkFieldFlush} />
+          <SellerSettingsSkeletonField className={styles.settingsSkFieldFlush} />
+        </div>
+      </div>
+      <div className={styles.settingsSkCardBlock}>
+        <span className={`${styles.settingsSkBar} ${styles.settingsSkCardTitle}`} />
+        <div className={styles.settingsSkTwoCol}>
+          <SellerSettingsSkeletonField className={styles.settingsSkFieldFlush} />
+          <SellerSettingsSkeletonField className={styles.settingsSkFieldFlush} />
+        </div>
+        <SellerSettingsSkeletonField />
+      </div>
+    </>
+  )
+}
+
+function SellerSettingsPayoutsSkeleton() {
+  return (
+    <>
+      <SellerSettingsSkeletonHead />
+      <div className={styles.settingsSkFormStack}>
+        <div className={styles.settingsSkTwoCol}>
+          <SellerSettingsSkeletonField className={styles.settingsSkFieldFlush} />
+          <SellerSettingsSkeletonField className={styles.settingsSkFieldFlush} />
+        </div>
+        <SellerSettingsSkeletonField className={styles.settingsSkFieldFlush} />
+        <SellerSettingsSkeletonField className={styles.settingsSkFieldFlush} />
+        <span className={`${styles.settingsSkBar} ${styles.settingsSkFieldTall}`} />
+        <span className={`${styles.settingsSkBar} ${styles.settingsSkPrimaryBtn}`} />
+      </div>
+      <div className={styles.settingsSkEmbeddedCard}>
+        <div className={styles.settingsSkEmbeddedHead}>
+          <span className={`${styles.settingsSkBar} ${styles.settingsSkEmbeddedTitle}`} />
+          <span className={`${styles.settingsSkBar} ${styles.settingsSkEmbeddedButton}`} />
+        </div>
+        <span className={`${styles.settingsSkBar} ${styles.settingsSkListRow}`} />
+        <span className={`${styles.settingsSkBar} ${styles.settingsSkListRow}`} />
+      </div>
+    </>
+  )
+}
+
+function SellerSettingsDocumentsSkeleton() {
+  return (
+    <>
+      <SellerSettingsSkeletonHead />
+      <div className={styles.settingsSkFormStack}>
+        <SellerSettingsSkeletonField className={styles.settingsSkFieldFlush} />
+        <SellerSettingsSkeletonField className={styles.settingsSkFieldFlush} />
+        <span className={`${styles.settingsSkBar} ${styles.settingsSkPrimaryBtn}`} />
+      </div>
+      <div className={styles.settingsSkListStack}>
+        <span className={`${styles.settingsSkBar} ${styles.settingsSkListRow}`} />
+        <span className={`${styles.settingsSkBar} ${styles.settingsSkListRow}`} />
+      </div>
+    </>
+  )
+}
+
+function SellerSettingsNotificationsSkeleton() {
+  return (
+    <>
+      <SellerSettingsSkeletonHead />
+      <span className={`${styles.settingsSkBar} ${styles.settingsSkDisclaimer}`} />
+      <div className={styles.settingsSkPrefStack}>
+        {[0, 1, 2].map((index) => (
+          <div key={index} className={styles.settingsSkPrefRow}>
+            <div className={styles.settingsSkPrefMeta}>
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkRowTitle}`} />
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkRowDesc}`} />
+            </div>
+            <span className={`${styles.settingsSkBar} ${styles.settingsSkSwitch}`} />
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+
+function SellerSettingsPanelSkeleton({ variant = 'profile' }) {
+  switch (variant) {
+    case 'password':
+      return <SellerSettingsPasswordSkeleton />
+    case 'shop':
+      return <SellerSettingsShopSkeleton />
+    case 'payouts':
+      return <SellerSettingsPayoutsSkeleton />
+    case 'documents':
+      return <SellerSettingsDocumentsSkeleton />
+    case 'notifications':
+      return <SellerSettingsNotificationsSkeleton />
+    case 'profile':
+    default:
+      return <SellerSettingsProfileSkeleton />
+  }
 }
 
 export default function SellerSettingsClient() {
@@ -639,6 +1022,12 @@ export default function SellerSettingsClient() {
       setProfile((prev) =>
         prev ? { ...prev, avatarPath: body?.avatarPath || null, avatarUrl: body?.avatarUrl || null } : prev,
       )
+      if (avatarPreviewRef.current) {
+        URL.revokeObjectURL(avatarPreviewRef.current)
+        avatarPreviewRef.current = ''
+      }
+      setAvatarPreview('')
+      if (fileRef.current) fileRef.current.value = ''
       notifyToast('success', 'Avatar updated successfully.')
     } catch (err) {
       notifyToast('error', err.message || 'Failed to upload avatar.')
@@ -773,7 +1162,7 @@ export default function SellerSettingsClient() {
   }
 
   const shownAvatar = avatarPreview || profile?.avatarUrl || ''
-  const shownAvatarIsBlob = Boolean(shownAvatar && shownAvatar.startsWith('blob:'))
+  const shownAvatarIsBlob = shouldUseUnoptimizedAvatarSrc(shownAvatar)
   const formId = 'sellerPasswordForm'
   const id = (name) => `seller_${name}`
   const shopId = (name) => `seller_shop_${name}`
@@ -826,23 +1215,7 @@ export default function SellerSettingsClient() {
             aria-busy="true"
             aria-label="Loading settings"
           >
-            <div className={styles.tabDetailHead} aria-hidden>
-              <span className={`${styles.settingsSkBar} ${styles.settingsSkHeadTitle}`} />
-              <span className={`${styles.settingsSkBar} ${styles.settingsSkHeadSub}`} />
-            </div>
-            <div className={styles.settingsSkProfileRow}>
-              <span className={`${styles.settingsSkBar} ${styles.settingsSkAvatar}`} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <span className={`${styles.settingsSkBar} ${styles.settingsSkField}`} />
-                <span className={`${styles.settingsSkBar} ${styles.settingsSkField}`} />
-              </div>
-            </div>
-            <div className={styles.settingsSkTwoCol} aria-hidden>
-              <span className={`${styles.settingsSkBar} ${styles.settingsSkFieldShort}`} />
-              <span className={`${styles.settingsSkBar} ${styles.settingsSkFieldShort}`} />
-            </div>
-            <span className={`${styles.settingsSkBar} ${styles.settingsSkField}`} />
-            <span className={`${styles.settingsSkBar} ${styles.settingsSkField}`} style={{ maxWidth: 280 }} />
+            <SellerSettingsPanelSkeleton variant={activeTab} />
           </section>
         </div>
       </div>
@@ -929,24 +1302,29 @@ export default function SellerSettingsClient() {
               </div>
             </div>
             <form className={styles.form} onSubmit={handleSavePayout}>
-              <label className={styles.field}>
-                <span className={styles.label}>Payout method</span>
-                <select
-                  className={styles.input}
-                  value={payoutForm.payoutMethod}
-                  onChange={(e) => onPayoutFieldChange('payoutMethod', e.target.value)}
-                >
-                  <option value="bank">Bank transfer</option>
-                  <option value="gcash">GCash</option>
-                  <option value="manual">Manual / other</option>
-                </select>
-              </label>
-              {payoutForm.payoutMethod === 'bank' && (
-                <>
+              <div className={styles.payoutFieldRow}>
+                <label className={styles.field}>
+                  <span className={styles.label}>Payout method</span>
+                  <SellerPortalSelect
+                    label="Payout method"
+                    value={payoutForm.payoutMethod}
+                    options={PAYOUT_METHOD_OPTIONS}
+                    onChange={(value) => onPayoutFieldChange('payoutMethod', value)}
+                  />
+                </label>
+                {payoutForm.payoutMethod === 'bank' ? (
                   <label className={styles.field}>
                     <span className={styles.label}>Account holder name</span>
-                    <input className={styles.input} value={payoutForm.accountHolderName} onChange={(e) => onPayoutFieldChange('accountHolderName', e.target.value)} />
+                    <input
+                      className={styles.input}
+                      value={payoutForm.accountHolderName}
+                      onChange={(e) => onPayoutFieldChange('accountHolderName', e.target.value)}
+                    />
                   </label>
+                ) : null}
+              </div>
+              {payoutForm.payoutMethod === 'bank' && (
+                <>
                   <label className={styles.field}>
                     <span className={styles.label}>Bank name</span>
                     <input className={styles.input} value={payoutForm.bankName} onChange={(e) => onPayoutFieldChange('bankName', e.target.value)} />
@@ -1011,7 +1389,7 @@ export default function SellerSettingsClient() {
                 <div className={styles.tabDetailHeadText}>
                   <h2 className={styles.tabDetailTitle}>Notification preferences</h2>
                   <p className={styles.tabDetailSubtitle}>
-                    Control which seller alerts can reach you by push or email.
+                    Control which seller alerts can reach you in-app or by email.
                   </p>
                 </div>
               </div>
@@ -1040,12 +1418,12 @@ export default function SellerSettingsClient() {
             <form className={styles.form} onSubmit={handleUploadDocument}>
               <label className={styles.field}>
                 <span className={styles.label}>Document type</span>
-                <select className={styles.input} value={documentType} onChange={(e) => setDocumentType(e.target.value)}>
-                  <option value="business_permit">Business permit</option>
-                  <option value="valid_id">Valid ID</option>
-                  <option value="bank_proof">Bank proof</option>
-                  <option value="other">Other</option>
-                </select>
+                <SellerPortalSelect
+                  label="Document type"
+                  value={documentType}
+                  options={DOCUMENT_TYPE_OPTIONS}
+                  onChange={setDocumentType}
+                />
               </label>
               <label className={styles.field}>
                 <span className={styles.label}>File</span>
@@ -1295,21 +1673,14 @@ export default function SellerSettingsClient() {
                       <label htmlFor={shopId('biz-type')} className={styles.shopGridLabel}>
                         Business type label
                       </label>
-                      <select
-                        id={shopId('biz-type')}
+                      <SellerPortalSelect
+                        label="Business type label"
                         value={shopForm.shopBusinessTypeChoice}
-                        onChange={(e) => onBusinessTypeChoiceChange(e.target.value)}
-                        className={`${styles.input} ${styles.selectInput} ${!isEditingShop || !canEditShop ? styles.inputReadOnly : ''}`}
+                        options={SHOP_BUSINESS_TYPE_OPTIONS}
+                        onChange={onBusinessTypeChoiceChange}
                         disabled={!isEditingShop || !canEditShop}
-                      >
-                        <option value="">Not set (optional)</option>
-                        {SELLER_BUSINESS_TYPE_PRESETS.map((label) => (
-                          <option key={label} value={label}>
-                            {label}
-                          </option>
-                        ))}
-                        <option value={SELLER_BUSINESS_TYPE_OTHER}>Others, please specify</option>
-                      </select>
+                        placeholder="Not set (optional)"
+                      />
                       {shopForm.shopBusinessTypeChoice === SELLER_BUSINESS_TYPE_OTHER && (
                         <div className={styles.businessTypeOtherWrap}>
                           <input
@@ -1360,39 +1731,38 @@ export default function SellerSettingsClient() {
                               spellCheck={true}
                               aria-label={`Speciality ${index + 1}`}
                             />
-                            <button
-                              type="button"
-                              className={styles.shopSpecialtyRemoveBtn}
-                              onClick={() => {
-                                const lines = specialtiesFormStringToLines(shopForm.shopSpecialties)
-                                lines.splice(index, 1)
-                                onShopFieldChange('shopSpecialties', lines.join('\n'))
-                              }}
-                              disabled={!isEditingShop || !canEditShop}
-                              aria-label={`Remove speciality ${index + 1}`}
-                            >
-                              <TbTrash aria-hidden />
-                            </button>
+                            {isEditingShop && canEditShop ? (
+                              <button
+                                type="button"
+                                className={styles.shopSpecialtyRemoveBtn}
+                                onClick={() => {
+                                  const lines = specialtiesFormStringToLines(shopForm.shopSpecialties)
+                                  lines.splice(index, 1)
+                                  onShopFieldChange('shopSpecialties', lines.join('\n'))
+                                }}
+                                aria-label={`Remove speciality ${index + 1}`}
+                              >
+                                <TbTrash aria-hidden />
+                              </button>
+                            ) : null}
                             </div>
                           </div>
                         ))}
                         </div>
-                        <button
-                          type="button"
-                          className={`${styles.secondaryBtn} ${styles.shopSpecialtyAddBtn}`}
-                          onClick={() => {
-                            const lines = specialtiesFormStringToLines(shopForm.shopSpecialties)
-                            lines.push('')
-                            onShopFieldChange('shopSpecialties', lines.join('\n'))
-                          }}
-                          disabled={
-                            !isEditingShop ||
-                            !canEditShop ||
-                            normalizeSellerSpecialties(shopForm.shopSpecialties ?? '').length >= 24
-                          }
-                        >
-                          <FiPlus aria-hidden /> Add speciality
-                        </button>
+                        {isEditingShop && canEditShop ? (
+                          <button
+                            type="button"
+                            className={`${styles.primaryBtn} ${styles.shopSpecialtyAddBtn}`}
+                            onClick={() => {
+                              const lines = specialtiesFormStringToLines(shopForm.shopSpecialties)
+                              lines.push('')
+                              onShopFieldChange('shopSpecialties', lines.join('\n'))
+                            }}
+                            disabled={normalizeSellerSpecialties(shopForm.shopSpecialties ?? '').length >= 24}
+                          >
+                            <FiPlus aria-hidden /> Add speciality
+                          </button>
+                        ) : null}
                       </div>
                       <p className={styles.shopGridHint}>
                         Shown as badges on your public seller profile (up to 24 specialties, 120 characters each). Use
@@ -1449,28 +1819,30 @@ export default function SellerSettingsClient() {
                         onChange={onPickShopCover}
                         aria-label="Upload shop cover photo"
                       />
-                      <div className={styles.shopCoverToolbar}>
-                        <button
-                          type="button"
-                          className={styles.primaryBtn}
-                          disabled={!isEditingShop || !canEditShop || coverLoading}
-                          onClick={() => coverFileRef.current?.click()}
-                        >
-                          <FaUpload aria-hidden />
-                          {seller?.cover_photo_url ? 'Replace cover' : 'Upload cover'}
-                        </button>
-                        {seller?.cover_photo_url ? (
+                      {isEditingShop && canEditShop ? (
+                        <div className={styles.shopCoverToolbar}>
                           <button
                             type="button"
-                            className={styles.dangerBtn}
-                            disabled={!isEditingShop || !canEditShop || coverLoading}
-                            onClick={onRemoveShopCover}
+                            className={styles.primaryBtn}
+                            disabled={coverLoading}
+                            onClick={() => coverFileRef.current?.click()}
                           >
-                            <TbTrash aria-hidden />
-                            Remove cover
+                            <FaUpload aria-hidden />
+                            {seller?.cover_photo_url ? 'Replace cover' : 'Upload cover'}
                           </button>
-                        ) : null}
-                      </div>
+                          {seller?.cover_photo_url ? (
+                            <button
+                              type="button"
+                              className={styles.dangerBtn}
+                              disabled={coverLoading}
+                              onClick={onRemoveShopCover}
+                            >
+                              <TbTrash aria-hidden />
+                              Remove cover
+                            </button>
+                          ) : null}
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 </div>
@@ -1822,7 +2194,7 @@ export default function SellerSettingsClient() {
                             {provider !== 'email' ? (
                               <button
                                 type="button"
-                                className={styles.secondaryBtn}
+                                className={styles.identityActionLink}
                                 onClick={() => handleUnlinkIdentity(identity)}
                                 disabled={!canUnlinkIdentity(identity) || identityBusy === provider}
                               >
@@ -1840,7 +2212,7 @@ export default function SellerSettingsClient() {
                     {!linkedProviders.has('google') ? (
                       <button
                         type="button"
-                        className={styles.secondaryBtn}
+                        className={styles.identityActionLink}
                         onClick={() => handleLinkProvider('google')}
                         disabled={identityBusy === 'google'}
                       >
@@ -1850,7 +2222,7 @@ export default function SellerSettingsClient() {
                     {!linkedProviders.has('facebook') ? (
                       <button
                         type="button"
-                        className={styles.secondaryBtn}
+                        className={styles.identityActionLink}
                         onClick={() => handleLinkProvider('facebook')}
                         disabled={identityBusy === 'facebook'}
                       >

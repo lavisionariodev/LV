@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import NewListingClient from '../SellerListingForm'
+import NewListingClient from '../components/SellerListingForm'
 import styles from '../products.module.css'
 
 export const metadata = {
@@ -16,6 +16,20 @@ function NewListingLoadingState() {
     >
       <p className={styles.srOnly}>Preparing the listing form</p>
       <div className={styles.loadingStack} aria-hidden="true">
+        <div className={styles.loadingMain}>
+          <div className={`${styles.skeletonCard} ${styles.skeletonCardSection}`}>
+            <div className={`${styles.skeletonLine} ${styles.skeletonTitle}`} />
+            <div className={`${styles.skeletonLine} ${styles.skeletonMedium}`} />
+            <div className={styles.skeletonBlock} />
+            <div className={styles.skeletonBlock} />
+            <div className={`${styles.skeletonLine} ${styles.skeletonShort}`} />
+            <div className={styles.skeletonFooter}>
+              <div className={styles.skeletonBtnGhost} />
+              <div className={styles.skeletonBtnGhostWide} />
+              <div className={styles.skeletonBtnPrimary} />
+            </div>
+          </div>
+        </div>
         <aside className={styles.loadingAside}>
           <div className={`${styles.skeletonCard} ${styles.skeletonCardStepper}`}>
             <div className={styles.skeletonStepperTrack}>
@@ -32,20 +46,6 @@ function NewListingLoadingState() {
             <div className={`${styles.skeletonLine} ${styles.skeletonNarrow}`} />
           </div>
         </aside>
-        <div className={styles.loadingMain}>
-          <div className={`${styles.skeletonCard} ${styles.skeletonCardSection}`}>
-            <div className={`${styles.skeletonLine} ${styles.skeletonTitle}`} />
-            <div className={`${styles.skeletonLine} ${styles.skeletonMedium}`} />
-            <div className={styles.skeletonBlock} />
-            <div className={styles.skeletonBlock} />
-            <div className={`${styles.skeletonLine} ${styles.skeletonShort}`} />
-            <div className={styles.skeletonFooter}>
-              <div className={styles.skeletonBtnGhost} />
-              <div className={styles.skeletonBtnGhostWide} />
-              <div className={styles.skeletonBtnPrimary} />
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   )
@@ -54,11 +54,7 @@ function NewListingLoadingState() {
 export default function SellerProductsNewPage() {
   return (
     <Suspense
-      fallback={
-        <div className={styles.newListingPage}>
-          <NewListingLoadingState />
-        </div>
-      }
+      fallback={<NewListingLoadingState />}
     >
       <NewListingClient />
     </Suspense>

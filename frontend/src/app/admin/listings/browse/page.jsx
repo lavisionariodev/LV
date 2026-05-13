@@ -14,7 +14,7 @@ import { Dropdown } from '@/components/ui'
 import { useDebouncedEffect, useMediaQuery } from '@/shared/hooks'
 import { TbX } from 'react-icons/tb'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { readEnum, readString, replaceUrlQuery } from '@/lib/url/queryParams'
+import { readEnum, readString, replaceUrlQuery } from '@/shared/utils/queryParams'
 
 const APPROVED_STATUS_TABS = [
   { value: 'active', label: 'Active' },

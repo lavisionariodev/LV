@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireAdminApiUser } from '@/lib/auth/requireAdminRoute'
-import { notifyUser } from '@/lib/notifications/inAppServer'
+import { notifyUser, notifySeller } from '@/lib/notifications/inAppServer'
 
 const DISPUTE_ATTACHMENT_BUCKET = 'dispute-attachments'
 const SIGNED_URL_TTL_SECONDS = 600
@@ -192,8 +192,7 @@ export async function PATCH(request, context) {
     })
   }
   if (before.seller_user_id) {
-    await notifyUser(supabaseAdmin, {
-      userId: before.seller_user_id,
+    await notifySeller(supabaseAdmin, before.seller_user_id, {
       type: 'alerts',
       title: 'Help request update (platform)',
       body: `Buyer request for order ${ordRef} is now ${statusLabel}.`,

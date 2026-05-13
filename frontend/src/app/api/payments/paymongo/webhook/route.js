@@ -4,7 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { computeCommissionSnapshot } from '@/shared/utils/commissionSnapshot'
 import { apiLog } from '@/lib/observability/apiLog'
 import { reconcilePaymongoRefundEvent } from '@/lib/payments/refundReconcile'
-import { notifyUser, notifyAllAdmins } from '@/lib/notifications/inAppServer'
+import { notifyUser, notifyAllAdmins, notifySeller } from '@/lib/notifications/inAppServer'
 import {
   fetchPlatformDefaultCommissionPercent,
   fetchSellerOverridesByUserId,
@@ -328,8 +328,7 @@ export async function POST(request) {
           })
         }
         if (o.seller_user_id) {
-          await notifyUser(supabaseAdmin, {
-            userId: o.seller_user_id,
+          await notifySeller(supabaseAdmin, o.seller_user_id, {
             type: 'alerts',
             title: 'New paid booking',
             body: `Order ${ref} is paid and awaiting your confirmation.`,

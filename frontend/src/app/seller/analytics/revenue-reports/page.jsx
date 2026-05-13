@@ -13,15 +13,7 @@ import {
   revenuePreviousCalendarMonth,
 } from '@/lib/seller/sellerOrderAnalytics'
 import SellerPayoutRequestsPanel from '../SellerPayoutRequestsPanel'
-
-function formatPhp(n) {
-  return new Intl.NumberFormat('en-PH', {
-    style: 'currency',
-    currency: 'PHP',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(n)
-}
+import { formatPhpWholeAmount } from '@/lib/cart/formatPhp'
 
 const REVENUE_SUMMARY_SOFT = [
   styles.summaryCardSoftGreen,
@@ -134,7 +126,7 @@ export default function SellerAnalyticsRevenueReportsPage() {
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftGreen}`}>
           <p className={styles.summaryLabel}>Gross revenue this month</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>{formatPhp(thisMonth)}</p>
+            <p className={styles.summaryValue}>{formatPhpWholeAmount(thisMonth)}</p>
             <span
               className={`${styles.summaryDelta} ${
                 monthDelta.up ? styles.summaryDeltaPositive : styles.summaryDeltaNegative
@@ -149,17 +141,17 @@ export default function SellerAnalyticsRevenueReportsPage() {
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftGreen}`}>
           <p className={styles.summaryLabel}>Net payable</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>{formatPhp(escrowSummary?.net || 0)}</p>
+            <p className={styles.summaryValue}>{formatPhpWholeAmount(escrowSummary?.net || 0)}</p>
           </div>
           <p className={styles.summaryHint}>
-            Gross {formatPhp(escrowSummary?.gross || 0)} less commission {formatPhp(escrowSummary?.commission || 0)}
+            Gross {formatPhpWholeAmount(escrowSummary?.gross || 0)} less commission {formatPhpWholeAmount(escrowSummary?.commission || 0)}
           </p>
         </article>
 
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftIndigo}`}>
           <p className={styles.summaryLabel}>Released payouts</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>{formatPhp(escrowSummary?.releasedNet || 0)}</p>
+            <p className={styles.summaryValue}>{formatPhpWholeAmount(escrowSummary?.releasedNet || 0)}</p>
           </div>
           <p className={styles.summaryHint}>Net amount released by admin</p>
         </article>
@@ -167,19 +159,19 @@ export default function SellerAnalyticsRevenueReportsPage() {
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftBlue}`}>
           <p className={styles.summaryLabel}>Held in escrow</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>{formatPhp((escrowSummary?.escrowedNet || 0) + (escrowSummary?.heldNet || 0))}</p>
+            <p className={styles.summaryValue}>{formatPhpWholeAmount((escrowSummary?.escrowedNet || 0) + (escrowSummary?.heldNet || 0))}</p>
           </div>
           <p className={styles.summaryHint}>
-            Escrowed {formatPhp(escrowSummary?.escrowedNet || 0)} · on hold {formatPhp(escrowSummary?.heldNet || 0)}
+            Escrowed {formatPhpWholeAmount(escrowSummary?.escrowedNet || 0)} · on hold {formatPhpWholeAmount(escrowSummary?.heldNet || 0)}
           </p>
         </article>
 
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftAmber}`}>
           <p className={styles.summaryLabel}>Avg booking value</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>{formatPhp(avg12)}</p>
+            <p className={styles.summaryValue}>{formatPhpWholeAmount(avg12)}</p>
           </div>
-          <p className={styles.summaryHint}>Best month: {best.amount > 0 ? `${best.label} · ${formatPhp(best.amount)}` : 'No paid revenue yet'}</p>
+          <p className={styles.summaryHint}>Best month: {best.amount > 0 ? `${best.label} · ${formatPhpWholeAmount(best.amount)}` : 'No paid revenue yet'}</p>
         </article>
       </section>
 
@@ -217,7 +209,7 @@ export default function SellerAnalyticsRevenueReportsPage() {
                         <div
                           className={styles.barInnerPrimary}
                           style={{ height: month.heightPct }}
-                          title={formatPhp(month.amount)}
+                          title={formatPhpWholeAmount(month.amount)}
                         />
                       </div>
                       <span className={styles.barLabel}>{month.label}</span>

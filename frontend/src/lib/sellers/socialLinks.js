@@ -1,4 +1,4 @@
-import { safeExternalHref } from '@/lib/url/safeExternalHref'
+import { safeExternalHref } from '@/shared/utils/safeExternalHref'
 
 export const SELLER_SOCIAL_PLATFORMS = /** @type {const} */ ([
   'phone',
