@@ -357,14 +357,29 @@ export default function SellerDashboardPage() {
     if (!activeAlert) return
     const row = alertNotificationById.get(activeAlert.id)
     if (row?.id) {
-      await fetch('/api/notifications', {
+      const res = await fetch('/api/notifications', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: row.id, resolve: true }),
+        body: JSON.stringify({ id: row.id, resolve: true, resolutionNote: resolveNote }),
       })
+      if (!res.ok) return
       const nowIso = new Date().toISOString()
       setDashboardAlertRows((prev) =>
-        prev.map((r) => (r.id === row.id ? { ...r, read_at: r.read_at || nowIso, resolved_at: nowIso } : r)),
+        prev.map((r) =>
+          r.id === row.id
+            ? {
+                ...r,
+                read_at: r.read_at || nowIso,
+                resolved_at: nowIso,
+                metadata: {
+                  ...(r.metadata || {}),
+                  ...(resolveNote.trim()
+                    ? { resolutionNote: resolveNote.trim(), resolutionNoteAt: nowIso }
+                    : {}),
+                },
+              }
+            : r,
+        ),
       )
     }
     setDismissedAlertIds((prev) => new Set([...prev, activeAlert.id]))

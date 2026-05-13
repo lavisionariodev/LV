@@ -139,6 +139,19 @@ export async function POST(request) {
 
   if (updErr) {
     apiLog('seller.decline_refund.order_update_failed', { err: errorMessage(updErr), orderId })
+    await insertOrderRefundEvent(supabaseAdmin, {
+      orderId,
+      paymentId,
+      actor: 'system',
+      action: 'seller_decline_refund_local_update_failed',
+      paymongoRefundId: pm.refundId,
+      payload: {
+        amount_centavos: centavos,
+        reason: refundReason,
+        error: errorMessage(updErr),
+        requires_manual_reconciliation: true,
+      },
+    })
     return NextResponse.json(
       { error: 'The refund was started, but the order could not be updated. Please contact support.' },
       { status: 500 },

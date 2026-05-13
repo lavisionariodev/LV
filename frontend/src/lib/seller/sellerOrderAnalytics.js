@@ -8,6 +8,172 @@
 export const SELLER_ANALYTICS_ORDER_SELECT =
   'id,buyer_id,order_number,created_at,preferred_date,fulfillment_status,payment_status,status,subtotal,refund_status,refund_requested_at,contact_name,order_items(name,quantity)'
 
+export const SELLER_CUSTOMER_ORDER_SELECT =
+  'id,buyer_id,order_number,created_at,preferred_date,fulfillment_status,contact_name,contact_email,contact_phone,service_location,order_items(name,quantity)'
+
+export const SELLER_ORDER_DETAIL_SELECT =
+  'id,buyer_id,order_number,status,fulfillment_status,payment_status,subtotal,created_at,preferred_date,refund_status,refund_requested_at,contact_name,contact_email,contact_phone,notes,service_location,deceased_name,date_of_death,wake_duration_days,order_items(name,quantity)'
+
+/**
+ * @param {{ name?: string|null, quantity?: number|null }[] | null | undefined} items
+ */
+export function sellerServicePackageLabel(items) {
+  const rows = Array.isArray(items) ? items : []
+  if (rows.length === 1) return rows[0].name || 'Booking'
+  if (rows.length > 1) return `${rows.length} items`
+  return 'Booking'
+}
+
+/**
+ * @param {SellerOrderRow} row
+ */
+export function sellerOrderDisplayId(row) {
+  return row?.order_number || String(row?.id || '').slice(0, 8)
+}
+
+/**
+ * @param {SellerOrderRow} row
+ */
+export function sellerOrderServiceDate(row) {
+  const raw = row?.preferred_date || row?.created_at
+  return raw ? String(raw).slice(0, 10) : null
+}
+
+/**
+ * @param {SellerOrderRow} row
+ */
+export function sellerOrderStatusForUi(row) {
+  const f = fulfillmentStatus(row)
+  if (f === 'confirmed') return 'confirmed'
+  if (f === 'in_progress') return 'in_progress'
+  if (f === 'completed') return 'completed'
+  if (f === 'cancelled') return 'cancelled'
+  return 'pending'
+}
+
+/**
+ * @param {SellerOrderRow} row
+ */
+export function sellerRefundStage(row) {
+  const rs = row?.refund_status ? String(row.refund_status).toLowerCase() : ''
+  return rs === 'requested' || rs === 'processing' ? rs : null
+}
+
+/**
+ * @param {SellerOrderRow & Record<string, any>} row
+ * @param {{ paymentMethod?: string, helpRequest?: any, helpAttachments?: any[] }} [opts]
+ */
+export function mapSellerOrderForOrdersPage(row, opts = {}) {
+  const items = row.order_items ?? []
+  const refundStage = sellerRefundStage(row)
+  const refundReason =
+    refundStage === 'processing'
+      ? 'Refund approved and being processed by the payment provider. Completion is automatic and typically takes a few business days.'
+      : refundStage === 'requested'
+        ? 'Buyer cancelled this booking before confirmation and has requested a refund. Approve to initiate the refund, or decline to keep the booking active.'
+        : null
+  const helpRequest = opts.helpRequest ?? null
+  const helpAttachments = Array.isArray(opts.helpAttachments) ? opts.helpAttachments : []
+
+  return {
+    id: row.id,
+    displayId: row.order_number || row.id,
+    customerName: row.contact_name || 'Buyer',
+    servicePackage: sellerServicePackageLabel(items),
+    dateOfService: sellerOrderServiceDate(row) || '',
+    location: row.service_location || '-',
+    totalPrice: Number(row.subtotal) || 0,
+    paymentStatus: resolvePaymentStatus(row),
+    orderStatus: sellerOrderStatusForUi(row),
+    customerPhone: row.contact_phone || '-',
+    customerEmail: row.contact_email || '-',
+    deceasedName: row.deceased_name || null,
+    dateOfDeath: row.date_of_death ? String(row.date_of_death) : null,
+    specialRequests: row.notes || null,
+    addOns: items.map((it) => `${it.name} x${it.quantity ?? 1}`),
+    wakeDuration:
+      typeof row.wake_duration_days === 'number'
+        ? `${row.wake_duration_days} day${row.wake_duration_days === 1 ? '' : 's'}`
+        : '-',
+    burialLocation: row.service_location || '-',
+    paymentMethod: opts.paymentMethod || '-',
+    refundRequested: Boolean(refundStage),
+    refundStage,
+    refundRequestedAt: row.refund_requested_at ? String(row.refund_requested_at) : null,
+    refundReason,
+    refundAttachments: helpAttachments,
+    helpRequest: helpRequest
+      ? {
+          id: helpRequest.id,
+          reason: helpRequest.reason,
+          description: helpRequest.description || '',
+          status: helpRequest.status,
+          openedAt: helpRequest.opened_at,
+          resolutionNotes: helpRequest.resolution_notes || '',
+          attachments: helpAttachments,
+        }
+      : null,
+  }
+}
+
+/**
+ * @param {SellerOrderRow & Record<string, any>} row
+ */
+export function mapSellerOrderToCustomerBooking(row) {
+  return {
+    id: row.id,
+    displayId: sellerOrderDisplayId(row),
+    servicePackage: sellerServicePackageLabel(row.order_items),
+    dateOfService: sellerOrderServiceDate(row) || '',
+    location: row.service_location?.trim() || '-',
+    status: orderStatusLabel(row),
+  }
+}
+
+/**
+ * @param {(SellerOrderRow & Record<string, any>)[]} rows
+ */
+export function aggregateSellerCustomers(rows) {
+  const byBuyer = new Map()
+
+  for (const row of rows) {
+    if (!row?.buyer_id) continue
+    const buyerId = String(row.buyer_id)
+    const list = byBuyer.get(buyerId) || []
+    list.push(row)
+    byBuyer.set(buyerId, list)
+  }
+
+  const out = []
+  for (const [buyerId, buyerOrders] of byBuyer) {
+    const sortedByCreatedDesc = [...buyerOrders].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    )
+    const latest = sortedByCreatedDesc[0]
+    const serviceDateStrs = buyerOrders
+      .map((order) => sellerOrderServiceDate(order))
+      .filter(Boolean)
+      .sort()
+
+    out.push({
+      id: buyerId,
+      name: latest.contact_name?.trim() || latest.contact_email?.trim() || 'Buyer',
+      phone: latest.contact_phone?.trim() || '-',
+      email: latest.contact_email?.trim() || '-',
+      lastServiceDate: serviceDateStrs.length ? serviceDateStrs[serviceDateStrs.length - 1] : null,
+      firstServiceDate: serviceDateStrs.length ? serviceDateStrs[0] : null,
+      bookings: sortedByCreatedDesc.map(mapSellerOrderToCustomerBooking),
+    })
+  }
+
+  out.sort((a, b) => {
+    const ad = (a.lastServiceDate || '').localeCompare(b.lastServiceDate || '')
+    return ad ? -ad : a.name.localeCompare(b.name)
+  })
+
+  return out
+}
+
 /**
  * @param {SellerOrderRow} row
  * @returns {string}

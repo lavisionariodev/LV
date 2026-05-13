@@ -6,7 +6,16 @@ const BUCKET = 'seller-documents'
 const DOC_ALLOWED = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp'])
 const MAX_DOC_BYTES = 8 * 1024 * 1024
 
-function mapDoc(row) {
+async function mapDoc(row, supabaseAdmin) {
+  let signedUrl = null
+  if (row.storage_path && supabaseAdmin) {
+    const { data } = await supabaseAdmin.storage
+      .from(row.storage_bucket || BUCKET)
+      .createSignedUrl(row.storage_path, 60 * 10, {
+        download: false,
+      })
+    signedUrl = data?.signedUrl || null
+  }
   return {
     id: row.id,
     documentType: row.document_type,
@@ -19,7 +28,28 @@ function mapDoc(row) {
     rejectionReason: row.rejection_reason,
     submittedAt: row.submitted_at,
     reviewedAt: row.reviewed_at,
+    previewUrl: signedUrl,
+    downloadUrl: signedUrl,
   }
+}
+
+async function requireSeller(userId) {
+  const supabaseAdmin = getSupabaseAdmin()
+  const { data: seller, error } = await supabaseAdmin
+    .from('sellers')
+    .select('status')
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (error || !seller) {
+    return { response: NextResponse.json({ error: 'Seller account required.' }, { status: 403 }), supabaseAdmin }
+  }
+  if (['rejected', 'suspended'].includes(String(seller.status || '').toLowerCase())) {
+    return {
+      response: NextResponse.json({ error: 'Seller account is not allowed to manage documents.' }, { status: 403 }),
+      supabaseAdmin,
+    }
+  }
+  return { response: null, supabaseAdmin }
 }
 
 export async function GET() {
@@ -29,6 +59,8 @@ export async function GET() {
     error: userErr,
   } = await supabase.auth.getUser()
   if (userErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const sellerAuth = await requireSeller(user.id)
+  if (sellerAuth.response) return sellerAuth.response
 
   const { data, error } = await supabase
     .from('seller_documents')
@@ -37,7 +69,9 @@ export async function GET() {
     .order('created_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message || 'Failed to load documents.' }, { status: 500 })
-  return NextResponse.json({ documents: (data || []).map(mapDoc) }, { status: 200 })
+  const supabaseAdmin = sellerAuth.supabaseAdmin
+  const documents = await Promise.all((data || []).map((row) => mapDoc(row, supabaseAdmin)))
+  return NextResponse.json({ documents }, { status: 200 })
 }
 
 export async function POST(request) {
@@ -47,6 +81,8 @@ export async function POST(request) {
     error: userErr,
   } = await supabase.auth.getUser()
   if (userErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const sellerAuth = await requireSeller(user.id)
+  if (sellerAuth.response) return sellerAuth.response
 
   const form = await request.formData().catch(() => null)
   const file = form?.get('file')
@@ -66,7 +102,7 @@ export async function POST(request) {
   const displayName = String(file.name || 'document').trim()
   const safeName = displayName.replace(/[^a-zA-Z0-9._-]+/g, '-')
   const storagePath = `${user.id}/${Date.now()}-${safeName}`
-  const supabaseAdmin = getSupabaseAdmin()
+  const supabaseAdmin = sellerAuth.supabaseAdmin
   const bytes = await file.arrayBuffer()
 
   const { error: uploadErr } = await supabaseAdmin.storage
@@ -99,7 +135,7 @@ export async function POST(request) {
     await supabaseAdmin.storage.from(BUCKET).remove([storagePath])
     return NextResponse.json({ error: error.message || 'Failed to save document.' }, { status: 500 })
   }
-  return NextResponse.json({ document: mapDoc(data) }, { status: 201 })
+  return NextResponse.json({ document: await mapDoc(data, supabaseAdmin) }, { status: 201 })
 }
 
 export async function DELETE(request) {
@@ -109,6 +145,8 @@ export async function DELETE(request) {
     error: userErr,
   } = await supabase.auth.getUser()
   if (userErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const sellerAuth = await requireSeller(user.id)
+  if (sellerAuth.response) return sellerAuth.response
 
   const id = new URL(request.url).searchParams.get('id')?.trim()
   if (!id) return NextResponse.json({ error: 'Missing document id.' }, { status: 400 })
@@ -128,7 +166,7 @@ export async function DELETE(request) {
   const { error } = await supabase.from('seller_documents').delete().eq('id', id).eq('seller_user_id', user.id)
   if (error) return NextResponse.json({ error: error.message || 'Failed to delete document.' }, { status: 500 })
 
-  const supabaseAdmin = getSupabaseAdmin()
+  const supabaseAdmin = sellerAuth.supabaseAdmin
   await supabaseAdmin.storage.from(doc.storage_bucket || BUCKET).remove([doc.storage_path])
   return NextResponse.json({ ok: true }, { status: 200 })
 }

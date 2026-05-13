@@ -1,7 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
 
-const LISTING_IMAGES_BUCKET = 'listing-images'
-
 function normalizeAvatarUrl(url) {
   if (url == null || typeof url !== 'string') return null
   const t = url.trim()
@@ -45,69 +43,38 @@ export async function uploadListingImages(files) {
     return { data: [], error: null }
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return { data: [], error: 'Not authenticated.' }
-  }
-
-  const uploadedUrls = []
-  for (const file of list) {
-    const ext = (file?.name?.split('.').pop() || 'jpg').toLowerCase()
-    const safeExt = ext.replace(/[^a-z0-9]/g, '') || 'jpg'
-    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt}`
-    const filePath = `${user.id}/${fileName}`
-
-    const { error: uploadError } = await supabase.storage
-      .from(LISTING_IMAGES_BUCKET)
-      .upload(filePath, file, { upsert: true, cacheControl: '3600' })
-
-    if (uploadError) {
-      return {
-        data: [],
-        error: uploadError.message || 'Failed to upload one or more listing images.',
-      }
+  try {
+    const form = new FormData()
+    list.forEach((file) => form.append('files', file))
+    const res = await fetch('/api/seller/listings/images', {
+      method: 'POST',
+      body: form,
+    })
+    const body = await res.json().catch(() => null)
+    if (!res.ok) {
+      return { data: [], error: body?.error || 'Failed to upload one or more listing images.' }
     }
-
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from(LISTING_IMAGES_BUCKET).getPublicUrl(filePath)
-
-    if (publicUrl) uploadedUrls.push(publicUrl)
+    return { data: Array.isArray(body?.urls) ? body.urls : [], error: null }
+  } catch (e) {
+    return { data: [], error: e?.message || 'Failed to upload one or more listing images.' }
   }
-
-  return { data: uploadedUrls, error: null }
 }
 
 export async function createSellerListing(payload) {
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return { data: null, error: 'Not authenticated.' }
+  try {
+    const res = await fetch('/api/seller/listings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload || {}),
+    })
+    const body = await res.json().catch(() => null)
+    if (!res.ok) {
+      return { data: null, error: body?.error || 'Failed to create listing.' }
+    }
+    return { data: body?.data ? normalizeListingRow(body.data) : null, error: null }
+  } catch (e) {
+    return { data: null, error: e?.message || 'Failed to create listing.' }
   }
-
-  const insertPayload = {
-    ...payload,
-    seller_user_id: user.id,
-  }
-
-  const { data, error } = await supabase
-    .from('seller_listings')
-    .insert(insertPayload)
-    .select('*')
-    .maybeSingle()
-
-  if (error) {
-    return { data: null, error: error.message || 'Failed to create listing.' }
-  }
-
-  return { data: normalizeListingRow(data), error: null }
 }
 
 export async function updateSellerListing(id, payload) {

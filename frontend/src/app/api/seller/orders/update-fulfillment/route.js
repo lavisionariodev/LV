@@ -5,6 +5,14 @@ import { notifyUser } from '@/lib/notifications/inAppServer'
 
 const ALLOWED = new Set(['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'])
 
+const LEGAL_TRANSITIONS = {
+  pending: new Set(['confirmed', 'cancelled']),
+  confirmed: new Set(['in_progress', 'cancelled']),
+  in_progress: new Set(['completed', 'cancelled']),
+  completed: new Set([]),
+  cancelled: new Set([]),
+}
+
 export async function POST(request) {
   const supabase = await createClient()
   const supabaseAdmin = getSupabaseAdmin()
@@ -29,7 +37,7 @@ export async function POST(request) {
 
   const { data: order, error: orderErr } = await supabaseAdmin
     .from('orders')
-    .select('id,buyer_id,seller_user_id,fulfillment_status,payment_status,status,order_number')
+    .select('id,buyer_id,seller_user_id,fulfillment_status,payment_status,status,refund_status,order_number')
     .eq('id', orderId)
     .maybeSingle()
 
@@ -42,16 +50,31 @@ export async function POST(request) {
   }
 
   const paid = order.payment_status === 'paid' || order.status === 'paid'
+  const currentStatus = String(order.fulfillment_status || 'pending').toLowerCase()
+  const refundStatus = String(order.refund_status || '').toLowerCase()
 
-  if (fulfillmentStatus === 'confirmed' && !paid) {
+  if (currentStatus === fulfillmentStatus) {
+    return NextResponse.json({ ok: true }, { status: 200 })
+  }
+
+  if (refundStatus === 'requested' || refundStatus === 'processing' || order.payment_status === 'refund_pending') {
     return NextResponse.json(
-      { error: 'Order must be paid before it can be confirmed.' },
+      { error: 'This order has an active refund flow and cannot be advanced.' },
       { status: 400 },
     )
   }
-  if (fulfillmentStatus === 'completed' && !paid) {
+
+  const legalNext = LEGAL_TRANSITIONS[currentStatus] || new Set()
+  if (!legalNext.has(fulfillmentStatus)) {
     return NextResponse.json(
-      { error: 'Order must be paid before it can be marked as completed.' },
+      { error: `Cannot change order status from ${currentStatus.replace('_', ' ')} to ${fulfillmentStatus.replace('_', ' ')}.` },
+      { status: 400 },
+    )
+  }
+
+  if (['confirmed', 'in_progress', 'completed'].includes(fulfillmentStatus) && !paid) {
+    return NextResponse.json(
+      { error: 'Order must be paid before fulfillment can advance.' },
       { status: 400 },
     )
   }

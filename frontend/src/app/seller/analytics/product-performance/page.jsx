@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { TbAdjustmentsHorizontal } from 'react-icons/tb'
 import styles from '../analytics.module.css'
 import { useSellerAnalyticsData } from '@/lib/seller/useSellerAnalyticsData'
@@ -28,6 +28,8 @@ const PRODUCT_PERF_SUMMARY_SOFT = [
   styles.summaryCardSoftIndigo,
   styles.summaryCardSoftAmber,
 ]
+
+const PRODUCT_WINDOW_OPTIONS = [3, 6, 12]
 
 function SellerAnalyticsProductPerformanceSkeleton() {
   return (
@@ -68,6 +70,7 @@ function SellerAnalyticsProductPerformanceSkeleton() {
 
 export default function SellerAnalyticsProductPerformancePage() {
   const { orders, loading, error } = useSellerAnalyticsData()
+  const [windowMonths, setWindowMonths] = useState(6)
 
   const orders12m = useMemo(() => {
     if (!orders.length) return []
@@ -76,7 +79,10 @@ export default function SellerAnalyticsProductPerformancePage() {
     return orders.filter((o) => new Date(o.created_at).getTime() >= start)
   }, [orders])
 
-  const packageBookings = useMemo(() => packageBookingCountsLastNMonths(orders, 6), [orders])
+  const packageBookings = useMemo(
+    () => packageBookingCountsLastNMonths(orders, windowMonths),
+    [orders, windowMonths],
+  )
   const totals = packageBookings.map((pkg) => pkg.confirmed + pkg.pending)
   const maxTotal = Math.max(...totals, 1)
 
@@ -143,15 +149,29 @@ export default function SellerAnalyticsProductPerformancePage() {
             <div className={styles.chartTitleGroup}>
               <h2 className={styles.chartTitle}>Bookings by package</h2>
               <p className={styles.chartSubtitle}>
-                Last 6 months – confirmed and pending bookings.
+                Last {windowMonths} months - confirmed and pending bookings.
               </p>
             </div>
-            <button type="button" className={styles.chartActionButton}>
-              <span className={styles.chartActionButtonIcon} aria-hidden>
-                <TbAdjustmentsHorizontal size={14} />
-              </span>
-              6-MONTH VIEW
-            </button>
+            <div className={styles.chartSegmentedControl} aria-label="Product performance date range">
+              {PRODUCT_WINDOW_OPTIONS.map((months) => (
+                <button
+                  key={months}
+                  type="button"
+                  className={`${styles.chartActionButton} ${
+                    windowMonths === months ? styles.chartActionButtonActive : ''
+                  }`}
+                  onClick={() => setWindowMonths(months)}
+                  aria-pressed={windowMonths === months}
+                >
+                  {months === windowMonths ? (
+                    <span className={styles.chartActionButtonIcon} aria-hidden>
+                      <TbAdjustmentsHorizontal size={14} />
+                    </span>
+                  ) : null}
+                  {months}-month view
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className={styles.chartBody}>

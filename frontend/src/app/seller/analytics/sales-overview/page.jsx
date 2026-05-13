@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { TbChartLine } from 'react-icons/tb'
 import {
   AreaChart,
@@ -31,6 +31,7 @@ import {
 
 const SELLER_BAR_COLORS = ['#1F312B', '#2D4A38', '#3D683A', '#4A7C47']
 const SELLER_CHART_ACCENT = '#1F312B'
+const PACKAGE_WINDOW_OPTIONS = [3, 6, 12]
 
 function formatShortDate(dateStr) {
   const d = new Date(dateStr + 'T12:00:00')
@@ -108,11 +109,15 @@ function SellerAnalyticsSalesOverviewSkeleton() {
 
 export default function SellerAnalyticsSalesOverviewPage() {
   const { orders, loading, error } = useSellerAnalyticsData()
+  const [packageWindowMonths, setPackageWindowMonths] = useState(6)
 
   const revenueByDay = useMemo(() => paidRevenueByLastNDays(orders, 7), [orders])
   const revenueByCategory = useMemo(() => revenueByLineItemTopN(orders, 7, 4), [orders])
   const monthlyRevenue = useMemo(() => monthlyRevenueBarsLastNMonths(orders, 6), [orders])
-  const packageBookings = useMemo(() => packageBookingCountsLastNMonths(orders, 6), [orders])
+  const packageBookings = useMemo(
+    () => packageBookingCountsLastNMonths(orders, packageWindowMonths),
+    [orders, packageWindowMonths],
+  )
 
   const packageTotals = packageBookings.map((pkg) => pkg.confirmed + pkg.pending)
   const packageMaxTotal = Math.max(...packageTotals, 1)
@@ -316,14 +321,30 @@ export default function SellerAnalyticsSalesOverviewPage() {
           <div className={styles.chartHeader}>
             <div className={styles.chartTitleGroup}>
               <h2 className={styles.chartTitle}>Bookings by package</h2>
-              <p className={styles.chartSubtitle}>Last 6 months · confirmed and pending bookings</p>
+              <p className={styles.chartSubtitle}>
+                Last {packageWindowMonths} months · confirmed and pending bookings
+              </p>
             </div>
-            <button type="button" className={styles.chartActionButton}>
-              <span className={styles.chartActionButtonIcon} aria-hidden>
-                <TbChartLine size={14} />
-              </span>
-              6-MONTH VIEW
-            </button>
+            <div className={styles.chartSegmentedControl} aria-label="Booking package date range">
+              {PACKAGE_WINDOW_OPTIONS.map((months) => (
+                <button
+                  key={months}
+                  type="button"
+                  className={`${styles.chartActionButton} ${
+                    packageWindowMonths === months ? styles.chartActionButtonActive : ''
+                  }`}
+                  onClick={() => setPackageWindowMonths(months)}
+                  aria-pressed={packageWindowMonths === months}
+                >
+                  {packageWindowMonths === months ? (
+                    <span className={styles.chartActionButtonIcon} aria-hidden>
+                      <TbChartLine size={14} />
+                    </span>
+                  ) : null}
+                  {months}-month view
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className={styles.chartBody}>

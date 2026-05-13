@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+function normalizePriority(value) {
+  const p = String(value || '').trim().toLowerCase()
+  if (p === 'high' || p === 'urgent' || p === 'critical') return 'high'
+  if (p === 'medium' || p === 'normal') return 'medium'
+  return 'low'
+}
+
 function mapRow(row) {
   const meta = row.metadata && typeof row.metadata === 'object' ? row.metadata : {}
   return {
@@ -11,6 +18,7 @@ function mapRow(row) {
     readAt: row.read_at,
     resolvedAt: row.resolved_at,
     createdAt: row.created_at,
+    priority: normalizePriority(meta.priority),
     metadata: meta,
   }
 }
@@ -71,6 +79,8 @@ export async function PATCH(request) {
   const markAllResolved = Boolean(body?.markAllResolved)
   const resolve = Boolean(body?.resolve)
   const id = body?.id != null ? String(body.id).trim() : ''
+  const resolutionNote =
+    body?.resolutionNote != null ? String(body.resolutionNote).trim().slice(0, 2000) : ''
 
   const nowIso = new Date().toISOString()
 
@@ -104,7 +114,27 @@ export async function PATCH(request) {
     return NextResponse.json({ error: 'Missing id or bulk action.' }, { status: 400 })
   }
 
-  const patch = resolve ? { read_at: nowIso, resolved_at: nowIso } : { read_at: nowIso }
+  let patch = resolve ? { read_at: nowIso, resolved_at: nowIso } : { read_at: nowIso }
+  if (resolve && resolutionNote) {
+    const { data: row, error: findErr } = await supabase
+      .from('user_notifications')
+      .select('metadata')
+      .eq('user_id', user.id)
+      .eq('id', id)
+      .maybeSingle()
+    if (findErr) {
+      return NextResponse.json({ error: findErr.message ?? 'Update failed.' }, { status: 500 })
+    }
+    const meta = row?.metadata && typeof row.metadata === 'object' ? row.metadata : {}
+    patch = {
+      ...patch,
+      metadata: {
+        ...meta,
+        resolutionNote,
+        resolutionNoteAt: nowIso,
+      },
+    }
+  }
   const { error } = await supabase
     .from('user_notifications')
     .update(patch)
