@@ -1,8 +1,14 @@
+import { pathFromAvatarsPublicUrl } from '@/shared/utils/avatarImage'
+
 const AVATARS_BUCKET = 'avatars'
+
+function resolveAvatarStoragePath(profile) {
+  return profile.avatarPath || pathFromAvatarsPublicUrl(profile.avatarUrl)
+}
 
 /**
  * @param {import('@supabase/supabase-js').SupabaseClient} supabase
- * @param {{ id: string, avatarPath?: string | null }} profile
+ * @param {{ id: string, avatarPath?: string | null, avatarUrl?: string | null }} profile
  * @param {File} file
  */
 export async function uploadAdminAvatar(supabase, profile, file) {
@@ -10,8 +16,9 @@ export async function uploadAdminAvatar(supabase, profile, file) {
   const fileName = `avatar-${Date.now()}.${fileExt}`
   const filePath = `${profile.id}/${fileName}`
 
-  if (profile.avatarPath) {
-    await supabase.storage.from(AVATARS_BUCKET).remove([profile.avatarPath])
+  const existingPath = resolveAvatarStoragePath(profile)
+  if (existingPath) {
+    await supabase.storage.from(AVATARS_BUCKET).remove([existingPath])
   }
 
   const { error: uploadError } = await supabase.storage
@@ -38,8 +45,9 @@ export async function uploadAdminAvatar(supabase, profile, file) {
  * @param {{ id: string, avatarPath?: string | null, avatarUrl?: string | null }} profile
  */
 export async function removeAdminAvatar(supabase, profile) {
-  if (profile.avatarPath) {
-    await supabase.storage.from(AVATARS_BUCKET).remove([profile.avatarPath])
+  const existingPath = resolveAvatarStoragePath(profile)
+  if (existingPath) {
+    await supabase.storage.from(AVATARS_BUCKET).remove([existingPath])
   }
 
   const { error } = await supabase

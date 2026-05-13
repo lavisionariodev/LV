@@ -32,6 +32,7 @@ import {
 } from '@/lib/sellers/client'
 import { normalizeSellerSocialLinks, validateSellerSocialLinks } from '@/lib/sellers/socialLinks'
 import { normalizeSellerSettingsTab } from './sellerSettingsTabs'
+import { shouldUseUnoptimizedAvatarSrc } from '@/shared/utils/avatarImage'
 import { useMediaQuery } from '@/shared/hooks'
 
 const PAYOUT_METHOD_OPTIONS = [
@@ -1021,6 +1022,12 @@ export default function SellerSettingsClient() {
       setProfile((prev) =>
         prev ? { ...prev, avatarPath: body?.avatarPath || null, avatarUrl: body?.avatarUrl || null } : prev,
       )
+      if (avatarPreviewRef.current) {
+        URL.revokeObjectURL(avatarPreviewRef.current)
+        avatarPreviewRef.current = ''
+      }
+      setAvatarPreview('')
+      if (fileRef.current) fileRef.current.value = ''
       notifyToast('success', 'Avatar updated successfully.')
     } catch (err) {
       notifyToast('error', err.message || 'Failed to upload avatar.')
@@ -1155,7 +1162,7 @@ export default function SellerSettingsClient() {
   }
 
   const shownAvatar = avatarPreview || profile?.avatarUrl || ''
-  const shownAvatarIsBlob = Boolean(shownAvatar && shownAvatar.startsWith('blob:'))
+  const shownAvatarIsBlob = shouldUseUnoptimizedAvatarSrc(shownAvatar)
   const formId = 'sellerPasswordForm'
   const id = (name) => `seller_${name}`
   const shopId = (name) => `seller_shop_${name}`

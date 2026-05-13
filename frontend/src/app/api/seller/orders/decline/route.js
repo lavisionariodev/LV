@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
 import { createPaymongoRefund, phpToCentavos } from '@/lib/paymongo/client'
 import { insertOrderRefundEvent, insertUserNotification } from '@/lib/payments/refundReconcile'
+import { notifySeller } from '@/lib/notifications/inAppServer'
 
 function paidOrder(order) {
   return order?.payment_status === 'paid' || order?.status === 'paid'
@@ -189,8 +190,7 @@ export async function POST(request) {
     })
   }
 
-  await insertUserNotification(supabaseAdmin, {
-    userId: user.id,
+  await notifySeller(supabaseAdmin, user.id, {
     type: 'payment_refund',
     title: 'Refund initiated for declined order',
     body: `Order ${ref} was declined. The buyer refund is now processing and this order will not receive a payout.`,

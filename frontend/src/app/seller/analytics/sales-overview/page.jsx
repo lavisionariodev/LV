@@ -165,7 +165,7 @@ export default function SellerAnalyticsSalesOverviewPage() {
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftAmber}`}>
           <p className={styles.summaryLabel}>Top package</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>{topPkg.name}</p>
+            <p className={`${styles.summaryValue} ${styles.summaryValueCompact}`}>{topPkg.name}</p>
           </div>
           <p className={styles.summaryHint}>
             {topPkg.count > 0 ? `${topPkg.count} booking(s) this month` : 'No bookings this month'}

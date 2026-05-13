@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
-import { notifyUser } from '@/lib/notifications/inAppServer'
+import { notifySeller } from '@/lib/notifications/inAppServer'
 
 export async function POST(_request, { params }) {
   const { id: listingId } = await params
@@ -47,8 +47,7 @@ export async function POST(_request, { params }) {
 
   if (listing?.seller_user_id) {
     const name = listing.listing_name || 'Your listing'
-    await notifyUser(supabaseAdmin, {
-      userId: listing.seller_user_id,
+    await notifySeller(supabaseAdmin, listing.seller_user_id, {
       type: 'listing_approval',
       title: 'Listing approved',
       body: `${name} was approved and is available on the shop.`,

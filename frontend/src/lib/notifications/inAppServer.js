@@ -81,7 +81,47 @@ export async function notifyAllAdmins(supabaseAdmin, payload) {
     return
   }
   const ids = (admins ?? []).map((r) => r.id).filter(Boolean)
-  await notifyUsers(supabaseAdmin, ids, payload)
+  const metadata =
+    payload.metadata && typeof payload.metadata === 'object' ? payload.metadata : {}
+  await notifyUsers(supabaseAdmin, ids, {
+    ...payload,
+    metadata: { audience: 'admin', ...metadata },
+  })
+}
+
+/**
+ * Fan-out to one seller auth user id (skips when the user is not in public.sellers).
+ *
+ * @param {import('@supabase/supabase-js').SupabaseClient} supabaseAdmin
+ * @param {string} sellerUserId
+ * @param {Omit<Parameters<typeof notifyUser>[1], 'userId'>} payload
+ */
+export async function notifySeller(supabaseAdmin, sellerUserId, payload) {
+  const userId = String(sellerUserId || '').trim()
+  if (!userId) return
+
+  const { data: sellerRow, error } = await supabaseAdmin
+    .from('sellers')
+    .select('user_id')
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (error) {
+    apiLog('user_notification.seller_lookup_failed', { err: errorMessage(error), type: payload.type })
+    return
+  }
+  if (!sellerRow?.user_id) {
+    apiLog('user_notification.seller_skipped', { type: payload.type })
+    return
+  }
+
+  const metadata =
+    payload.metadata && typeof payload.metadata === 'object' ? payload.metadata : {}
+  await notifyUser(supabaseAdmin, {
+    ...payload,
+    userId,
+    metadata: { audience: 'seller', ...metadata },
+  })
 }
 
 /**

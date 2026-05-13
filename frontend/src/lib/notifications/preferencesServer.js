@@ -104,9 +104,23 @@ export async function shouldSendChannel(supabaseAdmin, userId, bucket, channel) 
  */
 export async function shouldSendChannelForType(supabaseAdmin, userId, notificationType, channel) {
   const role = await detectRole(supabaseAdmin, userId)
-  const bucket =
-    role === 'seller'
-      ? sellerNotificationFilterBucket(notificationType)
-      : adminNotificationFilterBucket(notificationType)
-  return resolveChannelPreference(supabaseAdmin, userId, bucket, channel, role)
+  if (role === 'seller') {
+    return resolveChannelPreference(
+      supabaseAdmin,
+      userId,
+      sellerNotificationFilterBucket(notificationType),
+      channel,
+      role,
+    )
+  }
+  if (role === 'admin') {
+    return resolveChannelPreference(
+      supabaseAdmin,
+      userId,
+      adminNotificationFilterBucket(notificationType),
+      channel,
+      role,
+    )
+  }
+  return true
 }

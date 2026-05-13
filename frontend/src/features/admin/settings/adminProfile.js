@@ -3,9 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase as browserSupabase } from '@/lib/supabase/client'
 import { removeAdminAvatar, uploadAdminAvatar } from '@/lib/admin/adminAvatar'
-import { validateAvatarImage } from '@/shared/utils/avatarImage'
-
-const AVATARS_BUCKET = 'avatars'
+import { validateAvatarImage, resolveStoredAvatar } from '@/shared/utils/avatarImage'
 
 /**
  * Loads the current admin row + avatar public URL for topbar / settings / dashboard.
@@ -36,11 +34,7 @@ export async function fetchCurrentAdminProfile() {
     throw error
   }
 
-  const avatarPath = data.avatar_url || null
-
-  const avatarUrl = avatarPath
-    ? browserSupabase.storage.from(AVATARS_BUCKET).getPublicUrl(avatarPath).data.publicUrl
-    : null
+  const { avatarPath, avatarUrl } = resolveStoredAvatar(browserSupabase, data.avatar_url)
 
   const firstName = data.first_name || ''
   const lastName = data.last_name || ''
@@ -329,6 +323,7 @@ export function useAdminPersonalProfile({ supabase = browserSupabase, toast } = 
         setAvatarLoading(true)
         const nextAvatar = await uploadAdminAvatar(supabase, form.profile, file)
         form.setProfile((prev) => (prev ? { ...prev, ...nextAvatar } : prev))
+        resetAvatarPreview()
         form.setSaveStatus('Avatar updated successfully.')
       } catch (err) {
         form.setSaveError(err?.message || 'Failed to upload avatar.')

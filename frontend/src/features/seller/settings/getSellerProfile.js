@@ -1,14 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
-
-/**
- * Extract storage path from a Supabase public avatar URL.
- * e.g. "https://.../object/public/avatars/userId/file" -> "userId/file"
- */
-function pathFromAvatarUrl(avatarUrl) {
-  if (!avatarUrl || typeof avatarUrl !== 'string') return null
-  const match = avatarUrl.split('/avatars/')[1]
-  return match || null
-}
+import { resolveStoredAvatar } from '@/shared/utils/avatarImage'
 
 export async function fetchCurrentSellerProfile() {
   const {
@@ -30,8 +21,7 @@ export async function fetchCurrentSellerProfile() {
     throw error
   }
 
-  const avatarUrl = data.avatar_url || null
-  const avatarPath = avatarUrl ? pathFromAvatarUrl(avatarUrl) : null
+  const { avatarPath, avatarUrl } = resolveStoredAvatar(supabase, data.avatar_url)
 
   return {
     id: data.id,

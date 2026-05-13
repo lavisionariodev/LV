@@ -17,7 +17,7 @@ import { HiOutlineNewspaper } from 'react-icons/hi'
 import { changePasswordWithReauth } from '@/lib/auth/changePassword'
 import { useAuthToast } from '@/contexts/ToastContext'
 import { useAdminPersonalProfile } from '@/features/admin/settings/adminProfile'
-import { AVATAR_ALLOWED_TYPES } from '@/shared/utils/avatarImage'
+import { AVATAR_ALLOWED_TYPES, shouldUseUnoptimizedAvatarSrc } from '@/shared/utils/avatarImage'
 import { useMediaQuery } from '@/shared/hooks'
 import { normalizeSettingsTab } from '../settings/adminSettingsTabs'
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
@@ -163,7 +163,7 @@ export default function AdminProfileClient() {
   }
 
   const shownAvatar = avatarPreview || profile?.avatarUrl || ''
-  const shownAvatarIsBlob = Boolean(shownAvatar && shownAvatar.startsWith('blob:'))
+  const shownAvatarIsBlob = shouldUseUnoptimizedAvatarSrc(shownAvatar)
   const passwordSheetFormId = 'adminProfilePasswordSheetForm'
   const id = (name) => `admin_profile_${name}`
 

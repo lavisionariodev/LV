@@ -18,7 +18,7 @@ import { FiEdit, FiUpload } from 'react-icons/fi'
 import { MdCheckCircle, MdErrorOutline } from 'react-icons/md'
 import { changePasswordWithReauth } from '@/lib/auth/changePassword'
 import { useAdminPersonalProfile } from '@/features/admin/settings/adminProfile'
-import { AVATAR_ALLOWED_TYPES } from '@/shared/utils/avatarImage'
+import { AVATAR_ALLOWED_TYPES, shouldUseUnoptimizedAvatarSrc } from '@/shared/utils/avatarImage'
 import { useSiteContent, upsertSiteContent } from '@/lib/siteContent/client'
 import { validateSellerHelpFaq } from '@/lib/siteContent/mapping'
 import { useAuthToast } from '@/contexts/ToastContext'
@@ -1577,7 +1577,7 @@ export default function AdminSettingsClient() {
   }
 
   const shownAvatar = avatarPreview || profile?.avatarUrl || ''
-  const shownAvatarIsBlob = Boolean(shownAvatar && shownAvatar.startsWith('blob:'))
+  const shownAvatarIsBlob = shouldUseUnoptimizedAvatarSrc(shownAvatar)
   const formId = 'adminPasswordForm'
   const id = (name) => `admin_${name}`
 

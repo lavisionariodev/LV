@@ -1,8 +1,9 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { TbSearch } from 'react-icons/tb'
+import { TbChevronDown, TbSearch } from 'react-icons/tb'
 import { FiArchive } from 'react-icons/fi'
 import { MdArrowBackIos } from 'react-icons/md'
 import styles from '../products.module.css'
@@ -24,6 +25,22 @@ export default function ProductsListToolbar({
   const pathname = usePathname()
   const router = useRouter()
   const onArchivePage = pathname === ARCHIVE_PATH
+  const [typeDropdownOpen, setTypeDropdownOpen] = useState(false)
+  const typeDropdownRef = useRef(null)
+  const selectedTypeLabel =
+    typeOptions.find((option) => option.id === typeFilter)?.label ?? 'All types'
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (typeDropdownRef.current && !typeDropdownRef.current.contains(event.target)) {
+        setTypeDropdownOpen(false)
+      }
+    }
+    if (typeDropdownOpen) {
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
+    }
+  }, [typeDropdownOpen])
 
   const handleSubmit = (event) => {
     event.preventDefault()
@@ -39,24 +56,45 @@ export default function ProductsListToolbar({
     <section className={styles.filtersRow} aria-label="Search products">
       {showTypeFilter && typeOptions.length > 0 ? (
         <div
-          className={styles.filterButtonsWrap}
-          role="group"
-          aria-label="Filter by listing type"
+          className={`${styles.filterDropdownWrap} ${typeDropdownOpen ? styles.filterDropdownOpen : ''}`}
+          ref={typeDropdownRef}
         >
-          {typeOptions.map((option) => {
-            const selected = typeFilter === option.id
-            return (
-              <button
-                key={option.id}
-                type="button"
-                className={`${styles.filterButton} ${selected ? styles.filterButtonActive : ''}`}
-                aria-pressed={selected}
-                onClick={() => onTypeFilterChange?.(option.id)}
-              >
-                {option.label}
-              </button>
-            )
-          })}
+          <button
+            type="button"
+            className={styles.filterDropdownTrigger}
+            onClick={() => setTypeDropdownOpen((open) => !open)}
+            aria-haspopup="listbox"
+            aria-expanded={typeDropdownOpen}
+            aria-label="Filter by listing type"
+          >
+            <span className={styles.filterDropdownLabel}>{selectedTypeLabel}</span>
+            <TbChevronDown className={styles.filterDropdownChevron} size={18} aria-hidden />
+          </button>
+          {typeDropdownOpen ? (
+            <div
+              className={styles.filterDropdownPanel}
+              role="listbox"
+              aria-label="Listing type options"
+            >
+              {typeOptions.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  role="option"
+                  aria-selected={typeFilter === option.id}
+                  className={`${styles.filterDropdownOption} ${
+                    typeFilter === option.id ? styles.filterDropdownOptionSelected : ''
+                  }`}
+                  onClick={() => {
+                    onTypeFilterChange?.(option.id)
+                    setTypeDropdownOpen(false)
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
       ) : null}
       <form className={styles.searchWrap} role="search" onSubmit={handleSubmit}>

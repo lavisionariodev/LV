@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
-import { notifyUser, notifyAllAdmins } from '@/lib/notifications/inAppServer'
+import { notifyUser, notifyAllAdmins, notifySeller } from '@/lib/notifications/inAppServer'
 
 /**
  * Buyer opens a dispute when self-serve cancel is not available (e.g. provider already confirmed).
@@ -129,8 +129,7 @@ export async function POST(request) {
     .eq('status', 'escrowed')
 
   if (order.seller_user_id) {
-    await notifyUser(supabaseAdmin, {
-      userId: order.seller_user_id,
+    await notifySeller(supabaseAdmin, order.seller_user_id, {
       type: 'alerts',
       title: 'Buyer request received',
       body: `A buyer has submitted a request for review on order ${orderId.slice(0, 8)}. Reason: ${reason}. Please review and respond.`,
