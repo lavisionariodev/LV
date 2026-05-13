@@ -56,9 +56,7 @@ const PAGE_TITLES = {
   },
   seller: {
     '/seller': 'Dashboard',
-    '/seller/orders': 'All Orders',
-    '/seller/orders/pending': 'Pending',
-    '/seller/orders/completed': 'Completed',
+    '/seller/orders': 'Orders',
     '/seller/products': 'Products',
     '/seller/products/services': 'Services',
     '/seller/products/packages': 'Packages',

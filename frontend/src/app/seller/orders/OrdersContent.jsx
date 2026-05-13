@@ -252,16 +252,15 @@ function SellerOrdersShellSkeleton() {
   )
 }
 
-export default function OrdersContent({ initialTab, initialOrderId, initialAction }) {
+export default function OrdersContent({ initialOrderId, initialAction }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { user, authLoading, isSeller } = useAuth()
   const allowedTabs = useMemo(() => ORDER_STATUSES.map((t) => t.id), [])
-  /** Route-level default only (from path segments like /orders/pending). Do not derive from URL ?tab= here — that caused omitIf / defaultTab to flip when the URL changed and made params flicker. */
-  const routeDefaultTab = initialTab && allowedTabs.includes(initialTab) ? initialTab : 'all'
+  const defaultTab = 'all'
   const [activeTab, setActiveTab] = useState(() =>
-    readEnum(searchParams, 'tab', allowedTabs, routeDefaultTab),
+    readEnum(searchParams, 'tab', allowedTabs, defaultTab),
   )
   const [searchQuery, setSearchQuery] = useState(() => readString(searchParams, 'q', ''))
   const [selectedOrder, setSelectedOrder] = useState(null)
@@ -405,31 +404,23 @@ export default function OrdersContent({ initialTab, initialOrderId, initialActio
     }
   }, [authLoading, loadOrders, isSeller, user?.id])
 
-  useEffect(() => {
-    // Back-compat: if parent route supplies initialTab, respect it.
-    if (initialTab && ORDER_STATUSES.some((t) => t.id === initialTab)) {
-      queueMicrotask(() => setActiveTab(initialTab))
-    }
-  }, [initialTab])
-
   // Sync state <- URL (back/forward, shared links)
   useEffect(() => {
-    const nextTab = readEnum(searchParams, 'tab', allowedTabs, routeDefaultTab)
+    const nextTab = readEnum(searchParams, 'tab', allowedTabs, defaultTab)
     const nextQ = readString(searchParams, 'q', '')
     queueMicrotask(() => {
       setActiveTab((prev) => (nextTab !== prev ? nextTab : prev))
       setSearchQuery((prev) => (nextQ !== prev ? nextQ : prev))
     })
-  }, [allowedTabs, routeDefaultTab, searchParams])
+  }, [allowedTabs, searchParams])
 
   // Sync URL <- state (debounce typing; keep tab in URL too).
-  // omitIf uses routeDefaultTab (stable per route). Main /seller/orders must not pass URL-derived initialTab — that flipped omitIf whenever ?tab= was omitted and caused param flicker.
   useDebouncedEffect(() => {
     replaceUrlQuery(router, pathname, searchParams, {
-      tab: { value: activeTab, omitIf: routeDefaultTab },
+      tab: { value: activeTab, omitIf: defaultTab },
       q: searchQuery,
     })
-  }, [activeTab, searchQuery, router, pathname, searchParams, routeDefaultTab], 300)
+  }, [activeTab, searchQuery, router, pathname, searchParams], 300)
 
   /** Drop dashboard / email deep-link params so auto-open effects do not run again after refresh or polling. */
   const clearOrderDeepLinkParams = useCallback(() => {
