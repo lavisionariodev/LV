@@ -1,8 +1,9 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { TbChevronDown, TbMail, TbSearch } from 'react-icons/tb'
 import { useToast } from '@/contexts/ToastContext'
+import { useSiteContent } from '@/lib/siteContent/client'
 import styles from './help.module.css'
 
 const CATEGORY_TABS = [
@@ -103,6 +104,8 @@ const FAQ_BY_TAB = {
 
 export default function SellerHelpPage() {
   const toast = useToast()
+  const { data: siteContent } = useSiteContent()
+  const searchRef = useRef(null)
   const [query, setQuery] = useState('')
   const [activeTab, setActiveTab] = useState('Bookings & Service Dates')
   const [openFaqs, setOpenFaqs] = useState({ book_1: true })
@@ -110,16 +113,78 @@ export default function SellerHelpPage() {
   const [emailSubject, setEmailSubject] = useState('Seller Help Request')
   const [emailMessage, setEmailMessage] = useState('')
   const [isSubmittingEmail, setIsSubmittingEmail] = useState(false)
+  const [supportRequests, setSupportRequests] = useState([])
+  const [supportLoading, setSupportLoading] = useState(true)
+
+  const faqByTab = useMemo(() => {
+    const groups = siteContent?.sellerHelpFaq
+    if (!Array.isArray(groups) || groups.length === 0) return FAQ_BY_TAB
+    return groups.reduce((acc, group) => {
+      if (group?.category && Array.isArray(group.items) && group.items.length > 0) {
+        acc[group.category] = group.items
+      }
+      return acc
+    }, {})
+  }, [siteContent])
+
+  const categoryTabs = useMemo(() => {
+    const keys = Object.keys(faqByTab)
+    return keys.length ? keys : CATEGORY_TABS
+  }, [faqByTab])
+
+  const resolvedActiveTab = useMemo(() => {
+    if (categoryTabs.includes(activeTab)) return activeTab
+    return categoryTabs[0] || CATEGORY_TABS[0]
+  }, [activeTab, categoryTabs])
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadSupportRequests() {
+      setSupportLoading(true)
+      try {
+        const res = await fetch('/api/seller/support', { cache: 'no-store' })
+        const body = await res.json().catch(() => null)
+        if (!res.ok) throw new Error(body?.error || 'Failed to load support requests.')
+        if (!cancelled) setSupportRequests(Array.isArray(body?.requests) ? body.requests : [])
+      } catch {
+        if (!cancelled) setSupportRequests([])
+      } finally {
+        if (!cancelled) setSupportLoading(false)
+      }
+    }
+    loadSupportRequests()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const refreshSupportRequests = async () => {
+    setSupportLoading(true)
+    try {
+      const res = await fetch('/api/seller/support', { cache: 'no-store' })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(body?.error || 'Failed to load support requests.')
+      setSupportRequests(Array.isArray(body?.requests) ? body.requests : [])
+    } catch {
+      setSupportRequests([])
+    } finally {
+      setSupportLoading(false)
+    }
+  }
 
   const filteredFaqs = useMemo(() => {
-    const activeFaqItems = FAQ_BY_TAB[activeTab] ?? []
     const q = query.trim().toLowerCase()
-    if (!q) return activeFaqItems
-    return activeFaqItems.filter((item) => {
-      const haystack = `${item.question} ${item.answer}`.toLowerCase()
+    const allFaqs = categoryTabs.flatMap((tab) =>
+      (faqByTab[tab] ?? []).map((item) => ({ ...item, tab })),
+    )
+    if (!q) {
+      return (faqByTab[resolvedActiveTab] ?? []).map((item) => ({ ...item, tab: resolvedActiveTab }))
+    }
+    return allFaqs.filter((item) => {
+      const haystack = `${item.question} ${item.answer} ${item.tab}`.toLowerCase()
       return haystack.includes(q)
     })
-  }, [activeTab, query])
+  }, [resolvedActiveTab, categoryTabs, faqByTab, query])
 
   const handleSendSupportEmail = async (e) => {
     e.preventDefault()
@@ -148,6 +213,7 @@ export default function SellerHelpPage() {
       setEmailSubject('Seller Help Request')
       setEmailMessage('')
       setIsEmailModalOpen(false)
+      await refreshSupportRequests()
     } catch {
       toast.error('Unable to submit right now. Please try again in a moment.')
     } finally {
@@ -162,26 +228,31 @@ export default function SellerHelpPage() {
         <div className={styles.searchWrap}>
           <TbSearch className={styles.searchIcon} />
           <input
+            ref={searchRef}
             className={styles.searchInput}
             placeholder="Search bookings, refunds, listings, payouts, or documents"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          <button type="button" className={styles.searchBtn}>
+          <button
+            type="button"
+            className={styles.searchBtn}
+            onClick={() => searchRef.current?.focus()}
+          >
             Search
           </button>
         </div>
       </section>
 
       <div className={styles.categoryTabs}>
-        {CATEGORY_TABS.map((tab) => (
+        {categoryTabs.map((tab) => (
           <button
             key={tab}
             type="button"
-            className={`${styles.tabBtn} ${activeTab === tab ? styles.tabBtnActive : ''}`}
+            className={`${styles.tabBtn} ${resolvedActiveTab === tab ? styles.tabBtnActive : ''}`}
             onClick={() => {
               setActiveTab(tab)
-              const firstItem = (FAQ_BY_TAB[tab] ?? [])[0]
+              const firstItem = (faqByTab[tab] ?? [])[0]
               setOpenFaqs(firstItem ? { [firstItem.id]: true } : {})
             }}
           >
@@ -193,7 +264,9 @@ export default function SellerHelpPage() {
       <section className={styles.layoutGrid}>
         <div className={styles.mainColumn}>
           <div className={styles.sectionCard}>
-            <h2 className={styles.sectionTitle}>{activeTab} FAQs</h2>
+            <h2 className={styles.sectionTitle}>
+              {query.trim() ? 'Search results' : `${resolvedActiveTab} FAQs`}
+            </h2>
             <div className={styles.faqAccordion}>
               {filteredFaqs.map((item) => {
                 const isOpen = Boolean(openFaqs[item.id])
@@ -222,6 +295,28 @@ export default function SellerHelpPage() {
         </div>
 
         <aside className={styles.sideColumn}>
+          <div className={styles.supportCard}>
+            <h3 className={styles.supportTitle}>Support requests</h3>
+            <p className={styles.supportSubtitle}>Recent help requests submitted from this account.</p>
+            {supportLoading ? (
+              <p className={styles.supportMeta}>Loading support history…</p>
+            ) : supportRequests.length === 0 ? (
+              <p className={styles.supportMeta}>No support requests yet.</p>
+            ) : (
+              <ul className={styles.supportHistoryList}>
+                {supportRequests.map((request) => (
+                  <li key={request.id} className={styles.supportHistoryItem}>
+                    <p className={styles.supportHistorySubject}>{request.subject}</p>
+                    <p className={styles.supportHistoryMeta}>
+                      {request.status} · {new Date(request.created_at).toLocaleString('en-PH')}
+                    </p>
+                    <p className={styles.supportHistoryMessage}>{request.message}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
           <div className={styles.supportCard}>
             <h3 className={styles.supportTitle}>Contact Support</h3>
             <p className={styles.supportSubtitle}>You still have a question?</p>

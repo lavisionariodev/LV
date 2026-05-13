@@ -608,18 +608,6 @@
   box-shadow: 0 2px 6px rgba(27, 94, 32, 0.3);
 }
 
-.btnMessage {
-  background: #e8eaf6;
-  color: #3949ab;
-  border-color: #9fa8da;
-}
-.btnMessage:hover {
-  background: #303f9f;
-  color: #fff;
-  border-color: #303f9f;
-  box-shadow: 0 2px 6px rgba(48, 63, 159, 0.3);
-}
-
 .btnUploadDocs {
   background: #fff3e0;
   color: #e65100;

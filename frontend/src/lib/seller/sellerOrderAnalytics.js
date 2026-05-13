@@ -940,7 +940,7 @@ export function packagesNeedingAttentionCount(orders) {
  * @param {{ id: string, approval_status?: string|null }[]} listings
  */
 export function buildSmartAlerts(orders, listings) {
-  /** @type {{ id: string, type: string, message: string, priority?: string }[]} */
+  /** @type {{ id: string, type: string, message: string, priority?: string, orderId?: string, listingId?: string, href?: string }[]} */
   const alerts = []
   const refunds = refundAttentionOrders(orders)
   for (const o of refunds) {
@@ -950,15 +950,20 @@ export function buildSmartAlerts(orders, listings) {
       type: 'Refund',
       message: `Refund activity on order ${o.order_number || id.slice(0, 8)} — review in Orders.`,
       priority: 'high',
+      orderId: id,
+      href: `/seller/orders?orderId=${encodeURIComponent(id)}&action=view`,
     })
   }
   for (const o of highValuePaidPendingOrders(orders)) {
     const id = String(o.id)
+    const tab = orderTabForUrl(o)
     alerts.push({
       id: `hv-${id}`,
       type: 'High-value booking',
       message: `Paid order ${o.order_number || id.slice(0, 8)} (${formatPhp(orderSubtotal(o))}) is awaiting your confirmation.`,
       priority: 'high',
+      orderId: id,
+      href: `/seller/orders?tab=${encodeURIComponent(tab)}&orderId=${encodeURIComponent(id)}&action=view`,
     })
   }
   const pendingListings = listingsPendingReviewCount(listings)
@@ -968,6 +973,7 @@ export function buildSmartAlerts(orders, listings) {
       type: 'Listings',
       message: `${pendingListings} listing${pendingListings === 1 ? '' : 's'} pending review. Submit or update them in Products.`,
       priority: 'medium',
+      href: '/seller/products/catalog',
     })
   }
   return alerts

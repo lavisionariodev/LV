@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import styles from './seller.module.css'
 import { useSellerAnalyticsData } from '@/lib/seller/useSellerAnalyticsData'
@@ -32,7 +33,7 @@ const quickActions = [
   { label: 'Add New Listing', href: '/seller/products/new-listing', icon: 'add' },
   { label: 'Manage Orders', href: '/seller/orders', icon: 'orders' },
   { label: 'Create Promotion', href: '/seller/marketing/campaign', icon: 'promo' },
-  { label: 'View Messages', href: '/seller/notifications', icon: 'messages' },
+  { label: 'Notifications', href: '/seller/notifications', icon: 'messages' },
 ]
 
 function formatPhp(n) {
@@ -200,6 +201,7 @@ function SellerDashboardSkeleton() {
 }
 
 export default function SellerDashboardPage() {
+  const router = useRouter()
   const { user } = useAuth()
   const { orders, listings, loading, error } = useSellerAnalyticsData()
   const displayEmail = user?.email || ''
@@ -227,6 +229,25 @@ export default function SellerDashboardPage() {
       return !dismissedAlertIds.has(a.id) && !row?.resolved_at && !row?.resolvedAt
     })
   }, [rawAlerts, dismissedAlertIds, alertNotificationById])
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadDashboardAlerts() {
+      try {
+        const res = await fetch('/api/seller/dashboard-alerts', { cache: 'no-store' })
+        const body = await res.json().catch(() => null)
+        if (!cancelled && res.ok) {
+          setDashboardAlertRows(Array.isArray(body?.notifications) ? body.notifications : [])
+        }
+      } catch {
+        // Dashboard alerts still render locally if notification sync is temporarily unavailable.
+      }
+    }
+    loadDashboardAlerts()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     if (loading || error || rawAlerts.length === 0) return
@@ -577,6 +598,15 @@ export default function SellerDashboardPage() {
                   <p className={styles.alertMessage}>{alert.message}</p>
                 </div>
                 <div className={styles.alertActions}>
+                  {alert.href ? (
+                    <button
+                      type="button"
+                      className={styles.ghostButton}
+                      onClick={() => router.push(alert.href)}
+                    >
+                      Open
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     className={styles.ghostButton}
@@ -653,6 +683,18 @@ export default function SellerDashboardPage() {
               </div>
             </div>
             <div className={styles.modalActions}>
+              {activeDetailAlert.href ? (
+                <button
+                  type="button"
+                  className={styles.ghostButton}
+                  onClick={() => {
+                    setActiveDetailAlert(null)
+                    router.push(activeDetailAlert.href)
+                  }}
+                >
+                  Open workflow
+                </button>
+              ) : null}
               <button type="button" className={styles.ghostButton} onClick={() => setActiveDetailAlert(null)}>
                 Close
               </button>

@@ -581,3 +581,35 @@
     width: 100%;
   }
 }
+
+.supportHistoryList {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.supportHistoryItem {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border, var(--color-light-gray));
+  background: color-mix(in srgb, var(--background, #fff) 96%, #f8f8f8);
+}
+
+.supportHistorySubject {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.supportHistoryMeta,
+.supportHistoryMessage {
+  margin: 0;
+  color: var(--muted, var(--color-text-secondary));
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.supportHistoryMessage {
+  margin-top: 6px;
+}

@@ -101,7 +101,16 @@ const SIDEBAR_CONFIG = {
     brandSub: 'Seller Centre',
     navItems: [
       { href: '/seller', label: 'Dashboard', icon: TbLayoutDashboardFilled },
-      { href: '/seller/orders', label: 'Orders', icon: TbShoppingBag },
+      {
+        label: 'Orders',
+        icon: TbShoppingBag,
+        defaultHref: '/seller/orders',
+        children: [
+          { href: '/seller/orders', label: 'All Orders' },
+          { href: '/seller/orders/pending', label: 'Pending' },
+          { href: '/seller/orders/completed', label: 'Completed' },
+        ],
+      },
       {
         label: 'Products',
         icon: TbPackage,

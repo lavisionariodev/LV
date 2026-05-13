@@ -102,7 +102,7 @@
   background: #ffffff;
   border: 1px solid #e9e9ef;
   border-radius: 14px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* Notification list */

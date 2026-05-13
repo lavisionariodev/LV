@@ -1,6 +1,7 @@
 'use client'
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { TbSearch, TbUser, TbPhone, TbMail, TbX, TbReceipt } from 'react-icons/tb'
 import styles from './customers.module.css'
@@ -47,6 +48,15 @@ function customerMatchesSearchQuery(customer, rawQuery) {
   return tokens.every((t) => hay.includes(t))
 }
 
+function customerOrdersSearchQuery(customer) {
+  const email = String(customer?.email ?? '').trim()
+  if (email && email !== '-') return email
+  const name = String(customer?.name ?? '').trim()
+  if (name) return name
+  const phone = String(customer?.phone ?? '').trim()
+  return phone && phone !== '-' ? phone : ''
+}
+
 function SellerCustomersPageContent() {
   const router = useRouter()
   const pathname = usePathname()
@@ -61,8 +71,6 @@ function SellerCustomersPageContent() {
 
   const [searchQuery, setSearchQuery] = useState(() => readString(searchParams, 'q', ''))
   const [selectedCustomer, setSelectedCustomer] = useState(null)
-  const [customerForMessage, setCustomerForMessage] = useState(null)
-  const [messageText, setMessageText] = useState('')
 
   const loadCustomers = useCallback(
     async ({ signal, showLoading = false } = {}) => {
@@ -95,7 +103,6 @@ function SellerCustomersPageContent() {
       setCustomersLoading(false)
 
       setSelectedCustomer((prev) => (prev ? next.find((c) => c.id === prev.id) ?? prev : null))
-      setCustomerForMessage((prev) => (prev ? next.find((c) => c.id === prev.id) ?? prev : null))
     },
     [userId, isSeller],
   )
@@ -342,21 +349,17 @@ function SellerCustomersPageContent() {
                           <button
                             type="button"
                             className={styles.rowActionOrders}
-                            onClick={() => router.push('/seller/orders')}
+                            onClick={() => {
+                              const q = customerOrdersSearchQuery(customer)
+                              router.push(
+                                q
+                                  ? `/seller/orders?q=${encodeURIComponent(q)}`
+                                  : '/seller/orders',
+                              )
+                            }}
                             aria-label="View orders"
                           >
                             <TbReceipt size={16} />
-                          </button>
-                          <button
-                            type="button"
-                            className={styles.rowActionMessage}
-                            onClick={() => {
-                              setCustomerForMessage(customer)
-                              setMessageText('')
-                            }}
-                            aria-label="Message customer in app"
-                          >
-                            <TbMail size={16} />
                           </button>
                         </div>
                       </td>
@@ -368,86 +371,6 @@ function SellerCustomersPageContent() {
           </table>
         </div>
       </section>
-
-      {customerForMessage && (
-        <div
-          className={styles.customerModalOverlay}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="message-customer-title"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setCustomerForMessage(null)
-              setMessageText('')
-            }
-          }}
-        >
-          <div className={styles.messageModal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.messageModalHeader}>
-              <div className={styles.messageHeaderMain}>
-                <div className={styles.customerHeaderAvatar}>
-                  <TbUser size={20} />
-                </div>
-                <div>
-                  <h2 id="message-customer-title" className={styles.messageModalTitle}>
-                    Message {customerForMessage.name}
-                  </h2>
-                  <p className={styles.messageModalSubtitle}>
-                    {customerForMessage.phone} · {customerForMessage.email}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                className={styles.customerModalClose}
-                onClick={() => {
-                  setCustomerForMessage(null)
-                  setMessageText('')
-                }}
-                aria-label="Close"
-              >
-                <TbX size={20} />
-              </button>
-            </div>
-
-            <div className={styles.messageModalBody}>
-              <label className={styles.messageField}>
-                <span className={styles.messageLabel}>Message</span>
-                <textarea
-                  className={styles.messageTextarea}
-                  value={messageText}
-                  onChange={(e) => setMessageText(e.target.value)}
-                  placeholder="Write a thoughtful, concise message for this family…"
-                />
-              </label>
-            </div>
-
-            <div className={styles.messageModalFooter}>
-              <button
-                type="button"
-                className={styles.messageSecondary}
-                onClick={() => {
-                  setCustomerForMessage(null)
-                  setMessageText('')
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className={styles.messagePrimary}
-                onClick={() => {
-                  setCustomerForMessage(null)
-                  setMessageText('')
-                }}
-                disabled={!messageText.trim()}
-              >
-                Send message
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {selectedCustomer && (
         <div
@@ -542,7 +465,12 @@ function SellerCustomersPageContent() {
                         </div>
                         <div className={styles.bookingMain}>
                           <div className={styles.bookingHeaderRow}>
-                            <span className={styles.bookingService}>{booking.servicePackage}</span>
+                            <Link
+                              href={`/seller/orders?orderId=${encodeURIComponent(booking.id)}&action=view`}
+                              className={styles.bookingService}
+                            >
+                              {booking.servicePackage}
+                            </Link>
                             <span className={styles.bookingStatus}>{booking.status}</span>
                           </div>
                           <div className={styles.bookingMetaRow}>

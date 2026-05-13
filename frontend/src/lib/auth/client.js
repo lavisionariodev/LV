@@ -150,3 +150,30 @@ export function getOAuthRedirectUrl({ redirectPath, portal } = {}) {
   }
   return url;
 }
+
+/**
+ * Link an OAuth provider to the current signed-in user.
+ * @param {{ provider: 'google' | 'facebook' | string, redirectTo: string }}
+ */
+export async function linkOAuthIdentity({ provider, redirectTo }) {
+  const { data, error } = await supabase.auth.linkIdentity({
+    provider,
+    options: { redirectTo },
+  });
+  if (error) {
+    return { data: null, error: error.message };
+  }
+  return { data, error: null };
+}
+
+/**
+ * Unlink an OAuth identity from the current signed-in user.
+ * @param {import('@supabase/supabase-js').UserIdentity} identity
+ */
+export async function unlinkOAuthIdentity(identity) {
+  const { data, error } = await supabase.auth.unlinkIdentity(identity);
+  if (error) {
+    return { data: null, error: error.message };
+  }
+  return { data, error: null };
+}

@@ -263,6 +263,7 @@ export default function ProductsContent({ initialKind = 'all' }) {
 
   useEffect(() => {
     let mounted = true
+    let channel = null
 
     const load = async () => {
       setLoadingData(true)
@@ -292,9 +293,35 @@ export default function ProductsContent({ initialKind = 'all' }) {
       setLoadingData(false)
     }
 
-    load()
+    const setup = async () => {
+      await load()
+      const { data: authRes } = await supabase.auth.getUser()
+      const uid = authRes?.user?.id
+      if (!uid || !mounted) return
+
+      channel = supabase
+        .channel(`seller-products:${uid}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'seller_listings', filter: `seller_user_id=eq.${uid}` },
+          () => {
+            load()
+          },
+        )
+        .subscribe()
+    }
+
+    setup()
+
+    const onFocus = () => {
+      if (document.visibilityState === 'visible') load()
+    }
+    window.addEventListener('focus', onFocus)
+
     return () => {
       mounted = false
+      window.removeEventListener('focus', onFocus)
+      if (channel) supabase.removeChannel(channel)
     }
   }, [])
 

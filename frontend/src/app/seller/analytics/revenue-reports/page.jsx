@@ -12,6 +12,7 @@ import {
   revenueThisCalendarMonth,
   revenuePreviousCalendarMonth,
 } from '@/lib/seller/sellerOrderAnalytics'
+import SellerPayoutRequestsPanel from '../SellerPayoutRequestsPanel'
 
 function formatPhp(n) {
   return new Intl.NumberFormat('en-PH', {
@@ -240,6 +241,8 @@ export default function SellerAnalyticsRevenueReportsPage() {
           </footer>
         </article>
       </section>
+
+      <SellerPayoutRequestsPanel />
     </div>
   )
 }
