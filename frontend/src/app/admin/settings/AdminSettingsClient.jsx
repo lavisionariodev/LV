@@ -21,6 +21,7 @@ import { changePasswordWithReauth } from '@/lib/auth/changePassword'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/adminProfile'
 import { useMediaQuery } from '@/shared/hooks'
 import { useSiteContent, upsertSiteContent } from '@/lib/siteContent/client'
+import { validateSellerHelpFaq } from '@/lib/siteContent/mapping'
 import { useAuthToast } from '@/contexts/ToastContext'
 import { normalizeSettingsTab } from './adminSettingsTabs'
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
@@ -972,6 +973,7 @@ const EMPTY_SITE_CONTENT = {
     testimonial3Location: '',
     testimonialFeatured: '',
   },
+  sellerHelpFaq: [],
 }
 
 function SettingsRow({ title, description, children, titleEnd }) {
@@ -1069,6 +1071,7 @@ export function AdminSiteContentPanel({
     if (spec.kind === 'systemName') initial = draft.systemName ?? ''
     else if (spec.kind === 'footer') initial = draft.footer?.[spec.field] ?? ''
     else if (spec.kind === 'about') initial = draft.about?.[spec.key] ?? ''
+    else if (spec.kind === 'sellerHelpFaq') initial = JSON.stringify(draft.sellerHelpFaq ?? [], null, 2)
     setModal(spec)
     setModalValue(initial)
   }
@@ -1087,6 +1090,23 @@ export function AdminSiteContentPanel({
       nextDraft = {
         ...draft,
         about: { ...draft.about, [modal.key]: modalValue },
+      }
+    } else if (modal.kind === 'sellerHelpFaq') {
+      let parsed = []
+      try {
+        parsed = JSON.parse(modalValue || '[]')
+      } catch {
+        toast.error('Seller help FAQ must be valid JSON.')
+        return
+      }
+      const validationError = validateSellerHelpFaq(parsed)
+      if (validationError) {
+        toast.error(validationError)
+        return
+      }
+      nextDraft = {
+        ...draft,
+        sellerHelpFaq: parsed,
       }
     }
     try {
@@ -1395,6 +1415,18 @@ export function AdminSiteContentPanel({
     </>
   )
 
+  const renderSellerHelpFaq = () => (
+    <SettingsRow
+      title="Seller help FAQ"
+      description="CMS-managed seller help categories and questions. Leave empty to use built-in defaults."
+      titleEnd={mobileEditBtn('Edit seller help FAQ', { kind: 'sellerHelpFaq' })}
+    >
+      <div className={styles.settingsMobileValue}>
+        {(draft.sellerHelpFaq ?? []).length} categories configured
+      </div>
+    </SettingsRow>
+  )
+
   const modalMeta = (() => {
     if (!modal) return null
     if (modal.kind === 'systemName') {
@@ -1415,6 +1447,15 @@ export function AdminSiteContentPanel({
         placeholder: `Write your ${ABOUT_LABELS[modal.key].toLowerCase()} copy here`,
         multiline: !isSingleLine,
         inputType: isSingleLine ? 'text' : undefined,
+      }
+    }
+    if (modal.kind === 'sellerHelpFaq') {
+      return {
+        title: 'Seller help FAQ',
+        description: 'Categories and questions shown on the seller help page.',
+        placeholder:
+          '[{"category":"Getting Started","items":[{"id":"gs_1","question":"...","answer":"..."}]}]',
+        multiline: true,
       }
     }
     return null
@@ -1501,6 +1542,12 @@ export function AdminSiteContentPanel({
                   Footer contact
                 </h2>
                 {renderFooter()}
+              </section>
+              <section className={styles.settingsContentSection} aria-labelledby="site-content-seller-help-heading">
+                <h2 id="site-content-seller-help-heading" className={styles.settingsContentSectionTitle}>
+                  Seller help FAQ
+                </h2>
+                {renderSellerHelpFaq()}
               </section>
             </div>
           </>

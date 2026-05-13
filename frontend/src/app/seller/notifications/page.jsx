@@ -9,7 +9,6 @@ import {
   TbCheck,
   TbDots,
   TbFileText,
-  TbMessage2,
   TbReceiptRefund,
   TbTrash,
 } from 'react-icons/tb'
@@ -29,7 +28,6 @@ const ICON_BY_BUCKET = {
   order: LuShoppingBag,
   payment: TbReceiptRefund,
   listing: TbFileText,
-  message: TbMessage2,
   alert: TbAlertTriangle,
   system: LuMegaphone,
 }
@@ -38,7 +36,6 @@ const COLOR_BY_BUCKET = {
   order: 'blue',
   payment: 'gold',
   listing: 'green',
-  message: 'blue',
   alert: 'red',
   system: 'gold',
 }
@@ -65,9 +62,9 @@ function notificationHref(row) {
   }
   if (listingId || bucket === 'listing') return '/seller/products/catalog'
   if (bucket === 'payment') return '/seller/analytics/revenue-reports'
-  if (bucket === 'message') return '/seller/customers'
   if (bucket === 'alert') return '/seller/orders'
-  return '/seller/marketing/centre'
+  if (bucket === 'system') return '/seller/help'
+  return '/seller/notifications'
 }
 
 function HeaderMenu({

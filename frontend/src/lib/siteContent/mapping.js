@@ -1,4 +1,3 @@
-// Minimal default shape when DB has no row or null columns. Editable site copy comes from `site_content`.
 const DEFAULT_SITE_CONTENT = {
   systemName: '',
   footer: {
@@ -25,10 +24,9 @@ const DEFAULT_SITE_CONTENT = {
     testimonial3Location: '',
     testimonialFeatured: '',
   },
+  sellerHelpFaq: [],
 }
 
-// Map a Supabase row from `site_content` into the nested `siteContent` shape
-// used throughout the frontend (and by the admin content page).
 export function rowToSiteContent(row) {
   if (!row) return DEFAULT_SITE_CONTENT
 
@@ -78,10 +76,10 @@ export function rowToSiteContent(row) {
         row.about_testimonial_featured ??
         DEFAULT_SITE_CONTENT.about.testimonialFeatured,
     },
+    sellerHelpFaq: normalizeSellerHelpFaq(row.seller_help_faq),
   }
 }
 
-// Map the nested `siteContent` shape back into a flat row for `site_content`.
 export function siteContentToRow(content) {
   const src = content ?? DEFAULT_SITE_CONTENT
 
@@ -109,6 +107,44 @@ export function siteContentToRow(content) {
     about_testimonial_3_name: src.about?.testimonial3Name ?? null,
     about_testimonial_3_location: src.about?.testimonial3Location ?? null,
     about_testimonial_featured: src.about?.testimonialFeatured ?? null,
+
+    seller_help_faq: normalizeSellerHelpFaq(src.sellerHelpFaq),
   }
 }
 
+export function normalizeSellerHelpFaq(raw) {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map((group) => {
+      const category = String(group?.category || '').trim()
+      const items = Array.isArray(group?.items)
+        ? group.items
+            .map((item) => ({
+              id: String(item?.id || '').trim(),
+              question: String(item?.question || '').trim(),
+              answer: String(item?.answer || '').trim(),
+            }))
+            .filter((item) => item.id && item.question && item.answer)
+        : []
+      if (!category || items.length === 0) return null
+      return { category, items }
+    })
+    .filter(Boolean)
+}
+
+export function validateSellerHelpFaq(raw) {
+  if (!Array.isArray(raw)) return 'Seller help FAQ must be an array of categories.'
+  for (const group of raw) {
+    const category = String(group?.category || '').trim()
+    if (!category) return 'Each FAQ group needs a category name.'
+    if (!Array.isArray(group?.items) || group.items.length === 0) {
+      return `Category "${category}" needs at least one FAQ item.`
+    }
+    for (const item of group.items) {
+      if (!String(item?.id || '').trim()) return `Each FAQ in "${category}" needs an id.`
+      if (!String(item?.question || '').trim()) return `Each FAQ in "${category}" needs a question.`
+      if (!String(item?.answer || '').trim()) return `Each FAQ in "${category}" needs an answer.`
+    }
+  }
+  return ''
+}

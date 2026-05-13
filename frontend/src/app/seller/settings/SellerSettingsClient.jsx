@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -11,7 +11,10 @@ import { TbCamera, TbTrash } from 'react-icons/tb'
 import { FiEdit, FiPlus, FiSave } from 'react-icons/fi'
 import { MdCheckCircle, MdErrorOutline } from 'react-icons/md'
 import { changePasswordWithReauth } from '@/lib/auth/changePassword'
+import { getOAuthRedirectUrl, linkOAuthIdentity, unlinkOAuthIdentity } from '@/lib/auth/client'
 import { fetchCurrentSellerProfile } from '@/features/seller/settings/getSellerProfile'
+import SellerNotificationPreferencesPanel from './SellerNotificationPreferencesPanel'
+import SellerPayoutRequestsPanel from '@/app/seller/analytics/SellerPayoutRequestsPanel'
 import {
   SELLER_BUSINESS_TYPE_OTHER,
   SELLER_BUSINESS_TYPE_PRESETS,
@@ -198,6 +201,8 @@ export default function SellerSettingsClient() {
   const [isEditingPassword, setIsEditingPassword] = useState(false)
   const [passwordSaving, setPasswordSaving] = useState(false)
   const [sellerCanChangePassword, setSellerCanChangePassword] = useState(null)
+  const [authIdentities, setAuthIdentities] = useState([])
+  const [identityBusy, setIdentityBusy] = useState('')
   const [toast, setToast] = useState(null)
   const [avatarModalOpen, setAvatarModalOpen] = useState(false)
 
@@ -226,6 +231,64 @@ export default function SellerSettingsClient() {
     setToast({ id: Date.now(), type, message: msg })
   }, [])
 
+  const refreshAuthIdentities = useCallback(async () => {
+    const { data: auth } = await supabase.auth.getUser()
+    const user = auth?.user
+    setAuthIdentities(Array.isArray(user?.identities) ? user.identities : [])
+    setSellerCanChangePassword(inferSellerCanChangePassword(user))
+  }, [])
+
+  const linkedProviders = useMemo(() => {
+    const set = new Set()
+    authIdentities.forEach((identity) => {
+      const provider = String(identity?.provider || identity?.identity_provider || '').toLowerCase()
+      if (provider) set.add(provider)
+    })
+    return set
+  }, [authIdentities])
+
+  const canUnlinkIdentity = useCallback((identity) => {
+    if (authIdentities.length <= 1) return false
+    const remaining = authIdentities.filter((row) => row.identity_id !== identity.identity_id)
+    if (remaining.length === 0) return false
+    const hasPassword = remaining.some((row) => {
+      const provider = String(row?.provider || row?.identity_provider || '').toLowerCase()
+      return provider === 'email' || provider === 'password'
+    })
+    return hasPassword || remaining.length >= 1
+  }, [authIdentities])
+
+  const handleLinkProvider = async (provider) => {
+    setIdentityBusy(provider)
+    try {
+      const redirectTo = getOAuthRedirectUrl({ redirectPath: '/seller/settings?tab=profile', portal: 'seller' })
+      const { error } = await linkOAuthIdentity({ provider, redirectTo })
+      if (error) throw new Error(error)
+    } catch (err) {
+      notifyToast('error', err?.message || `Could not link ${provider}.`)
+      setIdentityBusy('')
+    }
+  }
+
+  const handleUnlinkIdentity = async (identity) => {
+    if (!canUnlinkIdentity(identity)) {
+      notifyToast('error', 'Keep a password or another sign-in method before unlinking this account.')
+      return
+    }
+    const provider = String(identity?.provider || identity?.identity_provider || 'account')
+    setIdentityBusy(provider)
+    try {
+      const { error } = await unlinkOAuthIdentity(identity)
+      if (error) throw new Error(error)
+      await refreshAuthIdentities()
+      notifyToast('success', `${provider} unlinked.`)
+    } catch (err) {
+      notifyToast('error', err?.message || `Could not unlink ${provider}.`)
+    } finally {
+      setIdentityBusy('')
+    }
+  }
+
   useEffect(() => {
     let cancelled = false
     async function loadProfile() {
@@ -242,6 +305,7 @@ export default function SellerSettingsClient() {
         const email = user?.email ?? ''
         if (cancelled) return
         setSellerCanChangePassword(inferSellerCanChangePassword(user))
+        setAuthIdentities(Array.isArray(user?.identities) ? user.identities : [])
         setSessionEmail(email)
         const sellerRow = user?.id ? await getSellerByUserId(user.id) : null
         if (cancelled) return
@@ -719,17 +783,19 @@ export default function SellerSettingsClient() {
   const shopTabId = 'seller-settings-tab-shop'
   const payoutsTabId = 'seller-settings-tab-payouts'
   const documentsTabId = 'seller-settings-tab-documents'
+  const notificationsTabId = 'seller-settings-tab-notifications'
   const profilePanelId = 'seller-settings-panel-profile'
   const passwordPanelId = 'seller-settings-panel-password'
   const shopPanelId = 'seller-settings-panel-shop'
   const payoutsPanelId = 'seller-settings-panel-payouts'
   const documentsPanelId = 'seller-settings-panel-documents'
+  const notificationsPanelId = 'seller-settings-panel-notifications'
 
   if (loading) {
     return (
       <div className={styles.page}>
         <nav className={styles.tabBar} aria-label="Settings sections">
-          {['profile', 'password', 'shop', 'payouts', 'documents'].map((tab) => (
+          {['profile', 'password', 'shop', 'payouts', 'documents', 'notifications'].map((tab) => (
             <button
               key={tab}
               type="button"
@@ -745,7 +811,9 @@ export default function SellerSettingsClient() {
                       ? 'Shop information'
                       : tab === 'payouts'
                         ? 'Payouts'
-                        : 'Documents'}
+                        : tab === 'notifications'
+                          ? 'Notifications'
+                          : 'Documents'}
               </span>
             </button>
           ))}
@@ -830,6 +898,15 @@ export default function SellerSettingsClient() {
           aria-current={activeTab === 'documents' ? 'page' : undefined}
         >
           <span className={styles.tabLabel}>Documents</span>
+        </button>
+        <button
+          type="button"
+          id={notificationsTabId}
+          className={`${styles.tabItem} ${activeTab === 'notifications' ? styles.tabItemActive : ''}`}
+          onClick={() => goTab('notifications')}
+          aria-current={activeTab === 'notifications' ? 'page' : undefined}
+        >
+          <span className={styles.tabLabel}>Notifications</span>
         </button>
       </nav>
 
@@ -918,6 +995,28 @@ export default function SellerSettingsClient() {
                 </button>
               </div>
             </form>
+            <SellerPayoutRequestsPanel className={styles.payoutRequestsEmbed} />
+          </section>
+        )}
+
+        {activeTab === 'notifications' && (
+          <section
+            id={notificationsPanelId}
+            role="tabpanel"
+            aria-labelledby={notificationsTabId}
+            className={`${styles.card} ${styles.full}`}
+          >
+            <div className={styles.tabDetailHead}>
+              <div className={styles.tabDetailHeadRow}>
+                <div className={styles.tabDetailHeadText}>
+                  <h2 className={styles.tabDetailTitle}>Notification preferences</h2>
+                  <p className={styles.tabDetailSubtitle}>
+                    Control which seller alerts can reach you by push or email.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <SellerNotificationPreferencesPanel />
           </section>
         )}
 
@@ -1009,6 +1108,14 @@ export default function SellerSettingsClient() {
                 <h2 className={styles.tabDetailTitle}>Shop information</h2>
                 <p className={styles.tabDetailSubtitle}>
                   Business details, cover image, and contact methods shown on your public profile.
+                  {profile?.id ? (
+                    <>
+                      {' '}
+                      <Link href={`/seller-profile?seller=${encodeURIComponent(profile.id)}`} className={styles.inlineLink}>
+                        View public shop
+                      </Link>
+                    </>
+                  ) : null}
                 </p>
               </div>
               <div className={styles.headActions}>
@@ -1446,7 +1553,7 @@ export default function SellerSettingsClient() {
               <div className={styles.shopInfoCard}>
                 <h3 className={styles.shopInfoCardTitle}>Contact methods (shown on your public profile)</h3>
                 <p className={styles.shopGridHint} style={{ marginBottom: 12 }}>
-                  Enable the channels you want buyers to use when they click <strong>Message</strong> / <strong>Chat now</strong>.
+                  Enable the channels you want buyers to use when they click <strong>Contact</strong> on your public shop profile.
                 </p>
                 <div className={styles.shopFieldGrid}>
                   <div className={`${styles.shopGridField} ${styles.shopFieldGridFull}`}>
@@ -1690,6 +1797,67 @@ export default function SellerSettingsClient() {
                     disabled={!isEditingPersonal}
                     aria-label="Email"
                   />
+                </div>
+              </div>
+
+              <div className={styles.settingsRow}>
+                <div className={styles.settingsRowMeta}>
+                  <div className={styles.settingsRowTitleRow}>
+                    <p className={styles.settingsRowTitle}>Linked sign-in methods</p>
+                  </div>
+                  <p className={styles.settingsRowDesc}>
+                    Link Google or Facebook for faster sign-in. Keep at least one sign-in method active.
+                  </p>
+                </div>
+                <div className={`${styles.settingsRowControl} ${styles.profileControl}`}>
+                  <div className={styles.identityList}>
+                    {authIdentities.length === 0 ? (
+                      <p className={styles.settingsRowDesc}>No linked sign-in methods found.</p>
+                    ) : (
+                      authIdentities.map((identity) => {
+                        const provider = String(identity?.provider || identity?.identity_provider || 'account')
+                        return (
+                          <div key={identity.identity_id || provider} className={styles.identityRow}>
+                            <span className={styles.identityProvider}>{provider}</span>
+                            {provider !== 'email' ? (
+                              <button
+                                type="button"
+                                className={styles.secondaryBtn}
+                                onClick={() => handleUnlinkIdentity(identity)}
+                                disabled={!canUnlinkIdentity(identity) || identityBusy === provider}
+                              >
+                                {identityBusy === provider ? 'Working…' : 'Unlink'}
+                              </button>
+                            ) : (
+                              <span className={styles.identityBadge}>Primary</span>
+                            )}
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
+                  <div className={styles.identityActions}>
+                    {!linkedProviders.has('google') ? (
+                      <button
+                        type="button"
+                        className={styles.secondaryBtn}
+                        onClick={() => handleLinkProvider('google')}
+                        disabled={identityBusy === 'google'}
+                      >
+                        {identityBusy === 'google' ? 'Redirecting…' : 'Link Google'}
+                      </button>
+                    ) : null}
+                    {!linkedProviders.has('facebook') ? (
+                      <button
+                        type="button"
+                        className={styles.secondaryBtn}
+                        onClick={() => handleLinkProvider('facebook')}
+                        disabled={identityBusy === 'facebook'}
+                      >
+                        {identityBusy === 'facebook' ? 'Redirecting…' : 'Link Facebook'}
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             </div>

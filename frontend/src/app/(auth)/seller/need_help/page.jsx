@@ -80,7 +80,7 @@ const categoriesWithArticles = [
     title: 'Account & help',
     subCategories: [
       { id: 'account-security', title: 'Your account', article: { title: 'How do I change my details or password?', content: 'After you sign in, go to Profile and Account to update your name, phone, or other details. To change your password, use Forgot password on the login screen and follow the email we send you. Do not share your password with anyone.', note: 'If you lost access to your email, contact support so we can help you safely.' } },
-      { id: 'contact-support', title: 'Talk to us', article: { title: 'How do I reach support?', content: 'Use the phone number or email at the bottom of this page. Tell us the email on your account and, if you have one, your booking number—that helps us find you quickly. If you are already signed in as a provider, you can also send a message from Help in your account.', note: null } },
+      { id: 'contact-support', title: 'Talk to us', article: { title: 'How do I reach support?', content: 'Use the phone number or email at the bottom of this page. Tell us the email on your account and, if you have one, your booking number—that helps us find you quickly. If you are already signed in as a provider, open Help in Seller Centre and submit a support request.', note: null } },
     ],
   },
   {

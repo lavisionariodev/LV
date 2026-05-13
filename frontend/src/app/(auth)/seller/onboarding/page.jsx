@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import styles from './onboarding.module.css'
 import { useAuth } from '@/contexts/AuthContext'
+import SellerComplianceDocuments from '@/features/seller/compliance/SellerComplianceDocuments'
 import {
   SELLER_BUSINESS_TYPE_OTHER,
   SELLER_BUSINESS_TYPE_PRESETS,
@@ -617,13 +618,30 @@ export default function SellerOnboardingPage() {
                 <span className={styles.sectionTitle}>Permits &amp; Documents</span>
               </div>
               <p className={styles.helperText}>
-                You can proceed without uploading files for now. Our team may reach out to request
-                business permits, accreditation, or other documents during the review process.
+                Optional uploads help speed up review. You can add or update documents later in Seller
+                Settings under Documents after your account is active.
               </p>
-              <div className={styles.placeholderBox}>
-                <IconUpload />
-                Document upload will be available in a future update.
-              </div>
+              <SellerComplianceDocuments
+                className={styles.documentsPanel}
+                formClassName={styles.documentsForm}
+                fieldClassName={styles.field}
+                labelClassName={styles.label}
+                inputClassName={styles.input}
+                primaryBtnClassName={styles.primaryButton}
+                secondaryBtnClassName={styles.secondaryButton}
+                dangerBtnClassName={styles.secondaryButton}
+                listClassName={styles.documentsList}
+                rowClassName={styles.documentRow}
+                rowTitleClassName={styles.documentTitle}
+                rowDescClassName={styles.helperText}
+                emptyClassName={styles.helperText}
+                actionsClassName={styles.documentActions}
+                disabled={['rejected', 'suspended'].includes(sellerStatus) || saving}
+                onToast={(type, message) => {
+                  if (type === 'success') toast.success(message)
+                  else toast.error(message)
+                }}
+              />
             </div>
 
             {/* ── Actions ── */}

@@ -1278,3 +1278,153 @@
   }
 }
 
+.identityList {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+}
+
+.identityRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border, var(--color-light-gray));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--background, #fff) 96%, #f8f8f8);
+}
+
+.identityProvider {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.identityBadge {
+  font-size: 0.8rem;
+  color: var(--muted, var(--color-text-secondary));
+}
+
+.identityActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.payoutRequestsEmbed {
+  margin-top: 18px;
+}
+
+.notifPrefPanel {
+  display: grid;
+  gap: 12px;
+}
+
+.notifPrefDisclaimer,
+.notifPrefError {
+  margin: 0;
+  color: var(--muted, var(--color-text-secondary));
+  font-size: 0.85rem;
+}
+
+.notifPrefError {
+  color: #b42318;
+}
+
+.notifPrefList {
+  display: grid;
+  gap: 0;
+}
+
+.notifPrefRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+}
+
+.notifPrefRowBorder {
+  border-top: 1px solid var(--border, var(--color-light-gray));
+}
+
+.notifPrefMeta {
+  flex: 1;
+  min-width: 0;
+}
+
+.notifPrefTitle {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.notifPrefDesc {
+  margin: 0;
+  color: var(--muted, var(--color-text-secondary));
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.notifPrefControls {
+  display: grid;
+  gap: 10px;
+  min-width: 180px;
+}
+
+.notifPrefChannel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.notifPrefChannelLabel {
+  display: grid;
+  gap: 2px;
+}
+
+.notifPrefChannelName {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.notifPrefChannelHint {
+  font-size: 0.75rem;
+  color: var(--muted, var(--color-text-secondary));
+}
+
+.notifPrefSwitch {
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid var(--border, var(--color-light-gray));
+  background: #e5e7eb;
+  position: relative;
+  cursor: pointer;
+}
+
+.notifPrefSwitchOn {
+  background: var(--primary, #204f38);
+  border-color: var(--primary, #204f38);
+}
+
+.notifPrefSwitchDisabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.notifPrefSwitchThumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #fff;
+  transition: transform 0.15s ease;
+}
+
+.notifPrefSwitchOn .notifPrefSwitchThumb {
+  transform: translateX(18px);
+}

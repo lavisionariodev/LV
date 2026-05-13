@@ -17,10 +17,22 @@ const moreLinks = [
     badge: 'Marketing',
   },
   {
+    href: '/seller/reviews',
+    title: 'Reviews',
+    description: 'Buyer ratings and feedback from completed bookings.',
+    badge: 'Reputation',
+  },
+  {
     href: '/seller/notifications',
     title: 'Notifications',
-    description: 'Booking alerts, payout updates, and messages.',
+    description: 'Booking alerts, payout updates, and account notices.',
     badge: 'Inbox',
+  },
+  {
+    href: '/seller/settings',
+    title: 'Settings',
+    description: 'Profile, shop details, payouts, documents, and preferences.',
+    badge: 'Account',
   },
   {
     href: '/seller/help',
