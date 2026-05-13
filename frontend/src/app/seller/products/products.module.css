@@ -44,6 +44,7 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.9rem;
+  margin-bottom: 0.85rem;
 }
 
 .statCard {
@@ -132,6 +133,352 @@
 
 .searchBox::-webkit-search-cancel-button {
   cursor: pointer;
+}
+
+.archivedLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #4b5563;
+  background: #f9fafb;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.archivedLink:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+.archivedLink:focus-visible {
+  outline: 2px solid #6b7280;
+  outline-offset: 2px;
+}
+
+.archiveGoBackLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  width: fit-content;
+  max-width: 100%;
+  flex: 0 0 auto;
+  align-self: flex-start;
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #204f38;
+  background: #ffffff;
+  border: 1px solid #204f38;
+  border-radius: 10px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.archiveGoBackIcon {
+  flex-shrink: 0;
+  width: 1em;
+  height: 1em;
+  font-size: 1em;
+  line-height: 1;
+}
+
+.archiveGoBackLink:hover {
+  background: #f4fbf7;
+  border-color: #163628;
+  color: #163628;
+}
+
+.archiveGoBackLink:focus-visible {
+  outline: 2px solid #204f38;
+  outline-offset: 2px;
+}
+
+.lifecycleTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.lifecycleTab {
+  appearance: none;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #4b5563;
+  border-radius: 999px;
+  padding: 0.45rem 0.95rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.lifecycleTab:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+.lifecycleTab:focus-visible {
+  outline: 2px solid #204f38;
+  outline-offset: 2px;
+}
+
+.lifecycleTabActive {
+  background: #204f38;
+  border-color: #204f38;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(32, 79, 56, 0.18);
+}
+
+.lifecycleTabActive:hover {
+  background: #163628;
+  border-color: #163628;
+  color: #ffffff;
+}
+
+.productsTableWrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.productsTable {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+}
+
+.productsTable th {
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6b7280;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.productsTable td {
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid #eef2f7;
+  font-size: 0.88rem;
+  color: #111827;
+  vertical-align: middle;
+}
+
+.productsTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.productsTable tbody tr:hover {
+  background: #f9fafb;
+}
+
+.productsTableName {
+  font-weight: 600;
+  color: #102820;
+}
+
+.productsTableMeta {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+.productsTableKind {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #eef6f1;
+  color: #204f38;
+}
+
+.productsTableStatus {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.productsTableStatusRejected {
+  background: #fef2f2;
+  color: #b42318;
+}
+
+.productsTableHint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.productsTableSubmittedCol {
+  width: 12.25rem;
+}
+
+.productsTableUpdatesPending .productsTableSubmittedCol {
+  width: 13rem;
+}
+
+.productsTableUpdatesPending .productsTableSubmittedChangesCol {
+  width: 24%;
+  max-width: 18.5rem;
+}
+
+.productsTableSubmittedChanges {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #374151;
+  line-height: 1.45;
+}
+
+.productsTableActionsCol {
+  width: 1%;
+  white-space: nowrap;
+  text-align: center;
+  padding-left: 0.5rem;
+  padding-right: 1rem;
+}
+
+.productsTable th.productsTableActionsCol {
+  text-align: center;
+}
+
+.productsTable td.productsTableActionsCol {
+  text-align: center;
+}
+
+.productsTableActions {
+  display: inline-flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.productsTableMenuBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.productsTableMenuBtn:hover {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #d1d5db;
+}
+
+.productsTableMenuBtn:focus-visible {
+  outline: 2px solid #204f38;
+  outline-offset: 2px;
+}
+
+.productsTableMenuDropdown {
+  position: fixed;
+  min-width: 148px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
+  z-index: 120;
+  padding: 0.25rem;
+  animation: productsTableMenuFadeIn 0.12s ease;
+}
+
+.productsTableMenuItem {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #204f38;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.12s ease;
+}
+
+.productsTableMenuItem:hover {
+  background: #f4fbf7;
+}
+
+.productsTableMenuItemDanger {
+  color: #b42318;
+}
+
+.productsTableMenuItemDanger:hover {
+  background: #fef2f2;
+}
+
+.productsTableMenuItem:focus-visible {
+  outline: 2px solid #204f38;
+  outline-offset: -2px;
+}
+
+@keyframes productsTableMenuFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.productsTableSkRow td {
+  padding: 0.9rem 1rem;
+}
+
+.productsTableSkLine {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #eef2f7 0%, #f8fafc 50%, #eef2f7 100%);
+  background-size: 200% 100%;
+  animation: productsShimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes productsShimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
 }
 
 /* Shown when seller sidebar is hidden (≤860px) — same destination as sidebar “Add New Listing” */
@@ -244,6 +591,11 @@
   outline: none;
   border-color: #204f38;
   box-shadow: 0 0 0 3px rgba(32, 79, 56, 0.12);
+}
+
+.filterDropdownTrigger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .filterDropdownLabel {
@@ -1226,6 +1578,11 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+.listingFormSelectTrigger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .listingFormSelectTriggerLabel {
   flex: 1;
   min-width: 0;
@@ -1773,6 +2130,45 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .productsTable {
+    min-width: 0;
+  }
+
+  .productsTable thead {
+    display: none;
+  }
+
+  .productsTable tbody {
+    display: grid;
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .productsTable tr {
+    display: grid;
+    gap: 0.55rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 0.75rem;
+    background: #ffffff;
+  }
+
+  .productsTable td {
+    display: grid;
+    gap: 0.2rem;
+    padding: 0;
+    border: none;
+  }
+
+  .productsTable td[data-label]::before {
+    content: attr(data-label);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #6b7280;
+  }
+
   .productModal {
     max-width: 100%;
     max-height: 95vh;
@@ -1816,27 +2212,13 @@
 }
 
 /* Full-page Add New Listing */
-.newListingPage {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  width: 100%;
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 1.1rem;
-  box-sizing: border-box;
-  background: #ffffff;
-  border-radius: 22px;
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07);
-}
 
 .newListingToast {
   position: sticky;
   top: 0.6rem;
   z-index: 40;
   width: 100%;
-  max-width: 760px;
-  margin: 0 auto 0.25rem;
+  margin: 0 0 0.25rem;
   padding: 0.72rem 0.88rem;
   border-radius: 10px;
   border: 1px solid #fecaca;
@@ -1881,11 +2263,11 @@
   min-width: 0;
 }
 
-/* Page-level layout: left = progress + tips (on page bg); right = form column */
+/* Page-level layout: form on the left; progress + tips pinned on the right */
 .newListingLayout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 312px);
+  gap: 1.15rem 1.75rem;
   align-items: start;
   width: 100%;
 }
@@ -1893,26 +2275,31 @@
 .newListingFormColumn {
   min-width: 0;
   width: 100%;
-  max-width: 760px;
-  margin: 0 auto;
 }
 
 .newListingAside {
   width: 100%;
-  max-width: 760px;
-  margin: 0 auto;
-  position: static;
+  position: sticky;
+  top: 0.85rem;
+  align-self: start;
+  z-index: 12;
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
+  max-height: calc(100dvh - 1.75rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .newListingStepper {
-  border-radius: 12px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  background: #fafafa;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  padding: 0.62rem 0.8rem;
+  border-radius: 14px;
+  border: 1px solid rgba(61, 104, 58, 0.24);
+  border-top: 3px solid var(--color-green-700);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 6px 16px rgba(31, 49, 43, 0.08);
+  padding: 0.72rem 0.85rem;
 }
 
 .newListingStepperList {
@@ -1923,8 +2310,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.6rem;
-  --listing-step-label-fs: 0.72rem;
-  --listing-step-label-lh: 1.2;
+  --listing-step-dot-size: 22px;
+  --listing-step-icon-size: 20px;
+  --listing-step-label-fs: 0.74rem;
+  --listing-step-label-lh: 1.35;
 }
 
 .newListingStepItem {
@@ -1963,45 +2352,41 @@
   flex: 1 1 auto;
 }
 
-/*
- * Dot center = label’s first-line center: pt + (line box / 2).
- * Padding reserves the label’s top inset; flex centers the dot in the line box only.
- */
 .newListingStepDotAlign {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 20px;
+  width: var(--listing-step-dot-size);
+  min-height: var(--listing-step-dot-size);
   box-sizing: border-box;
   padding: 0;
-  height: auto;
 }
 
 .newListingStepIconTodo {
-  width: 18px;
-  height: 18px;
+  width: var(--listing-step-icon-size);
+  height: var(--listing-step-icon-size);
   border-radius: 999px;
   border: 2px solid #d1d5db;
-  background: #f8fafb;
+  background: #ffffff;
   flex-shrink: 0;
   box-sizing: border-box;
 }
 
 .newListingStepIconActive {
-  width: 18px;
-  height: 18px;
+  width: var(--listing-step-icon-size);
+  height: var(--listing-step-icon-size);
   border-radius: 999px;
   border: 2px solid var(--color-green-700);
   background: var(--color-green-700);
-  box-shadow: none;
+  box-shadow: 0 0 0 3px rgba(61, 104, 58, 0.14);
   flex-shrink: 0;
   box-sizing: border-box;
 }
 
 .newListingStepIconDone {
-  width: 18px;
-  height: 18px;
+  width: var(--listing-step-icon-size);
+  height: var(--listing-step-icon-size);
   border-radius: 999px;
   border: 2px solid var(--color-green-700);
   background: var(--color-green-700);
@@ -2055,6 +2440,11 @@
   white-space: nowrap;
 }
 
+.newListingStepItemDone .newListingStepLabel {
+  color: var(--color-green-900);
+  font-weight: 600;
+}
+
 .newListingStepLabelActive {
   color: var(--color-green-900);
   font-weight: 600;
@@ -2106,36 +2496,74 @@
   width: 100%;
 }
 
+@media (min-width: 1025px) {
+  .newListingStepperList {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0;
+  }
+
+  .newListingStepItem {
+    display: grid;
+    grid-template-columns: var(--listing-step-dot-size) minmax(0, 1fr);
+    column-gap: 0.65rem;
+    row-gap: 0;
+    align-items: center;
+    flex: 0 0 auto;
+    padding: 0.12rem 0;
+  }
+
+  .newListingStepTrack {
+    display: contents;
+  }
+
+  .newListingStepDotAlign {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: center;
+    align-self: center;
+  }
+
+  .newListingStepLine {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: center;
+    width: 2px;
+    height: 0.9rem;
+    margin: 0.22rem 0;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: #d1d5db;
+  }
+
+  .newListingStepItem:last-child .newListingStepLine {
+    display: none;
+  }
+
+  .newListingStepLabel {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+    white-space: normal;
+  }
+}
+
 @media (max-width: 1024px) {
   .newListingLayout {
     grid-template-columns: 1fr;
     gap: 1.15rem;
   }
 
-  .newListingFormColumn {
-    order: 2;
-  }
-
   .newListingAside {
-    order: 1;
-    max-width: 760px;
+    order: -1;
     gap: 0.6rem;
   }
 }
 
 @media (max-width: 768px) {
-  .newListingPage {
-    padding: 0.9rem 0.85rem 1.35rem;
-    border-radius: 16px;
-  }
-
   .newListingLayout {
     gap: 0.9rem;
-  }
-
-  .newListingFormColumn,
-  .newListingAside {
-    max-width: 100%;
   }
 
   .newListingFormColumn {
@@ -2240,7 +2668,6 @@
     bottom: auto;
     z-index: auto;
     background: transparent;
-    border-top: 1px solid rgba(31, 49, 43, 0.12);
     border-radius: 0;
     padding: 0.72rem 0 0;
     box-shadow: none;
@@ -2346,7 +2773,6 @@
   flex-wrap: wrap;
   padding-top: 0.5rem;
   margin-top: 0.1rem;
-  border-top: 1px solid rgba(31, 49, 43, 0.12);
 }
 
 .newListingFooterLink {
@@ -2520,12 +2946,6 @@
 
 /* ── 480 px and below: phones ── */
 @media (max-width: 480px) {
-  .newListingPage {
-    gap: 0.75rem;
-    padding: 0.7rem 0.65rem 1rem;
-    border-radius: 14px;
-  }
-
   .newListingFormColumn {
     padding-bottom: calc(4.35rem + env(safe-area-inset-bottom, 0px));
   }
@@ -2536,9 +2956,8 @@
   }
 
   .newListingAside {
-    position: static;
-    max-height: none;
-    overflow: visible;
+    max-height: calc(100dvh - 1.5rem);
+    overflow-y: auto;
     flex-direction: column;
     gap: 0.65rem;
     padding-right: 0;
@@ -2681,7 +3100,6 @@
     position: static;
     bottom: auto;
     background: transparent;
-    border-top: 1px solid rgba(31, 49, 43, 0.12);
     box-shadow: none;
     padding: 0.32rem 0 0;
     border-radius: 0;
@@ -2744,21 +3162,18 @@
   border: 0;
 }
 
-/* Same vertical rhythm as .newListingLayout (stacked column, not side-by-side) */
+/* Mirrors .newListingLayout: form left, progress rail right */
 .loadingStack {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 312px);
+  gap: 1.15rem 1.75rem;
+  align-items: start;
   width: 100%;
 }
 
 .loadingAside,
 .loadingMain {
   width: 100%;
-  max-width: 760px;
-  margin-left: auto;
-  margin-right: auto;
   min-width: 0;
 }
 
@@ -2864,7 +3279,6 @@
   gap: 0.75rem;
   padding-top: 0.5rem;
   margin-top: 0.15rem;
-  border-top: 1px solid rgba(31, 49, 43, 0.12);
 }
 
 .skeletonBtnGhost {
@@ -2893,6 +3307,16 @@
   background-size: 200% 100%;
   animation: newListingSkeletonPulse 1.6s ease-in-out infinite;
   animation-delay: 0.22s;
+}
+
+@media (max-width: 1024px) {
+  .loadingStack {
+    grid-template-columns: 1fr;
+  }
+
+  .loadingAside {
+    order: -1;
+  }
 }
 
 @media (max-width: 480px) {

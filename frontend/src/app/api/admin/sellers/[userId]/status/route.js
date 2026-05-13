@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getAppBaseUrl } from '@/lib/email/appBaseUrl'
 import { sendSellerApprovedEmail } from '@/lib/email/sendSellerApprovedEmail'
+import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { sendEmailIfAllowed } from '@/lib/notifications/emailServer'
 
 const ALLOWED = new Set(['pending', 'active', 'suspended'])
 
@@ -89,11 +91,14 @@ export async function POST(request, { params }) {
   ) {
     const loginUrl = `${getAppBaseUrl()}/seller/login`
     try {
-      await sendSellerApprovedEmail({
-        to: data.email,
-        businessName: data.business_name,
-        loginUrl,
-      })
+      const supabaseAdmin = getSupabaseAdmin()
+      await sendEmailIfAllowed(supabaseAdmin, sellerUserId, 'account', () =>
+        sendSellerApprovedEmail({
+          to: data.email,
+          businessName: data.business_name,
+          loginUrl,
+        }),
+      )
     } catch (mailErr) {
       console.error('[email] Failed to send seller approval email:', mailErr)
     }

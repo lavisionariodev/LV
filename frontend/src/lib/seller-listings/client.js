@@ -149,6 +149,23 @@ export async function rejectListing(id, reason) {
   }
 }
 
+/** Seller: withdraw a pending new-listing review or staged update request. */
+export async function cancelListingReviewRequest(id) {
+  try {
+    const res = await fetch(`/api/seller/listings/${encodeURIComponent(id)}/cancel-review`, {
+      method: 'POST',
+    })
+    const body = await res.json().catch(() => null)
+    if (!res.ok) {
+      return { data: null, error: body?.error || 'Failed to cancel review request.' }
+    }
+    const row = body?.data
+    return { data: row ? normalizeListingRow(row) : null, error: null }
+  } catch (e) {
+    return { data: null, error: e?.message || 'Failed to cancel review request.' }
+  }
+}
+
 export async function deleteSellerListing(id) {
   try {
     const res = await fetch(`/api/seller/listings/${encodeURIComponent(id)}`, {

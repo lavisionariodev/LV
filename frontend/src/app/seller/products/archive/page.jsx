@@ -4,10 +4,10 @@ import { Suspense } from 'react'
 import ProductsContent from '../components/ProductsContent'
 import ProductsListingRouteFallback from '../components/ProductsListingRouteFallback'
 
-export default function SellerProductsServicesPage() {
+export default function SellerProductsArchivePage() {
   return (
     <Suspense fallback={<ProductsListingRouteFallback />}>
-      <ProductsContent initialKind="service" />
+      <ProductsContent listingScope="archived" initialKind="all" />
     </Suspense>
   )
 }

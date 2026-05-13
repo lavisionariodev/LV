@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { sendSellerRejectedEmail } from '@/lib/email/sendSellerRejectedEmail'
+import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { sendEmailIfAllowed } from '@/lib/notifications/emailServer'
 
 const REASON_MIN = 12
 const REASON_MAX = 8000
@@ -101,11 +103,14 @@ export async function POST(request, { params }) {
 
   if (data?.email) {
     try {
-      await sendSellerRejectedEmail({
-        to: data.email,
-        businessName: data.business_name,
-        reason,
-      })
+      const supabaseAdmin = getSupabaseAdmin()
+      await sendEmailIfAllowed(supabaseAdmin, sellerUserId, 'account', () =>
+        sendSellerRejectedEmail({
+          to: data.email,
+          businessName: data.business_name,
+          reason,
+        }),
+      )
     } catch (mailErr) {
       console.error('[email] Failed to send seller rejection email:', mailErr)
     }

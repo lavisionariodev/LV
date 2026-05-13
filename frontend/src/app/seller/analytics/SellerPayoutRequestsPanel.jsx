@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { GiReceiveMoney } from 'react-icons/gi'
 import { useToast } from '@/contexts/ToastContext'
 import styles from '../analytics/analytics.module.css'
 
@@ -15,6 +16,7 @@ export default function SellerPayoutRequestsPanel({ className = '' }) {
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false)
   const [note, setNote] = useState('')
   const [requestedAmount, setRequestedAmount] = useState('')
 
@@ -57,6 +59,11 @@ export default function SellerPayoutRequestsPanel({ className = '' }) {
     }
   }
 
+  const closeRequestModal = () => {
+    if (submitting) return
+    setIsRequestModalOpen(false)
+  }
+
   const onSubmit = async (event) => {
     event.preventDefault()
     const trimmedNote = note.trim()
@@ -80,6 +87,7 @@ export default function SellerPayoutRequestsPanel({ className = '' }) {
       toast.success('Payout request sent to admin review.')
       setNote('')
       setRequestedAmount('')
+      setIsRequestModalOpen(false)
       await reloadRequests()
     } catch (err) {
       toast.error(err?.message || 'Failed to submit payout request.')
@@ -97,35 +105,87 @@ export default function SellerPayoutRequestsPanel({ className = '' }) {
             Ask admins to review eligible escrow funds. This does not auto-release payouts.
           </p>
         </div>
+        <button
+          type="button"
+          className={`${styles.downloadButton} ${styles.payoutRequestOpenBtn}`}
+          onClick={() => setIsRequestModalOpen(true)}
+        >
+          <GiReceiveMoney size={16} aria-hidden />
+          <span>Request payout release</span>
+        </button>
       </div>
 
-      <form className={styles.payoutRequestForm} onSubmit={onSubmit}>
-        <label className={styles.payoutRequestField}>
-          <span className={styles.payoutRequestLabel}>Requested amount (optional)</span>
-          <input
-            className={styles.payoutRequestInput}
-            inputMode="decimal"
-            value={requestedAmount}
-            onChange={(e) => setRequestedAmount(e.target.value)}
-            placeholder="Leave blank to request a full review"
-            disabled={submitting}
-          />
-        </label>
-        <label className={styles.payoutRequestField}>
-          <span className={styles.payoutRequestLabel}>Note for admin</span>
-          <textarea
-            className={styles.payoutRequestTextarea}
-            rows={4}
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Explain which completed bookings or escrow balance should be reviewed."
-            disabled={submitting}
-          />
-        </label>
-        <button type="submit" className={styles.downloadButton} disabled={submitting}>
-          {submitting ? 'Submitting…' : 'Submit payout request'}
-        </button>
-      </form>
+      {isRequestModalOpen ? (
+        <div
+          className={styles.payoutRequestModalOverlay}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="payout-request-modal-title"
+          onClick={closeRequestModal}
+        >
+          <div className={styles.payoutRequestModalCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.payoutRequestModalHeader}>
+              <div className={styles.payoutRequestModalTitleWrap}>
+                <GiReceiveMoney className={styles.payoutRequestModalTitleIcon} aria-hidden />
+                <h3 id="payout-request-modal-title" className={styles.payoutRequestModalTitle}>
+                  Request payout release
+                </h3>
+              </div>
+              <button
+                type="button"
+                className={styles.payoutRequestModalCloseBtn}
+                onClick={closeRequestModal}
+                aria-label="Close payout request modal"
+                disabled={submitting}
+              >
+                ×
+              </button>
+            </div>
+            <div className={styles.payoutRequestModalBody}>
+              <p className={styles.payoutRequestModalSubtitle}>
+                Add the details admins need to review your eligible escrow funds.
+              </p>
+              <form className={styles.payoutRequestForm} onSubmit={onSubmit}>
+                <label className={styles.payoutRequestField}>
+                  <span className={styles.payoutRequestLabel}>Requested amount (optional)</span>
+                  <input
+                    className={styles.payoutRequestInput}
+                    inputMode="decimal"
+                    value={requestedAmount}
+                    onChange={(e) => setRequestedAmount(e.target.value)}
+                    placeholder="Leave blank to request a full review"
+                    disabled={submitting}
+                  />
+                </label>
+                <label className={styles.payoutRequestField}>
+                  <span className={styles.payoutRequestLabel}>Note for admin</span>
+                  <textarea
+                    className={styles.payoutRequestTextarea}
+                    rows={4}
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder="Explain which completed bookings or escrow balance should be reviewed."
+                    disabled={submitting}
+                  />
+                </label>
+                <div className={styles.payoutRequestModalActions}>
+                  <button
+                    type="button"
+                    className={styles.payoutRequestModalGhostBtn}
+                    onClick={closeRequestModal}
+                    disabled={submitting}
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className={styles.payoutRequestModalPrimaryBtn} disabled={submitting}>
+                    {submitting ? 'Submitting…' : 'Submit payout request'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className={styles.payoutRequestHistory}>
         <h3 className={styles.payoutRequestHistoryTitle}>Request history</h3>

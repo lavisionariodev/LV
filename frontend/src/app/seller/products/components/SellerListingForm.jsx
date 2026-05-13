@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -14,16 +13,24 @@ import {
 } from '@/lib/seller-listings/client'
 import { getSellerByUserId } from '@/lib/sellers/client'
 import { supabase } from '@/lib/supabase/client'
-import styles from './products.module.css'
-import { useMediaQuery } from '@/shared/hooks'
+import styles from '../products.module.css'
 import { normalizeStockStatusValue } from '@/lib/shop-listings/client'
 import { formatPhpInputString, parsePhpAmountInputString } from '@/lib/cart/formatPhp'
+import SellerPortalSelect from './SellerPortalSelect'
 
 /** Max images per listing (toolbar + upload strip). */
 export const MAX_LISTING_IMAGES = 10
 
 export const FALLBACK_IMAGE =
   'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 640 420%22%3E%3Crect width=%22640%22 height=%22420%22 fill=%22%23d1d5db%22/%3E%3Cpath d=%22M230 160h180a22 22 0 0 1 22 22v56a22 22 0 0 1-22 22H230a22 22 0 0 1-22-22v-56a22 22 0 0 1 22-22Zm18 28a16 16 0 1 0 0.1 0Zm-8 56 38-34 35 30 44-40 55 44H240Z%22 fill=%22%239ca3af%22/%3E%3C/svg%3E'
+
+export function shouldUnoptimizeListingImage(src) {
+  if (typeof src !== 'string') return false
+  const trimmed = src.trim()
+  if (!trimmed) return false
+  if (trimmed.startsWith('blob:') || trimmed.startsWith('data:')) return true
+  return trimmed.includes('/storage/v1/object/public/')
+}
 
 function NewListingLoadingState() {
   return (
@@ -35,6 +42,20 @@ function NewListingLoadingState() {
     >
       <p className={styles.srOnly}>Preparing the listing form</p>
       <div className={styles.loadingStack} aria-hidden="true">
+        <div className={styles.loadingMain}>
+          <div className={`${styles.skeletonCard} ${styles.skeletonCardSection}`}>
+            <div className={`${styles.skeletonLine} ${styles.skeletonTitle}`} />
+            <div className={`${styles.skeletonLine} ${styles.skeletonMedium}`} />
+            <div className={styles.skeletonBlock} />
+            <div className={styles.skeletonBlock} />
+            <div className={`${styles.skeletonLine} ${styles.skeletonShort}`} />
+            <div className={styles.skeletonFooter}>
+              <div className={styles.skeletonBtnGhost} />
+              <div className={styles.skeletonBtnGhostWide} />
+              <div className={styles.skeletonBtnPrimary} />
+            </div>
+          </div>
+        </div>
         <aside className={styles.loadingAside}>
           <div className={`${styles.skeletonCard} ${styles.skeletonCardStepper}`}>
             <div className={styles.skeletonStepperTrack}>
@@ -51,20 +72,6 @@ function NewListingLoadingState() {
             <div className={`${styles.skeletonLine} ${styles.skeletonNarrow}`} />
           </div>
         </aside>
-        <div className={styles.loadingMain}>
-          <div className={`${styles.skeletonCard} ${styles.skeletonCardSection}`}>
-            <div className={`${styles.skeletonLine} ${styles.skeletonTitle}`} />
-            <div className={`${styles.skeletonLine} ${styles.skeletonMedium}`} />
-            <div className={styles.skeletonBlock} />
-            <div className={styles.skeletonBlock} />
-            <div className={`${styles.skeletonLine} ${styles.skeletonShort}`} />
-            <div className={styles.skeletonFooter}>
-              <div className={styles.skeletonBtnGhost} />
-              <div className={styles.skeletonBtnGhostWide} />
-              <div className={styles.skeletonBtnPrimary} />
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   )
@@ -350,159 +357,8 @@ function getActiveTipSectionId(completed, order) {
 
 // --- ListingFormSelectControl --------------------------------------------------------------------
 
-function ListingFormSelectControl({ label, value, options, onChange, placeholder }) {
-  const isNarrow = useMediaQuery('(max-width: 640px)')
-  const [sheetOpen, setSheetOpen] = useState(false)
-  const [desktopOpen, setDesktopOpen] = useState(false)
-  const desktopDropdownRef = useRef(null)
-  const rawValue = asInputValue(value)
-  const opts = Array.isArray(options) ? options : []
-  const placeholderText = placeholder || 'Select'
-
-  useEffect(() => {
-    if (!sheetOpen) return
-    const onKey = (e) => {
-      if (e.key === 'Escape') setSheetOpen(false)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [sheetOpen])
-
-  useEffect(() => {
-    if (!desktopOpen || isNarrow) return
-    const handleClickOutside = (e) => {
-      if (desktopDropdownRef.current && !desktopDropdownRef.current.contains(e.target)) {
-        setDesktopOpen(false)
-      }
-    }
-    document.addEventListener('click', handleClickOutside)
-    return () => document.removeEventListener('click', handleClickOutside)
-  }, [desktopOpen, isNarrow])
-
-  useEffect(() => {
-    if (!sheetOpen) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = prev
-    }
-  }, [sheetOpen])
-
-  if (!isNarrow) {
-    const selectedLabel = opts.find((o) => o.value === rawValue)?.label || placeholderText
-    return (
-      <div
-        className={`${styles.filterDropdownWrap} ${styles.modalDropdownWrap} ${
-          desktopOpen ? styles.filterDropdownOpen : ''
-        }`}
-        ref={desktopDropdownRef}
-      >
-        <button
-          type="button"
-          className={styles.filterDropdownTrigger}
-          onClick={() => setDesktopOpen((prev) => !prev)}
-          aria-haspopup="listbox"
-          aria-expanded={desktopOpen}
-          aria-label={label}
-        >
-          <span className={styles.filterDropdownLabel}>{selectedLabel}</span>
-          <span className={styles.filterDropdownChevron} aria-hidden>
-            ▾
-          </span>
-        </button>
-        {desktopOpen && (
-          <div className={styles.filterDropdownPanel} role="listbox" aria-label={`${label} options`}>
-            {opts.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                role="option"
-                aria-selected={rawValue === option.value}
-                className={`${styles.filterDropdownOption} ${
-                  rawValue === option.value ? styles.filterDropdownOptionSelected : ''
-                }`}
-                onClick={() => {
-                  onChange(option.value)
-                  setDesktopOpen(false)
-                }}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  const display = opts.find((o) => o.value === rawValue)?.label || placeholderText
-  const sheet = sheetOpen ? (
-    <div className={styles.listingFormSelectSheetRoot}>
-      <button
-        type="button"
-        className={styles.listingFormSelectSheetBackdrop}
-        onClick={() => setSheetOpen(false)}
-        tabIndex={-1}
-        aria-label="Dismiss"
-      />
-      <div
-        className={styles.listingFormSelectSheet}
-        role="dialog"
-        aria-modal="true"
-        aria-label={label}
-      >
-        <div className={styles.listingFormSelectSheetHeader}>
-          <span className={styles.listingFormSelectSheetTitle}>{label}</span>
-          <button
-            type="button"
-            className={styles.listingFormSelectSheetClose}
-            onClick={() => setSheetOpen(false)}
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </div>
-        <div className={styles.listingFormSelectSheetList} role="listbox">
-          {opts.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              role="option"
-              aria-selected={rawValue === opt.value}
-              className={`${styles.listingFormSelectSheetRow} ${
-                rawValue === opt.value ? styles.listingFormSelectSheetRowActive : ''
-              }`}
-              onClick={() => {
-                onChange(opt.value)
-                setSheetOpen(false)
-              }}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  ) : null
-
-  return (
-    <>
-      <button
-        type="button"
-        className={`${styles.listingFormSelect} ${styles.listingFormSelectTrigger}`}
-        onClick={() => setSheetOpen(true)}
-        aria-haspopup="listbox"
-        aria-expanded={sheetOpen}
-        aria-label={label}
-      >
-        <span className={styles.listingFormSelectTriggerLabel}>{display}</span>
-        <span className={styles.listingFormSelectTriggerCaret} aria-hidden>
-          ▾
-        </span>
-      </button>
-      {typeof document !== 'undefined' && sheet ? createPortal(sheet, document.body) : null}
-    </>
-  )
+function ListingFormSelectControl(props) {
+  return <SellerPortalSelect {...props} />
 }
 
 export function ListingImageUploadTile({
@@ -1067,7 +923,6 @@ export default function NewListingClient() {
   const [imageUploadNote, setImageUploadNote] = useState(null)
   const [toastMessage, setToastMessage] = useState('')
   const [toastType, setToastType] = useState('error')
-
   const sectionOrder = useMemo(() => STATIC_SECTIONS.map((s) => s.id), [])
 
   const sectionCompletion = useMemo(
@@ -1288,7 +1143,7 @@ export default function NewListingClient() {
   const loading = loadingSeller
 
   return (
-    <div className={styles.newListingPage}>
+    <>
       {toastMessage ? (
         <div
           className={`${styles.newListingToast} ${
@@ -1322,13 +1177,6 @@ export default function NewListingClient() {
         <NewListingLoadingState />
       ) : (
         <div className={styles.newListingLayout}>
-          <NewListingProgressPanel
-            sections={STATIC_SECTIONS}
-            completed={sectionCompletion}
-            activeId={activeTipSectionId}
-            tipTitle={sidebarTip.title}
-            tipBody={sidebarTip.body}
-          />
           <div className={styles.newListingFormColumn}>
             <form className={styles.newListingForm} onSubmit={handleSubmit} noValidate>
               <SellerListingFormFields
@@ -1377,8 +1225,15 @@ export default function NewListingClient() {
               </div>
             </form>
           </div>
+          <NewListingProgressPanel
+            sections={STATIC_SECTIONS}
+            completed={sectionCompletion}
+            activeId={activeTipSectionId}
+            tipTitle={sidebarTip.title}
+            tipBody={sidebarTip.body}
+          />
         </div>
       )}
-    </div>
+    </>
   )
 }

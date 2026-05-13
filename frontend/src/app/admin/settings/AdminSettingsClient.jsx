@@ -23,6 +23,11 @@ import { useMediaQuery } from '@/shared/hooks'
 import { useSiteContent, upsertSiteContent } from '@/lib/siteContent/client'
 import { validateSellerHelpFaq } from '@/lib/siteContent/mapping'
 import { useAuthToast } from '@/contexts/ToastContext'
+import {
+  ADMIN_NOTIFICATION_BUCKETS,
+  defaultBucketChannels,
+  mergeAdminNotificationPreferences,
+} from '@/lib/notifications/preferenceSchema'
 import { normalizeSettingsTab } from './adminSettingsTabs'
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 
@@ -558,7 +563,7 @@ export function AdminBillingSettingsPanel({ variant = 'default' }) {
    Notification Preferences Panel
    ───────────────────────────────────────────────────────────────────────────── */
 
-const CATEGORY_KEYS = ['order', 'approval', 'alert', 'announcement']
+const CATEGORY_KEYS = ADMIN_NOTIFICATION_BUCKETS
 
 const CATEGORIES = [
   {
@@ -588,35 +593,20 @@ const CATEGORIES = [
 ]
 
 const CHANNELS = [
-  { id: 'push', label: 'Push', hint: 'In-app notification' },
+  { id: 'push', label: 'In-app', hint: 'Notification inbox' },
   { id: 'email', label: 'Email', hint: null },
 ]
-
-const SMS_DISCLAIMER =
-  'SMS delivery is not connected yet — only push and email channels are honored.'
 
 function defaultPrefs() {
   const o = {}
   for (const key of CATEGORY_KEYS) {
-    o[key] = { push: true, email: true, sms: false }
+    o[key] = defaultBucketChannels()
   }
   return o
 }
 
 function mergePrefs(raw) {
-  const base = defaultPrefs()
-  if (!raw || typeof raw !== 'object') return base
-  for (const key of CATEGORY_KEYS) {
-    const row = raw[key]
-    if (row && typeof row === 'object') {
-      base[key] = {
-        push: Boolean(row.push),
-        email: Boolean(row.email),
-        sms: false,
-      }
-    }
-  }
-  return base
+  return mergeAdminNotificationPreferences(raw)
 }
 
 function PrefSwitch({ checked, onToggle, disabled, labelledBy }) {
@@ -645,8 +635,18 @@ export const AdminNotificationPreferencesPanel = forwardRef(function AdminNotifi
   const prefsRef = useRef(prefs)
   const [loading, setLoading] = useState(true)
   const [saveError, setSaveError] = useState('')
-  const adminIdRef = useRef(null)
   const saveTimerRef = useRef(null)
+
+  const savePreferences = useCallback(async (next) => {
+    const res = await fetch('/api/admin/notification-preferences', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ preferences: next }),
+    })
+    const body = await res.json().catch(() => null)
+    if (!res.ok) throw new Error(body?.error || 'Could not save preferences.')
+    return mergePrefs(body?.preferences)
+  }, [])
 
   // Keep the ref in sync with state so `flushPendingSave` (called via the
   // imperative handle) always sees the latest preferences without re-binding.
@@ -658,28 +658,22 @@ export const AdminNotificationPreferencesPanel = forwardRef(function AdminNotifi
     ref,
     () => ({
       async flushPendingSave() {
-        const id = adminIdRef.current
-        if (!id) return
         if (saveTimerRef.current) {
           clearTimeout(saveTimerRef.current)
           saveTimerRef.current = null
         }
         setSaveError('')
         const next = prefsRef.current
-        const { error } = await supabase
-          .from('admins')
-          .update({
-            notification_preferences: next,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', id)
-        if (error) {
-          setSaveError(error.message || 'Could not save preferences.')
+        try {
+          const saved = await savePreferences(next)
+          setPrefs(saved)
+        } catch (error) {
+          setSaveError(error?.message || 'Could not save preferences.')
           throw error
         }
       },
     }),
-    [],
+    [savePreferences],
   )
 
   useEffect(() => {
@@ -687,22 +681,11 @@ export const AdminNotificationPreferencesPanel = forwardRef(function AdminNotifi
     async function load() {
       setSaveError('')
       try {
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser()
-        if (userError || !user) throw new Error('Not authenticated.')
-        adminIdRef.current = user.id
-
-        const { data, error } = await supabase
-          .from('admins')
-          .select('notification_preferences')
-          .eq('id', user.id)
-          .single()
-
-        if (error) throw error
+        const res = await fetch('/api/admin/notification-preferences', { cache: 'no-store' })
+        const body = await res.json().catch(() => null)
+        if (!res.ok) throw new Error(body?.error || 'Failed to load preferences.')
         if (!cancelled) {
-          setPrefs(mergePrefs(data?.notification_preferences))
+          setPrefs(mergePrefs(body?.preferences))
         }
       } catch (e) {
         if (!cancelled) setSaveError(e.message || 'Failed to load preferences.')
@@ -719,21 +702,17 @@ export const AdminNotificationPreferencesPanel = forwardRef(function AdminNotifi
   }, [])
 
   const persist = useCallback((next) => {
-    const id = adminIdRef.current
-    if (!id) return
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     saveTimerRef.current = setTimeout(async () => {
       setSaveError('')
-      const { error } = await supabase
-        .from('admins')
-        .update({
-          notification_preferences: next,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', id)
-      if (error) setSaveError(error.message || 'Could not save preferences.')
+      try {
+        const saved = await savePreferences(next)
+        setPrefs(saved)
+      } catch (error) {
+        setSaveError(error?.message || 'Could not save preferences.')
+      }
     }, 350)
-  }, [])
+  }, [savePreferences])
 
   useEffect(
     () => () => {
@@ -743,7 +722,6 @@ export const AdminNotificationPreferencesPanel = forwardRef(function AdminNotifi
   )
 
   const setChannel = (categoryKey, channelId, value) => {
-    if (channelId === 'sms') return
     setPrefs((prev) => {
       const next = {
         ...prev,
@@ -850,10 +828,6 @@ export const AdminNotificationPreferencesPanel = forwardRef(function AdminNotifi
           {saveError}
         </p>
       ) : null}
-
-      <p className={styles.notifPrefDesc} style={{ marginTop: 12, fontStyle: 'italic' }}>
-        {SMS_DISCLAIMER}
-      </p>
 
       <div className={styles.notifPrefFooter}>
         <Link href="/admin/notifications" className={styles.notificationsCta}>

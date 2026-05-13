@@ -2,9 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import styles from './settings.module.css'
-
-const CATEGORY_KEYS = ['order', 'payment', 'listing', 'alert', 'system']
+import styles from '../settings.module.css'
+import {
+  defaultBucketChannels,
+  mergeSellerNotificationPreferences,
+  SELLER_NOTIFICATION_BUCKETS,
+} from '@/lib/notifications/preferenceSchema'
 
 const CATEGORIES = [
   {
@@ -35,32 +38,20 @@ const CATEGORIES = [
 ]
 
 const CHANNELS = [
-  { id: 'push', label: 'Push', hint: 'In-app notification' },
+  { id: 'push', label: 'In-app', hint: 'Notification inbox' },
   { id: 'email', label: 'Email', hint: null },
 ]
 
 function defaultPrefs() {
   const out = {}
-  for (const key of CATEGORY_KEYS) {
-    out[key] = { push: true, email: true, sms: false }
+  for (const key of SELLER_NOTIFICATION_BUCKETS) {
+    out[key] = defaultBucketChannels()
   }
   return out
 }
 
 function mergePrefs(raw) {
-  const base = defaultPrefs()
-  if (!raw || typeof raw !== 'object') return base
-  for (const key of CATEGORY_KEYS) {
-    const row = raw[key]
-    if (row && typeof row === 'object') {
-      base[key] = {
-        push: row.push !== false,
-        email: row.email !== false,
-        sms: false,
-      }
-    }
-  }
-  return base
+  return mergeSellerNotificationPreferences(raw)
 }
 
 function PrefSwitch({ checked, onToggle, disabled, labelledBy }) {
@@ -150,13 +141,12 @@ export default function SellerNotificationPreferencesPanel() {
   return (
     <div className={styles.notifPrefPanel}>
       <p className={styles.tabDetailSubtitle}>
-        Choose which seller alerts can reach you by push or email. Open your{' '}
+        Choose which seller alerts can reach you in-app or by email. Open your{' '}
         <Link href="/seller/notifications" className={styles.inlineLink}>
           notification inbox
         </Link>{' '}
         to review recent activity.
       </p>
-      <p className={styles.notifPrefDisclaimer}>SMS delivery is not connected yet.</p>
       {loading ? <p className={styles.loadingText}>Loading notification preferences…</p> : null}
       {saveError ? <p className={styles.notifPrefError}>{saveError}</p> : null}
       <div className={styles.notifPrefList}>

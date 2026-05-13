@@ -3,6 +3,8 @@
  * Used by the seller dashboard and analytics routes.
  */
 
+import { hasPendingSellerChanges } from '@/lib/seller-listings/pendingChanges'
+
 /** @typedef {{ id: string, buyer_id?: string|null, order_number?: string|null, created_at: string, preferred_date?: string|null, fulfillment_status?: string|null, payment_status?: string|null, status?: string|null, subtotal?: number|null, refund_status?: string|null, refund_requested_at?: string|null, contact_name?: string|null, order_items?: { name?: string|null, quantity?: number|null }[]|null }} SellerOrderRow */
 
 export const SELLER_ANALYTICS_ORDER_SELECT =
@@ -599,10 +601,24 @@ export function refundAttentionOrders(orders) {
  * @param {{ approval_status?: string|null }[]} listingRows
  */
 export function listingsPendingReviewCount(listingRows) {
-  return listingRows.filter((r) => {
+  return (Array.isArray(listingRows) ? listingRows : []).filter((r) => {
     const s = String(r.approval_status || '').toLowerCase()
-    return s === 'pending' || s === 'pending_review' || s === 'in_review'
+    if (s === 'pending' || s === 'rejected') return true
+    return s === 'approved' && hasPendingSellerChanges(r)
   }).length
+}
+
+export function listingsReviewAlertHref(listingRows) {
+  let underReview = 0
+  let updatesPending = 0
+  for (const row of Array.isArray(listingRows) ? listingRows : []) {
+    const s = String(row?.approval_status || '').toLowerCase()
+    if (s === 'pending' || s === 'rejected') underReview += 1
+    else if (s === 'approved' && hasPendingSellerChanges(row)) updatesPending += 1
+  }
+  if (underReview > 0) return '/seller/products/catalog?tab=under_review'
+  if (updatesPending > 0) return '/seller/products/catalog?tab=updates_pending'
+  return '/seller/products/catalog'
 }
 
 /**
@@ -973,7 +989,7 @@ export function buildSmartAlerts(orders, listings) {
       type: 'Listings',
       message: `${pendingListings} listing${pendingListings === 1 ? '' : 's'} pending review. Submit or update them in Products.`,
       priority: 'medium',
-      href: '/seller/products/catalog',
+      href: listingsReviewAlertHref(listings),
     })
   }
   return alerts

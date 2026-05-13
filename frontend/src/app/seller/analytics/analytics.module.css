@@ -94,6 +94,18 @@
   .downloadButton span {
     display: none;
   }
+
+  .payoutRequestOpenBtn {
+    width: auto;
+    height: auto;
+    padding: 0.4rem 0.9rem;
+    margin-left: 0;
+    margin-top: 0;
+  }
+
+  .payoutRequestOpenBtn span {
+    display: inline;
+  }
 }
 
 /* Summary statistic strip */
@@ -751,6 +763,18 @@
     display: none;
   }
 
+  .payoutRequestOpenBtn {
+    width: auto;
+    height: auto;
+    padding: 0.4rem 0.9rem;
+    margin-left: 0;
+    margin-top: 0;
+  }
+
+  .payoutRequestOpenBtn span {
+    display: inline;
+  }
+
   .navGrid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -762,6 +786,44 @@
   .chartHeader {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .chartHeader .payoutRequestOpenBtn {
+    width: 100%;
+    justify-content: center;
+    margin-left: 0;
+    margin-top: 0;
+  }
+
+  .payoutRequestModalOverlay {
+    align-items: flex-end;
+    padding: 8px;
+  }
+
+  .payoutRequestModalCard {
+    border-radius: 14px 14px 0 0;
+    max-height: 88vh;
+    overflow: auto;
+  }
+
+  .payoutRequestModalActions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .payoutRequestModalGhostBtn,
+  .payoutRequestModalPrimaryBtn {
+    width: 100%;
+    min-height: 40px;
+  }
+
+  .payoutRequestItem {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .payoutRequestAmount {
+    font-weight: 600;
   }
 
   .chartBadge {
@@ -955,7 +1017,125 @@
 .payoutRequestForm {
   display: grid;
   gap: 12px;
-  margin-top: 12px;
+  margin-top: 0;
+}
+
+.payoutRequestModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.42);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  z-index: 1200;
+}
+
+.payoutRequestModalCard {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid var(--border, var(--color-light-gray));
+  box-shadow: 0 20px 38px rgba(15, 23, 42, 0.2);
+  overflow: hidden;
+}
+
+.payoutRequestModalHeader {
+  background: #1f312b;
+  color: #fff;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.payoutRequestModalTitleWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.payoutRequestModalTitleIcon {
+  flex-shrink: 0;
+  font-size: 1.05rem;
+}
+
+.payoutRequestModalTitle {
+  margin: 0;
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.payoutRequestModalCloseBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: transparent;
+  color: #fff;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.payoutRequestModalCloseBtn:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.payoutRequestModalCloseBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.payoutRequestModalBody {
+  padding: 18px;
+}
+
+.payoutRequestModalSubtitle {
+  margin: 0 0 14px;
+  color: var(--muted, var(--color-text-secondary));
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.payoutRequestModalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.payoutRequestModalGhostBtn,
+.payoutRequestModalPrimaryBtn {
+  height: 36px;
+  border-radius: 9px;
+  padding: 0 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.payoutRequestModalGhostBtn {
+  border: 1px solid var(--border, var(--color-light-gray));
+  background: #fff;
+  color: var(--foreground, var(--color-text-primary));
+}
+
+.payoutRequestModalPrimaryBtn {
+  border: 1px solid #1f312b;
+  background: #1f312b;
+  color: #fff;
+}
+
+.payoutRequestModalGhostBtn:disabled,
+.payoutRequestModalPrimaryBtn:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
 }
 
 .payoutRequestField {
