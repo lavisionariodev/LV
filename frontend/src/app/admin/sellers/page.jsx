@@ -312,6 +312,7 @@ function SellerDetailModal({ seller, onClose }) {
     if (hasBusiness) tabs.push({ id: 'business', label: 'Business' });
     if (hasDecision) tabs.push({ id: 'decision', label: 'Application' });
     if (hasAccount) tabs.push({ id: 'account', label: 'Account' });
+    tabs.push({ id: 'compliance', label: 'Compliance' });
 
     return {
       tabs,
@@ -328,6 +329,69 @@ function SellerDetailModal({ seller, onClose }) {
   }, [seller]);
 
   const [pickedTab, setPickedTab] = useState(null);
+  const [complianceDocs, setComplianceDocs] = useState([]);
+  const [complianceLoading, setComplianceLoading] = useState(false);
+  const [complianceError, setComplianceError] = useState('');
+  const [complianceBusyId, setComplianceBusyId] = useState(null);
+  const [rejectDocTarget, setRejectDocTarget] = useState(null);
+  const [rejectDocReason, setRejectDocReason] = useState('');
+  const [rejectDocError, setRejectDocError] = useState('');
+
+  const sellerUuidForDocs = seller?.user_id || seller?.id || null;
+
+  const loadComplianceDocs = useCallback(async () => {
+    if (!sellerUuidForDocs) {
+      setComplianceDocs([]);
+      return;
+    }
+    setComplianceLoading(true);
+    setComplianceError('');
+    try {
+      const res = await fetch(`/api/admin/sellers/${encodeURIComponent(sellerUuidForDocs)}/documents`, {
+        cache: 'no-store',
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(body?.error || 'Failed to load compliance documents.');
+      }
+      setComplianceDocs(Array.isArray(body?.documents) ? body.documents : []);
+    } catch (err) {
+      setComplianceDocs([]);
+      setComplianceError(err?.message || 'Failed to load compliance documents.');
+    } finally {
+      setComplianceLoading(false);
+    }
+  }, [sellerUuidForDocs]);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      loadComplianceDocs();
+    });
+  }, [loadComplianceDocs]);
+
+  const reviewComplianceDoc = async (documentId, action, reason = '') => {
+    if (!sellerUuidForDocs) return false;
+    setComplianceBusyId(documentId);
+    try {
+      const res = await fetch(
+        `/api/admin/sellers/${encodeURIComponent(sellerUuidForDocs)}/documents/${encodeURIComponent(documentId)}/review`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action, reason }),
+        },
+      );
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        window.alert(body?.error || 'Could not update document.');
+        return false;
+      }
+      await loadComplianceDocs();
+      return true;
+    } finally {
+      setComplianceBusyId(null);
+    }
+  };
 
   const activeTab =
     !detailModel?.tabs.length
@@ -357,6 +421,7 @@ function SellerDetailModal({ seller, onClose }) {
       : { 'aria-label': longLabel };
 
   return (
+    <>
     <div className={styles.detailModalOverlay} role="presentation" onClick={onClose}>
       <div
         className={styles.detailModal}
@@ -536,12 +601,130 @@ function SellerDetailModal({ seller, onClose }) {
                     </section>
                   </div>
                 ) : null}
+
+                {activeTab === 'compliance' ? (
+                  <div
+                    role="tabpanel"
+                    id="seller-detail-panel-compliance"
+                    className={styles.detailTabPanel}
+                    {...panelA11y('compliance', 'Compliance documents')}
+                  >
+                    <section className={styles.detailSection}>
+                      <div className={`${styles.detailGroup} ${styles.detailGroupTabPanel}`}>
+                        {complianceLoading ? <p className={styles.detailEmpty}>Loading documents…</p> : null}
+                        {!complianceLoading && complianceError ? (
+                          <p className={styles.detailEmpty}>{complianceError}</p>
+                        ) : null}
+                        {!complianceLoading && !complianceError && complianceDocs.length === 0 ? (
+                          <p className={styles.detailEmpty}>No compliance documents uploaded yet.</p>
+                        ) : null}
+                        {!complianceLoading && !complianceError
+                          ? complianceDocs.map((doc) => (
+                              <div key={doc.id} className={styles.detailRowMultiline}>
+                                <DetailRow
+                                  label={doc.displayName}
+                                  value={`${String(doc.documentType || '').replace(/_/g, ' ')} · ${doc.status}${
+                                    doc.submittedAt ? ` · ${formatDate(doc.submittedAt)}` : ''
+                                  }${doc.rejectionReason ? ` · ${doc.rejectionReason}` : ''}`}
+                                  multiline
+                                />
+                                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+                                  {doc.previewUrl ? (
+                                    <a
+                                      className={styles.detailRowLink}
+                                      href={doc.previewUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                    >
+                                      Preview
+                                    </a>
+                                  ) : null}
+                                  {doc.status === 'submitted' || doc.status === 'rejected' ? (
+                                    <>
+                                      <button
+                                        type="button"
+                                        className={styles.actionMenuItem}
+                                        disabled={complianceBusyId === doc.id}
+                                        onClick={() => reviewComplianceDoc(doc.id, 'approve')}
+                                      >
+                                        Approve
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className={`${styles.actionMenuItem} ${styles.actionMenuItemWarn}`}
+                                        disabled={complianceBusyId === doc.id}
+                                        onClick={() => {
+                                          setRejectDocError('');
+                                          setRejectDocReason('');
+                                          setRejectDocTarget(doc);
+                                        }}
+                                      >
+                                        Reject
+                                      </button>
+                                    </>
+                                  ) : null}
+                                </div>
+                              </div>
+                            ))
+                          : null}
+                      </div>
+                    </section>
+                  </div>
+                ) : null}
               </div>
             </>
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        open={rejectDocTarget != null}
+        variant="danger"
+        title="Reject compliance document?"
+        message="Tell the seller what to fix before they re-upload this document."
+        extra={
+          <div style={{ display: 'grid', gap: 8 }}>
+            <textarea
+              value={rejectDocReason}
+              onChange={(e) => {
+                setRejectDocReason(e.target.value);
+                setRejectDocError('');
+              }}
+              rows={4}
+              placeholder="At least 12 characters"
+              style={{ width: '100%', padding: '8px 10px', fontSize: 14 }}
+            />
+            {rejectDocError ? <p style={{ margin: 0, color: '#b91c1c', fontSize: 13 }}>{rejectDocError}</p> : null}
+          </div>
+        }
+        subtitleAlign="left"
+        confirmLabel="Reject document"
+        confirmLoadingLabel="Rejecting..."
+        cancelLabel="Cancel"
+        loading={rejectDocTarget != null && complianceBusyId === rejectDocTarget.id}
+        onCancel={() => {
+          if (complianceBusyId) return;
+          setRejectDocTarget(null);
+          setRejectDocReason('');
+          setRejectDocError('');
+        }}
+        onConfirm={async () => {
+          if (!rejectDocTarget) return;
+          const trimmed = rejectDocReason.trim();
+          if (trimmed.length < 12) {
+            setRejectDocError('Please enter at least 12 characters.');
+            return;
+          }
+          const ok = await reviewComplianceDoc(rejectDocTarget.id, 'reject', trimmed);
+          if (ok) {
+            setRejectDocTarget(null);
+            setRejectDocReason('');
+            setRejectDocError('');
+          }
+        }}
+      />
     </div>
+    </>
   );
 }
 

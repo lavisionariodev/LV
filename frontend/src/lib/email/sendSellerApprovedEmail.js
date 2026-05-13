@@ -1,29 +1,10 @@
-import nodemailer from 'nodemailer'
-
-function isSmtpConfigured() {
-  return Boolean(
-    process.env.SMTP_HOST &&
-      process.env.SMTP_USER &&
-      process.env.SMTP_PASS &&
-      (process.env.SMTP_FROM || process.env.SMTP_USER),
-  )
-}
-
-function createTransport() {
-  const port = Number(process.env.SMTP_PORT) || 587
-  const secure =
-    process.env.SMTP_SECURE === 'true' || process.env.SMTP_SECURE === '1' || port === 465
-
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port,
-    secure,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  })
-}
+import {
+  createMailTransport,
+  escapeAttr,
+  escapeHtml,
+  getMailFromAddress,
+  isSmtpConfigured,
+} from '@/lib/email/mailTransport'
 
 /**
  * @param {object} opts
@@ -44,7 +25,7 @@ export async function sendSellerApprovedEmail({ to, businessName, loginUrl }) {
     return { sent: false, reason: 'smtp_not_configured' }
   }
 
-  const from = process.env.SMTP_FROM?.trim() || process.env.SMTP_USER
+  const from = getMailFromAddress()
   const safeName = (businessName || 'your shop').trim() || 'your shop'
   const subject = 'Your seller account has been approved'
 
@@ -87,7 +68,7 @@ export async function sendSellerApprovedEmail({ to, businessName, loginUrl }) {
 </body>
 </html>`.trim()
 
-  const transport = createTransport()
+  const transport = createMailTransport()
   await transport.sendMail({
     from,
     to: to.trim(),
@@ -97,16 +78,4 @@ export async function sendSellerApprovedEmail({ to, businessName, loginUrl }) {
   })
 
   return { sent: true }
-}
-
-function escapeHtml(s) {
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
-
-function escapeAttr(s) {
-  return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
 }

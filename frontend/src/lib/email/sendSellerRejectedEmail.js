@@ -1,29 +1,9 @@
-import nodemailer from 'nodemailer'
-
-function isSmtpConfigured() {
-  return Boolean(
-    process.env.SMTP_HOST &&
-      process.env.SMTP_USER &&
-      process.env.SMTP_PASS &&
-      (process.env.SMTP_FROM || process.env.SMTP_USER),
-  )
-}
-
-function createTransport() {
-  const port = Number(process.env.SMTP_PORT) || 587
-  const secure =
-    process.env.SMTP_SECURE === 'true' || process.env.SMTP_SECURE === '1' || port === 465
-
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port,
-    secure,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  })
-}
+import {
+  createMailTransport,
+  escapeHtml,
+  getMailFromAddress,
+  isSmtpConfigured,
+} from '@/lib/email/mailTransport'
 
 /**
  * @param {object} opts
@@ -50,7 +30,7 @@ export async function sendSellerRejectedEmail({ to, businessName, reason }) {
     return { sent: false, reason: 'no_reason' }
   }
 
-  const from = process.env.SMTP_FROM?.trim() || process.env.SMTP_USER
+  const from = getMailFromAddress()
   const safeName = (businessName || 'your seller application').trim() || 'your seller application'
   const subject = 'Update on your seller application'
 
@@ -60,7 +40,7 @@ export async function sendSellerRejectedEmail({ to, businessName, reason }) {
     `Reason:`,
     trimmedReason,
     '',
-    'You may revise your details from Seller Onboarding and submit again when you\'re ready. If you have questions, reply to this email or contact support.',
+    "You may revise your details from Seller Onboarding and submit again when you're ready. If you have questions, reply to this email or contact support.",
   ].join('\n')
 
   const reasonsWithBreaks = trimmedReason
@@ -95,7 +75,7 @@ export async function sendSellerRejectedEmail({ to, businessName, reason }) {
 </body>
 </html>`.trim()
 
-  const transport = createTransport()
+  const transport = createMailTransport()
   await transport.sendMail({
     from,
     to: to.trim(),
@@ -105,12 +85,4 @@ export async function sendSellerRejectedEmail({ to, businessName, reason }) {
   })
 
   return { sent: true }
-}
-
-function escapeHtml(s) {
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
 }

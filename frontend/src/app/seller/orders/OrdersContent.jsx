@@ -31,6 +31,17 @@ import {
   mapSellerOrderForOrdersPage,
   SELLER_ORDER_DETAIL_SELECT,
 } from '@/lib/seller/sellerOrderAnalytics'
+import {
+  canCancelUnpaidBooking,
+  canDeclinePaidBooking,
+  fulfillmentStatusFromOrder,
+  fulfillmentStatusLabel,
+  getFulfillmentBlockedReason,
+  getSellerAdvanceAction,
+  getSellerCancellationAction,
+  getTimelineProgressForStatus,
+  hasSellerFulfillmentActions,
+} from '@/lib/orders/fulfillmentTransitions'
 
 const ORDER_STATUSES = [
   { id: 'all', label: 'All Orders' },
@@ -83,19 +94,6 @@ function sellerPaymentBadge(paymentStatus) {
   if (ps === 'refunded') return { label: 'Refunded', badgeClass: styles.badgeRefunded }
   if (ps === 'paid') return { label: 'Paid', badgeClass: styles.badgePaid }
   return { label: 'Pending', badgeClass: styles.badgePending }
-}
-
-function isPaidOrder(order) {
-  return order?.paymentStatus === 'paid'
-}
-
-function canDeclineOrder(order) {
-  return (
-    isPaidOrder(order) &&
-    order?.orderStatus !== 'completed' &&
-    order?.refundStage !== 'requested' &&
-    order?.refundStage !== 'processing'
-  )
 }
 
 function paymentMethodLabel(payment) {
@@ -172,6 +170,30 @@ function orderMatchesSearchQuery(order, rawQuery) {
   ]
   const hay = parts.map((x) => String(x ?? '').toLowerCase()).join(' ')
   return tokens.every((t) => hay.includes(t))
+}
+
+function advanceButtonMeta(status) {
+  switch (status) {
+    case 'in_progress':
+      return {
+        icon: TbTools,
+        iconClass: styles.updateStatusBtnIconInProgress,
+        btnClass: styles.updateStatusBtnInProgress,
+      }
+    case 'completed':
+      return {
+        icon: TbCircleCheck,
+        iconClass: styles.updateStatusBtnIconCompleted,
+        btnClass: styles.updateStatusBtnCompleted,
+      }
+    case 'confirmed':
+    default:
+      return {
+        icon: TbCheck,
+        iconClass: styles.updateStatusBtnIconConfirmed,
+        btnClass: styles.updateStatusBtnConfirmed,
+      }
+  }
 }
 
 function SellerOrdersTableSkeletonBody() {
@@ -268,6 +290,9 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
   const [showUpdateStatus, setShowUpdateStatus] = useState(false)
   const [declineOrder, setDeclineOrder] = useState(null)
   const [declineBusy, setDeclineBusy] = useState(false)
+  const [cancelUnpaidOrder, setCancelUnpaidOrder] = useState(null)
+  const [cancelUnpaidBusy, setCancelUnpaidBusy] = useState(false)
+  const [advanceBusy, setAdvanceBusy] = useState(false)
   const [orders, setOrders] = useState([])
   const [ordersReady, setOrdersReady] = useState(false)
   const [orderNotice, setOrderNotice] = useState(null)
@@ -438,7 +463,10 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
 
     queueMicrotask(() => {
       setSelectedOrder(matchedOrder)
-      if (initialAction === 'process') {
+      if (
+        initialAction === 'process' &&
+        (hasSellerFulfillmentActions(matchedOrder) || canDeclinePaidBooking(matchedOrder))
+      ) {
         setOrderForUpdateStatus(matchedOrder)
         setShowUpdateStatus(true)
       }
@@ -488,34 +516,99 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
     [orders]
   )
 
-  const handleAcceptOrder = async (order) => {
+  const closeAdvanceModal = useCallback(() => {
+    clearOrderDeepLinkParams()
+    setShowUpdateStatus(false)
+    setOrderForUpdateStatus(null)
+  }, [clearOrderDeepLinkParams])
+
+  const handleAdvanceOrder = async (order) => {
+    const action = getSellerAdvanceAction(order)
+    if (!action || advanceBusy) return
+
+    setAdvanceBusy(true)
     try {
-      const res = await fetch('/api/seller/orders/confirm', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId: order.id }),
-      })
-      const body = await res.json().catch(() => null)
-      if (!res.ok) {
-        showOrderNotice('error', body?.error || 'Unable to confirm this order. Please try again.')
-        return
+      if (action.handlerKind === 'confirm') {
+        const res = await fetch('/api/seller/orders/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: order.id }),
+        })
+        const body = await res.json().catch(() => null)
+        if (!res.ok) {
+          showOrderNotice('error', body?.error || 'Unable to confirm this order. Please try again.')
+          return
+        }
+      } else {
+        const res = await fetch('/api/seller/orders/update-fulfillment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: order.id, fulfillment_status: action.status }),
+        })
+        const body = await res.json().catch(() => null)
+        if (!res.ok) {
+          showOrderNotice('error', body?.error || 'Unable to update this order. Please try again.')
+          return
+        }
       }
+
       await loadOrders()
-      setSelectedOrder((prev) => (prev?.id === order.id ? { ...prev, orderStatus: 'confirmed' } : prev))
-      showOrderNotice('success', 'Order confirmed.')
+      setSelectedOrder((prev) => (prev?.id === order.id ? { ...prev, orderStatus: action.status } : prev))
+      closeAdvanceModal()
+      showOrderNotice('success', action.successMessage)
     } catch (err) {
-      showOrderNotice('error', err?.message || 'Network error. Please check your connection and try again.')
+      showOrderNotice('error', err?.message || 'Unable to update this order. Please try again.')
+    } finally {
+      setAdvanceBusy(false)
     }
   }
 
+  const handleAcceptOrder = async (order) => {
+    await handleAdvanceOrder(order)
+  }
+
   const handleDeclineOrder = (order) => {
-    if (!canDeclineOrder(order)) {
+    if (!canDeclinePaidBooking(order)) {
       showOrderNotice('error', 'Only paid non-completed orders can be declined for automatic refund.')
       return
     }
-    setShowUpdateStatus(false)
-    setOrderForUpdateStatus(null)
+    closeAdvanceModal()
     setDeclineOrder(order)
+  }
+
+  const handleCancelUnpaidOrder = (order) => {
+    if (!canCancelUnpaidBooking(order)) {
+      showOrderNotice('error', 'Only unpaid bookings that have not started can be cancelled here.')
+      return
+    }
+    closeAdvanceModal()
+    setCancelUnpaidOrder(order)
+  }
+
+  const handleConfirmCancelUnpaidOrder = async () => {
+    if (!cancelUnpaidOrder || cancelUnpaidBusy) return
+    setCancelUnpaidBusy(true)
+    try {
+      const res = await fetch('/api/seller/orders/update-fulfillment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: cancelUnpaidOrder.id, fulfillment_status: 'cancelled' }),
+      })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) {
+        showOrderNotice('error', body?.error || 'Unable to cancel this booking. Please try again.')
+        return
+      }
+      await loadOrders()
+      setSelectedOrder((prev) => (prev?.id === cancelUnpaidOrder.id ? null : prev))
+      setCancelUnpaidOrder(null)
+      clearOrderDeepLinkParams()
+      showOrderNotice('success', 'Booking cancelled.')
+    } catch (err) {
+      showOrderNotice('error', err?.message || 'Unable to cancel this booking. Please try again.')
+    } finally {
+      setCancelUnpaidBusy(false)
+    }
   }
 
   const handleConfirmDeclineOrder = async () => {
@@ -541,37 +634,6 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
       showOrderNotice('error', err?.message || 'Unable to decline this order. Please try again.')
     } finally {
       setDeclineBusy(false)
-    }
-  }
-
-  const handleUpdateStatus = async (order, newStatus) => {
-    if (newStatus === 'cancelled') {
-      handleDeclineOrder(order)
-      return
-    }
-    try {
-      // Only fulfillment statuses are persisted via the API.
-      if (['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'].includes(newStatus)) {
-        const res = await fetch('/api/seller/orders/update-fulfillment', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId: order.id, fulfillment_status: newStatus }),
-        })
-        if (!res.ok) {
-          const body = await res.json().catch(() => null)
-          showOrderNotice('error', body?.error || 'Unable to update this order. Please try again.')
-          return
-        }
-        await loadOrders()
-      }
-
-      setSelectedOrder((prev) => (prev?.id === order.id ? { ...prev, orderStatus: newStatus } : prev))
-      setShowUpdateStatus(false)
-      setOrderForUpdateStatus(null)
-      clearOrderDeepLinkParams()
-      showOrderNotice('success', 'Order status updated.')
-    } catch (err) {
-      showOrderNotice('error', err?.message || 'Unable to update this order. Please try again.')
     }
   }
 
@@ -675,26 +737,16 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
     }
   }
 
-  const getTimelineProgress = (order) => {
-    const rankByStatus = {
-      pending: 0,
-      confirmed: 1,
-      in_progress: 3,
-      completed: 4,
-      cancelled: 0,
-      refunded: 0,
-    }
-    const rank = rankByStatus[order?.orderStatus] ?? 0
-    return {
-      received: true,
-      confirmed: rank >= 1,
-      preparation: rank >= 2,
-      ongoing: rank >= 3,
-      completed: rank >= 4,
-    }
-  }
-
-  const timelineProgress = selectedOrder ? getTimelineProgress(selectedOrder) : {}
+  const timelineProgress = selectedOrder
+    ? getTimelineProgressForStatus(fulfillmentStatusFromOrder(selectedOrder))
+    : {}
+  const advanceOrderAction = orderForUpdateStatus ? getSellerAdvanceAction(orderForUpdateStatus) : null
+  const cancellationOrderAction = orderForUpdateStatus
+    ? getSellerCancellationAction(orderForUpdateStatus)
+    : null
+  const advanceBlockedReason = orderForUpdateStatus
+    ? getFulfillmentBlockedReason(orderForUpdateStatus)
+    : null
   const selectedPaymentBadge = selectedOrder
     ? sellerPaymentBadge(selectedOrder.paymentStatus)
     : null
@@ -1039,7 +1091,7 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
                       >
                         <TbEye size={16} />
                       </button>
-                      {order.orderStatus === 'pending' && order.paymentStatus === 'paid' && (
+                      {getSellerAdvanceAction(order)?.handlerKind === 'confirm' && (
                         <button
                           type="button"
                           className={`${styles.btnIcon} ${styles.btnIconAccept} ${styles.hideOnMobile}`}
@@ -1049,7 +1101,7 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
                           <TbCheck size={16} />
                         </button>
                       )}
-                      {canDeclineOrder(order) && (
+                      {canDeclinePaidBooking(order) && (
                         <button
                           type="button"
                           className={`${styles.btnIcon} ${styles.btnIconDecline} ${styles.hideOnMobile}`}
@@ -1059,17 +1111,19 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
                           <TbCircleX size={16} />
                         </button>
                       )}
-                      <button
-                        type="button"
-                        className={`${styles.btnIcon} ${styles.btnIconUpdate}`}
-                        onClick={() => {
-                          setOrderForUpdateStatus(order)
-                          setShowUpdateStatus(true)
-                        }}
-                        title="Edit"
-                      >
-                        <TbEdit size={16} />
-                      </button>
+                      {hasSellerFulfillmentActions(order) && (
+                        <button
+                          type="button"
+                          className={`${styles.btnIcon} ${styles.btnIconUpdate}`}
+                          onClick={() => {
+                            setOrderForUpdateStatus(order)
+                            setShowUpdateStatus(true)
+                          }}
+                          title="Advance order"
+                        >
+                          <TbEdit size={16} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -1105,6 +1159,7 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
                   clearOrderDeepLinkParams()
                   setSelectedOrder(null)
                   setShowUpdateStatus(false)
+                  setOrderForUpdateStatus(null)
                 }}
                 aria-label="Close"
               >
@@ -1411,8 +1466,17 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
               </div>
 
               <div className={styles.modalActions}>
-                {selectedOrder.orderStatus !== 'completed' && selectedOrder.orderStatus !== 'cancelled' && (
-                  <button type="button" className={`${styles.btnText} ${styles.btnUpdateStatus}`} onClick={() => { setOrderForUpdateStatus(selectedOrder); setShowUpdateStatus(true) }}>Update status</button>
+                {(hasSellerFulfillmentActions(selectedOrder) || canDeclinePaidBooking(selectedOrder)) && (
+                  <button
+                    type="button"
+                    className={`${styles.btnText} ${styles.btnUpdateStatus}`}
+                    onClick={() => {
+                      setOrderForUpdateStatus(selectedOrder)
+                      setShowUpdateStatus(true)
+                    }}
+                  >
+                    Advance order
+                  </button>
                 )}
               </div>
             </div>
@@ -1423,26 +1487,21 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
       {showUpdateStatus && orderForUpdateStatus && (
         <div
           className={styles.updateStatusWrap}
-          onClick={() => {
-            clearOrderDeepLinkParams()
-            setShowUpdateStatus(false)
-            setOrderForUpdateStatus(null)
-          }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="advance-order-title"
+          onClick={closeAdvanceModal}
         >
           <div
             className={styles.updateStatusCard}
             onClick={(e) => e.stopPropagation()}
           >
             <div className={styles.updateStatusHeader}>
-              <h2 className={styles.updateStatusTitle}>Update order status</h2>
+              <h2 id="advance-order-title" className={styles.updateStatusTitle}>Advance order</h2>
               <button
                 type="button"
                 className={styles.modalClose}
-                onClick={() => {
-                  clearOrderDeepLinkParams()
-                  setShowUpdateStatus(false)
-                  setOrderForUpdateStatus(null)
-                }}
+                onClick={closeAdvanceModal}
                 aria-label="Close"
               >
                 <TbX size={22} />
@@ -1450,35 +1509,117 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
             </div>
             <div className={styles.updateStatusBody}>
               <p className={styles.updateStatusPrompt}>
-                Choose new status for order <span className={styles.updateStatusOrderId}>{orderForUpdateStatus.id}</span>.
+                Next step for order{' '}
+                <span className={styles.updateStatusOrderId}>
+                  {orderForUpdateStatus.displayId || orderForUpdateStatus.id}
+                </span>
+                .
               </p>
-              <div className={styles.updateStatusOptions}>
-                {[
-                  { status: 'confirmed', label: 'Confirm', icon: TbCheck, iconClass: styles.updateStatusBtnIconConfirmed, btnClass: styles.updateStatusBtnConfirmed },
-                  { status: 'in_progress', label: 'In progress', icon: TbTools, iconClass: styles.updateStatusBtnIconInProgress, btnClass: styles.updateStatusBtnInProgress },
-                  { status: 'completed', label: 'Completed', icon: TbCircleCheck, iconClass: styles.updateStatusBtnIconCompleted, btnClass: styles.updateStatusBtnCompleted },
-                  { status: 'cancelled', label: 'Decline', icon: TbCircleX, iconClass: styles.updateStatusBtnIconDecline, btnClass: styles.updateStatusBtnDecline },
-                ]
-                  .filter((option) => option.status !== 'cancelled' || canDeclineOrder(orderForUpdateStatus))
-                  .map(({ status, label, icon: Icon, iconClass, btnClass }) => (
-                  <button
-                    key={status}
-                    type="button"
-                    className={`${styles.updateStatusBtn} ${btnClass}`}
-                    onClick={() => handleUpdateStatus(orderForUpdateStatus, status)}
-                  >
-                    <span className={`${styles.updateStatusBtnIcon} ${iconClass}`}>
-                      <Icon size={18} />
-                    </span>
-                    <span className={styles.updateStatusBtnLabel}>{label}</span>
-                  </button>
-                ))}
-              </div>
-              {canDeclineOrder(orderForUpdateStatus) ? (
-                <p className={styles.updateStatusNote}>
-                  Declining this paid order will cancel the booking, refund the buyer, and prevent seller payout.
-                </p>
+              <p className={styles.updateStatusCurrent}>
+                Current: {fulfillmentStatusLabel(fulfillmentStatusFromOrder(orderForUpdateStatus))}
+              </p>
+              {advanceOrderAction ? (
+                <div className={styles.updateStatusOptions}>
+                  {(() => {
+                    const { icon: AdvanceIcon, iconClass, btnClass } = advanceButtonMeta(advanceOrderAction.status)
+                    return (
+                      <button
+                        type="button"
+                        className={`${styles.updateStatusBtn} ${btnClass}`}
+                        onClick={() => handleAdvanceOrder(orderForUpdateStatus)}
+                        disabled={advanceBusy}
+                      >
+                        <span className={`${styles.updateStatusBtnIcon} ${iconClass}`}>
+                          <AdvanceIcon size={18} />
+                        </span>
+                        <span className={styles.updateStatusBtnLabel}>{advanceOrderAction.label}</span>
+                      </button>
+                    )
+                  })()}
+                  <p className={styles.updateStatusActionNote}>{advanceOrderAction.description}</p>
+                </div>
+              ) : advanceBlockedReason ? (
+                <p className={styles.updateStatusBlockedNote}>{advanceBlockedReason}</p>
               ) : null}
+              {cancellationOrderAction ? (
+                <>
+                  <div className={styles.updateStatusSectionDivider} aria-hidden />
+                  <div className={styles.updateStatusOptions}>
+                    <button
+                      type="button"
+                      className={`${styles.updateStatusBtn} ${styles.updateStatusBtnDecline}`}
+                      onClick={() =>
+                        cancellationOrderAction.kind === 'declinePaid'
+                          ? handleDeclineOrder(orderForUpdateStatus)
+                          : handleCancelUnpaidOrder(orderForUpdateStatus)
+                      }
+                      disabled={advanceBusy}
+                    >
+                      <span className={`${styles.updateStatusBtnIcon} ${styles.updateStatusBtnIconDecline}`}>
+                        <TbCircleX size={18} />
+                      </span>
+                      <span className={styles.updateStatusBtnLabel}>{cancellationOrderAction.label}</span>
+                    </button>
+                    <p className={styles.updateStatusNote}>{cancellationOrderAction.description}</p>
+                  </div>
+                </>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cancelUnpaidOrder && (
+        <div
+          className={styles.updateStatusWrap}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cancel-unpaid-order-title"
+          onClick={() => {
+            if (!cancelUnpaidBusy) setCancelUnpaidOrder(null)
+          }}
+        >
+          <div className={styles.updateStatusCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.updateStatusHeader}>
+              <h2 id="cancel-unpaid-order-title" className={styles.updateStatusTitle}>
+                Cancel booking
+              </h2>
+              <button
+                type="button"
+                className={styles.modalClose}
+                onClick={() => setCancelUnpaidOrder(null)}
+                disabled={cancelUnpaidBusy}
+                aria-label="Close"
+              >
+                <TbX size={22} />
+              </button>
+            </div>
+            <div className={styles.updateStatusBody}>
+              <p className={styles.updateStatusPrompt}>
+                Cancel unpaid booking{' '}
+                <span className={styles.updateStatusOrderId}>
+                  {cancelUnpaidOrder.displayId || cancelUnpaidOrder.id}
+                </span>
+                ? No refund is required because payment has not been completed.
+              </p>
+              <div className={styles.declineConfirmActions}>
+                <button
+                  type="button"
+                  className={styles.declineConfirmSecondary}
+                  onClick={() => setCancelUnpaidOrder(null)}
+                  disabled={cancelUnpaidBusy}
+                >
+                  Keep booking
+                </button>
+                <button
+                  type="button"
+                  className={styles.declineConfirmDanger}
+                  onClick={handleConfirmCancelUnpaidOrder}
+                  disabled={cancelUnpaidBusy}
+                >
+                  {cancelUnpaidBusy ? 'Cancelling...' : 'Cancel booking'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

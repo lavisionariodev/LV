@@ -923,9 +923,16 @@ function SellerProfileLoading() {
  * No dedicated Next.js `/api/**` route is required for this page.
  */
 export default function SellerProfilePage() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const sellerParam = searchParams.get('seller')?.trim()
   const realSellerId = isUuidLike(sellerParam) ? sellerParam : null
+
+  useEffect(() => {
+    if (!realSellerId) {
+      router.replace('/partners')
+    }
+  }, [realSellerId, router])
 
   /** All seller fetch state in one object so a single setState resets/updates atomically.
    *  This avoids calling multiple setStates synchronously in an effect body
@@ -1033,9 +1040,6 @@ export default function SellerProfilePage() {
   }, [realSellerId, shopRowsForSeller])
 
   const resolved = useMemo(() => {
-    if (!realSellerId) {
-      return { seller: SAMPLE_SELLER, listings: SAMPLE_LISTINGS, reviews: SAMPLE_REVIEWS }
-    }
     const aggregates = sellerReviewsPayload?.aggregates ?? {}
     const avgRating = aggregates?.avgRating ?? null
     const reviewCount = Number(aggregates?.reviewCount ?? 0) || 0
@@ -1064,7 +1068,11 @@ export default function SellerProfilePage() {
     pairAggregates,
   ])
 
-  if (realSellerId && loading) {
+  if (!realSellerId) {
+    return null
+  }
+
+  if (loading) {
     return <SellerProfileLoading />
   }
 
