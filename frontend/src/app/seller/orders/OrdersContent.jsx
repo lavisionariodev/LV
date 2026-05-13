@@ -463,7 +463,10 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
 
     queueMicrotask(() => {
       setSelectedOrder(matchedOrder)
-      if (initialAction === 'process') {
+      if (
+        initialAction === 'process' &&
+        (hasSellerFulfillmentActions(matchedOrder) || canDeclinePaidBooking(matchedOrder))
+      ) {
         setOrderForUpdateStatus(matchedOrder)
         setShowUpdateStatus(true)
       }
@@ -1088,7 +1091,7 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
                       >
                         <TbEye size={16} />
                       </button>
-                      {order.orderStatus === 'pending' && order.paymentStatus === 'paid' && (
+                      {getSellerAdvanceAction(order)?.handlerKind === 'confirm' && (
                         <button
                           type="button"
                           className={`${styles.btnIcon} ${styles.btnIconAccept} ${styles.hideOnMobile}`}
@@ -1156,6 +1159,7 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
                   clearOrderDeepLinkParams()
                   setSelectedOrder(null)
                   setShowUpdateStatus(false)
+                  setOrderForUpdateStatus(null)
                 }}
                 aria-label="Close"
               >
@@ -1483,6 +1487,9 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
       {showUpdateStatus && orderForUpdateStatus && (
         <div
           className={styles.updateStatusWrap}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="advance-order-title"
           onClick={closeAdvanceModal}
         >
           <div
@@ -1490,7 +1497,7 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className={styles.updateStatusHeader}>
-              <h2 className={styles.updateStatusTitle}>Advance order</h2>
+              <h2 id="advance-order-title" className={styles.updateStatusTitle}>Advance order</h2>
               <button
                 type="button"
                 className={styles.modalClose}
