@@ -6,7 +6,7 @@
  import styles from "./checkout.module.css"
 import { useCart } from "@/contexts/CartContext"
 import { getUser } from "@/lib/auth/session"
-import { getUserRole, ROLE_BUYER } from "@/lib/auth/roles"
+import { getBuyerAccountStatus, ROLE_BUYER } from "@/lib/auth/roles"
 import { formatPhpAmount } from "@/lib/cart/formatPhp"
 import { supabase } from "@/lib/supabase/client"
 
@@ -17,6 +17,7 @@ import { supabase } from "@/lib/supabase/client"
   const [loadingUser, setLoadingUser] = useState(true)
   const [user, setUser] = useState(null)
   const [isBuyerRole, setIsBuyerRole] = useState(false)
+  const [buyerSuspended, setBuyerSuspended] = useState(false)
   const [profile, setProfile] = useState(null)
   const [contactName, setContactName] = useState("")
   const [contactEmail, setContactEmail] = useState("")
@@ -39,9 +40,10 @@ import { supabase } from "@/lib/supabase/client"
         router.replace("/buyer/login?redirect=/checkout")
         return
       }
-      const role = await getUserRole(currentUser.id)
+      const { role, status } = await getBuyerAccountStatus(currentUser.id)
       setUser(currentUser)
       setIsBuyerRole(role === ROLE_BUYER)
+      setBuyerSuspended(role === ROLE_BUYER && status === 'suspended')
       setContactEmail(currentUser.email || "")
 
       const { data: profileRow } = await supabase
@@ -100,6 +102,19 @@ import { supabase } from "@/lib/supabase/client"
   if (user && !isBuyerRole) {
     router.replace('/buyer/login?redirect=/checkout')
     return null
+  }
+
+  if (buyerSuspended) {
+    return (
+      <main className={styles.checkoutPage}>
+        <div className={styles.centeredBox}>
+          <p className={styles.muted}>
+            Your buyer account has been suspended. Please contact support if you believe this is in error.
+          </p>
+          <Link href="/" className={styles.crumb}>Back to homepage</Link>
+        </div>
+      </main>
+    )
   }
 
   const hasScopedItemsParam = Boolean(searchParams.get("items")?.trim())

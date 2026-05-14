@@ -4,6 +4,7 @@ import { getAppBaseUrl } from '@/lib/email/appBaseUrl'
 import { sendSellerApprovedEmail } from '@/lib/email/sendSellerApprovedEmail'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { sendEmailIfAllowed } from '@/lib/notifications/emailServer'
+import { requireAdminApiUser } from '@/lib/auth/requireAdminRoute'
 
 const ALLOWED = new Set(['pending', 'active', 'suspended'])
 
@@ -25,29 +26,10 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: 'Invalid status.' }, { status: 400 })
   }
 
+  const { responseError } = await requireAdminApiUser()
+  if (responseError) return responseError
+
   const supabase = await createClient()
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 })
-  }
-
-  const { data: adminRow, error: adminErr } = await supabase
-    .from('admins')
-    .select('id')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  if (adminErr) {
-    return NextResponse.json({ error: adminErr.message || 'Failed to verify admin.' }, { status: 500 })
-  }
-  if (!adminRow) {
-    return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
-  }
 
   const { data: before, error: fetchErr } = await supabase
     .from('sellers')

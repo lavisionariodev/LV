@@ -203,6 +203,7 @@ export async function upsertSellerForUser(user, payload) {
     return { data: null, error: 'Missing user' };
   }
 
+  // Compliance uploads use `seller_documents` (see sellerDocuments.js), not this sellers row.
   const { data: existing } = await supabase
     .from('sellers')
     .select('*')
@@ -295,8 +296,6 @@ export async function upsertSellerForUser(user, payload) {
     social_links: socialLinks,
     cover_photo_url: coverPhotoUrl,
     turnaround,
-    // documents field is not yet in schema (future update)
-    // documents: payload.documents || null,
   };
 
   if (existing?.status === 'rejected' && status === 'pending') {

@@ -278,7 +278,7 @@ export function AdminBillingSettingsPanel({ variant = 'default' }) {
                     aria-hidden
                   />
                 ) : editingRate ? (
-                  <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+                  <span className={styles.billingInlineActions}>
                     <input
                       type="number"
                       min="0"
@@ -286,14 +286,14 @@ export function AdminBillingSettingsPanel({ variant = 'default' }) {
                       step="0.5"
                       value={rateInput}
                       onChange={(e) => setRateInput(e.target.value)}
-                      style={{ width: 80, padding: '4px 8px' }}
+                      className={styles.billingInlineInput}
                     />
                     <span>%</span>
                     <button
                       type="button"
                       onClick={saveRate}
                       disabled={rateBusy}
-                      className={styles.billingCta}
+                      className={styles.primaryBtn}
                     >
                       {rateBusy ? 'Saving…' : 'Save'}
                     </button>
@@ -304,23 +304,21 @@ export function AdminBillingSettingsPanel({ variant = 'default' }) {
                         setRateError('')
                       }}
                       disabled={rateBusy}
-                      className={styles.billingCta}
-                      style={{ background: 'transparent', color: '#475569' }}
+                      className={styles.secondaryBtn}
                     >
                       Cancel
                     </button>
                     {rateError ? (
-                      <span style={{ color: '#b91c1c', marginLeft: 4 }}>{rateError}</span>
+                      <span className={styles.billingInlineError}>{rateError}</span>
                     ) : null}
                   </span>
                 ) : (
-                  <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+                  <span className={styles.billingInlineActions}>
                     {`${defaultCommissionPercent}%`}
                     <button
                       type="button"
                       onClick={startEditRate}
-                      className={styles.billingCta}
-                      style={{ padding: '2px 8px', fontSize: 12 }}
+                      className={styles.secondaryBtn}
                     >
                       Edit
                     </button>
@@ -370,19 +368,19 @@ export function AdminBillingSettingsPanel({ variant = 'default' }) {
             etc.).
           </p>
           {editingSettlement ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className={styles.billingEditBlock}>
               <textarea
                 value={settlementDraft}
                 onChange={(e) => setSettlementDraft(e.target.value)}
                 rows={4}
-                style={{ width: '100%', padding: 8 }}
+                className={styles.settingsFieldTextarea}
               />
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div className={styles.billingActions}>
                 <button
                   type="button"
                   onClick={saveSettlement}
                   disabled={panelBusy}
-                  className={styles.billingCta}
+                  className={styles.primaryBtn}
                 >
                   {panelBusy ? 'Saving…' : 'Save'}
                 </button>
@@ -390,8 +388,7 @@ export function AdminBillingSettingsPanel({ variant = 'default' }) {
                   type="button"
                   onClick={() => setEditingSettlement(false)}
                   disabled={panelBusy}
-                  className={styles.billingCta}
-                  style={{ background: 'transparent', color: '#475569' }}
+                  className={styles.secondaryBtn}
                 >
                   Cancel
                 </button>
@@ -399,29 +396,31 @@ export function AdminBillingSettingsPanel({ variant = 'default' }) {
             </div>
           ) : hasSettlement ? (
             <>
-              <p style={{ whiteSpace: 'pre-wrap' }}>{row.settlement_notes}</p>
-              <button
-                type="button"
-                onClick={startEditSettlement}
-                className={styles.billingCta}
-                style={{ padding: '4px 10px', fontSize: 12 }}
-              >
-                Edit settlement notes
-              </button>
+              <p className={styles.billingNotes}>{row.settlement_notes}</p>
+              <div className={styles.billingActions}>
+                <button
+                  type="button"
+                  onClick={startEditSettlement}
+                  className={styles.secondaryBtn}
+                >
+                  Edit settlement notes
+                </button>
+              </div>
             </>
           ) : (
             <>
               <div className={styles.billingPlaceholder} role="status">
                 Not configured yet
               </div>
-              <button
-                type="button"
-                onClick={startEditSettlement}
-                className={styles.billingCta}
-                style={{ padding: '4px 10px', fontSize: 12 }}
-              >
-                Add settlement notes
-              </button>
+              <div className={styles.billingActions}>
+                <button
+                  type="button"
+                  onClick={startEditSettlement}
+                  className={styles.primaryBtn}
+                >
+                  Add settlement notes
+                </button>
+              </div>
             </>
           )}
           <Link href="/admin/payouts" className={styles.billingCta}>
@@ -435,55 +434,55 @@ export function AdminBillingSettingsPanel({ variant = 'default' }) {
             Registered business name, address, tax ID, and billing contact for official documents.
           </p>
           {editingLegal ? (
-            <div style={{ display: 'grid', gap: 8 }}>
-              <label style={{ display: 'grid', gap: 4 }}>
-                <span style={{ fontSize: 12, color: '#475569' }}>Legal name</span>
+            <div className={styles.billingEditBlock}>
+              <label className={styles.billingField}>
+                <span className={styles.billingFieldLabel}>Legal name</span>
                 <input
                   value={legalDraft.legalName}
                   onChange={(e) =>
                     setLegalDraft((p) => ({ ...p, legalName: e.target.value }))
                   }
-                  style={{ padding: '6px 10px' }}
+                  className={styles.settingsFieldInput}
                 />
               </label>
-              <label style={{ display: 'grid', gap: 4 }}>
-                <span style={{ fontSize: 12, color: '#475569' }}>Address</span>
+              <label className={styles.billingField}>
+                <span className={styles.billingFieldLabel}>Address</span>
                 <textarea
                   value={legalDraft.address}
                   onChange={(e) =>
                     setLegalDraft((p) => ({ ...p, address: e.target.value }))
                   }
                   rows={2}
-                  style={{ padding: '6px 10px' }}
+                  className={styles.settingsFieldTextarea}
                 />
               </label>
-              <label style={{ display: 'grid', gap: 4 }}>
-                <span style={{ fontSize: 12, color: '#475569' }}>Tax ID</span>
+              <label className={styles.billingField}>
+                <span className={styles.billingFieldLabel}>Tax ID</span>
                 <input
                   value={legalDraft.taxId}
                   onChange={(e) =>
                     setLegalDraft((p) => ({ ...p, taxId: e.target.value }))
                   }
-                  style={{ padding: '6px 10px' }}
+                  className={styles.settingsFieldInput}
                 />
               </label>
-              <label style={{ display: 'grid', gap: 4 }}>
-                <span style={{ fontSize: 12, color: '#475569' }}>Billing email</span>
+              <label className={styles.billingField}>
+                <span className={styles.billingFieldLabel}>Billing email</span>
                 <input
                   type="email"
                   value={legalDraft.billingEmail}
                   onChange={(e) =>
                     setLegalDraft((p) => ({ ...p, billingEmail: e.target.value }))
                   }
-                  style={{ padding: '6px 10px' }}
+                  className={styles.settingsFieldInput}
                 />
               </label>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div className={styles.billingActions}>
                 <button
                   type="button"
                   onClick={saveLegal}
                   disabled={panelBusy}
-                  className={styles.billingCta}
+                  className={styles.primaryBtn}
                 >
                   {panelBusy ? 'Saving…' : 'Save'}
                 </button>
@@ -491,8 +490,7 @@ export function AdminBillingSettingsPanel({ variant = 'default' }) {
                   type="button"
                   onClick={() => setEditingLegal(false)}
                   disabled={panelBusy}
-                  className={styles.billingCta}
-                  style={{ background: 'transparent', color: '#475569' }}
+                  className={styles.secondaryBtn}
                 >
                   Cancel
                 </button>
@@ -507,7 +505,7 @@ export function AdminBillingSettingsPanel({ variant = 'default' }) {
                 </div>
                 <div className={styles.billingDlRow}>
                   <dt>Address</dt>
-                  <dd style={{ whiteSpace: 'pre-wrap' }}>{row.address || '—'}</dd>
+                  <dd className={styles.billingNotes}>{row.address || '—'}</dd>
                 </div>
                 <div className={styles.billingDlRow}>
                   <dt>Tax ID</dt>
@@ -518,28 +516,30 @@ export function AdminBillingSettingsPanel({ variant = 'default' }) {
                   <dd>{row.billing_email || '—'}</dd>
                 </div>
               </dl>
-              <button
-                type="button"
-                onClick={startEditLegal}
-                className={styles.billingCta}
-                style={{ padding: '4px 10px', fontSize: 12 }}
-              >
-                Edit legal details
-              </button>
+              <div className={styles.billingActions}>
+                <button
+                  type="button"
+                  onClick={startEditLegal}
+                  className={styles.secondaryBtn}
+                >
+                  Edit legal details
+                </button>
+              </div>
             </>
           ) : (
             <>
               <div className={styles.billingPlaceholder} role="status">
                 Not configured yet — stored data will appear here after setup.
               </div>
-              <button
-                type="button"
-                onClick={startEditLegal}
-                className={styles.billingCta}
-                style={{ padding: '4px 10px', fontSize: 12 }}
-              >
-                Configure legal details
-              </button>
+              <div className={styles.billingActions}>
+                <button
+                  type="button"
+                  onClick={startEditLegal}
+                  className={styles.primaryBtn}
+                >
+                  Configure legal details
+                </button>
+              </div>
             </>
           )}
         </div>
@@ -1284,17 +1284,31 @@ export function AdminSiteContentPanel({
     </>
   )
 
-  const renderSellerHelpFaq = () => (
-    <SettingsRow
-      title="Seller help FAQ"
-      description="CMS-managed seller help categories and questions. Leave empty to use built-in defaults."
-      titleEnd={mobileEditBtn('Edit seller help FAQ', { kind: 'sellerHelpFaq' })}
-    >
+  const renderSellerHelpFaq = () => {
+    const sellerHelpFaqEditBtn = mobileEditBtn('Edit seller help FAQ', { kind: 'sellerHelpFaq' })
+    const sellerHelpFaqSummary = (
       <div className={styles.settingsMobileValue}>
         {(draft.sellerHelpFaq ?? []).length} categories configured
       </div>
-    </SettingsRow>
-  )
+    )
+
+    return (
+      <SettingsRow
+        title="Seller help FAQ"
+        description="CMS-managed seller help categories and questions. Leave empty to use built-in defaults."
+        titleEnd={isMobile ? sellerHelpFaqEditBtn : null}
+      >
+        {isMobile ? (
+          sellerHelpFaqSummary
+        ) : (
+          <div className={styles.settingsSellerFaqDesktopRow}>
+            {sellerHelpFaqSummary}
+            {sellerHelpFaqEditBtn}
+          </div>
+        )}
+      </SettingsRow>
+    )
+  }
 
   const modalMeta = (() => {
     if (!modal) return null

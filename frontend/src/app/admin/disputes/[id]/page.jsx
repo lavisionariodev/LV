@@ -17,6 +17,12 @@ const STATUS_LABELS = {
 }
 
 const DISPUTE_STAGE_ORDER = { open: 0, under_review: 1, resolved: 2, closed: 3 }
+const CLOSE_STATUSES = new Set(['resolved', 'closed'])
+const OUTCOME_OPTIONS = [
+  { value: 'continue_service', label: 'Continue service (lift dispute hold, no refund)' },
+  { value: 'refund_buyer', label: 'Refund buyer (hold escrow and start refund)' },
+  { value: 'no_financial_change', label: 'Close with no financial change' },
+]
 
 function disputeStatusConfirmVariant(current, next) {
   if (!current || !next || current === next) return 'warning'
@@ -116,6 +122,7 @@ export default function AdminDisputeDetailPage() {
   const [resolutionNotes, setResolutionNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [statusChangeConfirm, setStatusChangeConfirm] = useState(null)
+  const [closeOutcome, setCloseOutcome] = useState('no_financial_change')
   const [events, setEvents] = useState([])
   const [eventsLoading, setEventsLoading] = useState(false)
 
@@ -166,17 +173,21 @@ export default function AdminDisputeDetailPage() {
       : []
   }, [dispute])
 
-  async function savePatch(nextStatus) {
+  async function savePatch(nextStatus, outcome) {
     if (!id) return
     setSaving(true)
     try {
+      const payload = {
+        status: nextStatus,
+        resolutionNotes: resolutionNotes.trim() || null,
+      }
+      if (CLOSE_STATUSES.has(nextStatus)) {
+        payload.outcome = outcome || closeOutcome
+      }
       const res = await fetch(`/api/admin/disputes/${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          status: nextStatus,
-          resolutionNotes: resolutionNotes.trim() || null,
-        }),
+        body: JSON.stringify(payload),
       })
       const body = await res.json().catch(() => null)
       if (!res.ok) {
@@ -325,9 +336,11 @@ export default function AdminDisputeDetailPage() {
                 <span className={styles.value}>{dispute.openedAt}</span>
               </div>
               <div className={styles.field}>
-                <span className={styles.label}>Order payment</span>
+                <span className={styles.label}>Order money</span>
                 <span className={styles.value}>
-                  {dispute.orderPaymentStatus || '—'} · fulfillment {dispute.orderFulfillment || '—'}
+                  Payment {dispute.orderPaymentStatus || '—'} · fulfillment {dispute.orderFulfillment || '—'}
+                  {dispute.orderRefundStatus ? ` · refund ${dispute.orderRefundStatus}` : ''}
+                  {dispute.orderEscrowStatus ? ` · escrow ${dispute.orderEscrowStatus}` : ''}
                 </span>
               </div>
               <div className={styles.field}>
@@ -620,7 +633,9 @@ export default function AdminDisputeDetailPage() {
               </button>
             )}
           </div>
-          <p className={styles.demoHint}>Status changes require confirmation. Admin access only.</p>
+          <p className={styles.demoHint}>
+            Resolving or closing a case requires a financial outcome. Sellers cannot clear escrow or issue refunds.
+          </p>
         </div>
 
         <hr className={styles.divider} />
@@ -642,7 +657,9 @@ export default function AdminDisputeDetailPage() {
         title="Change dispute status?"
         message={
           statusChangeConfirm?.next
-            ? `Set this dispute to "${STATUS_LABELS[statusChangeConfirm.next] ?? statusChangeConfirm.next}"? Resolution notes (if any) will be saved with this update.`
+            ? CLOSE_STATUSES.has(statusChangeConfirm.next)
+              ? `Set this dispute to "${STATUS_LABELS[statusChangeConfirm.next] ?? statusChangeConfirm.next}" and apply the selected financial outcome. Resolution notes (if any) will be saved with this update.`
+              : `Set this dispute to "${STATUS_LABELS[statusChangeConfirm.next] ?? statusChangeConfirm.next}"? Resolution notes (if any) will be saved with this update.`
             : ''
         }
         confirmLabel="Save status"
@@ -657,9 +674,28 @@ export default function AdminDisputeDetailPage() {
         onConfirm={async () => {
           if (!statusChangeConfirm) return
           const next = statusChangeConfirm.next
-          await savePatch(next)
+          await savePatch(next, closeOutcome)
           setStatusChangeConfirm(null)
         }}
+        extra={
+          statusChangeConfirm?.next && CLOSE_STATUSES.has(statusChangeConfirm.next) ? (
+            <label style={{ display: 'block', marginTop: 4, fontSize: 13 }}>
+              <span style={{ display: 'block', marginBottom: 6, fontWeight: 600 }}>Financial outcome</span>
+              <select
+                value={closeOutcome}
+                onChange={(e) => setCloseOutcome(e.target.value)}
+                disabled={saving}
+                style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #d4d4d8' }}
+              >
+                {OUTCOME_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null
+        }
       />
     </div>
   )

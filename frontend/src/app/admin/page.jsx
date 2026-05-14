@@ -142,7 +142,7 @@ export default function AdminDashboardPage() {
           const msg =
             typeof body?.error === 'string'
               ? body.error
-              : 'Could not load dashboard metrics. Figures below may be incomplete.'
+              : "Couldn't load dashboard metrics."
           setMetricsError(msg)
           return
         }
@@ -160,9 +160,7 @@ export default function AdminDashboardPage() {
           setRecentActivityRows(body.recentActivity.slice(0, RECENT_ACTIVITY_LIMIT))
       } catch {
         if (!cancelled) {
-          setMetricsError(
-            'Could not load dashboard metrics. Check your connection and try again.',
-          )
+          setMetricsError("Couldn't load dashboard metrics. Check your connection and try again.")
         }
       }
     }
@@ -362,6 +360,8 @@ export default function AdminDashboardPage() {
     )
   }
 
+  const metricsReady = !metricsError
+
   return (
     <div className={styles.dashWrap}>
       {metricsError ? (
@@ -406,6 +406,7 @@ export default function AdminDashboardPage() {
       </section>
 
       {/* Desktop-only: charts (left) + stat cards (right) side by side */}
+      {metricsReady ? (
       <div className={`${styles.desktopDashGrid} ${styles.homeDesktopOnly}`}>
 
         {/* LEFT — two charts stacked */}
@@ -510,7 +511,8 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-      </div>{/* end desktopDashGrid */}
+      </div>
+      ) : null}
 
       {/* Mobile-first home hub */}
       <section className={styles.quickLinks}>
@@ -554,7 +556,9 @@ export default function AdminDashboardPage() {
               {greetingName ? `Welcome back, ${greetingName}` : 'Welcome back'}
             </p>
             <p className={styles.mobileHeroBalanceValue}>
-              {formatPHPMobile(payoutMetrics.platformRevenue30d)} Revenue
+              {metricsReady
+                ? `${formatPHPMobile(payoutMetrics.platformRevenue30d)} Revenue`
+                : '—'}
             </p>
             <p className={styles.mobileHeroBalanceSub}>
               <span className={styles.mobileHeroOnlineDot} />
@@ -684,6 +688,7 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Mobile stat cards (dashboard only) */}
+          {metricsReady ? (
           <div className={styles.mobileStatsGrid} aria-label="Admin stats">
             {MOBILE_STAT_CARDS.map(({ id, title, value, subtitle, icon: Icon, href, actionLabel, format }) => (
               <Link key={id} href={href} className={styles.mobileStatCard}>
@@ -717,12 +722,14 @@ export default function AdminDashboardPage() {
               </Link>
             ))}
           </div>
+          ) : null}
 
         </div>{/* end mobileBody */}
 
       </section>
 
       {/* Desktop-only recent activity and quick actions */}
+      {metricsReady ? (
       <section className={`${styles.lowerGrid} ${styles.homeDesktopOnly}`}>
         <div className={styles.panel}>
           <div className={styles.panelHead}>
@@ -786,8 +793,10 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       </section>
+      ) : null}
 
       {/* Mobile-only recent activity (no quick actions) */}
+      {metricsReady ? (
       <section className={styles.recentMobile}>
         <div className={styles.panel}>
           <div className={styles.panelHead}>
@@ -825,6 +834,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       </section>
+      ) : null}
     </div>
   )
 }

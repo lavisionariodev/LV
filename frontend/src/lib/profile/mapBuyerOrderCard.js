@@ -115,7 +115,7 @@ export function paymentSummaryLine(pd) {
  * @param {Array<{ id?: string; order_id: string; product_id?: string; name: string; quantity?: number; price?: number }>} orderItems
  * @param {string} [providerDisplayName] from seller-names API
  */
-export function mapBuyerOrderCard(o, orderItems, providerDisplayName) {
+export function mapBuyerOrderCard(o, orderItems, providerDisplayName, disputeStatus) {
   const fulfillment = o.fulfillment_status || 'pending'
   const refundRsRaw = o.refund_status == null ? null : String(o.refund_status)
 
@@ -242,7 +242,8 @@ export function mapBuyerOrderCard(o, orderItems, providerDisplayName) {
     canSubmitCancelPurchase,
     cancelPurchaseHint,
     cancelShowsRefundDisclaimer,
-    showOpenDispute,
+    showOpenDispute: showOpenDispute && !disputeStatus,
+    disputeStatus: disputeStatus ? String(disputeStatus) : null,
     detail: {
       serviceLocation: pickStr(o.service_location),
       contactName: pickStr(o.contact_name),

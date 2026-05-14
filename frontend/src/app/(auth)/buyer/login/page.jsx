@@ -11,7 +11,7 @@ import ForgotPasswordModal from '@/components/ui/Modal/ForgotPasswordModal';
 import { useAuthToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase/client';
 import { isAdmin } from '@/lib/auth/admin';
-import { getUserRole, ROLE_BUYER } from '@/lib/auth/roles';
+import { getBuyerAccountStatus, ROLE_BUYER } from '@/lib/auth/roles';
 
 function getSafeRedirect(path) {
   if (path == null || typeof path !== 'string') return '/';
@@ -66,9 +66,13 @@ function BuyerLoginPageInner() {
       if (!mounted) return;
       if (!currentUser) return;
       if (showForgotPasswordModalRef.current) return;
-      const role = await getUserRole(currentUser.id);
-      if (role === ROLE_BUYER) {
+      const { role, status } = await getBuyerAccountStatus(currentUser.id);
+      if (role === ROLE_BUYER && status === 'active') {
         router.replace(redirect);
+        return;
+      }
+      if (role === ROLE_BUYER && status === 'suspended') {
+        await supabase.auth.signOut();
       }
     });
     return () => {
@@ -111,7 +115,7 @@ function BuyerLoginPageInner() {
         return;
       }
 
-      const role = await getUserRole(user.id);
+      const { role, status } = await getBuyerAccountStatus(user.id);
       if (!role) {
         toast.error('Your account is not configured for this portal.');
         await supabase.auth.signOut();
@@ -120,6 +124,14 @@ function BuyerLoginPageInner() {
 
       if (role !== ROLE_BUYER) {
         toast.error('Please use the correct portal for your account.');
+        await supabase.auth.signOut();
+        return;
+      }
+
+      if (status === 'suspended') {
+        toast.error(
+          'Your buyer account has been suspended. Please contact support if you believe this is in error.',
+        );
         await supabase.auth.signOut();
         return;
       }

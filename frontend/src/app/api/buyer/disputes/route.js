@@ -1,27 +1,56 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { requireActiveBuyerApiUser } from '@/lib/auth/requireApiUser'
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
 import { notifyUser, notifyAllAdmins, notifySeller } from '@/lib/notifications/inAppServer'
+
+export async function GET(request) {
+  const { user, responseError } = await requireActiveBuyerApiUser()
+  if (responseError) return responseError
+
+  const supabaseAdmin = getSupabaseAdmin()
+
+  const { searchParams } = new URL(request.url)
+  const orderId = String(searchParams.get('orderId') ?? '').trim()
+
+  let query = supabaseAdmin
+    .from('disputes')
+    .select('id,order_id,reason,description,status,opened_at,updated_at,resolution_notes')
+    .eq('buyer_id', user.id)
+    .order('opened_at', { ascending: false })
+
+  if (orderId) {
+    query = query.eq('order_id', orderId)
+  }
+
+  const { data, error } = await query.limit(orderId ? 5 : 100)
+
+  if (error) {
+    return NextResponse.json({ error: error.message || 'Failed to load requests.' }, { status: 500 })
+  }
+
+  return NextResponse.json({
+    disputes: (data ?? []).map((row) => ({
+      id: row.id,
+      orderId: row.order_id,
+      reason: row.reason,
+      description: row.description || '',
+      status: row.status,
+      openedAt: row.opened_at,
+      updatedAt: row.updated_at,
+      resolutionNotes: row.resolution_notes || '',
+    })),
+  })
+}
 
 /**
  * Buyer opens a dispute when self-serve cancel is not available (e.g. provider already confirmed).
  */
 export async function POST(request) {
-  const supabase = await createClient()
+  const { user, responseError } = await requireActiveBuyerApiUser()
+  if (responseError) return responseError
+
   const supabaseAdmin = getSupabaseAdmin()
-
-  const {
-    data: { user },
-    error: userErr,
-  } = await supabase.auth.getUser()
-
-  if (userErr || !user) {
-    return NextResponse.json(
-      { error: 'You must be signed in to submit a request.' },
-      { status: 401 },
-    )
-  }
 
   const body = await request.json().catch(() => ({}))
   const orderId = String(body?.orderId ?? '').trim()
@@ -38,10 +67,7 @@ export async function POST(request) {
     )
   }
   if (!reason) {
-    return NextResponse.json(
-      { error: 'Please select a reason.' },
-      { status: 400 },
-    )
+    return NextResponse.json({ error: 'Please select a reason.' }, { status: 400 })
   }
 
   const { data: order, error: orderErr } = await supabaseAdmin
@@ -51,10 +77,7 @@ export async function POST(request) {
     .maybeSingle()
 
   if (orderErr || !order) {
-    return NextResponse.json(
-      { error: 'Purchase not found.' },
-      { status: 404 },
-    )
+    return NextResponse.json({ error: 'Purchase not found.' }, { status: 404 })
   }
 
   if (order.buyer_id !== user.id) {

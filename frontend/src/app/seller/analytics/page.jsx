@@ -5,6 +5,7 @@ import { useMemo } from 'react'
 import { TbChartLine, TbCurrencyPeso, TbUsers, TbChartBar } from 'react-icons/tb'
 import styles from './analytics.module.css'
 import { useSellerAnalyticsData } from '@/lib/seller/useSellerAnalyticsData'
+import SellerAnalyticsLoadError from './SellerAnalyticsLoadError'
 import { formatPhpWholeAmount } from '@/lib/cart/formatPhp'
 import {
   listingsApprovedCount,
@@ -60,7 +61,7 @@ function SellerAnalyticsHubSkeleton() {
 }
 
 export default function SellerAnalyticsPage() {
-  const { orders, listings, loading, error } = useSellerAnalyticsData()
+  const { orders, listings, loading, error, reload } = useSellerAnalyticsData()
 
   const totalOrders = orders.length
   const totalRevenue = formatPhpWholeAmount(totalPaidRevenueAllTime(orders))
@@ -81,10 +82,12 @@ export default function SellerAnalyticsPage() {
     return <SellerAnalyticsHubSkeleton />
   }
 
+  if (error) {
+    return <SellerAnalyticsLoadError onRetry={() => reload()} />
+  }
+
   return (
     <div className={styles.pageWrap}>
-      {error ? <p className={styles.pageError}>{error}</p> : null}
-
       <section aria-label="Analytics summary" className={styles.summaryStrip}>
         {summary.map((s) => (
           <article key={s.label} className={`${styles.summaryCard} ${styles.summaryCardSoftGreen}`}>

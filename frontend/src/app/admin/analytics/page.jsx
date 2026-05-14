@@ -69,7 +69,7 @@ export default function AdminAnalyticsPage() {
           const msg =
             typeof body?.error === 'string'
               ? body.error
-              : 'Could not load analytics. Charts and totals below may be incomplete.'
+              : "Couldn't load analytics."
           setMetricsError(msg)
           return
         }
@@ -86,9 +86,7 @@ export default function AdminAnalyticsPage() {
         setDisputesNeedingAttention(Number(body.disputesNeedingAttention) || 0)
       } catch {
         if (!cancelled) {
-          setMetricsError(
-            'Could not load analytics. Check your connection and try again.',
-          )
+          setMetricsError("Couldn't load analytics. Check your connection and try again.")
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -177,6 +175,8 @@ export default function AdminAnalyticsPage() {
           </div>
         </div>
       ) : null}
+      {!metricsError ? (
+      <>
       {/* Stat cards — 4 col desktop, 2 col tablet/mobile */}
       <section className={layoutStyles.analyticsStatsGrid}>
         <div className={layoutStyles.statCard}>
@@ -388,6 +388,8 @@ export default function AdminAnalyticsPage() {
           )}
         </div>
       </section>
+      </>
+      ) : null}
     </div>
   )
 }

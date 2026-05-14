@@ -55,7 +55,7 @@ const FAQ_BY_TAB = {
       id: 'refund_2',
       question: 'How should I handle buyer refund or help requests?',
       answer:
-        'Open the order details from the Orders page, review the buyer reason and attachments, then approve, decline, or mark the request under review based on the case. Refund completion is finalized by the payment provider webhook.',
+        'Open the order details from the Orders page, review the buyer reason and attachments, and mark the request under review when you are investigating. Platform admins close cases and handle refunds.',
     },
   ],
   'Listings & Approval': [

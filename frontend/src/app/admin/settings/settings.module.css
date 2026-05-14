@@ -427,6 +427,18 @@
     gap: 12px;
   }
 
+  .settingsSellerFaqDesktopRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .settingsSellerFaqDesktopRow .settingsMobileValue {
+    flex: 1;
+    min-width: 0;
+  }
+
   .nameFieldsRow {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -738,6 +750,70 @@
     .billingCta:hover {
       text-decoration: underline;
     }
+  }
+
+  .billingSection > .billingCta {
+    margin-top: 14px;
+  }
+
+  .billingActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-top: 12px;
+  }
+
+  .billingEditBlock {
+    display: grid;
+    gap: 12px;
+    max-width: 520px;
+  }
+
+  .billingEditBlock .billingActions {
+    margin-top: 4px;
+  }
+
+  .billingInlineActions {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .billingInlineInput {
+    width: 80px;
+    min-height: 36px;
+    padding: 0 12px;
+    font-size: 13px;
+    color: #0f172a;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #ffffff;
+    box-sizing: border-box;
+  }
+
+  .billingInlineError {
+    color: #b91c1c;
+    font-size: 12px;
+  }
+
+  .billingNotes {
+    margin: 0;
+    white-space: pre-wrap;
+    font-size: 13px;
+    line-height: 1.55;
+    color: #0f172a;
+  }
+
+  .billingField {
+    display: grid;
+    gap: 6px;
+  }
+
+  .billingFieldLabel {
+    font-size: 12px;
+    color: #475569;
   }
 
   .billingPlaceholder {

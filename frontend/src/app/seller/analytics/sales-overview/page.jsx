@@ -16,6 +16,7 @@ import {
 } from 'recharts'
 import styles from '../analytics.module.css'
 import { useSellerAnalyticsData } from '@/lib/seller/useSellerAnalyticsData'
+import SellerAnalyticsLoadError from '../SellerAnalyticsLoadError'
 import {
   averagePaidBookingValue,
   packageBookingCountsLastNMonths,
@@ -100,7 +101,7 @@ function SellerAnalyticsSalesOverviewSkeleton() {
 }
 
 export default function SellerAnalyticsSalesOverviewPage() {
-  const { orders, loading, error } = useSellerAnalyticsData()
+  const { orders, loading, error, reload } = useSellerAnalyticsData()
   const [packageWindowMonths, setPackageWindowMonths] = useState(6)
 
   const revenueByDay = useMemo(() => paidRevenueByLastNDays(orders, 7), [orders])
@@ -126,9 +127,12 @@ export default function SellerAnalyticsSalesOverviewPage() {
     return <SellerAnalyticsSalesOverviewSkeleton />
   }
 
+  if (error) {
+    return <SellerAnalyticsLoadError onRetry={() => reload()} />
+  }
+
   return (
     <div className={styles.pageWrap}>
-      {error ? <p className={styles.pageError}>{error}</p> : null}
 
       <section aria-label="Sales summary" className={styles.summaryStrip}>
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftGreen}`}>

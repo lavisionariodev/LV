@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { requireActiveSellerApiUser } from '@/lib/auth/requireApiUser'
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
 import { createPaymongoRefund, phpToCentavos } from '@/lib/paymongo/client'
 import { insertOrderRefundEvent, insertUserNotification } from '@/lib/payments/refundReconcile'
+import { isRefundInFlight } from '@/lib/payments/orderMoneyState'
 
 /**
  * Seller responds to buyer pre-confirmation cancellation (refund pipeline).
@@ -12,20 +12,8 @@ import { insertOrderRefundEvent, insertUserNotification } from '@/lib/payments/r
  * - complete: deprecated — refund completion is automatic when PayMongo sends payment.refunded / payment.refund.updated (succeeded).
  */
 export async function POST(request) {
-  const supabase = await createClient()
-  const supabaseAdmin = getSupabaseAdmin()
-
-  const {
-    data: { user },
-    error: userErr,
-  } = await supabase.auth.getUser()
-
-  if (userErr || !user) {
-    return NextResponse.json(
-      { error: 'You must be signed in to manage refund requests.' },
-      { status: 401 },
-    )
-  }
+  const { user, supabaseAdmin, responseError } = await requireActiveSellerApiUser()
+  if (responseError) return responseError
 
   const body = await request.json().catch(() => ({}))
   const orderId = String(body?.orderId ?? '').trim()
@@ -69,6 +57,13 @@ export async function POST(request) {
     return NextResponse.json(
       { error: 'You are not authorized to update this order.' },
       { status: 403 },
+    )
+  }
+
+  if (isRefundInFlight(order)) {
+    return NextResponse.json(
+      { error: 'A refund is already in progress for this order.' },
+      { status: 409 },
     )
   }
 

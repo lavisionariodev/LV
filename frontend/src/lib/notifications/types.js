@@ -15,6 +15,7 @@ export const IN_APP_NOTIFICATION_TYPES = /** @type {const} */ ([
   'service_alert',
   'alerts',
   'reminder',
+  // Legacy bucket id only — not in-app chat; buyer–seller contact uses external channels.
   'message',
   'account',
   'listing_approval',

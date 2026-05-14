@@ -1,36 +1,12 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { requireActiveSellerApiUser } from '@/lib/auth/requireApiUser'
 import { notifyAllAdmins } from '@/lib/notifications/inAppServer'
 
-async function requireActiveSeller(userId) {
-  const supabaseAdmin = getSupabaseAdmin()
-  const { data: seller, error } = await supabaseAdmin
-    .from('sellers')
-    .select('user_id, business_name, contact_name, email, status')
-    .eq('user_id', userId)
-    .maybeSingle()
-  if (error || !seller) {
-    return { response: NextResponse.json({ error: 'Seller account required.' }, { status: 403 }) }
-  }
-  if (String(seller.status || '').toLowerCase() !== 'active') {
-    return { response: NextResponse.json({ error: 'Seller account must be active to request payouts.' }, { status: 403 }) }
-  }
-  return { seller, supabaseAdmin }
-}
-
 export async function GET() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-    error: userErr,
-  } = await supabase.auth.getUser()
-  if (userErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { user, supabaseAdmin, responseError } = await requireActiveSellerApiUser()
+  if (responseError) return responseError
 
-  const auth = await requireActiveSeller(user.id)
-  if (auth.response) return auth.response
-
-  const { data, error } = await auth.supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from('seller_payout_requests')
     .select('id, requested_amount, note, status, escrow_snapshot, created_at')
     .eq('seller_user_id', user.id)
@@ -45,15 +21,14 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-    error: userErr,
-  } = await supabase.auth.getUser()
-  if (userErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { user, supabaseAdmin, responseError } = await requireActiveSellerApiUser()
+  if (responseError) return responseError
 
-  const auth = await requireActiveSeller(user.id)
-  if (auth.response) return auth.response
+  const { data: seller } = await supabaseAdmin
+    .from('sellers')
+    .select('user_id, business_name, contact_name, email')
+    .eq('user_id', user.id)
+    .maybeSingle()
 
   const body = await request.json().catch(() => ({}))
   const note = String(body?.note || '').trim().slice(0, 2000)
@@ -70,7 +45,7 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Requested amount must be a valid number.' }, { status: 400 })
   }
 
-  const { data: payoutSettings } = await auth.supabaseAdmin
+  const { data: payoutSettings } = await supabaseAdmin
     .from('seller_payout_settings')
     .select('payout_method')
     .eq('seller_user_id', user.id)
@@ -86,7 +61,7 @@ export async function POST(request) {
   const escrowBody = escrowRes ? await escrowRes.json().catch(() => null) : null
   const escrowSnapshot = escrowBody?.summary && typeof escrowBody.summary === 'object' ? escrowBody.summary : {}
 
-  const { data: row, error } = await auth.supabaseAdmin
+  const { data: row, error } = await supabaseAdmin
     .from('seller_payout_requests')
     .insert({
       seller_user_id: user.id,
@@ -102,9 +77,10 @@ export async function POST(request) {
     return NextResponse.json({ error: error?.message || 'Failed to submit payout request.' }, { status: 500 })
   }
 
-  await notifyAllAdmins(auth.supabaseAdmin, {
+  const sellerLabel = seller?.business_name || seller?.contact_name || 'Seller'
+  await notifyAllAdmins(supabaseAdmin, {
     type: 'system',
-    title: `Seller payout request: ${auth.seller.business_name || auth.seller.contact_name || 'Seller'}`,
+    title: `Seller payout review request: ${sellerLabel}`,
     body: note,
     metadata: {
       source: 'seller_payout_request',

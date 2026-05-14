@@ -835,31 +835,39 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
       <div className={styles.statsStrip}>
         <div className={`${styles.statCard} ${styles.statCardTotal}`}>
           <div className={styles.statCardTitle}>Total orders</div>
-          <div className={styles.statCardValue}>{formatCount(orders.length)}</div>
-          <div className={styles.statCardDesc}>All time (sample data)</div>
+          <div className={styles.statCardValue}>{ordersReady ? formatCount(orders.length) : '—'}</div>
+          <div className={styles.statCardDesc}>All orders loaded for your account</div>
         </div>
         <div className={`${styles.statCard} ${styles.statCardPending}`}>
           <div className={styles.statCardTitle}>Pending approvals</div>
           <div className={styles.statCardValue}>
-            {formatCount(orders.filter((o) => o.orderStatus === 'pending').length)}
+            {ordersReady
+              ? formatCount(orders.filter((o) => o.orderStatus === 'pending').length)
+              : '—'}
           </div>
           <div className={styles.statCardDesc}>Unpaid declines · paid awaits your confirmation</div>
         </div>
         <div className={`${styles.statCard} ${styles.statCardInProgress}`}>
           <div className={styles.statCardTitle}>In progress</div>
           <div className={styles.statCardValue}>
-            {formatCount(orders.filter((o) => o.orderStatus === 'in_progress' || o.orderStatus === 'confirmed').length)}
+            {ordersReady
+              ? formatCount(
+                  orders.filter((o) => o.orderStatus === 'in_progress' || o.orderStatus === 'confirmed').length,
+                )
+              : '—'}
           </div>
           <div className={styles.statCardDesc}>Preparation or service ongoing</div>
         </div>
         <div className={`${styles.statCard} ${styles.statCardCompleted}`}>
           <div className={styles.statCardTitle}>Completed (P)</div>
           <div className={styles.statCardValue}>
-            {formatPrice(
-              orders
-                .filter((o) => o.orderStatus === 'completed')
-                .reduce((sum, o) => sum + o.totalPrice, 0)
-            )}
+            {ordersReady
+              ? formatPrice(
+                  orders
+                    .filter((o) => o.orderStatus === 'completed')
+                    .reduce((sum, o) => sum + o.totalPrice, 0),
+                )
+              : '—'}
           </div>
           <div className={styles.statCardDesc}>Total from completed orders</div>
         </div>
@@ -995,7 +1003,8 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
                   <div className={styles.refundDetailRow}>
                     <span className={styles.detailLabel}>Seller action</span>
                     <span className={styles.detailValue}>
-                      Review the concern, contact the buyer if needed, then mark it resolved once handled.
+                      Review the concern and contact the buyer if needed. You may mark it under review with notes.
+                      Platform admins close cases and handle refunds.
                     </span>
                   </div>
                 </div>
@@ -1017,13 +1026,6 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
                         Mark under review
                       </button>
                     )}
-                    <button
-                      type="button"
-                      className={`${styles.btnText} ${styles.btnAccept}`}
-                      onClick={() => handleHelpRequestStatus(order, 'resolved')}
-                    >
-                      Mark resolved
-                    </button>
                   </div>
                 </footer>
               </article>
@@ -1404,6 +1406,13 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
                           </span>
                         </div>
                       ) : null}
+                      <div className={styles.detailItem}>
+                        <span className={styles.detailLabel}>Next steps</span>
+                        <span className={styles.detailValue}>
+                          Mark under review when you are looking into the case. Platform admins close requests and
+                          handle refunds.
+                        </span>
+                      </div>
                     </div>
                     <div className={styles.refundActions}>
                       {selectedOrder.helpRequest.status === 'open' && (
@@ -1415,13 +1424,6 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
                           Mark under review
                         </button>
                       )}
-                      <button
-                        type="button"
-                        className={`${styles.btnText} ${styles.btnAccept}`}
-                        onClick={() => handleHelpRequestStatus(selectedOrder, 'resolved')}
-                      >
-                        Mark resolved
-                      </button>
                     </div>
                   </div>
                 </div>

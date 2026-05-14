@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { getUser, onAuthStateChange } from '@/lib/auth/session';
-import { getUserRole, isBuyerRole, isSellerRole } from '@/lib/auth/roles';
+import { getUserRole, getBuyerAccountStatus, isBuyerRole, isSellerRole } from '@/lib/auth/roles';
 import { mapProfileRow } from '@/shared/utils/profileDefaults';
 
 const PROFILE_SELECT =
@@ -20,6 +20,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(() => mapProfileRow(null));
   const [role, setRole] = useState(null);
+  const [buyerAccountStatus, setBuyerAccountStatus] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
   const loadProfile = useCallback(async (nextUser) => {
@@ -44,10 +45,15 @@ export function AuthProvider({ children }) {
   const loadRole = useCallback(async (nextUser) => {
     if (!nextUser) {
       setRole(null);
+      setBuyerAccountStatus(null);
       return;
     }
-    const nextRole = await getUserRole(nextUser.id);
+    const [nextRole, account] = await Promise.all([
+      getUserRole(nextUser.id),
+      getBuyerAccountStatus(nextUser.id),
+    ]);
     setRole(nextRole || null);
+    setBuyerAccountStatus(account);
   }, []);
 
   const refreshProfile = useCallback(async () => {
@@ -69,6 +75,7 @@ export function AuthProvider({ children }) {
         } else {
           setProfile(mapProfileRow(null));
           setRole(null);
+          setBuyerAccountStatus(null);
         }
       } finally {
         if (mounted) {
@@ -88,6 +95,7 @@ export function AuthProvider({ children }) {
       } else {
         setProfile(mapProfileRow(null));
         setRole(null);
+        setBuyerAccountStatus(null);
       }
     });
 
@@ -106,10 +114,11 @@ export function AuthProvider({ children }) {
       role,
       authLoading,
       refreshProfile,
-      isBuyer: isBuyerRole(role),
+      isBuyer: isBuyerRole(role) && buyerAccountStatus?.status === 'active',
       isSeller: isSellerRole(role),
+      buyerAccountStatus,
     }),
-    [user, profile, role, authLoading, refreshProfile]
+    [user, profile, role, buyerAccountStatus, authLoading, refreshProfile]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
