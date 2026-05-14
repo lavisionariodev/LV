@@ -135,6 +135,30 @@ export async function pollSellerQrChallenge({ challengeId, pollSecret }) {
 
 /**
  * @param {{ challengeId: string, approveToken: string }} params
+ * @returns {Promise<{ data: SellerQrPollResult | null, error: string | null }>}
+ */
+export async function pollSellerQrApprovalForApprover({ challengeId, approveToken }) {
+  try {
+    const url = new URL(`/api/auth/qr/challenge/${encodeURIComponent(challengeId)}`, window.location.origin)
+    url.searchParams.set('approveToken', approveToken)
+
+    const response = await fetch(url.toString(), { method: 'GET', cache: 'no-store' })
+    const payload = await response.json().catch(() => ({}))
+    if (!response.ok) {
+      return {
+        data: null,
+        error: payload?.error || 'Could not check QR login status.',
+      }
+    }
+
+    return { data: payload, error: null }
+  } catch {
+    return { data: null, error: 'Could not check QR login status.' }
+  }
+}
+
+/**
+ * @param {{ challengeId: string, approveToken: string }} params
  * @returns {Promise<{ error: string | null }>}
  */
 export async function approveSellerQrChallenge({ challengeId, approveToken }) {

@@ -1,14 +1,33 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import SellerQrConfirmPanel from '@/features/seller/auth/SellerQrConfirmPanel'
 import SellerQrLoginScanner from '@/features/seller/auth/SellerQrLoginScanner'
 import styles from '../settings.module.css'
 import qrStyles from '@/app/(auth)/seller/login/qr/qrFlow.module.css'
 
-export default function SellerLinkDevicePage() {
-  const [scanTarget, setScanTarget] = useState(null)
+/**
+ * @param {URLSearchParams} searchParams
+ * @returns {{ challengeId: string, approveToken: string } | null}
+ */
+function parseScanTarget(searchParams) {
+  const challengeId = searchParams.get('challenge')?.trim() || ''
+  const approveToken = searchParams.get('token')?.trim() || ''
+  if (!challengeId || !approveToken) return null
+  return { challengeId, approveToken }
+}
+
+function SellerLinkDevicePageContent() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [scanTarget, setScanTarget] = useState(() => parseScanTarget(searchParams))
+
+  useEffect(() => {
+    if (!parseScanTarget(searchParams)) return
+    router.replace('/seller/settings/link-device', { scroll: false })
+  }, [router, searchParams])
 
   const handleScanned = useCallback((payload) => {
     if (!payload?.challengeId || !payload?.approveToken) return
@@ -20,18 +39,6 @@ export default function SellerLinkDevicePage() {
 
   const handleBackToScanner = useCallback(() => {
     setScanTarget(null)
-  }, [])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-
-    const params = new URLSearchParams(window.location.search)
-    const challengeId = params.get('challenge')?.trim() || ''
-    const approveToken = params.get('token')?.trim() || ''
-    if (!challengeId || !approveToken) return
-
-    setScanTarget({ challengeId, approveToken })
-    window.history.replaceState({}, '', '/seller/settings/link-device')
   }, [])
 
   return (
@@ -72,5 +79,19 @@ export default function SellerLinkDevicePage() {
         Back to profile settings
       </Link>
     </section>
+  )
+}
+
+export default function SellerLinkDevicePage() {
+  return (
+    <Suspense
+      fallback={
+        <section className={`${styles.card} ${styles.full}`}>
+          <p className={styles.loadingText}>Loading link device...</p>
+        </section>
+      }
+    >
+      <SellerLinkDevicePageContent />
+    </Suspense>
   )
 }

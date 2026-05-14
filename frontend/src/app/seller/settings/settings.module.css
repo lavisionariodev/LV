@@ -260,8 +260,14 @@
   flex-shrink: 0;
 }
 
+.primaryBtn {
+  background: #204F38;
+  border-color: #204F38;
+}
+
 .primaryBtn:hover:not(:disabled) {
   background: #163a29;
+  border-color: #163a29;
 }
 
 .primaryBtn:disabled {
@@ -273,6 +279,7 @@
   min-width: 132px;
   justify-content: center;
   text-decoration: none;
+  color: #ffffff;
 }
 
 
