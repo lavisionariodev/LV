@@ -547,7 +547,7 @@
 
   /* ── Remove padding so hero bleeds edge to edge ── */
   .content {
-    padding: 0 0 92px;
+    padding: 0 0 calc(92px + env(safe-area-inset-bottom, 0px));
     max-width: 100%;
   }
 
@@ -1268,7 +1268,7 @@
   }
 
   .content {
-    padding: 14px 14px 92px;
+    padding: 14px 14px calc(92px + env(safe-area-inset-bottom, 0px));
   }
 
   .rowHead,

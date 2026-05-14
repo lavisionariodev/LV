@@ -521,7 +521,7 @@ function SellerLoginPageInner() {
                         ? 'This QR code has expired.'
                         : qrStatus === 'denied'
                           ? 'Login request was denied on your phone.'
-                          : `Scan QR code with ${systemName} App`}
+                          : `Use Link device in the ${systemName} app to scan this code`}
                   </p>
 
                   {(qrStatus === 'expired' || qrStatus === 'error' || qrStatus === 'denied') && (
@@ -535,16 +535,12 @@ function SellerLoginPageInner() {
                     </button>
                   )}
 
-                  <Link href="/seller/login/qr/scan" className={styles.howToScanBtn}>
-                    Open scanner in app
-                  </Link>
-
                   <button
                     type="button"
-                    className={`${styles.howToScanBtn} ${styles.howToScanBtnSecondary}`}
+                    className={styles.howToScanBtn}
                     onClick={() => setShowHowToScan(true)}
                   >
-                    How To Scan
+                    How to use Link device
                   </button>
                 </div>
               )}
@@ -569,12 +565,12 @@ function SellerLoginPageInner() {
         onError={(msg) => toast.error(msg)}
       />
 
-      {/* How To Scan Modal */}
+      {/* Link device guide */}
       {showHowToScan && (
         <div className={styles.modal} onClick={() => setShowHowToScan(false)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h3>How To Scan</h3>
+              <h3>How to use Link device</h3>
               <button 
                 className={styles.closeModal}
                 onClick={() => setShowHowToScan(false)}
@@ -586,21 +582,21 @@ function SellerLoginPageInner() {
               <div className={styles.phonePreview}>
                 <div className={styles.phoneScreen}>
                   <div className={styles.appHeader}>
-                    <input placeholder={`🔍 ${systemName}`} readOnly />
-                    <div className={styles.appIcons}>🛒 💬</div>
+                    <p className={styles.appHeaderTitle}>Seller settings</p>
                   </div>
                   <div className={styles.scanIconArea}>
-                    <div className={styles.scanIcon}>📱</div>
+                    <div className={styles.linkDeviceGuide}>
+                      <p className={styles.linkDeviceLabel}>Link device</p>
+                      <p className={styles.linkDeviceHint}>Scan the QR on this screen</p>
+                    </div>
                   </div>
                 </div>
               </div>
-              <p className={styles.modalText}>
-                Open the installed {systemName} app or use{' '}
-                <Link href="/seller/login/qr/scan" className={styles.modalLink}>
-                  Open scanner in app
-                </Link>{' '}
-                to scan the QR code on this screen, then approve the login request on your phone.
-              </p>
+              <ol className={styles.modalSteps}>
+                <li>Open the installed {systemName} app and sign in with your seller account.</li>
+                <li>Go to Seller settings and open Link device.</li>
+                <li>Scan the QR code on this screen, then approve the login on your phone.</li>
+              </ol>
             </div>
           </div>
         </div>

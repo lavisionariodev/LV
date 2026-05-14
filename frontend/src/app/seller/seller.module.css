@@ -91,7 +91,7 @@
   }
 
   .content {
-    padding: 16px 16px 92px;
+    padding: 16px 16px calc(92px + env(safe-area-inset-bottom, 0px));
   }
 
   /*
@@ -104,7 +104,7 @@
 
 @media (max-width: 600px) {
   .content {
-    padding: 14px 14px 92px;
+    padding: 14px 14px calc(92px + env(safe-area-inset-bottom, 0px));
   }
 
   .content:has([class*='newListingLayout'], [class*='loadingRoot']) {
