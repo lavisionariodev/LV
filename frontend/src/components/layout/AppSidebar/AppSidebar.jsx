@@ -20,6 +20,7 @@ import {
   TbAddressBook,
   TbLayoutGrid,
   TbClipboardCheck,
+  TbMessageStar,
 } from 'react-icons/tb'
 import { LuUserCheck } from 'react-icons/lu'
 import { BsPerson } from 'react-icons/bs'
@@ -114,6 +115,7 @@ const SIDEBAR_CONFIG = {
         ],
       },
       { href: '/seller/customers', label: 'Customers', icon: TbUsers },
+      { href: '/seller/reviews', label: 'Reviews', icon: TbMessageStar },
       {
         label: 'Analytics',
         icon: TbChartBar,
@@ -566,8 +568,24 @@ export default function AppSidebar({
           {variant === 'seller' && (
             <Link
               href="/seller/more"
-              className={`${styles.bottomNavLink} ${pathname?.startsWith('/seller/more') ? styles.bottomNavLinkActive : ''}`}
-              aria-current={pathname?.startsWith('/seller/more') ? 'page' : undefined}
+              className={`${styles.bottomNavLink} ${
+                pathname?.startsWith('/seller/more') ||
+                pathname?.startsWith('/seller/reviews') ||
+                pathname?.startsWith('/seller/notifications') ||
+                pathname?.startsWith('/seller/help') ||
+                pathname?.startsWith('/seller/settings')
+                  ? styles.bottomNavLinkActive
+                  : ''
+              }`}
+              aria-current={
+                pathname?.startsWith('/seller/more') ||
+                pathname?.startsWith('/seller/reviews') ||
+                pathname?.startsWith('/seller/notifications') ||
+                pathname?.startsWith('/seller/help') ||
+                pathname?.startsWith('/seller/settings')
+                  ? 'page'
+                  : undefined
+              }
             >
               <span className={styles.bottomNavIcon}>
                 <TbMenu2 size={22} aria-hidden />

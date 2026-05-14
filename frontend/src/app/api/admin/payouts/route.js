@@ -7,6 +7,8 @@ import {
   summarizeEscrowsForPayoutStats,
   fetchDailyReleasedCommissionSeries,
 } from '@/lib/admin/adminPortalMetrics'
+import { indexDisbursementsByEscrowId, resolveEscrowDisbursementState } from '@/lib/payments/sellerWalletSummary'
+import { fetchPayoutDisbursementsForSeller } from '@/lib/payments/walletLedger'
 
 const MAX_ROWS = 500
 
@@ -109,8 +111,9 @@ export async function GET(request) {
   const buyerIds = [...new Set(rows.map((r) => pickOrder(r.orders)?.buyer_id).filter(Boolean))]
   const sellerUserIds = [...new Set(rows.map((r) => r.seller_user_id).filter(Boolean))]
   const orderIds = rows.map((r) => r.order_id).filter(Boolean)
+  const escrowIds = rows.map((r) => r.id).filter(Boolean)
 
-  const [buyerUsersRes, profilesRes, sellersRes, itemsRes] = await Promise.all([
+  const [buyerUsersRes, profilesRes, sellersRes, itemsRes, disbursementsRes] = await Promise.all([
     buyerIds.length
       ? supabaseAdmin.from('users').select('id,email').in('id', buyerIds)
       : Promise.resolve({ data: [] }),
@@ -126,7 +129,12 @@ export async function GET(request) {
     orderIds.length
       ? supabaseAdmin.from('order_items').select('order_id,name,quantity').in('order_id', orderIds)
       : Promise.resolve({ data: [] }),
+    escrowIds.length
+      ? fetchPayoutDisbursementsForSeller(supabaseAdmin, { escrowIds })
+      : Promise.resolve([]),
   ])
+
+  const disbursementByEscrowId = indexDisbursementsByEscrowId(disbursementsRes)
 
   const emailByBuyer = new Map((buyerUsersRes.data ?? []).map((u) => [u.id, u.email]))
   const nameByBuyer = new Map((profilesRes.data ?? []).map((p) => [p.id, p.full_name]))
@@ -191,6 +199,9 @@ export async function GET(request) {
       continue
     }
 
+    const disbursement = disbursementByEscrowId.get(e.id) ?? null
+    const disbursementState = resolveEscrowDisbursementState(e, disbursement)
+
     normalized.push({
       id: e.id,
       escrowId: e.id,
@@ -217,7 +228,11 @@ export async function GET(request) {
       payoutStatus: e.status,
       escrowStatus: e.status,
       hold_reason: e.hold_reason,
-      payoutReference: e.release_reference || '',
+      payoutReference: e.release_reference || disbursement?.paymongo_transfer_id || '',
+      disbursementStatus: disbursement?.status ?? null,
+      disbursementState,
+      paymongoTransferId: disbursement?.paymongo_transfer_id ?? null,
+      disbursementFailureReason: disbursement?.failure_reason ?? null,
       payoutDate: e.released_at ? String(e.released_at).slice(0, 10) : '',
       released_at: e.released_at,
       date: dateStr,

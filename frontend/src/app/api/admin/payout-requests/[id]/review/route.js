@@ -140,13 +140,13 @@ export async function POST(request, { params }) {
     type: 'system',
     title,
     body: notifyBody,
-    metadata: {
-      source: 'seller_payout_request_review',
-      requestId: updated.id,
-      action,
-      sellerBusinessName: sellerLabel,
-      href: '/seller/analytics',
-    },
+      metadata: {
+        source: 'seller_payout_request_review',
+        requestId: updated.id,
+        action,
+        sellerBusinessName: sellerLabel,
+        href: `/admin/payouts?tab=transactions&seller=${encodeURIComponent(updated.seller_user_id)}&payout=escrowed&approvedRequestId=${encodeURIComponent(updated.id)}`,
+      },
     dedupeKey: `seller_payout_request_review:${updated.id}:${action}`,
   })
 

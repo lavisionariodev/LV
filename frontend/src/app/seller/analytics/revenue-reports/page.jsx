@@ -153,20 +153,30 @@ export default function SellerAnalyticsRevenueReportsPage() {
         </article>
 
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftIndigo}`}>
-          <p className={styles.summaryLabel}>Released payouts</p>
+          <p className={styles.summaryLabel}>Held balance</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>{formatPhpWholeAmount(escrowSummary?.releasedNet || 0)}</p>
+            <p className={styles.summaryValue}>{formatPhpWholeAmount(escrowSummary?.heldBalanceNet || 0)}</p>
           </div>
-          <p className={styles.summaryHint}>Net amount released by admin</p>
+          <p className={styles.summaryHint}>
+            Escrowed {formatPhpWholeAmount(escrowSummary?.escrowedNet || 0)} · on hold {formatPhpWholeAmount(escrowSummary?.onHoldNet || 0)}
+          </p>
         </article>
 
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftBlue}`}>
-          <p className={styles.summaryLabel}>Held in escrow</p>
+          <p className={styles.summaryLabel}>Pending payout</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>{formatPhpWholeAmount((escrowSummary?.escrowedNet || 0) + (escrowSummary?.heldNet || 0))}</p>
+            <p className={styles.summaryValue}>{formatPhpWholeAmount(escrowSummary?.pendingDisbursementNet || 0)}</p>
+          </div>
+          <p className={styles.summaryHint}>Submitted to PayMongo and awaiting settlement</p>
+        </article>
+
+        <article className={`${styles.summaryCard} ${styles.summaryCardSoftGreen}`}>
+          <p className={styles.summaryLabel}>Paid out</p>
+          <div className={styles.summaryValueRow}>
+            <p className={styles.summaryValue}>{formatPhpWholeAmount(escrowSummary?.paidOutNet || 0)}</p>
           </div>
           <p className={styles.summaryHint}>
-            Escrowed {formatPhpWholeAmount(escrowSummary?.escrowedNet || 0)} · on hold {formatPhpWholeAmount(escrowSummary?.heldNet || 0)}
+            Released {formatPhpWholeAmount(escrowSummary?.releasedNet || 0)} · available {formatPhpWholeAmount(escrowSummary?.availableNet || 0)}
           </p>
         </article>
 
@@ -186,7 +196,7 @@ export default function SellerAnalyticsRevenueReportsPage() {
               <h2 className={styles.chartTitle}>Monthly paid revenue</h2>
               <p className={styles.chartSubtitle}>
                 Last 6 months · gross collected on paid orders. Seller payout totals above come from
-                escrow snapshots including commission, holds, releases, and refunds.
+                escrow snapshots and PayMongo disbursement status.
               </p>
             </div>
             <span className={styles.chartBadge}>

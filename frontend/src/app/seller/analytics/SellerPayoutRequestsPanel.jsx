@@ -96,7 +96,7 @@ export default function SellerPayoutRequestsPanel({ className = '' }) {
         <div className={styles.chartTitleGroup}>
           <h2 className={styles.chartTitle}>Payout review request</h2>
           <p className={styles.chartSubtitle}>
-            Ask admins to review eligible escrow funds. Approval does not send money — admins release completed orders in Payouts.
+            Ask admins to review eligible escrow funds. Approval authorizes release review only — PayMongo settlement happens per completed order in Admin Payouts.
           </p>
         </div>
         <button
@@ -200,7 +200,7 @@ export default function SellerPayoutRequestsPanel({ className = '' }) {
                   </p>
                   <p className={styles.payoutRequestItemBody}>
                     {request.status === 'approved'
-                      ? 'Funds are not sent automatically. Admins release completed orders in Payouts.'
+                      ? 'Funds are not sent automatically. Admins release completed orders in Payouts; PayMongo settlement may follow when enabled.'
                       : request.note}
                   </p>
                 </div>

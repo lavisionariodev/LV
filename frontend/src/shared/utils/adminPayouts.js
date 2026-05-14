@@ -28,6 +28,16 @@ export const PAYOUT_STATUS_META = {
   released: { label: 'Released', color: 'green' },
 }
 
+export const DISBURSEMENT_STATE_META = {
+  none: { label: 'No payout attempt', color: 'slate' },
+  pending: { label: 'Payout pending', color: 'amber' },
+  submitted: { label: 'PayMongo submitted', color: 'amber' },
+  succeeded: { label: 'Paid out', color: 'green' },
+  failed: { label: 'Payout failed', color: 'red' },
+  cancelled: { label: 'Payout cancelled', color: 'red' },
+  legacy_manual: { label: 'Released manually', color: 'slate' },
+}
+
 export function getCommissionRate(sellerId, settings) {
   return settings.sellers[sellerId] !== undefined
     ? settings.sellers[sellerId]
@@ -54,10 +64,11 @@ export function getTxnCommissionParts(t, settings) {
 }
 
 export function exportToCSV(transactions, settings) {
-  const headers = ['Order ID','Txn ID','Date','Buyer','Buyer Email','Seller','Service','Total Amount','Commission %','Commission','Seller Earnings','Payment Status','Payout Status','Payout Reference','Payout Date']
+  const headers = ['Order ID','Txn ID','Date','Buyer','Buyer Email','Seller','Service','Total Amount','Commission %','Commission','Seller Earnings','Payment Status','Payout Status','Disbursement Status','Payout Reference','Payout Date']
   const rows = transactions.map(t => {
     const { rate, commission, sellerEarnings } = getTxnCommissionParts(t, settings)
-    return [t.orderId, t.id, t.date, t.buyerName, t.buyerEmail, t.sellerName, t.service, t.amount, `${rate}%`, commission, sellerEarnings, t.paymentStatus, t.payoutStatus, t.payoutReference, t.payoutDate]
+    const disbursementLabel = DISBURSEMENT_STATE_META[t.disbursementState]?.label || t.disbursementState || ''
+    return [t.orderId, t.id, t.date, t.buyerName, t.buyerEmail, t.sellerName, t.service, t.amount, `${rate}%`, commission, sellerEarnings, t.paymentStatus, t.payoutStatus, disbursementLabel, t.payoutReference, t.payoutDate]
   })
   const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n')
   const blob = new Blob([csv], { type: 'text/csv' })
