@@ -14,12 +14,23 @@ export function useCheckoutPaymentStatus(paymentId) {
   const [settled, setSettled] = useState(!hasPaymentId)
   const [loading, setLoading] = useState(hasPaymentId)
   const [error, setError] = useState('')
+  const [timedOut, setTimedOut] = useState(false)
 
   useEffect(() => {
     if (!paymentId) return undefined
 
     let cancelled = false
     let attempts = 0
+
+    queueMicrotask(() => {
+      if (!cancelled) {
+        setStatus('pending')
+        setSettled(false)
+        setLoading(true)
+        setError('')
+        setTimedOut(false)
+      }
+    })
 
     async function poll() {
       while (!cancelled && attempts < MAX_ATTEMPTS) {
@@ -59,6 +70,10 @@ export function useCheckoutPaymentStatus(paymentId) {
 
       if (!cancelled) {
         setLoading(false)
+        setTimedOut(true)
+        setError(
+          'Payment confirmation is taking longer than expected. Check your purchases page for the latest status.',
+        )
       }
     }
 
@@ -68,5 +83,5 @@ export function useCheckoutPaymentStatus(paymentId) {
     }
   }, [paymentId])
 
-  return { status, settled, loading, error }
+  return { status, settled, loading, error, timedOut }
 }

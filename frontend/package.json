@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test src/lib/auth/*.test.js src/lib/payments/*.test.js src/lib/paymongo/*.test.js src/lib/ratings/*.test.js"
+    "test": "node --test src/lib/auth/*.test.js src/lib/payments/*.test.js src/lib/paymongo/*.test.js src/lib/ratings/*.test.js src/lib/seller/*.test.js"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^7.2.0",

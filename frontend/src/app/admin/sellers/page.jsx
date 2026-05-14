@@ -1422,7 +1422,13 @@ export default function AdminSellersPage() {
               <tbody>
                 {filtered.map((seller) => {
                   const sellerId = seller.user_id || seller.id
-                  const isOverride = false
+                  const overrideRaw = seller.commission_percent_override
+                  const hasOverride =
+                    overrideRaw != null && overrideRaw !== '' && Number.isFinite(Number(overrideRaw))
+                  const isOverride = hasOverride
+                  const commissionPct = hasOverride
+                    ? Number(overrideRaw)
+                    : platformDefaultCommissionPct
                   const isUpdating = updatingId === sellerId;
 
                   return (
@@ -1473,7 +1479,7 @@ export default function AdminSellersPage() {
                       </td>
 
                       <td>
-                        <CommissionBadge percentage={platformDefaultCommissionPct} isOverride={isOverride} />
+                        <CommissionBadge percentage={commissionPct} isOverride={isOverride} />
                       </td>
 
                       <td>

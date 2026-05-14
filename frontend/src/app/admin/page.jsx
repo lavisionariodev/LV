@@ -735,7 +735,7 @@ export default function AdminDashboardPage() {
           <div className={styles.panelHead}>
             <p className={styles.panelTitle}>Recent activity</p>
             {recentActivityRows.length > DESKTOP_RECENT_ACTIVITY_LIMIT ? (
-              <Link href="/admin/analytics" className={styles.smallBtn}>
+              <Link href="/admin/payouts?tab=transactions" className={styles.smallBtn}>
                 View all
               </Link>
             ) : null}

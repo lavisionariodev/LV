@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useToast } from '@/contexts/ToastContext';
-import { getUserRole, getBuyerAccountStatus, ROLE_SELLER } from '@/lib/auth/roles';
+import { getUserRole, getBuyerAccountStatus, ROLE_BUYER, ROLE_SELLER } from '@/lib/auth/roles';
 import { expandPurchaseCardsByLineItem, mapBuyerOrderCard } from '@/lib/profile/mapBuyerOrderCard';
 import styles from '../profile.module.css';
 import purchaseStyles from './purchases.module.css';
@@ -992,7 +992,7 @@ function PurchaseCard({ purchase, cancellingOrderId, payingOrderId }) {
           </button>
         ) : null}
 
-        {purchase.status === 'Completed' ? (
+        {purchase.canLeaveReview ? (
           <button type="button" className={purchaseStyles.actionLink} onClick={() => purchase.onLeaveReview?.(purchase)}>
             {purchase.hasExistingReview ? 'Edit review' : 'Leave a review'}
           </button>
@@ -1036,6 +1036,7 @@ export default function PurchasesPage() {
   const router = useRouter();
   /** `undefined` until `getUserRole` resolves — avoids a one-frame buyer skeleton for sellers. */
   const [isSeller, setIsSeller] = useState(undefined);
+  const [isBuyerAccount, setIsBuyerAccount] = useState(undefined);
   const [buyerSuspended, setBuyerSuspended] = useState(undefined);
   const [activeFilter, setActiveFilter] = useState('All');
   const [search, setSearch] = useState('');
@@ -1043,6 +1044,7 @@ export default function PurchasesPage() {
   const [loadingPurchases, setLoadingPurchases] = useState(true);
   const [refreshingPurchases, setRefreshingPurchases] = useState(false);
   const [purchases, setPurchases] = useState([]);
+  const [purchasesLoadError, setPurchasesLoadError] = useState('');
   const [refreshNonce, setRefreshNonce] = useState(0);
   const hasLoadedPurchasesRef = useRef(false);
   const lastRefreshAtRef = useRef(0);
@@ -1071,6 +1073,7 @@ export default function PurchasesPage() {
     async function check() {
       if (!user) {
         setIsSeller(false);
+        setIsBuyerAccount(false);
         setBuyerSuspended(false);
         return;
       }
@@ -1080,6 +1083,7 @@ export default function PurchasesPage() {
       ]);
       if (cancelled) return;
       setIsSeller(role === ROLE_SELLER);
+      setIsBuyerAccount(role === ROLE_BUYER);
       setBuyerSuspended(account.role !== ROLE_SELLER && account.status === 'suspended');
     }
     check();
@@ -1119,6 +1123,10 @@ export default function PurchasesPage() {
       if (isSeller !== false) {
         return;
       }
+      if (isBuyerAccount !== true) {
+        if (!cancelled) setLoadingPurchases(false);
+        return;
+      }
       if (buyerSuspended !== false) {
         if (!cancelled) setLoadingPurchases(false);
         return;
@@ -1133,8 +1141,24 @@ export default function PurchasesPage() {
         const ordersRes = await fetch('/api/buyer/orders', { cache: 'no-store' });
         const ordersBody = await ordersRes.json().catch(() => null);
         if (!ordersRes.ok || cancelled) {
-          if (!cancelled) setPurchases([]);
+          if (!cancelled) {
+            const message =
+              typeof ordersBody?.error === 'string'
+                ? ordersBody.error
+                : ordersRes.status === 401
+                  ? 'Sign in as a buyer to view your purchases.'
+                  : ordersRes.status === 403
+                    ? 'Only buyer accounts can view purchase history.'
+                    : 'Could not load your purchases. Please try again.';
+            setPurchases([]);
+            setPurchasesLoadError(message);
+            toast.error(message);
+          }
           return;
+        }
+
+        if (!cancelled) {
+          setPurchasesLoadError('');
         }
 
         const orders = ordersBody?.orders ?? [];
@@ -1224,7 +1248,7 @@ export default function PurchasesPage() {
     return () => {
       cancelled = true;
     };
-  }, [user, isSeller, refreshNonce, buyerSuspended]);
+  }, [user, isSeller, isBuyerAccount, refreshNonce, buyerSuspended, toast]);
 
   useEffect(() => {
     if (typeof document === 'undefined' || !user || isSeller) return undefined;
@@ -1300,6 +1324,8 @@ export default function PurchasesPage() {
   );
 
   const openLeaveReview = useCallback((purchase) => {
+    if (!purchase?.canLeaveReview) return;
+
     if (process.env.NODE_ENV !== 'production') {
       console.log('[openLeaveReview]', {
         rawOrderId: purchase?.rawOrderId,
@@ -1415,6 +1441,27 @@ export default function PurchasesPage() {
     );
   }
 
+  if (isBuyerAccount === false) {
+    return (
+      <div className={styles.profileCard}>
+        <div className={styles.profileAccentBar} />
+        <header className={styles.profileHeader}>
+          <div className={styles.profileHeaderLeft}>
+            <p className={styles.profileEyebrow}>Purchases</p>
+            <p className={styles.profileSignedIn}>
+              Purchase history is available on buyer accounts only.
+            </p>
+          </div>
+        </header>
+        <div className={purchaseStyles.purchasesBody} style={{ padding: '32px 28px' }}>
+          <button className={styles.primaryButton} type="button" onClick={() => router.push('/')}>
+            Back to homepage
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (buyerSuspended === true) {
     return (
       <div className={styles.profileCard}>
@@ -1437,7 +1484,12 @@ export default function PurchasesPage() {
     );
   }
 
-  if (isSeller === undefined || buyerSuspended === undefined || (!isSeller && loadingPurchases)) {
+  if (
+    isSeller === undefined ||
+    isBuyerAccount === undefined ||
+    buyerSuspended === undefined ||
+    (!isSeller && isBuyerAccount && loadingPurchases)
+  ) {
     return (
       <div
         className={styles.profileCard}
@@ -1526,6 +1578,14 @@ export default function PurchasesPage() {
             <p style={{ margin: 0, flex: 1 }}>{checkoutPayBanner}</p>
             <button type="button" className={purchaseStyles.payErrorDismiss} onClick={() => setCheckoutPayBanner('')}>
               Dismiss
+            </button>
+          </div>
+        ) : null}
+        {purchasesLoadError ? (
+          <div className={`${purchaseStyles.payErrorBanner} ${purchaseStyles.payErrorBannerDismissRow}`} role="alert">
+            <p style={{ margin: 0, flex: 1 }}>{purchasesLoadError}</p>
+            <button type="button" className={purchaseStyles.payErrorDismiss} onClick={() => bumpRefresh()}>
+              Retry
             </button>
           </div>
         ) : null}

@@ -83,13 +83,15 @@ export async function GET(request) {
     `,
     )
     .order('created_at', { ascending: false })
-    .limit(MAX_ROWS)
+    .limit(MAX_ROWS + 1)
 
   if (escErr) {
     return NextResponse.json({ error: escErr.message ?? 'Failed to load payouts.' }, { status: 500 })
   }
 
-  const rows = escrowRows ?? []
+  const fetchedRows = escrowRows ?? []
+  const truncated = fetchedRows.length > MAX_ROWS
+  const rows = truncated ? fetchedRows.slice(0, MAX_ROWS) : fetchedRows
 
   if (summary === '1' || summary === 'true') {
     const agg = summarizeEscrowsForPayoutStats(rows)
@@ -244,5 +246,7 @@ export async function GET(request) {
     defaultCommissionPercent,
     sellers: sellersDropdown,
     transactions: normalized,
+    truncated,
+    maxRows: MAX_ROWS,
   })
 }

@@ -1,14 +1,10 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { requireActiveSellerApiUser } from '@/lib/auth/requireApiUser'
 import { loadSellerReviews } from '@/lib/seller/sellerReviews'
 
 export async function GET() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-    error: userErr,
-  } = await supabase.auth.getUser()
-  if (userErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { user, responseError } = await requireActiveSellerApiUser()
+  if (responseError) return responseError
 
   try {
     const payload = await loadSellerReviews(user.id)
