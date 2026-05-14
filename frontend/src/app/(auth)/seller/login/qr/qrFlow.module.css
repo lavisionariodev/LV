@@ -167,6 +167,8 @@
 .scannerWrap {
   position: relative;
   width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
   aspect-ratio: 1;
   overflow: hidden;
   border-radius: 14px;
@@ -209,6 +211,11 @@
 @media (max-width: 640px) {
   .title {
     font-size: 24px;
+  }
+
+  .scannerWrap {
+    max-width: none;
+    aspect-ratio: 1;
   }
 
   .actions {

@@ -11,6 +11,17 @@ import {
 import { useAuthToast } from '@/contexts/ToastContext'
 import styles from '@/app/(auth)/seller/login/qr/qrFlow.module.css'
 
+function stopCameraTracks(videoEl) {
+  if (!videoEl) return
+  const stream = videoEl.srcObject
+  if (stream instanceof MediaStream) {
+    stream.getTracks().forEach((track) => {
+      track.stop()
+    })
+  }
+  videoEl.srcObject = null
+}
+
 /**
  * @param {{
  *   title?: string,
@@ -47,6 +58,7 @@ export default function SellerQrLoginScanner({
 
     handledRef.current = false
     const reader = new BrowserQRCodeReader()
+    const videoEl = videoRef.current
     let active = true
     let controls = null
     const confirmParams = context === 'settings' ? { from: 'settings' } : {}
@@ -55,7 +67,8 @@ export default function SellerQrLoginScanner({
       .decodeFromVideoDevice(undefined, videoRef.current, (result, decodeError) => {
         if (!active || decodeError || !result || handledRef.current) return
 
-        const credentials = parseSellerQrConfirmCredentials(result.getText())
+        const rawText = result.getText()
+        const credentials = parseSellerQrConfirmCredentials(rawText)
         if (!credentials) {
           toast.error(invalidQrMessage)
           return
@@ -63,6 +76,7 @@ export default function SellerQrLoginScanner({
 
         handledRef.current = true
         controls?.stop()
+        stopCameraTracks(videoEl)
 
         if (onScannedRef.current) {
           onScannedRef.current({
@@ -96,7 +110,10 @@ export default function SellerQrLoginScanner({
     return () => {
       active = false
       controls?.stop()
-      reader.reset()
+      stopCameraTracks(videoEl)
+      if (typeof reader.reset === 'function') {
+        reader.reset()
+      }
     }
   }, [context, invalidQrMessage, router, toast])
 

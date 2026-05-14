@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
-import { approveSellerQrChallenge, denySellerQrChallenge } from '@/lib/auth/qrLoginClient'
+import { onAuthStateChange } from '@/lib/auth/session'
+import { approveSellerQrChallenge, denySellerQrChallenge, pollSellerQrApprovalForApprover } from '@/lib/auth/qrLoginClient'
 import { useAuthToast } from '@/contexts/ToastContext'
 import styles from '@/app/(auth)/seller/login/qr/qrFlow.module.css'
 
@@ -14,6 +15,7 @@ import styles from '@/app/(auth)/seller/login/qr/qrFlow.module.css'
  *   fromSettings?: boolean,
  *   embedded?: boolean,
  *   onBack?: () => void,
+ *   onLinked?: () => void,
  * }} props
  */
 export default function SellerQrConfirmPanel({
@@ -22,6 +24,7 @@ export default function SellerQrConfirmPanel({
   fromSettings = false,
   embedded = false,
   onBack,
+  onLinked,
 }) {
   const toast = useAuthToast()
   const settingsHref = '/seller/settings/profile'
@@ -33,52 +36,141 @@ export default function SellerQrConfirmPanel({
       : '/seller/login/qr/confirm'
   const backHref = fromSettings ? settingsHref : loginHrefBase
   const backLabel = fromSettings ? 'Back to profile settings' : 'Back to seller login'
-  const signInRedirect = fromSettings ? linkDeviceHref : confirmPath
+  const linkDeviceReturnPath =
+    challengeId && approveToken
+      ? `${linkDeviceHref}?challenge=${encodeURIComponent(challengeId)}&token=${encodeURIComponent(approveToken)}`
+      : linkDeviceHref
+  const signInRedirect = fromSettings ? linkDeviceReturnPath : confirmPath
 
   const [loadingSession, setLoadingSession] = useState(true)
   const [email, setEmail] = useState('')
+  const [sessionReady, setSessionReady] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [completed, setCompleted] = useState(null)
+  const waitActiveRef = useRef(false)
+
+  useEffect(() => {
+    setCompleted(null)
+  }, [challengeId, approveToken])
+
+  useEffect(() => {
+    waitActiveRef.current = true
+    return () => {
+      waitActiveRef.current = false
+    }
+  }, [challengeId, approveToken])
 
   useEffect(() => {
     let mounted = true
 
     setLoadingSession(true)
     setEmail('')
-    setSubmitting(false)
-    setCompleted(null)
+    setSessionReady(false)
 
-    supabase.auth.getUser().then(({ data }) => {
+    const syncUser = (user, ready) => {
       if (!mounted) return
-      setEmail(data.user?.email || '')
+      setEmail(user?.email || '')
+      setSessionReady(ready)
       setLoadingSession(false)
+    }
+
+    const bootstrap = async () => {
+      let resolvedUser = null
+
+      const { data: userData, error: userError } = await supabase.auth.getUser()
+      if (!userError && userData.user) {
+        resolvedUser = userData.user
+      } else {
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
+        if (!refreshError && refreshData.session?.user) {
+          resolvedUser = refreshData.session.user
+        }
+      }
+
+      const nextEmail = resolvedUser?.email || ''
+      const ready = Boolean(nextEmail)
+
+      syncUser(resolvedUser, ready)
+    }
+
+    bootstrap()
+
+    const unsubscribe = onAuthStateChange((_event, session) => {
+      if (!mounted || !session?.user) return
+      syncUser(session.user, Boolean(session.user.email))
     })
 
     return () => {
       mounted = false
+      unsubscribe()
     }
-  }, [challengeId, approveToken])
+  }, [challengeId, approveToken, embedded, fromSettings])
 
   const loginHref = `${loginHrefBase}?redirect=${encodeURIComponent(signInRedirect)}`
   const cardClassName = embedded ? `${styles.card} ${styles.embeddedCard}` : styles.card
+  const title =
+    completed === 'linked'
+      ? 'Other device signed in'
+      : completed === 'approved'
+        ? 'Approval sent'
+        : 'Approve desktop login'
+  const subtitle =
+    completed === 'linked'
+      ? 'The other device finished signing in to Seller Centre with your seller account.'
+      : completed === 'approved'
+        ? 'Waiting for the other device to finish signing in.'
+        : 'Confirm the sign-in request from your other device before it can open Seller Centre.'
+
+  const waitForDesktopLogin = async () => {
+    const deadline = Date.now() + 30000
+
+    while (Date.now() < deadline && waitActiveRef.current) {
+      const { data, error } = await pollSellerQrApprovalForApprover({ challengeId, approveToken })
+      if (!waitActiveRef.current) return
+      if (error) break
+
+      if (data?.status === 'consumed') {
+        setCompleted('linked')
+        onLinked?.()
+        return
+      }
+
+      if (data?.status === 'expired' || data?.status === 'denied') {
+        break
+      }
+
+      await new Promise((resolve) => {
+        window.setTimeout(resolve, 2000)
+      })
+    }
+  }
 
   const handleApprove = async () => {
     if (submitting) return
     setSubmitting(true)
+
+    await supabase.auth.refreshSession()
     const { error } = await approveSellerQrChallenge({ challengeId, approveToken })
     setSubmitting(false)
 
     if (error) {
-      toast.error(error)
+      toast.error(
+        error === 'Unauthorized'
+          ? 'Your seller session expired on this device. Sign in again, then return to Link device to approve.'
+          : error,
+      )
       return
     }
 
     setCompleted('approved')
+    void waitForDesktopLogin()
   }
 
   const handleDeny = async () => {
     if (submitting) return
     setSubmitting(true)
+
+    await supabase.auth.refreshSession()
     const { error } = await denySellerQrChallenge({ challengeId, approveToken })
     setSubmitting(false)
 
@@ -94,16 +186,14 @@ export default function SellerQrConfirmPanel({
     <div className={cardClassName}>
       <div className={styles.cardHeader}>
         <p className={styles.eyebrow}>Seller Centre</p>
-        <h1 className={styles.title}>Approve desktop login</h1>
-        <p className={styles.subtitle}>
-          Confirm the sign-in request from your other device before it can open Seller Centre.
-        </p>
+        <h1 className={styles.title}>{title}</h1>
+        <p className={styles.subtitle}>{subtitle}</p>
       </div>
 
-      {completed === 'approved' ? (
+      {completed === 'linked' ? (
         <div className={styles.statusBlock}>
           <p className={styles.status}>
-            Login approved. You can return to your computer to continue in Seller Centre.
+            The other device is signed in to Seller Centre. You can return to that device now.
           </p>
           {onBack ? (
             <button type="button" className={styles.primaryBtn} onClick={onBack}>
@@ -114,6 +204,12 @@ export default function SellerQrConfirmPanel({
               {fromSettings ? 'Back to profile settings' : 'Open Seller Centre'}
             </Link>
           )}
+        </div>
+      ) : completed === 'approved' ? (
+        <div className={styles.statusBlock}>
+          <p className={styles.status}>
+            Login approved. Waiting for the other device to finish signing in.
+          </p>
         </div>
       ) : completed === 'denied' ? (
         <div className={styles.statusBlock}>
@@ -130,10 +226,12 @@ export default function SellerQrConfirmPanel({
         </div>
       ) : loadingSession ? (
         <p className={styles.status}>Checking your session...</p>
-      ) : !email ? (
+      ) : !sessionReady ? (
         <div className={styles.statusBlock}>
           <p className={styles.status}>
-            Sign in with your seller account on this device before approving the desktop login.
+            {fromSettings
+              ? 'This phone needs an active seller session to approve the other device. Refresh Link device or sign in here, then return to approve.'
+              : 'Sign in with your seller account on this device before approving the desktop login.'}
           </p>
           <Link href={loginHref} className={styles.primaryBtn}>
             Sign in to approve
