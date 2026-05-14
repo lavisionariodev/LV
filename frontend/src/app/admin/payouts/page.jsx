@@ -82,6 +82,12 @@ function payoutTxnRowKey(t) {
   return String(t.id)
 }
 
+function shouldShowDisbursementBadge(disbursementState, payoutStatus) {
+  if (!disbursementState || disbursementState === 'none') return false
+  if (disbursementState === 'legacy_manual' && payoutStatus === 'released') return false
+  return true
+}
+
 function buildPayoutQueryString({
   search,
   filterSeller,
@@ -1584,7 +1590,7 @@ function ExpandedEscrowDetails({
           <div className={styles.payoutStatusRow}>
             <Badge type="payment" value={t.paymentStatus} />
             <Badge type="payout" value={t.payoutStatus} />
-            {t.disbursementState && t.disbursementState !== 'none' ? (
+            {shouldShowDisbursementBadge(t.disbursementState, t.payoutStatus) ? (
               <Badge type="disbursement" value={t.disbursementState} />
             ) : null}
             {t.payoutReference && <span className={styles.refChip}>Ref: {t.payoutReference}</span>}
@@ -2889,7 +2895,7 @@ export default function AdminPayoutsPage() {
                     <div className={styles.mobileCardStatuses}>
                       <Badge type="payment" value={t.paymentStatus}/>
                       <Badge type="payout" value={t.payoutStatus}/>
-                      {t.disbursementState && t.disbursementState !== 'none' ? (
+                      {shouldShowDisbursementBadge(t.disbursementState, t.payoutStatus) ? (
                         <Badge type="disbursement" value={t.disbursementState} />
                       ) : null}
                     </div>
@@ -2957,7 +2963,7 @@ export default function AdminPayoutsPage() {
                   <th>Service</th>
                   <th>Buyer</th>
                   <th>Payment</th>
-                  <th>Escrow</th>
+                  <th className={styles.escrowCell}>Escrow</th>
                   <th className={styles.thDateHead} aria-sort={dateSortDesc ? 'descending' : 'ascending'}>
                     <button
                       type="button"
@@ -3036,11 +3042,13 @@ export default function AdminPayoutsPage() {
                           <p className={styles.personEmail}>{t.buyerEmail}</p>
                         </td>
                         <td><Badge type="payment" value={t.paymentStatus}/></td>
-                        <td>
-                          <Badge type="payout" value={t.payoutStatus}/>
-                          {t.disbursementState && t.disbursementState !== 'none' ? (
-                            <Badge type="disbursement" value={t.disbursementState} />
-                          ) : null}
+                        <td className={styles.escrowCell}>
+                          <div className={styles.escrowStatusStack}>
+                            <Badge type="payout" value={t.payoutStatus}/>
+                            {shouldShowDisbursementBadge(t.disbursementState, t.payoutStatus) ? (
+                              <Badge type="disbursement" value={t.disbursementState} />
+                            ) : null}
+                          </div>
                         </td>
                         <td className={styles.dateCell}>{t.date}</td>
                         <td>

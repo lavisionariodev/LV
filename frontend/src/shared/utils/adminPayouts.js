@@ -35,7 +35,7 @@ export const DISBURSEMENT_STATE_META = {
   succeeded: { label: 'Paid out', color: 'green' },
   failed: { label: 'Payout failed', color: 'red' },
   cancelled: { label: 'Payout cancelled', color: 'red' },
-  legacy_manual: { label: 'Released manually', color: 'slate' },
+  legacy_manual: { label: 'Manual', color: 'slate' },
 }
 
 export function getCommissionRate(sellerId, settings) {
