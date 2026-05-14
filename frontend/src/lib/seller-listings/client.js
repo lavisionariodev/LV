@@ -1,11 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
 
-function normalizeAvatarUrl(url) {
-  if (url == null || typeof url !== 'string') return null
-  const t = url.trim()
-  return t.length ? t : null
-}
-
 function normalizeListingRow(row) {
   const imageUrls = Array.isArray(row.image_urls) ? row.image_urls : []
   return {
@@ -182,81 +176,36 @@ export async function deleteSellerListing(id) {
 }
 
 /**
- * Admin: all listings with seller business name (requires RLS policy for admins).
+ * Admin: all listings with seller business name (server route).
  */
 export async function listSellerListingsForAdmin(options = {}) {
-  const statusInRaw = Array.isArray(options?.statusIn) ? options.statusIn : null
-  const approvalStatusInRaw = Array.isArray(options?.approvalStatusIn) ? options.approvalStatusIn : null
+  const statusIn = Array.isArray(options?.statusIn) ? options.statusIn : null
+  const approvalStatusIn = Array.isArray(options?.approvalStatusIn) ? options.approvalStatusIn : null
   const onlyActive = options?.onlyActive !== false
 
-  let query = supabase
-    .from('seller_listings')
-    .select(
-      `
-      *,
-      sellers (
-        business_name,
-        contact_name,
-        email
-      )
-    `,
-    )
-    .order('updated_at', { ascending: false })
-
-  const statusIn = statusInRaw
-    ? statusInRaw.map((s) => String(s || '').trim().toLowerCase()).filter(Boolean)
-    : null
-  const approvalStatusIn = approvalStatusInRaw
-    ? approvalStatusInRaw.map((s) => String(s || '').trim().toLowerCase()).filter(Boolean)
-    : null
-
+  const params = new URLSearchParams()
   if (statusIn?.length) {
-    query = query.in('status', statusIn)
-  } else if (onlyActive) {
-    query = query.ilike('status', 'active')
+    params.set('statusIn', statusIn.join(','))
   }
-
   if (approvalStatusIn?.length) {
-    query = query.in('approval_status', approvalStatusIn)
+    params.set('approvalStatusIn', approvalStatusIn.join(','))
+  }
+  if (!onlyActive) {
+    params.set('onlyActive', 'false')
   }
 
-  const { data, error } = await query
+  const query = params.toString()
+  const url = query ? `/api/admin/listings?${query}` : '/api/admin/listings'
 
-  if (error) {
-    return { data: [], error: error.message || 'Failed to load listings.' }
-  }
-
-  const rows = (data || []).map((row) => {
-    const { sellers, ...rest } = row
-    const rel = sellers
-    const seller = Array.isArray(rel) ? rel[0] : rel
-    return normalizeListingRow({
-      ...rest,
-      seller_business_name: seller?.business_name ?? null,
-      seller_contact_name: seller?.contact_name ?? null,
-      seller_email: seller?.email ?? null,
-    })
-  })
-
-  const sellerIds = [...new Set(rows.map((r) => r.seller_user_id).filter(Boolean))]
-  const avatarByUserId = new Map()
-  if (sellerIds.length > 0) {
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, avatar_url')
-      .in('id', sellerIds)
-
-    if (!profilesError && profiles) {
-      for (const p of profiles) {
-        avatarByUserId.set(p.id, normalizeAvatarUrl(p.avatar_url))
-      }
+  try {
+    const res = await fetch(url, { credentials: 'include' })
+    const body = await res.json().catch(() => null)
+    if (!res.ok) {
+      return { data: [], error: body?.error || 'Failed to load listings.' }
     }
+    const rows = Array.isArray(body?.listings) ? body.listings : []
+    return { data: rows.map(normalizeListingRow), error: null }
+  } catch (e) {
+    return { data: [], error: e?.message || 'Failed to load listings.' }
   }
-
-  const enriched = rows.map((r) => ({
-    ...r,
-    seller_avatar_url: avatarByUserId.get(r.seller_user_id) ?? null,
-  }))
-
-  return { data: enriched, error: null }
 }

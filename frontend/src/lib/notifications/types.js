@@ -81,3 +81,18 @@ export const SELLER_NOTIFICATION_FILTER_TABS = [
   { id: 'alert', label: 'Alerts' },
   { id: 'system', label: 'System' },
 ]
+
+/**
+ * Buyer notifications page filter buckets.
+ * @param {string} apiType from user_notifications.type
+ */
+export function buyerNotificationFilterBucket(apiType) {
+  const t = String(apiType || '')
+  if (t === 'payment_success' || t === 'payment_failed' || t === 'payment_refund') return 'payment'
+  if (t === 'reminder') return 'reminder'
+  if (t === 'account' || t === 'account_security' || t === 'account_profile' || t === 'message') {
+    return 'account'
+  }
+  if (t.startsWith('service') || t === 'alerts' || t === 'service_alert') return 'service'
+  return 'service'
+}

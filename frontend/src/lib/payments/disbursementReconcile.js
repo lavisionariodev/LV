@@ -1,4 +1,4 @@
-import { insertWalletLedgerEntry } from '@/lib/payments/walletLedger'
+import { recordPayoutReleaseLedgerEntry } from '@/lib/payments/walletLedgerEvents'
 
 const IN_FLIGHT_DISBURSEMENT_STATUSES = new Set(['pending', 'submitted'])
 
@@ -53,19 +53,16 @@ export async function finalizeSuccessfulDisbursement(supabaseAdmin, params) {
     })
     .eq('id', disbursement.id)
 
-  await insertWalletLedgerEntry(supabaseAdmin, {
-    seller_user_id: escrow.seller_user_id,
-    order_id: orderId,
-    escrow_id: escrow.id,
-    disbursement_id: disbursement.id,
-    entry_type: 'payout_release',
-    amount_php: Number(disbursement.amount_php ?? escrow.net_amount) || 0,
-    currency: disbursement.currency || escrow.currency || 'PHP',
+  await recordPayoutReleaseLedgerEntry(supabaseAdmin, {
+    escrow,
+    orderId,
+    disbursementId: disbursement.id,
+    releaseReference: releaseRef,
+    mode: 'automated',
     metadata: {
       paymongo_batch_id: disbursement.paymongo_batch_id,
       paymongo_transfer_id: disbursement.paymongo_transfer_id,
     },
-    idempotency_key: `payout_release:${disbursement.id}`,
   })
 
   return { ok: true, disbursementId: disbursement.id }

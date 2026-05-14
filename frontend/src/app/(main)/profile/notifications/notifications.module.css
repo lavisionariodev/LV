@@ -421,3 +421,119 @@
     height: 14px;
   }
 }
+
+.prefPanel {
+  padding: 0 24px 24px;
+}
+
+.prefIntro {
+  margin: 0 0 16px;
+  color: var(--text-muted, #5c6b63);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.prefInlineLink {
+  color: var(--forest-mid, #204f38);
+  text-decoration: underline;
+}
+
+.prefStatus,
+.prefError {
+  margin: 0 0 12px;
+  font-size: 0.88rem;
+}
+
+.prefError {
+  color: #b42318;
+}
+
+.prefList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.prefRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 16px;
+  padding: 14px 0;
+  border-top: 1px solid rgba(168, 137, 74, 0.14);
+}
+
+.prefMeta {
+  min-width: 0;
+}
+
+.prefTitle {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.prefDesc {
+  margin: 0;
+  color: var(--text-muted, #5c6b63);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.prefControls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.prefChannel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.prefChannelLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.prefChannelName {
+  font-size: 0.86rem;
+  font-weight: 500;
+}
+
+.prefChannelHint {
+  font-size: 0.78rem;
+  color: var(--text-muted, #5c6b63);
+}
+
+.inboxToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.inboxActionBtn {
+  border: 1px solid rgba(32, 79, 56, 0.18);
+  background: #fff;
+  color: var(--forest-mid, #204f38);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.inboxActionBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.inboxDeleteBtn {
+  border: none;
+  background: transparent;
+  color: #b42318;
+  font-size: 0.76rem;
+  cursor: pointer;
+  padding: 4px 0;
+}

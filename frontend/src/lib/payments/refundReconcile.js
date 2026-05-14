@@ -1,5 +1,6 @@
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
 import { insertUserNotification, notifySeller } from '@/lib/notifications/inAppServer'
+import { recordRefundLedgerEntry } from '@/lib/payments/walletLedgerEvents'
 
 export { insertUserNotification }
 
@@ -43,6 +44,12 @@ export async function applyTerminalRefundToOrder(supabaseAdmin, p) {
 
   const nowIso = new Date().toISOString()
 
+  const { data: escrow } = await supabaseAdmin
+    .from('order_escrows')
+    .select('*')
+    .eq('order_id', p.orderId)
+    .maybeSingle()
+
   const { error: updErr } = await supabaseAdmin
     .from('orders')
     .update({
@@ -67,6 +74,15 @@ export async function applyTerminalRefundToOrder(supabaseAdmin, p) {
       hold_reason: 'Buyer refunded via PayMongo; do not release payout for this order.',
     })
     .eq('order_id', p.orderId)
+
+  if (escrow) {
+    await recordRefundLedgerEntry(supabaseAdmin, {
+      escrow,
+      orderId: p.orderId,
+      refundId: p.paymongoRefundId,
+      amountPhp: p.amountPhp,
+    })
+  }
 
   const { data: adminDisputeRefundEvents } = await supabaseAdmin
     .from('order_refund_events')

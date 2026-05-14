@@ -119,6 +119,7 @@ function useAdminPayoutsPage() {
   const [listLoading, setListLoading] = useState(true)
   const [listError, setListError] = useState(null)
   const [summaryLoading, setSummaryLoading] = useState(true)
+  const [disbursementConfig, setDisbursementConfig] = useState(null)
 
   const [activeTab, setActiveTab] = useState(() => readEnum(searchParams, 'tab', TAB_VALUES, 'all'))
 
@@ -164,6 +165,17 @@ function useAdminPayoutsPage() {
     }))
     setSellerOptions(sellers)
     setTransactions(Array.isArray(payload.transactions) ? payload.transactions : [])
+  }, [])
+
+  const fetchDisbursementConfig = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/payouts/disbursement-config', { credentials: 'include' })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(body?.error || 'Failed to load disbursement config')
+      setDisbursementConfig(body?.config && typeof body.config === 'object' ? body.config : null)
+    } catch {
+      setDisbursementConfig(null)
+    }
   }, [])
 
   const fetchSummary = useCallback(async () => {
@@ -228,8 +240,9 @@ function useAdminPayoutsPage() {
   useEffect(() => {
     queueMicrotask(() => {
       void fetchSummary()
+      void fetchDisbursementConfig()
     })
-  }, [fetchSummary])
+  }, [fetchDisbursementConfig, fetchSummary])
 
   useDebouncedEffect(
     () => {
@@ -345,9 +358,8 @@ function useAdminPayoutsPage() {
   )
 
   const refreshAll = useCallback(async () => {
-    await fetchSummary()
-    await fetchTransactions()
-  }, [fetchSummary, fetchTransactions])
+    await Promise.all([fetchSummary(), fetchTransactions(), fetchDisbursementConfig()])
+  }, [fetchDisbursementConfig, fetchSummary, fetchTransactions])
 
   const releaseOrder = useCallback(
     async (orderUuid, options = {}) => {
@@ -506,6 +518,7 @@ function useAdminPayoutsPage() {
     summaryLoading,
     listLoading,
     listError,
+    disbursementConfig,
     paginatedRows,
     totalPages,
     dateSortDesc,
@@ -828,6 +841,7 @@ function EscrowReleasePanel({
   const [holdReasonInput, setHoldReasonInput] = useState('')
   const [holdModalErr, setHoldModalErr] = useState(null)
   const [releaseReferenceInput, setReleaseReferenceInput] = useState('')
+  const [manualOverrideRelease, setManualOverrideRelease] = useState(false)
 
   const disbursementState = String(t.disbursementState || 'none').toLowerCase()
   const disbursementLabel =
@@ -878,9 +892,11 @@ function EscrowReleasePanel({
       await releaseOrder(t.orderUuid, {
         releaseReference: releaseReferenceInput.trim(),
         approvedRequestId: approvedRequestId || null,
+        manualOverride: manualOverrideRelease,
       })
       setReleaseModalOpen(false)
       setReleaseReferenceInput('')
+      setManualOverrideRelease(false)
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Release failed.')
     } finally {
@@ -1013,16 +1029,27 @@ function EscrowReleasePanel({
           )
         }
         extra={
-          <label className={confirmModalStyles.modalFieldLabel}>
-            <span>Release reference (optional)</span>
-            <input
-              type="text"
-              value={releaseReferenceInput}
-              onChange={(e) => setReleaseReferenceInput(e.target.value)}
-              placeholder="Bank ref, transfer note, or PayMongo transfer id"
-              disabled={busy}
-            />
-          </label>
+          <>
+            <label className={confirmModalStyles.modalFieldLabel}>
+              <span>Release reference (optional)</span>
+              <input
+                type="text"
+                value={releaseReferenceInput}
+                onChange={(e) => setReleaseReferenceInput(e.target.value)}
+                placeholder="Bank ref, transfer note, or PayMongo transfer id"
+                disabled={busy}
+              />
+            </label>
+            <label className={confirmModalStyles.modalFieldLabel}>
+              <input
+                type="checkbox"
+                checked={manualOverrideRelease}
+                onChange={(e) => setManualOverrideRelease(e.target.checked)}
+                disabled={busy}
+              />
+              <span>Manual ledger release (skip PayMongo transfer)</span>
+            </label>
+          </>
         }
         confirmLabel={useCompactCopy ? 'Release' : 'Release payout'}
         confirmLoadingLabel="Releasing..."
@@ -1652,9 +1679,35 @@ function CommissionPanel({
 
   const customCount = Object.keys(settings.sellers).length
 
-  const logEntry = (entry) => {
-    setChangeLog((prev) => [{ id: Date.now(), ts: Date.now(), ...entry }, ...prev.slice(0, 9)])
-  }
+  const reloadChangeLog = useCallback(async () => {
+    const res = await fetch('/api/admin/payouts/commission-change-log?limit=20', {
+      credentials: 'include',
+      cache: 'no-store',
+    })
+    const body = await res.json().catch(() => null)
+    if (!res.ok) return
+    setChangeLog(
+      (body?.entries ?? []).map((row) => ({
+        id: row.id,
+        ts: new Date(row.created_at).getTime(),
+        type:
+          row.scope === 'global'
+            ? 'global'
+            : row.scope === 'seller_override'
+              ? row.to_percent == null
+                ? 'remove'
+                : 'seller'
+              : 'order',
+        label: row.label,
+        from: row.from_percent,
+        to: row.to_percent,
+      })),
+    )
+  }, [])
+
+  useEffect(() => {
+    reloadChangeLog()
+  }, [reloadChangeLog])
 
   const saveGlobal = async () => {
     setSaveError('')
@@ -1670,7 +1723,7 @@ function CommissionPanel({
     setBusy('global')
     try {
       await onSaveGlobal(v)
-      logEntry({ type: 'global', label: 'Global rate', from: settings.global, to: v })
+      await reloadChangeLog()
       setEditingGlobal(false)
     } catch (err) {
       setSaveError(err?.message || 'Failed to save commission.')
@@ -1690,12 +1743,7 @@ function CommissionPanel({
         setBusy(sid)
         try {
           await onClearSellerOverride(sid)
-          logEntry({
-            type: 'remove',
-            label: seller?.name || sid,
-            from: settings.sellers[sid],
-            to: settings.global,
-          })
+          await reloadChangeLog()
           setEditingSeller(null)
         } catch (err) {
           setSaveError(err?.message || 'Failed to clear override.')
@@ -1720,7 +1768,7 @@ function CommissionPanel({
     setBusy(sid)
     try {
       await onSaveSellerOverride(sid, v)
-      logEntry({ type: 'seller', label: seller?.name || sid, from: prev, to: v })
+      await reloadChangeLog()
       setEditingSeller(null)
     } catch (err) {
       setSaveError(err?.message || 'Failed to save override.')
@@ -1736,12 +1784,7 @@ function CommissionPanel({
     setSaveError('')
     try {
       await onClearSellerOverride(sid)
-      logEntry({
-        type: 'remove',
-        label: seller?.name || sid,
-        from: settings.sellers[sid],
-        to: settings.global,
-      })
+      await reloadChangeLog()
     } catch (err) {
       setSaveError(err?.message || 'Failed to clear override.')
     } finally {
@@ -1769,7 +1812,7 @@ function CommissionPanel({
       if (failed.length > 0) {
         setSaveError(`Cleared ${sellerIds.length - failed.length} of ${sellerIds.length} overrides.`)
       }
-      logEntry({ type: 'reset', label: 'All overrides cleared', from: null, to: settings.global })
+      await reloadChangeLog()
     } finally {
       setBusy(null)
       setConfirmReset(false)
@@ -2253,6 +2296,7 @@ export default function AdminPayoutsPage() {
     summaryLoading,
     listLoading,
     listError,
+    disbursementConfig,
     paginatedRows,
     totalPages,
     dateSortDesc,
@@ -2300,6 +2344,7 @@ export default function AdminPayoutsPage() {
   const [payoutsBulkReleaseConfirm, setPayoutsBulkReleaseConfirm] = useState(false)
   const [payoutsBulkUnholdConfirm, setPayoutsBulkUnholdConfirm] = useState(false)
   const [payoutsBulkBusy, setPayoutsBulkBusy] = useState(false)
+  const [bulkManualOverrideRelease, setBulkManualOverrideRelease] = useState(false)
 
   const selectedPayoutTxns = useMemo(() => {
     if (selectedRows.size === 0) return []
@@ -2334,6 +2379,7 @@ export default function AdminPayoutsPage() {
         body: JSON.stringify({
           orderIds,
           approvedRequestId: approvedRequestId || null,
+          manualOverride: bulkManualOverrideRelease,
         }),
       })
       const body = await res.json().catch(() => null)
@@ -2350,9 +2396,10 @@ export default function AdminPayoutsPage() {
     } finally {
       setPayoutsBulkBusy(false)
       setPayoutsBulkReleaseConfirm(false)
+      setBulkManualOverrideRelease(false)
       setSelectedRows(new Set())
     }
-  }, [approvedRequestId, bulkReleaseTargets, refreshAll, setSelectedRows])
+  }, [approvedRequestId, bulkManualOverrideRelease, bulkReleaseTargets, refreshAll, setSelectedRows])
 
   const runBulkUnhold = useCallback(async () => {
     if (bulkUnholdTargets.length === 0) return
@@ -2491,6 +2538,28 @@ export default function AdminPayoutsPage() {
           <p className={styles.stuckRefundsSub}>
             Release eligible completed escrow rows for this seller. Automated PayMongo disbursement runs per order when enabled.
           </p>
+        </section>
+      ) : null}
+
+      {disbursementConfig ? (
+        <section className={styles.stuckRefundsWrap} aria-live="polite">
+          <p className={styles.stuckRefundsTitle}>
+            {disbursementConfig.automatedReady
+              ? 'PayMongo automated disbursement is enabled'
+              : 'Escrow releases use manual settlement unless PayMongo is ready'}
+          </p>
+          <p className={styles.stuckRefundsSub}>
+            {disbursementConfig.automatedReady
+              ? 'Eligible releases can create PayMongo transfers when seller payout settings validate. Use the manual ledger checkbox to skip PayMongo for a specific release.'
+              : 'Set PAYMONGO_DISBURSEMENT_ENABLED=true with wallet source env vars, or use the manual ledger release checkbox on each release.'}
+          </p>
+          {Array.isArray(disbursementConfig.issues) && disbursementConfig.issues.length > 0 ? (
+            <ul className={styles.stuckRefundsSub}>
+              {disbursementConfig.issues.map((issue) => (
+                <li key={issue}>{issue}</li>
+              ))}
+            </ul>
+          ) : null}
         </section>
       ) : null}
 
@@ -3088,6 +3157,17 @@ export default function AdminPayoutsPage() {
                 Only use when you intend to complete these payouts.
               </>
             }
+            extra={
+              <label className={confirmModalStyles.modalFieldLabel}>
+                <input
+                  type="checkbox"
+                  checked={bulkManualOverrideRelease}
+                  onChange={(e) => setBulkManualOverrideRelease(e.target.checked)}
+                  disabled={payoutsBulkBusy}
+                />
+                <span>Manual ledger release (skip PayMongo transfer)</span>
+              </label>
+            }
             confirmLabel="Release payouts"
             confirmLoadingLabel="Releasing…"
             cancelLabel="Cancel"
@@ -3095,6 +3175,7 @@ export default function AdminPayoutsPage() {
             onCancel={() => {
               if (payoutsBulkBusy) return
               setPayoutsBulkReleaseConfirm(false)
+              setBulkManualOverrideRelease(false)
             }}
             onConfirm={runBulkRelease}
           />

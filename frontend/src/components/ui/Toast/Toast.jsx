@@ -25,6 +25,7 @@ export default function Toast({
   onAction,
   onClose,
   appearance = 'default',
+  showCheckIcon = true,
 }) {
   useEffect(() => {
     if (!duration) return;
@@ -115,7 +116,7 @@ export default function Toast({
             </button>
           ) : null}
         </div>
-        {variant === 'success' ? (
+        {variant === 'success' && showCheckIcon ? (
           <span className={styles.checkBadge} aria-hidden>
             <PiCheckCircleFill size={20} className={styles.checkIcon} />
           </span>

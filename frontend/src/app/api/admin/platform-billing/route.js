@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireAdminApiUser } from '@/lib/auth/requireAdminRoute'
+import { recordCommissionChangeLog } from '@/lib/admin/commissionChangeLog'
 
 /**
  * GET — singleton `platform_billing` row (id=1): default commission %, legal fields, updated_at.
@@ -39,7 +40,7 @@ export async function GET() {
  * Accepts any combination of: defaultCommissionPercent, legalName, address, taxId, billingEmail, settlementNotes.
  */
 export async function PATCH(request) {
-  const { responseError } = await requireAdminApiUser()
+  const { user, responseError } = await requireAdminApiUser()
   if (responseError) return responseError
 
   const body = await request.json().catch(() => ({}))
@@ -98,6 +99,19 @@ export async function PATCH(request) {
 
   const supabaseAdmin = getSupabaseAdmin()
 
+  let previousDefaultPercent = null
+  if (body?.defaultCommissionPercent !== undefined) {
+    const { data: beforeRow } = await supabaseAdmin
+      .from('platform_billing')
+      .select('default_commission_percent')
+      .eq('id', 1)
+      .maybeSingle()
+    previousDefaultPercent =
+      beforeRow?.default_commission_percent != null
+        ? Number(beforeRow.default_commission_percent)
+        : 10
+  }
+
   const { data, error } = await supabaseAdmin
     .from('platform_billing')
     .update(patch)
@@ -111,6 +125,16 @@ export async function PATCH(request) {
 
   const defaultCommissionPercent =
     data?.default_commission_percent != null ? Number(data.default_commission_percent) : 10
+
+  if (body?.defaultCommissionPercent !== undefined) {
+    await recordCommissionChangeLog(supabaseAdmin, {
+      changedBy: user.id,
+      scope: 'global',
+      label: 'Global rate',
+      fromPercent: previousDefaultPercent,
+      toPercent: Number.isFinite(defaultCommissionPercent) ? defaultCommissionPercent : 10,
+    })
+  }
 
   return NextResponse.json(
     {

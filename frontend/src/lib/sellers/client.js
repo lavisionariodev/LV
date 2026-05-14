@@ -338,55 +338,10 @@ export async function upsertSellerForUser(user, payload) {
  * Returns an array of sellers or [] on error.
  */
 export async function listSellersForAdmin() {
-  const { data, error } = await supabase
-    .from('sellers')
-    .select('*')
-    .order('registered_at', { ascending: false });
-
-  if (error || !data) {
-    return [];
-  }
-
-  const rows = data.filter(Boolean);
-  const ids = [...new Set(rows.map((r) => r.user_id).filter(Boolean))];
-  if (ids.length === 0) {
-    return rows.map((r) => ({ ...r, avatarUrl: null, listing_count: 0 }));
-  }
-
-  /** Rows in `seller_listings` per seller (not a column on `sellers`). */
-  const listingCountBySeller = new Map();
-  for (const id of ids) listingCountBySeller.set(id, 0);
-
-  const { data: listingRows, error: listingsError } = await supabase
-    .from('seller_listings')
-    .select('seller_user_id')
-    .in('seller_user_id', ids);
-
-  if (!listingsError && listingRows) {
-    for (const row of listingRows) {
-      const sid = row.seller_user_id;
-      if (!sid) continue;
-      listingCountBySeller.set(sid, (listingCountBySeller.get(sid) ?? 0) + 1);
-    }
-  }
-
-  const { data: profiles, error: profilesError } = await supabase
-    .from('profiles')
-    .select('id, avatar_url')
-    .in('id', ids);
-
-  const avatarByUserId = new Map();
-  if (!profilesError && profiles) {
-    for (const p of profiles) {
-      avatarByUserId.set(p.id, normalizeAvatarUrl(p.avatar_url));
-    }
-  }
-
-  return rows.map((r) => ({
-    ...r,
-    avatarUrl: avatarByUserId.get(r.user_id) ?? null,
-    listing_count: listingsError ? null : (listingCountBySeller.get(r.user_id) ?? 0),
-  }));
+  const res = await fetch('/api/admin/sellers', { credentials: 'include', cache: 'no-store' })
+  const body = await res.json().catch(() => null)
+  if (!res.ok) return []
+  return Array.isArray(body?.sellers) ? body.sellers : []
 }
 
 /**

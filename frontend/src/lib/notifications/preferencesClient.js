@@ -39,3 +39,23 @@ export async function saveSellerNotificationPreferences(preferences) {
   )
   return body?.preferences
 }
+
+export async function fetchBuyerNotificationPreferences() {
+  const body = await fetchJson('/api/buyer/notification-preferences', { cache: 'no-store' }, {
+    fallbackError: 'Failed to load notification preferences.',
+  })
+  return body?.preferences
+}
+
+export async function saveBuyerNotificationPreferences(preferences) {
+  const body = await fetchJson(
+    '/api/buyer/notification-preferences',
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ preferences }),
+    },
+    { fallbackError: 'Failed to save notification preferences.' },
+  )
+  return body?.preferences
+}

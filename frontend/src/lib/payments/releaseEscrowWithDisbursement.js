@@ -1,10 +1,9 @@
 import { canReleaseEscrow } from '@/lib/payments/orderMoneyState'
+import { evaluateSellerPayoutSettingsForDisbursement } from '@/lib/payments/disbursementConfig'
 import { isPaymongoDisbursementEnabled } from '@/lib/payments/sellerWalletSummary'
 import { finalizeSuccessfulDisbursement } from '@/lib/payments/disbursementReconcile'
-import {
-  buildPaymongoDestinationAccount,
-  createPaymongoBatchTransfer,
-} from '@/lib/paymongo/client'
+import { recordPayoutReleaseLedgerEntry } from '@/lib/payments/walletLedgerEvents'
+import { createPaymongoBatchTransfer } from '@/lib/paymongo/client'
 
 const IN_FLIGHT_DISBURSEMENT_STATUSES = new Set(['pending', 'submitted'])
 
@@ -72,6 +71,13 @@ async function releaseEscrowManually(supabaseAdmin, { orderId, escrow, adminUser
     return { ok: false, error: 'Could not release escrow (state changed).', status: 409 }
   }
 
+  await recordPayoutReleaseLedgerEntry(supabaseAdmin, {
+    escrow,
+    orderId,
+    releaseReference: releaseReference || null,
+    mode: 'manual',
+  })
+
   return { ok: true, mode: 'manual' }
 }
 
@@ -136,9 +142,9 @@ export async function releaseEscrowWithDisbursement(supabaseAdmin, input) {
     return { ok: false, error: payoutErr.message || 'Could not load seller payout settings.', status: 500 }
   }
 
-  const destination = buildPaymongoDestinationAccount(payoutSettings)
-  if (!destination.ok) {
-    return { ok: false, error: destination.error, status: 400 }
+  const payoutDestination = evaluateSellerPayoutSettingsForDisbursement(payoutSettings)
+  if (!payoutDestination.ok) {
+    return { ok: false, error: payoutDestination.error, status: 400 }
   }
 
   const idempotencyKey = `escrow:${escrow.id}:release`
@@ -186,7 +192,7 @@ export async function releaseEscrowWithDisbursement(supabaseAdmin, input) {
 
   const transfer = await createPaymongoBatchTransfer({
     amountPhp: Number(escrow.net_amount) || 0,
-    destination: destination.destination,
+    destination: payoutDestination.destination,
     referenceNumber: `lv_escrow_${escrow.id}`,
     metadata: {
       order_id: orderId,

@@ -3,10 +3,12 @@
  */
 import {
   ADMIN_NOTIFICATION_BUCKETS,
+  BUYER_NOTIFICATION_BUCKETS,
   SELLER_NOTIFICATION_BUCKETS,
 } from '@/lib/notifications/preferenceSchema'
 import {
   adminNotificationFilterBucket,
+  buyerNotificationFilterBucket,
   sellerNotificationFilterBucket,
 } from '@/lib/notifications/types'
 
@@ -78,6 +80,23 @@ async function resolveChannelPreference(supabaseAdmin, userId, bucket, channel, 
     return true
   }
 
+  if (role === 'user') {
+    const safeBucket = BUYER_NOTIFICATION_BUCKETS.includes(bucket) ? bucket : null
+    const { data: row } = await supabaseAdmin
+      .from('profiles')
+      .select('notification_preferences')
+      .eq('id', userId)
+      .maybeSingle()
+
+    const prefs = row?.notification_preferences
+    if (!prefs || typeof prefs !== 'object' || !safeBucket) return true
+
+    const bucketPrefs = prefs[safeBucket]
+    if (!bucketPrefs || typeof bucketPrefs !== 'object') return true
+    if (channel in bucketPrefs) return Boolean(bucketPrefs[channel])
+    return true
+  }
+
   return true
 }
 
@@ -122,5 +141,11 @@ export async function shouldSendChannelForType(supabaseAdmin, userId, notificati
       role,
     )
   }
-  return true
+  return resolveChannelPreference(
+    supabaseAdmin,
+    userId,
+    buyerNotificationFilterBucket(notificationType),
+    channel,
+    role,
+  )
 }
