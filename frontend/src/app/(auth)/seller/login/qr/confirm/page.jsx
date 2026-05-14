@@ -13,9 +13,15 @@ function SellerQrConfirmPageInner() {
   const toast = useAuthToast();
   const challengeId = searchParams.get('challenge') || '';
   const approveToken = searchParams.get('token') || '';
-  const confirmPath = challengeId && approveToken
-    ? `/seller/login/qr/confirm?challenge=${encodeURIComponent(challengeId)}&token=${encodeURIComponent(approveToken)}`
-    : '/seller/login/qr/confirm';
+  const fromSettings = searchParams.get('from') === 'settings';
+  const settingsHref = '/seller/settings/profile';
+  const loginHrefBase = '/seller/login';
+  const confirmPath =
+    challengeId && approveToken
+      ? `/seller/login/qr/confirm?challenge=${encodeURIComponent(challengeId)}&token=${encodeURIComponent(approveToken)}${fromSettings ? '&from=settings' : ''}`
+      : '/seller/login/qr/confirm';
+  const backHref = fromSettings ? settingsHref : loginHrefBase;
+  const backLabel = fromSettings ? 'Back to profile settings' : 'Back to seller login';
 
   const [loadingSession, setLoadingSession] = useState(true);
   const [email, setEmail] = useState('');
@@ -42,15 +48,15 @@ function SellerQrConfirmPageInner() {
         <div className={styles.card}>
           <h1 className={styles.title}>Invalid QR request</h1>
           <p className={styles.status}>This login link is missing required details.</p>
-          <Link href="/seller/login" className={styles.backLink}>
-            Back to seller login
+          <Link href={backHref} className={styles.backLink}>
+            {backLabel}
           </Link>
         </div>
       </div>
     );
   }
 
-  const loginHref = `/seller/login?redirect=${encodeURIComponent(confirmPath)}`;
+  const loginHref = `${loginHrefBase}?redirect=${encodeURIComponent(confirmPath)}`;
 
   const handleApprove = async () => {
     if (submitting) return;
@@ -90,15 +96,15 @@ function SellerQrConfirmPageInner() {
             <p className={styles.status}>
               Login approved. You can return to your computer to continue in Seller Centre.
             </p>
-            <Link href="/seller" className={styles.linkBtn}>
-              Open Seller Centre
+            <Link href={fromSettings ? settingsHref : '/seller'} className={styles.linkBtn}>
+              {fromSettings ? 'Back to profile settings' : 'Open Seller Centre'}
             </Link>
           </>
         ) : completed === 'denied' ? (
           <>
             <p className={styles.status}>Login request denied. The desktop QR code will need a new scan.</p>
-            <Link href="/seller/login" className={styles.backLink}>
-              Back to seller login
+            <Link href={backHref} className={styles.backLink}>
+              {backLabel}
             </Link>
           </>
         ) : loadingSession ? (
@@ -140,8 +146,8 @@ function SellerQrConfirmPageInner() {
         )}
 
         {!completed && (
-          <Link href="/seller/login" className={styles.backLink}>
-            Back to seller login
+          <Link href={backHref} className={styles.backLink}>
+            {backLabel}
           </Link>
         )}
       </div>
