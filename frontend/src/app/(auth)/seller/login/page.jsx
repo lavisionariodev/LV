@@ -14,7 +14,7 @@ import { getSellerStatusForUser } from '@/lib/sellers/client';
 import { useAuthToast } from '@/contexts/ToastContext';
 import { useSiteContent } from '@/lib/siteContent/client';
 import { completeSellerPortalLogin } from '@/lib/auth/completeSellerPortalLogin';
-import { createSellerQrChallenge, pollSellerQrChallenge } from '@/lib/auth/qrLoginClient';
+import { createSellerQrChallenge, pollSellerQrChallenge, SELLER_QR_LOGIN_POLL_INTERVAL_MS } from '@/lib/auth/qrLoginClient';
 import QRCode from 'react-qr-code';
 
 function SellerLoginPageInner() {
@@ -211,7 +211,7 @@ function SellerLoginPageInner() {
         }
       };
 
-      const intervalId = window.setInterval(poll, 2000);
+      const intervalId = window.setInterval(poll, SELLER_QR_LOGIN_POLL_INTERVAL_MS);
       poll();
 
       return () => {
@@ -521,7 +521,7 @@ function SellerLoginPageInner() {
                         ? 'This QR code has expired.'
                         : qrStatus === 'denied'
                           ? 'Login request was denied on your phone.'
-                          : `Use Link device in the ${systemName} app to scan this code`}
+                          : `Approve sign-in on this browser from Link device in the ${systemName} app. Both browsers can stay signed in.`}
                   </p>
 
                   {(qrStatus === 'expired' || qrStatus === 'error' || qrStatus === 'denied') && (

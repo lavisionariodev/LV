@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { buildSellerLinkDeviceProfileHref } from '@/lib/auth/sellerLinkDeviceState'
 import SellerQrConfirmView from './SellerQrConfirmView'
 
 export const dynamic = 'force-dynamic'
@@ -14,7 +15,7 @@ export default async function SellerQrConfirmPage({ searchParams }) {
 
   if (fromSettings && challengeId && approveToken) {
     redirect(
-      `/seller/settings/link-device?challenge=${encodeURIComponent(challengeId)}&token=${encodeURIComponent(approveToken)}`,
+      buildSellerLinkDeviceProfileHref({ challengeId, approveToken }),
     )
   }
 

@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { RiQrScan2Line } from 'react-icons/ri'
 import { BrowserQRCodeReader } from '@zxing/browser'
 import {
   appendSellerQrConfirmParams,
@@ -28,6 +29,9 @@ function stopCameraTracks(videoEl) {
  *   subtitle?: string,
  *   invalidQrMessage?: string,
  *   context?: 'login' | 'settings',
+ *   compact?: boolean,
+ *   modalTone?: boolean,
+ *   active?: boolean,
  *   onScanned?: (payload: { challengeId: string, approveToken: string }) => void,
  * }} props
  */
@@ -36,36 +40,67 @@ export default function SellerQrLoginScanner({
   subtitle = 'Point your camera at the QR code on the Seller Centre login screen.',
   invalidQrMessage = 'Scan the seller login QR code shown on your computer.',
   context = 'login',
+  compact = false,
+  modalTone = false,
+  active = true,
   onScanned,
 }) {
   const router = useRouter()
   const toast = useAuthToast()
   const videoRef = useRef(null)
   const onScannedRef = useRef(onScanned)
+  const activeRef = useRef(active)
+  const controlsRef = useRef(null)
+  const readerRef = useRef(null)
   const [error, setError] = useState('')
   const handledRef = useRef(false)
+
+  const releaseCamera = useCallback(() => {
+    controlsRef.current?.stop()
+    controlsRef.current = null
+    stopCameraTracks(videoRef.current)
+    if (typeof readerRef.current?.reset === 'function') {
+      readerRef.current.reset()
+    }
+    readerRef.current = null
+  }, [])
 
   useLayoutEffect(() => {
     onScannedRef.current = onScanned
   }, [onScanned])
 
+  useLayoutEffect(() => {
+    activeRef.current = active
+    if (!active) {
+      releaseCamera()
+    }
+  }, [active, releaseCamera])
+
   useEffect(() => {
-    if (typeof window === 'undefined') return undefined
+    if (!active || typeof window === 'undefined') {
+      return () => {
+        releaseCamera()
+      }
+    }
+
     if (!window.isSecureContext) {
       setError('Camera access requires HTTPS or localhost.')
-      return undefined
+      return () => {
+        releaseCamera()
+      }
     }
 
     handledRef.current = false
+    setError('')
     const reader = new BrowserQRCodeReader()
+    readerRef.current = reader
     const videoEl = videoRef.current
-    let active = true
-    let controls = null
+    let cancelled = false
     const confirmParams = context === 'settings' ? { from: 'settings' } : {}
 
     reader
-      .decodeFromVideoDevice(undefined, videoRef.current, (result, decodeError) => {
-        if (!active || decodeError || !result || handledRef.current) return
+      .decodeFromVideoDevice(undefined, videoEl, (result, decodeError) => {
+        if (cancelled || !activeRef.current || decodeError || !result || handledRef.current) return
 
         const rawText = result.getText()
         const credentials = parseSellerQrConfirmCredentials(rawText)
@@ -75,7 +110,8 @@ export default function SellerQrLoginScanner({
         }
 
         handledRef.current = true
-        controls?.stop()
+        controlsRef.current?.stop()
+        controlsRef.current = null
         stopCameraTracks(videoEl)
 
         if (onScannedRef.current) {
@@ -96,10 +132,16 @@ export default function SellerQrLoginScanner({
         router.replace(appendSellerQrConfirmParams(confirmPath, confirmParams))
       })
       .then((scannerControls) => {
-        controls = scannerControls
+        if (cancelled || !activeRef.current) {
+          scannerControls?.stop()
+          stopCameraTracks(videoEl)
+          return
+        }
+
+        controlsRef.current = scannerControls
       })
       .catch((err) => {
-        if (!active) return
+        if (cancelled || !activeRef.current) return
         const message =
           err instanceof Error && err.name === 'NotAllowedError'
             ? 'Camera permission was denied. Allow camera access to scan the login QR code.'
@@ -108,26 +150,36 @@ export default function SellerQrLoginScanner({
       })
 
     return () => {
-      active = false
-      controls?.stop()
-      stopCameraTracks(videoEl)
-      if (typeof reader.reset === 'function') {
-        reader.reset()
-      }
+      cancelled = true
+      releaseCamera()
     }
-  }, [context, invalidQrMessage, router, toast])
+  }, [active, context, invalidQrMessage, releaseCamera, router, toast])
 
   return (
-    <div className={`${styles.card} ${styles.scannerCard}`}>
-      <div className={styles.cardHeader}>
-        <p className={styles.eyebrow}>QR scanner</p>
-        <h2 className={styles.scannerTitle}>{title}</h2>
-        <p className={styles.subtitle}>{subtitle}</p>
-      </div>
+    <div
+      className={`${compact ? styles.scannerCompact : `${styles.card} ${styles.scannerCard}`} ${modalTone ? styles.scannerModal : ''}`}
+    >
+      {!compact ? (
+        <div className={styles.cardHeader}>
+          <p className={styles.eyebrow}>QR scanner</p>
+          <h2 className={styles.scannerTitle}>
+            <span className={styles.scannerTitleRow}>
+              <RiQrScan2Line className={styles.scannerTitleIcon} aria-hidden />
+              {title}
+            </span>
+          </h2>
+          {subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}
+        </div>
+      ) : (
+        <p className={styles.scannerCompactHeader}>
+          <RiQrScan2Line className={styles.scannerTitleIcon} aria-hidden />
+          <span>{title}</span>
+        </p>
+      )}
 
       {error ? <p className={styles.error}>{error}</p> : null}
 
-      <div className={styles.scannerWrap}>
+      <div className={`${styles.scannerWrap} ${compact ? styles.scannerWrapCompact : ''}`}>
         <video ref={videoRef} className={styles.video} muted playsInline />
         <div className={styles.scannerFrame} aria-hidden="true" />
       </div>

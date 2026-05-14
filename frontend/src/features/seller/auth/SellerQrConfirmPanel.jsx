@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import { onAuthStateChange } from '@/lib/auth/session'
-import { approveSellerQrChallenge, denySellerQrChallenge, pollSellerQrApprovalForApprover } from '@/lib/auth/qrLoginClient'
+import { approveSellerQrChallenge, denySellerQrChallenge, pollSellerQrApprovalForApprover, SELLER_QR_LOGIN_POLL_INTERVAL_MS } from '@/lib/auth/qrLoginClient'
 import { useAuthToast } from '@/contexts/ToastContext'
+import { buildSellerLinkDeviceProfileHref } from '@/lib/auth/sellerLinkDeviceState'
 import styles from '@/app/(auth)/seller/login/qr/qrFlow.module.css'
 
 /**
@@ -28,7 +29,6 @@ export default function SellerQrConfirmPanel({
 }) {
   const toast = useAuthToast()
   const settingsHref = '/seller/settings/profile'
-  const linkDeviceHref = '/seller/settings/link-device'
   const loginHrefBase = '/seller/login'
   const confirmPath =
     challengeId && approveToken
@@ -38,8 +38,8 @@ export default function SellerQrConfirmPanel({
   const backLabel = fromSettings ? 'Back to profile settings' : 'Back to seller login'
   const linkDeviceReturnPath =
     challengeId && approveToken
-      ? `${linkDeviceHref}?challenge=${encodeURIComponent(challengeId)}&token=${encodeURIComponent(approveToken)}`
-      : linkDeviceHref
+      ? buildSellerLinkDeviceProfileHref({ challengeId, approveToken })
+      : buildSellerLinkDeviceProfileHref()
   const signInRedirect = fromSettings ? linkDeviceReturnPath : confirmPath
 
   const [loadingSession, setLoadingSession] = useState(true)
@@ -116,10 +116,10 @@ export default function SellerQrConfirmPanel({
         : 'Approve desktop login'
   const subtitle =
     completed === 'linked'
-      ? 'The other device finished signing in to Seller Centre with your seller account.'
+      ? 'The other device finished signing in to Seller Centre. This browser stays signed in too.'
       : completed === 'approved'
         ? 'Waiting for the other device to finish signing in.'
-        : 'Confirm the sign-in request from your other device before it can open Seller Centre.'
+        : 'Confirm the sign-in request from your other device. Your current browser stays signed in.'
 
   const waitForDesktopLogin = async () => {
     const deadline = Date.now() + 30000
@@ -140,7 +140,7 @@ export default function SellerQrConfirmPanel({
       }
 
       await new Promise((resolve) => {
-        window.setTimeout(resolve, 2000)
+        window.setTimeout(resolve, SELLER_QR_LOGIN_POLL_INTERVAL_MS)
       })
     }
   }
@@ -230,7 +230,7 @@ export default function SellerQrConfirmPanel({
         <div className={styles.statusBlock}>
           <p className={styles.status}>
             {fromSettings
-              ? 'This phone needs an active seller session to approve the other device. Refresh Link device or sign in here, then return to approve.'
+              ? 'This browser needs an active seller session to approve the other device. Open Link device again or sign in here, then return to approve.'
               : 'Sign in with your seller account on this device before approving the desktop login.'}
           </p>
           <Link href={loginHref} className={styles.primaryBtn}>

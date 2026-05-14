@@ -7,6 +7,7 @@ import { AppSidebar, AppTopbar } from '@/components/layout'
 import { useMediaQuery } from '@/shared/hooks'
 import { CartProvider } from '@/contexts/CartContext'
 import { requireSeller } from '@/lib/auth/guards'
+import { registerSellerPortalSession } from '@/lib/auth/sellerPortalSessionsClient'
 import { signOut } from '@/lib/auth/session'
 import styles from './seller.module.css'
 
@@ -50,6 +51,7 @@ export default function SellerLayout({ children }) {
         return
       }
       setAuthStatus('allowed')
+      void registerSellerPortalSession()
     }
 
     check()

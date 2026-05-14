@@ -1,14 +1,48 @@
 'use client'
 
+import { Suspense, useEffect, useState } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { FaUser, FaUpload } from 'react-icons/fa6'
 import { TbCamera, TbTrash } from 'react-icons/tb'
 import { FiEdit, FiSave } from 'react-icons/fi'
 import { ALLOWED, MAX_MB, useSellerSettings } from '@/features/seller/settings/sellerSettings'
+import SellerLinkDeviceModal from '@/features/seller/settings/SellerLinkDeviceModal'
+import SellerSignedInDevices from '@/features/seller/settings/SellerSignedInDevices'
+import { clearSellerLinkDeviceScanTarget } from '@/lib/auth/sellerLinkDeviceState'
 import styles from '../settings.module.css'
 
-export default function Page() {
+function ProfilePageContent() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [linkDeviceOpen, setLinkDeviceOpen] = useState(false)
+  const [linkDeviceInitialTarget, setLinkDeviceInitialTarget] = useState(null)
+
+  useEffect(() => {
+    if (searchParams.get('linkDevice') !== '1') return
+
+    const challengeId = searchParams.get('challenge')?.trim() || ''
+    const approveToken = searchParams.get('token')?.trim() || ''
+    if (challengeId && approveToken) {
+      setLinkDeviceInitialTarget({ challengeId, approveToken })
+    }
+
+    setLinkDeviceOpen(true)
+    router.replace('/seller/settings/profile', { scroll: false })
+  }, [router, searchParams])
+
+  const openLinkDeviceModal = () => {
+    clearSellerLinkDeviceScanTarget()
+    setLinkDeviceInitialTarget(null)
+    setLinkDeviceOpen(true)
+  }
+
+  const closeLinkDeviceModal = () => {
+    clearSellerLinkDeviceScanTarget()
+    setLinkDeviceInitialTarget(null)
+    setLinkDeviceOpen(false)
+  }
+
   const ctx = useSellerSettings()
   const {
     profileTabId,
@@ -229,22 +263,34 @@ export default function Page() {
                 </div>
               </div>
 
+              <SellerSignedInDevices />
+
               <div className={styles.settingsRow}>
                 <div className={styles.settingsRowMeta}>
                   <div className={styles.settingsRowTitleRow}>
                     <p className={styles.settingsRowTitle}>Link device</p>
                   </div>
                   <p className={styles.settingsRowDesc}>
-                    Approve Seller Centre login on another device by scanning its QR code from this phone.
+                    Approve sign-in on another browser by scanning its QR code from this one. Both browsers can stay signed in.
                   </p>
                 </div>
                 <div className={`${styles.settingsRowControl} ${styles.profileControl}`}>
-                  <Link href="/seller/settings/link-device" className={`${styles.primaryBtn} ${styles.linkDeviceBtn}`}>
+                  <button
+                    type="button"
+                    className={`${styles.primaryBtn} ${styles.linkDeviceBtn}`}
+                    onClick={openLinkDeviceModal}
+                  >
                     Link device
-                  </Link>
+                  </button>
                 </div>
               </div>
             </div>
+
+            <SellerLinkDeviceModal
+              open={linkDeviceOpen}
+              initialScanTarget={linkDeviceInitialTarget}
+              onClose={closeLinkDeviceModal}
+            />
 
             {avatarModalOpen && isEditingPersonal && (
               <div className={styles.avatarModalOverlay} onClick={() => setAvatarModalOpen(false)}>
@@ -287,6 +333,13 @@ export default function Page() {
               onChange={onPickAvatar}
             />
           </section>
+  )
+}
 
+export default function Page() {
+  return (
+    <Suspense fallback={null}>
+      <ProfilePageContent />
+    </Suspense>
   )
 }
