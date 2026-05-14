@@ -5,9 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useToast } from '@/contexts/ToastContext';
 import { getUserRole, getBuyerAccountStatus, ROLE_SELLER } from '@/lib/auth/roles';
-import { supabase } from '@/lib/supabase/client';
 import { expandPurchaseCardsByLineItem, mapBuyerOrderCard } from '@/lib/profile/mapBuyerOrderCard';
-import { listingIdFromOrderItemProductId } from '@/lib/orders/listingIdFromProductId';
 import styles from '../profile.module.css';
 import purchaseStyles from './purchases.module.css';
 
@@ -1132,77 +1130,27 @@ export default function PurchasesPage() {
         setRefreshingPurchases(true);
       }
       try {
-        const { data: orders, error: ordersErr } = await supabase
-          .from('orders')
-          .select(
-            [
-              'id',
-              'order_number',
-              'seller_user_id',
-              'fulfillment_status',
-              'payment_status',
-              'status',
-              'subtotal',
-              'currency',
-              'created_at',
-              'preferred_date',
-              'contact_name',
-              'contact_email',
-              'contact_phone',
-              'notes',
-              'service_location',
-              'deceased_name',
-              'date_of_death',
-              'wake_duration_days',
-              'refund_status',
-              'refund_requested_at',
-            ].join(','),
-          )
-          .eq('buyer_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (ordersErr || cancelled) {
+        const ordersRes = await fetch('/api/buyer/orders', { cache: 'no-store' });
+        const ordersBody = await ordersRes.json().catch(() => null);
+        if (!ordersRes.ok || cancelled) {
           if (!cancelled) setPurchases([]);
           return;
         }
 
-        const orderIds = (orders ?? []).map((o) => o.id);
-        const { data: items, error: itemsErr } = orderIds.length
-          ? await supabase
-              .from('order_items')
-              .select('id,order_id,product_id,name,quantity,price')
-              .in('order_id', orderIds)
-          : { data: [], error: null };
-
-        const { data: reviewRows } = orderIds.length
-          ? await supabase
-              .from('order_item_reviews')
-              .select('order_id,order_item_id')
-              .eq('buyer_id', user.id)
-              .in('order_id', orderIds)
-          : { data: [], error: null };
-
-        // Debug: if items are empty, RLS policy on order_items may be missing.
-        // Fix: run the buyer_select_own_order_items RLS policy in Supabase SQL editor.
-        if (process.env.NODE_ENV !== 'production') {
-          console.log('[purchases] order_items fetched:', items?.length ?? 0, itemsErr ?? 'no error');
-        }
+        const orders = ordersBody?.orders ?? [];
+        const items = ordersBody?.items ?? [];
+        const reviewedItemIdsByOrder = new Map(
+          Object.entries(ordersBody?.reviewedItemIdsByOrder ?? {}).map(([orderId, itemIds]) => [
+            orderId,
+            new Set(Array.isArray(itemIds) ? itemIds : []),
+          ]),
+        );
 
         const itemsByOrder = new Map();
-        for (const it of items ?? []) {
+        for (const it of items) {
           const list = itemsByOrder.get(it.order_id) ?? [];
           list.push(it);
           itemsByOrder.set(it.order_id, list);
-        }
-
-        const reviewedItemIdsByOrder = new Map();
-        for (const row of reviewRows ?? []) {
-          const oid = String(row?.order_id ?? '').trim();
-          const itemId = String(row?.order_item_id ?? '').trim();
-          if (!oid || !itemId) continue;
-          const set = reviewedItemIdsByOrder.get(oid) ?? new Set();
-          set.add(itemId);
-          reviewedItemIdsByOrder.set(oid, set);
         }
 
         /** @type {Record<string, string | null>} */
@@ -1225,35 +1173,6 @@ export default function PurchasesPage() {
           }
         }
 
-        /** Resolve `listing_kind` for each purchased listing so the review modal can pick "Service Name" vs "Product Name". */
-        const listingIdByItemId = new Map();
-        const listingIdSet = new Set();
-        for (const it of items ?? []) {
-          const lid = listingIdFromOrderItemProductId(it.product_id);
-          if (lid) {
-            listingIdByItemId.set(String(it.id), lid);
-            listingIdSet.add(lid);
-          }
-        }
-
-        /** @type {Record<string, string | null>} */
-        let kindByListingId = {};
-        if (listingIdSet.size > 0 && !cancelled) {
-          try {
-            const kindsRes = await fetch('/api/profile/purchases/listing-kinds', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ listingIds: [...listingIdSet] }),
-            });
-            if (kindsRes.ok) {
-              const kbody = await kindsRes.json();
-              kindByListingId = kbody?.kinds && typeof kbody.kinds === 'object' ? kbody.kinds : {};
-            }
-          } catch {
-            kindByListingId = {};
-          }
-        }
-
         if (cancelled) return;
 
         let disputeByOrderId = new Map();
@@ -1272,16 +1191,7 @@ export default function PurchasesPage() {
           disputeByOrderId = new Map();
         }
 
-        const itemsByOrderWithKind = new Map();
-        for (const [orderId, list] of itemsByOrder.entries()) {
-          itemsByOrderWithKind.set(
-            orderId,
-            list.map((it) => {
-              const lid = listingIdByItemId.get(String(it.id));
-              return { ...it, listing_kind: lid ? kindByListingId[lid] ?? null : null };
-            }),
-          );
-        }
+        const itemsByOrderWithKind = itemsByOrder;
 
         const flattened = [];
         for (const o of orders ?? []) {

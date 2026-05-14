@@ -1,17 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireActiveBuyerApiUser } from '@/lib/auth/requireApiUser'
-
-function phpToCentavos(amount) {
-  const num = Number(amount)
-  if (!Number.isFinite(num)) return null
-  return Math.round(num * 100)
-}
-
-function getBasicAuthHeader(secretKey) {
-  const token = Buffer.from(`${secretKey}:`).toString('base64')
-  return `Basic ${token}`
-}
+import { phpToCentavos } from '@/lib/paymongo/client'
 
 export async function POST(request) {
   const { user, responseError } = await requireActiveBuyerApiUser()
@@ -63,13 +53,6 @@ export async function POST(request) {
       { error: 'Invalid total amount.' },
       { status: 400 },
     )
-  }
-
-  const origin = new URL(request.url).origin
-  const secretKey = process.env.PAYMONGO_SECRET_KEY
-  // Orders are created here; the client calls /api/checkout/pay next for immediate PayMongo checkout.
-  if (!secretKey) {
-    // Keep this as a soft failure only if buyer attempts to pay; for now, checkout creation can proceed.
   }
 
   return NextResponse.json(

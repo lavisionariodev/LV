@@ -117,14 +117,15 @@ export default function SellerHelpPage() {
   const [supportLoading, setSupportLoading] = useState(true)
 
   const faqByTab = useMemo(() => {
+    const merged = { ...FAQ_BY_TAB }
     const groups = siteContent?.sellerHelpFaq
-    if (!Array.isArray(groups) || groups.length === 0) return FAQ_BY_TAB
-    return groups.reduce((acc, group) => {
+    if (!Array.isArray(groups)) return merged
+    for (const group of groups) {
       if (group?.category && Array.isArray(group.items) && group.items.length > 0) {
-        acc[group.category] = group.items
+        merged[group.category] = group.items
       }
-      return acc
-    }, {})
+    }
+    return merged
   }, [siteContent])
 
   const categoryTabs = useMemo(() => {

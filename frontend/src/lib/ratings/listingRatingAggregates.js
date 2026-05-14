@@ -88,3 +88,20 @@ export function applyListingRatingAggregate(listing, aggregates) {
     },
   }
 }
+
+/**
+ * @param {Array<Record<string, unknown>>} listings
+ * @param {{ aggregatesBySellerId?: Record<string, unknown>, aggregatesByPair?: Record<string, unknown> }} aggregates
+ */
+export function mergeListingsWithRatingAggregates(listings, aggregates) {
+  return (listings ?? []).map((listing) => applyListingRatingAggregate(listing, aggregates))
+}
+
+/**
+ * @param {Array<Record<string, unknown>>} listings
+ */
+export async function enrichListingsWithRatingAggregates(listings) {
+  const query = buildAggregatesQueryFromListings(listings)
+  const aggregates = await fetchListingRatingAggregates(query)
+  return mergeListingsWithRatingAggregates(listings, aggregates)
+}

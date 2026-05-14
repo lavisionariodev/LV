@@ -9,11 +9,6 @@ import { formatCount } from '@/shared/utils/formatCount'
 import { useDebouncedEffect } from '@/shared/hooks'
 import { readString, replaceUrlQuery } from '@/shared/utils/queryParams'
 import { useAuth } from '@/contexts/AuthContext'
-import { supabase } from '@/lib/supabase/client'
-import {
-  aggregateSellerCustomers,
-  SELLER_CUSTOMER_ORDER_SELECT,
-} from '@/lib/seller/sellerOrderAnalytics'
 
 function formatDate(dateString) {
   if (!dateString) return '—'
@@ -79,25 +74,19 @@ function SellerCustomersPageContent() {
       if (showLoading) setCustomersLoading(true)
       setCustomersError(null)
 
-      const { data, error } = await supabase
-        .from('orders')
-        .select(SELLER_CUSTOMER_ORDER_SELECT)
-        .eq('seller_user_id', userId)
-        .order('created_at', { ascending: false })
-        .abortSignal?.(signal)
-
+      const res = await fetch('/api/seller/customers', { cache: 'no-store', signal })
       if (signal?.aborted) return
-
-      if (error) {
+      const body = await res.json().catch(() => null)
+      if (!res.ok) {
         if (!hasLoadedOnce.current) {
           setCustomers([])
         }
-        setCustomersError(error.message || 'Could not load customers.')
+        setCustomersError(body?.error || 'Could not load customers.')
         setCustomersLoading(false)
         return
       }
 
-      const next = aggregateSellerCustomers(data ?? [])
+      const next = Array.isArray(body?.customers) ? body.customers : []
       setCustomers(next)
       hasLoadedOnce.current = true
       setCustomersLoading(false)

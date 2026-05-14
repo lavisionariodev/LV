@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { FiEdit } from 'react-icons/fi'
-import { useSiteContent, upsertSiteContent } from '@/lib/siteContent/client'
+import { useAdminSiteContent, upsertSiteContent } from '@/lib/siteContent/client'
 import { validateSellerHelpFaq } from '@/lib/siteContent/mapping'
 import { useAuthToast } from '@/contexts/ToastContext'
 import { useMediaQuery } from '@/shared/hooks'
@@ -139,7 +139,7 @@ export default function Page() {
   const [isSaving, setIsSaving] = useState(false)
   const [modal, setModal] = useState(null)
   const [modalValue, setModalValue] = useState('')
-  const { data: loadedContent, isLoading, error } = useSiteContent()
+  const { data: loadedContent, isLoading, error } = useAdminSiteContent()
   const toast = useAuthToast()
   const contentRefs = useRef(null)
   // Track edit-mode in a ref so the loadedContent-sync effect can read the

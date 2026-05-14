@@ -8,11 +8,21 @@
  */
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { shouldRedirectAdminWithoutPublicSupabaseEnv } from "@/lib/auth/adminRouteGate";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 export async function middleware(request) {
+  const { pathname } = request.nextUrl;
+
+  if (shouldRedirectAdminWithoutPublicSupabaseEnv(pathname)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/administrator";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
   if (!supabaseUrl || !supabaseAnonKey) {
     return NextResponse.next({ request });
   }
@@ -36,7 +46,6 @@ export async function middleware(request) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
   const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");
   const isSellerRoute = pathname === "/seller" || pathname.startsWith("/seller/");
   const isPublicSellerRoute =

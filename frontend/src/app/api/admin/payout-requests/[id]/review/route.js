@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireAdminApiUser } from '@/lib/auth/requireAdminRoute'
 import { notifySeller } from '@/lib/notifications/inAppServer'
+import { recordWithdrawalLedgerEntry } from '@/lib/payments/walletLedgerEvents'
 
 const NOTE_MIN = 12
 const NOTE_MAX = 2000
@@ -118,6 +119,20 @@ export async function POST(request, { params }) {
   }
   if (!updated) {
     return NextResponse.json({ error: 'Payout request is no longer pending.' }, { status: 409 })
+  }
+
+  if (action === 'approve') {
+    await recordWithdrawalLedgerEntry(supabaseAdmin, {
+      payoutRequestId: updated.id,
+      sellerUserId: updated.seller_user_id,
+      amountPhp: updated.requested_amount,
+      metadata: {
+        reviewed_by: user.id,
+        admin_note: adminNote || null,
+        seller_note: updated.note || null,
+        source: 'seller_payout_request_review',
+      },
+    })
   }
 
   const { data: seller } = await supabaseAdmin

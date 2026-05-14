@@ -35,6 +35,41 @@ function pickCreatePayload(body) {
   return out
 }
 
+export async function GET() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+    error: userErr,
+  } = await supabase.auth.getUser()
+
+  if (userErr || !user) {
+    return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 })
+  }
+
+  const supabaseAdmin = getSupabaseAdmin()
+  const { data: seller, error: sellerErr } = await supabaseAdmin
+    .from('sellers')
+    .select('user_id')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (sellerErr || !seller) {
+    return NextResponse.json({ error: 'Seller account required.' }, { status: 403 })
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('seller_listings')
+    .select('*')
+    .eq('seller_user_id', user.id)
+    .order('updated_at', { ascending: false })
+
+  if (error) {
+    return NextResponse.json({ error: error.message || 'Failed to load listings.' }, { status: 500 })
+  }
+
+  return NextResponse.json({ listings: data ?? [] }, { status: 200 })
+}
+
 export async function POST(request) {
   const supabase = await createClient()
   const {

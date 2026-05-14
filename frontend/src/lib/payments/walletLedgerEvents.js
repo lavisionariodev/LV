@@ -1,4 +1,4 @@
-import { insertWalletLedgerEntry } from '@/lib/payments/walletLedger'
+import { insertWalletLedgerEntry } from './walletLedger.js'
 
 /**
  * @param {import('@supabase/supabase-js').SupabaseClient} supabaseAdmin
@@ -123,5 +123,92 @@ export async function recordRefundLedgerEntry(supabaseAdmin, params) {
       paymongo_refund_id: refundId || null,
     },
     idempotency_key: `refund:${orderId}:${refundKey}`,
+  })
+}
+
+/**
+ * @param {import('@supabase/supabase-js').SupabaseClient} supabaseAdmin
+ * @param {{
+ *   payoutRequestId: string,
+ *   sellerUserId: string,
+ *   amountPhp: number,
+ *   currency?: string,
+ *   metadata?: Record<string, unknown>,
+ * }} params
+ */
+export async function recordWithdrawalLedgerEntry(supabaseAdmin, params) {
+  const { payoutRequestId, sellerUserId, amountPhp, currency = 'PHP', metadata = {} } = params
+  const requestId = payoutRequestId ? String(payoutRequestId) : ''
+  const sellerId = sellerUserId ? String(sellerUserId) : ''
+  const amount = Number(amountPhp) || 0
+  if (!requestId || !sellerId || amount <= 0) return
+
+  await insertWalletLedgerEntry(supabaseAdmin, {
+    seller_user_id: sellerId,
+    order_id: null,
+    escrow_id: null,
+    disbursement_id: null,
+    entry_type: 'withdrawal',
+    amount_php: amount,
+    currency,
+    metadata: {
+      payout_request_id: requestId,
+      ...metadata,
+    },
+    idempotency_key: `withdrawal:payout_request:${requestId}`,
+  })
+}
+
+/**
+ * @param {import('@supabase/supabase-js').SupabaseClient} supabaseAdmin
+ * @param {{
+ *   sellerUserId: string,
+ *   amountPhp: number,
+ *   currency?: string,
+ *   reason: string,
+ *   adminUserId: string,
+ *   idempotencyKey: string,
+ *   metadata?: Record<string, unknown>,
+ * }} params
+ */
+export async function recordAdjustmentLedgerEntry(supabaseAdmin, params) {
+  const {
+    sellerUserId,
+    amountPhp,
+    currency = 'PHP',
+    reason,
+    adminUserId,
+    idempotencyKey,
+    metadata = {},
+  } = params
+  const sellerId = sellerUserId ? String(sellerUserId) : ''
+  const amount = Number(amountPhp)
+  const key = idempotencyKey ? String(idempotencyKey).trim() : ''
+  const auditReason = typeof reason === 'string' ? reason.trim() : ''
+
+  if (!sellerId || !Number.isFinite(amount) || amount === 0) {
+    return { ok: false, error: 'A non-zero adjustment amount and seller are required.' }
+  }
+  if (!key) {
+    return { ok: false, error: 'Missing adjustment idempotency key.' }
+  }
+  if (!auditReason) {
+    return { ok: false, error: 'A reason is required for ledger adjustments.' }
+  }
+
+  return insertWalletLedgerEntry(supabaseAdmin, {
+    seller_user_id: sellerId,
+    order_id: null,
+    escrow_id: null,
+    disbursement_id: null,
+    entry_type: 'adjustment',
+    amount_php: amount,
+    currency,
+    metadata: {
+      reason: auditReason,
+      admin_user_id: adminUserId,
+      ...metadata,
+    },
+    idempotency_key: key,
   })
 }

@@ -23,10 +23,10 @@ Paths are relative to `frontend/` unless noted.
 - [x] **Guest commerce (buyer account required)** — **Intentional / wired.** Guests cannot add to cart or favorites; shop and listing flows redirect to buyer login/signup with return URL (`src/lib/cart/bookNow.js`, `src/app/(main)/shop/page.jsx`, `src/app/(main)/shop/[id]/page.jsx`, `src/app/(main)/favorites/page.jsx`). Cart and favorites persist in Supabase only for signed-in buyers (`src/contexts/CartContext.jsx`, `src/contexts/FavoritesContext.jsx`). No guest/localStorage cart is planned unless product policy changes.
 - [x] **Buyer notification preferences** — **Wired.** `profiles.notification_preferences` (migration `108_buyer_notification_prefs_commission_log.sql`), `GET/PATCH /api/buyer/notification-preferences`, buyer settings at `/profile/notifications/preferences`, and server preference checks in `src/lib/notifications/preferencesServer.js`.
 - [x] **Buyer notification inbox actions** — **Wired.** Buyer inbox uses `useInAppNotificationFeed` with delete and clear-all actions (`src/app/(main)/profile/notifications/page.jsx`).
-- [ ] **Ratings API surface** — `GET /api/ratings/service-aggregates` exists (`src/app/api/ratings/service-aggregates/route.js`) but no UI calls it; shop and seller profile use `/api/ratings/aggregates` instead.
-- [ ] **Automated tests** — **Partial.** Only `src/lib/payments/sellerWalletSummary.test.js` exists; no broader `*.test.*` / `*.spec.*` coverage under `frontend/`.
-- [ ] **Root README vs app** — `README.md` lists generic stack/features; it does not document required env vars, Supabase migrations, PayMongo, or SMTP setup.
-- [ ] **Middleware admin gate bypass** — If `NEXT_PUBLIC_SUPABASE_URL` or `NEXT_PUBLIC_SUPABASE_ANON_KEY` is missing, `middleware.js` skips admin protection (`frontend/middleware.js`). `/api/admin/*` still checks auth per route via `requireAdminApiUser()`.
+- [x] **Ratings API surface** — **Wired.** Service-only aggregates are served via `services` on `GET /api/ratings/aggregates` (`src/lib/ratings/ratingsAggregatesServer.js`); the standalone `service-aggregates` route was removed.
+- [ ] **Automated tests** — **Partial.** Payment, PayMongo, ratings, auth middleware gate, and wallet ledger idempotency tests exist under `src/lib/`; broader route and UI coverage is still limited.
+- [x] **Root README vs app** — `frontend/README.md` documents required env vars, migrations, PayMongo webhook setup, and links to `docs/integration-gap-tracker.md`.
+- [x] **Middleware admin gate bypass** — `middleware.js` redirects `/admin/**` to `/administrator` when `NEXT_PUBLIC_SUPABASE_URL` or `NEXT_PUBLIC_SUPABASE_ANON_KEY` is missing (`src/lib/auth/adminRouteGate.js`). `/api/admin/*` still checks auth per route via `requireAdminApiUser()`.
 - [ ] **Client Supabase list reads** — **Partial.** Many buyer, seller, and admin tables still load via browser Supabase + RLS while mutations use `src/app/api/*` (see portal sections below). Admin sellers and listings directory reads now use `GET /api/admin/sellers` and `GET /api/admin/listings`.
 
 ---
@@ -45,12 +45,12 @@ Paths are relative to `frontend/` unless noted.
 - [ ] **Cart coupons** — **UI only.** Coupon `vision10` applies 10% in local state only (`src/app/(main)/cart/page.jsx`). Checkout create (`src/app/api/checkout/create/route.js`) has no discount/coupon fields; discount does not reach payment.
 - [ ] **Cart print receipt** — **UI only.** Print layout uses generated invoice id, status “Pending”, and generic payment/contact copy, not a placed order (`src/app/(main)/cart/page.jsx`).
 - [x] **Checkout payment retry** — **Wired.** Purchases shows **Pay now** for unpaid, failed, or expired orders and reuses `/api/checkout/pay` (`src/lib/profile/mapBuyerOrderCard.js`, `src/app/(main)/profile/purchases/page.jsx`). Checkout still stashes pay errors in `sessionStorage` for the dismissible banner (`src/app/(main)/checkout/page.jsx`). Orders with `payment_status: pending` (open PayMongo session) still cannot retry until that session clears.
-- [ ] **Checkout outcome pages** — **Partial.** `checkout/success` and `checkout/failed` are static; payment confirmation is webhook-driven (`src/app/api/payments/paymongo/webhook/route.js`), not client-verified on success.
+- [x] **Checkout outcome pages** — **Wired.** `checkout/success` and `checkout/failed` poll `GET /api/checkout/payments/[paymentId]/status` while PayMongo settlement remains webhook-driven (`src/app/api/payments/paymongo/webhook/route.js`).
 
 ### Profile and account
 
-- [ ] **Buyer password change in profile** — No password settings under buyer profile routes (`src/app/(main)/profile/`). Reset flow lives under auth (`src/app/(auth)/auth/reset-password/page.jsx`).
-- [ ] **Purchases list data path** — **Partial.** Order list reads via browser Supabase on `orders` / `order_items` (`src/app/(main)/profile/purchases/page.jsx`); cancel, dispute, review, and receipt use `/api/buyer/*` and `/api/profile/purchases/*`; no `GET /api/buyer/orders`.
+- [x] **Buyer password change in profile** — **Wired.** `/profile/password` uses `changePasswordWithReauth` and `inferCanChangePassword` (`src/app/(main)/profile/password/page.jsx`, `src/lib/auth/inferCanChangePassword.js`).
+- [x] **Purchases list data path** — **Wired.** Purchases load via `GET /api/buyer/orders` (`src/lib/profile/listBuyerOrdersForApi.js`); cancel, dispute, review, receipt, and pay retry still use existing buyer/profile APIs.
 - [ ] **Purchases post-checkout actions** — Cancel, dispute, review, receipt, and payment retry are wired to buyer/admin APIs and `/api/checkout/pay`.
 
 ### Auth (buyer)
@@ -85,7 +85,7 @@ Paths are relative to `frontend/` unless noted.
 
 ### Dashboard
 
-- [ ] **Alert “Resolve” persistence** — **Partial.** Alerts sync via `/api/seller/dashboard-alerts`; resolve PATCHes `/api/notifications` only when a synced row exists, and always adds id to `dismissedAlertIds` (session dismiss) (`src/app/seller/page.jsx`).
+- [x] **Alert “Resolve” persistence** — **Wired.** Resolve persists through `PATCH /api/seller/dashboard-alerts` with notification upsert by `metadata.alertId` (`src/app/seller/page.jsx`).
 - [ ] **Quick action “Create Promotion”** — Routes into marketing hub mock data (`src/app/seller/page.jsx` → `/seller/marketing/campaign`).
 
 ### Marketing (largest seller gap)
@@ -97,18 +97,18 @@ Paths are relative to `frontend/` unless noted.
 
 ### Help
 
-- [ ] **Seller help FAQs** — **Partial.** Default FAQ copy is static when CMS groups are missing (`FAQ_BY_TAB` in `src/app/seller/help/page.jsx`). Support tickets load/post via `/api/seller/support` (wired).
+- [x] **Seller help FAQs** — **Wired.** CMS `sellerHelpFaq` groups merge with static `FAQ_BY_TAB` per category (`src/app/seller/help/page.jsx`). Support tickets remain on `/api/seller/support`.
 
 ### Seller data loading (list screens)
 
-- [ ] **Orders list reads** — **Partial.** `OrdersContent.jsx` loads `orders` and `disputes` via browser Supabase + realtime; confirm, fulfillment, decline, refund, and dispute actions use `/api/seller/orders/*` and `/api/seller/disputes/*`.
-- [ ] **Customers list reads** — **Partial.** Customer aggregates come from a direct Supabase `orders` select (`src/app/seller/customers/page.jsx`, `src/lib/seller/sellerOrderAnalytics.js`); no dedicated seller customers API.
-- [ ] **Products/listings list reads** — **Partial.** `listMySellerListings()` and realtime on `seller_listings` are client-side (`src/app/seller/products/components/ProductsContent.jsx`); listing mutations go through `/api/seller/listings/*`.
+- [x] **Orders list reads** — **Wired.** `OrdersContent.jsx` loads via `GET /api/seller/orders` with realtime refresh; mutations use `/api/seller/orders/*` and `/api/seller/disputes/*`.
+- [x] **Customers list reads** — **Wired.** Customers load via `GET /api/seller/customers` (`src/app/seller/customers/page.jsx`).
+- [x] **Products/listings list reads** — **Wired.** Products load via `GET /api/seller/listings`; listing mutations go through `/api/seller/listings/*`.
 
 ### Wallet, payouts, and revenue reporting
 
-- [ ] **Wallet ledger transaction feed** — **Partial.** `GET /api/seller/escrow-summary` loads ledger rows for summary math and CSV export (`src/app/api/seller/escrow-summary/route.js`, `src/app/seller/analytics/revenue-reports/page.jsx`); sellers do not get a full append-only ledger history UI.
-- [ ] **Legacy manual release visibility** — **Partial.** `legacyReleasedCount` / `legacyReleasedNet` are computed in `src/lib/payments/sellerWalletSummary.js` but not shown in seller payout or revenue UI.
+- [x] **Wallet ledger transaction feed** — **Wired.** `GET /api/seller/escrow-summary` returns paginated `ledgerEntries`; revenue reports show recent ledger rows (`src/app/seller/analytics/revenue-reports/page.jsx`).
+- [x] **Legacy manual release visibility** — **Wired.** Revenue reports surface `legacyReleasedCount` / `legacyReleasedNet` from `sellerWalletSummary`.
 
 ### Seller areas largely integrated (spot-check)
 
@@ -121,7 +121,7 @@ Orders (mutations), products/listings (mutations), analytics, customers (aggrega
 ### Data loading pattern
 
 - [x] **Sellers and listings list reads** — **Wired.** Admin sellers load via `GET /api/admin/sellers` (`src/lib/sellers/client.js`); listings browse, approvals, and dashboard counts load via `GET /api/admin/listings` (`src/lib/seller-listings/client.js` → `src/lib/admin/listSellerListingsForAdmin.js`). Mutations still go through `src/app/api/admin/*`.
-- [ ] **Site content load vs save** — Read via client Supabase (`src/lib/siteContent/client.js`); writes via `POST /api/admin/site-content` (`src/app/api/admin/site-content/route.js`).
+- [x] **Site content load vs save** — Admin editor reads via `GET /api/admin/site-content` and writes via `POST /api/admin/site-content` (`src/lib/siteContent/client.js` → `useAdminSiteContent`). Public pages still use browser Supabase via `useSiteContent`.
 
 ### Listings moderation
 
@@ -135,7 +135,7 @@ Orders (mutations), products/listings (mutations), analytics, customers (aggrega
 
 - [x] **Escrow release vs PayMongo disbursement** — **Wired.** Admin release and bulk release call `releaseEscrowWithDisbursement` with env gating, seller payout settings validation, and manual override (`src/lib/payments/releaseEscrowWithDisbursement.js`, `src/lib/payments/disbursementConfig.js`, `GET /api/admin/payouts/disbursement-config`, admin payouts banner).
 - [x] **Manual disbursement override in UI** — **Wired.** Single-order and bulk release modals pass `manualOverride` to `/api/admin/payouts/release` and `/api/admin/payouts/release-batch` (`src/app/admin/payouts/page.jsx`).
-- [ ] **Payout request approval vs money movement** — **Partial.** Approve updates request status and notifies the seller (`src/app/api/admin/payout-requests/[id]/review/route.js`, `src/app/admin/payouts/PayoutRequestsStrip.jsx`); copy and flow still send admins to Payouts for release, with `approvedRequestId` only on the deep link.
+- [ ] **Payout request approval vs money movement** — **Partial.** Approve updates request status, writes a `withdrawal` ledger entry, and notifies the seller (`src/app/api/admin/payout-requests/[id]/review/route.js`, `src/app/admin/payouts/PayoutRequestsStrip.jsx`); copy and flow still send admins to Payouts for release, with `approvedRequestId` only on the deep link.
 - [x] **Payouts commission change log** — **Wired.** `platform_commission_change_log` (migration `108_buyer_notification_prefs_commission_log.sql`) with writes from platform billing, seller override, and per-order commission APIs; payouts UI loads `GET /api/admin/payouts/commission-change-log`.
 - [ ] **Platform billing singleton** — `platform-billing` assumes row `id = 1`; GET falls back to **10%** commission when row missing (`src/app/api/admin/platform-billing/route.js`).
 
@@ -151,12 +151,12 @@ Dashboard metrics, buyers, seller status/compliance/documents, listing approve/r
 
 ## Payments (PayMongo) and money movement
 
-- [ ] **Checkout PayMongo session** — Create/pay logic lives in route handlers with duplicated centavos/auth helpers (`src/app/api/checkout/create/route.js`, `src/app/api/checkout/pay/route.js`), not a shared `lib/payments` checkout module.
+- [x] **Checkout PayMongo session** — **Wired.** Checkout pay uses shared `createPaymongoCheckoutSession` / `phpToCentavos` in `src/lib/paymongo/client.js`.
 - [ ] **Refunds** — PayMongo refund client in `src/lib/paymongo/client.js`; reconciliation in `src/lib/payments/refundReconcile.js`; admin stuck-refund and dispute outcomes can call PayMongo when `paymongo_payment_id` exists.
 - [x] **Seller disbursement automation** — **Wired.** PayMongo batch transfer, `payout_disbursements`, and ledger writes on funding, refund, and payout release (`src/lib/paymongo/client.js`, `src/lib/payments/disbursementReconcile.js`, `src/lib/payments/walletLedgerEvents.js`, PayMongo webhook escrow creation).
 - [x] **PayMongo disbursement prerequisites** — **Wired / Ops.** Env readiness is surfaced via `getPaymongoDisbursementEnvStatus()` and `GET /api/admin/payouts/disbursement-config`; production still needs `PAYMONGO_DISBURSEMENT_ENABLED=true`, funded wallet, and `PAYMONGO_WALLET_SOURCE_*` env vars.
-- [ ] **Wallet ledger entry coverage** — **Partial.** `order_payment`, `held_funds`, `refund`, and `payout_release` are written on payment, refund, and release paths (`src/lib/payments/walletLedgerEvents.js`). `withdrawal` and `adjustment` remain unused.
-- [ ] **Seller withdrawal ledger type** — **Unwired.** `withdrawal` is summed in wallet summaries (`src/lib/payments/sellerWalletSummary.js`) but no API or UI creates withdrawal ledger entries; flow is payout requests plus admin escrow release.
+- [x] **Wallet ledger entry coverage** — `order_payment`, `held_funds`, `refund`, `payout_release`, `withdrawal`, and `adjustment` are written on payment, refund, release, payout-request approval, and admin adjustment paths (`src/lib/payments/walletLedgerEvents.js`, `src/app/api/admin/payouts/ledger-adjustment/route.js`).
+- [x] **Seller withdrawal ledger type** — **Wired.** `withdrawal` entries are written when payout requests are approved (`src/app/api/admin/payout-requests/[id]/review/route.js`) and summed in wallet summaries (`src/lib/payments/sellerWalletSummary.js`).
 - [ ] **Webhook dependency** — Paid/failed checkout, refunds, and transfer/disbursement settlement depend on `src/app/api/payments/paymongo/webhook/route.js` and `PAYMONGO_WEBHOOK_SECRET`.
 
 ---
@@ -175,7 +175,7 @@ Dashboard metrics, buyers, seller status/compliance/documents, listing approve/r
 - [ ] **Wallet ledger and disbursements schema** — Migration `107_wallet_ledger_disbursements.sql` (`payout_disbursements`, `seller_wallet_ledger`); disbursement state and ledger writes depend on this migration and service-role access (`src/lib/payments/walletLedger.js`).
 - [ ] **Partners spotlight/directory RPCs** — Required for homepage carousel, `/partners`, and seller-profile badges; UI hints if migrations ~087–091 are not applied.
 - [ ] **Seller `turnaround` and social links** — Used when migrations 082+ / 097+ are applied (shop + public profile RPCs).
-- [ ] **Supabase env** — App expects Supabase URL/keys; admin middleware gate is weakened without them (see cross-cutting).
+- [ ] **Supabase env** — App expects Supabase URL/keys; admin middleware fails closed without public Supabase env (see cross-cutting).
 
 ---
 

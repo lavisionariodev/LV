@@ -78,13 +78,15 @@ export function buildSellerWalletSummary(escrows, disbursements = [], ledgerEntr
   )
 
   const withdrawnNet = sumAmount(ledgerEntries, 'amount_php', (row) => row.entry_type === 'withdrawal')
+  const adjustmentNet = sumAmount(ledgerEntries, 'amount_php', (row) => row.entry_type === 'adjustment')
+  const payoutReleaseLedgerNet = sumAmount(ledgerEntries, 'amount_php', (row) => row.entry_type === 'payout_release')
 
   const gross = sumAmount(rows, 'gross_amount')
   const commission = sumAmount(rows, 'commission_amount')
   const net = sumAmount(rows, 'net_amount')
   const releasedNet = releasedNetAutomated + releasedNetLegacyManual
   const paidOutNet = releasedNetAutomated + withdrawnNet
-  const availableNet = Math.max(0, releasedNetAutomated - withdrawnNet)
+  const availableNet = Math.max(0, releasedNetAutomated - withdrawnNet + adjustmentNet)
 
   return {
     count: rows.length,
@@ -102,6 +104,8 @@ export function buildSellerWalletSummary(escrows, disbursements = [], ledgerEntr
     availableNet,
     paidOutNet,
     withdrawnNet,
+    payoutReleaseLedgerNet,
+    adjustmentNet,
     totalEarningsGross: gross,
     totalEarningsNet: net,
     legacyReleasedCount: legacyReleasedEscrowIds.size,

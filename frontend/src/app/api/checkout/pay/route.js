@@ -4,17 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireActiveBuyerApiUser } from '@/lib/auth/requireApiUser'
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
 import { getClientIp, takeToken } from '@/lib/rate-limit/memoryRateLimit'
-
-function phpToCentavos(amount) {
-  const num = Number(amount)
-  if (!Number.isFinite(num)) return null
-  return Math.round(num * 100)
-}
-
-function getBasicAuthHeader(secretKey) {
-  const token = Buffer.from(`${secretKey}:`).toString('base64')
-  return `Basic ${token}`
-}
+import { createPaymongoCheckoutSession, phpToCentavos } from '@/lib/paymongo/client'
 
 export async function POST(request) {
   const ip = getClientIp(request)
@@ -145,48 +135,27 @@ export async function POST(request) {
   const successUrl = `${origin}/checkout/success?payment=${encodeURIComponent(paymentRow.id)}`
   const cancelUrl = `${origin}/checkout/failed?payment=${encodeURIComponent(paymentRow.id)}`
 
-  const paymongoRes = await fetch('https://api.paymongo.com/v1/checkout_sessions', {
-    method: 'POST',
-    headers: {
-      Authorization: getBasicAuthHeader(secretKey),
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
+  const paymongoResult = await createPaymongoCheckoutSession({
+    amountCentavos,
+    currency,
+    successUrl,
+    cancelUrl,
+    referenceNumber: paymongoReference,
+    metadata: {
+      payment_id: paymentRow.id,
+      order_ids: orderIds,
     },
-    body: JSON.stringify({
-      data: {
-        attributes: {
-          line_items: [
-            {
-              name: 'Booking payment',
-              amount: amountCentavos,
-              quantity: 1,
-              currency,
-            },
-          ],
-          payment_method_types: ['card', 'gcash'],
-          success_url: successUrl,
-          cancel_url: cancelUrl,
-          reference_number: paymongoReference,
-          metadata: {
-            payment_id: paymentRow.id,
-            order_ids: orderIds,
-          },
-        },
-      },
-    }),
   })
 
-  const paymongoBody = await paymongoRes.json().catch(() => null)
-
-  if (!paymongoRes.ok) {
-    apiLog('checkout.pay.paymongo_session_failed', { statusCode: paymongoRes.status })
+  if (!paymongoResult.ok) {
+    apiLog('checkout.pay.paymongo_session_failed', { statusCode: paymongoResult.status })
     await supabaseAdmin
       .from('payments')
       .update({
         status: 'failed',
         metadata: {
           ...(paymentRow.metadata ?? {}),
-          paymongo_error: paymongoBody,
+          paymongo_error: paymongoResult.raw,
         },
       })
       .eq('id', paymentRow.id)
@@ -199,8 +168,8 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Failed to create PayMongo checkout session.' }, { status: 502 })
   }
 
-  const checkoutId = paymongoBody?.data?.id ?? null
-  const checkoutUrl = paymongoBody?.data?.attributes?.checkout_url ?? null
+  const checkoutId = paymongoResult.checkoutId
+  const checkoutUrl = paymongoResult.checkoutUrl
 
   if (!checkoutId || !checkoutUrl) {
     apiLog('checkout.pay.paymongo_bad_response_shape', {})

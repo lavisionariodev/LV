@@ -198,7 +198,6 @@ export default function SellerDashboardPage() {
   const { orders, listings, loading, error } = useSellerAnalyticsData()
   const displayEmail = user?.email || ''
   const [chartFilter, setChartFilter] = useState('weekly')
-  const [dismissedAlertIds, setDismissedAlertIds] = useState(() => new Set())
   const [dashboardAlertRows, setDashboardAlertRows] = useState([])
   const [activeAlert, setActiveAlert] = useState(null)
   const [activeDetailAlert, setActiveDetailAlert] = useState(null)
@@ -218,9 +217,9 @@ export default function SellerDashboardPage() {
   const alerts = useMemo(() => {
     return rawAlerts.filter((a) => {
       const row = alertNotificationById.get(a.id)
-      return !dismissedAlertIds.has(a.id) && !row?.resolved_at && !row?.resolvedAt
+      return !row?.resolved_at
     })
-  }, [rawAlerts, dismissedAlertIds, alertNotificationById])
+  }, [rawAlerts, alertNotificationById])
 
   useEffect(() => {
     let cancelled = false
@@ -368,34 +367,20 @@ export default function SellerDashboardPage() {
 
   const handleResolve = async () => {
     if (!activeAlert) return
-    const row = alertNotificationById.get(activeAlert.id)
-    if (row?.id) {
-      const res = await fetch('/api/notifications', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: row.id, resolve: true, resolutionNote: resolveNote }),
-      })
-      if (!res.ok) return
-      const nowIso = new Date().toISOString()
-      setDashboardAlertRows((prev) =>
-        prev.map((r) =>
-          r.id === row.id
-            ? {
-                ...r,
-                read_at: r.read_at || nowIso,
-                resolved_at: nowIso,
-                metadata: {
-                  ...(r.metadata || {}),
-                  ...(resolveNote.trim()
-                    ? { resolutionNote: resolveNote.trim(), resolutionNoteAt: nowIso }
-                    : {}),
-                },
-              }
-            : r,
-        ),
-      )
-    }
-    setDismissedAlertIds((prev) => new Set([...prev, activeAlert.id]))
+    const res = await fetch('/api/seller/dashboard-alerts', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        alertId: activeAlert.id,
+        type: activeAlert.type,
+        message: activeAlert.message,
+        priority: activeAlert.priority,
+        resolutionNote: resolveNote,
+      }),
+    })
+    if (!res.ok) return
+    const body = await res.json().catch(() => null)
+    setDashboardAlertRows(Array.isArray(body?.notifications) ? body.notifications : [])
     setActiveAlert(null)
     setResolveNote('')
   }
