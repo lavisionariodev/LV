@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireActiveBuyerApiUser } from '@/lib/auth/requireApiUser'
+import { getSupabaseAdmin } from '@/lib/supabase/admin'
 
 function paymentStatusLabel(status) {
   const normalized = String(status || '').toLowerCase()
@@ -10,8 +11,10 @@ function paymentStatusLabel(status) {
 }
 
 export async function GET(_request, { params }) {
-  const { user, supabaseAdmin, responseError } = await requireActiveBuyerApiUser()
+  const { user, responseError } = await requireActiveBuyerApiUser()
   if (responseError) return responseError
+
+  const supabaseAdmin = getSupabaseAdmin()
 
   const { paymentId } = await params
   if (!paymentId) {

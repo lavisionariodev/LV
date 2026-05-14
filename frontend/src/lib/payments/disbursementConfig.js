@@ -14,7 +14,7 @@ export function getPaymongoDisbursementEnvIssues() {
   const issues = []
   if (!isPaymongoDisbursementEnabled()) {
     issues.push(
-      'PAYMONGO_DISBURSEMENT_ENABLED is not true — escrow release updates the database only unless an admin forces manual ledger release.',
+      'PAYMONGO_DISBURSEMENT_ENABLED is not true — admin release finalizes escrow in the database and seller ledger only; pay sellers outside PayMongo.',
     )
   }
   if (!process.env.PAYMONGO_SECRET_KEY) {

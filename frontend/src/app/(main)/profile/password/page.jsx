@@ -51,9 +51,8 @@ export default function ProfilePasswordPage() {
       <div className={styles.profileAccentBar} />
       <header className={styles.profileHeader}>
         <div className={styles.profileHeaderLeft}>
-          <p className={styles.profileEyebrow}>Security</p>
-          <h1 className={styles.profileTitle}>Change password</h1>
-          <p className={styles.profileSubtitle}>
+          <p className={styles.profileEyebrow}>Change password</p>
+          <p className={styles.profileSignedIn}>
             {canChangePassword === null
               ? 'Checking your sign-in method...'
               : canChangePassword

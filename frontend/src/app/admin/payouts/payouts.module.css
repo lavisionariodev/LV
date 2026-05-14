@@ -6167,3 +6167,107 @@
     background: rgba(255, 255, 255, 0.18);
   }
 }
+
+/* ── PayMongo disbursement reminder (bottom-centered modal) ─────────────── */
+
+.disbursementReminderHost {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 24px;
+  z-index: 1200;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px;
+  pointer-events: none;
+}
+
+.disbursementReminderModal {
+  position: relative;
+  width: min(560px, 100%);
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow:
+    0 18px 40px rgba(15, 23, 42, 0.16),
+    0 2px 8px rgba(15, 23, 42, 0.08);
+  padding: 16px 44px 16px 16px;
+  pointer-events: auto;
+}
+
+.disbursementReminderModalManual {
+  border-color: rgba(220, 38, 38, 0.28);
+  background: rgba(254, 242, 242, 0.98);
+}
+
+.disbursementReminderModalAutomated {
+  border-color: rgba(22, 163, 74, 0.28);
+  background: rgba(240, 253, 244, 0.98);
+}
+
+.disbursementReminderClose {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.disbursementReminderClose:hover {
+  background: rgba(15, 23, 42, 0.06);
+  color: #0f172a;
+}
+
+.disbursementReminderClose:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.45);
+  outline-offset: 2px;
+}
+
+.disbursementReminderTitle {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.disbursementReminderModalManual .disbursementReminderTitle {
+  color: #991b1b;
+}
+
+.disbursementReminderModalAutomated .disbursementReminderTitle {
+  color: #166534;
+}
+
+.disbursementReminderSub {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.disbursementReminderIssues {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+@media (max-width: 640px) {
+  .disbursementReminderHost {
+    bottom: 16px;
+    padding: 0 12px;
+  }
+
+  .disbursementReminderModal {
+    padding: 14px 40px 14px 14px;
+  }
+}

@@ -1705,8 +1705,14 @@ function CommissionPanel({
     )
   }, [])
 
-  useEffect(() => {
-    reloadChangeLog()
+  const toggleChangeLog = useCallback(() => {
+    setShowLog((open) => {
+      const next = !open
+      if (next) {
+        void reloadChangeLog()
+      }
+      return next
+    })
   }, [reloadChangeLog])
 
   const saveGlobal = async () => {
@@ -1734,9 +1740,7 @@ function CommissionPanel({
 
   const saveSeller = async (sid) => {
     setSaveError('')
-    const seller = sellersList.find((s) => s.id === sid)
     const rawInput = sellerInputs[sid]
-    const prev = settings.sellers[sid] !== undefined ? settings.sellers[sid] : settings.global
 
     if (rawInput === '' || rawInput == null) {
       if (typeof onClearSellerOverride === 'function') {
@@ -1779,7 +1783,6 @@ function CommissionPanel({
 
   const removeOverride = async (sid) => {
     if (typeof onClearSellerOverride !== 'function') return
-    const seller = sellersList.find((s) => s.id === sid)
     setBusy(sid)
     setSaveError('')
     try {
@@ -1870,7 +1873,7 @@ function CommissionPanel({
           )}
           <button
             className={`${styles.logToggleBtn} ${showLog ? styles.logToggleBtnActive : ''}`}
-            onClick={() => setShowLog(v => !v)}
+            onClick={toggleChangeLog}
             title="Change history"
           >
             <svg viewBox="0 0 24 24" fill="none"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
@@ -2345,6 +2348,7 @@ export default function AdminPayoutsPage() {
   const [payoutsBulkUnholdConfirm, setPayoutsBulkUnholdConfirm] = useState(false)
   const [payoutsBulkBusy, setPayoutsBulkBusy] = useState(false)
   const [bulkManualOverrideRelease, setBulkManualOverrideRelease] = useState(false)
+  const [disbursementReminderDismissed, setDisbursementReminderDismissed] = useState(false)
 
   const selectedPayoutTxns = useMemo(() => {
     if (selectedRows.size === 0) return []
@@ -2538,28 +2542,6 @@ export default function AdminPayoutsPage() {
           <p className={styles.stuckRefundsSub}>
             Release eligible completed escrow rows for this seller. Automated PayMongo disbursement runs per order when enabled.
           </p>
-        </section>
-      ) : null}
-
-      {disbursementConfig ? (
-        <section className={styles.stuckRefundsWrap} aria-live="polite">
-          <p className={styles.stuckRefundsTitle}>
-            {disbursementConfig.automatedReady
-              ? 'PayMongo automated disbursement is enabled'
-              : 'Escrow releases use manual settlement unless PayMongo is ready'}
-          </p>
-          <p className={styles.stuckRefundsSub}>
-            {disbursementConfig.automatedReady
-              ? 'Eligible releases can create PayMongo transfers when seller payout settings validate. Use the manual ledger checkbox to skip PayMongo for a specific release.'
-              : 'Set PAYMONGO_DISBURSEMENT_ENABLED=true with wallet source env vars, or use the manual ledger release checkbox on each release.'}
-          </p>
-          {Array.isArray(disbursementConfig.issues) && disbursementConfig.issues.length > 0 ? (
-            <ul className={styles.stuckRefundsSub}>
-              {disbursementConfig.issues.map((issue) => (
-                <li key={issue}>{issue}</li>
-              ))}
-            </ul>
-          ) : null}
         </section>
       ) : null}
 
@@ -3452,6 +3434,50 @@ export default function AdminPayoutsPage() {
           )}
         </>
       )}
+
+      {disbursementConfig && !disbursementReminderDismissed ? (
+        <div
+          className={styles.disbursementReminderHost}
+          role="dialog"
+          aria-modal="false"
+          aria-labelledby="payouts-disbursement-reminder-title"
+          aria-live="polite"
+        >
+          <div
+            className={`${styles.disbursementReminderModal} ${
+              disbursementConfig.automatedReady
+                ? styles.disbursementReminderModalAutomated
+                : styles.disbursementReminderModalManual
+            }`}
+          >
+            <button
+              type="button"
+              className={styles.disbursementReminderClose}
+              onClick={() => setDisbursementReminderDismissed(true)}
+              aria-label="Dismiss disbursement reminder"
+            >
+              <TbX size={18} strokeWidth={2} aria-hidden />
+            </button>
+            <p id="payouts-disbursement-reminder-title" className={styles.disbursementReminderTitle}>
+              {disbursementConfig.automatedReady
+                ? 'PayMongo automated disbursement is enabled'
+                : 'Escrow releases use manual settlement unless PayMongo is ready'}
+            </p>
+            <p className={styles.disbursementReminderSub}>
+              {disbursementConfig.automatedReady
+                ? 'Eligible releases can create PayMongo transfers when seller payout settings validate. Use the manual ledger checkbox to skip PayMongo for a specific release.'
+                : 'Admin release finalizes escrow in the app; settlement is manual until PayMongo wallet env is configured on the server. Optional release reference can note your bank transfer.'}
+            </p>
+            {Array.isArray(disbursementConfig.issues) && disbursementConfig.issues.length > 0 ? (
+              <ul className={styles.disbursementReminderIssues}>
+                {disbursementConfig.issues.map((issue) => (
+                  <li key={issue}>{issue}</li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
     </div>
   )
