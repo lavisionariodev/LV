@@ -1,13 +1,5 @@
-'use client'
-
-import { Suspense } from 'react'
-import ProductsContent from '../components/ProductsContent'
-import ProductsListingRouteFallback from '../components/ProductsListingRouteFallback'
+import ProductsRoutePage from '../components/ProductsRoutePage'
 
 export default function SellerProductsPackagesPage() {
-  return (
-    <Suspense fallback={<ProductsListingRouteFallback />}>
-      <ProductsContent initialKind="package" />
-    </Suspense>
-  )
+  return <ProductsRoutePage initialKind="package" />
 }

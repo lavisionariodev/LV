@@ -4,8 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import layoutStyles from '../../admin.module.css'
-import styles from './detail.module.css'
+import styles from '../disputes.module.css'
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
+import { Dropdown } from '@/components/ui'
 
 const STATUS_FLOW = ['open', 'under_review', 'resolved', 'closed']
 
@@ -679,20 +680,17 @@ export default function AdminDisputeDetailPage() {
         }}
         extra={
           statusChangeConfirm?.next && CLOSE_STATUSES.has(statusChangeConfirm.next) ? (
-            <label style={{ display: 'block', marginTop: 4, fontSize: 13 }}>
-              <span style={{ display: 'block', marginBottom: 6, fontWeight: 600 }}>Financial outcome</span>
-              <select
+            <label className={styles.outcomeField}>
+              <span className={styles.outcomeFieldLabel}>Financial outcome</span>
+              <Dropdown
                 value={closeOutcome}
-                onChange={(e) => setCloseOutcome(e.target.value)}
+                onChange={setCloseOutcome}
+                options={OUTCOME_OPTIONS}
+                ariaLabel="Financial outcome"
+                placeholder="Select outcome"
                 disabled={saving}
-                style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #d4d4d8' }}
-              >
-                {OUTCOME_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+                fullWidth
+              />
             </label>
           ) : null
         }

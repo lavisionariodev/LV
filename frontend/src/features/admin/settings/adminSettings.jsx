@@ -172,9 +172,9 @@ export function AdminPasswordSection({ supabase, changePasswordWithReauth, toast
 /**
  * Shared, layout-light personal-info section for admin profile/settings pages.
  *
- * NOTE: AdminSettingsClient.jsx and AdminProfileClient.jsx still use their own
- * tightly-styled JSX. This component exists for new admin profile surfaces
- * (e.g. an embedded modal) and to make the canonical save flow available.
+ * NOTE: Admin settings and profile routes still use their own tightly-styled JSX.
+ * This component exists for new admin profile surfaces (e.g. an embedded modal)
+ * and to make the canonical save flow available.
  */
 export function AdminPersonalSection({ supabase, toast, className }) {
   const form = useAdminProfileForm({ supabase, toast })

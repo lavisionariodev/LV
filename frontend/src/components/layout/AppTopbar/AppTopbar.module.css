@@ -41,6 +41,45 @@
   user-select: none;
 }
 
+.pageTitleBreadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+}
+
+.breadcrumbLink {
+  color: #0f172a;
+  text-decoration: none;
+  flex-shrink: 0;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .breadcrumbLink:hover {
+    color: #334155;
+  }
+}
+
+.breadcrumbSeparator {
+  color: #94a3b8;
+  font-size: 14px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.breadcrumbCurrent {
+  color: #7a8596;
+  font-weight: 500;
+  font-size: 14px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .right {
   display: flex;
   align-items: center;

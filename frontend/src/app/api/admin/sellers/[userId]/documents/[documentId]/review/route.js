@@ -109,7 +109,7 @@ export async function POST(request, { params }) {
       source: 'seller_document_review',
       documentId: updated.id,
       action,
-      href: '/seller/settings?tab=documents',
+      href: '/seller/settings/documents',
     },
     dedupeKey: `seller_document_review:${updated.id}:${action}`,
   })

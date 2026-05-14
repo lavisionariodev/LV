@@ -8,7 +8,16 @@ import styles from './Dropdown.module.css'
  * Select-style dropdown for toolbars (admin payouts, sellers, buyers).
  * Styles live in `./Dropdown.module.css`.
  */
-export function Dropdown({ value, onChange, options, placeholder, ariaLabel, leadingIcon }) {
+export function Dropdown({
+  value,
+  onChange,
+  options,
+  placeholder,
+  ariaLabel,
+  leadingIcon,
+  disabled = false,
+  fullWidth = false,
+}) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -20,14 +29,29 @@ export function Dropdown({ value, onChange, options, placeholder, ariaLabel, lea
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
+  useEffect(() => {
+    if (disabled) setOpen(false)
+  }, [disabled])
+
   const selected = options.find((o) => o.value === value)
 
   return (
-    <div className={styles.root} ref={ref} aria-label={ariaLabel}>
+    <div
+      className={`${styles.root} ${fullWidth ? styles.rootFullWidth : ''}`}
+      ref={ref}
+      aria-label={ariaLabel}
+    >
       <button
         type="button"
-        className={`${styles.trigger} ${open ? styles.triggerOpen : ''} ${leadingIcon ? styles.triggerWithLeading : ''}`}
-        onClick={() => setOpen((o) => !o)}
+        className={`${styles.trigger} ${open ? styles.triggerOpen : ''} ${
+          leadingIcon ? styles.triggerWithLeading : ''
+        } ${fullWidth ? styles.triggerFullWidth : ''} ${disabled ? styles.triggerDisabled : ''}`}
+        onClick={() => {
+          if (disabled) return
+          setOpen((o) => !o)
+        }}
+        disabled={disabled}
+        aria-disabled={disabled || undefined}
       >
         {leadingIcon ? (
           <span className={styles.leadingIcon} aria-hidden>
@@ -43,13 +67,15 @@ export function Dropdown({ value, onChange, options, placeholder, ariaLabel, lea
           <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
-      {open && (
-        <div className={styles.menu}>
+      {open && !disabled && (
+        <div className={`${styles.menu} ${fullWidth ? styles.menuFullWidth : ''}`}>
           {options.map((opt) => (
             <button
               key={String(opt.value)}
               type="button"
-              className={`${styles.item} ${value === opt.value ? styles.itemActive : ''}`}
+              className={`${styles.item} ${fullWidth ? styles.itemFullWidth : ''} ${
+                value === opt.value ? styles.itemActive : ''
+              }`}
               onClick={() => {
                 onChange(opt.value)
                 setOpen(false)

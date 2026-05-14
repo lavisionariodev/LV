@@ -31,7 +31,7 @@ const DESKTOP_RECENT_ACTIVITY_LIMIT = 4
 const NAV_ACTIONS = [
   { id: 'sellers',  label: 'Sellers',  icon: LuUserCheck,    href: '/admin/sellers' },
   { id: 'buyers',   label: 'Buyers',   icon: TbUsers,        href: '/admin/buyers' },
-  { id: 'billing',  label: 'Billing',  icon: TbCreditCard,   href: '/admin/profile/billing' },
+  { id: 'billing',  label: 'Billing',  icon: TbCreditCard,   href: '/admin/settings/billing' },
   { id: 'disputes', label: 'Disputes', icon: TbReportSearch, href: '/admin/disputes' },
 ]
 

@@ -23,13 +23,28 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
-        source: '/admin/listings',
-        destination: '/admin/listings/browse',
+        source: '/seller/settings/shop',
+        destination: '/seller/settings/shop-information',
         permanent: true,
       },
       {
-        source: '/admin/listings/review',
-        destination: '/admin/listings/approvals',
+        source: '/admin/settings/profile',
+        destination: '/admin/settings/account',
+        permanent: true,
+      },
+      {
+        source: '/admin/profile/notifications',
+        destination: '/admin/settings/notifications',
+        permanent: true,
+      },
+      {
+        source: '/admin/profile/billing',
+        destination: '/admin/settings/billing',
+        permanent: true,
+      },
+      {
+        source: '/admin/profile/content',
+        destination: '/admin/settings/site-content',
         permanent: true,
       },
     ]

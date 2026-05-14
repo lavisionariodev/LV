@@ -295,7 +295,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    margin: 0 26px 16px;
+    margin: 18px 26px 16px;
     padding: 10px 12px;
     font-size: 12px;
     color: #475569;
@@ -538,17 +538,17 @@
 
   /* Notification preferences (admin settings tab) */
   .notifPrefList {
+    display: grid;
+    gap: 0;
     margin-top: 4px;
   }
 
   .notifPrefRow {
     display: flex;
-    flex-wrap: wrap;
     align-items: flex-start;
-    justify-content: flex-start;
-    column-gap: 36px;
-    row-gap: 20px;
-    padding: 22px 0;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 0;
   }
 
   .notifPrefRow:first-child {
@@ -556,17 +556,16 @@
   }
 
   .notifPrefRowBorder {
-    border-bottom: 1px solid #e5e7eb;
+    border-top: 1px solid #e5e7eb;
   }
 
   .notifPrefMeta {
-    flex: 0 1 480px;
-    min-width: min(100%, 260px);
-    max-width: 520px;
+    flex: 1;
+    min-width: 0;
   }
 
   .notifPrefTitle {
-    margin: 0 0 6px;
+    margin: 0 0 4px;
     font-size: 14px;
     font-weight: 600;
     color: #0f172a;
@@ -581,27 +580,22 @@
   }
 
   .notifPrefControls {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    flex: 0 0 auto;
-    width: 185px;
-    max-width: 100%;
-    min-width: 0;
+    display: grid;
+    gap: 10px;
+    min-width: 180px;
+    flex-shrink: 0;
   }
 
   .notifPrefChannel {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 40px;
+    display: flex;
     align-items: center;
-    column-gap: 8px;
+    justify-content: space-between;
+    gap: 12px;
     min-height: 24px;
   }
 
   .notifPrefChannelLabel {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
+    display: grid;
     gap: 2px;
     min-width: 0;
   }
@@ -781,6 +775,14 @@
     gap: 8px;
   }
 
+  .billingInlineActionBtns {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
   .billingInlineInput {
     width: 80px;
     min-height: 36px;
@@ -891,13 +893,13 @@
     .notifPrefRow {
       flex-direction: column;
       align-items: stretch;
-      gap: 18px;
+      gap: 12px;
       padding: 18px 0;
     }
 
     .notifPrefControls {
       width: 100%;
-      max-width: none;
+      min-width: 0;
     }
   
     .settingsRowControlPair {
@@ -1504,13 +1506,15 @@
 
   .notifPrefRowSheet .notifPrefControls {
     width: 100%;
-    max-width: 100%;
+    min-width: 0;
     gap: 12px;
   }
 
   .notifPrefRowSheet .notifPrefChannel {
-    grid-template-columns: minmax(0, 1fr) 44px;
-    column-gap: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
   }
 
   .settingsSheetEmbed {

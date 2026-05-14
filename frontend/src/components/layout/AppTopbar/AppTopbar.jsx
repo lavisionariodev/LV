@@ -21,7 +21,7 @@ const TOPBAR_CONFIG = {
     defaultDisplayName: 'Admin',
     avatarAlt: 'Admin avatar',
     profileMenuItems: [
-      { href: '/admin/settings', label: 'Settings', icon: TbSettings },
+      { href: '/admin/settings/account', label: 'Settings', icon: TbSettings },
       { href: '/admin/help', label: 'Help Center', icon: TbMessage2Question },
     ],
   },
@@ -30,7 +30,7 @@ const TOPBAR_CONFIG = {
     defaultDisplayName: 'Seller',
     avatarAlt: 'Seller avatar',
     profileMenuItems: [
-      { href: '/seller/settings', label: 'Settings', icon: TbSettings },
+      { href: '/seller/settings/profile', label: 'Settings', icon: TbSettings },
       { href: '/seller/help', label: 'Help Center', icon: TbMessage2Question },
     ],
   },
@@ -47,10 +47,12 @@ const PAGE_TITLES = {
     '/admin/listings/browse': 'Browse listings',
     '/admin/listings/approvals': 'Listing approvals',
     '/admin/settings': 'Settings',
+    '/admin/settings/account': 'Account',
+    '/admin/settings/password': 'Password',
+    '/admin/settings/notifications': 'Notification',
+    '/admin/settings/billing': 'Platform billing',
+    '/admin/settings/site-content': 'Site content',
     '/admin/profile': 'Profile',
-    '/admin/profile/notifications': 'Notification settings',
-    '/admin/profile/billing': 'Platform billing',
-    '/admin/profile/content': 'Site content',
     '/admin/help': 'Help Center',
     '/admin/notifications': 'Notifications',
   },
@@ -76,6 +78,12 @@ const PAGE_TITLES = {
     '/seller/marketing/campaign': 'Campaign',
     '/seller/onboarding': 'Onboarding',
     '/seller/settings': 'Settings',
+    '/seller/settings/profile': 'Profile',
+    '/seller/settings/password': 'Password',
+    '/seller/settings/shop-information': 'Shop information',
+    '/seller/settings/payouts': 'Payouts',
+    '/seller/settings/documents': 'Documents',
+    '/seller/settings/notifications': 'Notifications',
     '/seller/help': 'Help Center',
     '/seller/notifications': 'Notifications',
     '/seller/more': 'More',
@@ -174,10 +182,20 @@ export default function AppTopbar({ variant, onLogout, isMobile, sidebarCollapse
   const heading = isAdminHome && isMobile ? 'Home' : pageTitle
 
   const cleanPathname = pathname?.split(/[?#]/)[0] || ''
+  const isAdminSettingsSubpage =
+    isAdmin &&
+    cleanPathname.startsWith('/admin/settings/') &&
+    Boolean(PAGE_TITLES.admin[cleanPathname])
+  const showAdminSettingsBreadcrumb = !isMobile && isAdminSettingsSubpage
+  const adminSettingsSectionTitle = showAdminSettingsBreadcrumb
+    ? PAGE_TITLES.admin[cleanPathname]
+    : ''
   const isSettingsPage = isMobile && (
     cleanPathname === '/admin/settings' ||
+    cleanPathname.startsWith('/admin/settings/') ||
     cleanPathname === '/admin/profile' ||
-    cleanPathname === '/seller/settings'
+    cleanPathname === '/seller/settings' ||
+    cleanPathname.startsWith('/seller/settings/')
   )
 
   const isNotificationsPage = isMobile && (
@@ -185,14 +203,23 @@ export default function AppTopbar({ variant, onLogout, isMobile, sidebarCollapse
   )
 
   const isProfileSectionPage = isMobile && (
-    cleanPathname === '/admin/profile/notifications' ||
-    cleanPathname === '/admin/profile/billing' ||
-    cleanPathname === '/admin/profile/content'
+    cleanPathname === '/admin/settings/notifications' ||
+    cleanPathname === '/admin/settings/billing' ||
+    cleanPathname === '/admin/settings/site-content'
   )
 
-  const isCenteredPage = isSettingsPage || isNotificationsPage || isProfileSectionPage
+  const isSellerSettingsSectionPage =
+    isMobile &&
+    variant === 'seller' &&
+    cleanPathname.startsWith('/seller/settings/') &&
+    Boolean(PAGE_TITLES.seller[cleanPathname])
+
+  const isCenteredPage =
+    isSettingsPage || isNotificationsPage || isProfileSectionPage || isSellerSettingsSectionPage
   const centeredTitle = isProfileSectionPage
     ? (PAGE_TITLES.admin[cleanPathname] || pageTitle)
+    : isSellerSettingsSectionPage
+      ? (PAGE_TITLES.seller[cleanPathname] || pageTitle)
     : isSettingsPage ? 'Profile'
     : isNotificationsPage ? 'Notifications'
     : ''
@@ -226,11 +253,30 @@ export default function AppTopbar({ variant, onLogout, isMobile, sidebarCollapse
                 <IoIosArrowBack />
               </Link>
             )}
+            {isSellerSettingsSectionPage && (
+              <Link href="/seller/more" className={styles.topbarBackBtn} aria-label="Back to more">
+                <IoIosArrowBack />
+              </Link>
+            )}
             <h1 className={styles.pageTitleCentered}>{centeredTitle}</h1>
           </>
         ) : (<>
         <div className={styles.left}>
-          {heading && <h1 className={styles.pageTitle}>{heading}</h1>}
+          {showAdminSettingsBreadcrumb ? (
+            <nav className={styles.pageTitleBreadcrumb} aria-label="Breadcrumb">
+              <Link href="/admin/settings/account" className={styles.breadcrumbLink}>
+                Settings
+              </Link>
+              <span className={styles.breadcrumbSeparator} aria-hidden="true">
+                &gt;
+              </span>
+              <span className={styles.breadcrumbCurrent} aria-current="page">
+                {adminSettingsSectionTitle}
+              </span>
+            </nav>
+          ) : (
+            heading && <h1 className={styles.pageTitle}>{heading}</h1>
+          )}
         </div>
 
         <div className={styles.right}>

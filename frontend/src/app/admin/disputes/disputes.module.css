@@ -1184,3 +1184,505 @@
   flex-direction: column;
   gap: 10px;
 }
+
+/* ── Dispute detail page ─────────────────────────────────────────────────── */
+
+.notFoundHint {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 8px;
+}
+
+.backBtnWrap {
+  margin-top: 12px;
+}
+
+.headLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.headRef {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  word-break: break-word;
+}
+
+.backBtn {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .backBtn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #0f172a;
+  }
+}
+
+.statusBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  margin-bottom: 4px;
+}
+
+.banner_open         { background: #fff5f5; border-color: #fecaca; }
+.banner_under_review { background: #fffbeb; border-color: #fde68a; }
+.banner_resolved     { background: #f0fdf4; border-color: #bbf7d0; }
+.banner_closed       { background: #f8fafc; border-color: #e2e8f0; }
+
+.bannerLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bannerLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.bannerDate {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.statusPill .statusDot {
+  width: 7px;
+  height: 7px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.section {
+  border: 1px solid #e9e9ef;
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.sectionTitle {
+  margin: 0 0 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.fieldGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.partyGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.partyCard {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.partyCard[data-role='complainant'] {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.partyCard[data-role='respondent'] {
+  background: #f9fefb;
+  border-color: #d1fae5;
+}
+
+.partyKicker {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.partyAvatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  margin: 6px 0 4px;
+  flex-shrink: 0;
+}
+
+.partyAvatar[data-role='complainant'] {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1.5px solid #bfdbfe;
+}
+
+.partyAvatar[data-role='respondent'] {
+  background: #d1fae5;
+  color: #15803d;
+  border: 1.5px solid #a7f3d0;
+}
+
+.partyCard .partyName {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.partyMeta {
+  font-size: 12px;
+  color: #475569;
+  font-weight: 500;
+}
+
+.textAreaLike {
+  border: 1px solid #e9e9ef;
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.divider {
+  margin: 16px 0;
+  border: none;
+  border-top: 1px solid #e5e7eb;
+}
+
+.statusSection {
+  border: 1px solid #e9e9ef;
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.stepTrack {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.stepItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  position: relative;
+}
+
+.stepItem:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 13px;
+  left: calc(50% + 14px);
+  right: calc(-50% + 14px);
+  height: 2px;
+  background: #e2e8f0;
+  z-index: 0;
+}
+
+.stepDone:not(:last-child)::after {
+  background: #102820;
+}
+
+.stepDot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid #e2e8f0;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  z-index: 1;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.stepDotDone {
+  border-color: #102820;
+  background: #102820;
+  color: #fff;
+}
+
+.stepDotActive {
+  border-color: #b91c1c;
+  background: #fff5f5;
+  color: #b91c1c;
+}
+
+.stepLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.stepDone .stepLabel  { color: #475569; }
+.stepActive .stepLabel { color: #b91c1c; }
+
+.statusActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.statusBtn {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  text-align: center;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .statusBtn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #0f172a;
+  }
+}
+
+.statusBtnActive {
+  border-color: #0f172a;
+  background: #0f172a;
+  color: #fff;
+}
+
+.nextBtn {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 11px 12px;
+  border-radius: 10px;
+  border: none;
+  background: #102820;
+  color: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  width: 100%;
+  transition: background 0.12s;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .nextBtn:hover {
+    background: #163628;
+  }
+}
+
+.demoHint {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 12px;
+  line-height: 1.5;
+}
+
+.footerNote {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.footerNote p {
+  margin: 0;
+}
+
+.footerNote p + p {
+  margin-top: 6px;
+}
+
+.link {
+  color: var(--color-main-accent, #204F38);
+  text-decoration: underline;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .link:hover {
+    text-decoration: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .section,
+  .statusSection {
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .statusBanner {
+    border-radius: 14px;
+    padding: 12px 14px;
+  }
+
+  .fieldGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .value {
+    white-space: normal;
+  }
+
+  .partyGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .stepLabel {
+    font-size: 9px;
+  }
+
+  .divider { margin: 12px 0; }
+
+  .footerNote { font-size: 12px; }
+  .footerNote p + p { margin-top: 6px; }
+}
+
+@keyframes detailSkShimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.detailSkBar {
+  display: block;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #e8ecf0 0%, #f4f6f8 45%, #e8ecf0 90%);
+  background-size: 200% 100%;
+  animation: detailSkShimmer 1.12s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detailSkBar {
+    animation: none;
+    background: #e8ecf0;
+  }
+}
+
+.detailSkBanner {
+  min-height: 52px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  box-sizing: border-box;
+  background: #f8fafc;
+}
+
+.detailSkPartyCard {
+  border: 1px solid #e9e9ef;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-height: 120px;
+}
+
+.outcomeField {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  text-align: left;
+}
+
+.outcomeFieldLabel {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
