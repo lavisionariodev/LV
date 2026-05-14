@@ -104,8 +104,15 @@ export default function PayoutRequestsStrip() {
     }
   }
 
-  const escrowHref = (sellerUserId) =>
-    `/admin/payouts?tab=transactions&seller=${encodeURIComponent(sellerUserId)}&escrow=escrowed`
+  const escrowHref = (sellerUserId, requestId) => {
+    const params = new URLSearchParams({
+      tab: 'transactions',
+      seller: sellerUserId,
+      payout: 'escrowed',
+    })
+    if (requestId) params.set('approvedRequestId', requestId)
+    return `/admin/payouts?${params.toString()}`
+  }
 
   if (loading && requests.length === 0) return null
 
@@ -186,7 +193,7 @@ export default function PayoutRequestsStrip() {
                     >
                       Reject
                     </button>
-                    <Link href={escrowHref(row.sellerUserId)} className={styles.stuckRefundsLink}>
+                    <Link href={escrowHref(row.sellerUserId, row.id)} className={styles.stuckRefundsLink}>
                       View escrow
                     </Link>
                   </td>

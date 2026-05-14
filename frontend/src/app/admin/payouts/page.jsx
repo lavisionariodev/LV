@@ -13,6 +13,7 @@ import {
   formatDateRangeLabel,
   PAYMENT_STATUS_META,
   PAYOUT_STATUS_META,
+  DISBURSEMENT_STATE_META,
   getTxnCommissionParts,
 } from '@/shared/utils/adminPayouts'
 import { computeCommissionSnapshot } from '@/shared/utils/commissionSnapshot'
@@ -66,7 +67,8 @@ function payoutTxnCanBulkRelease(t) {
     t &&
     t.payoutStatus === 'escrowed' &&
     t.paymentStatus === 'paid' &&
-    t.fulfillmentStatus === 'completed'
+    t.fulfillmentStatus === 'completed' &&
+    !['pending', 'submitted'].includes(String(t.disbursementState || '').toLowerCase())
   )
 }
 
@@ -128,6 +130,9 @@ function useAdminPayoutsPage() {
   )
   const [filterDateFrom, setFilterDateFrom] = useState(() => readString(searchParams, 'from', ''))
   const [filterDateTo, setFilterDateTo] = useState(() => readString(searchParams, 'to', ''))
+  const [approvedRequestId, setApprovedRequestId] = useState(() =>
+    readString(searchParams, 'approvedRequestId', ''),
+  )
   const [showFilters, setShowFilters] = useState(false)
   const [expandedRow, setExpandedRow] = useState(null)
   const [selectedRows, setSelectedRows] = useState(new Set())
@@ -248,9 +253,12 @@ function useAdminPayoutsPage() {
     const nextQ = readString(searchParams, 'q', '')
     const nextSeller = readString(searchParams, 'seller', 'all')
     const nextPayment = readString(searchParams, 'payment', 'all')
-    const nextPayout = coerceEscrowFilterFromUrl(readString(searchParams, 'payout', 'all'))
+    const nextPayout = coerceEscrowFilterFromUrl(
+      readString(searchParams, 'escrow', readString(searchParams, 'payout', 'all')),
+    )
     const nextFrom = readString(searchParams, 'from', '')
     const nextTo = readString(searchParams, 'to', '')
+    const nextApprovedRequestId = readString(searchParams, 'approvedRequestId', '')
     const nextPage = Math.max(1, readInt(searchParams, 'page', 1))
 
     queueMicrotask(() => {
@@ -261,6 +269,7 @@ function useAdminPayoutsPage() {
       if (nextPayout !== filterPayout) setFilterPayout(nextPayout)
       if (nextFrom !== filterDateFrom) setFilterDateFrom(nextFrom)
       if (nextTo !== filterDateTo) setFilterDateTo(nextTo)
+      if (nextApprovedRequestId !== approvedRequestId) setApprovedRequestId(nextApprovedRequestId)
       if (nextPage !== currentPage) setCurrentPage(nextPage)
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -349,6 +358,8 @@ function useAdminPayoutsPage() {
         body: JSON.stringify({
           orderId: orderUuid,
           releaseReference: options.releaseReference ?? '',
+          manualOverride: Boolean(options.manualOverride),
+          approvedRequestId: options.approvedRequestId ?? null,
         }),
       })
       const body = await res.json().catch(() => null)
@@ -482,6 +493,7 @@ function useAdminPayoutsPage() {
     setFilterDateFrom,
     filterDateTo,
     setFilterDateTo,
+    approvedRequestId,
     showFilters,
     setShowFilters,
     expandedRow,
@@ -698,6 +710,11 @@ function DateRangePicker({ from, to, onChange }) {
 }
 
 function Badge({ type, value }) {
+  if (type === 'disbursement') {
+    const meta = DISBURSEMENT_STATE_META[value] || DISBURSEMENT_STATE_META.none
+    const cls = styles[`badgePayout_${meta.color}`] || styles.badgePayout_slate
+    return <span className={`${styles.badgePayout} ${cls}`}>{meta.label}</span>
+  }
   const meta = type === 'payment' ? PAYMENT_STATUS_META[value] : PAYOUT_STATUS_META[value]
   const label = meta?.label ?? (value ? String(value) : '—')
   if (type === 'payout') {
@@ -797,6 +814,7 @@ function EscrowReleasePanel({
   releaseOrder,
   holdOrder,
   unholdOrder,
+  approvedRequestId = '',
   compactUi = false,
   /** `'sheet'` — mobile order-details modal layout (distinct from desktop expanded row). */
   variant = 'default',
@@ -809,6 +827,11 @@ function EscrowReleasePanel({
   const [holdModalOpen, setHoldModalOpen] = useState(false)
   const [holdReasonInput, setHoldReasonInput] = useState('')
   const [holdModalErr, setHoldModalErr] = useState(null)
+  const [releaseReferenceInput, setReleaseReferenceInput] = useState('')
+
+  const disbursementState = String(t.disbursementState || 'none').toLowerCase()
+  const disbursementLabel =
+    DISBURSEMENT_STATE_META[disbursementState]?.label || disbursementState || '—'
 
   const closeHoldModal = useCallback(() => {
     if (busy) return
@@ -839,14 +862,25 @@ function EscrowReleasePanel({
   if (t.payoutStatus === 'released') {
     blockers.push(useCompactCopy ? 'Released.' : 'Already released.')
   }
+  if (['pending', 'submitted'].includes(disbursementState)) {
+    blockers.push(
+      useCompactCopy
+        ? 'PayMongo payout already in progress.'
+        : 'A PayMongo payout is already in progress for this order.',
+    )
+  }
 
   async function handleConfirmRelease() {
     if (busy) return
     setBusy(true)
     setErr(null)
     try {
-      await releaseOrder(t.orderUuid)
+      await releaseOrder(t.orderUuid, {
+        releaseReference: releaseReferenceInput.trim(),
+        approvedRequestId: approvedRequestId || null,
+      })
       setReleaseModalOpen(false)
+      setReleaseReferenceInput('')
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Release failed.')
     } finally {
@@ -967,16 +1001,28 @@ function EscrowReleasePanel({
             </>
           ) : (
             <>
-              This will mark order{' '}
+              This will start PayMongo disbursement for order{' '}
               <strong>{t.orderId || t.orderUuid || '—'}</strong>
               {' '}
-              as released. Net to seller after platform fee:{' '}
+              when automated payouts are enabled. Net to seller after platform fee:{' '}
               <strong className={confirmModalStyles.subtitleAccentGreen}>
                 {formatPHP(Number(t.net_amount) || 0)}
               </strong>
-              . This action should only be used when you intend to complete the payout release.
+              .
             </>
           )
+        }
+        extra={
+          <label className={confirmModalStyles.modalFieldLabel}>
+            <span>Release reference (optional)</span>
+            <input
+              type="text"
+              value={releaseReferenceInput}
+              onChange={(e) => setReleaseReferenceInput(e.target.value)}
+              placeholder="Bank ref, transfer note, or PayMongo transfer id"
+              disabled={busy}
+            />
+          </label>
         }
         confirmLabel={useCompactCopy ? 'Release' : 'Release payout'}
         confirmLoadingLabel="Releasing..."
@@ -1000,6 +1046,10 @@ function EscrowReleasePanel({
             <strong>{formatPHP(Number(t.net_amount) || 0)}</strong>
           </>
         )}
+      </p>
+      <p className={isSheet ? styles.msheetReleasedLine : styles.escrowActionReleased}>
+        Payout rail: {disbursementLabel}
+        {t.disbursementFailureReason ? ` · ${t.disbursementFailureReason}` : ''}
       </p>
       {t.payoutStatus === 'released' && (t.released_at || t.payoutDate) && (
         <p className={isSheet ? styles.msheetReleasedLine : styles.escrowActionReleased}>
@@ -1349,6 +1399,7 @@ function MobileTxnDetailSheetContent({
   holdOrder,
   unholdOrder,
   updateOrderCommission,
+  approvedRequestId = '',
 }) {
   const { rate, commission, sellerEarnings } = getTxnCommissionParts(t, commissionSettings)
   const splitRate = Math.min(100, Math.max(0, Number(rate) || 0))
@@ -1421,6 +1472,7 @@ function MobileTxnDetailSheetContent({
         releaseOrder={releaseOrder}
         holdOrder={holdOrder}
         unholdOrder={unholdOrder}
+        approvedRequestId={approvedRequestId}
         variant="sheet"
       />
     </div>
@@ -1434,6 +1486,7 @@ function ExpandedEscrowDetails({
   holdOrder,
   unholdOrder,
   updateOrderCommission,
+  approvedRequestId = '',
   compactUi = false,
 }) {
   const { rate, commission, sellerEarnings } = getTxnCommissionParts(t, commissionSettings)
@@ -1500,6 +1553,9 @@ function ExpandedEscrowDetails({
           <div className={styles.payoutStatusRow}>
             <Badge type="payment" value={t.paymentStatus} />
             <Badge type="payout" value={t.payoutStatus} />
+            {t.disbursementState && t.disbursementState !== 'none' ? (
+              <Badge type="disbursement" value={t.disbursementState} />
+            ) : null}
             {t.payoutReference && <span className={styles.refChip}>Ref: {t.payoutReference}</span>}
             {t.payoutDate && <span className={styles.dateChip}>{t.payoutDate}</span>}
           </div>
@@ -1515,6 +1571,7 @@ function ExpandedEscrowDetails({
           releaseOrder={releaseOrder}
           holdOrder={holdOrder}
           unholdOrder={unholdOrder}
+          approvedRequestId={approvedRequestId}
           compactUi={compactUi}
         />
       </div>
@@ -2183,6 +2240,7 @@ export default function AdminPayoutsPage() {
     setFilterDateFrom,
     filterDateTo,
     setFilterDateTo,
+    approvedRequestId,
     showFilters,
     setShowFilters,
     expandedRow,
@@ -2199,6 +2257,7 @@ export default function AdminPayoutsPage() {
     totalPages,
     dateSortDesc,
     toggleDateSort,
+    refreshAll,
     releaseOrder,
     holdOrder,
     unholdOrder,
@@ -2263,28 +2322,37 @@ export default function AdminPayoutsPage() {
     if (bulkReleaseTargets.length === 0) return
     setPayoutsBulkBusy(true)
     try {
-      let failed = 0
-      for (const t of bulkReleaseTargets) {
-        try {
-          const orderId = t.orderUuid ?? t.orderId
-          if (!orderId) {
-            failed += 1
-            continue
-          }
-          await releaseOrder(orderId)
-        } catch {
-          failed += 1
-        }
+      const orderIds = bulkReleaseTargets
+        .map((t) => t.orderUuid ?? t.orderId)
+        .filter(Boolean)
+      if (!orderIds.length) return
+
+      const res = await fetch('/api/admin/payouts/release-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          orderIds,
+          approvedRequestId: approvedRequestId || null,
+        }),
+      })
+      const body = await res.json().catch(() => null)
+      if (!res.ok && res.status !== 207) {
+        throw new Error(body?.error || 'Bulk release failed.')
       }
+      const failed = Number(body?.failed) || 0
       if (failed > 0) {
-        window.alert(`${failed} of ${bulkReleaseTargets.length} release(s) failed.`)
+        window.alert(`${failed} of ${orderIds.length} release(s) failed.`)
       }
+      await refreshAll()
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Bulk release failed.')
     } finally {
       setPayoutsBulkBusy(false)
       setPayoutsBulkReleaseConfirm(false)
       setSelectedRows(new Set())
     }
-  }, [bulkReleaseTargets, releaseOrder, setSelectedRows])
+  }, [approvedRequestId, bulkReleaseTargets, refreshAll, setSelectedRows])
 
   const runBulkUnhold = useCallback(async () => {
     if (bulkUnholdTargets.length === 0) return
@@ -2416,6 +2484,15 @@ export default function AdminPayoutsPage() {
           />
         </section>
       )}
+
+      {approvedRequestId ? (
+        <section className={styles.stuckRefundsWrap} aria-live="polite">
+          <p className={styles.stuckRefundsTitle}>Approved payout review request</p>
+          <p className={styles.stuckRefundsSub}>
+            Release eligible completed escrow rows for this seller. Automated PayMongo disbursement runs per order when enabled.
+          </p>
+        </section>
+      ) : null}
 
       {activeTab === 'all' && <PayoutRequestsStrip />}
       {activeTab === 'all' && <StuckRefundsStrip />}
@@ -2750,6 +2827,9 @@ export default function AdminPayoutsPage() {
                     <div className={styles.mobileCardStatuses}>
                       <Badge type="payment" value={t.paymentStatus}/>
                       <Badge type="payout" value={t.payoutStatus}/>
+                      {t.disbursementState && t.disbursementState !== 'none' ? (
+                        <Badge type="disbursement" value={t.disbursementState} />
+                      ) : null}
                     </div>
                     <div className={styles.mobileCardBreakdown}>
                       <span className={styles.mobileCardBreakdownItem}>Platform <strong>{formatPHP(commission)}</strong></span>
@@ -2894,7 +2974,12 @@ export default function AdminPayoutsPage() {
                           <p className={styles.personEmail}>{t.buyerEmail}</p>
                         </td>
                         <td><Badge type="payment" value={t.paymentStatus}/></td>
-                        <td><Badge type="payout" value={t.payoutStatus}/></td>
+                        <td>
+                          <Badge type="payout" value={t.payoutStatus}/>
+                          {t.disbursementState && t.disbursementState !== 'none' ? (
+                            <Badge type="disbursement" value={t.disbursementState} />
+                          ) : null}
+                        </td>
                         <td className={styles.dateCell}>{t.date}</td>
                         <td>
                           <p className={styles.amountCell}>{formatPHP(t.amount)}</p>
@@ -2927,6 +3012,7 @@ export default function AdminPayoutsPage() {
                                 holdOrder={holdOrder}
                                 unholdOrder={unholdOrder}
                                 updateOrderCommission={updateOrderCommission}
+                                approvedRequestId={approvedRequestId}
                                 compactUi={isMobile}
                               />
                             </div>
@@ -3277,6 +3363,7 @@ export default function AdminPayoutsPage() {
                     holdOrder={holdOrder}
                     unholdOrder={unholdOrder}
                     updateOrderCommission={updateOrderCommission}
+                    approvedRequestId={approvedRequestId}
                   />
                 </div>
               </div>

@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { computeCommissionSnapshot } from '@/shared/utils/commissionSnapshot'
 import { apiLog } from '@/lib/observability/apiLog'
 import { reconcilePaymongoRefundEvent } from '@/lib/payments/refundReconcile'
+import { reconcilePaymongoDisbursementEvent } from '@/lib/payments/disbursementReconcile'
 import { notifyUser, notifyAllAdmins, notifySeller } from '@/lib/notifications/inAppServer'
 import {
   fetchPlatformDefaultCommissionPercent,
@@ -80,6 +81,60 @@ function extractCheckoutSessionId(payload) {
 function extractReferenceNumber(payload) {
   const resource = getResource(payload)
   return resource?.attributes?.reference_number ?? null
+}
+
+function extractTransferFromPayload(payload) {
+  const resource = getResource(payload)
+  if (!resource) return null
+  if (resource.type === 'transfer') {
+    return {
+      transferId: resource.id ? String(resource.id) : '',
+      batchId: resource.attributes?.batch_transfer_id
+        ? String(resource.attributes.batch_transfer_id)
+        : '',
+      status: resource.attributes?.status != null ? String(resource.attributes.status) : '',
+      failureReason:
+        resource.attributes?.failure_reason != null
+          ? String(resource.attributes.failure_reason)
+          : resource.attributes?.provider_error != null
+            ? String(resource.attributes.provider_error)
+            : null,
+    }
+  }
+  if (resource.type === 'batch_transfer' && Array.isArray(resource.attributes?.transfers)) {
+    const transfer = resource.attributes.transfers[0]
+    if (!transfer) return null
+    return {
+      transferId: transfer.id ? String(transfer.id) : '',
+      batchId: resource.id ? String(resource.id) : '',
+      status: transfer.status != null ? String(transfer.status) : '',
+      failureReason: transfer.failure_reason != null ? String(transfer.failure_reason) : null,
+    }
+  }
+  return null
+}
+
+async function handleDisbursementWebhookEvent(supabaseAdmin, payload, eventType) {
+  const transfer = extractTransferFromPayload(payload)
+  if (!transfer?.transferId && !transfer?.batchId) return false
+
+  const normalizedType = String(eventType || '').toLowerCase()
+  let status = String(transfer.status || '').toLowerCase()
+  if (!status) {
+    if (normalizedType.includes('failed') || normalizedType.includes('cancelled')) {
+      status = normalizedType.includes('cancelled') ? 'cancelled' : 'failed'
+    } else if (normalizedType.includes('succeeded') || normalizedType.includes('paid')) {
+      status = 'succeeded'
+    }
+  }
+
+  await reconcilePaymongoDisbursementEvent(supabaseAdmin, {
+    transferId: transfer.transferId,
+    batchId: transfer.batchId,
+    status,
+    failureReason: transfer.failureReason,
+  })
+  return true
 }
 
 function extractPaymongoPaymentIdFromResource(payload) {
@@ -212,6 +267,19 @@ export async function POST(request) {
   const payload = JSON.parse(rawBody || '{}')
   const eventType = getEventType(payload)
   apiLog('paymongo.webhook.received', { eventKind: typeof eventType === 'string' ? eventType : 'unknown' })
+
+  const normalizedEventType = String(eventType || '').toLowerCase()
+  if (
+    normalizedEventType.includes('transfer') ||
+    normalizedEventType.includes('batch_transfer') ||
+    normalizedEventType.includes('disbursement')
+  ) {
+    const handled = await handleDisbursementWebhookEvent(supabaseAdmin, payload, normalizedEventType)
+    if (handled) {
+      apiLog('paymongo.webhook.disbursement', {})
+      return NextResponse.json({ received: true }, { status: 200 })
+    }
+  }
 
   const checkoutSessionId = extractCheckoutSessionId(payload)
   const referenceNumber = extractReferenceNumber(payload)

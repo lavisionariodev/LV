@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server'
 import { requireActiveSellerApiUser } from '@/lib/auth/requireApiUser'
-
-function sum(rows, field, predicate = () => true) {
-  return rows.reduce((total, row) => (predicate(row) ? total + (Number(row[field]) || 0) : total), 0)
-}
+import {
+  buildSellerWalletSummary,
+  indexDisbursementsByEscrowId,
+  resolveEscrowDisbursementState,
+} from '@/lib/payments/sellerWalletSummary'
+import {
+  fetchPayoutDisbursementsForSeller,
+  fetchSellerWalletLedgerEntries,
+} from '@/lib/payments/walletLedger'
 
 function csvEscape(v) {
   const s = String(v ?? '')
@@ -54,17 +59,39 @@ export async function GET(request) {
   const offset = Math.max(0, parseInt(String(searchParams.get('offset') || '0'), 10) || 0)
 
   let allRows = []
+  let disbursements = []
+  let ledgerEntries = []
   try {
     allRows = await fetchAllEscrows(supabaseAdmin, user.id, { from, to })
+    const escrowIds = allRows.map((row) => row.id).filter(Boolean)
+    disbursements = await fetchPayoutDisbursementsForSeller(supabaseAdmin, {
+      sellerUserId: user.id,
+      escrowIds: escrowIds.length ? escrowIds : null,
+    })
+    ledgerEntries = await fetchSellerWalletLedgerEntries(supabaseAdmin, user.id)
   } catch (error) {
     return NextResponse.json({ error: error.message || 'Failed to load escrow summary.' }, { status: 500 })
   }
 
-  const rows = allRows.slice(offset, offset + limit)
+  const disbursementByEscrowId = indexDisbursementsByEscrowId(disbursements)
+
+  const enrichedRows = allRows.map((row) => {
+    const disbursement = disbursementByEscrowId.get(row.id) ?? null
+    return {
+      ...row,
+      disbursement_status: disbursement?.status ?? null,
+      disbursement_state: resolveEscrowDisbursementState(row, disbursement),
+      paymongo_transfer_id: disbursement?.paymongo_transfer_id ?? null,
+    }
+  })
+
+  const rows = enrichedRows.slice(offset, offset + limit)
   if (format === 'csv') {
     const header = [
       'order_id',
       'status',
+      'disbursement_state',
+      'disbursement_status',
       'gross_amount',
       'commission_rate_percent',
       'commission_amount',
@@ -72,10 +99,11 @@ export async function GET(request) {
       'currency',
       'released_at',
       'release_reference',
+      'paymongo_transfer_id',
       'hold_reason',
       'created_at',
     ]
-    const body = allRows
+    const body = enrichedRows
       .map((r) =>
         header
           .map((key) => csvEscape(r[key]))
@@ -92,17 +120,7 @@ export async function GET(request) {
     })
   }
 
-  const summary = {
-    count: allRows.length,
-    currency: allRows[0]?.currency || 'PHP',
-    gross: sum(allRows, 'gross_amount'),
-    commission: sum(allRows, 'commission_amount'),
-    net: sum(allRows, 'net_amount'),
-    escrowedNet: sum(allRows, 'net_amount', (r) => r.status === 'escrowed'),
-    heldNet: sum(allRows, 'net_amount', (r) => r.status === 'on_hold'),
-    releasedNet: sum(allRows, 'net_amount', (r) => r.status === 'released'),
-    refundedNet: sum(allRows, 'net_amount', (r) => r.status === 'refunded'),
-  }
+  const summary = buildSellerWalletSummary(allRows, disbursements, ledgerEntries)
 
   return NextResponse.json(
     {
