@@ -269,10 +269,12 @@
   cursor: not-allowed;
 }
 
-.primaryBtn {
-  background: #204F38;
-  border-color: #204F38;
+.linkDeviceBtn {
+  min-width: 132px;
+  justify-content: center;
+  text-decoration: none;
 }
+
 
 .secondaryBtn {
   background: #8B3835;

@@ -239,7 +239,7 @@ export default function Page() {
                   </p>
                 </div>
                 <div className={`${styles.settingsRowControl} ${styles.profileControl}`}>
-                  <Link href="/seller/settings/link-device" className={styles.identityActionLink}>
+                  <Link href="/seller/settings/link-device" className={`${styles.primaryBtn} ${styles.linkDeviceBtn}`}>
                     Link device
                   </Link>
                 </div>

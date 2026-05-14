@@ -1,63 +1,144 @@
 .page {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: linear-gradient(180deg, #f7f9f8 0%, #eef2ef 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 24px 16px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+}
+
+.pageInner {
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .card {
   width: 100%;
-  max-width: 420px;
   background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e4e8e5;
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(16, 40, 32, 0.08);
   padding: 28px 24px;
 }
 
-.title {
+.embeddedCard {
+  box-shadow: none;
+  border-color: #dfe6e1;
+  padding: 24px 20px;
+}
+
+.scannerCard {
+  margin-top: 8px;
+}
+
+.cardHeader {
+  margin-bottom: 20px;
+}
+
+.eyebrow {
   margin: 0 0 8px;
-  font-size: 24px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5d7468;
+}
+
+.title,
+.scannerTitle {
+  margin: 0 0 8px;
+  font-size: 28px;
+  line-height: 1.2;
   color: #204f38;
 }
 
+.scannerTitle {
+  font-size: 22px;
+}
+
 .subtitle {
-  margin: 0 0 20px;
-  color: #555;
+  margin: 0;
+  color: #5f6662;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .account {
   margin: 0 0 20px;
-  padding: 12px 14px;
-  border-radius: 8px;
-  background: #f7f7f7;
-  color: #333;
-  font-size: 14px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #f4f7f5;
+  border: 1px solid #e2e8e4;
+  color: #1f2d27;
+  font-size: 15px;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.statusBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .actions {
   display: flex;
   gap: 12px;
+  margin-top: 8px;
 }
 
 .primaryBtn,
 .secondaryBtn,
-.linkBtn {
-  flex: 1;
-  border-radius: 6px;
-  font-size: 14px;
+.ghostBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
   padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
   cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .primaryBtn {
-  border: none;
+  border: 1px solid #204f38;
   background: #204f38;
   color: #fff;
+}
+
+.primaryBtn:hover {
+  background: #163a29;
+  border-color: #163a29;
+}
+
+.secondaryBtn {
+  border: 1px solid #d0d7d2;
+  background: #fff;
+  color: #24352d;
+}
+
+.secondaryBtn:hover {
+  background: #f7f9f8;
+}
+
+.ghostBtn {
+  width: 100%;
+  margin-top: 16px;
+  border: 1px solid #d8e0da;
+  background: #f8faf9;
+  color: #204f38;
+}
+
+.ghostBtn:hover {
+  background: #eef3ef;
 }
 
 .primaryBtn:disabled,
@@ -66,27 +147,21 @@
   cursor: not-allowed;
 }
 
-.secondaryBtn {
-  border: 1px solid #d0d0d0;
-  background: #fff;
-  color: #333;
+.actions .primaryBtn,
+.actions .secondaryBtn {
+  flex: 1;
 }
 
-.linkBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  border: 1px solid #204f38;
-  background: #fff;
-  color: #204f38;
+.statusBlock .primaryBtn,
+.statusBlock .secondaryBtn {
+  width: 100%;
 }
 
 .status {
   margin: 0;
-  color: #333;
+  color: #33443c;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .scannerWrap {
@@ -94,9 +169,9 @@
   width: 100%;
   aspect-ratio: 1;
   overflow: hidden;
-  border-radius: 12px;
-  background: #111;
-  margin-bottom: 16px;
+  border-radius: 14px;
+  background: #0f1512;
+  border: 1px solid #24352d;
 }
 
 .video {
@@ -105,20 +180,38 @@
   object-fit: cover;
 }
 
+.scannerFrame {
+  position: absolute;
+  inset: 18%;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: 16px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.28);
+  pointer-events: none;
+}
+
 .error {
   margin: 0 0 16px;
-  color: #b42318;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #fff4f3;
+  border: 1px solid #f2c6c2;
+  color: #8f2f28;
   font-size: 14px;
+  line-height: 1.5;
 }
 
-.backLink {
-  display: inline-block;
-  margin-top: 16px;
-  color: #05a;
-  text-decoration: none;
-  font-size: 14px;
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.backLink:hover {
-  text-decoration: underline;
+@media (max-width: 640px) {
+  .title {
+    font-size: 24px;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
 }

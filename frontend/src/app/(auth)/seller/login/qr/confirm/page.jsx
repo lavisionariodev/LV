@@ -1,155 +1,58 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
-import { approveSellerQrChallenge, denySellerQrChallenge } from '@/lib/auth/qrLoginClient';
-import { useAuthToast } from '@/contexts/ToastContext';
+import SellerQrConfirmPanel from '@/features/seller/auth/SellerQrConfirmPanel';
 import styles from '../qrFlow.module.css';
 
 function SellerQrConfirmPageInner() {
   const searchParams = useSearchParams();
-  const toast = useAuthToast();
   const challengeId = searchParams.get('challenge') || '';
   const approveToken = searchParams.get('token') || '';
   const fromSettings = searchParams.get('from') === 'settings';
-  const settingsHref = '/seller/settings/profile';
-  const loginHrefBase = '/seller/login';
-  const confirmPath =
-    challengeId && approveToken
-      ? `/seller/login/qr/confirm?challenge=${encodeURIComponent(challengeId)}&token=${encodeURIComponent(approveToken)}${fromSettings ? '&from=settings' : ''}`
-      : '/seller/login/qr/confirm';
-  const backHref = fromSettings ? settingsHref : loginHrefBase;
+  const backHref = fromSettings ? '/seller/settings/profile' : '/seller/login';
   const backLabel = fromSettings ? 'Back to profile settings' : 'Back to seller login';
-
-  const [loadingSession, setLoadingSession] = useState(true);
-  const [email, setEmail] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [completed, setCompleted] = useState(null);
-
-  useEffect(() => {
-    let mounted = true;
-
-    supabase.auth.getUser().then(({ data }) => {
-      if (!mounted) return;
-      setEmail(data.user?.email || '');
-      setLoadingSession(false);
-    });
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   if (!challengeId || !approveToken) {
     return (
       <div className={styles.page}>
-        <div className={styles.card}>
-          <h1 className={styles.title}>Invalid QR request</h1>
-          <p className={styles.status}>This login link is missing required details.</p>
-          <Link href={backHref} className={styles.backLink}>
-            {backLabel}
-          </Link>
+        <div className={styles.pageInner}>
+          <div className={styles.card}>
+            <div className={styles.cardHeader}>
+              <p className={styles.eyebrow}>Seller Centre</p>
+              <h1 className={styles.title}>Invalid QR request</h1>
+              <p className={styles.subtitle}>This login link is missing required details.</p>
+            </div>
+            <Link href={backHref} className={styles.primaryBtn}>
+              {backLabel}
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
-  const loginHref = `${loginHrefBase}?redirect=${encodeURIComponent(confirmPath)}`;
-
-  const handleApprove = async () => {
-    if (submitting) return;
-    setSubmitting(true);
-    const { error } = await approveSellerQrChallenge({ challengeId, approveToken });
-    setSubmitting(false);
-
-    if (error) {
-      toast.error(error);
-      return;
-    }
-
-    setCompleted('approved');
-  };
-
-  const handleDeny = async () => {
-    if (submitting) return;
-    setSubmitting(true);
-    const { error } = await denySellerQrChallenge({ challengeId, approveToken });
-    setSubmitting(false);
-
-    if (error) {
-      toast.error(error);
-      return;
-    }
-
-    setCompleted('denied');
-  };
-
   return (
     <div className={styles.page}>
-      <div className={styles.card}>
-        <h1 className={styles.title}>Approve desktop login</h1>
+      <div className={styles.pageInner}>
+        <SellerQrConfirmPanel
+          challengeId={challengeId}
+          approveToken={approveToken}
+          fromSettings={fromSettings}
+        />
+      </div>
+    </div>
+  );
+}
 
-        {completed === 'approved' ? (
-          <>
-            <p className={styles.status}>
-              Login approved. You can return to your computer to continue in Seller Centre.
-            </p>
-            <Link href={fromSettings ? settingsHref : '/seller'} className={styles.linkBtn}>
-              {fromSettings ? 'Back to profile settings' : 'Open Seller Centre'}
-            </Link>
-          </>
-        ) : completed === 'denied' ? (
-          <>
-            <p className={styles.status}>Login request denied. The desktop QR code will need a new scan.</p>
-            <Link href={backHref} className={styles.backLink}>
-              {backLabel}
-            </Link>
-          </>
-        ) : loadingSession ? (
-          <p className={styles.status}>Checking your session...</p>
-        ) : !email ? (
-          <>
-            <p className={styles.subtitle}>
-              Sign in with your seller account on this device before approving the desktop login.
-            </p>
-            <Link href={loginHref} className={styles.linkBtn}>
-              Sign in to approve
-            </Link>
-          </>
-        ) : (
-          <>
-            <p className={styles.subtitle}>
-              Confirm that you want to sign in to Seller Centre on your computer as:
-            </p>
-            <p className={styles.account}>{email}</p>
-            <div className={styles.actions}>
-              <button
-                type="button"
-                className={styles.secondaryBtn}
-                onClick={handleDeny}
-                disabled={submitting}
-              >
-                Deny
-              </button>
-              <button
-                type="button"
-                className={styles.primaryBtn}
-                onClick={handleApprove}
-                disabled={submitting}
-              >
-                {submitting ? 'Approving...' : 'Approve'}
-              </button>
-            </div>
-          </>
-        )}
-
-        {!completed && (
-          <Link href={backHref} className={styles.backLink}>
-            {backLabel}
-          </Link>
-        )}
+function SellerQrConfirmFallback() {
+  return (
+    <div className={styles.page}>
+      <div className={styles.pageInner}>
+        <div className={styles.card}>
+          <p className={styles.status}>Loading approval request...</p>
+        </div>
       </div>
     </div>
   );
@@ -157,7 +60,7 @@ function SellerQrConfirmPageInner() {
 
 export default function SellerQrConfirmPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<SellerQrConfirmFallback />}>
       <SellerQrConfirmPageInner />
     </Suspense>
   );

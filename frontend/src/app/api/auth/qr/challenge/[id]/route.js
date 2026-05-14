@@ -17,7 +17,7 @@ async function markChallengeExpired(admin, challengeId) {
 export async function GET(request, { params }) {
   const { id: challengeIdRaw } = await params
   const challengeId = typeof challengeIdRaw === 'string' ? challengeIdRaw.trim() : ''
-  const pollSecret = new URL(request.url).searchParams.get('pollSecret') || ''
+  const pollSecret = (new URL(request.url).searchParams.get('pollSecret') || '').trim()
 
   if (!challengeId || !pollSecret) {
     return NextResponse.json({ error: 'Missing challenge credentials.' }, { status: 400 })
