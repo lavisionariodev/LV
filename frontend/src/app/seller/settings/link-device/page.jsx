@@ -1,10 +1,27 @@
 'use client'
 
+import { useCallback, useState } from 'react'
 import Link from 'next/link'
+import SellerQrConfirmPanel from '@/features/seller/auth/SellerQrConfirmPanel'
 import SellerQrLoginScanner from '@/features/seller/auth/SellerQrLoginScanner'
 import styles from '../settings.module.css'
+import qrStyles from '@/app/(auth)/seller/login/qr/qrFlow.module.css'
 
 export default function SellerLinkDevicePage() {
+  const [scanTarget, setScanTarget] = useState(null)
+
+  const handleScanned = useCallback((payload) => {
+    if (!payload?.challengeId || !payload?.approveToken) return
+    setScanTarget({
+      challengeId: payload.challengeId,
+      approveToken: payload.approveToken,
+    })
+  }, [])
+
+  const handleBackToScanner = useCallback(() => {
+    setScanTarget(null)
+  }, [])
+
   return (
     <section className={`${styles.card} ${styles.full}`}>
       <div className={styles.tabDetailHead}>
@@ -18,13 +35,28 @@ export default function SellerLinkDevicePage() {
         </div>
       </div>
 
-      <SellerQrLoginScanner
-        context="settings"
-        title="Scan login QR"
-        subtitle="Open Seller Centre login on your other device, switch to Log in with QR, then scan that code here."
-      />
+      <div className={qrStyles.stack}>
+        {scanTarget ? (
+          <SellerQrConfirmPanel
+            key={`${scanTarget.challengeId}:${scanTarget.approveToken}`}
+            embedded
+            fromSettings
+            challengeId={scanTarget.challengeId}
+            approveToken={scanTarget.approveToken}
+            onBack={handleBackToScanner}
+          />
+        ) : (
+          <SellerQrLoginScanner
+            key="seller-link-device-scanner"
+            context="settings"
+            title="Scan login QR"
+            subtitle="Open Seller Centre login on your other device, switch to Log in with QR, then scan that code here."
+            onScanned={handleScanned}
+          />
+        )}
+      </div>
 
-      <Link href="/seller/settings/profile" className={styles.identityActionLink}>
+      <Link href="/seller/settings/profile" className={qrStyles.ghostBtn}>
         Back to profile settings
       </Link>
     </section>

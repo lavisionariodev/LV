@@ -541,7 +541,7 @@ function SellerLoginPageInner() {
 
                   <button
                     type="button"
-                    className={styles.howToScanBtn}
+                    className={`${styles.howToScanBtn} ${styles.howToScanBtnSecondary}`}
                     onClick={() => setShowHowToScan(true)}
                   >
                     How To Scan

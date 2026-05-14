@@ -8,20 +8,51 @@
  */
 
 /**
+ * @param {string} pathname
+ * @returns {boolean}
+ */
+function isSellerQrConfirmPathname(pathname) {
+  if (!pathname) return false
+  const normalized = pathname.replace(/\/+$/, '') || '/'
+  return normalized === '/seller/login/qr/confirm'
+}
+
+/**
  * @param {string} value
  * @returns {string | null}
  */
 export function parseSellerQrConfirmPath(value) {
+  const credentials = parseSellerQrConfirmCredentials(value)
+  if (!credentials) return null
+
+  const next = new URL('/seller/login/qr/confirm', window.location.origin)
+  next.searchParams.set('challenge', credentials.challengeId)
+  next.searchParams.set('token', credentials.approveToken)
+  return `${next.pathname}${next.search}`
+}
+
+/**
+ * @param {string} value
+ * @returns {{ challengeId: string, approveToken: string } | null}
+ */
+export function parseSellerQrConfirmCredentials(value) {
   if (!value || typeof window === 'undefined') return null
 
+  const trimmed = String(value).trim().replace(/\u0000/g, '')
+  if (!trimmed) return null
+
   try {
-    const parsed = new URL(value, window.location.origin)
-    if (parsed.origin !== window.location.origin) return null
-    if (parsed.pathname !== '/seller/login/qr/confirm') return null
-    const challenge = parsed.searchParams.get('challenge')
-    const token = parsed.searchParams.get('token')
-    if (!challenge || !token) return null
-    return `${parsed.pathname}${parsed.search}`
+    const parsed = trimmed.startsWith('/')
+      ? new URL(trimmed, window.location.origin)
+      : new URL(trimmed)
+
+    if (!isSellerQrConfirmPathname(parsed.pathname)) return null
+
+    const challengeId = parsed.searchParams.get('challenge')?.trim() || ''
+    const approveToken = parsed.searchParams.get('token')?.trim() || ''
+    if (!challengeId || !approveToken) return null
+
+    return { challengeId, approveToken }
   } catch {
     return null
   }
