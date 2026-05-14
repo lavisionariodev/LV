@@ -218,6 +218,13 @@ export function mapBuyerOrderCard(o, orderItems, providerDisplayName, disputeSta
     ? `${paymentSummaryLine(pd)} · finishing checkout`
     : paymentSummaryLine(pd)
 
+  const canRetryPayment =
+    fulfillment === 'pending' &&
+    !blockingRefundLifecycle &&
+    !paid &&
+    !paymongoCheckoutActive &&
+    (pd.code === 'unpaid' || pd.code === 'failed' || pd.code === 'expired')
+
   return {
     id: o.order_number || o.id,
     rawOrderId: o.id,
@@ -232,6 +239,7 @@ export function mapBuyerOrderCard(o, orderItems, providerDisplayName, disputeSta
     statusDetail,
     paymentSummary: pd,
     paymentMethodLine,
+    canRetryPayment,
     currency,
     price,
     formattedTotal: formatMoney(price, currency),

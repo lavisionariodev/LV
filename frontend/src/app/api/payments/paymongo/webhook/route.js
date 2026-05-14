@@ -11,6 +11,7 @@ import {
   fetchSellerOverridesByUserId,
   resolveCommissionRate,
 } from '@/lib/admin/commissionRate'
+import { recordEscrowFundingLedgerEntries } from '@/lib/payments/walletLedgerEvents'
 
 function parseSignatureHeader(headerValue) {
   const out = {}
@@ -221,7 +222,10 @@ async function ensureOrderEscrowsForPayment({ supabaseAdmin, paymentId, orderIds
   }
 
   if (inserts.length > 0) {
-    await supabaseAdmin.from('order_escrows').insert(inserts)
+    const { data: insertedRows } = await supabaseAdmin.from('order_escrows').insert(inserts).select('*')
+    for (const escrow of insertedRows || []) {
+      await recordEscrowFundingLedgerEntries(supabaseAdmin, escrow)
+    }
   }
 }
 

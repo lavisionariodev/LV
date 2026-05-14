@@ -1,12 +1,21 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useFavorites } from '@/contexts/FavoritesContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/contexts/ToastContext'
 import { formatPhpAmount } from '@/lib/cart/formatPhp'
+import {
+  fetchActiveShopListings,
+  mergeShopListings,
+} from '@/lib/shop-listings/client'
+import {
+  buildAggregatesQueryFromListings,
+  fetchListingRatingAggregates,
+  resolveListingRatingAggregate,
+} from '@/lib/ratings/listingRatingAggregates'
 import styles from './favorites.module.css'
 
 // ─── Sort options ─────────────────────────────────────────────────────────────
@@ -27,19 +36,79 @@ export default function FavoritesPage() {
   const [sortBy, setSortBy] = useState('newest')
   const [removingId, setRemovingId] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
+  const [ratingAggregates, setRatingAggregates] = useState({
+    aggregatesBySellerId: {},
+    aggregatesByPair: {},
+  })
+  const [listingMetaById, setListingMetaById] = useState(() => new Map())
 
   const ITEMS_PER_PAGE = 15 // 3 columns × 5 rows
 
+  useEffect(() => {
+    if (!favorites.length) {
+      setListingMetaById(new Map())
+      setRatingAggregates({ aggregatesBySellerId: {}, aggregatesByPair: {} })
+      return
+    }
+
+    let cancelled = false
+    const favoriteListingIds = new Set(favorites.map((item) => String(item.listingId)))
+
+    async function loadRatings() {
+      const rows = await fetchActiveShopListings({ bustCache: true }).catch(() => [])
+      if (cancelled) return
+
+      const listings = mergeShopListings(
+        rows.filter((row) => favoriteListingIds.has(String(row.listing_id))),
+      )
+      const nextMeta = new Map(listings.map((listing) => [String(listing.id), listing]))
+      setListingMetaById(nextMeta)
+
+      const query = buildAggregatesQueryFromListings(listings)
+      const aggregates = await fetchListingRatingAggregates(query)
+      if (!cancelled) setRatingAggregates(aggregates)
+    }
+
+    loadRatings()
+    return () => {
+      cancelled = true
+    }
+  }, [favorites])
+
+  const favoritesWithRatings = useMemo(() => {
+    return favorites.map((item) => {
+      const listing = listingMetaById.get(String(item.listingId))
+      if (!listing) return item
+
+      const { avgRating, reviewCount } = resolveListingRatingAggregate(listing, ratingAggregates)
+      return {
+        ...item,
+        provider: {
+          ...item.provider,
+          rating: avgRating,
+          reviews: reviewCount,
+        },
+      }
+    })
+  }, [favorites, listingMetaById, ratingAggregates])
+
   const sorted = useMemo(() => {
-    const list = [...favorites]
+    const list = [...favoritesWithRatings]
     list.sort((a, b) => {
       if (sortBy === 'price-asc') return a.price - b.price
       if (sortBy === 'price-desc') return b.price - a.price
-      if (sortBy === 'rating') return b.provider.rating - a.provider.rating
+      if (sortBy === 'rating') {
+        const ar = a.provider.rating
+        const br = b.provider.rating
+        if (ar == null && br == null) return 0
+        if (ar == null) return 1
+        if (br == null) return -1
+        return br - ar
+      }
       return new Date(b.savedAt) - new Date(a.savedAt)
     })
     return list
-  }, [favorites, sortBy])
+  }, [favoritesWithRatings, sortBy])
 
   const totalPages = Math.ceil(sorted.length / ITEMS_PER_PAGE)
   const safeCurrentPage = totalPages > 0 ? Math.min(currentPage, totalPages) : 1
@@ -65,6 +134,7 @@ export default function FavoritesPage() {
         6000,
         {
           actionLabel: 'Undo',
+          showCheckIcon: false,
           onAction: async () => {
             const { error: undoErr } = await restoreFavorite(item)
             if (undoErr) {
@@ -308,8 +378,10 @@ function FavoriteCard({ item, isRemoving, onRemove, styles }) {
                   <path d="M6 1l1.35 2.73L10.5 4.2l-2.25 2.19.53 3.1L6 7.9l-2.78 1.6.53-3.1L1.5 4.2l3.15-.47z" />
                 </svg>
               </span>
-              <span className={styles.ratingNum}>{provider.rating}</span>
-              <span className={styles.ratingReviews}>({provider.reviews})</span>
+              <span className={styles.ratingNum}>
+                {provider.rating != null ? provider.rating : '—'}
+              </span>
+              <span className={styles.ratingReviews}>({provider.reviews ?? 0})</span>
             </div>
           </div>
 

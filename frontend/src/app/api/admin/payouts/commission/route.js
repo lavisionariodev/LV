@@ -2,13 +2,14 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireAdminApiUser } from '@/lib/auth/requireAdminRoute'
 import { computeCommissionSnapshot } from '@/shared/utils/commissionSnapshot'
+import { recordCommissionChangeLog } from '@/lib/admin/commissionChangeLog'
 
 /**
  * PATCH — update per-order escrow commission rate and recalculated fee / net (admin only).
  * Blocked when escrow is already released.
  */
 export async function PATCH(request) {
-  const { responseError } = await requireAdminApiUser()
+  const { user, responseError } = await requireAdminApiUser()
   if (responseError) return responseError
 
   const body = await request.json().catch(() => ({}))
@@ -70,6 +71,16 @@ export async function PATCH(request) {
   if (updErr) {
     return NextResponse.json({ error: updErr.message ?? 'Commission update failed.' }, { status: 500 })
   }
+
+  await recordCommissionChangeLog(supabaseAdmin, {
+    changedBy: user.id,
+    scope: 'order_escrow',
+    orderId,
+    label: `Order ${orderId}`,
+    fromPercent:
+      escrow.commission_rate_percent != null ? Number(escrow.commission_rate_percent) : null,
+    toPercent: snap.commissionRatePercent,
+  })
 
   return NextResponse.json({ ok: true, escrow: updated })
 }

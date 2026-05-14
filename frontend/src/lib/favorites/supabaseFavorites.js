@@ -17,7 +17,7 @@ function rowToItem(row) {
     provider: {
       name: row.business_name ?? 'Seller',
       location: row.business_location ?? '',
-      rating: row.seller_rating != null ? Number(row.seller_rating) : 4.8,
+      rating: row.seller_rating != null ? Number(row.seller_rating) : null,
       reviews: row.seller_reviews != null ? Number(row.seller_reviews) : 0,
       badge: row.seller_badge ?? null,
       initial: (row.business_name || 'S').charAt(0).toUpperCase(),

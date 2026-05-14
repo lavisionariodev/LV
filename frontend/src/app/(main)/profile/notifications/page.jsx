@@ -1,9 +1,11 @@
 'use client';
 
+import Link from 'next/link';
 import { useProfile } from '@/contexts/ProfileContext';
 import styles from '../profile.module.css';
 import notifStyles from './notifications.module.css';
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo } from 'react';
+import { useInAppNotificationFeed } from '@/lib/notifications/useInAppNotificationFeed';
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -177,36 +179,18 @@ const PAGE_SIZE = 7;
 
 export default function NotificationsPage() {
   const { loading, user } = useProfile();
-  const [apiRows, setApiRows] = useState([]);
-  const [feedLoading, setFeedLoading] = useState(true);
+  const {
+    notifications: apiRows,
+    loading: feedLoading,
+    markRead,
+    markAllRead,
+    deleteOne,
+    clearAll,
+  } = useInAppNotificationFeed({ limit: 100, enabled: Boolean(user) && !loading });
 
   const [activeFilter, setActiveFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
-
-  const loadFeed = useCallback(async () => {
-    if (!user) {
-      setApiRows([]);
-      setFeedLoading(false);
-      return;
-    }
-    setFeedLoading(true);
-    const res = await fetch('/api/notifications?limit=100', { cache: 'no-store' });
-    const body = await res.json().catch(() => null);
-    if (!res.ok) {
-      setApiRows([]);
-      setFeedLoading(false);
-      return;
-    }
-    setApiRows(Array.isArray(body?.notifications) ? body.notifications : []);
-    setFeedLoading(false);
-  }, [user]);
-
-  useEffect(() => {
-    if (loading) return;
-    queueMicrotask(() => {
-      loadFeed();
-    });
-  }, [loading, loadFeed]);
+  const [clearAllBusy, setClearAllBusy] = useState(false);
 
   const notifications = useMemo(() => apiRows.map(mapApiRowToBuyerNotification), [apiRows]);
 
@@ -237,30 +221,19 @@ export default function NotificationsPage() {
     return map;
   }, [paginated]);
 
-  async function markRead(id) {
-    await fetch('/api/notifications', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: String(id) }),
-    });
-    setApiRows((prev) =>
-      prev.map((r) => (String(r.id) === String(id) ? { ...r, readAt: new Date().toISOString() } : r)),
-    );
-  }
-
-  async function markAllRead() {
-    await fetch('/api/notifications', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ markAllRead: true }),
-    });
-    const nowIso = new Date().toISOString();
-    setApiRows((prev) => prev.map((r) => ({ ...r, readAt: r.readAt || nowIso })));
-  }
-
   function handleFilterChange(filterId) {
     setActiveFilter(filterId);
     setCurrentPage(1);
+  }
+
+  async function handleClearAll() {
+    if (clearAllBusy || notifications.length === 0) return;
+    setClearAllBusy(true);
+    try {
+      await clearAll();
+    } finally {
+      setClearAllBusy(false);
+    }
   }
 
   if (loading) {
@@ -325,8 +298,27 @@ export default function NotificationsPage() {
               <p className={styles.profileSignedIn}>Real-time updates on your services and activity.</p>
             </div>
             <div className={notifStyles.headerActions}>
+              <div className={notifStyles.inboxToolbar}>
+                <Link href="/profile/notifications/preferences" className={notifStyles.inboxActionBtn}>
+                  Preferences
+                </Link>
+                {notifications.length > 0 ? (
+                  <button
+                    type="button"
+                    className={notifStyles.inboxActionBtn}
+                    onClick={handleClearAll}
+                    disabled={clearAllBusy}
+                  >
+                    {clearAllBusy ? 'Clearing…' : 'Clear all'}
+                  </button>
+                ) : null}
+              </div>
               {unreadCount > 0 && <span className={notifStyles.unreadBadge}>{unreadCount} unread</span>}
-              {unreadCount > 0 && <button type="button" className={notifStyles.markAllBtn} onClick={markAllRead}>Mark all as read</button>}
+              {unreadCount > 0 && (
+                <button type="button" className={notifStyles.markAllBtn} onClick={markAllRead}>
+                  Mark all as read
+                </button>
+              )}
             </div>
           </div>
           <div className={notifStyles.filterRow}>
@@ -366,6 +358,16 @@ export default function NotificationsPage() {
                     </div>
                     <p className={notifStyles.notifBody}>{notif.body}</p>
                     <span className={notifStyles.notifTime}>{notif.time}</span>
+                    <button
+                      type="button"
+                      className={notifStyles.inboxDeleteBtn}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteOne(notif.id);
+                      }}
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
               ))}

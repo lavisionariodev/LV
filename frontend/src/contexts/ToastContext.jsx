@@ -25,6 +25,7 @@ function parseToastExtraArgs(arg2, arg3) {
       actionLabel: o.actionLabel ?? null,
       onAction: o.onAction ?? null,
       appearance: o.appearance ?? "default",
+      showCheckIcon: o.showCheckIcon ?? true,
     };
   }
   return {
@@ -32,6 +33,7 @@ function parseToastExtraArgs(arg2, arg3) {
     actionLabel: arg3?.actionLabel ?? null,
     onAction: arg3?.onAction ?? null,
     appearance: arg3?.appearance ?? "default",
+    showCheckIcon: arg3?.showCheckIcon ?? true,
   };
 }
 
@@ -60,7 +62,12 @@ export function ToastProvider({ children }) {
 
   const show = useCallback((variant, message, duration, options = {}) => {
     if (!message) return;
-    const { actionLabel, onAction, appearance = "default" } = options;
+    const {
+      actionLabel,
+      onAction,
+      appearance = "default",
+      showCheckIcon = true,
+    } = options;
     setToastState({
       message,
       variant,
@@ -68,17 +75,19 @@ export function ToastProvider({ children }) {
       actionLabel: actionLabel ?? null,
       onAction: onAction ?? null,
       appearance,
+      showCheckIcon,
     });
   }, []);
 
   const api = {
     success: (message, arg2, arg3) => {
-      const { duration, actionLabel, onAction, appearance } =
+      const { duration, actionLabel, onAction, appearance, showCheckIcon } =
         parseToastExtraArgs(arg2, arg3);
       show("success", message, duration, {
         actionLabel,
         onAction,
         appearance,
+        showCheckIcon,
       });
     },
     error: (message, arg2, arg3) => {
@@ -116,6 +125,7 @@ export function ToastProvider({ children }) {
           actionLabel={toastState.actionLabel}
           onAction={toastState.onAction}
           appearance={toastState.appearance}
+          showCheckIcon={toastState.showCheckIcon}
           onClose={handleClose}
         />
       )}

@@ -9,6 +9,11 @@ import {
   mergeShopListings,
   stockAvailabilityLabel,
 } from '@/lib/shop-listings/client'
+import {
+  buildAggregatesQueryFromListings,
+  fetchListingRatingAggregates,
+  applyListingRatingAggregate,
+} from '@/lib/ratings/listingRatingAggregates'
 import { formatPhpAmount } from '@/lib/cart/formatPhp'
 import shopStyles from '../shop.module.css'
 import styles from './compare.module.css'
@@ -207,6 +212,10 @@ function ComparePageLoading({ columnCount }) {
 export default function ComparePage() {
   const searchParams = useSearchParams()
   const [catalog, setCatalog] = useState(null)
+  const [ratingAggregates, setRatingAggregates] = useState({
+    aggregatesBySellerId: {},
+    aggregatesByPair: {},
+  })
 
   useEffect(() => {
     let cancelled = false
@@ -234,11 +243,35 @@ export default function ComparePage() {
     return compareIds
       .map((id) => {
         const listing = catalog.find((l) => String(l.id) === String(id))
-        const provider = listing?.provider ?? null
-        return { listing, provider }
+        if (!listing) return null
+        const ratedListing = applyListingRatingAggregate(listing, ratingAggregates)
+        return { listing: ratedListing, provider: ratedListing.provider ?? null }
       })
-      .filter((x) => x.listing)
-  }, [compareIds, catalog])
+      .filter(Boolean)
+  }, [compareIds, catalog, ratingAggregates])
+
+  useEffect(() => {
+    if (!catalog || compareIds.length < 2) {
+      setRatingAggregates({ aggregatesBySellerId: {}, aggregatesByPair: {} })
+      return
+    }
+
+    let cancelled = false
+    const listings = compareIds
+      .map((id) => catalog.find((l) => String(l.id) === String(id)))
+      .filter(Boolean)
+
+    async function loadRatings() {
+      const query = buildAggregatesQueryFromListings(listings)
+      const aggregates = await fetchListingRatingAggregates(query)
+      if (!cancelled) setRatingAggregates(aggregates)
+    }
+
+    loadRatings()
+    return () => {
+      cancelled = true
+    }
+  }, [catalog, compareIds])
 
   const catalogLoading = catalog === null
   const compareSkeletonColumns = Math.min(Math.max(compareIds.length, 2), 3)
@@ -399,10 +432,14 @@ export default function ComparePage() {
                       }`}
                     >
                       <div className={shopStyles.compareRating}>
-                        <span className={shopStyles.compareRatingNum}>{provider?.rating}</span>
-                        <span className={shopStyles.compareRatingMax}>/5</span>
+                        <span className={shopStyles.compareRatingNum}>
+                          {provider?.rating != null ? provider.rating : '—'}
+                        </span>
+                        {provider?.rating != null ? (
+                          <span className={shopStyles.compareRatingMax}>/5</span>
+                        ) : null}
                         <span className={shopStyles.compareRatingCount}>
-                          ({provider?.reviews} reviews)
+                          ({provider?.reviews ?? 0} reviews)
                         </span>
                       </div>
                       {highestRatedIds.includes(listing.id) && (

@@ -2,6 +2,8 @@ export const SELLER_NOTIFICATION_BUCKETS = ['order', 'payment', 'listing', 'aler
 
 export const ADMIN_NOTIFICATION_BUCKETS = ['order', 'approval', 'alert', 'announcement']
 
+export const BUYER_NOTIFICATION_BUCKETS = ['service', 'payment', 'reminder', 'account']
+
 export const NOTIFICATION_CHANNELS = ['push', 'email']
 
 /** @returns {{ push: boolean, email: boolean }} */
@@ -56,4 +58,9 @@ export function mergeSellerNotificationPreferences(raw, incoming) {
 /** @param {unknown} raw @param {Record<string, unknown> | null | undefined} [incoming] */
 export function mergeAdminNotificationPreferences(raw, incoming) {
   return mergePreferencesForBuckets(ADMIN_NOTIFICATION_BUCKETS, raw, incoming)
+}
+
+/** @param {unknown} raw @param {Record<string, unknown> | null | undefined} [incoming] */
+export function mergeBuyerNotificationPreferences(raw, incoming) {
+  return mergePreferencesForBuckets(BUYER_NOTIFICATION_BUCKETS, raw, incoming)
 }

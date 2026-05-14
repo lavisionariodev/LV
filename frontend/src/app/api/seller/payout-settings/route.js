@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { evaluateSellerPayoutSettingsForDisbursement } from '@/lib/payments/disbursementConfig'
 
 function clean(body) {
   const method = String(body?.payoutMethod || body?.payout_method || 'bank').trim().toLowerCase()
@@ -92,7 +93,13 @@ export async function GET() {
     .maybeSingle()
 
   if (error) return NextResponse.json({ error: error.message || 'Failed to load payout settings.' }, { status: 500 })
-  return NextResponse.json({ settings: mapRow(data) }, { status: 200 })
+  return NextResponse.json(
+    {
+      settings: mapRow(data),
+      disbursement: evaluateSellerPayoutSettingsForDisbursement(data),
+    },
+    { status: 200 },
+  )
 }
 
 export async function PUT(request) {

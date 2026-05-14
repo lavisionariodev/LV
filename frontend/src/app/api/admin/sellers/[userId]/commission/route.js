@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireAdminApiUser } from '@/lib/auth/requireAdminRoute'
+import { recordCommissionChangeLog } from '@/lib/admin/commissionChangeLog'
 
 /**
  * PATCH — set or clear `sellers.commission_percent_override` for one seller.
@@ -12,7 +13,7 @@ import { requireAdminApiUser } from '@/lib/auth/requireAdminRoute'
  * Note: this only changes future escrows. Use `/api/admin/payouts/commission` to retro-edit an existing escrow.
  */
 export async function PATCH(request, context) {
-  const { responseError } = await requireAdminApiUser()
+  const { user, responseError } = await requireAdminApiUser()
   if (responseError) return responseError
 
   const params = await context.params
@@ -45,7 +46,7 @@ export async function PATCH(request, context) {
 
   const { data: before, error: beforeErr } = await supabaseAdmin
     .from('sellers')
-    .select('user_id,commission_percent_override')
+    .select('user_id,commission_percent_override,business_name')
     .eq('user_id', sellerUserId)
     .maybeSingle()
 
@@ -72,6 +73,16 @@ export async function PATCH(request, context) {
       { status: 500 },
     )
   }
+
+  await recordCommissionChangeLog(supabaseAdmin, {
+    changedBy: user.id,
+    scope: 'seller_override',
+    sellerUserId,
+    label: before?.business_name || sellerUserId,
+    fromPercent:
+      before?.commission_percent_override != null ? Number(before.commission_percent_override) : null,
+    toPercent: nextValue,
+  })
 
   return NextResponse.json(
     {

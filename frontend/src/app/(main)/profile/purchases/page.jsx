@@ -826,12 +826,13 @@ function LeaveReviewModal({
   );
 }
 
-/** @param {{ purchase: object, cancellingOrderId: string | null }} props */
-function PurchaseCard({ purchase, cancellingOrderId }) {
+/** @param {{ purchase: object, cancellingOrderId: string | null, payingOrderId: string | null }} props */
+function PurchaseCard({ purchase, cancellingOrderId, payingOrderId }) {
   const [expanded, setExpanded] = useState(false);
   const cfg = STATUS_CONFIG[purchase.status] ?? STATUS_CONFIG.Pending;
 
   const cancelling = cancellingOrderId === purchase.rawOrderId;
+  const paying = payingOrderId === purchase.rawOrderId;
   const detail = purchase.detail || {};
 
   return (
@@ -982,6 +983,17 @@ function PurchaseCard({ purchase, cancellingOrderId }) {
           Download receipt
         </button>
 
+        {purchase.canRetryPayment ? (
+          <button
+            type="button"
+            className={`${purchaseStyles.actionLink} ${purchaseStyles.actionPayNow}`}
+            disabled={paying}
+            onClick={() => purchase.onPayNow?.(purchase.rawOrderId)}
+          >
+            {paying ? 'Opening payment…' : 'Pay now'}
+          </button>
+        ) : null}
+
         {purchase.status === 'Completed' ? (
           <button type="button" className={purchaseStyles.actionLink} onClick={() => purchase.onLeaveReview?.(purchase)}>
             {purchase.hasExistingReview ? 'Edit review' : 'Leave a review'}
@@ -1044,6 +1056,7 @@ export default function PurchasesPage() {
   const [cancelResultMessage, setCancelResultMessage] = useState('');
   const [cancelResultOpen, setCancelResultOpen] = useState(false);
   const [checkoutPayBanner, setCheckoutPayBanner] = useState('');
+  const [payingOrderId, setPayingOrderId] = useState(null);
 
   const [leaveReviewOpen, setLeaveReviewOpen] = useState(false);
   const [leaveReviewOrder, setLeaveReviewOrder] = useState(null);
@@ -1347,6 +1360,35 @@ export default function PurchasesPage() {
     }
   }, []);
 
+  const handlePayNow = useCallback(
+    async (rawOrderId) => {
+      if (!rawOrderId) return;
+      setPayingOrderId(rawOrderId);
+      try {
+        const res = await fetch('/api/checkout/pay', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderIds: [rawOrderId] }),
+        });
+        const body = await res.json().catch(() => null);
+        if (res.ok && body?.redirect_url) {
+          window.location.href = body.redirect_url;
+          return;
+        }
+        toast.error(
+          typeof body?.error === 'string'
+            ? body.error
+            : 'Could not open secure payment. Please try again.',
+        );
+      } catch {
+        toast.error('Network error. Please try again.');
+      } finally {
+        setPayingOrderId(null);
+      }
+    },
+    [toast],
+  );
+
   const openLeaveReview = useCallback((purchase) => {
     if (process.env.NODE_ENV !== 'production') {
       console.log('[openLeaveReview]', {
@@ -1589,9 +1631,11 @@ export default function PurchasesPage() {
                 <PurchaseCard
                   key={p.listRowKey ?? p.rawOrderId}
                   cancellingOrderId={cancellingOrderId}
+                  payingOrderId={payingOrderId}
                   purchase={{
                     ...p,
                     onDownloadReceipt: handleDownloadReceipt,
+                    onPayNow: handlePayNow,
                     onRequestCancel: (id, showsRefundDisclaimer = false) => {
                       setCancelConfirmRawOrderId(id);
                       setCancelShowsRefundDisclaimer(Boolean(showsRefundDisclaimer));
