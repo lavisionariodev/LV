@@ -1,19 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { requireActiveSellerApiUser } from '@/lib/auth/requireApiUser'
 import { notifySeller } from '@/lib/notifications/inAppServer'
-
-async function requireSeller(supabaseAdmin, userId) {
-  const { data: seller, error } = await supabaseAdmin
-    .from('sellers')
-    .select('user_id')
-    .eq('user_id', userId)
-    .maybeSingle()
-  if (error || !seller) {
-    return { response: NextResponse.json({ error: 'Seller account required.' }, { status: 403 }) }
-  }
-  return { seller }
-}
 
 function normalizeAlerts(raw) {
   return (Array.isArray(raw) ? raw : [])
@@ -39,16 +26,8 @@ async function listDashboardNotifications(supabaseAdmin, userId) {
 }
 
 export async function GET() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-    error: userErr,
-  } = await supabase.auth.getUser()
-  if (userErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const supabaseAdmin = getSupabaseAdmin()
-  const auth = await requireSeller(supabaseAdmin, user.id)
-  if (auth.response) return auth.response
+  const { user, supabaseAdmin, responseError } = await requireActiveSellerApiUser()
+  if (responseError) return responseError
 
   return NextResponse.json(
     { notifications: await listDashboardNotifications(supabaseAdmin, user.id) },
@@ -57,18 +36,11 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-    error: userErr,
-  } = await supabase.auth.getUser()
-  if (userErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { user, supabaseAdmin, responseError } = await requireActiveSellerApiUser()
+  if (responseError) return responseError
 
   const body = await request.json().catch(() => ({}))
   const alerts = normalizeAlerts(body?.alerts)
-  const supabaseAdmin = getSupabaseAdmin()
-  const auth = await requireSeller(supabaseAdmin, user.id)
-  if (auth.response) return auth.response
 
   await Promise.all(
     alerts.map((alert) =>
@@ -93,12 +65,8 @@ export async function POST(request) {
 }
 
 export async function PATCH(request) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-    error: userErr,
-  } = await supabase.auth.getUser()
-  if (userErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { user, supabaseAdmin, responseError } = await requireActiveSellerApiUser()
+  if (responseError) return responseError
 
   const body = await request.json().catch(() => ({}))
   const alertId = String(body?.alertId || '').trim().slice(0, 160)
@@ -110,10 +78,6 @@ export async function PATCH(request) {
   if (!alertId) {
     return NextResponse.json({ error: 'Missing alertId.' }, { status: 400 })
   }
-
-  const supabaseAdmin = getSupabaseAdmin()
-  const auth = await requireSeller(supabaseAdmin, user.id)
-  if (auth.response) return auth.response
 
   const existing = (await listDashboardNotifications(supabaseAdmin, user.id)).find(
     (row) => String(row?.metadata?.alertId || '') === alertId,

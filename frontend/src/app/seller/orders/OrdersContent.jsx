@@ -572,14 +572,17 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
     }
   }
 
-  const handleHelpRequestStatus = async (order, status) => {
+  const handleHelpRequestStatus = async (order, status, sellerNote = '') => {
     const requestId = order?.helpRequest?.id
     if (!requestId) return
     try {
+      const payload = { status }
+      const trimmedNote = String(sellerNote || '').trim()
+      if (trimmedNote) payload.sellerNote = trimmedNote
       const res = await fetch(`/api/seller/disputes/${encodeURIComponent(requestId)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify(payload),
       })
       const body = await res.json().catch(() => null)
       if (!res.ok) {
@@ -798,7 +801,7 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
               <article key={order.id} className={styles.refundCard}>
                 <header className={styles.refundCardHeader}>
                   <div>
-                    <div className={styles.refundOrderId}>{order.id}</div>
+                    <div className={styles.refundOrderId}>{order.displayId || order.id}</div>
                     <div className={styles.refundCustomerName}>{order.customerName}</div>
                   </div>
                   <div className={styles.refundMeta}>
@@ -935,7 +938,14 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
                       <button
                         type="button"
                         className={`${styles.btnText}`}
-                        onClick={() => handleHelpRequestStatus(order, 'under_review')}
+                        onClick={() => {
+                          const sellerNote = window.prompt(
+                            'Add an optional note for admins and the buyer:',
+                            '',
+                          )
+                          if (sellerNote === null) return
+                          void handleHelpRequestStatus(order, 'under_review', sellerNote)
+                        }}
                       >
                         Mark under review
                       </button>
@@ -1333,7 +1343,14 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
                         <button
                           type="button"
                           className={`${styles.btnText}`}
-                          onClick={() => handleHelpRequestStatus(selectedOrder, 'under_review')}
+                          onClick={() => {
+                            const sellerNote = window.prompt(
+                              'Add an optional note for admins and the buyer:',
+                              '',
+                            )
+                            if (sellerNote === null) return
+                            void handleHelpRequestStatus(selectedOrder, 'under_review', sellerNote)
+                          }}
                         >
                           Mark under review
                         </button>

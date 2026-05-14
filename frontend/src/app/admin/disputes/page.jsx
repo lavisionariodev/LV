@@ -168,6 +168,7 @@ export default function AdminDisputesPage() {
   const [allDisputes, setAllDisputes] = useState([])
   const [listLoading, setListLoading] = useState(true)
   const [listError, setListError] = useState('')
+  const [listTruncated, setListTruncated] = useState(false)
   const [bulkBusy, setBulkBusy] = useState(false)
   const [bulkStatusConfirm, setBulkStatusConfirm] = useState(null)
 
@@ -186,9 +187,11 @@ export default function AdminDisputesPage() {
     if (!res.ok) {
       setListError(typeof body?.error === 'string' ? body.error : 'Failed to load disputes.')
       setAllDisputes([])
+      setListTruncated(false)
       return
     }
     setAllDisputes(Array.isArray(body?.disputes) ? body.disputes : [])
+    setListTruncated(Boolean(body?.truncated))
   }, [])
 
   const requestBulkStatus = useCallback(
@@ -310,6 +313,11 @@ export default function AdminDisputesPage() {
       {listError ? (
         <p role="alert" style={{ color: '#b91c1c', margin: '0 0 8px', fontSize: 14 }}>
           {listError}
+        </p>
+      ) : null}
+      {listTruncated ? (
+        <p role="status" style={{ color: '#92400e', margin: '0 0 8px', fontSize: 14 }}>
+          Showing the latest disputes only. Narrow filters or open a case from search if you need an older record.
         </p>
       ) : null}
       {/* ── Stats ── */}
@@ -450,7 +458,7 @@ export default function AdminDisputesPage() {
             <span style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>
               {selectedRows.size} selected
             </span>
-            {STATUS_OPTIONS.filter((o) => o.value !== 'all')
+            {STATUS_OPTIONS.filter((o) => o.value !== 'all' && o.value !== 'resolved' && o.value !== 'closed')
               .filter((opt) =>
                 bulkStatusActionApplies(
                   selectedRows,

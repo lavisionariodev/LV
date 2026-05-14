@@ -8,11 +8,35 @@ import { useCheckoutPaymentStatus } from "@/lib/checkout/useCheckoutPaymentStatu
 export default function CheckoutSuccessPage() {
   const searchParams = useSearchParams()
   const paymentId = searchParams.get("payment")
-  const { status, settled, loading, error } = useCheckoutPaymentStatus(paymentId)
+  const { status, settled, loading, error, timedOut } = useCheckoutPaymentStatus(paymentId)
 
   const confirming = Boolean(paymentId) && loading
   const confirmed = !paymentId || (settled && status === "paid")
   const failed = settled && status === "failed"
+  const inconclusive =
+    Boolean(paymentId) && !loading && !settled && !failed && (timedOut || Boolean(error))
+
+  const title = confirming
+    ? "Confirming payment"
+    : failed
+      ? "Payment not completed"
+      : inconclusive
+        ? "Payment status pending"
+        : confirmed
+          ? "You’re all set"
+          : "Payment status pending"
+
+  const subtitle = error
+    ? error
+    : confirming
+      ? "We’re waiting for PayMongo to confirm your payment. This usually takes a few seconds."
+      : failed
+        ? "Your payment did not complete. You can retry from your purchases page."
+        : inconclusive
+          ? "We could not confirm your payment yet. Open your purchases page to check status or retry payment."
+          : confirmed
+            ? "We’ve received your payment. A coordinator will reach out to confirm schedule and arrangements."
+            : "We’re still confirming your payment. Check your purchases page for updates."
 
   return (
     <main className={styles.checkoutPage}>
@@ -32,18 +56,8 @@ export default function CheckoutSuccessPage() {
             </div>
 
             <div className={styles.successHeader}>
-              <h2 className={styles.successTitle}>
-                {confirming ? "Confirming payment" : failed ? "Payment not completed" : "You’re all set"}
-              </h2>
-              <p className={styles.successSubtitle}>
-                {error
-                  ? error
-                  : confirming
-                    ? "We’re waiting for PayMongo to confirm your payment. This usually takes a few seconds."
-                    : failed
-                      ? "Your payment did not complete. You can retry from your purchases page."
-                      : "We’ve received your payment. A coordinator will reach out to confirm schedule and arrangements."}
-              </p>
+              <h2 className={styles.successTitle}>{title}</h2>
+              <p className={styles.successSubtitle}>{subtitle}</p>
             </div>
 
             {paymentId ? (
@@ -53,7 +67,7 @@ export default function CheckoutSuccessPage() {
               </div>
             ) : null}
 
-            {confirmed && !failed ? (
+            {confirmed && !failed && !inconclusive ? (
               <div className={styles.successSteps}>
                 {[
                   { title: "Provider notified", desc: "We’ll forward your booking details to the provider(s)." },

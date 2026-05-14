@@ -118,6 +118,7 @@ function useAdminPayoutsPage() {
 
   const [listLoading, setListLoading] = useState(true)
   const [listError, setListError] = useState(null)
+  const [listTruncated, setListTruncated] = useState(false)
   const [summaryLoading, setSummaryLoading] = useState(true)
   const [disbursementConfig, setDisbursementConfig] = useState(null)
 
@@ -165,6 +166,7 @@ function useAdminPayoutsPage() {
     }))
     setSellerOptions(sellers)
     setTransactions(Array.isArray(payload.transactions) ? payload.transactions : [])
+    setListTruncated(Boolean(payload.truncated))
   }, [])
 
   const fetchDisbursementConfig = useCallback(async () => {
@@ -223,6 +225,7 @@ function useAdminPayoutsPage() {
       setListError(e?.message || 'Failed to load payouts')
       setTransactions([])
       setSellerOptions([])
+      setListTruncated(false)
     } finally {
       setListLoading(false)
       fetchingRef.current = false
@@ -2815,6 +2818,12 @@ export default function AdminPayoutsPage() {
                 Clear selection
               </button>
             </div>
+          ) : null}
+
+          {listTruncated ? (
+            <p role="status" className={styles.emptyHint} style={{ margin: '0 0 12px' }}>
+              Showing the latest escrow rows only. Narrow filters or search by order ID if you need an older payout.
+            </p>
           ) : null}
 
           {/* Mobile Card List — hidden on desktop via CSS */}

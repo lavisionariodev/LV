@@ -5,6 +5,14 @@
 
 import { hasPendingSellerChanges } from '@/lib/seller-listings/pendingChanges'
 import { formatPhpWholeAmount } from '@/lib/cart/formatPhp'
+import {
+  fulfillmentStatus,
+  orderIsPaid,
+  pendingFulfillmentCount,
+  resolvePaymentStatus,
+} from '@/lib/seller/sellerOrderPaymentStatus'
+
+export { fulfillmentStatus, orderIsPaid, pendingFulfillmentCount, resolvePaymentStatus }
 
 /** @typedef {{ id: string, buyer_id?: string|null, order_number?: string|null, created_at: string, preferred_date?: string|null, fulfillment_status?: string|null, payment_status?: string|null, status?: string|null, subtotal?: number|null, refund_status?: string|null, refund_requested_at?: string|null, contact_name?: string|null, order_items?: { name?: string|null, quantity?: number|null }[]|null }} SellerOrderRow */
 
@@ -15,7 +23,7 @@ export const SELLER_CUSTOMER_ORDER_SELECT =
   'id,buyer_id,order_number,created_at,preferred_date,fulfillment_status,contact_name,contact_email,contact_phone,service_location,order_items(name,quantity)'
 
 export const SELLER_ORDER_DETAIL_SELECT =
-  'id,buyer_id,order_number,status,fulfillment_status,payment_status,subtotal,created_at,preferred_date,refund_status,refund_requested_at,contact_name,contact_email,contact_phone,notes,service_location,deceased_name,date_of_death,wake_duration_days,order_items(name,quantity)'
+  'id,buyer_id,order_number,status,fulfillment_status,payment_status,subtotal,created_at,preferred_date,refund_status,refund_reason,refund_requested_at,contact_name,contact_email,contact_phone,notes,service_location,deceased_name,date_of_death,wake_duration_days,order_items(name,quantity)'
 
 /**
  * @param {{ name?: string|null, quantity?: number|null }[] | null | undefined} items
@@ -69,12 +77,15 @@ export function sellerRefundStage(row) {
 export function mapSellerOrderForOrdersPage(row, opts = {}) {
   const items = row.order_items ?? []
   const refundStage = sellerRefundStage(row)
+  const buyerRefundReason =
+    row.refund_reason == null ? '' : String(row.refund_reason).trim()
   const refundReason =
-    refundStage === 'processing'
+    buyerRefundReason ||
+    (refundStage === 'processing'
       ? 'Refund approved and being processed by the payment provider. Completion is automatic and typically takes a few business days.'
       : refundStage === 'requested'
         ? 'Buyer cancelled this booking before confirmation and has requested a refund. Approve to initiate the refund, or decline to keep the booking active.'
-        : null
+        : null)
   const helpRequest = opts.helpRequest ?? null
   const helpAttachments = Array.isArray(opts.helpAttachments) ? opts.helpAttachments : []
 
@@ -104,7 +115,7 @@ export function mapSellerOrderForOrdersPage(row, opts = {}) {
     refundStage,
     refundRequestedAt: row.refund_requested_at ? String(row.refund_requested_at) : null,
     refundReason,
-    refundAttachments: helpAttachments,
+    refundAttachments: [],
     helpRequest: helpRequest
       ? {
           id: helpRequest.id,
@@ -179,40 +190,12 @@ export function aggregateSellerCustomers(rows) {
 
 /**
  * @param {SellerOrderRow} row
- * @returns {string}
- */
-export function resolvePaymentStatus(row) {
-  const ps = row.payment_status
-  if (ps) return String(ps).toLowerCase()
-  const st = row.status
-  if (st === 'paid') return 'paid'
-  if (st === 'failed') return 'failed'
-  return 'unpaid'
-}
-
-/**
- * @param {SellerOrderRow} row
- */
-export function orderIsPaid(row) {
-  return resolvePaymentStatus(row) === 'paid'
-}
-
-/**
- * @param {SellerOrderRow} row
  */
 export function orderSubtotal(row) {
   return Number(row.subtotal) || 0
 }
 
 /**
- * @param {SellerOrderRow} row
- */
-export function fulfillmentStatus(row) {
-  return String(row.fulfillment_status || 'pending').toLowerCase()
-}
-
-/**
- * Maps to seller orders URL tab segment.
  * @param {SellerOrderRow} row
  */
 export function orderTabForUrl(row) {
@@ -387,13 +370,6 @@ export function totalPaidRevenueAllTime(orders) {
     if (orderIsPaid(o)) s += orderSubtotal(o)
   }
   return s
-}
-
-/**
- * @param {SellerOrderRow[]} orders
- */
-export function pendingFulfillmentCount(orders) {
-  return orders.filter((o) => fulfillmentStatus(o) === 'pending').length
 }
 
 /**

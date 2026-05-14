@@ -13,7 +13,7 @@ import { supabase } from "@/lib/supabase/client"
  export default function CheckoutPage() {
    const router = useRouter()
    const searchParams = useSearchParams()
-   const { items: cartItems, loading: cartLoading } = useCart()
+   const { items: cartItems, loading: cartLoading, refreshCart } = useCart()
   const [loadingUser, setLoadingUser] = useState(true)
   const [user, setUser] = useState(null)
   const [isBuyerRole, setIsBuyerRole] = useState(false)
@@ -194,9 +194,12 @@ import { supabase } from "@/lib/supabase/client"
 
       if (orderIds.length === 0) {
         setSubmitError("Checkout could not continue. Contact support if this persists.")
+        await refreshCart()
         router.replace('/profile/purchases')
         return
       }
+
+      await refreshCart()
 
       const payRes = await fetch('/api/checkout/pay', {
         method: 'POST',
@@ -219,6 +222,7 @@ import { supabase } from "@/lib/supabase/client"
       } catch {
         /* ignore quota / privacy mode */
       }
+      await refreshCart()
       router.replace('/profile/purchases')
     } catch {
       setSubmitError("Network error. Please try again.")

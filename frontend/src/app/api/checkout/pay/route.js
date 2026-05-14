@@ -45,6 +45,20 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Orders not found.' }, { status: 404 })
   }
 
+  if (orders.length !== orderIds.length) {
+    return NextResponse.json({ error: 'One or more orders were not found.' }, { status: 404 })
+  }
+
+  const currencies = new Set(
+    orders.map((o) => String(o.currency || 'PHP').trim().toUpperCase() || 'PHP'),
+  )
+  if (currencies.size > 1) {
+    return NextResponse.json(
+      { error: 'Orders must share the same currency to pay together.' },
+      { status: 400 },
+    )
+  }
+
   const notOwned = orders.some((o) => o.buyer_id !== user.id)
   if (notOwned) {
     return NextResponse.json({ error: 'Not allowed.' }, { status: 403 })
@@ -119,18 +133,55 @@ export async function POST(request) {
     )
   }
 
-  await supabaseAdmin.from('payment_orders').insert(
+  const { error: paymentOrdersErr } = await supabaseAdmin.from('payment_orders').insert(
     orderIds.map((orderId) => ({
       payment_id: paymentRow.id,
       order_id: orderId,
     })),
   )
 
-  // Mark orders as pending payment.
-  await supabaseAdmin
+  if (paymentOrdersErr) {
+    apiLog('checkout.pay.payment_orders_insert_failed', { err: errorMessage(paymentOrdersErr) })
+    await supabaseAdmin
+      .from('payments')
+      .update({
+        status: 'failed',
+        metadata: {
+          ...(paymentRow.metadata ?? {}),
+          link_error: paymentOrdersErr.message ?? 'Failed to link payment to orders.',
+        },
+      })
+      .eq('id', paymentRow.id)
+
+    return NextResponse.json(
+      { error: paymentOrdersErr.message ?? 'Failed to link payment to orders.' },
+      { status: 500 },
+    )
+  }
+
+  const { error: ordersPendingErr } = await supabaseAdmin
     .from('orders')
     .update({ payment_status: 'pending', status: 'pending_payment' })
     .in('id', orderIds)
+
+  if (ordersPendingErr) {
+    apiLog('checkout.pay.orders_pending_update_failed', { err: errorMessage(ordersPendingErr) })
+    await supabaseAdmin
+      .from('payments')
+      .update({
+        status: 'failed',
+        metadata: {
+          ...(paymentRow.metadata ?? {}),
+          order_update_error: ordersPendingErr.message ?? 'Failed to mark orders pending payment.',
+        },
+      })
+      .eq('id', paymentRow.id)
+
+    return NextResponse.json(
+      { error: ordersPendingErr.message ?? 'Failed to mark orders pending payment.' },
+      { status: 500 },
+    )
+  }
 
   const successUrl = `${origin}/checkout/success?payment=${encodeURIComponent(paymentRow.id)}`
   const cancelUrl = `${origin}/checkout/failed?payment=${encodeURIComponent(paymentRow.id)}`

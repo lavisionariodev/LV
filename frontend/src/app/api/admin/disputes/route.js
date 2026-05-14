@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireAdminApiUser } from '@/lib/auth/requireAdminRoute'
 
+const MAX_ROWS = 500
+
 function formatOpenedAt(iso) {
   if (!iso) return '—'
   try {
@@ -26,13 +28,15 @@ export async function GET() {
       'id,order_id,buyer_id,seller_user_id,reason,description,status,opened_at,updated_at,resolution_notes,attachment_paths',
     )
     .order('opened_at', { ascending: false })
-    .limit(500)
+    .limit(MAX_ROWS + 1)
 
   if (error) {
     return NextResponse.json({ error: error.message ?? 'Failed to load disputes.' }, { status: 500 })
   }
 
-  const list = rows ?? []
+  const fetched = rows ?? []
+  const truncated = fetched.length > MAX_ROWS
+  const list = truncated ? fetched.slice(0, MAX_ROWS) : fetched
   const orderIds = [...new Set(list.map((r) => r.order_id).filter(Boolean))]
   const userIds = [...new Set([...list.map((r) => r.buyer_id), ...list.map((r) => r.seller_user_id)].filter(Boolean))]
   const sellerUserIds = [...new Set(list.map((r) => r.seller_user_id).filter(Boolean))]
@@ -90,5 +94,5 @@ export async function GET() {
     }
   })
 
-  return NextResponse.json({ disputes: mapped }, { status: 200 })
+  return NextResponse.json({ disputes: mapped, truncated, maxRows: MAX_ROWS }, { status: 200 })
 }

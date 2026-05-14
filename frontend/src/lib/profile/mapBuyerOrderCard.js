@@ -111,6 +111,31 @@ export function paymentSummaryLine(pd) {
 }
 
 /**
+ * Whether a buyer may leave or edit a review for this order (matches reviews API rules).
+ * @param {Record<string, unknown>} order
+ */
+export function canLeaveBuyerReview(order) {
+  if (!order || order.fulfillment_status !== 'completed') return false
+
+  const paymentStatus = String(order.payment_status ?? '').trim().toLowerCase()
+  const legacyStatus = String(order.status ?? '').trim().toLowerCase()
+  const refundStatus = String(order.refund_status ?? '').trim().toLowerCase()
+  const paid = paymentStatus === 'paid' || legacyStatus === 'paid'
+  if (!paid) return false
+  if (order.fulfillment_status === 'cancelled' || legacyStatus === 'cancelled') return false
+  if (
+    paymentStatus === 'refund_pending' ||
+    paymentStatus === 'refunded' ||
+    refundStatus === 'requested' ||
+    refundStatus === 'processing' ||
+    refundStatus === 'completed'
+  ) {
+    return false
+  }
+  return true
+}
+
+/**
  * @param {Record<string, unknown>} o orders row from Supabase
  * @param {Array<{ id?: string; order_id: string; product_id?: string; name: string; quantity?: number; price?: number }>} orderItems
  * @param {string} [providerDisplayName] from seller-names API
@@ -252,6 +277,7 @@ export function mapBuyerOrderCard(o, orderItems, providerDisplayName, disputeSta
     cancelShowsRefundDisclaimer,
     showOpenDispute: showOpenDispute && !disputeStatus,
     disputeStatus: disputeStatus ? String(disputeStatus) : null,
+    canLeaveReview: canLeaveBuyerReview(o),
     detail: {
       serviceLocation: pickStr(o.service_location),
       contactName: pickStr(o.contact_name),

@@ -102,6 +102,18 @@ export function CartProvider({ children }) {
     [userId],
   )
 
+  const refreshCart = useCallback(async () => {
+    if (!cartUser?.id) {
+      setUserId(null)
+      setItems([])
+      return { error: null }
+    }
+    const { items: fetched, error } = await fetchCart(supabase, cartUser.id)
+    setUserId(cartUser.id)
+    setItems(error ? [] : fetched)
+    return { error }
+  }, [cartUser])
+
   const cartCount = items.reduce((sum, i) => sum + (i.qty ?? 1), 0)
 
   const value = {
@@ -111,6 +123,7 @@ export function CartProvider({ children }) {
     addItem,
     updateQty,
     removeItem,
+    refreshCart,
   }
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>
