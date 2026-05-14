@@ -615,6 +615,52 @@
   border: 2px dashed #ccc;
 }
 
+.appHeaderTitle {
+  margin: 0;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.linkDeviceGuide {
+  width: 100%;
+  padding: 24px 20px;
+  border-radius: 12px;
+  background: #f4f7f5;
+  border: 1px solid #d7e5dd;
+  text-align: center;
+}
+
+.linkDeviceLabel {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #204f38;
+}
+
+.linkDeviceHint {
+  margin: 0;
+  font-size: 13px;
+  color: #555;
+}
+
+.modalSteps {
+  margin: 0;
+  padding-left: 20px;
+  color: #555;
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: left;
+}
+
+.modalSteps li + li {
+  margin-top: 10px;
+}
+
 .modalText {
   text-align: center;
   color: #555;

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import SellerQrConfirmPanel from '@/features/seller/auth/SellerQrConfirmPanel'
 import SellerQrLoginScanner from '@/features/seller/auth/SellerQrLoginScanner'
@@ -20,6 +20,18 @@ export default function SellerLinkDevicePage() {
 
   const handleBackToScanner = useCallback(() => {
     setScanTarget(null)
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const params = new URLSearchParams(window.location.search)
+    const challengeId = params.get('challenge')?.trim() || ''
+    const approveToken = params.get('token')?.trim() || ''
+    if (!challengeId || !approveToken) return
+
+    setScanTarget({ challengeId, approveToken })
+    window.history.replaceState({}, '', '/seller/settings/link-device')
   }, [])
 
   return (

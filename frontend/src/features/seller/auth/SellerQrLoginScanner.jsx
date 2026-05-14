@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { BrowserQRCodeReader } from '@zxing/browser'
 import {
@@ -34,7 +34,7 @@ export default function SellerQrLoginScanner({
   const [error, setError] = useState('')
   const handledRef = useRef(false)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     onScannedRef.current = onScanned
   }, [onScanned])
 
