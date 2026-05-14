@@ -44,7 +44,8 @@ export async function middleware(request) {
     pathname === "/seller/signup" ||
     pathname === "/seller/register" ||
     pathname === "/seller/need_help" ||
-    pathname === "/seller/onboarding";
+    pathname === "/seller/onboarding" ||
+    pathname.startsWith("/seller/login/qr/");
 
   if (isAdminRoute) {
     if (!user) {

@@ -125,3 +125,68 @@ export async function requireActiveSellerApiUser() {
 
   return { user, supabaseAdmin, responseError: null }
 }
+
+/**
+ * Authenticated seller role for QR approve/deny (does not require active seller status).
+ * @returns {Promise<{
+ *   user: import('@supabase/supabase-js').User | null,
+ *   supabase: Awaited<ReturnType<typeof createClient>>,
+ *   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+ *   responseError: Response | null
+ * }>}
+ */
+export async function requireSellerRoleApiUser() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+    error: userErr,
+  } = await supabase.auth.getUser()
+
+  const supabaseAdmin = getSupabaseAdmin()
+
+  if (userErr || !user) {
+    return {
+      user: null,
+      supabase,
+      supabaseAdmin,
+      responseError: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+    }
+  }
+
+  const [{ data: adminRow }, { data: userRow, error: userRowErr }] = await Promise.all([
+    supabaseAdmin.from('admins').select('id').eq('id', user.id).maybeSingle(),
+    supabaseAdmin.from('users').select('role').eq('id', user.id).maybeSingle(),
+  ])
+
+  if (userRowErr) {
+    return {
+      user: null,
+      supabase,
+      supabaseAdmin,
+      responseError: NextResponse.json({ error: 'Failed to verify account.' }, { status: 500 }),
+    }
+  }
+
+  if (adminRow) {
+    return {
+      user: null,
+      supabase,
+      supabaseAdmin,
+      responseError: NextResponse.json(
+        { error: 'Admin accounts cannot approve seller QR login.' },
+        { status: 403 },
+      ),
+    }
+  }
+
+  if (!userRow || userRow.role !== ROLE_SELLER) {
+    return {
+      user: null,
+      supabase,
+      supabaseAdmin,
+      responseError: NextResponse.json({ error: 'Seller account required.' }, { status: 403 }),
+    }
+  }
+
+  return { user, supabase, supabaseAdmin, responseError: null }
+}

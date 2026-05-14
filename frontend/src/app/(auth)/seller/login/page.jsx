@@ -8,12 +8,14 @@ import styles from './login.module.css';
 import { loginWithEmailPassword, signInWithOAuth, getOAuthRedirectUrl } from '@/lib/auth/client';
 import { supabase } from '@/lib/supabase/client';
 import ForgotPasswordModal from '@/components/ui/Modal/ForgotPasswordModal';
-import { isAdmin } from '@/lib/auth/admin';
 import { getUser } from '@/lib/auth/session';
 import { getUserRole, ROLE_SELLER } from '@/lib/auth/roles';
 import { getSellerStatusForUser } from '@/lib/sellers/client';
 import { useAuthToast } from '@/contexts/ToastContext';
 import { useSiteContent } from '@/lib/siteContent/client';
+import { completeSellerPortalLogin } from '@/lib/auth/completeSellerPortalLogin';
+import { createSellerQrChallenge, pollSellerQrChallenge } from '@/lib/auth/qrLoginClient';
+import QRCode from 'react-qr-code';
 
 function SellerLoginPageInner() {
   const [loginMode, setLoginMode] = useState('password'); // 'password' or 'qr'
@@ -22,11 +24,18 @@ function SellerLoginPageInner() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [qrApproveUrl, setQrApproveUrl] = useState('');
+  const [qrStatus, setQrStatus] = useState('idle');
+  const [qrRefreshing, setQrRefreshing] = useState(false);
 
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const hasShownErrorRef = useRef(false);
   const showForgotPasswordModalRef = useRef(false);
   showForgotPasswordModalRef.current = showForgotPasswordModal;
+  const pollSecretRef = useRef('');
+  const challengeIdRef = useRef('');
+  const qrExpiresAtRef = useRef('');
+  const qrCompletionRef = useRef(false);
 
   const { data: siteContent } = useSiteContent()
   const systemName = siteContent?.systemName || 'La Visionario'
@@ -72,6 +81,163 @@ function SellerLoginPageInner() {
     };
   }, [redirect, router]);
 
+  const finishSellerLogin = async (user, nextRedirect = redirect) => {
+    const result = await completeSellerPortalLogin({
+      supabase,
+      user,
+      redirect: nextRedirect,
+    });
+
+    if (!result.ok) {
+      if (result.signOut) {
+        await supabase.auth.signOut();
+      }
+      toast.error(result.error);
+      return false;
+    }
+
+    toast.success('Welcome back to Seller Centre!');
+    router.replace(result.target);
+    return true;
+  };
+
+  const startQrChallenge = async ({ showSpinner = true } = {}) => {
+    if (showSpinner) {
+      setQrRefreshing(true);
+      setQrStatus('loading');
+    }
+
+    const safeRedirect = !redirect || redirect === '/' ? null : redirect;
+    const { data, error } = await createSellerQrChallenge({ redirectPath: safeRedirect });
+
+    if (showSpinner) {
+      setQrRefreshing(false);
+    }
+
+    if (error || !data) {
+      setQrApproveUrl('');
+      pollSecretRef.current = '';
+      challengeIdRef.current = '';
+      qrExpiresAtRef.current = '';
+      setQrStatus('error');
+      toast.error(error || 'Could not start QR login.');
+      return false;
+    }
+
+    pollSecretRef.current = data.pollSecret;
+    challengeIdRef.current = data.challengeId;
+    qrExpiresAtRef.current = data.expiresAt;
+    setQrApproveUrl(data.approveUrl);
+    setQrStatus('ready');
+    return true;
+  };
+
+  useEffect(() => {
+    if (loginMode !== 'qr') {
+      return undefined;
+    }
+
+    let cancelled = false;
+    qrCompletionRef.current = false;
+
+    const boot = async () => {
+      const started = await startQrChallenge();
+      if (!started || cancelled) return;
+
+      const poll = async () => {
+        if (cancelled || qrCompletionRef.current) return;
+
+        if (qrExpiresAtRef.current && new Date(qrExpiresAtRef.current).getTime() <= Date.now()) {
+          setQrStatus('expired');
+          return;
+        }
+
+        const { data, error } = await pollSellerQrChallenge({
+          challengeId: challengeIdRef.current,
+          pollSecret: pollSecretRef.current,
+        });
+
+        if (cancelled || qrCompletionRef.current) return;
+
+        if (error) {
+          setQrStatus('error');
+          toast.error(error);
+          return;
+        }
+
+        if (!data) return;
+
+        if (data.status === 'pending') {
+          setQrStatus('waiting');
+          return;
+        }
+
+        if (data.status === 'expired' || data.status === 'denied') {
+          setQrStatus(data.status);
+          return;
+        }
+
+        if (data.status === 'approved' && data.email && data.tokenHash) {
+          qrCompletionRef.current = true;
+          setQrStatus('completing');
+
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            email: data.email,
+            token_hash: data.tokenHash,
+            type: 'magiclink',
+          });
+
+          if (cancelled) return;
+
+          if (verifyError) {
+            qrCompletionRef.current = false;
+            setQrStatus('error');
+            toast.error(verifyError.message || 'Could not complete QR login.');
+            return;
+          }
+
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+
+          if (!user) {
+            qrCompletionRef.current = false;
+            setQrStatus('error');
+            toast.error('Unable to load your account. Please try again.');
+            return;
+          }
+
+          await finishSellerLogin(user, data.redirectPath || redirect);
+          return;
+        }
+      };
+
+      const intervalId = window.setInterval(poll, 2000);
+      poll();
+
+      return () => {
+        window.clearInterval(intervalId);
+      };
+    };
+
+    let cleanupPoll = null;
+    boot().then((cleanup) => {
+      cleanupPoll = cleanup;
+    });
+
+    return () => {
+      cancelled = true;
+      if (typeof cleanupPoll === 'function') {
+        cleanupPoll();
+      }
+    };
+  }, [loginMode, redirect, toast]);
+
+  const handleRefreshQr = async () => {
+    qrCompletionRef.current = false;
+    await startQrChallenge();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (submitting) return;
@@ -93,33 +259,7 @@ function SellerLoginPageInner() {
         return;
       }
 
-      const admin = await isAdmin(supabase, user.id);
-      if (admin) {
-        await supabase.auth.signOut();
-        toast.error('Please use the admin portal to log in.');
-        return;
-      }
-
-      const role = await getUserRole(user.id);
-      if (!role) {
-        toast.error('Your account is not configured for this portal.');
-        await supabase.auth.signOut();
-        return;
-      }
-
-      if (role !== ROLE_SELLER) {
-        toast.error('Please use the correct portal for your account.');
-        await supabase.auth.signOut();
-        return;
-      }
-
-      toast.success('Welcome back to Seller Centre!');
-      let target = !redirect || redirect === '/' ? '/seller' : redirect;
-      const sellerStatus = await getSellerStatusForUser(user.id);
-      if (sellerStatus === 'pending' || sellerStatus === 'rejected') {
-        target = '/seller/onboarding';
-      }
-      router.replace(target);
+      await finishSellerLogin(user);
     } catch (err) {
       console.error('Seller login error:', err);
       toast.error('An error occurred. Please try again later.');
@@ -367,43 +507,43 @@ function SellerLoginPageInner() {
                 <div className={styles.qrSection}>
                   <div className={styles.qrCodeWrapper}>
                     <div className={styles.qrCode}>
-                      <svg viewBox="0 0 200 200" className={styles.qrSvg}>
-                        {/* QR Code Pattern */}
-                        <rect width="200" height="200" fill="white"/>
-                        {/* Pattern simulation */}
-                        {Array.from({length: 10}).map((_, i) => 
-                          Array.from({length: 10}).map((_, j) => 
-                            Math.random() > 0.5 && (
-                              <rect 
-                                key={`${i}-${j}`}
-                                x={10 + j * 18} 
-                                y={10 + i * 18} 
-                                width="16" 
-                                height="16" 
-                                fill="black"
-                              />
-                            )
-                          )
-                        )}
-                        {/* Corner markers */}
-                        <rect x="10" y="10" width="50" height="50" fill="none" stroke="black" strokeWidth="8"/>
-                        <rect x="25" y="25" width="20" height="20" fill="black"/>
-                        <rect x="140" y="10" width="50" height="50" fill="none" stroke="black" strokeWidth="8"/>
-                        <rect x="155" y="25" width="20" height="20" fill="black"/>
-                        <rect x="10" y="140" width="50" height="50" fill="none" stroke="black" strokeWidth="8"/>
-                        <rect x="25" y="155" width="20" height="20" fill="black"/>
-                        {/* Lavisionario logo in center */}
-                        <circle cx="100" cy="100" r="20" fill="#204F38"/>
-                        <text x="100" y="108" fontSize="24" fill="white" textAnchor="middle" fontWeight="bold">L</text>
-                      </svg>
+                      {qrApproveUrl ? (
+                        <QRCode value={qrApproveUrl} size={168} bgColor="#ffffff" fgColor="#000000" />
+                      ) : (
+                        <div className={styles.qrPlaceholder} aria-hidden="true" />
+                      )}
                     </div>
                   </div>
 
-                  <p className={styles.qrText}>Scan QR code with {systemName} App</p>
-                  
-                  <button 
+                  <p className={styles.qrText}>
+                    {qrStatus === 'completing'
+                      ? 'Signing you in...'
+                      : qrStatus === 'expired'
+                        ? 'This QR code has expired.'
+                        : qrStatus === 'denied'
+                          ? 'Login request was denied on your phone.'
+                          : `Scan QR code with ${systemName} App`}
+                  </p>
+
+                  {(qrStatus === 'expired' || qrStatus === 'error' || qrStatus === 'denied') && (
+                    <button
+                      type="button"
+                      className={styles.refreshQrBtn}
+                      onClick={handleRefreshQr}
+                      disabled={qrRefreshing}
+                    >
+                      {qrRefreshing ? 'Refreshing...' : 'Refresh QR'}
+                    </button>
+                  )}
+
+                  <Link href="/seller/login/qr/scan" className={styles.howToScanBtn}>
+                    Open scanner in app
+                  </Link>
+
+                  <button
+                    type="button"
                     className={styles.howToScanBtn}
-                    onClick={() => setShowHowToScan(!showHowToScan)}
+                    onClick={() => setShowHowToScan(true)}
                   >
                     How To Scan
                   </button>
@@ -456,7 +596,11 @@ function SellerLoginPageInner() {
                 </div>
               </div>
               <p className={styles.modalText}>
-                Press the scan icon on the {systemName} app to open the QR code scanner
+                Open the installed {systemName} app or use{' '}
+                <Link href="/seller/login/qr/scan" className={styles.modalLink}>
+                  Open scanner in app
+                </Link>{' '}
+                to scan the QR code on this screen, then approve the login request on your phone.
               </p>
             </div>
           </div>
