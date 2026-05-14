@@ -57,7 +57,32 @@
 }
 
 .scannerTitle {
-  font-size: 22px;
+  font-size: 25px;
+}
+
+.scannerTitleRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scannerTitleIcon {
+  width: 1.15em;
+  height: 1.15em;
+  flex-shrink: 0;
+  color: currentColor;
+}
+
+.scannerCompactHeader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-primary, #204f38);
 }
 
 .subtitle {
@@ -200,6 +225,30 @@
   color: #8f2f28;
   font-size: 14px;
   line-height: 1.5;
+}
+
+.scannerCompact {
+  width: 100%;
+}
+
+.scannerWrapCompact {
+  max-width: none;
+  margin: 0;
+}
+
+.scannerModal .scannerCompactHeader {
+  margin-bottom: 18px;
+}
+
+.scannerModal .scannerWrap {
+  width: min(92%, 440px);
+  margin-inline: auto;
+  border-color: color-mix(in srgb, var(--color-primary) 42%, #24352d 58%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+.scannerModal .scannerFrame {
+  border-color: color-mix(in srgb, #ffffff 88%, var(--color-primary) 12%);
 }
 
 .stack {

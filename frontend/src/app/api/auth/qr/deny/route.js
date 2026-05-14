@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireSellerRoleApiUser } from '@/lib/auth/requireApiUser'
+import { requireActiveSellerApiUser } from '@/lib/auth/requireApiUser'
 import {
   QR_LOGIN_STATUS,
   hashQrLoginToken,
@@ -7,7 +7,7 @@ import {
 } from '@/lib/auth/qrLoginServer'
 
 export async function POST(request) {
-  const { supabaseAdmin, responseError } = await requireSellerRoleApiUser()
+  const { supabaseAdmin, responseError } = await requireActiveSellerApiUser()
   if (responseError) return responseError
 
   let body

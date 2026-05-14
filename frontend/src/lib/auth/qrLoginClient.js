@@ -1,3 +1,5 @@
+export const SELLER_QR_LOGIN_POLL_INTERVAL_MS = 2000
+
 /**
  * @typedef {{
  *   challengeId: string,

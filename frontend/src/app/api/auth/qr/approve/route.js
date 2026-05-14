@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireSellerRoleApiUser } from '@/lib/auth/requireApiUser'
+import { requireActiveSellerApiUser } from '@/lib/auth/requireApiUser'
 import {
   QR_LOGIN_STATUS,
   hashQrLoginToken,
@@ -44,7 +44,7 @@ async function loadPendingChallenge(admin, challengeId, approveToken) {
 }
 
 export async function POST(request) {
-  const { user, supabaseAdmin, responseError } = await requireSellerRoleApiUser()
+  const { user, supabaseAdmin, responseError } = await requireActiveSellerApiUser()
   if (responseError) return responseError
 
   let body
