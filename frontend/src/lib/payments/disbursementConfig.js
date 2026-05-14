@@ -12,11 +12,6 @@ function hasPaymongoWalletSourceAccount() {
  */
 export function getPaymongoDisbursementEnvIssues() {
   const issues = []
-  if (!isPaymongoDisbursementEnabled()) {
-    issues.push(
-      'PAYMONGO_DISBURSEMENT_ENABLED is not true — admin release finalizes escrow in the database and seller ledger only; pay sellers outside PayMongo.',
-    )
-  }
   if (!process.env.PAYMONGO_SECRET_KEY) {
     issues.push('PAYMONGO_SECRET_KEY is missing.')
   }

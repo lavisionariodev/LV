@@ -12,6 +12,24 @@ import styles from "./administrator.module.css";
 import { useSiteContent } from "@/lib/siteContent/client";
 import { useAuthToast } from "@/contexts/ToastContext";
 
+function formatAdminAuthError(message, fallback = "Login failed. Please check your email and password.") {
+  if (!message || typeof message !== "string") return fallback;
+  const normalized = message.toLowerCase();
+  if (normalized.includes("invalid login credentials") || normalized.includes("invalid credentials")) {
+    return "Invalid credentials.";
+  }
+  if (normalized.includes("email not confirmed")) {
+    return "Please confirm your email before signing in.";
+  }
+  if (normalized.includes("too many requests") || normalized.includes("rate limit")) {
+    return "Too many attempts. Please wait and try again.";
+  }
+  if (normalized.includes("user not found")) {
+    return "Invalid credentials.";
+  }
+  return fallback;
+}
+
 export default function AdminLoginPage() {
   const { data: siteContent } = useSiteContent();
   const systemName = siteContent?.systemName || "La Visionario";
@@ -50,22 +68,14 @@ export default function AdminLoginPage() {
       password: signInData.password,
     });
     if (signInError) {
-      const raw = signInError.message || "Login failed. Please check your credentials.";
-      const normalized = raw.toLowerCase();
-      if (normalized.includes("invalid login credentials")) {
-        setError(
-          "Invalid login credentials. Admin accounts must exist in Supabase Authentication (email/password) and be whitelisted in the admins table."
-        );
-      } else {
-        setError(raw);
-      }
+      setError(formatAdminAuthError(signInError.message));
       setLoading(false);
       return;
     }
     const admin = await isAdmin(supabase, data.user?.id);
     if (!admin) {
       await signOut();
-      setError("Access denied. Admin only.");
+      setError("This account does not have administrator access.");
       setLoading(false);
       return;
     }
@@ -196,7 +206,14 @@ export default function AdminLoginPage() {
           setError("");
         }}
         portal="administrator"
-        onError={setError}
+        onError={(message) =>
+          setError(
+            formatAdminAuthError(
+              message,
+              "We could not send a reset link. Please check your email and try again."
+            )
+          )
+        }
       />
     </div>
   );
