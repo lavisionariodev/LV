@@ -1,34 +1,9 @@
-import { supabase } from '@/lib/supabase/client'
-
 function normalizeListingRow(row) {
   const imageUrls = Array.isArray(row.image_urls) ? row.image_urls : []
   return {
     ...row,
     image_urls: imageUrls,
   }
-}
-
-export async function listMySellerListings() {
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return { data: [], error: 'Not authenticated.' }
-  }
-
-  const { data, error } = await supabase
-    .from('seller_listings')
-    .select('*')
-    .eq('seller_user_id', user.id)
-    .order('created_at', { ascending: false })
-
-  if (error) {
-    return { data: [], error: error.message || 'Failed to load listings.' }
-  }
-
-  return { data: (data || []).map(normalizeListingRow), error: null }
 }
 
 export async function uploadListingImages(files) {

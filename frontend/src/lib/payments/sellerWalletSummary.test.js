@@ -40,6 +40,24 @@ test('resolveEscrowDisbursementState marks legacy released rows without disburse
   assert.equal(resolveEscrowDisbursementState({ status: 'escrowed' }, { status: 'submitted' }), 'submitted')
 })
 
+test('buildSellerWalletSummary does not double-count payout_release ledger rows in paidOutNet', () => {
+  const escrows = [
+    { id: 'e1', status: 'released', gross_amount: 800, commission_amount: 80, net_amount: 720, currency: 'PHP' },
+  ]
+  const disbursements = [{ escrow_id: 'e1', amount_php: 720, status: 'succeeded' }]
+  const ledger = [
+    { entry_type: 'payout_release', amount_php: 720 },
+    { entry_type: 'withdrawal', amount_php: 100 },
+  ]
+
+  const summary = buildSellerWalletSummary(escrows, disbursements, ledger)
+
+  assert.equal(summary.releasedNet, 720)
+  assert.equal(summary.paidOutNet, 820)
+  assert.equal(summary.payoutReleaseLedgerNet, 720)
+  assert.equal(summary.availableNet, 620)
+})
+
 test('isPaymongoDisbursementEnabled reads env flag', () => {
   const previous = process.env.PAYMONGO_DISBURSEMENT_ENABLED
   process.env.PAYMONGO_DISBURSEMENT_ENABLED = 'true'

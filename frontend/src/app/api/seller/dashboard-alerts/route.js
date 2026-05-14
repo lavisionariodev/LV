@@ -91,3 +91,80 @@ export async function POST(request) {
     { status: 200 },
   )
 }
+
+export async function PATCH(request) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+    error: userErr,
+  } = await supabase.auth.getUser()
+  if (userErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const body = await request.json().catch(() => ({}))
+  const alertId = String(body?.alertId || '').trim().slice(0, 160)
+  const resolutionNote = String(body?.resolutionNote || '').trim().slice(0, 2000)
+  const alertType = String(body?.type || 'Alert').trim().slice(0, 120)
+  const alertMessage = String(body?.message || '').trim().slice(0, 1000)
+  const alertPriority = String(body?.priority || 'medium').trim().slice(0, 40)
+
+  if (!alertId) {
+    return NextResponse.json({ error: 'Missing alertId.' }, { status: 400 })
+  }
+
+  const supabaseAdmin = getSupabaseAdmin()
+  const auth = await requireSeller(supabaseAdmin, user.id)
+  if (auth.response) return auth.response
+
+  const existing = (await listDashboardNotifications(supabaseAdmin, user.id)).find(
+    (row) => String(row?.metadata?.alertId || '') === alertId,
+  )
+
+  if (!existing) {
+    if (!alertMessage) {
+      return NextResponse.json({ error: 'Alert message is required to resolve.' }, { status: 400 })
+    }
+    await notifySeller(supabaseAdmin, user.id, {
+      type: 'alerts',
+      title: alertType,
+      body: alertMessage,
+      metadata: {
+        source: 'seller_dashboard',
+        alertId,
+        priority: alertPriority,
+        ...(resolutionNote ? { resolutionNote, resolutionNoteAt: new Date().toISOString() } : {}),
+      },
+      dedupeKey: `seller_dashboard:${user.id}:${alertId}`,
+    })
+  }
+
+  const rows = await listDashboardNotifications(supabaseAdmin, user.id)
+  const target = rows.find((row) => String(row?.metadata?.alertId || '') === alertId)
+  if (!target?.id) {
+    return NextResponse.json({ error: 'Could not resolve alert.' }, { status: 404 })
+  }
+
+  const nowIso = new Date().toISOString()
+  const nextMetadata = {
+    ...(target.metadata || {}),
+    ...(resolutionNote ? { resolutionNote, resolutionNoteAt: nowIso } : {}),
+  }
+
+  const { error: updateErr } = await supabaseAdmin
+    .from('user_notifications')
+    .update({
+      read_at: target.read_at || nowIso,
+      resolved_at: nowIso,
+      metadata: nextMetadata,
+    })
+    .eq('id', target.id)
+    .eq('user_id', user.id)
+
+  if (updateErr) {
+    return NextResponse.json({ error: updateErr.message || 'Failed to resolve alert.' }, { status: 500 })
+  }
+
+  return NextResponse.json(
+    { notifications: await listDashboardNotifications(supabaseAdmin, user.id) },
+    { status: 200 },
+  )
+}

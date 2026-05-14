@@ -5,6 +5,54 @@ import { rowToSiteContent } from './mapping'
 const TABLE = 'site_content'
 const GLOBAL_ID = 'global'
 
+export function useAdminSiteContent() {
+  const [data, setData] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function load() {
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        const res = await fetch('/api/admin/site-content', { cache: 'no-store' })
+        const body = await res.json().catch(() => null)
+
+        if (!isMounted) return
+
+        if (!res.ok) {
+          const message = body?.error || 'Failed to load site content.'
+          setError(new Error(message))
+          setData(null)
+          setIsLoading(false)
+          return
+        }
+
+        setData(body?.data ?? null)
+        setError(null)
+      } catch (err) {
+        if (!isMounted) return
+        console.error('Failed to load site content from admin API:', err)
+        setError(err instanceof Error ? err : new Error('Failed to load site content.'))
+        setData(null)
+      } finally {
+        if (isMounted) setIsLoading(false)
+      }
+    }
+
+    load()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  return { data, isLoading, error }
+}
+
 export function useSiteContent() {
   const [data, setData] = useState(null)
   const [isLoading, setIsLoading] = useState(true)

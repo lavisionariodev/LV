@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { fetchActivePartnersDirectory, formatTenureYearsShort } from '@/lib/partners/client'
 import { normalizeSellerSpecialties } from '@/lib/sellers/client'
 import { fetchActiveShopListings, mergeShopListings } from '@/lib/shop-listings/client'
+import { enrichListingsWithRatingAggregates } from '@/lib/ratings/listingRatingAggregates'
 import { buildShopCategoryCatalog } from '@/lib/shop/categories'
 import { useSiteContent } from '@/lib/siteContent/client'
 import styles from './homepage.module.css'
@@ -117,9 +118,9 @@ function ShopByCategorySection() {
     let cancelled = false
 
     fetchActiveShopListings({ bustCache: true })
-      .then((rows) => {
+      .then(async (rows) => {
         if (cancelled) return
-        const listings = mergeShopListings(rows)
+        const listings = await enrichListingsWithRatingAggregates(mergeShopListings(rows))
         const nextCategories = buildShopCategoryCatalog(listings).map((cat) => ({
             id: cat.id,
             title: cat.label,

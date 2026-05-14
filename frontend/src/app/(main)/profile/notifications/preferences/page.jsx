@@ -2,8 +2,8 @@
 
 import Link from 'next/link'
 import BuyerNotificationPreferencesPanel from '@/features/buyer/notifications/BuyerNotificationPreferencesPanel'
-import styles from '../profile.module.css'
-import notifStyles from './notifications.module.css'
+import styles from '@/app/(main)/profile/profile.module.css'
+import notifStyles from '@/app/(main)/profile/notifications/notifications.module.css'
 
 export default function BuyerNotificationPreferencesPage() {
   return (

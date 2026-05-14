@@ -3,13 +3,9 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
 import { isUuidLike } from '@/shared/utils/uuidLike'
 import { listingIdFromOrderItemProductId } from '@/lib/orders/listingIdFromProductId'
+import { loadAggregatesByServiceId, toAvgRating } from '@/lib/ratings/ratingsAggregatesServer'
 
 const SERVICE_ID_ALLOWED = new Set(['cremation', 'traditional-burial', 'memorial-planning'])
-
-function toAvgRating(num) {
-  if (!Number.isFinite(num)) return null
-  return Number(num.toFixed(1))
-}
 
 function buildPairKey(sellerId, serviceId, listingId) {
   if (listingId) return `${sellerId}::${serviceId}::${listingId}`
@@ -42,6 +38,16 @@ export async function GET(request) {
     .split(',')
     .map((s) => String(s ?? '').trim())
     .filter(Boolean)
+
+  const servicesParam = searchParams.get('services') || ''
+  const serviceIdsForAggregate = [
+    ...new Set(
+      servicesParam
+        .split(',')
+        .map((s) => String(s ?? '').trim())
+        .filter((id) => SERVICE_ID_ALLOWED.has(id)),
+    ),
+  ]
 
   /** @type {Array<{sellerId:string,serviceId:string,listingId:string}>} */
   const parsedPairs = []
@@ -206,11 +212,25 @@ export async function GET(request) {
     }
   }
 
-  if (sellerIdsForWide.length === 0 && pairs.length === 0) {
+  if (sellerIdsForWide.length === 0 && pairs.length === 0 && serviceIdsForAggregate.length === 0) {
     return NextResponse.json(
-      { ok: true, aggregatesBySellerId: {}, aggregatesByPair: {} },
+      { ok: true, aggregatesBySellerId: {}, aggregatesByPair: {}, aggregatesByServiceId: {} },
       { status: 200 },
     )
+  }
+
+  /** @type {Record<string,{avgRating:number|null,reviewCount:number}>} */
+  let aggregatesByServiceId = {}
+  if (serviceIdsForAggregate.length > 0) {
+    const { aggregatesByServiceId: loaded, error: serviceErr } = await loadAggregatesByServiceId(
+      supabaseAdmin,
+      serviceIdsForAggregate,
+    )
+    if (serviceErr) {
+      apiLog('ratings.aggregates.service_failed', { err: errorMessage(serviceErr) })
+      return NextResponse.json({ error: 'Failed to load ratings aggregates.' }, { status: 500 })
+    }
+    aggregatesByServiceId = loaded
   }
 
   return NextResponse.json(
@@ -218,6 +238,7 @@ export async function GET(request) {
       ok: true,
       aggregatesBySellerId,
       aggregatesByPair,
+      aggregatesByServiceId,
     },
     { status: 200 },
   )

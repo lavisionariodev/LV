@@ -18,10 +18,82 @@ function getBasicAuthHeader(secretKey) {
 }
 
 /**
+ * @param {{
+ *   amountCentavos: number,
+ *   currency?: string,
+ *   successUrl: string,
+ *   cancelUrl: string,
+ *   referenceNumber: string,
+ *   metadata?: Record<string, unknown>,
+ *   lineItemName?: string,
+ * }} params
+ * @returns {Promise<{ ok: true, checkoutId: string, checkoutUrl: string, raw: unknown } | { ok: false, error: string, status?: number, raw?: unknown }>}
+ */
+export async function createPaymongoCheckoutSession(params) {
+  const secretKey = getPaymongoSecretKey()
+  if (!secretKey) {
+    return { ok: false, error: 'Missing PAYMONGO_SECRET_KEY on server.' }
+  }
+
+  const amountCentavos = Number(params.amountCentavos)
+  if (!Number.isFinite(amountCentavos) || amountCentavos <= 0) {
+    return { ok: false, error: 'Invalid checkout amount.' }
+  }
+
+  const currency = params.currency || 'PHP'
+  const res = await fetch(`${PAYMONGO_API_BASE}/v1/checkout_sessions`, {
+    method: 'POST',
+    headers: {
+      Authorization: getBasicAuthHeader(secretKey),
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({
+      data: {
+        attributes: {
+          line_items: [
+            {
+              name: params.lineItemName || 'Booking payment',
+              amount: amountCentavos,
+              quantity: 1,
+              currency,
+            },
+          ],
+          payment_method_types: ['card', 'gcash'],
+          success_url: params.successUrl,
+          cancel_url: params.cancelUrl,
+          reference_number: params.referenceNumber,
+          metadata: params.metadata || {},
+        },
+      },
+    }),
+  })
+
+  const raw = await res.json().catch(() => null)
+  if (!res.ok) {
+    const msg =
+      raw?.errors?.[0]?.detail ||
+      raw?.errors?.[0]?.code ||
+      raw?.message ||
+      `PayMongo checkout session failed (${res.status})`
+    return { ok: false, error: String(msg), status: res.status, raw }
+  }
+
+  const checkoutId = raw?.data?.id ? String(raw.data.id) : ''
+  const checkoutUrl = raw?.data?.attributes?.checkout_url ? String(raw.data.attributes.checkout_url) : ''
+  if (!checkoutId || !checkoutUrl) {
+    return { ok: false, error: 'PayMongo response missing checkout_url.', raw }
+  }
+
+  return { ok: true, checkoutId, checkoutUrl, raw }
+}
+
+/**
  * @param {number} amountPhp
  * @returns {number | null}
  */
 export function phpToCentavos(amountPhp) {
+  if (amountPhp == null || amountPhp === '') return null
   const num = Number(amountPhp)
   if (!Number.isFinite(num)) return null
   return Math.round(num * 100)

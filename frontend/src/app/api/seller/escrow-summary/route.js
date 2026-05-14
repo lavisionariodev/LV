@@ -121,11 +121,31 @@ export async function GET(request) {
   }
 
   const summary = buildSellerWalletSummary(allRows, disbursements, ledgerEntries)
+  const ledgerLimit = parsePositiveInt(searchParams.get('ledgerLimit'), 50, 200)
+  const ledgerOffset = Math.max(0, parseInt(String(searchParams.get('ledgerOffset') || '0'), 10) || 0)
+  const ledgerPageRows = ledgerEntries.slice(ledgerOffset, ledgerOffset + ledgerLimit).map((row) => ({
+    id: row.id,
+    entryType: row.entry_type,
+    amountPhp: row.amount_php,
+    currency: row.currency,
+    orderId: row.order_id,
+    escrowId: row.escrow_id,
+    disbursementId: row.disbursement_id,
+    metadata: row.metadata ?? {},
+    createdAt: row.created_at,
+  }))
 
   return NextResponse.json(
     {
       summary,
       escrows: rows,
+      ledgerEntries: ledgerPageRows,
+      ledgerPage: {
+        limit: ledgerLimit,
+        offset: ledgerOffset,
+        total: ledgerEntries.length,
+        hasMore: ledgerOffset + ledgerLimit < ledgerEntries.length,
+      },
       page: {
         limit,
         offset,

@@ -67,6 +67,7 @@ function SellerAnalyticsRevenueReportsSkeleton() {
 export default function SellerAnalyticsRevenueReportsPage() {
   const { orders, loading, error, reload } = useSellerAnalyticsData()
   const [escrowSummary, setEscrowSummary] = useState(null)
+  const [ledgerEntries, setLedgerEntries] = useState([])
   const [escrowError, setEscrowError] = useState('')
 
   useEffect(() => {
@@ -78,6 +79,7 @@ export default function SellerAnalyticsRevenueReportsPage() {
         if (!res.ok) throw new Error(body?.error || 'Failed to load escrow report.')
         if (!cancelled) {
           setEscrowSummary(body?.summary || null)
+          setLedgerEntries(Array.isArray(body?.ledgerEntries) ? body.ledgerEntries : [])
           setEscrowError('')
         }
       } catch (err) {
@@ -247,6 +249,50 @@ export default function SellerAnalyticsRevenueReportsPage() {
           </footer>
         </article>
       </section>
+
+      {Number(escrowSummary?.legacyReleasedCount || 0) > 0 ? (
+        <section className={styles.chartCard} aria-label="Legacy manual releases">
+          <div className={styles.chartHeader}>
+            <div className={styles.chartTitleGroup}>
+              <h2 className={styles.chartTitle}>Legacy manual releases</h2>
+              <p className={styles.chartSubtitle}>
+                {escrowSummary.legacyReleasedCount} escrow release
+                {escrowSummary.legacyReleasedCount === 1 ? '' : 's'} completed before automated PayMongo
+                disbursement tracking ({formatPhpWholeAmount(escrowSummary.legacyReleasedNet || 0)} net).
+              </p>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {ledgerEntries.length > 0 ? (
+        <section className={styles.chartCard} aria-label="Wallet ledger history">
+          <div className={styles.chartHeader}>
+            <div className={styles.chartTitleGroup}>
+              <h2 className={styles.chartTitle}>Wallet ledger</h2>
+              <p className={styles.chartSubtitle}>Recent wallet movements tied to orders, refunds, and payouts.</p>
+            </div>
+          </div>
+          <div className={styles.chartBody}>
+            <ul className={styles.chartLegend}>
+              {ledgerEntries.map((entry) => (
+                <li key={entry.id} className={styles.legendItem}>
+                  <span className={styles.legendLabel}>
+                    {entry.entryType} · {formatPhpWholeAmount(entry.amountPhp || 0)}
+                    {entry.orderId ? ` · order ${entry.orderId}` : ''}
+                    {entry.createdAt
+                      ? ` · ${new Date(entry.createdAt).toLocaleString('en-PH', {
+                          dateStyle: 'medium',
+                          timeStyle: 'short',
+                        })}`
+                      : ''}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      ) : null}
 
       <SellerPayoutRequestsPanel />
     </div>

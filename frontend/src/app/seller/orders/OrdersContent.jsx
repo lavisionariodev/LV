@@ -28,10 +28,6 @@ import { formatCount } from '@/shared/utils/formatCount'
 import { useDebouncedEffect } from '@/shared/hooks'
 import { readEnum, readString, replaceUrlQuery } from '@/shared/utils/queryParams'
 import {
-  mapSellerOrderForOrdersPage,
-  SELLER_ORDER_DETAIL_SELECT,
-} from '@/lib/seller/sellerOrderAnalytics'
-import {
   canCancelUnpaidBooking,
   canDeclinePaidBooking,
   fulfillmentStatusFromOrder,
@@ -96,44 +92,13 @@ function sellerPaymentBadge(paymentStatus) {
   return { label: 'Pending', badgeClass: styles.badgePending }
 }
 
-function paymentMethodLabel(payment) {
-  const provider = String(payment?.provider || '').trim()
-  const status = String(payment?.status || '').trim()
-  const reference = String(payment?.paymongo_reference || '').trim()
-  const label = provider
-    ? provider.charAt(0).toUpperCase() + provider.slice(1)
-    : status || reference
-      ? 'Payment provider'
-      : '—'
-  return reference ? `${label} · ${reference}` : label
-}
-
 const IMAGE_EXT_RE = /\.(png|jpe?g|webp|gif)$/i
 const PDF_EXT_RE = /\.pdf$/i
-
-function fileNameFromPath(path) {
-  const s = String(path || '').split('?')[0]
-  return s.split('/').filter(Boolean).pop() || 'Attachment'
-}
 
 function attachmentKind(name) {
   if (IMAGE_EXT_RE.test(name)) return 'photo'
   if (PDF_EXT_RE.test(name)) return 'pdf'
   return 'file'
-}
-
-function mapDisputeAttachmentPaths(dispute) {
-  const paths = Array.isArray(dispute?.attachment_paths) ? dispute.attachment_paths : []
-  return paths.map((path, idx) => {
-    const label = fileNameFromPath(path)
-    return {
-      id: `${dispute.id}-${idx}`,
-      label,
-      path,
-      disputeId: dispute.id,
-      type: attachmentKind(label),
-    }
-  })
 }
 
 /**
@@ -309,67 +274,16 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
   const loadOrders = useCallback(async ({ signal } = {}) => {
     if (!user?.id || !isSeller) return
     try {
-      const { data, error } = await supabase
-      .from('orders')
-      .select(SELLER_ORDER_DETAIL_SELECT)
-      .eq('seller_user_id', user.id)
-      .order('created_at', { ascending: false })
-      .abortSignal?.(signal)
-
-    if (signal?.aborted) return
-    if (error) {
-      showOrderNotice('error', error.message || 'Failed to load orders.')
-      return
-    }
-
-    const { data: disputeRows } = await supabase
-      .from('disputes')
-      .select('id,order_id,reason,description,status,opened_at,resolution_notes,attachment_paths')
-      .eq('seller_user_id', user.id)
-      .in('status', ['open', 'under_review'])
-      .order('opened_at', { ascending: false })
-      .abortSignal?.(signal)
-
-    if (signal?.aborted) return
-
-    const orderIds = (data ?? []).map((o) => o.id).filter(Boolean)
-    const paymentByOrder = new Map()
-    if (orderIds.length) {
-      const { data: paymentLinks } = await supabase
-        .from('payment_orders')
-        .select('order_id,payments(provider,status,paymongo_reference,created_at)')
-        .in('order_id', orderIds)
-        .abortSignal?.(signal)
-
+      const res = await fetch('/api/seller/orders', { cache: 'no-store', signal })
       if (signal?.aborted) return
-      for (const link of paymentLinks ?? []) {
-        const payment = Array.isArray(link.payments) ? link.payments[0] : link.payments
-        if (link.order_id && payment && !paymentByOrder.has(link.order_id)) {
-          paymentByOrder.set(link.order_id, payment)
-        }
+      const body = await res.json().catch(() => null)
+      if (!res.ok) {
+        showOrderNotice('error', body?.error || 'Failed to load orders.')
+        return
       }
-    }
 
-    const disputeByOrder = new Map()
-    for (const dispute of disputeRows ?? []) {
-      if (!disputeByOrder.has(dispute.order_id)) {
-        disputeByOrder.set(dispute.order_id, dispute)
-      }
-    }
-
-    const mapped = (data ?? []).map((o) => {
-        const helpRequest = disputeByOrder.get(o.id) ?? null
-        const helpAttachments = mapDisputeAttachmentPaths(helpRequest)
-        const payment = paymentByOrder.get(o.id) ?? null
-        return mapSellerOrderForOrdersPage(o, {
-          paymentMethod: paymentMethodLabel(payment),
-          helpRequest,
-          helpAttachments,
-        })
-      })
-
-    setOrders(mapped)
-    setOrderNotice((prev) => (prev?.type === 'error' ? null : prev))
+      setOrders(Array.isArray(body?.orders) ? body.orders : [])
+      setOrderNotice((prev) => (prev?.type === 'error' ? null : prev))
     } catch (err) {
       if (!signal?.aborted) {
         showOrderNotice('error', err?.message || 'Failed to load orders.')

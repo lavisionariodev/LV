@@ -36,7 +36,6 @@ import {
   SellerListingFormFields,
 } from './SellerListingForm'
 import {
-  listMySellerListings,
   submitListingForReview,
   updateSellerListing,
   deleteSellerListing,
@@ -841,10 +840,13 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
     const load = async () => {
       setLoadingData(true)
 
-      const [{ data: listingRows, error: listingError }, authRes] = await Promise.all([
-        listMySellerListings(),
+      const [listingsRes, authRes] = await Promise.all([
+        fetch('/api/seller/listings', { cache: 'no-store' }),
         supabase.auth.getUser(),
       ])
+      const listingsBody = await listingsRes.json().catch(() => null)
+      const listingRows = listingsRes.ok ? listingsBody?.listings : null
+      const listingError = listingsRes.ok ? null : listingsBody?.error || 'Failed to load listings.'
 
       if (!mounted) return
 
