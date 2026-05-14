@@ -6,6 +6,7 @@ import { TbUsers } from 'react-icons/tb'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import styles from '../analytics.module.css'
 import { useSellerAnalyticsData } from '@/lib/seller/useSellerAnalyticsData'
+import SellerAnalyticsLoadError from '../SellerAnalyticsLoadError'
 import {
   averageMonthsBetweenRepeatBookings,
   familiesSupportedLast12Months,
@@ -67,7 +68,7 @@ function SellerAnalyticsCustomerInsightsSkeleton() {
 export default function SellerAnalyticsCustomerInsightsPage() {
   const { data: siteContent } = useSiteContent()
   const systemName = siteContent?.systemName || 'La Visionario'
-  const { orders, loading, error } = useSellerAnalyticsData()
+  const { orders, loading, error, reload } = useSellerAnalyticsData()
 
   const chartData = useMemo(() => newVsReturningByMonth(orders, 6), [orders])
   const maxStack = useMemo(
@@ -86,9 +87,12 @@ export default function SellerAnalyticsCustomerInsightsPage() {
     return <SellerAnalyticsCustomerInsightsSkeleton />
   }
 
+  if (error) {
+    return <SellerAnalyticsLoadError onRetry={() => reload()} />
+  }
+
   return (
     <div className={styles.pageWrap}>
-      {error ? <p className={styles.pageError}>{error}</p> : null}
 
       <section aria-label="Customer summary" className={styles.summaryStrip}>
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftGreen}`}>

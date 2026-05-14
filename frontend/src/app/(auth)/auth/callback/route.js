@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 /**
  * GET /auth/callback - Single handler for Google OAuth.
@@ -57,7 +58,7 @@ export async function GET(request) {
 
   let { data: userRow } = await supabase
     .from("users")
-    .select("role")
+    .select("role, status")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -174,6 +175,24 @@ export async function GET(request) {
     }
 
     return NextResponse.redirect(loginUrl);
+  }
+
+  if (portal === "buyer") {
+    const supabaseAdmin = getSupabaseAdmin();
+    const { data: buyerRow } = await supabaseAdmin
+      .from("users")
+      .select("status")
+      .eq("id", user.id)
+      .maybeSingle();
+    const buyerStatus = String(buyerRow?.status || userRow?.status || "active").toLowerCase();
+    if (buyerStatus === "suspended") {
+      await supabase.auth.signOut();
+      loginUrl.searchParams.set(
+        "error",
+        "Your buyer account has been suspended. Please contact support if you believe this is in error.",
+      );
+      return NextResponse.redirect(loginUrl);
+    }
   }
 
   if (portal === "seller" && userRow.role !== "seller") {

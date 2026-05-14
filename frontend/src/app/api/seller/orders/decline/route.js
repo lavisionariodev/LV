@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { requireActiveSellerApiUser } from '@/lib/auth/requireApiUser'
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
 import { createPaymongoRefund, phpToCentavos } from '@/lib/paymongo/client'
 import { insertOrderRefundEvent, insertUserNotification } from '@/lib/payments/refundReconcile'
@@ -11,17 +10,8 @@ function paidOrder(order) {
 }
 
 export async function POST(request) {
-  const supabase = await createClient()
-  const supabaseAdmin = getSupabaseAdmin()
-
-  const {
-    data: { user },
-    error: userErr,
-  } = await supabase.auth.getUser()
-
-  if (userErr || !user) {
-    return NextResponse.json({ error: 'You must be signed in to decline orders.' }, { status: 401 })
-  }
+  const { user, supabaseAdmin, responseError } = await requireActiveSellerApiUser()
+  if (responseError) return responseError
 
   const body = await request.json().catch(() => ({}))
   const orderId = String(body?.orderId ?? '').trim()

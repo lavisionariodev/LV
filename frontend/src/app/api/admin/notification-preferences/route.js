@@ -1,30 +1,30 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { requireAdminApiUser } from '@/lib/auth/requireAdminRoute'
 import { mergeAdminNotificationPreferences } from '@/lib/notifications/preferenceSchema'
 
-async function requireAdminUser(supabase, userId) {
+async function loadAdminNotificationPreferences(userId) {
   const supabaseAdmin = getSupabaseAdmin()
   const { data: admin, error } = await supabaseAdmin
     .from('admins')
-    .select('id, notification_preferences')
+    .select('notification_preferences')
     .eq('id', userId)
     .maybeSingle()
+
   if (error || !admin) {
-    return { response: NextResponse.json({ error: 'Admin account required.' }, { status: 403 }) }
+    return {
+      response: NextResponse.json({ error: 'Admin account required.' }, { status: 403 }),
+    }
   }
+
   return { admin }
 }
 
 export async function GET() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-    error: userErr,
-  } = await supabase.auth.getUser()
-  if (userErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { user, responseError } = await requireAdminApiUser()
+  if (responseError) return responseError
 
-  const auth = await requireAdminUser(supabase, user.id)
+  const auth = await loadAdminNotificationPreferences(user.id)
   if (auth.response) return auth.response
 
   return NextResponse.json(
@@ -34,14 +34,10 @@ export async function GET() {
 }
 
 export async function PATCH(request) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-    error: userErr,
-  } = await supabase.auth.getUser()
-  if (userErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { user, responseError } = await requireAdminApiUser()
+  if (responseError) return responseError
 
-  const auth = await requireAdminUser(supabase, user.id)
+  const auth = await loadAdminNotificationPreferences(user.id)
   if (auth.response) return auth.response
 
   const body = await request.json().catch(() => ({}))

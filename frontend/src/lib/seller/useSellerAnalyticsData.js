@@ -29,13 +29,26 @@ export function useSellerAnalyticsData() {
       if (!res.ok) {
         setOrders([])
         setListings([])
-        setError(body?.error || 'Could not load orders.')
+        setError(body?.error || "Couldn't load analytics.")
       } else {
         setOrders(Array.isArray(body?.orders) ? body.orders : [])
         setListings(Array.isArray(body?.listings) ? body.listings : [])
       }
     },
     [user, isSeller],
+  )
+
+  const reload = useCallback(
+    async (opts) => {
+      if (!user?.id || !isSeller) return
+      setLoading(true)
+      try {
+        await load(opts)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [load, user, isSeller],
   )
 
   useEffect(() => {
@@ -93,5 +106,5 @@ export function useSellerAnalyticsData() {
     }
   }, [authLoading, user, isSeller, load])
 
-  return { orders, listings, loading, error, reload: load }
+  return { orders, listings, loading, error, reload }
 }

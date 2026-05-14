@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { TbCurrencyPeso, TbDownload } from 'react-icons/tb'
 import styles from '../analytics.module.css'
 import { useSellerAnalyticsData } from '@/lib/seller/useSellerAnalyticsData'
+import SellerAnalyticsLoadError from '../SellerAnalyticsLoadError'
 import {
   averagePaidBookingValueLastNMonths,
   bestMonthLabelLastNMonths,
@@ -64,7 +65,7 @@ function SellerAnalyticsRevenueReportsSkeleton() {
 }
 
 export default function SellerAnalyticsRevenueReportsPage() {
-  const { orders, loading, error } = useSellerAnalyticsData()
+  const { orders, loading, error, reload } = useSellerAnalyticsData()
   const [escrowSummary, setEscrowSummary] = useState(null)
   const [escrowError, setEscrowError] = useState('')
 
@@ -106,9 +107,12 @@ export default function SellerAnalyticsRevenueReportsPage() {
     return <SellerAnalyticsRevenueReportsSkeleton />
   }
 
+  if (error) {
+    return <SellerAnalyticsLoadError onRetry={() => reload()} />
+  }
+
   return (
     <div className={styles.pageWrap}>
-      {error ? <p className={styles.pageError}>{error}</p> : null}
       {escrowError ? <p className={styles.pageError}>{escrowError}</p> : null}
 
       <div className={styles.downloadRow}>

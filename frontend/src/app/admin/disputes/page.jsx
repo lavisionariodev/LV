@@ -220,7 +220,12 @@ export default function AdminDisputesPage() {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ status: nextStatus }),
+            body: JSON.stringify({
+              status: nextStatus,
+              ...(nextStatus === 'resolved' || nextStatus === 'closed'
+                ? { outcome: 'no_financial_change' }
+                : {}),
+            }),
           }).then(async (res) => {
             if (!res.ok) {
               const body = await res.json().catch(() => null)
@@ -742,7 +747,12 @@ export default function AdminDisputesPage() {
                   bulkStatusConfirm.nextStatus === 'under_review'
                     ? 'under review'
                     : STATUS_LABEL[bulkStatusConfirm.nextStatus] ?? bulkStatusConfirm.nextStatus
-                return `Set ${bulkStatusConfirm.ids.length} selected dispute${bulkStatusConfirm.ids.length > 1 ? 's' : ''} to "${label}"?`
+                const closeNote =
+                  bulkStatusConfirm.nextStatus === 'resolved' ||
+                  bulkStatusConfirm.nextStatus === 'closed'
+                    ? ' Each case will close with outcome “no financial change”. Use the dispute detail page to refund a buyer or lift escrow holds.'
+                    : ''
+                return `Set ${bulkStatusConfirm.ids.length} selected dispute${bulkStatusConfirm.ids.length > 1 ? 's' : ''} to "${label}"?${closeNote}`
               })()
             : ''
         }

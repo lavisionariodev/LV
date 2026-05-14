@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useState, useMemo, useSyncExternalStore, useId } from 'react'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { isBuyerRole } from '@/lib/auth/roles'
 import styles from './cart.module.css'
 import { formatPhpAmount } from '@/lib/cart/formatPhp'
 import { useSiteContent } from '@/lib/siteContent/client'
@@ -33,7 +34,7 @@ function mapCartItemToRow(item) {
 export default function CartPage() {
   const { items: cartItems, loading: cartLoading, updateQty: cartUpdateQty, removeItem: cartRemoveItem } =
     useCart()
-  const { authLoading, isBuyer, user } = useAuth()
+  const { authLoading, isBuyer, user, role, buyerAccountStatus } = useAuth()
   const { data: siteContent } = useSiteContent()
   const mounted = useSyncExternalStore(
     () => () => {},
@@ -110,6 +111,7 @@ export default function CartPage() {
     selectedVisible.size > 0
       ? `/checkout?items=${encodeURIComponent([...selectedVisible].join(","))}`
       : "/checkout"
+  const buyerSuspended = Boolean(user && isBuyerRole(role) && buyerAccountStatus?.status === 'suspended')
 
   const isEmpty = rows.length === 0
   const showCartLoading = !authLoading && isBuyer && user && cartLoading
@@ -287,7 +289,18 @@ export default function CartPage() {
       {/* ── Content ── */}
       <div className={styles.content}>
 
-        {isEmpty ? (
+        {buyerSuspended ? (
+          <div className={styles.emptySection}>
+            <h2 className={styles.emptyTitle}>Cart unavailable</h2>
+            <p className={styles.emptySub}>
+              Your buyer account has been suspended. Checkout and booking actions are unavailable until your account is
+              restored.
+            </p>
+            <Link href="/" className={styles.emptyLink}>
+              Back to homepage
+            </Link>
+          </div>
+        ) : isEmpty ? (
           /* ── Empty State ── */
           <div className={styles.emptySection}>
             <div className={styles.emptyIcon}>

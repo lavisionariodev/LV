@@ -262,6 +262,38 @@
   box-shadow: none;
 }
 
+.confirmBtnBusy.confirmBtnDanger,
+.confirmBtnDanger:disabled,
+.confirmBtnDanger[aria-busy='true'] {
+  border-color: #dc2626;
+  background: #dc2626;
+  opacity: 0.82;
+}
+
+.confirmBtnBusy.confirmBtnPrimary,
+.confirmBtnPrimary:disabled,
+.confirmBtnPrimary[aria-busy='true'] {
+  border-color: #10b981;
+  background: #10b981;
+  opacity: 0.82;
+}
+
+.confirmBtnBusy.confirmBtnWarning,
+.confirmBtnWarning:disabled,
+.confirmBtnWarning[aria-busy='true'] {
+  border-color: #d97706;
+  background: #d97706;
+  opacity: 0.82;
+}
+
+.confirmBtnBusy.confirmBtnNeutral,
+.confirmBtnNeutral:disabled,
+.confirmBtnNeutral[aria-busy='true'] {
+  border-color: #64748b;
+  background: #64748b;
+  opacity: 0.82;
+}
+
 /* ── Small screens (escrow release / hold dialogs on payouts mobile) ─────── */
 
 @media (max-width: 520px) {

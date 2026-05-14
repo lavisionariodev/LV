@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useToast } from '@/contexts/ToastContext';
-import { getUserRole, ROLE_SELLER } from '@/lib/auth/roles';
+import { getUserRole, getBuyerAccountStatus, ROLE_SELLER } from '@/lib/auth/roles';
 import { supabase } from '@/lib/supabase/client';
 import { expandPurchaseCardsByLineItem, mapBuyerOrderCard } from '@/lib/profile/mapBuyerOrderCard';
 import { listingIdFromOrderItemProductId } from '@/lib/orders/listingIdFromProductId';
@@ -988,7 +988,11 @@ function PurchaseCard({ purchase, cancellingOrderId }) {
           </button>
         ) : null}
 
-        {purchase.showOpenDispute ? (
+        {purchase.disputeStatus ? (
+          <span className={purchaseStyles.actionLink} role="status" style={{ cursor: 'default', opacity: 0.85 }}>
+            Help request: {String(purchase.disputeStatus).replace(/_/g, ' ')}
+          </span>
+        ) : purchase.showOpenDispute ? (
           <button
             type="button"
             className={purchaseStyles.actionLink}
@@ -1022,6 +1026,7 @@ export default function PurchasesPage() {
   const router = useRouter();
   /** `undefined` until `getUserRole` resolves — avoids a one-frame buyer skeleton for sellers. */
   const [isSeller, setIsSeller] = useState(undefined);
+  const [buyerSuspended, setBuyerSuspended] = useState(undefined);
   const [activeFilter, setActiveFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -1055,11 +1060,16 @@ export default function PurchasesPage() {
     async function check() {
       if (!user) {
         setIsSeller(false);
+        setBuyerSuspended(false);
         return;
       }
-      const role = await getUserRole(user.id);
+      const [role, account] = await Promise.all([
+        getUserRole(user.id),
+        getBuyerAccountStatus(user.id),
+      ]);
       if (cancelled) return;
       setIsSeller(role === ROLE_SELLER);
+      setBuyerSuspended(account.role !== ROLE_SELLER && account.status === 'suspended');
     }
     check();
     return () => {
@@ -1096,6 +1106,10 @@ export default function PurchasesPage() {
         return;
       }
       if (isSeller !== false) {
+        return;
+      }
+      if (buyerSuspended !== false) {
+        if (!cancelled) setLoadingPurchases(false);
         return;
       }
       const shouldBlock = !hasLoadedPurchasesRef.current;
@@ -1229,6 +1243,22 @@ export default function PurchasesPage() {
 
         if (cancelled) return;
 
+        let disputeByOrderId = new Map();
+        try {
+          const disputeRes = await fetch('/api/buyer/disputes', { cache: 'no-store' });
+          const disputeBody = await disputeRes.json().catch(() => null);
+          if (disputeRes.ok && Array.isArray(disputeBody?.disputes)) {
+            for (const row of disputeBody.disputes) {
+              const oid = String(row?.orderId ?? '');
+              if (oid && !disputeByOrderId.has(oid)) {
+                disputeByOrderId.set(oid, row.status);
+              }
+            }
+          }
+        } catch {
+          disputeByOrderId = new Map();
+        }
+
         const itemsByOrderWithKind = new Map();
         for (const [orderId, list] of itemsByOrder.entries()) {
           itemsByOrderWithKind.set(
@@ -1244,7 +1274,12 @@ export default function PurchasesPage() {
         for (const o of orders ?? []) {
           const orderItems = itemsByOrderWithKind.get(o.id) ?? [];
           const dn = nameMap[o.seller_user_id];
-          const card = mapBuyerOrderCard(o, orderItems, dn ?? undefined);
+          const card = mapBuyerOrderCard(
+            o,
+            orderItems,
+            dn ?? undefined,
+            disputeByOrderId.get(o.id),
+          );
           const reviewedSet = reviewedItemIdsByOrder.get(String(o.id)) ?? new Set();
           flattened.push(...expandPurchaseCardsByLineItem(card, orderItems, reviewedSet));
         }
@@ -1266,7 +1301,7 @@ export default function PurchasesPage() {
     return () => {
       cancelled = true;
     };
-  }, [user, isSeller, refreshNonce]);
+  }, [user, isSeller, refreshNonce, buyerSuspended]);
 
   useEffect(() => {
     if (typeof document === 'undefined' || !user || isSeller) return undefined;
@@ -1428,7 +1463,29 @@ export default function PurchasesPage() {
     );
   }
 
-  if (isSeller === undefined || (!isSeller && loadingPurchases)) {
+  if (buyerSuspended === true) {
+    return (
+      <div className={styles.profileCard}>
+        <div className={styles.profileAccentBar} />
+        <header className={styles.profileHeader}>
+          <div className={styles.profileHeaderLeft}>
+            <p className={styles.profileEyebrow}>Purchases</p>
+            <p className={styles.profileSignedIn}>
+              Your buyer account has been suspended. Purchase history and actions are unavailable until your
+              account is reactivated.
+            </p>
+          </div>
+        </header>
+        <div className={purchaseStyles.purchasesBody} style={{ padding: '32px 28px' }}>
+          <button className={styles.primaryButton} type="button" onClick={() => router.push('/')}>
+            Back to homepage
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isSeller === undefined || buyerSuspended === undefined || (!isSeller && loadingPurchases)) {
     return (
       <div
         className={styles.profileCard}

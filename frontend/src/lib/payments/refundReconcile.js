@@ -68,6 +68,21 @@ export async function applyTerminalRefundToOrder(supabaseAdmin, p) {
     })
     .eq('order_id', p.orderId)
 
+  const { data: adminDisputeRefundEvents } = await supabaseAdmin
+    .from('order_refund_events')
+    .select('id')
+    .eq('order_id', p.orderId)
+    .in('action', ['dispute_refund_requested', 'dispute_refund_processing'])
+    .limit(1)
+
+  if (adminDisputeRefundEvents?.length) {
+    await supabaseAdmin
+      .from('disputes')
+      .update({ status: 'closed' })
+      .eq('order_id', p.orderId)
+      .in('status', ['open', 'under_review', 'resolved'])
+  }
+
   await insertOrderRefundEvent(supabaseAdmin, {
     orderId: p.orderId,
     paymentId: p.paymentId,

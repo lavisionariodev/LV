@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
-import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { requireActiveBuyerApiUser } from '@/lib/auth/requireApiUser'
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
 import { getClientIp, takeToken } from '@/lib/rate-limit/memoryRateLimit'
 
@@ -27,29 +27,14 @@ export async function POST(request) {
     )
   }
 
+  const { user, responseError } = await requireActiveBuyerApiUser()
+  if (responseError) {
+    if (responseError.status === 401) apiLog('checkout.pay.unauthorized', {})
+    if (responseError.status === 403) apiLog('checkout.pay.not_buyer', {})
+    return responseError
+  }
+
   const supabaseAdmin = getSupabaseAdmin()
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-    error: userErr,
-  } = await supabase.auth.getUser()
-
-  if (userErr || !user) {
-    apiLog('checkout.pay.unauthorized', {})
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const { data: userRow, error: roleErr } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  if (roleErr || !userRow || userRow.role !== 'buyer') {
-    apiLog('checkout.pay.not_buyer', {})
-    return NextResponse.json({ error: 'Only buyers can pay for orders.' }, { status: 403 })
-  }
 
   const body = await request.json().catch(() => ({}))
   const orderIdsRaw = Array.isArray(body?.orderIds) ? body.orderIds : null

@@ -47,7 +47,7 @@ export default function ContactSellerModal({
       <div className={styles.modal} onClick={stop}>
         <div className={styles.head}>
           <div className={styles.titleRow}>
-            <h3 className={styles.title}>Message seller</h3>
+            <h3 className={styles.title}>Contact seller</h3>
             <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Close">
               ×
             </button>
@@ -68,7 +68,7 @@ export default function ContactSellerModal({
             </div>
             <div className={styles.sellerMeta}>
               <div className={styles.sellerName}>{sellerName || 'Seller'}</div>
-              <div className={styles.sellerSub}>Choose where you want to message them</div>
+              <div className={styles.sellerSub}>Choose how to reach them</div>
             </div>
           </div>
         </div>

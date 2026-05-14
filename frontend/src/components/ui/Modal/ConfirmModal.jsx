@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 import styles from './ConfirmModal.module.css'
 
@@ -28,6 +28,20 @@ export default function ConfirmModal({
   subtitleAlign = 'center',
 }) {
   const actionsDisabled = disableActions || loading
+  const pinnedVariantRef = useRef(variant)
+
+  if (open && !loading) {
+    pinnedVariantRef.current = variant
+  }
+
+  const visualVariant = open && loading ? pinnedVariantRef.current : variant
+
+  useEffect(() => {
+    if (!open) return
+    if (!loading) {
+      pinnedVariantRef.current = variant
+    }
+  }, [open, variant, loading])
 
   useEffect(() => {
     if (!open) return
@@ -56,9 +70,9 @@ export default function ConfirmModal({
 
   const stop = (e) => e.stopPropagation()
 
-  const isPrimary = variant === 'primary'
-  const isWarning = variant === 'warning'
-  const isNeutral = variant === 'neutral'
+  const isPrimary = visualVariant === 'primary'
+  const isWarning = visualVariant === 'warning'
+  const isNeutral = visualVariant === 'neutral'
   const iconCircleClass = `${styles.iconCircle} ${
     isPrimary
       ? styles.iconCirclePrimary
@@ -109,7 +123,7 @@ export default function ConfirmModal({
 
           <button
             type="button"
-            className={confirmBtnClass}
+            className={`${confirmBtnClass}${loading ? ` ${styles.confirmBtnBusy}` : ''}`}
             onClick={onConfirm}
             disabled={actionsDisabled}
             aria-busy={loading}

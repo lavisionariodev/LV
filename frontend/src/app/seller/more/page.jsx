@@ -29,7 +29,7 @@ const moreLinks = [
     badge: 'Inbox',
   },
   {
-    href: '/seller/settings',
+    href: '/seller/settings/profile',
     title: 'Settings',
     description: 'Profile, shop details, payouts, documents, and preferences.',
     badge: 'Account',

@@ -94,9 +94,9 @@ export default function SellerPayoutRequestsPanel({ className = '' }) {
     <section className={`${styles.chartCard} ${className}`.trim()} aria-label="Payout release requests">
       <div className={styles.chartHeader}>
         <div className={styles.chartTitleGroup}>
-          <h2 className={styles.chartTitle}>Request payout release</h2>
+          <h2 className={styles.chartTitle}>Payout review request</h2>
           <p className={styles.chartSubtitle}>
-            Ask admins to review eligible escrow funds. This does not auto-release payouts.
+            Ask admins to review eligible escrow funds. Approval does not send money — admins release completed orders in Payouts.
           </p>
         </div>
         <button
@@ -122,7 +122,7 @@ export default function SellerPayoutRequestsPanel({ className = '' }) {
               <div className={styles.payoutRequestModalTitleWrap}>
                 <GiReceiveMoney className={styles.payoutRequestModalTitleIcon} aria-hidden />
                 <h3 id="payout-request-modal-title" className={styles.payoutRequestModalTitle}>
-                  Request payout release
+                  Payout review request
                 </h3>
               </div>
               <button
@@ -172,7 +172,7 @@ export default function SellerPayoutRequestsPanel({ className = '' }) {
                     Cancel
                   </button>
                   <button type="submit" className={styles.payoutRequestModalPrimaryBtn} disabled={submitting}>
-                    {submitting ? 'Submitting…' : 'Submit payout request'}
+                    {submitting ? 'Submitting…' : 'Submit review request'}
                   </button>
                 </div>
               </form>
@@ -193,9 +193,16 @@ export default function SellerPayoutRequestsPanel({ className = '' }) {
               <li key={request.id} className={styles.payoutRequestItem}>
                 <div>
                   <p className={styles.payoutRequestItemTitle}>
-                    {request.status} · {formatDate(request.created_at)}
+                    {request.status === 'approved'
+                      ? 'Approved for release review'
+                      : request.status}{' '}
+                    · {formatDate(request.created_at)}
                   </p>
-                  <p className={styles.payoutRequestItemBody}>{request.note}</p>
+                  <p className={styles.payoutRequestItemBody}>
+                    {request.status === 'approved'
+                      ? 'Funds are not sent automatically. Admins release completed orders in Payouts.'
+                      : request.note}
+                  </p>
                 </div>
                 {request.requested_amount != null ? (
                   <span className={styles.payoutRequestAmount}>₱{Number(request.requested_amount).toLocaleString('en-PH')}</span>

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { requireActiveBuyerApiUser } from '@/lib/auth/requireApiUser'
 
 function phpToCentavos(amount) {
   const num = Number(amount)
@@ -14,27 +14,10 @@ function getBasicAuthHeader(secretKey) {
 }
 
 export async function POST(request) {
+  const { user, responseError } = await requireActiveBuyerApiUser()
+  if (responseError) return responseError
+
   const supabaseAdmin = getSupabaseAdmin()
-  const supabase = await createClient()
-  const {
-    data: { user },
-    error: userErr,
-  } = await supabase.auth.getUser()
-
-  if (userErr || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  // Enforce buyer role (public.users.role is the app role source).
-  const { data: userRow, error: roleErr } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  if (roleErr || !userRow || userRow.role !== 'buyer') {
-    return NextResponse.json({ error: 'Only buyers can checkout.' }, { status: 403 })
-  }
 
   const body = await request.json().catch(() => ({}))
   const productIdsRaw = Array.isArray(body?.productIds) ? body.productIds : null

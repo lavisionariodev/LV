@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { sendSellerRejectedEmail } from '@/lib/email/sendSellerRejectedEmail'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { sendEmailIfAllowed } from '@/lib/notifications/emailServer'
+import { requireAdminApiUser } from '@/lib/auth/requireAdminRoute'
 
 const REASON_MIN = 12
 const REASON_MAX = 8000
@@ -38,29 +39,10 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: `Reason must be ${REASON_MAX} characters or fewer.` }, { status: 400 })
   }
 
+  const { responseError } = await requireAdminApiUser()
+  if (responseError) return responseError
+
   const supabase = await createClient()
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-
-  if (userError || !user) {
-    return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 })
-  }
-
-  const { data: adminRow, error: adminErr } = await supabase
-    .from('admins')
-    .select('id')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  if (adminErr) {
-    return NextResponse.json({ error: adminErr.message || 'Failed to verify admin.' }, { status: 500 })
-  }
-  if (!adminRow) {
-    return NextResponse.json({ error: 'Forbidden.' }, { status: 403 })
-  }
 
   const { data: before, error: fetchErr } = await supabase
     .from('sellers')

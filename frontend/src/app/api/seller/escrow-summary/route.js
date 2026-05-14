@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { requireActiveSellerApiUser } from '@/lib/auth/requireApiUser'
 
 function sum(rows, field, predicate = () => true) {
   return rows.reduce((total, row) => (predicate(row) ? total + (Number(row[field]) || 0) : total), 0)
@@ -44,12 +43,8 @@ async function fetchAllEscrows(supabaseAdmin, userId, filters) {
 }
 
 export async function GET(request) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-    error: userErr,
-  } = await supabase.auth.getUser()
-  if (userErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { user, supabaseAdmin, responseError } = await requireActiveSellerApiUser()
+  if (responseError) return responseError
 
   const { searchParams } = new URL(request.url)
   const format = String(searchParams.get('format') || 'json').toLowerCase()
@@ -58,7 +53,6 @@ export async function GET(request) {
   const limit = parsePositiveInt(searchParams.get('limit'), 500, 500)
   const offset = Math.max(0, parseInt(String(searchParams.get('offset') || '0'), 10) || 0)
 
-  const supabaseAdmin = getSupabaseAdmin()
   let allRows = []
   try {
     allRows = await fetchAllEscrows(supabaseAdmin, user.id, { from, to })

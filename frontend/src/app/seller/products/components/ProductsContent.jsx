@@ -1,25 +1,26 @@
 'use client'
 
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback, useId } from 'react'
+import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import Link from 'next/link'
-import { TbCircleX, TbPlus, TbTrash } from 'react-icons/tb'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { TbCircleX, TbPlus, TbTrash, TbChevronDown, TbSearch, TbDots } from 'react-icons/tb'
+import { FiArchive } from 'react-icons/fi'
+import { MdArrowBackIos } from 'react-icons/md'
 import styles from '../products.module.css'
-import ProductsListToolbar from './ProductsListToolbar'
-import ProductsLifecycleTabs from './ProductsLifecycleTabs'
-import ProductsActiveGrid from './ProductsActiveGrid'
-import ProductsReviewTable, { ProductsReviewTableSkeleton } from './ProductsReviewTable'
 import {
   awaitingAdminCount,
+  canCancelListingReview,
   countByTab,
   DEFAULT_LISTING_TAB,
   filterByTab,
   isProductShopActive,
   LISTING_TAB_IDS,
+  LISTING_TABS,
   productStateLabel,
   readListingTab,
-} from './listingLifecycle'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+} from '@/features/seller/products/listingLifecycle'
 import {
   buildSellerListingPayload,
   ALLOWED_IMAGE_MIME,
@@ -48,6 +49,566 @@ import { hasPendingSellerChanges, mergePendingChangesIntoListingRow, getPendingC
 import { formatCount } from '@/shared/utils/formatCount'
 import { useDebouncedEffect } from '@/shared/hooks'
 import { readEnum, readString, replaceUrlQuery } from '@/shared/utils/queryParams'
+
+const ARCHIVE_PATH = '/seller/products/archive'
+const CATALOG_PATH = '/seller/products/catalog'
+
+// ---------------------------------------------------------------------------
+// List chrome (toolbar, lifecycle tabs, grids, review table, route fallback)
+// ---------------------------------------------------------------------------
+
+function ProductsListToolbar({
+  searchQuery = '',
+  onSearchChange,
+  searchPlaceholder = 'Search by name, category, area, description, duration…',
+  searchSubmitHref = null,
+  rightSlot = null,
+  showTypeFilter = false,
+  typeFilter = 'all',
+  typeOptions = [],
+  onTypeFilterChange,
+}) {
+  const pathname = usePathname()
+  const router = useRouter()
+  const onArchivePage = pathname === ARCHIVE_PATH
+  const [typeDropdownOpen, setTypeDropdownOpen] = useState(false)
+  const typeDropdownRef = useRef(null)
+  const selectedTypeLabel =
+    typeOptions.find((option) => option.id === typeFilter)?.label ?? 'All types'
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (typeDropdownRef.current && !typeDropdownRef.current.contains(event.target)) {
+        setTypeDropdownOpen(false)
+      }
+    }
+    if (typeDropdownOpen) {
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
+    }
+  }, [typeDropdownOpen])
+
+  const handleSubmit = (event) => {
+    event.preventDefault()
+    if (!searchSubmitHref) return
+    const query = String(searchQuery || '').trim()
+    const url = query
+      ? `${searchSubmitHref}?q=${encodeURIComponent(query)}`
+      : searchSubmitHref
+    router.push(url)
+  }
+
+  return (
+    <section className={styles.filtersRow} aria-label="Search products">
+      {showTypeFilter && typeOptions.length > 0 ? (
+        <div
+          className={`${styles.filterDropdownWrap} ${typeDropdownOpen ? styles.filterDropdownOpen : ''}`}
+          ref={typeDropdownRef}
+        >
+          <button
+            type="button"
+            className={styles.filterDropdownTrigger}
+            onClick={() => setTypeDropdownOpen((open) => !open)}
+            aria-haspopup="listbox"
+            aria-expanded={typeDropdownOpen}
+            aria-label="Filter by listing type"
+          >
+            <span className={styles.filterDropdownLabel}>{selectedTypeLabel}</span>
+            <TbChevronDown className={styles.filterDropdownChevron} size={18} aria-hidden />
+          </button>
+          {typeDropdownOpen ? (
+            <div
+              className={styles.filterDropdownPanel}
+              role="listbox"
+              aria-label="Listing type options"
+            >
+              {typeOptions.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  role="option"
+                  aria-selected={typeFilter === option.id}
+                  className={`${styles.filterDropdownOption} ${
+                    typeFilter === option.id ? styles.filterDropdownOptionSelected : ''
+                  }`}
+                  onClick={() => {
+                    onTypeFilterChange?.(option.id)
+                    setTypeDropdownOpen(false)
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+      <form className={styles.searchWrap} role="search" onSubmit={handleSubmit}>
+        <TbSearch className={styles.searchIcon} size={18} aria-hidden />
+        <input
+          type="search"
+          name="q"
+          className={styles.searchBox}
+          placeholder={searchPlaceholder}
+          value={searchQuery}
+          onChange={(event) => onSearchChange?.(event.target.value)}
+          aria-label="Search listings by text"
+          autoComplete="off"
+          spellCheck={false}
+        />
+      </form>
+      {onArchivePage ? (
+        <Link href={CATALOG_PATH} className={styles.archiveGoBackLink}>
+          <MdArrowBackIos className={styles.archiveGoBackIcon} aria-hidden />
+          Go back
+        </Link>
+      ) : (
+        <Link href={ARCHIVE_PATH} className={styles.archivedLink}>
+          <FiArchive size={16} aria-hidden />
+          Archived
+        </Link>
+      )}
+      {rightSlot}
+    </section>
+  )
+}
+function ProductsLifecycleTabs({ activeTab, counts, onTabChange }) {
+  return (
+    <div className={styles.lifecycleTabs} role="tablist" aria-label="Listing lifecycle">
+      {LISTING_TABS.map((tab) => {
+        const selected = activeTab === tab.id
+        const count = counts?.[tab.id] ?? 0
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            id={`products-tab-${tab.id}`}
+            aria-selected={selected}
+            aria-controls={`products-panel-${tab.id}`}
+            tabIndex={selected ? 0 : -1}
+            className={`${styles.lifecycleTab} ${selected ? styles.lifecycleTabActive : ''}`}
+            onClick={() => onTabChange(tab.id)}
+          >
+            {tab.label} ({count})
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+function ProductsActiveGrid({
+  products,
+  onOpenEdit,
+  onOpenView,
+  onRequestRemove,
+}) {
+  return (
+    <div className={styles.productsGrid}>
+      {products.map((product) => (
+        <article key={product.id} className={styles.productCard}>
+          <div className={styles.productHeader}>
+            <div className={styles.productBadges}>
+              <span className={styles.productKindBadge}>
+                {product.kind === 'service' ? 'Service' : 'Package'}
+              </span>
+              <span className={styles.productCategoryBadge}>{product.category}</span>
+            </div>
+            <span
+              className={`${styles.statusPill} ${
+                isProductShopActive(product) ? styles.statusPillActive : styles.statusPillInactive
+              }`}
+            >
+              {productStateLabel(product)}
+            </span>
+          </div>
+
+          <div className={styles.productImageWrap}>
+            <Image
+              src={product.image}
+              alt={product.name}
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 960px) 50vw, 320px"
+              className={styles.productImage}
+              unoptimized={shouldUnoptimizeListingImage(product.image)}
+            />
+          </div>
+
+          <h2 className={styles.productTitle}>{product.name}</h2>
+
+          <div className={styles.productMeta}>
+            <p className={styles.productPrice}>
+              <span className={styles.productPriceLabel}>Starting at</span>{' '}
+              <span className={styles.productPriceValue}>{formatPhpAmount(product.startingPrice)}</span>
+            </p>
+            <p className={styles.productLocation}>{product.city}</p>
+            <p className={styles.productAvailability}>{product.availability}</p>
+          </div>
+
+          <div className={styles.productActions}>
+            <button
+              type="button"
+              className={styles.productActionPrimary}
+              onClick={() => onOpenEdit(product)}
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              className={styles.productActionGhost}
+              onClick={() => onOpenView(product)}
+            >
+              View
+            </button>
+            <button
+              type="button"
+              className={styles.productActionDanger}
+              onClick={() => onRequestRemove(product)}
+              aria-haspopup="dialog"
+            >
+              Remove
+            </button>
+          </div>
+        </article>
+      ))}
+    </div>
+  )
+}
+function formatSubmittedAt(value) {
+  if (!value) return '—'
+  try {
+    return new Date(value).toLocaleDateString('en-PH', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    })
+  } catch {
+    return '—'
+  }
+}
+
+function formatKindLabel(kind) {
+  return kind === 'package' ? 'Package' : 'Service'
+}
+
+function approvalStatusLabel(product) {
+  const approval = String(product?.approvalStatus || 'draft').toLowerCase()
+  if (approval === 'pending') return 'Pending review'
+  if (approval === 'rejected') return 'Rejected'
+  return approval
+}
+
+function ProductsReviewTableRowMenu({
+  product,
+  open,
+  onToggle,
+  onClose,
+  onOpenView,
+  onOpenEdit,
+  onCancelRequest,
+  showCancelRequest,
+}) {
+  const triggerRef = useRef(null)
+  const dropdownRef = useRef(null)
+  const menuId = useId()
+  const [menuPosition, setMenuPosition] = useState(null)
+
+  const updateMenuPosition = useCallback(() => {
+    const trigger = triggerRef.current
+    if (!trigger) return
+
+    const rect = trigger.getBoundingClientRect()
+    setMenuPosition({
+      top: rect.bottom + 6,
+      right: Math.max(8, window.innerWidth - rect.right),
+      minWidth: Math.max(148, rect.width),
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!open) return
+
+    updateMenuPosition()
+
+    const handleScrollOrResize = () => updateMenuPosition()
+    window.addEventListener('resize', handleScrollOrResize)
+    window.addEventListener('scroll', handleScrollOrResize, true)
+
+    return () => {
+      window.removeEventListener('resize', handleScrollOrResize)
+      window.removeEventListener('scroll', handleScrollOrResize, true)
+    }
+  }, [open, updateMenuPosition])
+
+  useEffect(() => {
+    if (!open) return
+
+    const handlePointerDown = (event) => {
+      if (triggerRef.current?.contains(event.target)) return
+      if (dropdownRef.current?.contains(event.target)) return
+      onClose()
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') onClose()
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [open, onClose])
+
+  const menu =
+    open && menuPosition && typeof document !== 'undefined'
+      ? createPortal(
+          <div
+            ref={dropdownRef}
+            className={styles.productsTableMenuDropdown}
+            id={menuId}
+            role="menu"
+            style={{
+              top: `${menuPosition.top}px`,
+              right: `${menuPosition.right}px`,
+              minWidth: `${menuPosition.minWidth}px`,
+            }}
+          >
+            <button
+              type="button"
+              role="menuitem"
+              className={styles.productsTableMenuItem}
+              onClick={() => {
+                onOpenView(product)
+                onClose()
+              }}
+            >
+              View
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className={styles.productsTableMenuItem}
+              onClick={() => {
+                onOpenEdit(product)
+                onClose()
+              }}
+            >
+              Edit
+            </button>
+            {showCancelRequest ? (
+              <button
+                type="button"
+                role="menuitem"
+                className={`${styles.productsTableMenuItem} ${styles.productsTableMenuItemDanger}`}
+                onClick={() => {
+                  onCancelRequest(product)
+                  onClose()
+                }}
+              >
+                Cancel request
+              </button>
+            ) : null}
+          </div>,
+          document.body,
+        )
+      : null
+
+  return (
+    <div className={styles.productsTableActions}>
+      <button
+        ref={triggerRef}
+        type="button"
+        className={styles.productsTableMenuBtn}
+        aria-label={`Actions for ${product.name}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={open ? menuId : undefined}
+        onClick={() => {
+          if (open) {
+            onClose()
+            return
+          }
+          updateMenuPosition()
+          onToggle()
+        }}
+      >
+        <TbDots size={18} aria-hidden />
+      </button>
+      {menu}
+    </div>
+  )
+}
+
+function formatSubmittedChanges(product) {
+  const fields = Array.isArray(product?.pendingChangeFields) ? product.pendingChangeFields : []
+  if (fields.length === 0) return '—'
+  return fields.join(', ')
+}
+
+function ProductsReviewTable({
+  variant,
+  products,
+  onOpenView,
+  onOpenEdit,
+  onCancelRequest,
+}) {
+  const isUpdatesPending = variant === 'updates_pending'
+  const [openMenuId, setOpenMenuId] = useState(null)
+
+  return (
+    <div className={styles.productsTableWrap}>
+      <table
+        className={`${styles.productsTable} ${
+          isUpdatesPending ? styles.productsTableUpdatesPending : ''
+        }`}
+      >
+        <thead>
+          <tr>
+            <th scope="col">Listing</th>
+            <th scope="col">Kind</th>
+            <th scope="col" className={styles.productsTableSubmittedCol}>
+              Submitted
+            </th>
+            <th
+              scope="col"
+              className={isUpdatesPending ? styles.productsTableSubmittedChangesCol : undefined}
+            >
+              {isUpdatesPending ? 'Submitted changes' : 'Status'}
+            </th>
+            <th scope="col" className={styles.productsTableActionsCol}>
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {products.map((product) => (
+            <tr key={product.id}>
+              <td data-label="Listing">
+                <div className={styles.productsTableName}>{product.name}</div>
+                <p className={styles.productsTableMeta}>{product.category}</p>
+              </td>
+              <td data-label="Kind">
+                <span className={styles.productsTableKind}>{formatKindLabel(product.kind)}</span>
+              </td>
+              <td data-label="Submitted" className={styles.productsTableSubmittedCol}>
+                {formatSubmittedAt(
+                  isUpdatesPending ? product.pendingChangesSubmittedAt : product.submittedAt,
+                )}
+              </td>
+              <td
+                data-label={isUpdatesPending ? 'Submitted changes' : 'Status'}
+                className={isUpdatesPending ? styles.productsTableSubmittedChangesCol : undefined}
+              >
+                {isUpdatesPending ? (
+                  <p className={styles.productsTableSubmittedChanges}>
+                    {formatSubmittedChanges(product)}
+                  </p>
+                ) : (
+                  <span
+                    className={`${styles.productsTableStatus} ${
+                      product.approvalStatus === 'rejected' ? styles.productsTableStatusRejected : ''
+                    }`}
+                  >
+                    {approvalStatusLabel(product)}
+                  </span>
+                )}
+              </td>
+              <td data-label="Actions" className={styles.productsTableActionsCol}>
+                <ProductsReviewTableRowMenu
+                  product={product}
+                  open={openMenuId === product.id}
+                  onToggle={() =>
+                    setOpenMenuId((current) => (current === product.id ? null : product.id))
+                  }
+                  onClose={() => setOpenMenuId(null)}
+                  onOpenView={onOpenView}
+                  onOpenEdit={onOpenEdit}
+                  onCancelRequest={onCancelRequest}
+                  showCancelRequest={canCancelListingReview(product)}
+                />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+export function ProductsReviewTableSkeleton({ rows = 5 }) {
+  return (
+    <div className={styles.productsTableWrap}>
+      <table className={styles.productsTable}>
+        <thead>
+          <tr>
+            <th scope="col">Listing</th>
+            <th scope="col">Kind</th>
+            <th scope="col">Submitted</th>
+            <th scope="col">Status</th>
+            <th scope="col" className={styles.productsTableActionsCol}>
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {Array.from({ length: rows }).map((_, index) => (
+            <tr key={`products-table-sk-${index}`} className={styles.productsTableSkRow}>
+              <td colSpan={5}>
+                <span className={styles.productsTableSkLine} style={{ width: '100%' }} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+export function ProductsListingRouteFallback({ tableSkeleton = false }) {
+  return (
+    <div
+      className={styles.pageWrap}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label="Loading listings"
+    >
+      <section className={styles.statsStrip} aria-hidden>
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className={styles.statCard}>
+            <span className={styles.skeletonLine} style={{ width: '58%', height: 9 }} />
+            <span className={styles.skeletonLine} style={{ width: '42%', height: 18, marginTop: 6 }} />
+            <span className={styles.skeletonLine} style={{ width: '72%', height: 8, marginTop: 6 }} />
+          </div>
+        ))}
+      </section>
+      <div className={styles.lifecycleTabs} aria-hidden>
+        {[0, 1, 2].map((i) => (
+          <span key={i} className={styles.lifecycleTab}>
+            <span className={styles.skeletonLine} style={{ width: 96, height: 10 }} />
+          </span>
+        ))}
+      </div>
+      {tableSkeleton ? (
+        <ProductsReviewTableSkeleton rows={6} />
+      ) : (
+        <div className={styles.catalogSkGrid}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className={styles.catalogSkCard}>
+              <div className={styles.skeletonBlock} style={{ height: 148, borderRadius: 0 }} />
+              <div className={styles.catalogSkLines}>
+                <div className={`${styles.skeletonLine} ${styles.skeletonTitle}`} />
+                <div className={`${styles.skeletonLine} ${styles.skeletonMedium}`} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Listing form utilities (products list + edit modal)

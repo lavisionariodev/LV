@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { requireActiveBuyerApiUser } from '@/lib/auth/requireApiUser'
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
 import { getClientIp, takeToken } from '@/lib/rate-limit/memoryRateLimit'
 import { insertOrderRefundEvent, insertUserNotification } from '@/lib/payments/refundReconcile'
@@ -22,21 +22,13 @@ export async function POST(request) {
     )
   }
 
-  const supabase = await createClient()
-  const supabaseAdmin = getSupabaseAdmin()
-
-  const {
-    data: { user },
-    error: userErr,
-  } = await supabase.auth.getUser()
-
-  if (userErr || !user) {
-    apiLog('buyer.cancel.unauthorized', {})
-    return NextResponse.json(
-      { error: 'You must be signed in to cancel a purchase.' },
-      { status: 401 },
-    )
+  const { user, responseError } = await requireActiveBuyerApiUser()
+  if (responseError) {
+    if (responseError.status === 401) apiLog('buyer.cancel.unauthorized', {})
+    return responseError
   }
+
+  const supabaseAdmin = getSupabaseAdmin()
 
   const body = await request.json().catch(() => ({}))
   const orderId = String(body?.orderId ?? '').trim()

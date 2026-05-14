@@ -62,6 +62,10 @@ const helpCenterTopics = [
 
 const helpCenterFaqs = [
   {
+    q: 'Why can’t a provider or admin use buyer checkout while signed into their own portal?',
+    a: 'The public storefront only treats a buyer session as signed in for cart, profile, and checkout. Seller Centre and Admin use separate logins; those accounts appear as guests on the main site until the person signs in on the buyer portal. Each portal keeps its own session.',
+  },
+  {
     q: 'Where do I see all the services on the public shop?',
     a: 'Open Listings → Browse from the sidebar. Anything marked Approved is visible to families on the public Shop. Drafts and rejected items stay hidden.',
   },
@@ -76,6 +80,10 @@ const helpCenterFaqs = [
   {
     q: 'When should I put a payout on hold?',
     a: 'Put it on hold when there is an open dispute about that booking, a refund is still being worked out, or something doesn’t feel right and you need a colleague to take a second look. Release it once the case is resolved.',
+  },
+  {
+    q: 'Does approving a seller payout review request send money?',
+    a: 'No. Approval only means the seller’s request was reviewed. Funds stay in escrow until you release each completed order on the Payouts page.',
   },
   {
     q: 'When should I suspend a provider?',

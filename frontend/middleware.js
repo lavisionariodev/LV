@@ -2,7 +2,9 @@
  * Supabase auth middleware: refreshes session (token refresh) so cookies stay up to date.
  * OAuth code exchange is done in app/(auth)/auth/callback/route.js so cookies set correctly in production.
  *
- * Also gates `/admin/**` and protected `/seller/**` routes (defense-in-depth; client guards remain).
+ * Refreshes Supabase session cookies and gates `/admin/**` routes.
+ * Unauthenticated or non-admin users are redirected to `/administrator`.
+ * The admin app layout runs a client-side `requireAdmin()` check as a fallback.
  */
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
@@ -42,7 +44,8 @@ export async function middleware(request) {
     pathname === "/seller/signup" ||
     pathname === "/seller/register" ||
     pathname === "/seller/need_help" ||
-    pathname === "/seller/onboarding";
+    pathname === "/seller/onboarding" ||
+    pathname.startsWith("/seller/login/qr/");
 
   if (isAdminRoute) {
     if (!user) {

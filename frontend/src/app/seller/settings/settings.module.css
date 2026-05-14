@@ -736,14 +736,6 @@
     grid-template-columns: 1fr;
   }
 
-  .shopFieldGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .payoutFieldRow {
-    grid-template-columns: 1fr;
-  }
-
   .settingsRow {
     grid-template-columns: 1fr;
     gap: 12px;
@@ -1054,6 +1046,12 @@
   align-items: start;
 }
 
+@media (max-width: 900px) {
+  .shopFieldGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .shopFieldGridFull {
   grid-column: 1 / -1;
 }
@@ -1072,11 +1070,9 @@
 }
 
 .shopGridLabel {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
   line-height: 1.35;
 }
 
@@ -1207,14 +1203,11 @@
 
 @media (max-width: 900px) {
   .shopSpecialtyGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 520px) {
-  .shopSpecialtyGrid {
-    grid-template-columns: 1fr;
-  }
 
   .shopSpecialtyAddBtn {
     width: 100%;
@@ -1612,6 +1605,12 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px 16px;
   align-items: start;
+}
+
+@media (max-width: 900px) {
+  .payoutFieldRow {
+    grid-template-columns: 1fr;
+  }
 }
 
 .payoutFieldRow > .field:only-child {

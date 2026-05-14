@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireAdminApiUser } from '@/lib/auth/requireAdminRoute'
 import { notifyUser, notifySeller } from '@/lib/notifications/inAppServer'
+import {
+  applyDisputeOutcome,
+  DISPUTE_CLOSE_STATUSES,
+  DISPUTE_OUTCOMES,
+} from '@/lib/disputes/applyDisputeOutcome'
 
 const DISPUTE_ATTACHMENT_BUCKET = 'dispute-attachments'
 const SIGNED_URL_TTL_SECONDS = 600
@@ -70,8 +75,14 @@ export async function GET(_request, context) {
 
   const { data: ord } = await supabaseAdmin
     .from('orders')
-    .select('id,order_number,contact_name,subtotal,payment_status,fulfillment_status')
+    .select('id,order_number,contact_name,subtotal,payment_status,fulfillment_status,refund_status')
     .eq('id', d.order_id)
+    .maybeSingle()
+
+  const { data: escrow } = await supabaseAdmin
+    .from('order_escrows')
+    .select('status,hold_reason')
+    .eq('order_id', d.order_id)
     .maybeSingle()
 
   const { data: buyer } = await supabaseAdmin
@@ -106,6 +117,9 @@ export async function GET(_request, context) {
         orderSubtotal: ord?.subtotal,
         orderPaymentStatus: ord?.payment_status,
         orderFulfillment: ord?.fulfillment_status,
+        orderRefundStatus: ord?.refund_status,
+        orderEscrowStatus: escrow?.status,
+        orderEscrowHoldReason: escrow?.hold_reason,
         orderContactName: ord?.contact_name,
         complainantName: buyer?.full_name || buyer?.email || 'Buyer',
         complainantEmail: buyer?.email || '',
@@ -138,11 +152,21 @@ export async function PATCH(request, context) {
 
   const body = await request.json().catch(() => ({}))
   const status = body?.status != null ? String(body.status).trim().toLowerCase() : ''
+  const outcome = body?.outcome != null ? String(body.outcome).trim().toLowerCase() : ''
   const resolutionNotes =
     body?.resolutionNotes != null ? String(body.resolutionNotes).trim().slice(0, 8000) : undefined
 
   if (!['open', 'under_review', 'resolved', 'closed'].includes(status)) {
     return NextResponse.json({ error: 'Invalid status.' }, { status: 400 })
+  }
+
+  if (DISPUTE_CLOSE_STATUSES.has(status)) {
+    if (!DISPUTE_OUTCOMES.has(outcome)) {
+      return NextResponse.json(
+        { error: 'Closing a request requires an outcome: continue_service, refund_buyer, or no_financial_change.' },
+        { status: 400 },
+      )
+    }
   }
 
   const patch = { status }
@@ -158,6 +182,22 @@ export async function PATCH(request, context) {
 
   if (beforeErr || !before) {
     return NextResponse.json({ error: 'Dispute not found.' }, { status: 404 })
+  }
+
+  if (DISPUTE_CLOSE_STATUSES.has(status)) {
+    const outcomeResult = await applyDisputeOutcome(supabaseAdmin, {
+      disputeId: id,
+      orderId: before.order_id,
+      toStatus: status,
+      outcome,
+      adminUserId: user.id,
+    })
+    if (!outcomeResult.ok) {
+      return NextResponse.json(
+        { error: outcomeResult.error || 'Could not apply dispute outcome.' },
+        { status: outcomeResult.status || 400 },
+      )
+    }
   }
 
   const { error } = await supabaseAdmin.from('disputes').update(patch).eq('id', id)

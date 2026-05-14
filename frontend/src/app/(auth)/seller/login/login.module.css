@@ -368,6 +368,49 @@
   height: 100%;
 }
 
+.qrPlaceholder {
+  width: 168px;
+  height: 168px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: qrShimmer 1.2s infinite;
+  border-radius: 4px;
+}
+
+@keyframes qrShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.refreshQrBtn {
+  margin: 0 0 8px;
+  padding: 8px 16px;
+  border: 1px solid #204F38;
+  border-radius: 4px;
+  background: #fff;
+  color: #204F38;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.refreshQrBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.modalLink {
+  color: #05a;
+  text-decoration: none;
+}
+
+.modalLink:hover {
+  text-decoration: underline;
+}
+
 .qrText {
   font-size: 14px;
   color: #555;

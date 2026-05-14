@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { requireActiveBuyerApiUser } from '@/lib/auth/requireApiUser'
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
 import { getClientIp, takeToken } from '@/lib/rate-limit/memoryRateLimit'
 import { isUuidLike } from '@/shared/utils/uuidLike'
@@ -19,7 +19,12 @@ export async function GET(request, { params }) {
   const resolvedParams = await params
   const orderIdParam = resolvedParams?.orderId
   const orderId = String(orderIdParam ?? '').trim().replace(/^#/, '')
-  const supabase = await createClient()
+  const { user, responseError } = await requireActiveBuyerApiUser()
+  if (responseError) {
+    if (responseError.status === 401) apiLog('buyer.reviews.get.unauthorized', {})
+    return responseError
+  }
+
   const supabaseAdmin = getSupabaseAdmin()
   let actualOrderId = null
 
@@ -62,15 +67,6 @@ export async function GET(request, { params }) {
   if (!actualOrderId) {
     apiLog('buyer.reviews.get.invalid_id', { orderId, orderIdLength: orderId?.length })
     return NextResponse.json({ error: 'Invalid orderId.' }, { status: 400 })
-  }
-  const {
-    data: { user },
-    error: userErr,
-  } = await supabase.auth.getUser()
-
-  if (userErr || !user) {
-    apiLog('buyer.reviews.get.unauthorized', {})
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   // Verify order belongs to buyer.

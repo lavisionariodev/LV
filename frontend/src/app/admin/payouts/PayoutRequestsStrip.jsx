@@ -112,7 +112,7 @@ export default function PayoutRequestsStrip() {
   if (err) {
     return (
       <section className={styles.stuckRefundsWrap} aria-live="polite">
-        <p className={styles.stuckRefundsTitle}>Seller payout requests</p>
+        <p className={styles.stuckRefundsTitle}>Seller payout review requests</p>
         <p className={styles.stuckRefundsError}>{err}</p>
       </section>
     )
@@ -129,14 +129,13 @@ export default function PayoutRequestsStrip() {
       >
         <div className={styles.stuckRefundsHead}>
           <p id="payout-requests-title" className={styles.stuckRefundsTitle}>
-            Seller payout requests{' '}
+            Seller payout review requests{' '}
             <span style={{ fontWeight: 400, color: '#64748b', fontSize: 13 }}>
               ({requests.length} of {total})
             </span>
           </p>
           <p className={styles.stuckRefundsSub}>
-            Sellers ask admins to review eligible escrow funds. Approving a request does not auto-release payouts —
-            use the linked escrow view to release completed orders.
+            Sellers ask admins to review eligible escrow funds. Approving a request means “approved for release review” only — funds are not sent until you release each completed order in Payouts.
           </p>
         </div>
         <div className={styles.stuckRefundsTableWrap}>
@@ -168,7 +167,7 @@ export default function PayoutRequestsStrip() {
                         const ok = await reviewRequest(row.id, 'approve')
                         if (ok) {
                           window.alert(
-                            `Request approved. Open escrow transactions for ${sellerLabel(row)} to release eligible orders.`,
+                            `Approved for release review. Funds were not sent — open escrow transactions for ${sellerLabel(row)} to release eligible completed orders.`,
                           )
                         }
                       }}

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireAdminApiUser } from '@/lib/auth/requireAdminRoute'
+import { canReleaseEscrow } from '@/lib/payments/orderMoneyState'
 
 export async function POST(request) {
   const { user, responseError } = await requireAdminApiUser()
@@ -16,55 +17,28 @@ export async function POST(request) {
 
   const supabaseAdmin = getSupabaseAdmin()
 
-  const [{ data: order }, { data: escrow }] = await Promise.all([
+  const [{ data: order }, { data: escrow }, { data: activeDispute }] = await Promise.all([
     supabaseAdmin
       .from('orders')
-      .select('id,payment_status,fulfillment_status')
+      .select('id,payment_status,status,refund_status,fulfillment_status')
       .eq('id', orderId)
       .maybeSingle(),
     supabaseAdmin.from('order_escrows').select('*').eq('order_id', orderId).maybeSingle(),
+    supabaseAdmin
+      .from('disputes')
+      .select('id,status')
+      .eq('order_id', orderId)
+      .in('status', ['open', 'under_review'])
+      .limit(1)
+      .maybeSingle(),
   ])
 
-  if (!order) {
-    return NextResponse.json({ error: 'Order not found.' }, { status: 404 })
-  }
-
-  if (!escrow) {
-    return NextResponse.json({ error: 'No escrow record for this order.' }, { status: 409 })
-  }
-
-  if (escrow.status === 'released') {
-    return NextResponse.json({ ok: true, alreadyReleased: true })
-  }
-
-  if (escrow.status === 'on_hold') {
-    return NextResponse.json(
-      { error: 'Escrow is on hold. Remove hold before releasing.' },
-      { status: 409 },
-    )
-  }
-
-  const { data: activeDispute } = await supabaseAdmin
-    .from('disputes')
-    .select('id')
-    .eq('order_id', orderId)
-    .in('status', ['open', 'under_review'])
-    .limit(1)
-    .maybeSingle()
-
-  if (activeDispute?.id) {
-    return NextResponse.json(
-      { error: 'This order has an open buyer request. Resolve or close it before releasing payout.' },
-      { status: 409 },
-    )
-  }
-
-  if (order.payment_status !== 'paid') {
-    return NextResponse.json({ error: 'Order is not paid.' }, { status: 400 })
-  }
-
-  if (order.fulfillment_status !== 'completed') {
-    return NextResponse.json({ error: 'Order service is not completed.' }, { status: 400 })
+  const gate = canReleaseEscrow({ order, escrow, activeDispute })
+  if (!gate.ok) {
+    if (gate.alreadyReleased) {
+      return NextResponse.json({ ok: true, alreadyReleased: true })
+    }
+    return NextResponse.json({ error: gate.error }, { status: gate.status || 400 })
   }
 
   const { data: updated, error: updErr } = await supabaseAdmin

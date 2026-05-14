@@ -129,12 +129,12 @@ export async function POST(request, { params }) {
   const sellerLabel = seller?.business_name || seller?.contact_name || 'your shop'
   const title =
     action === 'approve'
-      ? 'Payout request approved'
-      : 'Payout request needs follow-up'
+      ? 'Payout review request approved'
+      : 'Payout review request needs follow-up'
   const notifyBody =
     action === 'approve'
-      ? `Your payout release request was approved. Eligible escrow can be released per completed orders. ${adminNote ? `Note: ${adminNote}` : ''}`.trim()
-      : `Your payout release request was not approved. ${adminNote}`
+      ? `Your payout review request was approved for release review. Funds are not sent automatically — eligible completed orders are released in Admin Payouts.${adminNote ? ` Note: ${adminNote}` : ''}`.trim()
+      : `Your payout review request was not approved. ${adminNote}`
 
   await notifySeller(supabaseAdmin, updated.seller_user_id, {
     type: 'system',

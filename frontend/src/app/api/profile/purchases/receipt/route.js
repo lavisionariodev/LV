@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { requireActiveBuyerApiUser } from '@/lib/auth/requireApiUser'
 import { formatMoney, formatMoneyReceiptPdf } from '@/lib/profile/mapBuyerOrderCard'
 import { buildReceiptPdf } from '@/lib/profile/buildReceiptPdf'
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
@@ -25,18 +25,13 @@ export async function GET(request) {
     )
   }
 
-  const supabase = await createClient()
-  const supabaseAdmin = getSupabaseAdmin()
-
-  const {
-    data: { user },
-    error: userErr,
-  } = await supabase.auth.getUser()
-
-  if (userErr || !user) {
-    apiLog('receipt.unauthorized', {})
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { user, responseError } = await requireActiveBuyerApiUser()
+  if (responseError) {
+    if (responseError.status === 401) apiLog('receipt.unauthorized', {})
+    return responseError
   }
+
+  const supabaseAdmin = getSupabaseAdmin()
 
   const { searchParams } = new URL(request.url)
   const orderId = String(searchParams.get('orderId') ?? '').trim()

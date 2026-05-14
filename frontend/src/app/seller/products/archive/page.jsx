@@ -1,13 +1,5 @@
-'use client'
-
-import { Suspense } from 'react'
-import ProductsContent from '../components/ProductsContent'
-import ProductsListingRouteFallback from '../components/ProductsListingRouteFallback'
+import ProductsRoutePage from '../components/ProductsRoutePage'
 
 export default function SellerProductsArchivePage() {
-  return (
-    <Suspense fallback={<ProductsListingRouteFallback />}>
-      <ProductsContent listingScope="archived" initialKind="all" />
-    </Suspense>
-  )
+  return <ProductsRoutePage listingScope="archived" initialKind="all" />
 }

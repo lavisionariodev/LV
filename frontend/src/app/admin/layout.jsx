@@ -27,6 +27,7 @@ export default function AdminLayout({ children }) {
   }, [])
 
   useEffect(() => {
+    // Fallback gate after middleware; denied users go to /administrator.
     let cancelled = false
     async function check() {
       const { user, isAdmin } = await requireAdmin()

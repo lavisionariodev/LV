@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { requireActiveSellerApiUser } from '@/lib/auth/requireApiUser'
 import { buildSellerOrderDocumentPdf } from '@/lib/seller/buildSellerOrderDocumentPdf'
 
 const TYPES = new Set(['invoice', 'receipt', 'summary', 'contract'])
@@ -63,14 +62,8 @@ export async function GET(request, context) {
   if (!orderId) return NextResponse.json({ error: 'Missing order id.' }, { status: 400 })
   if (!TYPES.has(type)) return NextResponse.json({ error: 'Invalid document type.' }, { status: 400 })
 
-  const supabase = await createClient()
-  const {
-    data: { user },
-    error: userErr,
-  } = await supabase.auth.getUser()
-  if (userErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const supabaseAdmin = getSupabaseAdmin()
+  const { user, supabaseAdmin, responseError } = await requireActiveSellerApiUser()
+  if (responseError) return responseError
   const { data: order, error: orderErr } = await supabaseAdmin
     .from('orders')
     .select('id,buyer_id,seller_user_id,order_number,status,fulfillment_status,payment_status,subtotal,currency,created_at,preferred_date,contact_name,contact_email,contact_phone,notes')

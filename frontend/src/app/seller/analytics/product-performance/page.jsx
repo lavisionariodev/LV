@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { TbAdjustmentsHorizontal } from 'react-icons/tb'
 import styles from '../analytics.module.css'
 import { useSellerAnalyticsData } from '@/lib/seller/useSellerAnalyticsData'
+import SellerAnalyticsLoadError from '../SellerAnalyticsLoadError'
 import {
   averagePaidBookingValueLastNMonths,
   bestMonthLabelLastNMonths,
@@ -61,7 +62,7 @@ function SellerAnalyticsProductPerformanceSkeleton() {
 }
 
 export default function SellerAnalyticsProductPerformancePage() {
-  const { orders, loading, error } = useSellerAnalyticsData()
+  const { orders, loading, error, reload } = useSellerAnalyticsData()
   const [windowMonths, setWindowMonths] = useState(6)
 
   const orders12m = useMemo(() => {
@@ -91,9 +92,12 @@ export default function SellerAnalyticsProductPerformancePage() {
     return <SellerAnalyticsProductPerformanceSkeleton />
   }
 
+  if (error) {
+    return <SellerAnalyticsLoadError onRetry={() => reload()} />
+  }
+
   return (
     <div className={styles.pageWrap}>
-      {error ? <p className={styles.pageError}>{error}</p> : null}
 
       <section aria-label="Product summary" className={styles.summaryStrip}>
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftGreen}`}>

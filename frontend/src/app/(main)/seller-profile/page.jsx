@@ -16,147 +16,15 @@ import { providerServiceAggPairSegments } from '@/lib/ratings/providerServiceAgg
 import { formatPhpWholeAmount } from '@/lib/cart/formatPhp'
 import styles from './seller-profile.module.css'
 
-// ─── Sample Data ──────────────────────────────────────────────────────────────
-
-const SAMPLE_SELLER = {
-  id: 'seller-001',
-  name: 'Sereno Memorial Services',
-  handle: 'serenomemorial',
-  location: 'Quezon City, Metro Manila',
-  tagline:
-    'Providing compassionate and dignified funeral services to grieving families across Metro Manila for over 20 years. We handle every detail with care so you can focus on remembering your loved one.',
-  avatarUrl: null,
-  bannerUrl: 'https://getwallpapers.com/wallpaper/full/4/c/f/289455.jpg',
-  badge: 'Top Provider',
-  rating: 4.9,
-  reviewCount: 87,
-  memberSince: 'Mar 2020',
-  turnaround: '24 hours',
-  /** Marketplace row: `active` = admin-approved (see `sellers.status`). */
-  sellerStatus: 'active',
-  verifiedSeller: true,
-  specialties: ['Traditional Funeral Rites', 'Memorial Planning', 'Casket & Urn Selection', 'Embalming Services', 'Cremation', 'Lifestream / Online Wake'],
-  extendedBio:
-    'Sereno Memorial Services has been a trusted partner to Filipino families during their most difficult moments since 2003. Founded by the Sereno family, our team of licensed funeral directors and grief support staff are available around the clock. We believe every life deserves a meaningful farewell, and we work closely with each family to honour the unique story of their loved one — from traditional Catholic rites to contemporary celebration-of-life ceremonies.',
-}
-
-const SAMPLE_LISTINGS = [
-  {
-    id: 'lst-001',
-    serviceId: 'memorial-planning',
-    name: 'Full Funeral Package — Traditional',
-    price: 45000,
-    rating: 5.0,
-    inStock: true,
-    imageUrl: null,
-    createdAt: '2024-11-10',
-  },
-  {
-    id: 'lst-002',
-    serviceId: 'memorial-planning',
-    name: 'Cremation Package (with Urn)',
-    price: 28000,
-    rating: 4.9,
-    inStock: true,
-    imageUrl: null,
-    createdAt: '2024-10-22',
-  },
-  {
-    id: 'lst-003',
-    serviceId: 'memorial-planning',
-    name: 'Memorial Flower Arrangement',
-    price: 3500,
-    rating: 4.8,
-    inStock: true,
-    imageUrl: null,
-    createdAt: '2024-09-15',
-  },
-  {
-    id: 'lst-004',
-    serviceId: 'memorial-planning',
-    name: 'Lifestream / Online Wake Setup',
-    price: 5000,
-    rating: 4.7,
-    inStock: false,
-    imageUrl: null,
-    createdAt: '2024-08-01',
-  },
-  {
-    id: 'lst-005',
-    serviceId: 'memorial-planning',
-    name: 'Premium Hardwood Casket',
-    price: 18000,
-    rating: 4.9,
-    inStock: true,
-    imageUrl: null,
-    createdAt: '2024-07-20',
-  },
-  {
-    id: 'lst-006',
-    serviceId: 'memorial-planning',
-    name: 'Embalming & Preparation Service',
-    price: 8500,
-    rating: 5.0,
-    inStock: true,
-    imageUrl: null,
-    createdAt: '2024-06-05',
-  },
-]
-
-const SAMPLE_REVIEWS = [
-  {
-    id: 'rev-001',
-    reviewerName: 'Angela Reyes',
-    reviewerInitials: 'AR',
-    rating: 5,
-    date: 'March 2025',
-    service: 'Full Funeral Package — Traditional',
-    text: 'The team at Sereno handled everything with such grace and professionalism during an incredibly hard time for our family. Every detail was taken care of. We are deeply grateful.',
-  },
-  {
-    id: 'rev-002',
-    reviewerName: 'Marco dela Cruz',
-    reviewerInitials: 'MD',
-    rating: 5,
-    date: 'February 2025',
-    service: 'Cremation Package (with Urn)',
-    text: 'They were available at midnight when we needed them most and guided us through every step calmly. The urn was beautiful and the entire process was handled with dignity.',
-  },
-  {
-    id: 'rev-003',
-    reviewerName: 'Sophia Tan',
-    reviewerInitials: 'ST',
-    rating: 4,
-    date: 'January 2025',
-    service: 'Lifestream / Online Wake Setup',
-    text: 'The livestream setup allowed our relatives abroad to attend and grieve with us. There were minor technical hiccups at the start but the staff resolved them quickly.',
-  },
-  {
-    id: 'rev-004',
-    reviewerName: 'Jerome Villanueva',
-    reviewerInitials: 'JV',
-    rating: 5,
-    date: 'December 2024',
-    service: 'Memorial Flower Arrangement',
-    text: 'The floral arrangements were tasteful and exactly what we envisioned for our father\'s wake. Delivered on time and arranged beautifully by the staff.',
-  },
-  {
-    id: 'rev-005',
-    reviewerName: 'Carmela Bautista',
-    reviewerInitials: 'CB',
-    rating: 5,
-    date: 'November 2024',
-    service: 'Embalming & Preparation Service',
-    text: 'Our lola looked peaceful and well-cared for. The preparation was done with great respect. This gave our family so much comfort during the viewing.',
-  },
-]
+/** Static storefront banner for public seller profiles (not loaded from DB). */
+const SELLER_PROFILE_BANNER_URL = 'https://getwallpapers.com/wallpaper/full/4/c/f/289455.jpg'
 
 /**
  * When `?seller=<uuid>` loads a real storefront, remaining placeholders are documented below.
  */
 /** Notes on seller-profile data sources (see `buildSellerViewModel` + `resolved` in this file). */
 export const MOCK_SELLER_PROFILE_FIELDS = /** @type {const} */ ([
-  'bannerUrl — sample hero image only (not from DB; intentional)',
+  'bannerUrl — static hero image only (not from DB; intentional)',
   'badge — "Top Provider" when #1 in `get_active_partners_directory` by avg rating',
   'rating / reviewCount (header) — `/api/seller/:id/reviews` aggregates when `?seller=` is UUID',
   'turnaround — `sellers.turnaround` via shop + public profile RPCs (migration 097+)',
@@ -331,10 +199,10 @@ function buildSellerViewModel(sellerUserId, shopRows, publicProfileRow) {
     handle,
     location,
     avatarUrl: avatarUrlResolved,
-    bannerUrl: SAMPLE_SELLER.bannerUrl,
+    bannerUrl: SELLER_PROFILE_BANNER_URL,
     badge: null,
-    rating: SAMPLE_SELLER.rating,
-    reviewCount: SAMPLE_SELLER.reviewCount,
+    rating: null,
+    reviewCount: 0,
     memberSince,
     turnaround,
     sellerStatus,
@@ -399,17 +267,8 @@ function PinIcon() {
 
 /**
  * Presentational seller profile (tabs, listings grid, reviews, about).
- *
- * Props (all optional — falls back to SAMPLE_* constants when omitted):
- *   seller   – seller object
- *   listings – listing array
- *   reviews  – review array
  */
-function SellerProfileView({
-  seller   = SAMPLE_SELLER,
-  listings = SAMPLE_LISTINGS,
-  reviews  = SAMPLE_REVIEWS,
-}) {
+function SellerProfileView({ seller, listings = [], reviews = [] }) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState('listings')
   const [sortBy, setSortBy] = useState('newest')
@@ -515,7 +374,7 @@ function SellerProfileView({
                 <svg viewBox="0 0 16 14" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M14 1H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3l3 3 3-3h3a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1z" />
                 </svg>
-                Message
+                Contact
               </button>
               <button
                 className={styles.btnInquire}
@@ -916,6 +775,45 @@ function SellerProfileLoading() {
   )
 }
 
+function hasPublicProviderData(shopRows, publicProfileRow) {
+  if (Array.isArray(shopRows) && shopRows.length > 0) return true
+  return Boolean(providerFromPublicSellerProfileRow(publicProfileRow))
+}
+
+function SellerProfileFetchError({ onRetry }) {
+  return (
+    <section className={styles.profilePage}>
+      <div className={styles.content}>
+        <div className={styles.emptyState} role="alert">
+          <div className={styles.emptyTitle}>Couldn&apos;t load this provider profile</div>
+          <p className={styles.emptyText}>Check your connection and try again.</p>
+          <button type="button" className={styles.btnInquire} onClick={onRetry}>
+            Try again
+          </button>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function SellerProfileUnavailable({ onBack }) {
+  return (
+    <section className={styles.profilePage}>
+      <div className={styles.content}>
+        <div className={styles.emptyState}>
+          <div className={styles.emptyTitle}>Provider not available</div>
+          <p className={styles.emptyText}>
+            This seller profile is unavailable or no longer active on the marketplace.
+          </p>
+          <button type="button" className={styles.btnInquire} onClick={onBack}>
+            Back to partners
+          </button>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 /**
  * Loads `/seller-profile?seller=<uuid>` via `fetchActiveShopListings` → `get_active_shop_listings` (SECURITY DEFINER;
  * anon + authenticated). Sellers RLS stays closed to public reads; seller writes use `upsertSellerForUser` (settings/onboarding).
@@ -945,7 +843,9 @@ export default function SellerProfilePage() {
     topRatedSellerUserId: null,
     /** `user_id` the catalog + profile fetch completed for (loading until this matches `realSellerId`). */
     catalogLoadedSellerId: null,
+    catalogLoadFailed: false,
   })
+  const [catalogRetryTick, setCatalogRetryTick] = useState(0)
 
   const {
     allShopListings,
@@ -953,6 +853,7 @@ export default function SellerProfilePage() {
     sellerReviewsPayload,
     topRatedSellerUserId,
     catalogLoadedSellerId,
+    catalogLoadFailed,
   } = sellerFetchState
 
   const loading = Boolean(realSellerId) && catalogLoadedSellerId !== realSellerId
@@ -968,6 +869,7 @@ export default function SellerProfilePage() {
       sellerReviewsPayload: null,
       topRatedSellerUserId: null,
       catalogLoadedSellerId: null,
+      catalogLoadFailed: false,
     })
     Promise.all([
       fetchActiveShopListings({ bustCache: true }).then((raw) => mergeShopListings(raw)),
@@ -985,6 +887,7 @@ export default function SellerProfilePage() {
           sellerReviewsPayload: reviewsPayload,
           topRatedSellerUserId: pickTopRatedSellerUserIdFromDirectory(directoryRows),
           catalogLoadedSellerId: realSellerId,
+          catalogLoadFailed: false,
         })
       })
       .catch(() => {
@@ -995,12 +898,13 @@ export default function SellerProfilePage() {
           sellerReviewsPayload: null,
           topRatedSellerUserId: null,
           catalogLoadedSellerId: realSellerId,
+          catalogLoadFailed: true,
         })
       })
     return () => {
       cancelled = true
     }
-  }, [realSellerId])
+  }, [realSellerId, catalogRetryTick])
 
   const shopRowsForSeller = useMemo(() => {
     if (!realSellerId) return []
@@ -1074,6 +978,14 @@ export default function SellerProfilePage() {
 
   if (loading) {
     return <SellerProfileLoading />
+  }
+
+  if (catalogLoadFailed) {
+    return <SellerProfileFetchError onRetry={() => setCatalogRetryTick((n) => n + 1)} />
+  }
+
+  if (!hasPublicProviderData(shopRowsForSeller, publicSellerProfile)) {
+    return <SellerProfileUnavailable onBack={() => router.push('/partners')} />
   }
 
   return <SellerProfileView seller={resolved.seller} listings={resolved.listings} reviews={resolved.reviews} />
