@@ -257,6 +257,20 @@
   gap: 16px;
 }
 
+@media (max-width: 860px) {
+  .scannerModal .scannerCompactHeader {
+    margin-bottom: 12px;
+    font-size: 16px;
+  }
+
+  .scannerModal .scannerWrap {
+    width: min(100%, 260px);
+    max-height: min(42dvh, 260px);
+    aspect-ratio: 1;
+    margin-inline: auto;
+  }
+}
+
 @media (max-width: 640px) {
   .title {
     font-size: 24px;

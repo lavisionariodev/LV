@@ -804,12 +804,32 @@
   .payoutRequestModalOverlay {
     align-items: flex-end;
     padding: 8px;
+    overflow: hidden;
+    overscroll-behavior: contain;
   }
 
   .payoutRequestModalCard {
     border-radius: 14px 14px 0 0;
     max-height: 88vh;
-    overflow: auto;
+    max-height: 88dvh;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .payoutRequestModalHeader {
+    flex-shrink: 0;
+  }
+
+  .payoutRequestModalBody {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(18px + env(safe-area-inset-bottom));
   }
 
   .payoutRequestModalActions {
@@ -1220,4 +1240,33 @@
 .payoutRequestAmount {
   margin: 0;
   color: var(--muted, var(--color-text-secondary));
+}
+
+@media (max-width: 860px) {
+  .payoutRequestModalOverlay {
+    overflow: hidden;
+    overscroll-behavior: contain;
+  }
+
+  .payoutRequestModalCard {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    max-height: min(88dvh, calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1rem));
+    overflow: hidden;
+  }
+
+  .payoutRequestModalHeader {
+    flex-shrink: 0;
+  }
+
+  .payoutRequestModalBody {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(18px + env(safe-area-inset-bottom));
+  }
 }

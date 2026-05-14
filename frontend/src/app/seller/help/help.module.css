@@ -555,18 +555,61 @@
   .modalOverlay {
     align-items: flex-end;
     padding: 8px;
+    overflow: hidden;
+    overscroll-behavior: contain;
   }
 
   .modalCard {
     border-radius: 14px 14px 0 0;
     max-height: 88vh;
-    overflow: auto;
+    max-height: 88dvh;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .modalBody {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
   .modalCloseBtn {
     width: 30px;
     height: 30px;
     font-size: 1.05rem;
+  }
+}
+
+@media (max-width: 860px) {
+  .modalOverlay {
+    overflow: hidden;
+    overscroll-behavior: contain;
+  }
+
+  .modalCard {
+    display: flex;
+    flex-direction: column;
+    max-height: min(88dvh, calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1rem));
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .modalHeader {
+    flex-shrink: 0;
+  }
+
+  .modalBody {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
