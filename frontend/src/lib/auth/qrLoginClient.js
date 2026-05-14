@@ -8,6 +8,39 @@
  */
 
 /**
+ * @param {string} value
+ * @returns {string | null}
+ */
+export function parseSellerQrConfirmPath(value) {
+  if (!value || typeof window === 'undefined') return null
+
+  try {
+    const parsed = new URL(value, window.location.origin)
+    if (parsed.origin !== window.location.origin) return null
+    if (parsed.pathname !== '/seller/login/qr/confirm') return null
+    const challenge = parsed.searchParams.get('challenge')
+    const token = parsed.searchParams.get('token')
+    if (!challenge || !token) return null
+    return `${parsed.pathname}${parsed.search}`
+  } catch {
+    return null
+  }
+}
+
+/**
+ * @param {string} confirmPath
+ * @param {Record<string, string>} [extraParams]
+ * @returns {string}
+ */
+export function appendSellerQrConfirmParams(confirmPath, extraParams = {}) {
+  const url = new URL(confirmPath, window.location.origin)
+  Object.entries(extraParams).forEach(([key, value]) => {
+    if (value) url.searchParams.set(key, value)
+  })
+  return `${url.pathname}${url.search}`
+}
+
+/**
  * @typedef {{
  *   status: 'pending' | 'approved' | 'consumed' | 'expired' | 'denied',
  *   email?: string,

@@ -177,12 +177,11 @@ function SellerLoginPageInner() {
           return;
         }
 
-        if (data.status === 'approved' && data.email && data.tokenHash) {
+        if (data.status === 'approved' && data.tokenHash) {
           qrCompletionRef.current = true;
           setQrStatus('completing');
 
           const { error: verifyError } = await supabase.auth.verifyOtp({
-            email: data.email,
             token_hash: data.tokenHash,
             type: 'magiclink',
           });

@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import Link from 'next/link'
 import { FaUser, FaUpload } from 'react-icons/fa6'
 import { TbCamera, TbTrash } from 'react-icons/tb'
 import { FiEdit, FiSave } from 'react-icons/fi'
@@ -225,6 +226,22 @@ export default function Page() {
                       </button>
                     ) : null}
                   </div>
+                </div>
+              </div>
+
+              <div className={styles.settingsRow}>
+                <div className={styles.settingsRowMeta}>
+                  <div className={styles.settingsRowTitleRow}>
+                    <p className={styles.settingsRowTitle}>Link device</p>
+                  </div>
+                  <p className={styles.settingsRowDesc}>
+                    Approve Seller Centre login on another device by scanning its QR code from this phone.
+                  </p>
+                </div>
+                <div className={`${styles.settingsRowControl} ${styles.profileControl}`}>
+                  <Link href="/seller/settings/link-device" className={styles.identityActionLink}>
+                    Link device
+                  </Link>
                 </div>
               </div>
             </div>

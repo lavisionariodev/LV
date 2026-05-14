@@ -12,5 +12,6 @@ export function getSettingsSectionFromPathname(pathname) {
   const match = pathname.match(/^\/seller\/settings\/([^/]+)/)
   if (!match) return null
   const segment = match[1]
+  if (segment === 'link-device') return 'profile'
   return SELLER_SETTINGS_NAV.some((item) => item.id === segment) ? segment : null
 }
