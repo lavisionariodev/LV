@@ -622,6 +622,40 @@
     'Courier New', monospace;
 }
 
+@media (max-width: 860px) {
+  .customerModalOverlay {
+    align-items: flex-end;
+    padding: 0.5rem;
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+    padding-right: max(0.5rem, env(safe-area-inset-right));
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    padding-left: max(0.5rem, env(safe-area-inset-left));
+    overflow: hidden;
+    overscroll-behavior: contain;
+  }
+
+  .customerModal {
+    max-width: 100%;
+    max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1rem));
+    border-radius: 16px 16px 0 0;
+    min-height: 0;
+  }
+
+  .customerModalHeader {
+    flex-shrink: 0;
+  }
+
+  .customerModalBody {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(1.4rem + env(safe-area-inset-bottom));
+  }
+}
+
 @media (max-width: 768px) {
   .pageWrap {
     padding: 0 1rem;

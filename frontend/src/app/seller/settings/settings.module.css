@@ -1813,7 +1813,7 @@
   background: rgba(16, 40, 32, 0.36);
   display: grid;
   place-items: center;
-  z-index: 110;
+  z-index: 1200;
   padding: 20px;
   animation: linkDeviceModalFadeIn 0.2s ease;
 }
@@ -1993,6 +1993,38 @@
   border: 1px solid color-mix(in srgb, var(--color-primary) 12%, var(--color-border) 88%);
 }
 
+.linkDeviceModalGuideActions {
+  display: grid;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.linkDeviceModalScanBtn {
+  width: 100%;
+  justify-content: center;
+  min-height: 44px;
+  font-size: 13px;
+  border-radius: 10px;
+}
+
+.linkDeviceModalBackToGuide {
+  align-self: flex-start;
+  margin-bottom: 12px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.linkDeviceModalBackToGuide:hover {
+  color: color-mix(in srgb, var(--color-primary) 78%, #000000 22%);
+}
+
 .linkDeviceModalSteps {
   margin: 0;
   padding: 0;
@@ -2045,26 +2077,112 @@
   width: 100%;
 }
 
-@media (max-width: 820px) {
+@media (max-width: 860px) {
+  .linkDeviceModalOverlay {
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+      max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    overflow: hidden;
+    overscroll-behavior: contain;
+  }
+
   .linkDeviceModalCard {
-    max-height: min(94vh, 900px);
-    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: auto;
+    max-height: min(72dvh, calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px));
+    overflow: hidden;
+    min-height: 0;
+    border-radius: 18px;
   }
 
   .linkDeviceModalGrid {
     grid-template-columns: 1fr;
-    min-height: auto;
-    max-height: none;
+    flex: 0 1 auto;
+    min-height: 0;
+    max-height: min(72dvh, calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px));
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
   .linkDeviceModalGuide {
     border-right: 0;
     border-bottom: 1px solid var(--color-border);
-    padding: 24px 20px;
+    padding: 16px 16px 14px;
+    gap: 12px;
+    justify-content: flex-start;
+    overflow: visible;
+  }
+
+  .linkDeviceModalIntro {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .linkDeviceModalTitleRow {
+    font-size: 18px;
+  }
+
+  .linkDeviceModalSubtitle {
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .linkDeviceModalGuideBlock {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .linkDeviceModalSteps {
+    gap: 8px;
+  }
+
+  .linkDeviceModalSteps li {
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .linkDeviceModalGuideNote {
+    padding: 8px 10px;
+    font-size: 12px;
+    line-height: 1.45;
   }
 
   .linkDeviceModalPanel {
-    padding: 24px 20px;
+    padding: 16px;
+    overflow: visible;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .linkDeviceModalGridMobileGuideOnly .linkDeviceModalPanel {
+    display: none;
+  }
+
+  .linkDeviceModalGridMobileGuideOnly .linkDeviceModalGuide {
+    border-bottom: 0;
+  }
+
+  .linkDeviceModalGridMobileScannerOnly .linkDeviceModalGuide {
+    display: none;
+  }
+
+  .linkDeviceModalGridMobileConfirmOnly .linkDeviceModalGuide {
+    display: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .avatarModalOverlay {
+    z-index: 1200;
+    overflow: hidden;
+    overscroll-behavior: contain;
   }
 }
 
