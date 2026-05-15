@@ -157,9 +157,7 @@ function BuyerLoginPageInner() {
     if (provider === "Facebook") {
       const { error } = await signInWithOAuth({ provider: "facebook", redirectTo });
       if (error) toast.error(error);
-      return;
     }
-    toast.info(`${provider} authentication would be implemented here`);
   };
 
   return (

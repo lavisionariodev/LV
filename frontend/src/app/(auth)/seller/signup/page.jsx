@@ -195,227 +195,6 @@ const Step3OTPInput = ({
   );
 };
 
-const StepPhoneReclaim = ({
-  systemName,
-  phoneNumber,
-  existingAccount,
-  onProceed,
-  onBack,
-  currentStep,
-}) => {
-  const formattedPhone = `(+63) ${phoneNumber.slice(0, 3)} ${phoneNumber.slice(3, 6)} ${phoneNumber.slice(6)}`;
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    reason: '',
-    additionalInfo: '',
-    confirmOwnership: false,
-    agreeTerms: false
-  });
-  
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const isFormValid = () => {
-    return formData.fullName.trim() && 
-           formData.email.trim() && 
-           formData.reason.trim() &&
-           formData.confirmOwnership && 
-           formData.agreeTerms;
-  };
-  
-  return (
-    <div className={`${styles.signupCard} ${styles.reclaimCard}`}>
-      <StepIndicator currentStep={currentStep} />
-      <button className={styles.backButton} onClick={onBack}>←</button>
-      <h2 className={styles.signupTitle}>Phone Number Reclaim Request</h2>
-      
-      <div className={styles.reclaimInfo}>
-        <div className={styles.warningIcon}>
-          <svg viewBox="0 0 24 24" width="48" height="48" fill="#ff6b00">
-            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
-          </svg>
-        </div>
-        
-        <p className={styles.reclaimMessage}>
-          The phone number <strong>{formattedPhone}</strong> is already linked to an existing {systemName} account. Please fill out this form to reclaim your number for Seller Centre.
-        </p>
-        
-        <div className={styles.existingAccountInfo}>
-          <div className={styles.accountAvatar}>
-            {existingAccount.name.charAt(0).toUpperCase()}
-          </div>
-          <div className={styles.accountDetails}>
-            <h3 className={styles.accountUsername}>{existingAccount.name}</h3>
-            <p className={styles.accountType}>Current Account</p>
-          </div>
-        </div>
-
-        {/* Reclaim Form */}
-        <div className={styles.reclaimForm}>
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>
-              Full Name <span className={styles.required}>*</span>
-            </label>
-            <input 
-              type="text"
-              placeholder="Enter your full name"
-              className={styles.formControl}
-              value={formData.fullName}
-              onChange={(e) => handleInputChange('fullName', e.target.value)}
-            />
-          </div>
-
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>
-              Email Address <span className={styles.required}>*</span>
-            </label>
-            <input 
-              type="email"
-              placeholder="Enter your email address"
-              className={styles.formControl}
-              value={formData.email}
-              onChange={(e) => handleInputChange('email', e.target.value)}
-            />
-          </div>
-
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>
-              Phone Number to Reclaim <span className={styles.required}>*</span>
-            </label>
-            <input 
-              type="text"
-              className={styles.formControl}
-              value={formattedPhone}
-              disabled
-              style={{ background: '#f5f5f5', color: '#666' }}
-            />
-          </div>
-
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>
-              Reason for Reclaiming <span className={styles.required}>*</span>
-            </label>
-            <select 
-              className={styles.formControl}
-              value={formData.reason}
-              onChange={(e) => handleInputChange('reason', e.target.value)}
-            >
-              <option value="">Please select a reason</option>
-              <option value="create_seller">I want to create a Seller Centre account</option>
-              <option value="lost_access">I lost access to my buyer account</option>
-              <option value="security">Security concerns</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>
-              Additional Information
-            </label>
-            <textarea 
-              placeholder="Provide any additional details that may help us process your request..."
-              className={styles.formTextarea}
-              rows="4"
-              value={formData.additionalInfo}
-              onChange={(e) => handleInputChange('additionalInfo', e.target.value)}
-            />
-          </div>
-
-          <div className={styles.reclaimNotice}>
-            <h4>⚠️ Important Information:</h4>
-            <ul>
-              <li>
-                By reclaiming this phone number, it will be <strong>removed from your existing {systemName} account</strong>
-              </li>
-              <li>You will need to <strong>add a new phone number</strong> to your buyer account to continue using it</li>
-              <li>This process may take <strong>24-48 hours</strong> to complete</li>
-              <li>You will receive email confirmation once the reclaim is processed</li>
-            </ul>
-          </div>
-
-          <div className={styles.checkboxGroup}>
-            <label className={styles.checkboxLabel}>
-              <input 
-                type="checkbox" 
-                className={styles.checkbox}
-                checked={formData.confirmOwnership}
-                onChange={(e) => handleInputChange('confirmOwnership', e.target.checked)}
-              />
-              <span>I confirm that I own this phone number and have access to it <span className={styles.required}>*</span></span>
-            </label>
-          </div>
-
-          <div className={styles.checkboxGroup}>
-            <label className={styles.checkboxLabel}>
-              <input 
-                type="checkbox" 
-                className={styles.checkbox}
-                checked={formData.agreeTerms}
-                onChange={(e) => handleInputChange('agreeTerms', e.target.checked)}
-              />
-              <span>I understand that this will remove the phone number from my existing account <span className={styles.required}>*</span></span>
-            </label>
-          </div>
-        </div>
-      </div>
-      
-      <button 
-        className={`${styles.reclaimButton} ${styles.fullWidth}`}
-        onClick={onProceed}
-        disabled={!isFormValid()}
-      >
-        SUBMIT RECLAIM REQUEST
-      </button>
-      
-      <button 
-        className={`${styles.cancelButton} ${styles.fullWidth}`}
-        onClick={onBack}
-      >
-        Cancel
-      </button>
-    </div>
-  );
-};
-
-const Step4AccountCheck = ({
-  systemName,
-  phoneNumber,
-  existingAccount,
-  onLogin,
-  onCreateNew,
-  currentStep,
-}) => {
-  const formattedPhone = `(+63) ${phoneNumber.slice(0, 3)} ${phoneNumber.slice(3, 6)} ${phoneNumber.slice(6)}`;
-  
-  if (!existingAccount) return null;
-  
-  return (
-    <div className={`${styles.signupCard} ${styles.accountCheckCard}`}>
-      <StepIndicator currentStep={currentStep} />
-      <button className={styles.backButton} onClick={onCreateNew}>←</button>
-      <h2 className={styles.signupTitle}>Is This Your Account?</h2>
-      
-      <div className={styles.accountInfo}>
-        <div className={styles.accountAvatar}>{existingAccount.name.charAt(0).toUpperCase()}</div>
-        <h3 className={styles.accountName}>{existingAccount.name}</h3>
-        <p className={styles.accountPhone}>{formattedPhone}</p>
-        <p className={styles.accountMessage}>
-          This phone number is already registered with {systemName}. 
-          Please proceed to login if this account belongs to you.
-        </p>
-      </div>
-      
-      <button className={styles.loginButton} onClick={onLogin}>
-        Yes, Login
-      </button>
-      <button className={styles.createNewButton} onClick={onCreateNew}>
-        No, Create A New Account
-      </button>
-    </div>
-  );
-};
 
 const Step5CreatePassword = ({
   fullName,
@@ -555,7 +334,6 @@ const Page = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [existingAccount, setExistingAccount] = useState(null);
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
@@ -587,8 +365,6 @@ const Page = () => {
       if (error) toast.error(error);
       return;
     }
-
-    toast.info(`${provider} authentication would be implemented here`);
   };
 
   const handleEmailNext = () => {
@@ -695,27 +471,6 @@ const Page = () => {
     } finally {
       setIsVerifyingCode(false);
     }
-  };
-
-  const handleReclaimProceed = () => {
-    toast.success('Reclaim request submitted. Our team will review within 24-48 hours and email you once approved.');
-    setStep(5);
-  };
-
-  const handleReclaimBack = () => {
-    setStep(1);
-    setSignupEmail('');
-    setOtpValue(['', '', '', '', '', '']);
-    setExistingAccount(null);
-  };
-
-  const handleLogin = () => {
-    router.push('/seller/login');
-  };
-
-  const handleCreateNew = () => {
-    setExistingAccount(null);
-    setStep(5);
   };
 
   const handleComplete = async () => {

@@ -672,37 +672,46 @@
 @media (max-width: 968px) {
   .contentWrapper {
     grid-template-columns: 1fr;
-    gap: 0;
+    gap: 32px;
     padding: 0 16px;
     align-items: start;
   }
 
   .leftSection {
-    display: none; /* marketing illustration — desktop only */
+    display: block;
+    padding: 0;
+    text-align: center;
   }
 
   .mainTitle {
     font-size: 32px;
+    margin-bottom: 12px;
+  }
+
+  .mainSubtitle {
+    margin-bottom: 0;
   }
 
   .mainSubtitle br {
     display: none;
   }
 
+  /* Hide illustration artwork on mobile; keep headline copy visible */
   .illustration {
-    margin: 0 auto;
-    max-width: 380px;
+    display: none;
   }
 
   .rightSection {
     width: 100%;
     display: flex;
     justify-content: center;
+    align-items: flex-start;
   }
 
   .loginCard {
     max-width: 100%;
     width: 100%;
+    margin: 0 auto;
   }
 }
 
@@ -733,17 +742,26 @@
   .leftSection {
     padding: 0 8px;
     flex-shrink: 0;
+    text-align: center;
+  }
+
+  .illustration {
+    display: none;
   }
 
   .rightSection {
     flex-shrink: 0;
     align-items: flex-start;
+    width: 100%;
+    display: flex;
+    justify-content: center;
   }
 
   .loginCard {
-    padding: 28px 22px;
+    padding: 32px 24px;
     max-height: none;
-    max-width: 400px;
+    max-width: 100%;
+    width: 100%;
     margin: 0 auto;
   }
 
@@ -786,13 +804,8 @@
 
   .mainSubtitle {
     font-size: 14px;
-    margin-bottom: 20px;
+    margin-bottom: 0;
     line-height: 1.5;
-  }
-
-  .illustration {
-    max-width: 260px;
-    margin: 0 auto;
   }
 
   .loginHeader {
@@ -939,8 +952,10 @@
   }
 
   .loginCard {
-    padding: 24px 18px;
+    padding: 24px 20px;
     max-width: 100%;
+    width: 100%;
+    border-radius: 12px;
   }
 
   .needHelpText {
@@ -966,10 +981,6 @@
 
   .mainSubtitle {
     font-size: 13px;
-  }
-
-  .illustration {
-    max-width: 220px;
   }
 
   .loginTitle {
