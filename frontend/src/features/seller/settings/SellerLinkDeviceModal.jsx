@@ -12,6 +12,7 @@ import {
 } from '@/lib/auth/sellerLinkDeviceState'
 import { useMediaQuery } from '@/shared/hooks'
 import styles from '@/app/seller/settings/settings.module.css'
+import BodyPortal from '@/components/ui/Modal/BodyPortal'
 import qrStyles from '@/app/(auth)/seller/login/qr/qrFlow.module.css'
 
 /**
@@ -137,6 +138,7 @@ export default function SellerLinkDeviceModal({ open, onClose, initialScanTarget
     .join(' ')
 
   return (
+    <BodyPortal>
     <div className={styles.linkDeviceModalOverlay} onClick={handleClose}>
       <div
         className={styles.linkDeviceModalCard}
@@ -252,5 +254,6 @@ export default function SellerLinkDeviceModal({ open, onClose, initialScanTarget
         </div>
       </div>
     </div>
+    </BodyPortal>
   )
 }

@@ -9,6 +9,7 @@ import { FiEdit, FiSave } from 'react-icons/fi'
 import { ALLOWED, MAX_MB, useSellerSettings } from '@/features/seller/settings/sellerSettings'
 import SellerLinkDeviceModal from '@/features/seller/settings/SellerLinkDeviceModal'
 import SellerSignedInDevices from '@/features/seller/settings/SellerSignedInDevices'
+import BodyPortal from '@/components/ui/Modal/BodyPortal'
 import { clearSellerLinkDeviceScanTarget } from '@/lib/auth/sellerLinkDeviceState'
 import styles from '../settings.module.css'
 
@@ -293,6 +294,7 @@ function ProfilePageContent() {
             />
 
             {avatarModalOpen && isEditingPersonal && (
+              <BodyPortal>
               <div className={styles.avatarModalOverlay} onClick={() => setAvatarModalOpen(false)}>
                 <div className={styles.avatarModalCard} onClick={(e) => e.stopPropagation()}>
                   <h3 className={styles.avatarModalTitle}>Profile Photo</h3>
@@ -323,6 +325,7 @@ function ProfilePageContent() {
                   </div>
                 </div>
               </div>
+              </BodyPortal>
             )}
 
             <input

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import styles from './seller.module.css'
+import BodyPortal from '@/components/ui/Modal/BodyPortal'
 import { useSellerAnalyticsData } from '@/lib/seller/useSellerAnalyticsData'
 import { formatPhpWholeAmount } from '@/lib/cart/formatPhp'
 import {
@@ -606,6 +607,7 @@ export default function SellerDashboardPage() {
       </section>
 
       {activeAlert && (
+        <BodyPortal>
         <div className={styles.modalOverlay} role="dialog" aria-modal="true" aria-labelledby="resolve-title">
           <div className={styles.modalCard}>
             <h3 id="resolve-title" className={styles.modalTitle}>
@@ -632,9 +634,11 @@ export default function SellerDashboardPage() {
             </div>
           </div>
         </div>
+        </BodyPortal>
       )}
 
       {activeDetailAlert && (
+        <BodyPortal>
         <div className={styles.modalOverlay} role="dialog" aria-modal="true" aria-labelledby="alert-details-title">
           <div className={styles.modalCard}>
             <h3 id="alert-details-title" className={styles.modalTitle}>
@@ -688,6 +692,7 @@ export default function SellerDashboardPage() {
             </div>
           </div>
         </div>
+        </BodyPortal>
       )}
     </div>
   )

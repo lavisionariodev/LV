@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 
 import styles from './ConfirmModal.module.css'
+import BodyPortal from './BodyPortal'
 
 export default function ConfirmModal({
   open,
@@ -96,13 +97,14 @@ export default function ConfirmModal({
     subtitleAlign === 'left' ? `${styles.subtitle} ${styles.subtitleLeft}` : styles.subtitle
 
   return (
-    <div
-      className={styles.overlay}
-      role="dialog"
-      aria-modal="true"
-      onClick={handleOverlayClick}
-    >
-      <div className={styles.modal} onClick={stop}>
+    <BodyPortal>
+      <div
+        className={styles.overlay}
+        role="dialog"
+        aria-modal="true"
+        onClick={handleOverlayClick}
+      >
+        <div className={styles.modal} onClick={stop}>
         <div className={styles.iconWrap} aria-hidden="true">
           <div className={iconCircleClass}>{icon ?? '!'}</div>
         </div>
@@ -133,6 +135,7 @@ export default function ConfirmModal({
         </div>
       </div>
     </div>
+    </BodyPortal>
   )
 }
 

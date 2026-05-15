@@ -5,6 +5,7 @@ import { TbChevronDown, TbMail, TbSearch } from 'react-icons/tb'
 import { useToast } from '@/contexts/ToastContext'
 import { useSiteContent } from '@/lib/siteContent/client'
 import styles from './help.module.css'
+import BodyPortal from '@/components/ui/Modal/BodyPortal'
 
 const CATEGORY_TABS = [
   'Getting Started',
@@ -338,6 +339,7 @@ export default function SellerHelpPage() {
       </section>
 
       {isEmailModalOpen && (
+        <BodyPortal>
         <div
           className={styles.modalOverlay}
           onClick={() => {
@@ -402,6 +404,7 @@ export default function SellerHelpPage() {
             </div>
           </div>
         </div>
+        </BodyPortal>
       )}
     </div>
   )

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { TbSearch, TbUser, TbPhone, TbMail, TbX, TbReceipt } from 'react-icons/tb'
 import styles from './customers.module.css'
+import BodyPortal from '@/components/ui/Modal/BodyPortal'
 import { formatCount } from '@/shared/utils/formatCount'
 import { useDebouncedEffect } from '@/shared/hooks'
 import { readString, replaceUrlQuery } from '@/shared/utils/queryParams'
@@ -362,6 +363,7 @@ function SellerCustomersPageContent() {
       </section>
 
       {selectedCustomer && (
+        <BodyPortal>
         <div
           className={styles.customerModalOverlay}
           role="dialog"
@@ -478,6 +480,7 @@ function SellerCustomersPageContent() {
             </div>
           </div>
         </div>
+        </BodyPortal>
       )}
     </div>
   )
