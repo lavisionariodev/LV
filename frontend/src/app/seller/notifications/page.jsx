@@ -8,37 +8,19 @@ import {
   TbBellRinging,
   TbCheck,
   TbDots,
-  TbFileText,
-  TbReceiptRefund,
   TbTrash,
 } from 'react-icons/tb'
-import { LuMegaphone, LuShoppingBag } from 'react-icons/lu'
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 import {
   relativeNotificationTime,
   useInAppNotificationFeed,
 } from '@/lib/notifications/useInAppNotificationFeed'
+import { getNotificationDisplay } from '@/lib/notifications/notificationDisplay'
 import {
   SELLER_NOTIFICATION_FILTER_TABS,
   sellerNotificationFilterBucket,
 } from '@/lib/notifications/types'
 import styles from '@/app/admin/notifications/notifications.module.css'
-
-const ICON_BY_BUCKET = {
-  order: LuShoppingBag,
-  payment: TbReceiptRefund,
-  listing: TbFileText,
-  alert: TbAlertTriangle,
-  system: LuMegaphone,
-}
-
-const COLOR_BY_BUCKET = {
-  order: 'blue',
-  payment: 'gold',
-  listing: 'green',
-  alert: 'red',
-  system: 'gold',
-}
 
 function normalizePriority(value, bucket) {
   const p = String(value || '').trim().toLowerCase()
@@ -329,7 +311,7 @@ export default function SellerNotificationsPage() {
     () =>
       apiRows.map((row) => {
         const bucket = sellerNotificationFilterBucket(row.type)
-        const Icon = ICON_BY_BUCKET[bucket] || TbAlertTriangle
+        const { Icon, color: iconColor } = getNotificationDisplay(row.type, bucket)
         const priority = normalizePriority(row.priority || row.metadata?.priority, bucket)
         return {
           id: row.id,
@@ -341,7 +323,7 @@ export default function SellerNotificationsPage() {
           resolved: Boolean(row.resolvedAt),
           priority,
           icon: Icon,
-          iconColor: COLOR_BY_BUCKET[bucket] || 'red',
+          iconColor,
           href: notificationHref(row),
         }
       }),

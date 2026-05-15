@@ -625,24 +625,22 @@
 @media (max-width: 860px) {
   .customerModalOverlay {
     align-items: flex-end;
-    padding: 0.5rem;
-    padding-top: max(0.5rem, env(safe-area-inset-top));
-    padding-right: max(0.5rem, env(safe-area-inset-right));
-    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
-    padding-left: max(0.5rem, env(safe-area-inset-left));
+    padding: max(0.5rem, env(safe-area-inset-top)) max(0.5rem, env(safe-area-inset-right))
+      max(0.5rem, env(safe-area-inset-bottom)) max(0.5rem, env(safe-area-inset-left));
     overflow: hidden;
     overscroll-behavior: contain;
   }
 
   .customerModal {
     max-width: 100%;
-    max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1rem));
+    max-height: min(88dvh, calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2rem));
     border-radius: 16px 16px 0 0;
     min-height: 0;
   }
 
   .customerModalHeader {
     flex-shrink: 0;
+    padding: 0.9rem 1.1rem;
   }
 
   .customerModalBody {
@@ -652,7 +650,7 @@
     overflow-x: hidden;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: calc(1.4rem + env(safe-area-inset-bottom));
+    padding: 1rem 1.1rem calc(1rem + env(safe-area-inset-bottom));
   }
 }
 
@@ -676,12 +674,6 @@
 
   .customerInfoGrid {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .customerModal {
-    max-width: 100%;
-    max-height: 95vh;
-    border-radius: 18px;
   }
 }
 
@@ -778,6 +770,37 @@
   .rowActionSecondary,
   .rowActionOrders {
     min-height: 32px;
+  }
+
+  .customerModal {
+    max-height: min(85dvh, calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2.5rem));
+  }
+
+  .customerModalHeader {
+    padding: 0.75rem 0.9rem;
+  }
+
+  .customerModalTitle {
+    font-size: 1rem;
+  }
+
+  .customerModalSubtitle {
+    font-size: 0.8rem;
+  }
+
+  .customerModalBody {
+    padding: 0.85rem 0.9rem calc(0.85rem + env(safe-area-inset-bottom));
+  }
+
+  .customerInfoGrid {
+    gap: 0.75rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .customerInfoCard,
+  .customerInfoSummaryCard,
+  .bookingHistorySection {
+    padding: 0.75rem 0.85rem;
   }
 }
 
