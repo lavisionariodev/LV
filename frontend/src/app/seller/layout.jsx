@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { Poppins } from 'next/font/google'
-import { AppSidebar, AppTopbar } from '@/components/layout'
+import { AppSidebar, AppTopbar, AppMobileBottomNav } from '@/components/layout'
 import { useMediaQuery } from '@/shared/hooks'
 import { CartProvider } from '@/contexts/CartContext'
 import { requireSeller } from '@/lib/auth/guards'
@@ -122,6 +122,7 @@ export default function SellerLayout({ children }) {
           isMobile={isMobile}
           mobileOpen={mobileMenuOpen}
           onMobileClose={() => setMobileMenuOpen(false)}
+          omitBottomNav={isMobile}
         />
         <div className={styles.main}>
           <AppTopbar
@@ -133,6 +134,9 @@ export default function SellerLayout({ children }) {
           <div className={styles.mainScroll}>
             <div className={styles.content}>{children}</div>
           </div>
+          {isMobile ? (
+            <AppMobileBottomNav variant="seller" onMobileClose={() => setMobileMenuOpen(false)} />
+          ) : null}
         </div>
       </div>
     </CartProvider>

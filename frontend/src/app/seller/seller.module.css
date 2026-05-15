@@ -83,10 +83,14 @@
   }
 
   /*
+   * Anchor stacking for fixed children (topbar, scroll, bottom nav, page modals) so modal overlays
+   * paint above the mobile bottom bar, which lives inside `.main` for seller.
    * Bottom inset matches admin mobile `.content` (92px) for fixed bottom nav + breathing room.
    * Do not also pad .main — that stacked with .content and looked like a huge empty band on every page.
    */
   .main {
+    position: relative;
+    z-index: 0;
     padding-bottom: 0;
   }
 

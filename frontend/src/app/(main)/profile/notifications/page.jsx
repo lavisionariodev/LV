@@ -5,7 +5,7 @@ import { useProfile } from '@/contexts/ProfileContext';
 import styles from '../profile.module.css';
 import notifStyles from './notifications.module.css';
 import { useState, useMemo } from 'react';
-import { useInAppNotificationFeed } from '@/lib/notifications/useInAppNotificationFeed';
+import { useBuyerInAppNotificationFeed } from '@/contexts/BuyerInAppNotificationFeedContext';
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -178,7 +178,7 @@ function mapApiRowToBuyerNotification(row) {
 const PAGE_SIZE = 7;
 
 export default function NotificationsPage() {
-  const { loading, user } = useProfile();
+  const { loading } = useProfile();
   const {
     notifications: apiRows,
     loading: feedLoading,
@@ -186,7 +186,7 @@ export default function NotificationsPage() {
     markAllRead,
     deleteOne,
     clearAll,
-  } = useInAppNotificationFeed({ limit: 100, enabled: Boolean(user) && !loading });
+  } = useBuyerInAppNotificationFeed();
 
   const [activeFilter, setActiveFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);

@@ -1119,13 +1119,20 @@ button.shareIconDisabled:hover {
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 100;
+    z-index: 200;
     background: #fff;
     border-top: 1px solid rgba(16, 40, 32, 0.1);
     box-shadow: 0 -4px 16px rgba(16, 40, 32, 0.08);
-    padding: 10px 14px;
+    /* Push buttons up above the home indicator / gesture bar */
+    padding: 10px 14px max(env(safe-area-inset-bottom, 0px), 10px);
     gap: 8px;
     align-items: center;
+    box-sizing: border-box;
+  }
+
+  /* Give the page enough room so content isn't hidden behind the bar */
+  .detailPage {
+    padding-bottom: calc(70px + max(env(safe-area-inset-bottom, 0px), 10px));
   }
 }
 

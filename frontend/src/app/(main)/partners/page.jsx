@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
 import { fetchActivePartnersDirectory, fetchPartnersSpotlight } from '@/lib/partners/client'
 import styles from './partners.module.css'
@@ -43,13 +44,11 @@ function PartnerHeroSection() {
  */
 function FeaturedPartnersSection() {
   const [spotlight, setSpotlight] = useState({ featured: [], topRated: [] })
-  const [loadState, setLoadState] = useState('idle')
+  const [loadState, setLoadState] = useState('loading')
   const [loadErrorDetail, setLoadErrorDetail] = useState(null)
 
   useEffect(() => {
     let cancelled = false
-    setLoadState('loading')
-    setLoadErrorDetail(null)
     fetchPartnersSpotlight()
       .then((data) => {
         if (cancelled) return
@@ -130,10 +129,13 @@ function FeaturedPartnersSection() {
                 <div className={styles.featuredBadge}>{partner.badge}</div>
                 <div className={styles.featuredImageWrap}>
                   {partner.avatarUrl ? (
-                    <img
+                    <Image
                       src={partner.avatarUrl}
                       alt={partner.businessName}
+                      width={96}
+                      height={96}
                       className={styles.featuredCircleImage}
+                      unoptimized
                     />
                   ) : (
                     <span
@@ -196,13 +198,11 @@ function partnerInitials(name) {
 function AllPartnersSection() {
   const [filter, setFilter] = useState('All')
   const [partners, setPartners] = useState([])
-  const [loadState, setLoadState] = useState('idle')
+  const [loadState, setLoadState] = useState('loading')
   const [loadErrorDetail, setLoadErrorDetail] = useState(null)
 
   useEffect(() => {
     let cancelled = false
-    setLoadState('loading')
-    setLoadErrorDetail(null)
     fetchActivePartnersDirectory({ bustCache: true })
       .then((rows) => {
         if (cancelled) return
@@ -233,9 +233,10 @@ function AllPartnersSection() {
   }, [partners])
 
   useEffect(() => {
-    if (filter !== 'All' && !categories.includes(filter)) {
+    if (filter === 'All' || categories.includes(filter)) return
+    queueMicrotask(() => {
       setFilter('All')
-    }
+    })
   }, [categories, filter])
 
   const filtered = useMemo(() => {
@@ -308,10 +309,13 @@ function AllPartnersSection() {
             <div key={partner.sellerUserId} className={styles.partnerCard}>
               <div className={styles.partnerImageWrap}>
                 {partner.avatarUrl ? (
-                  <img
+                  <Image
                     src={partner.avatarUrl}
                     alt={partner.businessName}
+                    width={80}
+                    height={80}
                     className={styles.partnerCircleImage}
+                    unoptimized
                   />
                 ) : (
                   <span

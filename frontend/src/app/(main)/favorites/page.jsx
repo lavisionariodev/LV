@@ -46,8 +46,6 @@ export default function FavoritesPage() {
 
   useEffect(() => {
     if (!favorites.length) {
-      setListingMetaById(new Map())
-      setRatingAggregates({ aggregatesBySellerId: {}, aggregatesByPair: {} })
       return
     }
 

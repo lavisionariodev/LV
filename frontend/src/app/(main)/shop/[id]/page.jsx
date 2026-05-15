@@ -77,6 +77,15 @@ export default function ServiceDetailPage({ params }) {
   const [chatOpen, setChatOpen] = useState(false)
   const [isMobileView, setIsMobileView] = useState(false)
 
+  // Hide the global bottom nav (Home/Shop/Notifications/Profile) on this page
+  // so it doesn't overlap the sticky CHAT / BOOK NOW / ADD TO CART action bar.
+  useEffect(() => {
+    document.body.setAttribute('data-hide-bottom-nav', '')
+    return () => {
+      document.body.removeAttribute('data-hide-bottom-nav')
+    }
+  }, [])
+
   useEffect(() => {
     const mql = window.matchMedia('(max-width: 860px)')
     const update = () => setIsMobileView(mql.matches)
@@ -302,12 +311,18 @@ export default function ServiceDetailPage({ params }) {
 
   const [shareAbsoluteUrl, setShareAbsoluteUrl] = useState('')
   useEffect(() => {
-    if (typeof window === 'undefined' || !service) return
-    try {
-      setShareAbsoluteUrl(new URL(listingSharePath, window.location.origin).href)
-    } catch {
-      setShareAbsoluteUrl('')
-    }
+    if (typeof window === 'undefined') return
+    queueMicrotask(() => {
+      if (!service) {
+        setShareAbsoluteUrl('')
+        return
+      }
+      try {
+        setShareAbsoluteUrl(new URL(listingSharePath, window.location.origin).href)
+      } catch {
+        setShareAbsoluteUrl('')
+      }
+    })
   }, [listingSharePath, service])
 
   const shareImageAbsolute = useMemo(() => {

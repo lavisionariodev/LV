@@ -134,6 +134,106 @@ const SIDEBAR_CONFIG = {
 
 const BOTTOM_NAV_MAIN_ITEMS = 4
 
+/** Mobile bottom bar; keep in the same stacking subtree as page modals (e.g. inside seller `.main`). */
+export function AppMobileBottomNav({ variant, onMobileClose }) {
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const config = SIDEBAR_CONFIG[variant]
+  if (!config) return null
+
+  const basePath = config.basePath
+
+  const isActive = (href) => isHrefActive(href, pathname, searchParams, basePath)
+
+  return (
+    <nav className={styles.bottomNav} aria-label="Main navigation">
+      {(
+        variant === 'admin'
+          ? [
+              {
+                href: '/admin',
+                label: 'Home',
+                icon: TbLayoutDashboardFilled,
+              },
+              {
+                href: '/admin/payouts',
+                label: 'Payouts',
+                icon: TbReportSearch,
+              },
+              {
+                href: '/admin/listings/browse',
+                label: 'Listings',
+                icon: TbPackage,
+                activePrefix: '/admin/listings',
+              },
+              {
+                href: '/admin/analytics',
+                label: 'Analytics',
+                icon: TbChartBar,
+              },
+              {
+                href: '/admin/profile',
+                label: 'Profile',
+                icon: BsPerson,
+              },
+            ]
+          : getBottomNavItems(
+              config.navItems,
+              variant === 'seller' ? BOTTOM_NAV_MAIN_ITEMS : undefined,
+            )
+      ).map((item) => {
+        const active =
+          item.activePrefix && pathname
+            ? pathname.startsWith(item.activePrefix)
+            : isActive(item.href)
+        const Icon = item.icon
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`${styles.bottomNavLink} ${active ? styles.bottomNavLinkActive : ''}`}
+            onClick={onMobileClose}
+            aria-current={active ? 'page' : undefined}
+          >
+            <span className={styles.bottomNavIcon}>
+              <Icon size={22} aria-hidden />
+            </span>
+            <span className={styles.bottomNavLabel}>{item.label}</span>
+          </Link>
+        )
+      })}
+      {variant === 'seller' && (
+        <Link
+          href="/seller/more"
+          className={`${styles.bottomNavLink} ${
+            pathname?.startsWith('/seller/more') ||
+            pathname?.startsWith('/seller/reviews') ||
+            pathname?.startsWith('/seller/notifications') ||
+            pathname?.startsWith('/seller/help') ||
+            pathname?.startsWith('/seller/settings')
+              ? styles.bottomNavLinkActive
+              : ''
+          }`}
+          aria-current={
+            pathname?.startsWith('/seller/more') ||
+            pathname?.startsWith('/seller/reviews') ||
+            pathname?.startsWith('/seller/notifications') ||
+            pathname?.startsWith('/seller/help') ||
+            pathname?.startsWith('/seller/settings')
+              ? 'page'
+              : undefined
+          }
+        >
+          <span className={styles.bottomNavIcon}>
+            <TbMenu2 size={22} aria-hidden />
+          </span>
+          <span className={styles.bottomNavLabel}>More</span>
+        </Link>
+      )}
+    </nav>
+  )
+}
+
 export default function AppSidebar({
   variant,
   collapsed = false,
@@ -141,6 +241,7 @@ export default function AppSidebar({
   isMobile,
   mobileOpen,
   onMobileClose,
+  omitBottomNav = false,
 }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -508,92 +609,8 @@ export default function AppSidebar({
         </>
       )}
 
-      {isMobile && (
-        <nav className={styles.bottomNav} aria-label="Main navigation">
-          {(
-            variant === 'admin'
-              ? [
-                  {
-                    href: '/admin',
-                    label: 'Home',
-                    icon: TbLayoutDashboardFilled,
-                  },
-                  {
-                    href: '/admin/payouts',
-                    label: 'Payouts',
-                    icon: TbReportSearch,
-                  },
-                  {
-                    href: '/admin/listings/browse',
-                    label: 'Listings',
-                    icon: TbPackage,
-                    activePrefix: '/admin/listings',
-                  },
-                  {
-                    href: '/admin/analytics',
-                    label: 'Analytics',
-                    icon: TbChartBar,
-                  },
-                  {
-                    href: '/admin/profile',
-                    label: 'Profile',
-                    icon: BsPerson,
-                  },
-                ]
-              : getBottomNavItems(
-                  config.navItems,
-                  variant === 'seller' ? BOTTOM_NAV_MAIN_ITEMS : undefined,
-                )
-          ).map((item) => {
-            const active =
-              item.activePrefix && pathname
-                ? pathname.startsWith(item.activePrefix)
-                : isActive(item.href)
-            const Icon = item.icon
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`${styles.bottomNavLink} ${active ? styles.bottomNavLinkActive : ''}`}
-                onClick={onMobileClose}
-                aria-current={active ? 'page' : undefined}
-              >
-                <span className={styles.bottomNavIcon}>
-                  <Icon size={22} aria-hidden />
-                </span>
-                <span className={styles.bottomNavLabel}>{item.label}</span>
-              </Link>
-            )
-          })}
-          {variant === 'seller' && (
-            <Link
-              href="/seller/more"
-              className={`${styles.bottomNavLink} ${
-                pathname?.startsWith('/seller/more') ||
-                pathname?.startsWith('/seller/reviews') ||
-                pathname?.startsWith('/seller/notifications') ||
-                pathname?.startsWith('/seller/help') ||
-                pathname?.startsWith('/seller/settings')
-                  ? styles.bottomNavLinkActive
-                  : ''
-              }`}
-              aria-current={
-                pathname?.startsWith('/seller/more') ||
-                pathname?.startsWith('/seller/reviews') ||
-                pathname?.startsWith('/seller/notifications') ||
-                pathname?.startsWith('/seller/help') ||
-                pathname?.startsWith('/seller/settings')
-                  ? 'page'
-                  : undefined
-              }
-            >
-              <span className={styles.bottomNavIcon}>
-                <TbMenu2 size={22} aria-hidden />
-              </span>
-              <span className={styles.bottomNavLabel}>More</span>
-            </Link>
-          )}
-        </nav>
+      {isMobile && !omitBottomNav && (
+        <AppMobileBottomNav variant={variant} onMobileClose={onMobileClose} />
       )}
     </>
   )

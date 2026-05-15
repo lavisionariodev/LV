@@ -1,16 +1,9 @@
 import Head from "next/head";
+import Image from "next/image";
 import styles from "./about.module.css";
 import { getSiteContent } from "@/lib/siteContent/server";
 
 /* ── static data ──────────────────────────────────────────────────────────── */
-
-const STRIP_ITEMS = [
-  { icon: "fa-church",        label: "Chapel"    },
-  { icon: "fa-coffin-cross",  label: "Casket"    },
-  { icon: "fa-file-contract", label: "Documents" },
-  { icon: "fa-truck-moving",  label: "Transport" },
-  { icon: "fa-dove",          label: "Memorial"  },
-];
 
 const BLOB_ICONS = [
   "fa-dove",         "fa-hands-praying", "fa-feather",
@@ -79,12 +72,6 @@ export default async function AboutPage() {
             about.ourStory ||
             `${systemName} helps Filipino families plan funeral services in a simple, respectful, and transparent way.`
           }
-        />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Lato:wght@300;400;600;700&display=swap"
-          rel="stylesheet"
         />
         <link
           rel="stylesheet"
@@ -174,10 +161,12 @@ export default async function AboutPage() {
               <div className={styles.missionLeft}>
                 <div className={styles.missionCard}>
                   <div className={styles.missionCardImageWrap}>
-                    <img
+                    <Image
                       src="/sample/about-us/mission-compassion-card.png"
                       alt="Dove symbol representing compassion"
+                      fill
                       className={styles.missionCardImage}
+                      sizes="296px"
                     />
                   </div>
                   <div className={styles.missionBadge}>
@@ -224,10 +213,12 @@ export default async function AboutPage() {
             <div className={styles.blobWrap}>
               <div className={styles.blob}>
                 <div className={styles.blobImageWrap}>
-                  <img
+                  <Image
                     src="/sample/about-us/about-us-blob.png"
                     alt={`${systemName} — dignified farewell care`}
+                    fill
                     className={styles.blobImage}
+                    sizes="370px"
                   />
                 </div>
                 <div className={styles.blobGrid}>
@@ -311,10 +302,13 @@ export default async function AboutPage() {
                     <p className={styles.testimonialText}>{t.text}</p>
                     <div className={styles.testimonialAuthorRow}>
                       <div className={styles.testimonialAvatar}>
-                        <img
+                        <Image
                           src={`https://ui-avatars.com/api/?name=${encodeURIComponent(t.name)}&background=102820&color=fff&size=84&font-size=0.38&bold=true&rounded=true`}
                           alt={t.name}
+                          width={42}
+                          height={42}
                           className={styles.testimonialAvatarImg}
+                          unoptimized
                         />
                       </div>
                       <div>
