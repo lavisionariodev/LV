@@ -3,10 +3,10 @@ import { createClient } from '@/lib/supabase/server'
 import { requireActiveSellerApiUser } from '@/lib/auth/requireApiUser'
 import {
   removeOtherSellerPortalSessions,
-  resolveAuthSessionId,
+  resolveSellerPortalDeviceKeyFromRequest,
 } from '@/lib/auth/sellerPortalSessionsServer'
 
-export async function POST() {
+export async function POST(request) {
   const { user, supabaseAdmin, responseError } = await requireActiveSellerApiUser()
   if (responseError) return responseError
 
@@ -20,13 +20,10 @@ export async function POST() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const currentSessionId = resolveAuthSessionId(session)
-  if (!currentSessionId) {
-    return NextResponse.json({ error: 'Could not identify this browser session.' }, { status: 500 })
-  }
+  const currentDeviceKey = resolveSellerPortalDeviceKeyFromRequest(request, user.id)
 
   const { error: signOutError } = await supabase.auth.signOut({ scope: 'others' })
-  const deleteError = await removeOtherSellerPortalSessions(supabaseAdmin, user.id, currentSessionId)
+  const deleteError = await removeOtherSellerPortalSessions(supabaseAdmin, user.id, currentDeviceKey)
 
   if (signOutError) {
     return NextResponse.json(

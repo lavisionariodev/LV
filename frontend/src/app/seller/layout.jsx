@@ -22,6 +22,8 @@ export default function SellerLayout({ children }) {
   const [authStatus, setAuthStatus] = useState('loading')
 
   useEffect(() => {
+    if (authStatus === 'allowed') return
+
     let cancelled = false
 
     async function check() {
@@ -51,7 +53,7 @@ export default function SellerLayout({ children }) {
     return () => {
       cancelled = true
     }
-  }, [router, pathname])
+  }, [router, pathname, authStatus])
 
   const handleLogout = async () => {
     await signOut()

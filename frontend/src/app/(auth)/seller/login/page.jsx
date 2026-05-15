@@ -14,6 +14,7 @@ import { getSellerStatusForUser } from '@/lib/sellers/client';
 import { useAuthToast } from '@/contexts/ToastContext';
 import { useSiteContent } from '@/lib/siteContent/client';
 import { completeSellerPortalLogin } from '@/lib/auth/completeSellerPortalLogin';
+import PortalBootstrapLoader from '@/components/ui/Loader/PortalBootstrapLoader';
 import { createSellerQrChallenge, pollSellerQrChallenge, SELLER_QR_LOGIN_POLL_INTERVAL_MS } from '@/lib/auth/qrLoginClient';
 import QRCode from 'react-qr-code';
 
@@ -24,6 +25,7 @@ function SellerLoginPageInner() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [enteringPortal, setEnteringPortal] = useState(false);
   const [qrApproveUrl, setQrApproveUrl] = useState('');
   const [qrStatus, setQrStatus] = useState('idle');
   const [qrRefreshing, setQrRefreshing] = useState(false);
@@ -97,6 +99,7 @@ function SellerLoginPageInner() {
     }
 
     toast.success('Welcome back to Seller Centre!');
+    setEnteringPortal(true);
     router.replace(result.target);
     return true;
   };
@@ -258,7 +261,8 @@ function SellerLoginPageInner() {
         return;
       }
 
-      await finishSellerLogin(user);
+      const navigated = await finishSellerLogin(user);
+      if (navigated) return;
     } catch (err) {
       console.error('Seller login error:', err);
       toast.error('An error occurred. Please try again later.');
@@ -284,6 +288,10 @@ function SellerLoginPageInner() {
       if (error) toast.error(error);
     }
   };
+
+  if (enteringPortal) {
+    return <PortalBootstrapLoader variant="seller" />;
+  }
 
   return (
     <div className={styles.pageWrapper}>

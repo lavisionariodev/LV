@@ -516,15 +516,22 @@
   .shell,
   .shellCollapsed {
     grid-template-columns: 1fr;
-    min-height: 100vh;
-    min-height: 100dvh;
+    /* Avoid forcing viewport height when page content is short (empty band below scroll). */
+    min-height: auto;
     /* Match AppMobileBottomNav / AppTopbar fixed heights (safe-area is inside those bars). */
     --admin-mobile-topbar-h: calc(60px + env(safe-area-inset-top, 0px));
     --admin-mobile-bottom-nav-h: calc(60px + env(safe-area-inset-bottom, 0px));
     --admin-mobile-content-gap: 4px;
   }
 
-  /* Top inset clears fixed topbar; bottom inset clears fixed bottom nav only once */
+  .main {
+    min-height: auto;
+  }
+
+  /*
+   * Mobile bottom clearance lives here only — do not add nav-height padding-bottom on page roots.
+   * Modals / in-page fixed footers may add local padding inside their own scroll areas.
+   */
   .content {
     padding:
       calc(var(--admin-mobile-topbar-h) + var(--admin-mobile-content-gap))
@@ -559,6 +566,8 @@
     background: linear-gradient(160deg, #0d2218 0%, #102820 40%, #163a27 100%);
     border-radius: 22px;
     padding: 24px 24px 60px;
+    margin-left: 6px;
+    margin-right: 6px;
     position: relative;
     overflow: hidden;
   }
@@ -1717,6 +1726,8 @@
   background: linear-gradient(160deg, #0d2218 0%, #102820 40%, #163a27 100%);
   border-radius: 22px;
   padding: 24px 24px 60px;
+  margin-left: 6px;
+  margin-right: 6px;
   position: relative;
   overflow: hidden;
 }
@@ -2035,5 +2046,62 @@
   .analyticsSkStats {
     grid-template-columns: 1fr 1fr;
     gap: 10px;
+  }
+}
+
+/* Bulk toolbar — clear selection: full label on desktop, X icon on mobile */
+.bulkClearSelectionBtn {
+  margin-left: auto;
+  padding: 6px 12px;
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #0f172a;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.bulkClearSelectionBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bulkClearSelectionIcon {
+  display: none;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .bulkClearSelectionLabel {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .bulkClearSelectionIcon {
+    display: block;
+  }
+
+  .bulkClearSelectionBtn {
+    padding: 6px 10px;
+    min-width: 36px;
+    min-height: 36px;
   }
 }

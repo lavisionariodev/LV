@@ -7,6 +7,7 @@ import { FiRotateCcw } from 'react-icons/fi';
 import { TbX } from 'react-icons/tb';
 import { LuSettings2 } from 'react-icons/lu';
 import styles from './sellers.module.css';
+import adminStyles from '../admin.module.css';
 import {
   listSellersForAdmin,
   rejectSellerApplication,
@@ -17,6 +18,7 @@ import { useAuthToast } from '@/contexts/ToastContext';
 import { useMediaQuery } from '@/shared/hooks';
 import { Dropdown } from '@/components/ui';
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal';
+import confirmModalStyles from '@/components/ui/Modal/ConfirmModal.module.css';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDebouncedEffect } from '@/shared/hooks';
@@ -683,8 +685,9 @@ function SellerDetailModal({ seller, onClose }) {
         title="Reject compliance document?"
         message="Tell the seller what to fix before they re-upload this document."
         extra={
-          <div style={{ display: 'grid', gap: 8 }}>
+          <>
             <textarea
+              className={confirmModalStyles.modalTextarea}
               value={rejectDocReason}
               onChange={(e) => {
                 setRejectDocReason(e.target.value);
@@ -692,10 +695,9 @@ function SellerDetailModal({ seller, onClose }) {
               }}
               rows={4}
               placeholder="At least 12 characters"
-              style={{ width: '100%', padding: '8px 10px', fontSize: 14 }}
             />
-            {rejectDocError ? <p style={{ margin: 0, color: '#b91c1c', fontSize: 13 }}>{rejectDocError}</p> : null}
-          </div>
+            {rejectDocError ? <p className={confirmModalStyles.modalFieldError}>{rejectDocError}</p> : null}
+          </>
         }
         subtitleAlign="left"
         confirmLabel="Reject document"
@@ -1295,20 +1297,11 @@ export default function AdminSellersPage() {
               type="button"
               onClick={() => setSelectedRows(new Set())}
               disabled={bulkBusy}
-              style={{
-                marginLeft: 'auto',
-                padding: '6px 12px',
-                background: '#ffffff',
-                color: '#0f172a',
-                border: '1px solid #0f172a',
-                borderRadius: 6,
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: bulkBusy ? 'not-allowed' : 'pointer',
-                opacity: bulkBusy ? 0.5 : 1,
-              }}
+              className={adminStyles.bulkClearSelectionBtn}
+              aria-label="Clear selection"
             >
-              Clear selection
+              <span className={adminStyles.bulkClearSelectionLabel}>Clear selection</span>
+              <TbX className={adminStyles.bulkClearSelectionIcon} aria-hidden />
             </button>
           </div>
         ) : null}

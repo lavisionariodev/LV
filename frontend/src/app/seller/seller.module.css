@@ -58,51 +58,62 @@
   .shell,
   .shellCollapsed {
     grid-template-columns: 1fr;
-    min-height: 100vh;
-    min-height: 100dvh;
+    /* Avoid forcing viewport height when page content is short (empty band below scroll). */
+    min-height: auto;
+    /* Match AppMobileBottomNav / AppTopbar fixed heights (safe-area is inside those bars). */
+    --seller-mobile-topbar-h: calc(60px + env(safe-area-inset-top, 0px));
+    --seller-mobile-bottom-nav-h: calc(60px + env(safe-area-inset-bottom, 0px));
+    --seller-mobile-content-gap-top: 16px;
+    --seller-mobile-content-gap-bottom: 4px;
+    --seller-mobile-side-pad: 16px;
   }
 
   /*
    * Anchor stacking for fixed children (topbar, bottom nav, page modals) so modal overlays
    * paint above the mobile bottom bar, which lives inside `.main` for seller.
-   * Bottom inset clears fixed bottom nav (60px) + small gap.
-   * Do not also pad .main — that stacked with .content and looked like a huge empty band on every page.
+   * Bottom inset clears fixed bottom nav only once on `.content` — not on `.main`.
    */
   .main {
     position: relative;
     z-index: 0;
+    min-height: auto;
     padding-bottom: 0;
   }
 
   .content {
-    padding: calc(60px + env(safe-area-inset-top, 0px) + 16px) 16px
-      calc(64px + env(safe-area-inset-bottom, 0px));
+    padding:
+      calc(var(--seller-mobile-topbar-h) + var(--seller-mobile-content-gap-top))
+      var(--seller-mobile-side-pad)
+      calc(var(--seller-mobile-bottom-nav-h) + var(--seller-mobile-content-gap-bottom));
   }
 
   .content:has([data-portal-inner-page]) {
-    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(var(--seller-mobile-bottom-nav-h) + var(--seller-mobile-content-gap-bottom));
   }
 
   /*
-   * /seller/products/new-listing — full-page form uses its own fixed footer; trim layout padding.
+   * Mobile bottom clearance lives here only — do not add nav-height padding-bottom on page roots.
+   * Modals / in-page fixed footers may add local padding inside their own scroll areas.
    */
-  .content:has([class*='newListingLayout'], [class*='loadingRoot']) {
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
-  }
 }
 
 @media (max-width: 600px) {
+  .shell,
+  .shellCollapsed {
+    --seller-mobile-topbar-h: calc(56px + env(safe-area-inset-top, 0px));
+    --seller-mobile-content-gap-top: 14px;
+    --seller-mobile-side-pad: 14px;
+  }
+
   .content {
-    padding: calc(56px + env(safe-area-inset-top, 0px) + 14px) 14px
-      calc(64px + env(safe-area-inset-bottom, 0px));
+    padding:
+      calc(var(--seller-mobile-topbar-h) + var(--seller-mobile-content-gap-top))
+      var(--seller-mobile-side-pad)
+      calc(var(--seller-mobile-bottom-nav-h) + var(--seller-mobile-content-gap-bottom));
   }
 
   .content:has([data-portal-inner-page]) {
-    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
-  }
-
-  .content:has([class*='newListingLayout'], [class*='loadingRoot']) {
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    padding-bottom: calc(var(--seller-mobile-bottom-nav-h) + var(--seller-mobile-content-gap-bottom));
   }
 }
 

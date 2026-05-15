@@ -2594,10 +2594,6 @@
     gap: 0.9rem;
   }
 
-  .newListingFormColumn {
-    padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
-  }
-
   .newListingCard {
     padding: 1rem 0.95rem 1rem;
     border-radius: 14px;
@@ -2974,9 +2970,6 @@
 
 /* ── 480 px and below: phones ── */
 @media (max-width: 480px) {
-  .newListingFormColumn {
-    padding-bottom: calc(4.35rem + env(safe-area-inset-bottom, 0px));
-  }
 
   .newListingLayout {
     grid-template-columns: 1fr;

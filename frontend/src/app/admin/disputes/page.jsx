@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import styles from './disputes.module.css'
+import adminStyles from '../admin.module.css'
 import { TbX } from 'react-icons/tb'
 import { LuSettings2 } from 'react-icons/lu'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
@@ -489,20 +490,11 @@ export default function AdminDisputesPage() {
               type="button"
               onClick={() => setSelectedRows(new Set())}
               disabled={bulkBusy}
-              style={{
-                marginLeft: 'auto',
-                padding: '6px 12px',
-                background: '#ffffff',
-                color: '#0f172a',
-                border: '1px solid #0f172a',
-                borderRadius: 6,
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: bulkBusy ? 'not-allowed' : 'pointer',
-                opacity: bulkBusy ? 0.5 : 1,
-              }}
+              className={adminStyles.bulkClearSelectionBtn}
+              aria-label="Clear selection"
             >
-              Clear selection
+              <span className={adminStyles.bulkClearSelectionLabel}>Clear selection</span>
+              <TbX className={adminStyles.bulkClearSelectionIcon} aria-hidden />
             </button>
           </div>
         ) : null}
@@ -651,30 +643,38 @@ export default function AdminDisputesPage() {
         <div className={styles.mobileList}>
           {listLoading ? (
             Array.from({ length: 5 }).map((_, i) => (
-              <div key={`dis-m-sk-${i}`} className={styles.disputesSkMobileCardSk}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <span className={styles.disputesSkBar} style={{ display: 'block', height: 14, width: '72%', marginBottom: 6 }} aria-hidden />
-                    <span className={styles.disputesSkBar} style={{ display: 'block', height: 10, width: 100 }} aria-hidden />
+              <div key={`dis-m-sk-${i}`} className={styles.disputesSkMobileCardSk} aria-hidden>
+                <div className={styles.mobileCardHeader}>
+                  <div className={styles.disputesSkHeaderMain}>
+                    <span className={`${styles.disputesSkBar} ${styles.disputesSkLineTitle}`} />
+                    <span className={`${styles.disputesSkBar} ${styles.disputesSkLineSub}`} />
                   </div>
-                  <span className={styles.disputesSkBar} style={{ width: 72, height: 24, borderRadius: 999, flexShrink: 0 }} aria-hidden />
+                  <span className={`${styles.disputesSkBar} ${styles.disputesSkBadge}`} />
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
-                  <span className={styles.disputesSkBar} style={{ width: 22, height: 22, borderRadius: 7, flexShrink: 0 }} aria-hidden />
-                  <span className={styles.disputesSkBar} style={{ height: 11, width: 80, flex: '1 1 72px' }} aria-hidden />
-                  <span className={styles.disputesSkBar} style={{ width: 13, height: 13, flexShrink: 0 }} aria-hidden />
-                  <span className={styles.disputesSkBar} style={{ width: 22, height: 22, borderRadius: 7, flexShrink: 0 }} aria-hidden />
-                  <span className={styles.disputesSkBar} style={{ height: 11, width: 96, flex: '1 1 80px' }} aria-hidden />
+                <div className={styles.disputesSkSection}>
+                  <div className={styles.disputesSkPartiesRow}>
+                    <span className={`${styles.disputesSkBar} ${styles.disputesSkChip}`} />
+                    <span className={`${styles.disputesSkBar} ${styles.disputesSkPartyLine}`} />
+                    <span className={`${styles.disputesSkBar} ${styles.disputesSkArrow}`} />
+                    <span className={`${styles.disputesSkBar} ${styles.disputesSkChip}`} />
+                    <span className={`${styles.disputesSkBar} ${styles.disputesSkPartyLine}`} style={{ maxWidth: 96 }} />
+                  </div>
                 </div>
-                <span className={styles.disputesSkBar} style={{ height: 24, width: 128, borderRadius: 999 }} aria-hidden />
-                <span className={styles.disputesSkBar} style={{ height: 13, width: 92 }} aria-hidden />
-                <span className={styles.disputesSkBar} style={{ height: 46, width: '100%', borderRadius: 12, display: 'block' }} aria-hidden />
+                <div className={styles.disputesSkSection}>
+                  <span className={`${styles.disputesSkBar} ${styles.disputesSkReason}`} />
+                </div>
+                <div className={styles.disputesSkSection}>
+                  <span className={`${styles.disputesSkBar} ${styles.disputesSkDate}`} />
+                </div>
+                <div className={styles.mobileCardFooter}>
+                  <span className={`${styles.disputesSkBar} ${styles.disputesSkDetailsBtn}`} />
+                </div>
               </div>
             ))
           ) : filtered.map((d) => {
             const refLbl = disputeRefShortLabel(d.id)
             return (
-            <div key={d.id} className={styles.mobileCard}>
+            <article key={d.id} className={styles.mobileCard}>
               <div className={styles.mobileCardHeader}>
                 <div className={styles.mobileHeaderMain}>
                   <div className={styles.mobileTitle}>{d.orderRef}</div>
@@ -685,10 +685,8 @@ export default function AdminDisputesPage() {
                 </div>
               </div>
 
-              <div className={styles.mobileCardBody}>
-                <div className={styles.mobileField}>
-                  <div className={styles.mobileFieldLabel}>Parties</div>
-                  <div className={styles.parties}>
+              <div className={styles.mobileCardSection} data-mobile-label="Parties">
+                <div className={styles.parties}>
                     <span className={styles.partyChip} data-role="complainant" title="Complainant">C</span>
                     <span className={styles.partyName}>{d.complainantName}</span>
                     <svg className={styles.arrowIcon} viewBox="0 0 16 16" fill="none" aria-hidden>
@@ -696,22 +694,23 @@ export default function AdminDisputesPage() {
                     </svg>
                     <span className={styles.partyChip} data-role="respondent" title="Respondent">R</span>
                     <span className={styles.partyName}>{d.respondentName}</span>
-                  </div>
-                </div>
-                <div className={styles.mobileField}>
-                  <div className={styles.mobileFieldLabel}>Reason</div>
-                  <span className={styles.reasonTag}>{d.reason}</span>
-                </div>
-                <div className={styles.mobileField}>
-                  <div className={styles.mobileFieldLabel}>Date</div>
-                  <span className={styles.dateCell}>{formatDisputeTableDate(d.openedAtIso)}</span>
                 </div>
               </div>
 
-              <Link href={`/admin/disputes/${d.id}`} className={styles.mobileCardDetailsBtn}>
-                View
-              </Link>
-            </div>
+              <div className={styles.mobileCardSection} data-mobile-label="Reason">
+                <span className={styles.reasonTag}>{d.reason}</span>
+              </div>
+
+              <div className={styles.mobileCardSection} data-mobile-label="Date">
+                <span className={styles.dateCell}>{formatDisputeTableDate(d.openedAtIso)}</span>
+              </div>
+
+              <div className={styles.mobileCardFooter}>
+                <Link href={`/admin/disputes/${d.id}`} className={styles.mobileCardDetailsBtn}>
+                  View dispute
+                </Link>
+              </div>
+            </article>
             )
           })}
 
