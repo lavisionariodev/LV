@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import styles from './payouts.module.css'
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
+import confirmModalStyles from '@/components/ui/Modal/ConfirmModal.module.css'
 
 function formatMoney(n) {
   const v = Number(n)
@@ -217,8 +218,9 @@ export default function PayoutRequestsStrip() {
         title="Reject payout request?"
         message="Explain what the seller should fix or why escrow cannot be released yet. They will receive this note."
         extra={
-          <div style={{ display: 'grid', gap: 8 }}>
+          <>
             <textarea
+              className={confirmModalStyles.modalTextarea}
               value={rejectNote}
               onChange={(e) => {
                 setRejectNote(e.target.value)
@@ -226,10 +228,9 @@ export default function PayoutRequestsStrip() {
               }}
               rows={4}
               placeholder="At least 12 characters"
-              style={{ width: '100%', padding: '8px 10px', fontSize: 14 }}
             />
-            {rejectError ? <p style={{ margin: 0, color: '#b91c1c', fontSize: 13 }}>{rejectError}</p> : null}
-          </div>
+            {rejectError ? <p className={confirmModalStyles.modalFieldError}>{rejectError}</p> : null}
+          </>
         }
         subtitleAlign="left"
         confirmLabel="Reject request"

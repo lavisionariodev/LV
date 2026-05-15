@@ -1030,6 +1030,7 @@ function EscrowReleasePanel({
         variant="primary"
         icon={<TbCreditCardPay size={22} strokeWidth={1.75} aria-hidden />}
         title={useCompactCopy ? 'Release payout' : 'Release payout?'}
+        subtitleAlign="left"
         message={
           useCompactCopy ? (
             <>
@@ -1056,17 +1057,19 @@ function EscrowReleasePanel({
         }
         extra={
           <>
-            <label className={confirmModalStyles.modalFieldLabel}>
-              <span>Release reference (optional)</span>
-              <input
-                type="text"
-                value={releaseReferenceInput}
-                onChange={(e) => setReleaseReferenceInput(e.target.value)}
-                placeholder="Bank ref, transfer note, or PayMongo transfer id"
-                disabled={busy}
-              />
+            <label htmlFor={`escrow-release-ref-${t.id}`} className={confirmModalStyles.modalFieldLabel}>
+              Release reference (optional)
             </label>
-            <label className={confirmModalStyles.modalFieldLabel}>
+            <input
+              id={`escrow-release-ref-${t.id}`}
+              type="text"
+              className={confirmModalStyles.modalInput}
+              value={releaseReferenceInput}
+              onChange={(e) => setReleaseReferenceInput(e.target.value)}
+              placeholder="Bank ref, transfer note, or PayMongo transfer id"
+              disabled={busy}
+            />
+            <label className={confirmModalStyles.modalCheckboxField}>
               <input
                 type="checkbox"
                 checked={manualOverrideRelease}
@@ -3164,6 +3167,7 @@ export default function AdminPayoutsPage() {
             variant="primary"
             icon={<TbCreditCardPay size={22} strokeWidth={1.75} aria-hidden />}
             title={`Release ${bulkReleaseTargets.length} payout${bulkReleaseTargets.length === 1 ? '' : 's'}?`}
+            subtitleAlign="left"
             message={
               <>
                 This will finalize escrow release for{' '}
@@ -3173,7 +3177,7 @@ export default function AdminPayoutsPage() {
               </>
             }
             extra={
-              <label className={confirmModalStyles.modalFieldLabel}>
+              <label className={confirmModalStyles.modalCheckboxField}>
                 <input
                   type="checkbox"
                   checked={bulkManualOverrideRelease}

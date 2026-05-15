@@ -150,6 +150,64 @@
   color: #0f172a;
 }
 
+.modalInput {
+  width: 100%;
+  padding: 12px 14px;
+  margin: 0 0 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 13px;
+  font-family: inherit;
+  line-height: 1.45;
+  box-sizing: border-box;
+  color: #0f172a;
+  background: #fff;
+  transition:
+    border-color 0.12s,
+    box-shadow 0.12s;
+}
+
+.modalInput::placeholder {
+  color: #94a3b8;
+}
+
+.modalInput:focus {
+  outline: none;
+  border-color: #0f172a;
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+}
+
+.modalInput:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.modalCheckboxField {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #475569;
+  cursor: pointer;
+}
+
+.modalCheckboxField input[type='checkbox'] {
+  margin: 2px 0 0;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  accent-color: #10b981;
+  cursor: pointer;
+}
+
+.modalCheckboxField input[type='checkbox']:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .modalTextarea {
   width: 100%;
   min-height: 88px;
@@ -352,9 +410,18 @@
     margin-top: 12px;
   }
 
+  .modalInput {
+    font-size: 14px;
+    padding: 11px 12px;
+  }
+
   .modalTextarea {
     font-size: 14px;
     min-height: 76px;
+  }
+
+  .modalCheckboxField {
+    font-size: 12px;
   }
 
   .actions {
