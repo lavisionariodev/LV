@@ -3697,7 +3697,7 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding: 12px 14px;
+    padding: 12px 14px 0;
   }
 
   .tableWrap { display: none; }
@@ -5348,7 +5348,7 @@
   }
 
   .drpFooter {
-    padding: 10px 16px 28px; /* extra bottom for safe area */
+    padding: 10px 16px 0;
   }
 
   .drpClearBtn {
@@ -5362,7 +5362,7 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding: 12px;
+    padding: 12px 12px 0;
   }
 
   .tableWrap { display: none; }

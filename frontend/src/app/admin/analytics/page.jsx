@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import layoutStyles from '../admin.module.css'
-import { formatCount } from '@/shared/utils/formatCount'
 import {
   AreaChart,
   Area,
@@ -44,13 +43,9 @@ function formatShortDate(dateStr) {
 export default function AdminAnalyticsPage() {
   const [loading, setLoading] = useState(true)
   const [rangeDays, setRangeDays] = useState(7)
-  const [sellersTotal, setSellersTotal] = useState(0)
-  const [buyersTotal, setBuyersTotal] = useState(0)
-  const [paidOrdersLast30Days, setPaidOrdersLast30Days] = useState(0)
   const [dailyCollectedGmv, setDailyCollectedGmv] = useState(() => utcLastNDaysSeriesZeros(7))
   const [topLineItems, setTopLineItems] = useState([])
   const [recentActivity, setRecentActivity] = useState([])
-  const [disputesNeedingAttention, setDisputesNeedingAttention] = useState(0)
   const [metricsError, setMetricsError] = useState(null)
   const [metricsRetryTick, setMetricsRetryTick] = useState(0)
 
@@ -73,9 +68,6 @@ export default function AdminAnalyticsPage() {
           setMetricsError(msg)
           return
         }
-        setSellersTotal(Number(body.sellersTotal) || 0)
-        setBuyersTotal(Number(body.buyersTotal) || 0)
-        setPaidOrdersLast30Days(Number(body.paidOrdersLast30Days) || 0)
         if (Array.isArray(body.dailyCollectedGmv) && body.dailyCollectedGmv.length > 0) {
           setDailyCollectedGmv(body.dailyCollectedGmv)
         } else {
@@ -83,7 +75,6 @@ export default function AdminAnalyticsPage() {
         }
         if (Array.isArray(body.topLineItems)) setTopLineItems(body.topLineItems)
         if (Array.isArray(body.recentActivity)) setRecentActivity(body.recentActivity)
-        setDisputesNeedingAttention(Number(body.disputesNeedingAttention) || 0)
       } catch {
         if (!cancelled) {
           setMetricsError("Couldn't load analytics. Check your connection and try again.")
@@ -101,15 +92,6 @@ export default function AdminAnalyticsPage() {
   if (loading) {
     return (
       <div className={layoutStyles.dashWrap} role="status" aria-live="polite" aria-busy="true" aria-label="Loading analytics">
-        <section className={layoutStyles.analyticsSkStats}>
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className={layoutStyles.analyticsSkStatCard}>
-              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 11, width: '55%' }} />
-              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 24, width: '48%' }} />
-              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 10, width: '72%' }} />
-            </div>
-          ))}
-        </section>
         <section className={layoutStyles.analyticsSkPanel}>
           <div className={layoutStyles.analyticsSkPanelHead}>
             <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 16, width: 180 }} />
@@ -177,30 +159,6 @@ export default function AdminAnalyticsPage() {
       ) : null}
       {!metricsError ? (
       <>
-      {/* Stat cards — 4 col desktop, 2 col tablet/mobile */}
-      <section className={layoutStyles.analyticsStatsGrid}>
-        <div className={layoutStyles.statCard}>
-          <p className={layoutStyles.statLabel}>Total Sellers</p>
-          <p className={layoutStyles.statValue}>{formatCount(sellersTotal)}</p>
-          <p className={layoutStyles.statHint}>Registered sellers</p>
-        </div>
-        <div className={layoutStyles.statCard}>
-          <p className={layoutStyles.statLabel}>Total Buyers</p>
-          <p className={layoutStyles.statValue}>{formatCount(buyersTotal)}</p>
-          <p className={layoutStyles.statHint}>Buyer accounts</p>
-        </div>
-        <div className={layoutStyles.statCard}>
-          <p className={layoutStyles.statLabel}>Paid orders</p>
-          <p className={layoutStyles.statValue}>{formatCount(paidOrdersLast30Days)}</p>
-          <p className={layoutStyles.statHint}>Last 30 days (count)</p>
-        </div>
-        <div className={layoutStyles.statCard}>
-          <p className={layoutStyles.statLabel}>Disputes to review</p>
-          <p className={layoutStyles.statValue}>{formatCount(disputesNeedingAttention)}</p>
-          <p className={layoutStyles.statHint}>Open or under review</p>
-        </div>
-      </section>
-
       {/* Revenue overview panel */}
       <section className={layoutStyles.panel}>
         <div className={layoutStyles.panelHead}>

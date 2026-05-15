@@ -518,22 +518,29 @@
     grid-template-columns: 1fr;
     min-height: 100vh;
     min-height: 100dvh;
+    /* Match AppMobileBottomNav / AppTopbar fixed heights (safe-area is inside those bars). */
+    --admin-mobile-topbar-h: calc(60px + env(safe-area-inset-top, 0px));
+    --admin-mobile-bottom-nav-h: calc(60px + env(safe-area-inset-bottom, 0px));
+    --admin-mobile-content-gap: 4px;
   }
 
-  /* Top inset clears fixed mobile topbar; sides stay flush for hero bleed */
+  /* Top inset clears fixed topbar; bottom inset clears fixed bottom nav only once */
   .content {
-    padding: calc(60px + env(safe-area-inset-top, 0px)) 0 calc(64px + env(safe-area-inset-bottom, 0px));
+    padding:
+      calc(var(--admin-mobile-topbar-h) + var(--admin-mobile-content-gap))
+      0
+      calc(var(--admin-mobile-bottom-nav-h) + var(--admin-mobile-content-gap));
     max-width: 100%;
   }
 
   /* Profile hub (/admin/profile menu) */
   .content:has([data-portal-profile-hub]) {
-    padding-bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(var(--admin-mobile-bottom-nav-h) + var(--admin-mobile-content-gap));
   }
 
   /* Settings subpages (notifications, billing, site content, …) */
   .content:has([data-portal-inner-page]) {
-    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(var(--admin-mobile-bottom-nav-h) + var(--admin-mobile-content-gap));
   }
 
   /* ── Show / hide blocks ── */
@@ -1252,17 +1259,22 @@
     grid-template-columns: 1fr;
   }
 
+  .shell,
+  .shellCollapsed {
+    --admin-mobile-topbar-h: calc(56px + env(safe-area-inset-top, 0px));
+    --admin-mobile-content-gap: 4px;
+  }
+
   .content {
-    padding: calc(56px + env(safe-area-inset-top, 0px) + 14px) 14px
-      calc(64px + env(safe-area-inset-bottom, 0px));
+    padding:
+      calc(var(--admin-mobile-topbar-h) + var(--admin-mobile-content-gap))
+      var(--admin-mobile-content-gap)
+      calc(var(--admin-mobile-bottom-nav-h) + var(--admin-mobile-content-gap));
   }
 
-  .content:has([data-portal-profile-hub]) {
-    padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px));
-  }
-
+  .content:has([data-portal-profile-hub]),
   .content:has([data-portal-inner-page]) {
-    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(var(--admin-mobile-bottom-nav-h) + var(--admin-mobile-content-gap));
   }
 
   .rowHead,
