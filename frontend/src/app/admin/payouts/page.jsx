@@ -3492,13 +3492,6 @@ export default function AdminPayoutsPage() {
                 ? 'Eligible releases can create PayMongo transfers when seller payout settings validate. Use the manual ledger checkbox to skip PayMongo for a specific release.'
                 : 'Admin release finalizes escrow in the app; settlement is manual until PayMongo wallet env is configured on the server. Optional release reference can note your bank transfer.'}
             </p>
-            {Array.isArray(disbursementConfig.issues) && disbursementConfig.issues.length > 0 ? (
-              <ul className={styles.disbursementReminderIssues}>
-                {disbursementConfig.issues.map((issue) => (
-                  <li key={issue}>{issue}</li>
-                ))}
-              </ul>
-            ) : null}
           </div>
         </div>
       ) : null}

@@ -22,14 +22,6 @@ export default function SellerLayout({ children }) {
   const [authStatus, setAuthStatus] = useState('loading')
 
   useEffect(() => {
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = prevOverflow
-    }
-  }, [])
-
-  useEffect(() => {
     let cancelled = false
 
     async function check() {
@@ -131,9 +123,7 @@ export default function SellerLayout({ children }) {
             isMobile={isMobile}
             sidebarCollapsed={collapsed}
           />
-          <div className={styles.mainScroll}>
-            <div className={styles.content}>{children}</div>
-          </div>
+          <div className={styles.content}>{children}</div>
           {isMobile ? (
             <AppMobileBottomNav variant="seller" onMobileClose={() => setMobileMenuOpen(false)} />
           ) : null}

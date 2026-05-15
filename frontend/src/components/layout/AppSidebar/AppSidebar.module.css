@@ -1,7 +1,8 @@
 .sidebar {
   width: var(--sidebar-width);
-  height: 100vh; /* fallback */
-  height: 100dvh; /* match portal shell on mobile browsers */
+  min-height: 100vh;
+  min-height: 100dvh;
+  align-self: start;
   box-sizing: border-box;
   position: sticky;
   top: 0;

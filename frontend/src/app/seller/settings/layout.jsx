@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
+import { useMediaQuery } from '@/shared/hooks'
 import { MdCheckCircle, MdErrorOutline } from 'react-icons/md'
 import SellerSettingsProvider, {
   SellerSettingsPanelSkeleton,
@@ -14,6 +15,7 @@ import styles from './settings.module.css'
 function SellerSettingsChrome({ children }) {
   const pathname = usePathname()
   const router = useRouter()
+  const isMobile = useMediaQuery('(max-width: 860px)')
   const activeId = getSettingsSectionFromPathname(pathname) ?? 'profile'
   const { loading, sellerCanChangePassword, toast, setToast } = useSellerSettings()
 
@@ -28,7 +30,7 @@ function SellerSettingsChrome({ children }) {
   )
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} {...(isMobile ? { 'data-portal-inner-page': '' } : {})}>
       <nav className={styles.tabBar} aria-label="Settings sections">
         {loading
           ? SELLER_SETTINGS_NAV.map((tab) => (

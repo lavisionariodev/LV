@@ -14,9 +14,8 @@
 .shell {
   display: grid;
   grid-template-columns: var(--sidebar-width) 1fr;
-  height: 100vh; /* fallback */
-  height: 100dvh; /* avoid mobile browser chrome vh issues */
-  overflow: hidden;
+  min-height: 100vh;
+  min-height: 100dvh;
   background: #ffffff;
   transition: grid-template-columns 0.25s ease;
 }
@@ -33,17 +32,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  height: 100vh; /* fallback */
-  height: 100dvh;
-  overflow: hidden;
-}
-
-.mainScroll {
-  flex: 1;
-  min-height: 0; /* critical: keep scroll inside content pane */
-  overflow-y: auto;
-  overflow-x: hidden;
-  overscroll-behavior: contain; /* prevent scroll chaining to window on mobile */
+  min-height: 100dvh;
   background: #ffffff;
 }
 
@@ -536,19 +525,24 @@
   .shell,
   .shellCollapsed {
     grid-template-columns: 1fr;
-    height: 100vh;
-    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 
-  /* ── Page background: light gray like banking apps ── */
-  .mainScroll {
-    background: #ffffff;
-  }
-
-  /* ── Remove padding so hero bleeds edge to edge ── */
+  /* Top inset clears fixed mobile topbar; sides stay flush for hero bleed */
   .content {
-    padding: 0 0 calc(92px + env(safe-area-inset-bottom, 0px));
+    padding: calc(60px + env(safe-area-inset-top, 0px)) 0 calc(64px + env(safe-area-inset-bottom, 0px));
     max-width: 100%;
+  }
+
+  /* Profile hub (/admin/profile menu) */
+  .content:has([data-portal-profile-hub]) {
+    padding-bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Settings subpages (notifications, billing, site content, …) */
+  .content:has([data-portal-inner-page]) {
+    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
   }
 
   /* ── Show / hide blocks ── */
@@ -1268,7 +1262,16 @@
   }
 
   .content {
-    padding: 14px 14px calc(92px + env(safe-area-inset-bottom, 0px));
+    padding: calc(56px + env(safe-area-inset-top, 0px) + 14px) 14px
+      calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .content:has([data-portal-profile-hub]) {
+    padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .content:has([data-portal-inner-page]) {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
   }
 
   .rowHead,

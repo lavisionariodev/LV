@@ -10,6 +10,12 @@
   min-height: 100%;
 }
 
+@media (max-width: 860px) {
+  .page {
+    min-height: 0;
+  }
+}
+
 .contentArea {
   width: 100%;
   max-width: none;
@@ -2005,24 +2011,6 @@
   min-height: 44px;
   font-size: 13px;
   border-radius: 10px;
-}
-
-.linkDeviceModalBackToGuide {
-  align-self: flex-start;
-  margin-bottom: 12px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--color-primary);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.linkDeviceModalBackToGuide:hover {
-  color: color-mix(in srgb, var(--color-primary) 78%, #000000 22%);
 }
 
 .linkDeviceModalSteps {

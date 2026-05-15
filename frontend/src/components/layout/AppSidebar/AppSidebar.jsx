@@ -134,7 +134,7 @@ const SIDEBAR_CONFIG = {
 
 const BOTTOM_NAV_MAIN_ITEMS = 4
 
-/** Mobile bottom bar; keep in the same stacking subtree as page modals (e.g. inside seller `.main`). */
+/** Mobile bottom bar (fixed). Page content uses bottom padding so it clears this bar when the document scrolls. */
 export function AppMobileBottomNav({ variant, onMobileClose }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -146,7 +146,7 @@ export function AppMobileBottomNav({ variant, onMobileClose }) {
   const isActive = (href) => isHrefActive(href, pathname, searchParams, basePath)
 
   return (
-    <nav className={styles.bottomNav} aria-label="Main navigation">
+    <nav className={styles.bottomNav} aria-label="Main navigation" data-bottom-nav>
       {(
         variant === 'admin'
           ? [

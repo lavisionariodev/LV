@@ -279,7 +279,7 @@
     flex-direction: column;
     gap: 0;
     background: #ffffff;
-    min-height: 100%;
+    min-height: 0;
   }
 
   /* ── Shared headerBanner scaled down for mobile ── */

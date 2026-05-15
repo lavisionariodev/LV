@@ -14,9 +14,8 @@
 .shell {
   display: grid;
   grid-template-columns: var(--sidebar-width) 1fr;
-  height: 100vh; /* fallback */
-  height: 100dvh; /* avoid mobile browser chrome vh issues */
-  overflow: hidden;
+  min-height: 100vh;
+  min-height: 100dvh;
   background: #ffffff;
   transition: grid-template-columns 0.25s ease;
 }
@@ -29,20 +28,10 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  height: 100vh; /* fallback */
-  height: 100dvh;
-  overflow: hidden;
-}
-
-.mainScroll {
-  flex: 1;
-  min-height: 0; /* critical: keep scroll inside content pane */
-  overflow-y: auto;
-  overflow-x: hidden;
-  overscroll-behavior: contain; /* prevent scroll chaining to window on mobile */
-  -webkit-overflow-scrolling: touch;
+  min-height: 100dvh;
   background: #ffffff;
 }
+
 .content {
   max-width: 1200px;
   margin: 0 auto;
@@ -78,14 +67,14 @@
   .shell,
   .shellCollapsed {
     grid-template-columns: 1fr;
-    height: 100vh; /* fallback */
-    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   /*
-   * Anchor stacking for fixed children (topbar, scroll, bottom nav, page modals) so modal overlays
+   * Anchor stacking for fixed children (topbar, bottom nav, page modals) so modal overlays
    * paint above the mobile bottom bar, which lives inside `.main` for seller.
-   * Bottom inset matches admin mobile `.content` (92px) for fixed bottom nav + breathing room.
+   * Bottom inset clears fixed bottom nav (60px) + small gap.
    * Do not also pad .main — that stacked with .content and looked like a huge empty band on every page.
    */
   .main {
@@ -95,7 +84,12 @@
   }
 
   .content {
-    padding: 16px 16px calc(92px + env(safe-area-inset-bottom, 0px));
+    padding: calc(60px + env(safe-area-inset-top, 0px) + 16px) 16px
+      calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .content:has([data-portal-inner-page]) {
+    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
   }
 
   /*
@@ -108,7 +102,12 @@
 
 @media (max-width: 600px) {
   .content {
-    padding: 14px 14px calc(92px + env(safe-area-inset-bottom, 0px));
+    padding: calc(56px + env(safe-area-inset-top, 0px) + 14px) 14px
+      calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .content:has([data-portal-inner-page]) {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
   }
 
   .content:has([class*='newListingLayout'], [class*='loadingRoot']) {
