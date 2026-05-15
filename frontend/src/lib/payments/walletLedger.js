@@ -38,6 +38,24 @@ export async function fetchSellerWalletLedgerEntries(supabaseAdmin, sellerUserId
  * @param {import('@supabase/supabase-js').SupabaseClient} supabaseAdmin
  * @param {Record<string, unknown>} entry
  */
+/**
+ * @param {import('@supabase/supabase-js').SupabaseClient} supabaseAdmin
+ * @param {string} sellerUserId
+ */
+export async function fetchSellerWithdrawalsForSeller(supabaseAdmin, sellerUserId) {
+  const { data, error } = await supabaseAdmin
+    .from('seller_withdrawals')
+    .select(
+      'id,seller_user_id,amount_php,currency,status,failure_reason,paymongo_batch_id,paymongo_transfer_id,submitted_at,settled_at,created_at',
+    )
+    .eq('seller_user_id', sellerUserId)
+    .order('created_at', { ascending: false })
+    .limit(500)
+
+  if (error) throw error
+  return data ?? []
+}
+
 export async function insertWalletLedgerEntry(supabaseAdmin, entry) {
   const { data, error } = await supabaseAdmin
     .from('seller_wallet_ledger')

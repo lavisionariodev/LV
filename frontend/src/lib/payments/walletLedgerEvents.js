@@ -58,12 +58,12 @@ export async function recordEscrowFundingLedgerEntries(supabaseAdmin, escrow) {
  *   orderId: string,
  *   disbursementId?: string | null,
  *   releaseReference?: string | null,
- *   mode?: 'automated' | 'manual',
+ *   mode?: 'wallet' | 'automated' | 'manual',
  *   metadata?: Record<string, unknown>,
  * }} params
  */
 export async function recordPayoutReleaseLedgerEntry(supabaseAdmin, params) {
-  const { escrow, orderId, disbursementId, releaseReference, mode = 'automated', metadata = {} } = params
+  const { escrow, orderId, disbursementId, releaseReference, mode = 'wallet', metadata = {} } = params
   const escrowId = escrow?.id ? String(escrow.id) : ''
   const sellerUserId = escrow?.seller_user_id ? String(escrow.seller_user_id) : ''
   if (!escrowId || !sellerUserId || !orderId) return
@@ -73,7 +73,7 @@ export async function recordPayoutReleaseLedgerEntry(supabaseAdmin, params) {
 
   const idempotencyKey = disbursementId
     ? `payout_release:${disbursementId}`
-    : `payout_release:manual:${escrowId}`
+    : `payout_release:wallet:${escrowId}`
 
   await insertWalletLedgerEntry(supabaseAdmin, {
     seller_user_id: sellerUserId,
@@ -129,7 +129,7 @@ export async function recordRefundLedgerEntry(supabaseAdmin, params) {
 /**
  * @param {import('@supabase/supabase-js').SupabaseClient} supabaseAdmin
  * @param {{
- *   payoutRequestId: string,
+ *   withdrawalId: string,
  *   sellerUserId: string,
  *   amountPhp: number,
  *   currency?: string,
@@ -137,11 +137,11 @@ export async function recordRefundLedgerEntry(supabaseAdmin, params) {
  * }} params
  */
 export async function recordWithdrawalLedgerEntry(supabaseAdmin, params) {
-  const { payoutRequestId, sellerUserId, amountPhp, currency = 'PHP', metadata = {} } = params
-  const requestId = payoutRequestId ? String(payoutRequestId) : ''
+  const { withdrawalId, sellerUserId, amountPhp, currency = 'PHP', metadata = {} } = params
+  const wid = withdrawalId ? String(withdrawalId) : ''
   const sellerId = sellerUserId ? String(sellerUserId) : ''
   const amount = Number(amountPhp) || 0
-  if (!requestId || !sellerId || amount <= 0) return
+  if (!wid || !sellerId || amount <= 0) return
 
   await insertWalletLedgerEntry(supabaseAdmin, {
     seller_user_id: sellerId,
@@ -152,10 +152,10 @@ export async function recordWithdrawalLedgerEntry(supabaseAdmin, params) {
     amount_php: amount,
     currency,
     metadata: {
-      payout_request_id: requestId,
+      withdrawal_id: wid,
       ...metadata,
     },
-    idempotency_key: `withdrawal:payout_request:${requestId}`,
+    idempotency_key: `withdrawal:${wid}`,
   })
 }
 

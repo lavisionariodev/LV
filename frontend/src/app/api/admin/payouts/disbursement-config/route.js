@@ -5,13 +5,22 @@ import { getPaymongoDisbursementEnvStatus } from '@/lib/payments/disbursementCon
 /**
  * GET /api/admin/payouts/disbursement-config
  *
- * Read-only PayMongo disbursement readiness for admin payout tooling.
+ * PayMongo readiness for seller withdrawals (not admin escrow release).
  */
 export async function GET() {
   const { responseError } = await requireAdminApiUser()
   if (responseError) return responseError
 
-  return NextResponse.json({ config: getPaymongoDisbursementEnvStatus() }, { status: 200 })
+  const config = getPaymongoDisbursementEnvStatus()
+  return NextResponse.json(
+    {
+      config: {
+        ...config,
+        withdrawReady: config.automatedReady,
+      },
+    },
+    { status: 200 },
+  )
 }
 
 export const dynamic = 'force-dynamic'

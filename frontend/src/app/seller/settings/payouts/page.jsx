@@ -1,7 +1,7 @@
 'use client'
 
 import { FiSave } from 'react-icons/fi'
-import SellerPayoutRequestsPanel from '@/app/seller/analytics/SellerPayoutRequestsPanel'
+import SellerWithdrawPanel from '@/app/seller/analytics/SellerWithdrawPanel'
 import { PAYOUT_METHOD_OPTIONS, SellerPortalSelect, useSellerSettings } from '@/features/seller/settings/sellerSettings'
 import styles from '../settings.module.css'
 
@@ -28,7 +28,7 @@ export default function Page() {
                 <div className={styles.tabDetailHeadText}>
                   <h2 className={styles.tabDetailTitle}>Payout settings</h2>
                   <p className={styles.tabDetailSubtitle}>
-                    Payout account details for admin release.
+                    Bank or GCash details used when you withdraw from your seller wallet.
                   </p>
                 </div>
               </div>
@@ -105,7 +105,7 @@ export default function Page() {
                 </button>
               </div>
             </form>
-            <SellerPayoutRequestsPanel className={styles.payoutRequestsEmbed} />
+            <SellerWithdrawPanel className={styles.payoutRequestsEmbed} />
           </section>
 
   )

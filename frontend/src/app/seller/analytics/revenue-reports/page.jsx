@@ -13,7 +13,7 @@ import {
   revenueThisCalendarMonth,
   revenuePreviousCalendarMonth,
 } from '@/lib/seller/sellerOrderAnalytics'
-import SellerPayoutRequestsPanel from '../SellerPayoutRequestsPanel'
+import SellerWithdrawPanel from '../SellerWithdrawPanel'
 import { formatPhpWholeAmount } from '@/lib/cart/formatPhp'
 
 const REVENUE_SUMMARY_SOFT = [
@@ -165,11 +165,21 @@ export default function SellerAnalyticsRevenueReportsPage() {
         </article>
 
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftBlue}`}>
-          <p className={styles.summaryLabel}>Pending payout</p>
+          <p className={styles.summaryLabel}>Wallet balance</p>
           <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>{formatPhpWholeAmount(escrowSummary?.pendingDisbursementNet || 0)}</p>
+            <p className={styles.summaryValue}>{formatPhpWholeAmount(escrowSummary?.walletBalanceNet || 0)}</p>
           </div>
-          <p className={styles.summaryHint}>Submitted to PayMongo and awaiting settlement</p>
+          <p className={styles.summaryHint}>
+            Available to withdraw {formatPhpWholeAmount(escrowSummary?.availableNet || 0)}
+          </p>
+        </article>
+
+        <article className={`${styles.summaryCard} ${styles.summaryCardSoftGreen}`}>
+          <p className={styles.summaryLabel}>Pending withdrawal</p>
+          <div className={styles.summaryValueRow}>
+            <p className={styles.summaryValue}>{formatPhpWholeAmount(escrowSummary?.pendingWithdrawalNet || 0)}</p>
+          </div>
+          <p className={styles.summaryHint}>PayMongo transfer in progress</p>
         </article>
 
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftGreen}`}>
@@ -177,9 +187,7 @@ export default function SellerAnalyticsRevenueReportsPage() {
           <div className={styles.summaryValueRow}>
             <p className={styles.summaryValue}>{formatPhpWholeAmount(escrowSummary?.paidOutNet || 0)}</p>
           </div>
-          <p className={styles.summaryHint}>
-            Released {formatPhpWholeAmount(escrowSummary?.releasedNet || 0)} · available {formatPhpWholeAmount(escrowSummary?.availableNet || 0)}
-          </p>
+          <p className={styles.summaryHint}>Sent to your bank or GCash</p>
         </article>
 
         <article className={`${styles.summaryCard} ${styles.summaryCardSoftAmber}`}>
@@ -198,7 +206,7 @@ export default function SellerAnalyticsRevenueReportsPage() {
               <h2 className={styles.chartTitle}>Monthly paid revenue</h2>
               <p className={styles.chartSubtitle}>
                 Last 6 months · gross collected on paid orders. Seller payout totals above come from
-                escrow snapshots and PayMongo disbursement status.
+                escrow snapshots and your seller wallet balance.
               </p>
             </div>
             <span className={styles.chartBadge}>
@@ -250,15 +258,14 @@ export default function SellerAnalyticsRevenueReportsPage() {
         </article>
       </section>
 
-      {Number(escrowSummary?.legacyReleasedCount || 0) > 0 ? (
-        <section className={styles.chartCard} aria-label="Legacy manual releases">
+      {Number(escrowSummary?.legacyPaidViaDisbursementNet || 0) > 0 ? (
+        <section className={styles.chartCard} aria-label="Legacy payouts">
           <div className={styles.chartHeader}>
             <div className={styles.chartTitleGroup}>
-              <h2 className={styles.chartTitle}>Legacy manual releases</h2>
+              <h2 className={styles.chartTitle}>Legacy direct payouts</h2>
               <p className={styles.chartSubtitle}>
-                {escrowSummary.legacyReleasedCount} escrow release
-                {escrowSummary.legacyReleasedCount === 1 ? '' : 's'} completed before automated PayMongo
-                disbursement tracking ({formatPhpWholeAmount(escrowSummary.legacyReleasedNet || 0)} net).
+                {formatPhpWholeAmount(escrowSummary.legacyPaidViaDisbursementNet || 0)} net was sent via the
+                previous per-order PayMongo release flow before seller wallet withdrawals.
               </p>
             </div>
           </div>
@@ -294,7 +301,7 @@ export default function SellerAnalyticsRevenueReportsPage() {
         </section>
       ) : null}
 
-      <SellerPayoutRequestsPanel />
+      <SellerWithdrawPanel />
     </div>
   )
 }

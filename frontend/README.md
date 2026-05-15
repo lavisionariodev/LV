@@ -53,8 +53,9 @@ SQL migrations live in `supabase/migrations/`. Apply them to your Supabase proje
 
 - `107_wallet_ledger_disbursements.sql` — `payout_disbursements`, `seller_wallet_ledger`
 - `108_buyer_notification_prefs_commission_log.sql` — buyer notification preferences, commission change log
+- `110_seller_withdrawals_wallet_flow.sql` — `seller_withdrawals` (PayMongo bank/GCash payouts)
 
-Wallet summaries, disbursement automation, and admin payout flows depend on migration 107 and service-role access.
+Wallet summaries and seller withdrawals depend on migrations 107+110 and service-role access. Admin release credits the seller wallet; sellers withdraw via PayMongo when `PAYMONGO_DISBURSEMENT_ENABLED=true`.
 
 ## PayMongo webhook
 
@@ -62,7 +63,7 @@ Configure PayMongo to send events to:
 
 `https://<your-host>/api/payments/paymongo/webhook`
 
-Set `PAYMONGO_WEBHOOK_SECRET` to the signing secret from PayMongo. Checkout payment confirmation, refunds, and disbursement settlement are driven by this webhook, not by client-side success pages.
+Set `PAYMONGO_WEBHOOK_SECRET` to the signing secret from PayMongo. Checkout payment confirmation, refunds, and withdrawal settlement are driven by this webhook, not by client-side success pages.
 
 ## Integration gap tracker
 

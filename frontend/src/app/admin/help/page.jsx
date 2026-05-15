@@ -82,8 +82,8 @@ const helpCenterFaqs = [
     a: 'Put it on hold when there is an open dispute about that booking, a refund is still being worked out, or something doesn’t feel right and you need a colleague to take a second look. Release it once the case is resolved.',
   },
   {
-    q: 'Does approving a seller payout review request send money?',
-    a: 'No. Approval only means the seller’s request was reviewed. Funds stay in escrow until you release each completed order on the Payouts page.',
+    q: 'Does admin release payout send money to the seller’s bank?',
+    a: 'No. Release credits the seller’s platform wallet after you confirm a completed order. The seller withdraws to their bank or GCash when ready (PayMongo must be enabled for withdrawals).',
   },
   {
     q: 'When should I suspend a provider?',
