@@ -46,7 +46,6 @@ function ResetPasswordInner() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [sessionReady, setSessionReady] = useState(false);
 
   // Supabase may send a short-lived code in the query (?code=...) for PKCE flows.
   const code = searchParams.get("code");
@@ -120,20 +119,6 @@ function ResetPasswordInner() {
         }
       } catch (err) {
         console.error("Unexpected error exchanging recovery code:", err);
-      }
-    })();
-
-    // Track whether we actually have a session (updateUser requires it).
-    (async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error("Error getting session:", error);
-          return;
-        }
-        if (data?.session) setSessionReady(true);
-      } catch (err) {
-        console.error("Unexpected error getting session:", err);
       }
     })();
 

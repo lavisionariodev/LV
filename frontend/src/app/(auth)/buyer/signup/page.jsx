@@ -1,4 +1,3 @@
-// signup.jsx
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -82,9 +81,7 @@ export default function SignUpPage() {
     if (provider === "Facebook") {
       const { error } = await signInWithOAuth({ provider: "facebook", redirectTo });
       if (error) toast.error(error);
-      return;
     }
-    toast.info(`${provider} authentication would be implemented here`);
   };
 
   return (
