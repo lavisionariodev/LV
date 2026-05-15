@@ -2091,6 +2091,10 @@
   }
   
   @media (max-width: 640px) {
+    .page {
+      min-height: 0;
+    }
+
     .grid {
       display: none;
     }
@@ -2107,7 +2111,7 @@
     .mobileSettings {
       display: flex;
       flex-direction: column;
-      min-height: 100%;
+      min-height: 0;
       background: #ffffff;
     }
 
@@ -2119,7 +2123,7 @@
     }
 
     .mobileSettingsFlowPushed {
-      min-height: min(100dvh, 100%);
+      min-height: 0;
     }
 
     .mobileSettingsTrack {

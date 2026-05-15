@@ -375,11 +375,19 @@
 /* Breakpoints: 860px = mobile layout (sidebar overlay), 600px = narrow */
 @media (max-width: 860px) {
   .topbar {
-    height: 60px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 30;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    height: calc(60px + env(safe-area-inset-top, 0px));
     padding-left: 16px;
     padding-right: 16px;
     gap: 12px;
-    border-bottom: none;
+    border-bottom: 1px solid #eef0f4;
   }
   .pageTitle {
     font-size: 18px;
@@ -419,14 +427,24 @@
     font-size: 12px;
     padding: 5px 12px;
   }
+
+  /* Centered title/back layout — must stay fixed (do not use position: relative here) */
+  .topbar.topbarCentered {
+    position: fixed;
+    justify-content: center;
+  }
+
+  .topbarCentered .topbarBackBtn {
+    left: 16px;
+  }
 }
 
 @media (max-width: 600px) {
   .topbar {
-    height: 56px;
+    height: calc(56px + env(safe-area-inset-top, 0px));
     padding-left: 14px;
     padding-right: 14px;
-    padding-top: 6px;
+    padding-top: calc(6px + env(safe-area-inset-top, 0px));
     gap: 8px;
   }
   .pageTitle {
@@ -481,10 +499,13 @@
   .notifList {
     max-height: 220px;
   }
+
+  .topbarCentered .topbarBackBtn {
+    left: 14px;
+  }
 }
 
 .topbarCentered {
-  position: relative;
   justify-content: center;
 }
 

@@ -121,11 +121,6 @@ export default function SellerLinkDeviceModal({ open, onClose, initialScanTarget
     setScannerActive(true)
   }, [])
 
-  const returnToMobileGuide = useCallback(() => {
-    setMobileScannerOpen(false)
-    setScannerActive(false)
-  }, [])
-
   if (!open) return null
 
   const gridClassName = [
@@ -219,15 +214,6 @@ export default function SellerLinkDeviceModal({ open, onClose, initialScanTarget
           </aside>
 
           <div className={styles.linkDeviceModalPanel}>
-            {showMobileScannerOnly ? (
-              <button
-                type="button"
-                className={styles.linkDeviceModalBackToGuide}
-                onClick={returnToMobileGuide}
-              >
-                Back to instructions
-              </button>
-            ) : null}
             <div className={qrStyles.stack}>
               {scanTarget ? (
                 <SellerQrConfirmPanel

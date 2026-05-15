@@ -170,6 +170,7 @@ function reviewMatchesSearch(review, rawQuery) {
   return tokens.every((t) => hay.includes(t))
 }
 
+
 function RatingDistribution({ reviews }) {
   const counts = useMemo(() => {
     const next = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }

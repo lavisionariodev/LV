@@ -42,7 +42,7 @@ export default function AdminSettingsLayout({ children }) {
 
   if (isMobile) {
     return (
-      <div className={styles.page}>
+      <div className={styles.page} data-portal-inner-page>
         {tabNav}
         <div className={profileStyles.profileDetailPage}>
           <div className={profileStyles.profileDetailBody}>

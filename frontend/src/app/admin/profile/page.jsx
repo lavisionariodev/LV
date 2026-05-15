@@ -277,7 +277,7 @@ export default function AdminProfilePage() {
   }
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-portal-profile-hub>
 
       <div className={styles.mobileSettingsFlow}>
         <div className={styles.mobileSettingsTrack}>

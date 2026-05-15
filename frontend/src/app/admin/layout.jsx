@@ -19,14 +19,6 @@ export default function AdminLayout({ children }) {
   const [authStatus, setAuthStatus] = useState('loading')
 
   useEffect(() => {
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = prevOverflow
-    }
-  }, [])
-
-  useEffect(() => {
     // Fallback gate after middleware; denied users go to /administrator.
     let cancelled = false
     async function check() {
@@ -98,9 +90,7 @@ export default function AdminLayout({ children }) {
           isMobile={isMobile}
           sidebarCollapsed={collapsed}
         />
-        <div className={styles.mainScroll}>
-          <div className={styles.content}>{children}</div>
-        </div>
+        <div className={styles.content}>{children}</div>
       </div>
     </div>
   )

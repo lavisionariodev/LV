@@ -7,6 +7,7 @@ import styles from './notifications.module.css'
 import { useInAppNotificationFeed, relativeNotificationTime } from '@/lib/notifications/useInAppNotificationFeed'
 import { adminNotificationFilterBucket, ADMIN_NOTIFICATION_FILTER_TABS } from '@/lib/notifications/types'
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
+import { useMediaQuery } from '@/shared/hooks'
 
 const ICON_BY_BUCKET = {
   order: LuShoppingBag,
@@ -174,6 +175,7 @@ function NotifMenu({ notifId, isRead, onMarkRead, onRequestDelete }) {
 }
 
 export default function NotificationsPage() {
+  const isMobile = useMediaQuery('(max-width: 860px)')
   const {
     notifications: apiRows,
     loading,
@@ -220,7 +222,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} {...(isMobile ? { 'data-portal-inner-page': '' } : {})}>
 
       {/* ── DESKTOP LAYOUT ── */}
       <div className={styles.desktopLayout}>
