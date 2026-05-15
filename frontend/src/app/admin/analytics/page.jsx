@@ -104,18 +104,18 @@ export default function AdminAnalyticsPage() {
         <section className={layoutStyles.analyticsSkStats}>
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className={layoutStyles.analyticsSkStatCard}>
-              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 11, width: '55%' }} />
-              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 24, width: '48%' }} />
-              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 10, width: '72%' }} />
+              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 11, width: '55%' }} />
+              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 24, width: '48%' }} />
+              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 10, width: '72%' }} />
             </div>
           ))}
         </section>
         <section className={layoutStyles.analyticsSkPanel}>
           <div className={layoutStyles.analyticsSkPanelHead}>
-            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 16, width: 180 }} />
-            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 12, width: 100 }} />
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 16, width: 180 }} />
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 12, width: 100 }} />
           </div>
-          <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 12, width: '62%', maxWidth: 400 }} />
+          <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 12, width: '62%', maxWidth: 400 }} />
           <div className={layoutStyles.analyticsSkChartGrid}>
             <span className={`${layoutStyles.adminSkBar} ${layoutStyles.analyticsSkChart}`} />
             <span className={`${layoutStyles.adminSkBar} ${layoutStyles.analyticsSkChart}`} />
@@ -123,35 +123,35 @@ export default function AdminAnalyticsPage() {
         </section>
         <section className={`${layoutStyles.panel} ${layoutStyles.homeDesktopOnly}`}>
           <div className={layoutStyles.panelHead}>
-            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 15, width: 160 }} />
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 15, width: 160 }} />
           </div>
           <div className={layoutStyles.analyticsSkRowHead}>
-            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 10 }} />
-            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 10 }} />
-            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 10 }} />
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 10 }} />
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 10 }} />
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 10 }} />
           </div>
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className={layoutStyles.analyticsSkRow}>
-              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 12 }} />
-              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 12 }} />
-              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 22, borderRadius: 8 }} />
+              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 12 }} />
+              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 12 }} />
+              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 22, borderRadius: 8 }} />
             </div>
           ))}
         </section>
         <section className={`${layoutStyles.panel} ${layoutStyles.homeMobileOnly}`}>
           <div className={layoutStyles.panelHead}>
-            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 15, width: 160 }} />
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 15, width: 160 }} />
           </div>
           <div className={layoutStyles.analyticsSkRowHead}>
-            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 10 }} />
-            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 10 }} />
-            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 10 }} />
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 10 }} />
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 10 }} />
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 10 }} />
           </div>
           {[0, 1, 2, 3].map((i) => (
             <div key={`m-sk-act-${i}`} className={layoutStyles.analyticsSkRow}>
-              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 12 }} />
-              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 12 }} />
-              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.authGateSkNavItem}`} style={{ height: 22, borderRadius: 8 }} />
+              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 12 }} />
+              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 12 }} />
+              <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 22, borderRadius: 8 }} />
             </div>
           ))}
         </section>

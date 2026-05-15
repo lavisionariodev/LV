@@ -27,6 +27,11 @@ import { MdArrowOutward } from 'react-icons/md'
 const CHART_ACCENT = '#1F312B'
 const RECENT_ACTIVITY_LIMIT = 6
 const DESKTOP_RECENT_ACTIVITY_LIMIT = 4
+const RANGE_OPTIONS = [
+  { value: 7, label: '7d' },
+  { value: 30, label: '30d' },
+  { value: 90, label: '90d' },
+]
 
 const NAV_ACTIONS = [
   { id: 'sellers',  label: 'Sellers',  icon: LuUserCheck,    href: '/admin/sellers' },
@@ -78,9 +83,9 @@ const MOBILE_STAT_CARDS = [
   },
 ]
 
-function utcLast7DaysSeriesZeros() {
+function utcLastNDaysSeriesZeros(n) {
   const out = []
-  for (let i = 6; i >= 0; i--) {
+  for (let i = n - 1; i >= 0; i--) {
     const d = new Date()
     d.setUTCHours(0, 0, 0, 0)
     d.setUTCDate(d.getUTCDate() - i)
@@ -124,8 +129,9 @@ export default function AdminDashboardPage() {
     pendingPayoutAmt: 0,
   })
 
-  /** Commission from released escrows by UTC day (7 days); filled from `/api/admin/metrics`. */
-  const [commissionChartSeries, setCommissionChartSeries] = useState(() => utcLast7DaysSeriesZeros())
+  const [rangeDays, setRangeDays] = useState(7)
+  /** Commission from released escrows by UTC day; filled from `/api/admin/metrics`. */
+  const [commissionChartSeries, setCommissionChartSeries] = useState(() => utcLastNDaysSeriesZeros(7))
   const [recentActivityRows, setRecentActivityRows] = useState([])
   const [disputesNeedingAttention, setDisputesNeedingAttention] = useState(0)
   const [metricsError, setMetricsError] = useState(null)
@@ -135,7 +141,7 @@ export default function AdminDashboardPage() {
     let cancelled = false
     const load = async () => {
       try {
-        const res = await fetch('/api/admin/metrics', { credentials: 'include' })
+        const res = await fetch(`/api/admin/metrics?range=${rangeDays}d`, { credentials: 'include' })
         const body = await res.json().catch(() => null)
         if (cancelled) return
         if (!res.ok || !body?.payoutSummary) {
@@ -155,6 +161,8 @@ export default function AdminDashboardPage() {
         setDisputesNeedingAttention(Number(body.disputesNeedingAttention) || 0)
         if (Array.isArray(body.dailyReleasedCommission) && body.dailyReleasedCommission.length > 0) {
           setCommissionChartSeries(body.dailyReleasedCommission)
+        } else {
+          setCommissionChartSeries(utcLastNDaysSeriesZeros(rangeDays))
         }
         if (Array.isArray(body.recentActivity))
           setRecentActivityRows(body.recentActivity.slice(0, RECENT_ACTIVITY_LIMIT))
@@ -168,7 +176,7 @@ export default function AdminDashboardPage() {
     return () => {
       cancelled = true
     }
-  }, [metricsRetryTick])
+  }, [rangeDays, metricsRetryTick])
 
   useEffect(() => {
     let cancelled = false
@@ -415,9 +423,39 @@ export default function AdminDashboardPage() {
           <div className={`${styles.panel} ${styles.revenueOverviewPanel}`} style={{ display: 'flex', flexDirection: 'column' }}>
             <div className={styles.panelHead}>
               <p className={styles.panelTitle}>Platform commission</p>
+              <div
+                role="group"
+                aria-label="Date range"
+                style={{ display: 'inline-flex', gap: 4, padding: 2, background: '#f1f5f9', borderRadius: 8 }}
+              >
+                {RANGE_OPTIONS.map((opt) => {
+                  const active = rangeDays === opt.value
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      className={styles.smallBtn}
+                      aria-pressed={active}
+                      onClick={() => setRangeDays(opt.value)}
+                      style={{
+                        background: active ? '#1F312B' : 'transparent',
+                        color: active ? '#fff' : '#334155',
+                        border: 'none',
+                        padding: '4px 10px',
+                        fontSize: 12,
+                        fontWeight: active ? 600 : 500,
+                        borderRadius: 6,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
             <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: 14, color: '#374151' }}>
-              Last 7 days · released escrows (UTC day)
+              Last {rangeDays} days · released escrows (UTC day)
             </p>
             <div style={{ flex: 1, minHeight: 0 }}>
             <ResponsiveContainer width="100%" height="100%">

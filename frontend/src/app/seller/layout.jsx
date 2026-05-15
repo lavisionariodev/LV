@@ -59,45 +59,7 @@ export default function SellerLayout({ children }) {
   }
 
   if (authStatus === 'loading' || authStatus === 'denied' || authStatus === 'pending') {
-    return (
-      <div className={`${styles.authLoading} ${poppins.className}`}>
-        <div
-          className={styles.authGateSk}
-          role="status"
-          aria-live="polite"
-          aria-busy="true"
-          aria-label="Loading seller portal"
-        >
-          <aside className={styles.authGateSkAside} aria-hidden>
-            <span className={`${styles.sellerSkBar} ${styles.authGateSkNavItem}`} style={{ width: '72%' }} />
-            <span className={`${styles.sellerSkBar} ${styles.authGateSkNavItem}`} style={{ width: '88%' }} />
-            <span className={`${styles.sellerSkBar} ${styles.authGateSkNavItem}`} style={{ width: '64%' }} />
-            <span className={`${styles.sellerSkBar} ${styles.authGateSkNavItem}`} style={{ width: '80%' }} />
-            <span className={`${styles.sellerSkBar} ${styles.authGateSkNavItem}`} style={{ width: '58%' }} />
-          </aside>
-          <div className={styles.authGateSkMain}>
-            <div className={styles.authGateSkTop}>
-              <span className={`${styles.sellerSkBar} ${styles.authGateSkNavItem}`} style={{ width: 120, height: 14 }} />
-              <span
-                className={`${styles.sellerSkBar} ${styles.authGateSkNavItem}`}
-                style={{ width: 80, height: 14, marginLeft: 'auto' }}
-              />
-            </div>
-            <div className={styles.authGateSkBody}>
-              <span
-                className={`${styles.sellerSkBar} ${styles.authGateSkNavItem}`}
-                style={{ height: 22, width: '40%', maxWidth: 220 }}
-              />
-              <span
-                className={`${styles.sellerSkBar} ${styles.authGateSkNavItem}`}
-                style={{ height: 120, width: '100%', borderRadius: 12 }}
-              />
-              <span className={`${styles.sellerSkBar} ${styles.authGateSkNavItem}`} style={{ height: 14, width: '70%' }} />
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+    return null
   }
 
   return (
@@ -132,4 +94,3 @@ export default function SellerLayout({ children }) {
     </CartProvider>
   )
 }
-

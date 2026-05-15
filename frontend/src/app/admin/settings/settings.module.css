@@ -2484,3 +2484,91 @@
   width: 100%;
   border-radius: 10px;
 }
+
+/* Mobile profile hub (/admin/profile) — mirrors .mobileProfileHero + .mobileMenuGroup */
+.settingsSkMobileHero {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  background: #fff;
+  border-radius: 14px;
+  margin: 0 16px 24px;
+}
+
+.settingsSkMobileAvatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.settingsSkMobileHeroText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settingsSkMobileName {
+  height: 14px;
+  width: 48%;
+  max-width: 160px;
+}
+
+.settingsSkMobileEmail {
+  height: 11px;
+  width: 64%;
+  max-width: 200px;
+}
+
+.settingsSkMobileSection {
+  margin-bottom: 24px;
+}
+
+.settingsSkMobileSectionLabel {
+  height: 10px;
+  width: 56px;
+  margin: 0 16px 8px;
+}
+
+.settingsSkMobileMenuGroup {
+  background: #fff;
+  border-radius: 14px;
+  margin: 0 16px;
+  overflow: hidden;
+}
+
+.settingsSkMobileMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.settingsSkMobileMenuItem:first-child {
+  border-top: none;
+}
+
+.settingsSkMobileMenuIcon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.settingsSkMobileMenuLabel {
+  height: 13px;
+  flex: 1;
+  max-width: 140px;
+}
+
+.settingsSkMobileMenuArrow {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}

@@ -155,6 +155,106 @@ const HELP_TOPIC_ICON_MAP = {
   LuWallet,
 }
 
+/** Mirrors page layout — topic grid, FAQ, playbooks, quick links, support bar. */
+function AdminHelpSkeleton() {
+  return (
+    <div
+      className={styles.wrap}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label="Loading help center"
+    >
+      <section className={styles.grid} aria-hidden>
+        {[0, 1, 2, 3].map((i) => (
+          <article key={i} className={styles.card}>
+            <div className={styles.cardTop}>
+              <span className={`${styles.helpSkBar} ${styles.helpSkIcon}`} />
+              <div className={styles.cardText}>
+                <span className={`${styles.helpSkBar} ${styles.helpSkCardTitle}`} />
+                <span className={`${styles.helpSkBar} ${styles.helpSkCardDesc}`} />
+              </div>
+            </div>
+            <div className={styles.helpSkBullets}>
+              {[0, 1, 2, 3].map((j) => (
+                <span key={j} className={`${styles.helpSkBar} ${styles.helpSkBullet}`} />
+              ))}
+            </div>
+          </article>
+        ))}
+      </section>
+
+      <section className={styles.lower} aria-hidden>
+        <article className={styles.panel}>
+          <div className={styles.panelHead}>
+            <div>
+              <span className={`${styles.helpSkBar} ${styles.helpSkPanelTitle}`} />
+              <span className={`${styles.helpSkBar} ${styles.helpSkPanelSub}`} />
+            </div>
+          </div>
+          <div className={styles.faqList}>
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div key={i} className={styles.helpSkFaqItem}>
+                <span className={`${styles.helpSkBar} ${styles.helpSkFaqQ}`} />
+              </div>
+            ))}
+          </div>
+        </article>
+
+        <article className={styles.panel}>
+          <div className={styles.panelHead}>
+            <div>
+              <span className={`${styles.helpSkBar} ${styles.helpSkPanelTitle}`} />
+              <span className={`${styles.helpSkBar} ${styles.helpSkPanelSub}`} />
+            </div>
+          </div>
+          <div className={styles.playbooks}>
+            {[0, 1, 2].map((i) => (
+              <div key={i} className={styles.helpSkPlaybook}>
+                <span className={`${styles.helpSkBar} ${styles.helpSkPlaybookTitle}`} />
+                <div className={styles.helpSkSteps}>
+                  {[0, 1, 2].map((j) => (
+                    <span key={j} className={`${styles.helpSkBar} ${styles.helpSkStep}`} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </article>
+
+        <article className={styles.panel}>
+          <div className={styles.panelHead}>
+            <div>
+              <span className={`${styles.helpSkBar} ${styles.helpSkPanelTitle}`} />
+              <span className={`${styles.helpSkBar} ${styles.helpSkPanelSub}`} />
+            </div>
+          </div>
+          <div className={styles.contactGrid}>
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className={styles.helpSkContactCard}>
+                <span className={`${styles.helpSkBar} ${styles.helpSkContactTitle}`} />
+                <span className={`${styles.helpSkBar} ${styles.helpSkContactDesc}`} />
+                <span className={`${styles.helpSkBar} ${styles.helpSkContactMeta}`} />
+              </div>
+            ))}
+          </div>
+          <div className={styles.supportBar}>
+            <div className={styles.supportLeft}>
+              <span className={`${styles.helpSkBar} ${styles.helpSkSupportIcon}`} />
+              <div className={styles.helpSkSupportText}>
+                <span className={`${styles.helpSkBar} ${styles.helpSkSupportTitle}`} />
+                <span className={`${styles.helpSkBar} ${styles.helpSkSupportSub}`} />
+                <span className={`${styles.helpSkBar} ${styles.helpSkSupportSub}`} style={{ width: '88%' }} />
+              </div>
+            </div>
+            <span className={`${styles.helpSkBar} ${styles.helpSkPrimaryBtn}`} />
+          </div>
+        </article>
+      </section>
+    </div>
+  )
+}
+
 export default function AdminHelpCenterPage() {
   const [openFaq, setOpenFaq] = useState(0)
 
@@ -288,3 +388,4 @@ export default function AdminHelpCenterPage() {
     </div>
   )
 }
+

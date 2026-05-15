@@ -668,7 +668,7 @@ export default function AdminDisputesPage() {
                 </div>
                 <span className={styles.disputesSkBar} style={{ height: 24, width: 128, borderRadius: 999 }} aria-hidden />
                 <span className={styles.disputesSkBar} style={{ height: 13, width: 92 }} aria-hidden />
-                <span className={styles.disputesSkBar} style={{ height: 36, width: 120, borderRadius: 8, display: 'block', margin: '0 auto' }} aria-hidden />
+                <span className={styles.disputesSkBar} style={{ height: 46, width: '100%', borderRadius: 12, display: 'block' }} aria-hidden />
               </div>
             ))
           ) : filtered.map((d) => {
@@ -708,11 +708,9 @@ export default function AdminDisputesPage() {
                 </div>
               </div>
 
-              <div className={styles.mobileActions}>
-                <Link href={`/admin/disputes/${d.id}`} className={`${styles.viewBtn} ${styles.mobileViewBtn}`}>
-                  View
-                </Link>
-              </div>
+              <Link href={`/admin/disputes/${d.id}`} className={styles.mobileCardDetailsBtn}>
+                View
+              </Link>
             </div>
             )
           })}

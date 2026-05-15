@@ -733,6 +733,31 @@
   }
 }
 
+.mobileCardDetailsBtn {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #d7e1db;
+  background: #ffffff;
+  color: #166534;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mobileCardDetailsBtn:hover {
+    background: #f0fdf4;
+    color: #166534;
+  }
+}
+
 /* ── Empty ───────────────────────────────────────────────────────────────── */
 
 .emptyState {
@@ -1015,13 +1040,13 @@
   .mobileCard {
     display: flex;
     flex-direction: column;
-    gap: 0;
+    gap: 12px;
     background: #fff;
     border: 1px solid #e5e7eb;
     border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-    padding: 16px 16px 14px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    padding: 16px;
   }
 
   /* ── Card header: Order + short ref + status (matches desktop columns) ── */
@@ -1077,8 +1102,7 @@
     display: flex;
     flex-direction: column;
     gap: 14px;
-    padding: 14px 0 12px;
-    border-bottom: 1px solid #f1f5f9;
+    padding: 0;
   }
 
   .mobileField {
@@ -1098,18 +1122,11 @@
     word-break: break-word;
   }
 
-  /* ── Action (centered; same control as desktop View) ── */
-  .mobileActions {
-    display: flex;
-    justify-content: center;
-    padding-top: 12px;
-  }
-
-  .mobileViewBtn {
-    min-height: 44px;
-    min-width: 120px;
-    width: auto;
-    padding: 10px 22px;
+  .mobileCardDetailsBtn {
+    padding: 13px;
+    font-size: 13px;
+    min-height: 46px;
+    border-radius: 12px;
   }
 
   /* Hover effects disabled on touch devices */

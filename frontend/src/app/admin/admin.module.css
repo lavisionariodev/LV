@@ -2,15 +2,6 @@
    ADMIN LAYOUT (MVP)
    ========================= */
 
-.authLoading {
-  display: grid;
-  place-items: center;
-  min-height: 100vh;
-  background: #ffffff;
-  font-size: 14px;
-  color: #6b7280;
-}
-
 .shell {
   display: grid;
   grid-template-columns: var(--sidebar-width) 1fr;
@@ -1568,66 +1559,9 @@
   }
 }
 
-/* Auth gate — approximates sidebar + topbar + content */
-.authGateSk {
-  display: grid;
-  grid-template-columns: minmax(200px, 240px) 1fr;
-  width: 100%;
-  max-width: 1200px;
-  height: min(560px, 85vh);
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid #e5e7eb;
-  box-sizing: border-box;
-}
-
-.authGateSkAside {
-  background: #f8fafc;
-  border-right: 1px solid #e5e7eb;
-  padding: 16px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.authGateSkNavItem {
+.adminSkLine {
   height: 12px;
   border-radius: 6px;
-}
-
-.authGateSkMain {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  background: #fff;
-}
-
-.authGateSkTop {
-  height: 52px;
-  border-bottom: 1px solid #eef0f4;
-  display: flex;
-  align-items: center;
-  padding: 0 18px;
-  gap: 12px;
-}
-
-.authGateSkBody {
-  flex: 1;
-  padding: 20px 22px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-@media (max-width: 720px) {
-  .authGateSk {
-    grid-template-columns: 1fr;
-    height: min(480px, 80vh);
-  }
-
-  .authGateSkAside {
-    display: none;
-  }
 }
 
 /* Dashboard first paint */
