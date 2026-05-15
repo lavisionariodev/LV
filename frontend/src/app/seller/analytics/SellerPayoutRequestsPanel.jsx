@@ -8,6 +8,7 @@ import {
   listSellerPayoutRequests,
 } from '@/lib/seller/payoutRequestsClient'
 import styles from '../analytics/analytics.module.css'
+import BodyPortal from '@/components/ui/Modal/BodyPortal'
 
 function formatDate(value) {
   const d = new Date(value)
@@ -110,6 +111,7 @@ export default function SellerPayoutRequestsPanel({ className = '' }) {
       </div>
 
       {isRequestModalOpen ? (
+        <BodyPortal>
         <div
           className={styles.payoutRequestModalOverlay}
           role="dialog"
@@ -179,6 +181,7 @@ export default function SellerPayoutRequestsPanel({ className = '' }) {
             </div>
           </div>
         </div>
+        </BodyPortal>
       ) : null}
 
       <div className={styles.payoutRequestHistory}>

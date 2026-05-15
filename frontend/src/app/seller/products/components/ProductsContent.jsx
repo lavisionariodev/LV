@@ -47,6 +47,7 @@ import { formatPhpAmount, roundPhpAmount } from '@/lib/cart/formatPhp'
 import { hasPendingSellerChanges, mergePendingChangesIntoListingRow, getPendingChangeFieldLabels } from '@/lib/seller-listings/pendingChanges'
 import { formatCount } from '@/shared/utils/formatCount'
 import { useDebouncedEffect } from '@/shared/hooks'
+import BodyPortal from '@/components/ui/Modal/BodyPortal'
 import { readEnum, readString, replaceUrlQuery } from '@/shared/utils/queryParams'
 
 const ARCHIVE_PATH = '/seller/products/archive'
@@ -1379,6 +1380,7 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
       </section>
 
       {selectedProduct && modalMode && (
+        <BodyPortal>
         <div
           className={styles.productModalOverlay}
           onClick={(e) => {
@@ -1650,9 +1652,11 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
             </div>
           </div>
         </div>
+        </BodyPortal>
       )}
 
       {productPendingRemoval && (
+        <BodyPortal>
         <div
           className={styles.removeConfirmOverlay}
           onClick={(e) => {
@@ -1705,8 +1709,10 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
             </div>
           </div>
         </div>
+        </BodyPortal>
       )}
       {productPendingCancel ? (
+        <BodyPortal>
         <div
           className={styles.removeConfirmOverlay}
           onClick={(e) => {
@@ -1763,6 +1769,7 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
             </div>
           </div>
         </div>
+        </BodyPortal>
       ) : null}
     </div>
   )

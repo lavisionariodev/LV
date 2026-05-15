@@ -22,6 +22,7 @@ import {
   TbPhoto,
 } from 'react-icons/tb'
 import styles from './orders.module.css'
+import BodyPortal from '@/components/ui/Modal/BodyPortal'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase/client'
 import { formatCount } from '@/shared/utils/formatCount'
@@ -1061,6 +1062,7 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
       </div>
 
       {selectedOrder && (
+        <BodyPortal>
         <div
           className={styles.modalOverlay}
           role="dialog"
@@ -1415,9 +1417,11 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
             </div>
           </div>
         </div>
+        </BodyPortal>
       )}
 
       {showUpdateStatus && orderForUpdateStatus && (
+        <BodyPortal>
         <div
           className={styles.updateStatusWrap}
           role="dialog"
@@ -1500,9 +1504,11 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
             </div>
           </div>
         </div>
+        </BodyPortal>
       )}
 
       {cancelUnpaidOrder && (
+        <BodyPortal>
         <div
           className={styles.updateStatusWrap}
           role="dialog"
@@ -1556,9 +1562,11 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
             </div>
           </div>
         </div>
+        </BodyPortal>
       )}
 
       {declineOrder && (
+        <BodyPortal>
         <div
           className={styles.updateStatusWrap}
           role="dialog"
@@ -1611,9 +1619,11 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
             </div>
           </div>
         </div>
+        </BodyPortal>
       )}
 
       {previewAttachment && (
+        <BodyPortal>
         <div
           className={styles.modalOverlay}
           role="dialog"
@@ -1673,6 +1683,7 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
             </div>
           </div>
         </div>
+        </BodyPortal>
       )}
     </div>
   )

@@ -13,6 +13,7 @@ import {
   YAxis,
 } from 'recharts'
 import styles from './marketing.module.css'
+import BodyPortal from '@/components/ui/Modal/BodyPortal'
 import { Toast } from '@/components/ui'
 
 function StatusPill({ status }) {
@@ -108,6 +109,7 @@ function Drawer({ open, title, onClose, children }) {
   if (!open) return null
 
   return (
+    <BodyPortal>
     <div className={styles.drawerOverlay} role="dialog" aria-modal="true" onClick={onClose}>
       <div className={styles.drawer} onClick={(e) => e.stopPropagation()}>
         <div className={styles.drawerHeader}>
@@ -119,6 +121,7 @@ function Drawer({ open, title, onClose, children }) {
         <div className={styles.drawerBody}>{children}</div>
       </div>
     </div>
+    </BodyPortal>
   )
 }
 

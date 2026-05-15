@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import styles from './Logout.module.css'
+import BodyPortal from './BodyPortal'
 import { LuLogOut } from 'react-icons/lu'
 
 export default function Logout({ open, onConfirm, onCancel }) {
@@ -31,14 +32,15 @@ export default function Logout({ open, onConfirm, onCancel }) {
   const stop = (e) => e.stopPropagation()
 
   return (
-    <div
-      className={styles.overlay}
-      role="dialog"
-      aria-modal="true"
-      aria-busy={isLoggingOut}
-      onClick={handleOverlayClick}
-    >
-      <div className={styles.modal} onClick={stop}>
+    <BodyPortal>
+      <div
+        className={styles.overlay}
+        role="dialog"
+        aria-modal="true"
+        aria-busy={isLoggingOut}
+        onClick={handleOverlayClick}
+      >
+        <div className={styles.modal} onClick={stop}>
         <div className={styles.iconWrap} aria-hidden="true">
           <div className={styles.iconCircle}>
             <LuLogOut />
@@ -59,5 +61,6 @@ export default function Logout({ open, onConfirm, onCancel }) {
         </div>
       </div>
     </div>
+    </BodyPortal>
   )
 }

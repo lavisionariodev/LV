@@ -17,6 +17,10 @@ npm run dev
 
 The dev server runs at `http://localhost:3000`.
 
+## Project documentation (handover)
+
+Numbered guides: [docs/project-documentation/](docs/project-documentation/).
+
 ## Environment variables
 
 Create `frontend/.env.local` (or configure the same keys in your host). Public keys are safe for the browser; server-only keys must never be exposed to client bundles.

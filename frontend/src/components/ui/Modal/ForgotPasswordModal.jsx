@@ -4,6 +4,7 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { isValidEmail } from "@/lib/validators/authSchemas";
 import styles from "./ForgotPasswordModal.module.css";
+import BodyPortal from "./BodyPortal";
 
 const VALID_PORTALS = ["buyer", "seller", "administrator"];
 
@@ -70,6 +71,7 @@ export default function ForgotPasswordModal({
   if (!isOpen) return null;
 
   return (
+    <BodyPortal>
     <div className={styles.modalOverlay}>
       <div className={styles.modalContent}>
         {!submitted ? (
@@ -197,5 +199,6 @@ export default function ForgotPasswordModal({
         )}
       </div>
     </div>
+    </BodyPortal>
   );
 }
