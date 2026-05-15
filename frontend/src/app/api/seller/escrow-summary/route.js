@@ -8,6 +8,7 @@ import {
 import {
   fetchPayoutDisbursementsForSeller,
   fetchSellerWalletLedgerEntries,
+  fetchSellerWithdrawalsForSeller,
 } from '@/lib/payments/walletLedger'
 
 function csvEscape(v) {
@@ -60,6 +61,7 @@ export async function GET(request) {
 
   let allRows = []
   let disbursements = []
+  let withdrawals = []
   let ledgerEntries = []
   try {
     allRows = await fetchAllEscrows(supabaseAdmin, user.id, { from, to })
@@ -68,6 +70,7 @@ export async function GET(request) {
       sellerUserId: user.id,
       escrowIds: escrowIds.length ? escrowIds : null,
     })
+    withdrawals = await fetchSellerWithdrawalsForSeller(supabaseAdmin, user.id)
     ledgerEntries = await fetchSellerWalletLedgerEntries(supabaseAdmin, user.id)
   } catch (error) {
     return NextResponse.json({ error: error.message || 'Failed to load escrow summary.' }, { status: 500 })
@@ -120,7 +123,7 @@ export async function GET(request) {
     })
   }
 
-  const summary = buildSellerWalletSummary(allRows, disbursements, ledgerEntries)
+  const summary = buildSellerWalletSummary(allRows, disbursements, withdrawals, ledgerEntries)
   const ledgerLimit = parsePositiveInt(searchParams.get('ledgerLimit'), 50, 200)
   const ledgerOffset = Math.max(0, parseInt(String(searchParams.get('ledgerOffset') || '0'), 10) || 0)
   const ledgerPageRows = ledgerEntries.slice(ledgerOffset, ledgerOffset + ledgerLimit).map((row) => ({

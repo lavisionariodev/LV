@@ -1,5 +1,6 @@
-const PENDING_DISBURSEMENT_STATUSES = new Set(['pending', 'submitted'])
 const SUCCEEDED_DISBURSEMENT_STATUS = 'succeeded'
+const ACTIVE_WITHDRAWAL_STATUSES = new Set(['pending', 'submitted', 'succeeded'])
+const PENDING_WITHDRAWAL_STATUSES = new Set(['pending', 'submitted'])
 
 function sumAmount(rows, field, predicate = () => true) {
   return rows.reduce((total, row) => {
@@ -41,26 +42,31 @@ function disbursementRank(status) {
 /**
  * @param {any[]} escrows
  * @param {any[]} disbursements
+ * @param {any[]} withdrawals
  * @param {any[]} ledgerEntries
  */
-export function buildSellerWalletSummary(escrows, disbursements = [], ledgerEntries = []) {
+export function buildSellerWalletSummary(
+  escrows,
+  disbursements = [],
+  withdrawals = [],
+  ledgerEntries = [],
+) {
   const rows = escrows ?? []
   const disbursementByEscrowId = indexDisbursementsByEscrowId(disbursements)
-  const currency = rows[0]?.currency || disbursements[0]?.currency || 'PHP'
+  const currency =
+    rows[0]?.currency || disbursements[0]?.currency || withdrawals[0]?.currency || 'PHP'
 
-  const legacyReleasedEscrowIds = new Set()
-  let releasedNetAutomated = 0
-  let releasedNetLegacyManual = 0
+  let walletBalanceNet = 0
+  let legacyPaidViaDisbursementNet = 0
 
   for (const escrow of rows) {
     if (String(escrow.status || '').toLowerCase() !== 'released') continue
-    const disbursement = disbursementByEscrowId.get(escrow.id)
     const net = Number(escrow.net_amount) || 0
+    const disbursement = disbursementByEscrowId.get(escrow.id)
     if (disbursement?.status === SUCCEEDED_DISBURSEMENT_STATUS) {
-      releasedNetAutomated += net
+      legacyPaidViaDisbursementNet += net
     } else {
-      legacyReleasedEscrowIds.add(escrow.id)
-      releasedNetLegacyManual += net
+      walletBalanceNet += net
     }
   }
 
@@ -72,21 +78,29 @@ export function buildSellerWalletSummary(escrows, disbursements = [], ledgerEntr
   const heldNet = sumAmount(rows, 'net_amount', (row) => String(row.status || '').toLowerCase() === 'on_hold')
   const onHoldNet = heldNet
   const refundedNet = sumAmount(rows, 'net_amount', (row) => String(row.status || '').toLowerCase() === 'refunded')
+  const releasedNet = sumAmount(rows, 'net_amount', (row) => String(row.status || '').toLowerCase() === 'released')
 
-  const pendingDisbursementNet = sumAmount(disbursements, 'amount_php', (row) =>
-    PENDING_DISBURSEMENT_STATUSES.has(String(row.status || '').toLowerCase()),
+  const pendingWithdrawalNet = sumAmount(withdrawals, 'amount_php', (row) =>
+    PENDING_WITHDRAWAL_STATUSES.has(String(row.status || '').toLowerCase()),
   )
 
-  const withdrawnNet = sumAmount(ledgerEntries, 'amount_php', (row) => row.entry_type === 'withdrawal')
+  const reservedWithdrawalNet = sumAmount(withdrawals, 'amount_php', (row) =>
+    ACTIVE_WITHDRAWAL_STATUSES.has(String(row.status || '').toLowerCase()),
+  )
+
+  const succeededWithdrawalNet = sumAmount(withdrawals, 'amount_php', (row) =>
+    String(row.status || '').toLowerCase() === 'succeeded',
+  )
+
   const adjustmentNet = sumAmount(ledgerEntries, 'amount_php', (row) => row.entry_type === 'adjustment')
   const payoutReleaseLedgerNet = sumAmount(ledgerEntries, 'amount_php', (row) => row.entry_type === 'payout_release')
 
   const gross = sumAmount(rows, 'gross_amount')
   const commission = sumAmount(rows, 'commission_amount')
   const net = sumAmount(rows, 'net_amount')
-  const releasedNet = releasedNetAutomated + releasedNetLegacyManual
-  const paidOutNet = releasedNetAutomated + withdrawnNet
-  const availableNet = Math.max(0, releasedNetAutomated - withdrawnNet + adjustmentNet)
+
+  const paidOutNet = legacyPaidViaDisbursementNet + succeededWithdrawalNet
+  const availableNet = Math.max(0, walletBalanceNet - reservedWithdrawalNet + adjustmentNet)
 
   return {
     count: rows.length,
@@ -100,16 +114,18 @@ export function buildSellerWalletSummary(escrows, disbursements = [], ledgerEntr
     releasedNet,
     refundedNet,
     heldBalanceNet,
-    pendingDisbursementNet,
+    walletBalanceNet,
+    pendingWithdrawalNet,
     availableNet,
     paidOutNet,
-    withdrawnNet,
+    withdrawnNet: succeededWithdrawalNet,
     payoutReleaseLedgerNet,
     adjustmentNet,
     totalEarningsGross: gross,
     totalEarningsNet: net,
-    legacyReleasedCount: legacyReleasedEscrowIds.size,
-    legacyReleasedNet: releasedNetLegacyManual,
+    legacyPaidViaDisbursementNet,
+    /** @deprecated use pendingWithdrawalNet */
+    pendingDisbursementNet: pendingWithdrawalNet,
   }
 }
 
@@ -121,12 +137,8 @@ export function resolveEscrowDisbursementState(escrow, disbursement) {
   const escrowStatus = String(escrow?.status || '').toLowerCase()
   const disbursementStatus = String(disbursement?.status || '').toLowerCase()
 
-  if (disbursementStatus === SUCCEEDED_DISBURSEMENT_STATUS) return 'succeeded'
-  if (disbursementStatus === 'submitted') return 'submitted'
-  if (disbursementStatus === 'pending') return 'pending'
-  if (disbursementStatus === 'failed') return 'failed'
-  if (disbursementStatus === 'cancelled') return 'cancelled'
-  if (escrowStatus === 'released') return 'legacy_manual'
+  if (disbursementStatus === SUCCEEDED_DISBURSEMENT_STATUS) return 'legacy_paid'
+  if (escrowStatus === 'released') return 'wallet_credited'
   return 'none'
 }
 

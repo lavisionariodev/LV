@@ -36,25 +36,25 @@ function createMockSupabaseAdmin() {
   }
 }
 
-test('recordWithdrawalLedgerEntry uses payout request idempotency key', async () => {
+test('recordWithdrawalLedgerEntry uses withdrawal idempotency key', async () => {
   const { client, inserted } = createMockSupabaseAdmin()
   await recordWithdrawalLedgerEntry(client, {
-    payoutRequestId: 'req-1',
+    withdrawalId: 'wd-1',
     sellerUserId: 'seller-1',
     amountPhp: 250,
-    metadata: { reviewed_by: 'admin-1' },
+    metadata: { paymongo_transfer_id: 'tr_1' },
   })
 
   assert.equal(inserted.length, 1)
   assert.equal(inserted[0].entry_type, 'withdrawal')
-  assert.equal(inserted[0].idempotency_key, 'withdrawal:payout_request:req-1')
+  assert.equal(inserted[0].idempotency_key, 'withdrawal:wd-1')
   assert.equal(inserted[0].amount_php, 250)
 })
 
-test('recordWithdrawalLedgerEntry is idempotent for the same payout request', async () => {
+test('recordWithdrawalLedgerEntry is idempotent for the same withdrawal', async () => {
   const { client, inserted } = createMockSupabaseAdmin()
   const params = {
-    payoutRequestId: 'req-2',
+    withdrawalId: 'wd-2',
     sellerUserId: 'seller-1',
     amountPhp: 100,
   }

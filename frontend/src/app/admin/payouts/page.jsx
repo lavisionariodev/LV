@@ -26,7 +26,6 @@ import adminStyles from '../admin.module.css'
 
 import styles from './payouts.module.css'
 import StuckRefundsStrip from './StuckRefundsStrip'
-import PayoutRequestsStrip from './PayoutRequestsStrip'
 
 // ─── Admin payouts page data hook (formerly useAdminPayoutsPage.js) ──────────
 
@@ -68,8 +67,7 @@ function payoutTxnCanBulkRelease(t) {
     t &&
     t.payoutStatus === 'escrowed' &&
     t.paymentStatus === 'paid' &&
-    t.fulfillmentStatus === 'completed' &&
-    !['pending', 'submitted'].includes(String(t.disbursementState || '').toLowerCase())
+    t.fulfillmentStatus === 'completed'
   )
 }
 
@@ -83,10 +81,9 @@ function payoutTxnRowKey(t) {
   return String(t.id)
 }
 
-function shouldShowDisbursementBadge(disbursementState, payoutStatus) {
+function shouldShowDisbursementBadge(disbursementState) {
   if (!disbursementState || disbursementState === 'none') return false
-  if (disbursementState === 'legacy_manual' && payoutStatus === 'released') return false
-  return true
+  return disbursementState === 'wallet_credited' || disbursementState === 'legacy_paid'
 }
 
 function buildPayoutQueryString({
@@ -139,9 +136,6 @@ function useAdminPayoutsPage() {
   )
   const [filterDateFrom, setFilterDateFrom] = useState(() => readString(searchParams, 'from', ''))
   const [filterDateTo, setFilterDateTo] = useState(() => readString(searchParams, 'to', ''))
-  const [approvedRequestId, setApprovedRequestId] = useState(() =>
-    readString(searchParams, 'approvedRequestId', ''),
-  )
   const [showFilters, setShowFilters] = useState(false)
   const [expandedRow, setExpandedRow] = useState(null)
   const [selectedRows, setSelectedRows] = useState(new Set())
@@ -281,7 +275,6 @@ function useAdminPayoutsPage() {
     )
     const nextFrom = readString(searchParams, 'from', '')
     const nextTo = readString(searchParams, 'to', '')
-    const nextApprovedRequestId = readString(searchParams, 'approvedRequestId', '')
     const nextPage = Math.max(1, readInt(searchParams, 'page', 1))
 
     queueMicrotask(() => {
@@ -292,7 +285,6 @@ function useAdminPayoutsPage() {
       if (nextPayout !== filterPayout) setFilterPayout(nextPayout)
       if (nextFrom !== filterDateFrom) setFilterDateFrom(nextFrom)
       if (nextTo !== filterDateTo) setFilterDateTo(nextTo)
-      if (nextApprovedRequestId !== approvedRequestId) setApprovedRequestId(nextApprovedRequestId)
       if (nextPage !== currentPage) setCurrentPage(nextPage)
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -380,8 +372,6 @@ function useAdminPayoutsPage() {
         body: JSON.stringify({
           orderId: orderUuid,
           releaseReference: options.releaseReference ?? '',
-          manualOverride: Boolean(options.manualOverride),
-          approvedRequestId: options.approvedRequestId ?? null,
         }),
       })
       const body = await res.json().catch(() => null)
@@ -515,7 +505,6 @@ function useAdminPayoutsPage() {
     setFilterDateFrom,
     filterDateTo,
     setFilterDateTo,
-    approvedRequestId,
     showFilters,
     setShowFilters,
     expandedRow,
@@ -853,7 +842,6 @@ function EscrowReleasePanel({
   releaseOrder,
   holdOrder,
   unholdOrder,
-  approvedRequestId = '',
   compactUi = false,
   /** `'sheet'` — mobile order-details modal layout (distinct from desktop expanded row). */
   variant = 'default',
@@ -867,7 +855,6 @@ function EscrowReleasePanel({
   const [holdReasonInput, setHoldReasonInput] = useState('')
   const [holdModalErr, setHoldModalErr] = useState(null)
   const [releaseReferenceInput, setReleaseReferenceInput] = useState('')
-  const [manualOverrideRelease, setManualOverrideRelease] = useState(false)
 
   const disbursementState = String(t.disbursementState || 'none').toLowerCase()
   const disbursementLabel =
@@ -902,14 +889,6 @@ function EscrowReleasePanel({
   if (t.payoutStatus === 'released') {
     blockers.push(useCompactCopy ? 'Released.' : 'Already released.')
   }
-  if (['pending', 'submitted'].includes(disbursementState)) {
-    blockers.push(
-      useCompactCopy
-        ? 'PayMongo payout already in progress.'
-        : 'A PayMongo payout is already in progress for this order.',
-    )
-  }
-
   async function handleConfirmRelease() {
     if (busy) return
     setBusy(true)
@@ -917,12 +896,9 @@ function EscrowReleasePanel({
     try {
       await releaseOrder(t.orderUuid, {
         releaseReference: releaseReferenceInput.trim(),
-        approvedRequestId: approvedRequestId || null,
-        manualOverride: manualOverrideRelease,
       })
       setReleaseModalOpen(false)
       setReleaseReferenceInput('')
-      setManualOverrideRelease(false)
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Release failed.')
     } finally {
@@ -1044,14 +1020,12 @@ function EscrowReleasePanel({
             </>
           ) : (
             <>
-              This will start PayMongo disbursement for order{' '}
-              <strong>{t.orderId || t.orderUuid || '—'}</strong>
-              {' '}
-              when automated payouts are enabled. Net to seller after platform fee:{' '}
+              This credits the seller wallet for order{' '}
+              <strong>{t.orderId || t.orderUuid || '—'}</strong>. Net after platform fee:{' '}
               <strong className={confirmModalStyles.subtitleAccentGreen}>
                 {formatPHP(Number(t.net_amount) || 0)}
               </strong>
-              .
+              . The seller withdraws to their bank or GCash separately.
             </>
           )
         }
@@ -1066,18 +1040,9 @@ function EscrowReleasePanel({
               className={confirmModalStyles.modalInput}
               value={releaseReferenceInput}
               onChange={(e) => setReleaseReferenceInput(e.target.value)}
-              placeholder="Bank ref, transfer note, or PayMongo transfer id"
+              placeholder="Internal note (optional)"
               disabled={busy}
             />
-            <label className={confirmModalStyles.modalCheckboxField}>
-              <input
-                type="checkbox"
-                checked={manualOverrideRelease}
-                onChange={(e) => setManualOverrideRelease(e.target.checked)}
-                disabled={busy}
-              />
-              <span>Manual ledger release (skip PayMongo transfer)</span>
-            </label>
           </>
         }
         confirmLabel={useCompactCopy ? 'Release' : 'Release payout'}
@@ -1455,7 +1420,6 @@ function MobileTxnDetailSheetContent({
   holdOrder,
   unholdOrder,
   updateOrderCommission,
-  approvedRequestId = '',
 }) {
   const { rate, commission, sellerEarnings } = getTxnCommissionParts(t, commissionSettings)
   const splitRate = Math.min(100, Math.max(0, Number(rate) || 0))
@@ -1528,7 +1492,6 @@ function MobileTxnDetailSheetContent({
         releaseOrder={releaseOrder}
         holdOrder={holdOrder}
         unholdOrder={unholdOrder}
-        approvedRequestId={approvedRequestId}
         variant="sheet"
       />
     </div>
@@ -1542,7 +1505,6 @@ function ExpandedEscrowDetails({
   holdOrder,
   unholdOrder,
   updateOrderCommission,
-  approvedRequestId = '',
   compactUi = false,
 }) {
   const { rate, commission, sellerEarnings } = getTxnCommissionParts(t, commissionSettings)
@@ -1609,7 +1571,7 @@ function ExpandedEscrowDetails({
           <div className={styles.payoutStatusRow}>
             <Badge type="payment" value={t.paymentStatus} />
             <Badge type="payout" value={t.payoutStatus} />
-            {shouldShowDisbursementBadge(t.disbursementState, t.payoutStatus) ? (
+            {shouldShowDisbursementBadge(t.disbursementState) ? (
               <Badge type="disbursement" value={t.disbursementState} />
             ) : null}
             {t.payoutReference && <span className={styles.refChip}>Ref: {t.payoutReference}</span>}
@@ -1627,7 +1589,6 @@ function ExpandedEscrowDetails({
           releaseOrder={releaseOrder}
           holdOrder={holdOrder}
           unholdOrder={unholdOrder}
-          approvedRequestId={approvedRequestId}
           compactUi={compactUi}
         />
       </div>
@@ -2315,7 +2276,6 @@ export default function AdminPayoutsPage() {
     setFilterDateFrom,
     filterDateTo,
     setFilterDateTo,
-    approvedRequestId,
     showFilters,
     setShowFilters,
     expandedRow,
@@ -2377,7 +2337,6 @@ export default function AdminPayoutsPage() {
   const [payoutsBulkReleaseConfirm, setPayoutsBulkReleaseConfirm] = useState(false)
   const [payoutsBulkUnholdConfirm, setPayoutsBulkUnholdConfirm] = useState(false)
   const [payoutsBulkBusy, setPayoutsBulkBusy] = useState(false)
-  const [bulkManualOverrideRelease, setBulkManualOverrideRelease] = useState(false)
   const [disbursementReminderDismissed, setDisbursementReminderDismissed] = useState(false)
 
   const selectedPayoutTxns = useMemo(() => {
@@ -2410,11 +2369,7 @@ export default function AdminPayoutsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({
-          orderIds,
-          approvedRequestId: approvedRequestId || null,
-          manualOverride: bulkManualOverrideRelease,
-        }),
+        body: JSON.stringify({ orderIds }),
       })
       const body = await res.json().catch(() => null)
       if (!res.ok && res.status !== 207) {
@@ -2430,10 +2385,9 @@ export default function AdminPayoutsPage() {
     } finally {
       setPayoutsBulkBusy(false)
       setPayoutsBulkReleaseConfirm(false)
-      setBulkManualOverrideRelease(false)
       setSelectedRows(new Set())
     }
-  }, [approvedRequestId, bulkManualOverrideRelease, bulkReleaseTargets, refreshAll, setSelectedRows])
+  }, [bulkReleaseTargets, refreshAll, setSelectedRows])
 
   const runBulkUnhold = useCallback(async () => {
     if (bulkUnholdTargets.length === 0) return
@@ -2566,16 +2520,6 @@ export default function AdminPayoutsPage() {
         </section>
       )}
 
-      {approvedRequestId ? (
-        <section className={styles.stuckRefundsWrap} aria-live="polite">
-          <p className={styles.stuckRefundsTitle}>Approved payout review request</p>
-          <p className={styles.stuckRefundsSub}>
-            Release eligible completed escrow rows for this seller. Automated PayMongo disbursement runs per order when enabled.
-          </p>
-        </section>
-      ) : null}
-
-      {activeTab === 'all' && <PayoutRequestsStrip />}
       {activeTab === 'all' && <StuckRefundsStrip />}
 
       {/* Tab panels: All = transactions → commission → seller earnings */}
@@ -2905,7 +2849,7 @@ export default function AdminPayoutsPage() {
                       <div className={styles.mobileCardStatuses}>
                       <Badge type="payment" value={t.paymentStatus}/>
                       <Badge type="payout" value={t.payoutStatus}/>
-                      {shouldShowDisbursementBadge(t.disbursementState, t.payoutStatus) ? (
+                      {shouldShowDisbursementBadge(t.disbursementState) ? (
                         <Badge type="disbursement" value={t.disbursementState} />
                       ) : null}
                       </div>
@@ -3062,7 +3006,7 @@ export default function AdminPayoutsPage() {
                         <td className={styles.escrowCell}>
                           <div className={styles.escrowStatusStack}>
                             <Badge type="payout" value={t.payoutStatus}/>
-                            {shouldShowDisbursementBadge(t.disbursementState, t.payoutStatus) ? (
+                            {shouldShowDisbursementBadge(t.disbursementState) ? (
                               <Badge type="disbursement" value={t.disbursementState} />
                             ) : null}
                           </div>
@@ -3099,7 +3043,6 @@ export default function AdminPayoutsPage() {
                                 holdOrder={holdOrder}
                                 unholdOrder={unholdOrder}
                                 updateOrderCommission={updateOrderCommission}
-                                approvedRequestId={approvedRequestId}
                                 compactUi={isMobile}
                               />
                             </div>
@@ -3170,22 +3113,11 @@ export default function AdminPayoutsPage() {
             subtitleAlign="left"
             message={
               <>
-                This will finalize escrow release for{' '}
+                This credits the seller wallet for{' '}
                 <strong>{bulkReleaseTargets.length}</strong> paid, completed order
-                {bulkReleaseTargets.length === 1 ? '' : 's'} (other selected rows that are not eligible are skipped).
-                Only use when you intend to complete these payouts.
+                {bulkReleaseTargets.length === 1 ? '' : 's'} (ineligible selected rows are skipped).
+                Sellers withdraw to bank or GCash separately.
               </>
-            }
-            extra={
-              <label className={confirmModalStyles.modalCheckboxField}>
-                <input
-                  type="checkbox"
-                  checked={bulkManualOverrideRelease}
-                  onChange={(e) => setBulkManualOverrideRelease(e.target.checked)}
-                  disabled={payoutsBulkBusy}
-                />
-                <span>Manual ledger release (skip PayMongo transfer)</span>
-              </label>
             }
             confirmLabel="Release payouts"
             confirmLoadingLabel="Releasing…"
@@ -3194,7 +3126,6 @@ export default function AdminPayoutsPage() {
             onCancel={() => {
               if (payoutsBulkBusy) return
               setPayoutsBulkReleaseConfirm(false)
-              setBulkManualOverrideRelease(false)
             }}
             onConfirm={runBulkRelease}
           />
@@ -3463,7 +3394,6 @@ export default function AdminPayoutsPage() {
                     holdOrder={holdOrder}
                     unholdOrder={unholdOrder}
                     updateOrderCommission={updateOrderCommission}
-                    approvedRequestId={approvedRequestId}
                   />
                 </div>
               </div>
@@ -3499,13 +3429,13 @@ export default function AdminPayoutsPage() {
             </button>
             <p id="payouts-disbursement-reminder-title" className={styles.disbursementReminderTitle}>
               {disbursementConfig.automatedReady
-                ? 'PayMongo automated disbursement is enabled'
-                : 'Escrow releases use manual settlement unless PayMongo is ready'}
+                ? 'Seller withdrawals use PayMongo'
+                : 'Seller withdrawals need PayMongo configuration'}
             </p>
             <p className={styles.disbursementReminderSub}>
               {disbursementConfig.automatedReady
-                ? 'Eligible releases can create PayMongo transfers when seller payout settings validate. Use the manual ledger checkbox to skip PayMongo for a specific release.'
-                : 'Admin release finalizes escrow in the app; settlement is manual until PayMongo wallet env is configured on the server. Optional release reference can note your bank transfer.'}
+                ? 'Admin release credits the seller wallet. Sellers withdraw to their bank or GCash when ready.'
+                : 'Admin release still credits the seller wallet in the app. Configure PayMongo wallet env vars before sellers can withdraw.'}
             </p>
           </div>
         </div>

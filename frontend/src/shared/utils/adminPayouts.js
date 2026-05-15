@@ -32,14 +32,11 @@ export const PAYOUT_STATUS_META = {
   released: { label: 'Released', color: 'green' },
 }
 
+/** Wallet / legacy bank payout state for admin payouts table. */
 export const DISBURSEMENT_STATE_META = {
-  none: { label: 'No payout attempt', color: 'slate' },
-  pending: { label: 'Payout pending', color: 'amber' },
-  submitted: { label: 'PayMongo submitted', color: 'amber' },
-  succeeded: { label: 'Paid out', color: 'green' },
-  failed: { label: 'Payout failed', color: 'red' },
-  cancelled: { label: 'Payout cancelled', color: 'red' },
-  legacy_manual: { label: 'Manual', color: 'slate' },
+  none: { label: 'In escrow', color: 'slate' },
+  wallet_credited: { label: 'In seller wallet', color: 'green' },
+  legacy_paid: { label: 'Paid (legacy)', color: 'slate' },
 }
 
 export function getCommissionRate(sellerId, settings) {

@@ -55,7 +55,7 @@ const categoriesWithArticles = [
     subCategories: [
       { id: 'escrow-hold', title: 'Escrow holds', article: { title: 'Why are paid bookings held in escrow?', content: 'When a family pays through Lavisionario, funds are held while the booking is pending, in progress, disputed, or refunding. After the service is completed and any platform commission is applied, eligible amounts can move toward your payout.', note: null } },
       { id: 'payout-details', title: 'Payout details', article: { title: 'Where do I set up payouts?', content: 'After you are approved, open Seller Settings, then Payouts, and keep your bank or payment account details current. Incorrect details may delay release of eligible escrow funds. Payouts are processed through our payment partner (PayMongo).', note: null } },
-      { id: 'payout-timing', title: 'Payout timing', article: { title: 'When do I receive my earnings?', content: 'Eligible completed bookings can be released according to platform rules and your payout setup. Processing times depend on your bank or e-wallet. Check Seller Centre for escrow summary and payout request status.', note: null } },
+      { id: 'payout-timing', title: 'Payout timing', article: { title: 'When do I receive my earnings?', content: 'After admin releases eligible completed bookings, funds appear in your seller wallet. Withdraw to your bank or GCash from Payout settings or Revenue reports. Processing times depend on your bank or e-wallet.', note: null } },
     ],
   },
   {
