@@ -14,11 +14,15 @@ export function formatDateRangeLabel(from, to) {
   return ''
 }
 
+/** Labels kept short for admin payouts table (fixed column width). */
 export const PAYMENT_STATUS_META = {
-  paid:     { label: 'Paid',     color: 'green' },
-  pending:  { label: 'Pending',  color: 'amber' },
-  refunded: { label: 'Refunded', color: 'red'   },
-  failed:   { label: 'Failed',   color: 'red'   },
+  paid: { label: 'Paid', color: 'green' },
+  pending: { label: 'Pending', color: 'amber' },
+  unpaid: { label: 'Unpaid', color: 'slate' },
+  failed: { label: 'Failed', color: 'red' },
+  expired: { label: 'Expired', color: 'slate' },
+  refund_pending: { label: 'Refunding', color: 'amber' },
+  refunded: { label: 'Refunded', color: 'red' },
 }
 
 /** Escrow / payout lifecycle shown on admin payouts (matches `order_escrows.status`). */

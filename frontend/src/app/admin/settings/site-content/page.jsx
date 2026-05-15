@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { FiEdit } from 'react-icons/fi'
+import { FiEdit, FiPlus, FiTrash2 } from 'react-icons/fi'
 import { useAdminSiteContent, upsertSiteContent } from '@/lib/siteContent/client'
 import { validateSellerHelpFaq } from '@/lib/siteContent/mapping'
 import { useAuthToast } from '@/contexts/ToastContext'
@@ -114,6 +114,46 @@ const EMPTY_SITE_CONTENT = {
   sellerHelpFaq: [],
 }
 
+const emptyFaqItem = () => ({ id: '', question: '', answer: '' })
+
+const emptyFaqCategory = () => ({ category: '', items: [emptyFaqItem()] })
+
+function cloneSellerFaqForEditor(groups) {
+  const list = Array.isArray(groups) ? groups : []
+  if (list.length === 0) return []
+  return list.map((g) => ({
+    category: String(g?.category ?? ''),
+    items: Array.isArray(g?.items) && g.items.length
+      ? g.items.map((it) => ({
+          id: String(it?.id ?? ''),
+          question: String(it?.question ?? ''),
+          answer: String(it?.answer ?? ''),
+        }))
+      : [emptyFaqItem()],
+  }))
+}
+
+function buildSellerFaqPayloadFromEditor(editor) {
+  let idSeq = 0
+  const genId = () => `faq_${Date.now().toString(36)}_${(idSeq++).toString(36)}`
+  const out = []
+  for (const group of editor || []) {
+    const category = String(group?.category ?? '').trim()
+    if (!category) continue
+    const items = []
+    for (const it of group.items || []) {
+      const question = String(it?.question ?? '').trim()
+      const answer = String(it?.answer ?? '').trim()
+      if (!question || !answer) continue
+      let id = String(it?.id ?? '').trim()
+      if (!id) id = genId()
+      items.push({ id, question, answer })
+    }
+    if (items.length > 0) out.push({ category, items })
+  }
+  return out
+}
+
 function SettingsRow({ title, description, children, titleEnd }) {
   return (
     <div className={styles.settingsRow}>
@@ -139,6 +179,8 @@ export default function Page() {
   const [isSaving, setIsSaving] = useState(false)
   const [modal, setModal] = useState(null)
   const [modalValue, setModalValue] = useState('')
+  /** Structured FAQ form when modal.kind === 'sellerHelpFaq' */
+  const [faqEditor, setFaqEditor] = useState([])
   const { data: loadedContent, isLoading, error } = useAdminSiteContent()
   const toast = useAuthToast()
   const contentRefs = useRef(null)
@@ -192,6 +234,7 @@ export default function Page() {
   const closeModal = useCallback(() => {
     setModal(null)
     setModalValue('')
+    setFaqEditor([])
   }, [])
 
   useEffect(() => {
@@ -208,7 +251,13 @@ export default function Page() {
     if (spec.kind === 'systemName') initial = draft.systemName ?? ''
     else if (spec.kind === 'footer') initial = draft.footer?.[spec.field] ?? ''
     else if (spec.kind === 'about') initial = draft.about?.[spec.key] ?? ''
-    else if (spec.kind === 'sellerHelpFaq') initial = JSON.stringify(draft.sellerHelpFaq ?? [], null, 2)
+    else if (spec.kind === 'sellerHelpFaq') {
+      setFaqEditor(cloneSellerFaqForEditor(draft.sellerHelpFaq))
+      setModalValue('')
+      setModal(spec)
+      return
+    }
+    setFaqEditor([])
     setModal(spec)
     setModalValue(initial)
   }
@@ -229,13 +278,7 @@ export default function Page() {
         about: { ...draft.about, [modal.key]: modalValue },
       }
     } else if (modal.kind === 'sellerHelpFaq') {
-      let parsed = []
-      try {
-        parsed = JSON.parse(modalValue || '[]')
-      } catch {
-        toast.error('Seller help FAQ must be valid JSON.')
-        return
-      }
+      const parsed = buildSellerFaqPayloadFromEditor(faqEditor)
       const validationError = validateSellerHelpFaq(parsed)
       if (validationError) {
         toast.error(validationError)
@@ -603,10 +646,9 @@ export default function Page() {
     if (modal.kind === 'sellerHelpFaq') {
       return {
         title: 'Seller help FAQ',
-        description: 'Categories and questions shown on the seller help page.',
-        placeholder:
-          '[{"category":"Getting Started","items":[{"id":"gs_1","question":"...","answer":"..."}]}]',
-        multiline: true,
+        description:
+          'Organize topics and answers for the seller help page. Use the same category name as a default tab (for example “Getting Started”) to replace that tab’s questions. Leave everything empty and save to use only built-in help.',
+        multiline: false,
       }
     }
     return null
@@ -708,11 +750,151 @@ export default function Page() {
       {modal && modalMeta && (
         <div className={styles.siteContentModalRoot} role="dialog" aria-modal="true" aria-labelledby="site-content-field-modal-title">
           <button type="button" className={styles.siteContentModalBackdrop} onClick={closeModal} aria-label="Close" />
-          <div className={styles.siteContentModal}>
+          <div
+            className={
+              modal.kind === 'sellerHelpFaq'
+                ? `${styles.siteContentModal} ${styles.siteContentModalFaq}`
+                : styles.siteContentModal
+            }
+          >
             <h2 id="site-content-field-modal-title" className={styles.siteContentModalTitle}>
               {modalMeta.title}
             </h2>
-            {modalMeta.multiline ? (
+            {modal.kind === 'sellerHelpFaq' ? (
+              <>
+                <p className={styles.siteContentModalDesc}>{modalMeta.description}</p>
+                <div className={styles.siteContentFaqEditor}>
+                  {faqEditor.length === 0 ? (
+                    <p className={styles.siteContentFaqEmpty}>No custom topics yet. Add a topic to write your own questions and answers.</p>
+                  ) : null}
+                  {faqEditor.map((group, gi) => (
+                    <div key={gi} className={styles.siteContentFaqCategory}>
+                      <div className={styles.siteContentFaqCategoryHead}>
+                        <label className={styles.siteContentFaqLabel} htmlFor={`faq-cat-${gi}`}>
+                          Topic name
+                        </label>
+                        <button
+                          type="button"
+                          className={styles.siteContentFaqIconBtn}
+                          onClick={() => {
+                            setFaqEditor((prev) => prev.filter((_, i) => i !== gi))
+                          }}
+                          aria-label={`Remove topic ${gi + 1}`}
+                          disabled={isSaving}
+                        >
+                          <FiTrash2 aria-hidden />
+                        </button>
+                      </div>
+                      <input
+                        id={`faq-cat-${gi}`}
+                        type="text"
+                        value={group.category}
+                        onChange={(e) => {
+                          const v = e.target.value
+                          setFaqEditor((prev) => prev.map((g, i) => (i === gi ? { ...g, category: v } : g)))
+                        }}
+                        className={styles.siteContentModalInput}
+                        placeholder="e.g. Getting Started"
+                        disabled={isSaving}
+                      />
+                      <div className={styles.siteContentFaqItems}>
+                        {(group.items || []).map((item, ii) => (
+                          <div key={ii} className={styles.siteContentFaqItem}>
+                            <div className={styles.siteContentFaqItemHead}>
+                              <span className={styles.siteContentFaqItemTitle}>Question {ii + 1}</span>
+                              <button
+                                type="button"
+                                className={styles.siteContentFaqIconBtn}
+                                onClick={() => {
+                                  setFaqEditor((prev) =>
+                                    prev.map((g, i) => {
+                                      if (i !== gi) return g
+                                      const nextItems = g.items.filter((_, j) => j !== ii)
+                                      return {
+                                        ...g,
+                                        items: nextItems.length ? nextItems : [emptyFaqItem()],
+                                      }
+                                    }),
+                                  )
+                                }}
+                                aria-label="Remove question"
+                                disabled={isSaving}
+                              >
+                                <FiTrash2 aria-hidden />
+                              </button>
+                            </div>
+                            <input
+                              type="text"
+                              value={item.question}
+                              onChange={(e) => {
+                                const v = e.target.value
+                                setFaqEditor((prev) =>
+                                  prev.map((g, i) =>
+                                    i === gi
+                                      ? {
+                                          ...g,
+                                          items: g.items.map((it, j) => (j === ii ? { ...it, question: v } : it)),
+                                        }
+                                      : g,
+                                  ),
+                                )
+                              }}
+                              className={styles.siteContentModalInput}
+                              placeholder="Question sellers will see"
+                              disabled={isSaving}
+                            />
+                            <label className={styles.siteContentFaqLabel} htmlFor={`faq-ans-${gi}-${ii}`}>
+                              Answer
+                            </label>
+                            <textarea
+                              id={`faq-ans-${gi}-${ii}`}
+                              value={item.answer}
+                              onChange={(e) => {
+                                const v = e.target.value
+                                setFaqEditor((prev) =>
+                                  prev.map((g, i) =>
+                                    i === gi
+                                      ? {
+                                          ...g,
+                                          items: g.items.map((it, j) => (j === ii ? { ...it, answer: v } : it)),
+                                        }
+                                      : g,
+                                  ),
+                                )
+                              }}
+                              className={styles.siteContentFaqAnswer}
+                              rows={4}
+                              placeholder="Clear, step-by-step answer"
+                              disabled={isSaving}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        className={styles.siteContentFaqAddBtn}
+                        onClick={() => {
+                          setFaqEditor((prev) =>
+                            prev.map((g, i) => (i === gi ? { ...g, items: [...g.items, emptyFaqItem()] } : g)),
+                          )
+                        }}
+                        disabled={isSaving}
+                      >
+                        <FiPlus aria-hidden /> Add another question
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    className={styles.siteContentFaqAddTopicBtn}
+                    onClick={() => setFaqEditor((prev) => [...prev, emptyFaqCategory()])}
+                    disabled={isSaving}
+                  >
+                    <FiPlus aria-hidden /> Add topic
+                  </button>
+                </div>
+              </>
+            ) : modalMeta.multiline ? (
               <textarea
                 value={modalValue}
                 onChange={(e) => setModalValue(e.target.value)}

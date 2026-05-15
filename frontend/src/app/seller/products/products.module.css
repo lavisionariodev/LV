@@ -2170,7 +2170,8 @@
   }
 
   .productModalOverlay {
-    align-items: flex-end;
+    align-items: center;
+    justify-content: center;
     padding: 0.5rem;
     padding-top: max(0.5rem, env(safe-area-inset-top));
     padding-right: max(0.5rem, env(safe-area-inset-right));
@@ -2183,7 +2184,7 @@
   .productModal {
     max-width: 100%;
     max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1rem));
-    border-radius: 18px 18px 0 0;
+    border-radius: 16px;
     min-height: 0;
   }
 
@@ -2577,6 +2578,14 @@
   .newListingAside {
     order: -1;
     gap: 0.6rem;
+    /* Scroll with page: drop desktop sticky rail on single-column / mobile */
+    position: static;
+    top: auto;
+    align-self: stretch;
+    max-height: none;
+    overflow-y: visible;
+    overscroll-behavior: auto;
+    z-index: auto;
   }
 }
 
@@ -2975,8 +2984,8 @@
   }
 
   .newListingAside {
-    max-height: calc(100dvh - 1.5rem);
-    overflow-y: auto;
+    max-height: none;
+    overflow-y: visible;
     flex-direction: column;
     gap: 0.65rem;
     padding-right: 0;
@@ -3459,6 +3468,8 @@
 
 @media (max-width: 860px) {
   .productModalOverlay {
+    align-items: center;
+    justify-content: center;
     overflow: hidden;
     overscroll-behavior: contain;
   }

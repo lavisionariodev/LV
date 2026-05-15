@@ -1847,6 +1847,172 @@
     animation: modalPopIn 0.16s ease-out forwards;
   }
 
+  .siteContentModalFaq {
+    max-width: min(640px, 100%);
+  }
+
+  .siteContentFaqEditor {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 4px;
+    text-align: left;
+  }
+
+  .siteContentFaqEmpty {
+    margin: 0;
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #64748b;
+    background: #f8fafc;
+    border-radius: 10px;
+    border: 1px dashed #cbd5e1;
+  }
+
+  .siteContentFaqCategory {
+    padding: 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #fafbfc;
+  }
+
+  .siteContentFaqCategoryHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .siteContentFaqLabel {
+    display: block;
+    margin: 10px 0 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+  }
+
+  .siteContentFaqCategoryHead .siteContentFaqLabel {
+    margin: 0;
+  }
+
+  .siteContentFaqIconBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: #94a3b8;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .siteContentFaqIconBtn:hover:not(:disabled) {
+    color: #dc2626;
+    background: #fef2f2;
+  }
+
+  .siteContentFaqIconBtn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .siteContentFaqItems {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 10px;
+  }
+
+  .siteContentFaqItem {
+    padding: 12px;
+    border-radius: 10px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+  }
+
+  .siteContentFaqItemHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .siteContentFaqItemTitle {
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+  }
+
+  .siteContentFaqAnswer {
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 4px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    line-height: 1.45;
+    color: #0f172a;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 88px;
+  }
+
+  .siteContentFaqAnswer:focus {
+    outline: none;
+    border-color: var(--color-main-accent);
+    box-shadow: var(--focus-shadow-green-soft);
+  }
+
+  .siteContentFaqAddBtn,
+  .siteContentFaqAddTopicBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    margin-top: 4px;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-main-accent, #15803d);
+    background: #ffffff;
+    border: 1px dashed #bbf7d0;
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .siteContentFaqAddBtn:hover:not(:disabled),
+  .siteContentFaqAddTopicBtn:hover:not(:disabled) {
+    background: #f0fdf4;
+    border-color: var(--color-main-accent, #15803d);
+  }
+
+  .siteContentFaqAddTopicBtn {
+    margin-top: 0;
+    border-style: solid;
+    border-color: #e2e8f0;
+    color: #0f172a;
+  }
+
+  .siteContentFaqAddTopicBtn:hover:not(:disabled) {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+  }
+
+  .siteContentFaqAddBtn:disabled,
+  .siteContentFaqAddTopicBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
   @keyframes modalPopIn {
     from { transform: translateY(8px) scale(0.98); opacity: 0; }
     to   { transform: translateY(0) scale(1); opacity: 1; }

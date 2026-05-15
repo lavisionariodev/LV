@@ -733,13 +733,16 @@ function DateRangePicker({ from, to, onChange }) {
 }
 
 function Badge({ type, value }) {
+  const raw = value == null || value === '' ? '' : String(value).trim()
+  const key = raw.toLowerCase()
+
   if (type === 'disbursement') {
-    const meta = DISBURSEMENT_STATE_META[value] || DISBURSEMENT_STATE_META.none
+    const meta = DISBURSEMENT_STATE_META[key] || DISBURSEMENT_STATE_META.none
     const cls = styles[`badgePayout_${meta.color}`] || styles.badgePayout_slate
     return <span className={`${styles.badgePayout} ${cls}`}>{meta.label}</span>
   }
-  const meta = type === 'payment' ? PAYMENT_STATUS_META[value] : PAYOUT_STATUS_META[value]
-  const label = meta?.label ?? (value ? String(value) : '—')
+  const meta = type === 'payment' ? PAYMENT_STATUS_META[key] : PAYOUT_STATUS_META[key]
+  const label = meta?.label ?? (raw ? raw : '—')
   if (type === 'payout') {
     const cls = meta ? styles[`badgePayout_${meta.color}`] : styles.badgePayout_slate
     return <span className={`${styles.badgePayout} ${cls || ''}`}>{label}</span>
@@ -3456,7 +3459,9 @@ export default function AdminPayoutsPage() {
 
       {disbursementConfig && !disbursementReminderDismissed ? (
         <div
-          className={styles.disbursementReminderHost}
+          className={`${styles.disbursementReminderHost}${
+            disbursementConfig.automatedReady ? '' : ` ${styles.disbursementReminderHostManual}`
+          }`}
           role="dialog"
           aria-modal="false"
           aria-labelledby="payouts-disbursement-reminder-title"

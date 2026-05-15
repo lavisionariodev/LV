@@ -1929,16 +1929,9 @@
     padding-left: 0;
   }
 
+  /* Vertical spine was misaligned when no time column (order details modal); keep layout clean on mobile */
   .timeline::before {
-    content: '';
-    position: absolute;
-    left: calc(4rem + 0.75rem + 13px);
-    top: 1.25rem;
-    bottom: 1.25rem;
-    width: 2px;
-    background: #dddddd;
-    border-radius: 1px;
-    z-index: 0;
+    display: none;
   }
 
   .timelineStep {
@@ -2142,10 +2135,6 @@
 
   .timelineStepTimePlaceholder {
     width: 3.5rem;
-  }
-
-  .timeline::before {
-    left: calc(3.5rem + 0.5rem + 13px);
   }
 
   .timelineStepLabel {

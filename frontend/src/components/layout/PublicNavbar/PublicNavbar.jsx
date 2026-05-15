@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useCart } from '@/contexts/CartContext'
 import { useFavorites } from '@/contexts/FavoritesContext'
 import { signOut } from '@/lib/auth/session'
@@ -12,7 +13,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useSiteContent } from '@/lib/siteContent/client'
 import { readString, replaceUrlQuery } from '@/shared/utils/queryParams'
 import InstallAppControl from '@/components/pwa/InstallAppControl'
-import { useInAppNotificationFeed, relativeNotificationTime } from '@/lib/notifications/useInAppNotificationFeed'
+import { relativeNotificationTime } from '@/lib/notifications/useInAppNotificationFeed'
+import { useBuyerInAppNotificationFeed } from '@/contexts/BuyerInAppNotificationFeedContext'
 
 export default function PublicNavbar() {
   const { cartCount } = useCart()
@@ -31,12 +33,9 @@ export default function PublicNavbar() {
     unreadCount,
     markRead: markNotifRead,
     markAllRead: markAllNotifsRead,
-  } = useInAppNotificationFeed({
-    limit: 12,
-    enabled: hydrated && !authLoading && !!user && isBuyer,
-  })
+  } = useBuyerInAppNotificationFeed()
 
-  const notifications = notifRows.map((n) => ({
+  const notifications = notifRows.slice(0, 12).map((n) => ({
     id: n.id,
     message: [n.title, n.body].filter(Boolean).join(' — '),
     timestamp: relativeNotificationTime(n.createdAt),
@@ -53,7 +52,9 @@ export default function PublicNavbar() {
   const { data: siteContent } = useSiteContent()
 
   useEffect(() => {
-    setHydrated(true)
+    queueMicrotask(() => {
+      setHydrated(true)
+    })
   }, [])
 
   const qFromShopUrl = readString(searchParams, 'q', '')
@@ -62,9 +63,11 @@ export default function PublicNavbar() {
   const desktopSearchExpanded = desktopSearchOpen || shopUrlHasQParam
 
   useEffect(() => {
-    if (pathname?.startsWith('/shop')) {
-      setSearchQuery(qFromShopUrl)
-    }
+    queueMicrotask(() => {
+      if (pathname?.startsWith('/shop')) {
+        setSearchQuery(qFromShopUrl)
+      }
+    })
   }, [pathname, qFromShopUrl])
 
   const howItWorksItems = [
@@ -103,7 +106,7 @@ export default function PublicNavbar() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [profileMenuOpen, desktopSearchOpen, notificationsOpen])
+  }, [profileMenuOpen, desktopSearchOpen, notificationsOpen, shopUrlHasQParam])
 
   // Only buyers count as authenticated on the main site; seller/admin have their own portals.
   const authUiReady = hydrated && !authLoading
@@ -573,10 +576,13 @@ export default function PublicNavbar() {
                   }}
                 >
                   {profile?.avatar_url ? (
-                    <img
+                    <Image
                       src={profile.avatar_url}
                       alt={displayName || 'User avatar'}
+                      width={32}
+                      height={32}
                       className={styles.profileAvatar}
+                      unoptimized
                     />
                   ) : (
                     <span className={styles.profileIcon} aria-hidden="true">
@@ -760,10 +766,13 @@ export default function PublicNavbar() {
             onClick={() => router.push('/profile')}
           >
             {profile?.avatar_url ? (
-              <img
+              <Image
                 src={profile.avatar_url}
                 alt={displayName || 'User avatar'}
+                width={26}
+                height={26}
                 className={styles.bottomNavAvatar}
+                unoptimized
               />
             ) : (
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
