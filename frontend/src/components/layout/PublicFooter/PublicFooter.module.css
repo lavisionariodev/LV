@@ -135,6 +135,18 @@
   color: #BFA96B;
 }
 
+.adminPortalLink {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.25);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.adminPortalLink:hover,
+.adminPortalLink:focus-visible {
+  color: rgba(255, 255, 255, 0.45);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .inner {

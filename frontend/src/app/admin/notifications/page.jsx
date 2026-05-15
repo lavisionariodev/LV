@@ -2,26 +2,12 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { TbBellOff, TbBellRinging, TbCheck, TbTrash, TbAlertTriangle, TbDots } from 'react-icons/tb'
-import { LuShoppingBag, LuUserCheck, LuMegaphone } from 'react-icons/lu'
 import styles from './notifications.module.css'
 import { useInAppNotificationFeed, relativeNotificationTime } from '@/lib/notifications/useInAppNotificationFeed'
 import { adminNotificationFilterBucket, ADMIN_NOTIFICATION_FILTER_TABS } from '@/lib/notifications/types'
+import { getNotificationDisplay } from '@/lib/notifications/notificationDisplay'
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 import { useMediaQuery } from '@/shared/hooks'
-
-const ICON_BY_BUCKET = {
-  order: LuShoppingBag,
-  approval: LuUserCheck,
-  alert: TbAlertTriangle,
-  announcement: LuMegaphone,
-}
-
-const COLOR_BY_BUCKET = {
-  order: 'blue',
-  approval: 'green',
-  alert: 'red',
-  announcement: 'gold',
-}
 
 function useClickOutside(ref, onClose) {
   useEffect(() => {
@@ -194,7 +180,7 @@ export default function NotificationsPage() {
     () =>
       apiRows.map((row) => {
         const bucket = adminNotificationFilterBucket(row.type)
-        const Icon = ICON_BY_BUCKET[bucket] || TbAlertTriangle
+        const { Icon, color: iconColor } = getNotificationDisplay(row.type, bucket)
         return {
           id: row.id,
           filterBucket: bucket,
@@ -203,7 +189,7 @@ export default function NotificationsPage() {
           time: relativeNotificationTime(row.createdAt),
           read: Boolean(row.readAt),
           icon: Icon,
-          iconColor: COLOR_BY_BUCKET[bucket] || 'red',
+          iconColor,
         }
       }),
     [apiRows],

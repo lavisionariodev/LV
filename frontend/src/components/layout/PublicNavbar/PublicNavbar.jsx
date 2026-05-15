@@ -231,6 +231,13 @@ export default function PublicNavbar() {
                 </svg>
               </a>
             </div>
+            <Link
+              href="/administrator"
+              className={styles.adminPortalLink}
+              aria-label="Administrator sign in"
+            >
+              ·
+            </Link>
           </div>
 
           <div className={styles.topRight}>

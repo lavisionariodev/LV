@@ -134,6 +134,9 @@ export default function PublicFooter() {
           <Link href="/accessibility" className={styles.bottomLink}>
             Accessibility
           </Link>
+          <Link href="/administrator" className={styles.adminPortalLink} aria-label="Administrator sign in">
+            ·
+          </Link>
         </div>
       </div>
     </footer>

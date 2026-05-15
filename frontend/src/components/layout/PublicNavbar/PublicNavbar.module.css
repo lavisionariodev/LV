@@ -48,6 +48,21 @@
   color: var(--color-gold-bright);
 }
 
+.adminPortalLink {
+  font-size: 9px;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.22);
+  text-decoration: none;
+  margin-left: 8px;
+  align-self: center;
+  transition: color 0.2s ease;
+}
+
+.adminPortalLink:hover,
+.adminPortalLink:focus-visible {
+  color: rgba(255, 255, 255, 0.5);
+}
+
 .divider {
   margin: 0 6px;
   opacity: 0.6;
