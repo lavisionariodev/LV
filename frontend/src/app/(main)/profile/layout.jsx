@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useLayoutEffect, useState, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
-import { useRouter, useSelectedLayoutSegment } from 'next/navigation';
+import { useRouter, useSelectedLayoutSegment, useSearchParams } from 'next/navigation';
 import styles from './profile.module.css';
 import mobileStyles from './profile.mobile.module.css';
 import { ProfileProvider } from '@/contexts/ProfileContext';
@@ -12,6 +12,10 @@ import { useProfile } from '@/contexts/ProfileContext';
 // ── Bottom sheet (renders null on desktop) ────────────────────────────────────
 import BottomSheet from './components/BottomSheet';
 import { signOut as signOutSession } from '@/lib/auth/session';
+import { changePasswordWithReauth } from '@/lib/auth/changePassword';
+import { inferCanChangePassword } from '@/lib/auth/inferCanChangePassword';
+import { supabase } from '@/lib/supabase/client';
+import { useToast } from '@/contexts/ToastContext';
 import LogoutModal from '@/components/ui/Modal/Logout';
 import {
   PROFILE_DOB_MONTHS,
@@ -49,6 +53,10 @@ function useIsMobile(breakpoint = 768) {
 const SHEET_CONFIG = {
   account: {
     title: 'Edit Profile',
+    hasSave: true,
+  },
+  password: {
+    title: 'Change Password',
     hasSave: true,
   },
 };
@@ -143,7 +151,11 @@ function ProfileSidebar({ activeTab, onMobileNavClick, onLogout, userEmail }) {
 
             <div className={mobileStyles.menuDivider} />
 
-            <Link href="/profile/password" className={mobileStyles.menuRow}>
+            <button
+              type="button"
+              className={mobileStyles.menuRow}
+              onClick={() => onMobileNavClick('password')}
+            >
               <span className={mobileStyles.menuRowLeft}>
                 <span className={mobileStyles.menuIcon}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
@@ -155,7 +167,7 @@ function ProfileSidebar({ activeTab, onMobileNavClick, onLogout, userEmail }) {
                 <span className={mobileStyles.menuLabel}>Password</span>
               </span>
               <span className={mobileStyles.menuChevron}><Chevron /></span>
-            </Link>
+            </button>
 
             <div className={mobileStyles.menuDivider} />
 
@@ -339,6 +351,7 @@ function ProfileSidebar({ activeTab, onMobileNavClick, onLogout, userEmail }) {
 export default function ProfileLayout({ children }) {
   const router = useRouter();
   const segment = useSelectedLayoutSegment();
+  const searchParams = useSearchParams();
   const activeTab = segment || 'account';
   const { user, authLoading, isBuyer } = useAuth();
   const isMobile = useIsMobile();
@@ -347,7 +360,7 @@ export default function ProfileLayout({ children }) {
   const [openSheet, setOpenSheet] = useState(() => {
     if (typeof window === 'undefined') return null;
     const sheet = new URLSearchParams(window.location.search).get('sheet');
-    const validSheets = ['account'];
+    const validSheets = ['account', 'password'];
     if (sheet && validSheets.includes(sheet) &&
         window.matchMedia('(max-width: 768px)').matches) {
       return sheet;
@@ -416,6 +429,15 @@ export default function ProfileLayout({ children }) {
       router.replace('/buyer/login?redirect=/profile/account');
     }
   }, [authLoading, user, isBuyer, router]);
+
+  // Open sheet when mobile lands on /profile?sheet=account|password (e.g. redirect from /profile/password)
+  useEffect(() => {
+    if (!isMobile) return;
+    const sheet = searchParams.get('sheet');
+    if (sheet === 'account' || sheet === 'password') {
+      setOpenSheet(sheet);
+    }
+  }, [isMobile, searchParams]);
 
   // Close sheet if screen grows to desktop while sheet is open
   useEffect(() => {
@@ -491,6 +513,13 @@ export default function ProfileLayout({ children }) {
         >
           {openSheet === 'account' && (
             <AccountSheetContent
+              onSaveTriggerReady={setSaveTrigger}
+              onSavingChange={setSheetSaving}
+              onSaveComplete={handleSheetClose}
+            />
+          )}
+          {openSheet === 'password' && (
+            <PasswordSheetContent
               onSaveTriggerReady={setSaveTrigger}
               onSavingChange={setSheetSaving}
               onSaveComplete={handleSheetClose}
@@ -777,6 +806,134 @@ function AccountSheetForm({ onSaveTriggerReady, onSavingChange, onSaveComplete }
           />
         </div>
 
+      </div>
+    </div>
+  );
+}
+
+function PasswordSheetContent({ onSaveTriggerReady, onSavingChange, onSaveComplete }) {
+  return (
+    <div className={sheetStyles.sheetPasswordWrap}>
+      <PasswordSheetForm
+        onSaveTriggerReady={onSaveTriggerReady}
+        onSavingChange={onSavingChange}
+        onSaveComplete={onSaveComplete}
+      />
+    </div>
+  );
+}
+
+function PasswordSheetForm({ onSaveTriggerReady, onSavingChange, onSaveComplete }) {
+  const { user, authLoading } = useAuth();
+  const { showToast } = useToast();
+  const canChangePassword = useMemo(() => {
+    if (authLoading) return null;
+    return inferCanChangePassword(user);
+  }, [authLoading, user]);
+
+  const [saving, setSaving] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const fieldsRef = useRef({ currentPassword: '', newPassword: '', confirmPassword: '' });
+
+  useLayoutEffect(() => {
+    fieldsRef.current = { currentPassword, newPassword, confirmPassword };
+  }, [currentPassword, newPassword, confirmPassword]);
+
+  useEffect(() => {
+    onSaveTriggerReady(() => async () => {
+      if (!canChangePassword) return;
+      const { currentPassword: cur, newPassword: next, confirmPassword: confirm } = fieldsRef.current;
+      setSaving(true);
+      const result = await changePasswordWithReauth(supabase, {
+        currentPassword: cur,
+        newPassword: next,
+        confirmPassword: confirm,
+      });
+      setSaving(false);
+      if (!result.ok) {
+        showToast(result.error, 'error');
+        return;
+      }
+      if (result.warning) showToast(result.warning, 'info');
+      else showToast('Password updated.', 'success');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      if (onSaveComplete) onSaveComplete();
+    });
+  }, [onSaveTriggerReady, onSaveComplete, canChangePassword, showToast]);
+
+  useEffect(() => {
+    onSavingChange(saving);
+  }, [saving, onSavingChange]);
+
+  if (canChangePassword === null) {
+    return (
+      <p className={sheetStyles.sheetPasswordStatus} role="status">
+        Checking your sign-in method…
+      </p>
+    );
+  }
+
+  if (!canChangePassword) {
+    return (
+      <p className={sheetStyles.sheetPasswordStatus}>
+        Password change is available only for email/password accounts.
+      </p>
+    );
+  }
+
+  return (
+    <div className={sheetStyles.accountForm}>
+      <p className={sheetStyles.sheetPasswordIntro}>
+        Update your password to keep your account secure.
+      </p>
+      <div className={sheetStyles.fields}>
+        <div className={sheetStyles.fieldGroup}>
+          <label className={sheetStyles.fieldLabel} htmlFor="sh_current_password">
+            Current password
+          </label>
+          <input
+            id="sh_current_password"
+            type="password"
+            className={sheetStyles.fieldInput}
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            disabled={saving}
+            autoComplete="current-password"
+          />
+        </div>
+        <div className={sheetStyles.fieldGroup}>
+          <label className={sheetStyles.fieldLabel} htmlFor="sh_new_password">
+            New password
+          </label>
+          <input
+            id="sh_new_password"
+            type="password"
+            className={sheetStyles.fieldInput}
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            disabled={saving}
+            autoComplete="new-password"
+          />
+        </div>
+        <div className={sheetStyles.fieldGroup}>
+          <label className={sheetStyles.fieldLabel} htmlFor="sh_confirm_password">
+            Confirm new password
+          </label>
+          <input
+            id="sh_confirm_password"
+            type="password"
+            className={sheetStyles.fieldInput}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            disabled={saving}
+            autoComplete="new-password"
+          />
+        </div>
       </div>
     </div>
   );

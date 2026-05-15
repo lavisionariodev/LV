@@ -312,6 +312,28 @@
   /* intentionally empty — AccountSheetForm handles its own layout */
 }
 
+.sheetPasswordWrap {
+  /* PasswordSheetForm handles its own layout */
+}
+
+.sheetPasswordIntro {
+  font-family: 'Lato', sans-serif;
+  font-size: 0.8125rem;
+  color: var(--muted, #6B6B6B);
+  line-height: 1.5;
+  margin: 0;
+  padding: 16px 20px 0;
+}
+
+.sheetPasswordStatus {
+  font-family: 'Lato', sans-serif;
+  font-size: 0.875rem;
+  color: var(--muted, #6B6B6B);
+  line-height: 1.5;
+  margin: 0;
+  padding: 24px 20px 32px;
+}
+
 
 /* ============================================================
    MOBILE MENU — card-style profile home screen

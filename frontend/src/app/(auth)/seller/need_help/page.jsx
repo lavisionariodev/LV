@@ -29,76 +29,76 @@ const categoryIcons = {
   policies: FaFileContract,
 };
 
-/* Help articles — short, plain language for families and providers. */
+/* Help articles — short, plain language for funeral service providers (pre-login). */
 const categoriesWithArticles = [
   {
     id: 'getting-started',
     title: 'Getting Started',
     subCategories: [
-      { id: 'what-is-lavisionario', title: 'What is Lavisionario?', article: { title: 'What is Lavisionario?', content: 'Lavisionario helps Filipino families plan a respectful farewell in one place. You can look for trusted funeral and memorial services—chapel, casket, transport, cremation, burial, memorial lots, and more—with clear prices and people who understand this is a difficult time.', note: null } },
-      { id: 'become-provider', title: 'Become a provider', article: { title: 'How do I sign up as a service provider?', content: 'From the provider login page, choose Sign Up and register with your email. Confirm your email, set a password, then tell us about your business and upload what we ask for. We review each application before your shop can go live.', note: 'Reviews usually take a few working days. We will email you when there is an update.' } },
-      { id: 'login-issues', title: 'Login issues', article: { title: 'I can’t log in', content: 'Check that you are using the same email and password you signed up with. If you forgot your password, use Forgot password on the login page and check your inbox for a reset link. If you recently applied as a provider, you may need to finish your application before full access opens.', note: 'Need more help? Use the phone or email at the bottom of this page.' } },
+      { id: 'what-is-lavisionario', title: 'What is Lavisionario?', article: { title: 'What is Lavisionario?', content: 'Lavisionario is a funeral and memorial services marketplace in the Philippines. Families browse verified providers, compare packages, and book online. As a seller, you list your services, manage bookings in Seller Centre, and receive payouts after services are fulfilled.', note: null } },
+      { id: 'become-provider', title: 'Become a provider', article: { title: 'How do I sign up as a service provider?', content: 'From the seller login page, choose Sign Up and register with your email. Verify your email with the code we send, create a password, then complete onboarding—business details, compliance documents, and shop information. We review each application before your account becomes active and families can book.', note: 'Reviews usually take a few working days. We will email you when there is an update.' } },
+      { id: 'login-issues', title: 'Login issues', article: { title: 'I can’t log in', content: 'Use the same email and password you used at signup. If you forgot your password, use Forgot password on the seller login page and follow the reset link in your inbox. If your application is still pending or you have not finished onboarding, you may be redirected there until your account is approved.', note: 'Need more help? Use the phone or email at the bottom of this page.' } },
     ],
   },
   {
     id: 'browse',
-    title: 'Browse & Book',
+    title: 'Onboarding & Listings',
     subCategories: [
-      { id: 'find-services', title: 'Find services', article: { title: 'How do I find a service?', content: 'Go to Shop from the menu, or use the search on the home page. You can look by type of service—chapel, casket, packages for cremation or burial, memorial lots, transport, and others—and read what is included and how much it costs before you book.', note: null } },
-      { id: 'compare', title: 'Compare packages', article: { title: 'Can I compare packages?', content: 'Yes. On the Shop page, use Compare to put two or more packages next to each other so you can see what each one includes, the price, and who provides it—then choose what feels right for your family.', note: null } },
-      { id: 'favorites', title: 'Save favorites', article: { title: 'How do I save something for later?', content: 'On a service page, click the heart to save it to Favorites. You can open Favorites from your profile when you want to come back to it or share options with relatives.', note: null } },
+      { id: 'onboarding-steps', title: 'Onboarding steps', article: { title: 'What do I submit during onboarding?', content: 'After signup you complete shop information (business name, shop username, business type, contact details), business details (address, specialties, tagline), and upload compliance documents. Submit the form for admin review. You can resubmit if your application is rejected.', note: null } },
+      { id: 'listing-approval', title: 'Listing approval', article: { title: 'When can families book my services?', content: 'After your seller account is active, create service or package listings in Seller Centre. New and edited listings may need admin approval before they appear on the public shop. Draft, pending, or rejected listings are not bookable.', note: null } },
+      { id: 'edit-listings', title: 'Edit listings', article: { title: 'Can I edit an approved listing?', content: 'Yes. Changes to approved listings may go back to pending review. Keep descriptions, inclusions, images, and prices accurate before submitting so families know exactly what they are booking.', note: null } },
     ],
   },
   {
     id: 'payments',
-    title: 'Payments',
+    title: 'Payouts & Escrow',
     subCategories: [
-      { id: 'payment-methods', title: 'How to pay', article: { title: 'How do I pay?', content: 'When you check out, you will be taken to a safe payment page. There you can pick from the payment options shown (for example card or e-wallet, depending on what is offered). After your payment goes through, your chosen provider is notified so they can confirm your booking.', note: 'Please stay on the page until you return to Lavisionario after paying, so your booking shows up correctly.' } },
-      { id: 'receipts', title: 'Receipts', article: { title: 'Where is my receipt?', content: 'Sign in, open your Profile, then Purchases. Open the booking you paid for and you can get your receipt there. You should also get a confirmation by email when payment succeeds.', note: null } },
-      { id: 'payment-failed', title: 'Payment didn’t work', article: { title: 'My payment didn’t go through', content: 'Your items should still be in your cart. Try checkout again and complete payment on the secure page before it times out. If it keeps failing, reach out to support and tell us what you were trying to book.', note: null } },
+      { id: 'escrow-hold', title: 'Escrow holds', article: { title: 'Why are paid bookings held in escrow?', content: 'When a family pays through Lavisionario, funds are held while the booking is pending, in progress, disputed, or refunding. After the service is completed and any platform commission is applied, eligible amounts can move toward your payout.', note: null } },
+      { id: 'payout-details', title: 'Payout details', article: { title: 'Where do I set up payouts?', content: 'After you are approved, open Seller Settings, then Payouts, and keep your bank or payment account details current. Incorrect details may delay release of eligible escrow funds. Payouts are processed through our payment partner (PayMongo).', note: null } },
+      { id: 'payout-timing', title: 'Payout timing', article: { title: 'When do I receive my earnings?', content: 'Eligible completed bookings can be released according to platform rules and your payout setup. Processing times depend on your bank or e-wallet. Check Seller Centre for escrow summary and payout request status.', note: null } },
     ],
   },
   {
     id: 'bookings',
-    title: 'Your booking',
+    title: 'Bookings & Orders',
     subCategories: [
-      { id: 'booking-details', title: 'What we ask for', article: { title: 'What details do I need when I book?', content: 'We ask for a way to reach you, when you hope the service can happen, where it should take place, and—if you wish—the name of your loved one. Your provider uses this to plan with you.', note: null } },
-      { id: 'provider-coordination', title: 'Working with your provider', article: { title: 'What happens after I pay?', content: 'Your provider sees your booking and will confirm next steps. They may call the number you gave to agree on time, place, and any special wishes. To see where things stand, open your Profile and go to Purchases.', note: null } },
-      { id: 'cancel-booking', title: 'Cancel a booking', article: { title: 'Can I cancel?', content: 'You can usually cancel while the booking is still waiting to start or has just been confirmed—open Profile, then Purchases, pick your booking, and look for cancel. If preparations have already begun, what is possible depends on the provider’s rules and how far things have gone.', note: 'If it is urgent, call the provider using the number on your booking as well.' } },
+      { id: 'booking-statuses', title: 'Booking statuses', article: { title: 'How do booking statuses work?', content: 'New paid bookings start as pending. Confirm when you can serve the requested date, move to in progress when preparation or service work begins, and mark completed only after the service is fulfilled. Manage everything from Orders in Seller Centre.', note: null } },
+      { id: 'before-confirm', title: 'Before you confirm', article: { title: 'What should I check before confirming?', content: 'Review the requested service date, location, deceased details if provided, family contact information, add-ons, and special notes. If you cannot fulfill the booking, decline it so the family refund process can start.', note: null } },
+      { id: 'decline-booking', title: 'Decline a booking', article: { title: 'What happens if I decline a paid booking?', content: 'Declining a non-completed paid booking cancels it and starts a refund to the family’s original payment method. The order is held out of your payout while the payment provider processes the refund.', note: 'If you need help with a difficult case, contact support or use Help in Seller Centre after you sign in.' } },
     ],
   },
   {
     id: 'refunds',
-    title: 'Refunds',
+    title: 'Refunds & Disputes',
     subCategories: [
-      { id: 'request-refund', title: 'Ask for a refund', article: { title: 'How do I ask for a refund?', content: 'If your situation allows a refund—for example a cancelled booking that qualifies, or a service that could not happen—go to Profile, then Purchases, open the booking, and send a refund request with a few words about why. Your provider and our team will look at it.', note: 'If a refund is approved, the money goes back the same way you paid. Banks and e-wallets can take a few days to show it.' } },
-      { id: 'supporting-docs', title: 'What to include', article: { title: 'What should I send with a refund request?', content: 'Your booking reference, a short explanation of what happened, and anything that helps us understand—photos, screenshots, or other papers if you have them. That usually speeds things up.', note: null } },
+      { id: 'buyer-refunds', title: 'Buyer refund requests', article: { title: 'How should I handle buyer refund requests?', content: 'Open the order from Orders, review the family’s reason and any attachments, and mark the request under review while you investigate. Platform admins may close cases and process refunds according to policy.', note: null } },
+      { id: 'supporting-docs', title: 'What to document', article: { title: 'What should I keep for disputes?', content: 'Keep your booking reference, messages with the family, photos or records of service delivery, and any agreements about dates or scope. That helps our team resolve questions fairly.', note: null } },
     ],
   },
   {
     id: 'account',
     title: 'Account & help',
     subCategories: [
-      { id: 'account-security', title: 'Your account', article: { title: 'How do I change my details or password?', content: 'After you sign in, go to Profile and Account to update your name, phone, or other details. To change your password, use Forgot password on the login screen and follow the email we send you. Do not share your password with anyone.', note: 'If you lost access to your email, contact support so we can help you safely.' } },
-      { id: 'contact-support', title: 'Talk to us', article: { title: 'How do I reach support?', content: 'Use the phone number or email at the bottom of this page. Tell us the email on your account and, if you have one, your booking number—that helps us find you quickly. If you are already signed in as a provider, open Help in Seller Centre and submit a support request.', note: null } },
+      { id: 'account-security', title: 'Your account', article: { title: 'How do I change my password or shop details?', content: 'Sign in to Seller Centre and open Settings for profile, shop information, password, and notifications. To reset a forgotten password, use Forgot password on the seller login page. Never share your password or verification codes.', note: 'If you lost access to your email, contact support so we can help you safely.' } },
+      { id: 'contact-support', title: 'Talk to us', article: { title: 'How do I reach support?', content: 'Use the phone number or email at the bottom of this page before you sign in. After you sign in, open Help in Seller Centre to browse FAQs or submit a support request by email.', note: null } },
     ],
   },
   {
     id: 'policies',
     title: 'Policies',
     subCategories: [
-      { id: 'privacy', title: 'Privacy', article: { title: 'Privacy', content: 'We use your information to run Lavisionario—for your account, your bookings, and coordinating with your provider. The full privacy notice is on the main website; scroll to the bottom and open Privacy.', note: null } },
-      { id: 'terms', title: 'Terms of use', article: { title: 'Terms of use', content: 'By using Lavisionario you agree to our terms. They cover everyday things like your account, paying for services, refunds, and how questions between families and providers are handled. The full text is linked from the bottom of the main website.', note: null } },
+      { id: 'privacy', title: 'Privacy', article: { title: 'Privacy', content: 'We use your information to run Lavisionario—for your seller account, listings, bookings, payouts, and compliance. The full privacy notice is on the main website; open Policies from the link above or the site footer.', note: null } },
+      { id: 'terms', title: 'Terms of use', article: { title: 'Terms of use', content: 'By using Lavisionario as a provider you agree to our terms. They cover your account, listings, bookings, payouts, refunds, and how questions between families and providers are handled. The full text is linked from Policies on this site.', note: null } },
     ],
   },
 ];
 
 const categories = [
   { id: 'getting-started', title: 'Getting Started', iconColor: 'blue' },
-  { id: 'browse', title: 'Browse & Book', iconColor: 'teal' },
-  { id: 'payments', title: 'Payments', iconColor: 'orange' },
-  { id: 'bookings', title: 'Your booking', iconColor: 'teal' },
-  { id: 'refunds', title: 'Refunds', iconColor: 'orange' },
+  { id: 'browse', title: 'Onboarding & Listings', iconColor: 'teal' },
+  { id: 'payments', title: 'Payouts & Escrow', iconColor: 'orange' },
+  { id: 'bookings', title: 'Bookings & Orders', iconColor: 'teal' },
+  { id: 'refunds', title: 'Refunds & Disputes', iconColor: 'orange' },
   { id: 'account', title: 'Account & help', iconColor: 'blue' },
   { id: 'policies', title: 'Policies', iconColor: 'orange' },
 ];
@@ -120,11 +120,11 @@ export default function NeedHelpPage() {
   const popularQuestions = [
     { question: 'How do I sign up as a funeral service provider?', categoryId: 'getting-started', subId: 'become-provider' },
     { question: 'I can’t log in—what should I try?', categoryId: 'getting-started', subId: 'login-issues' },
-    { question: 'How do I pay for a service?', categoryId: 'payments', subId: 'payment-methods' },
-    { question: 'What details do you need when I book?', categoryId: 'bookings', subId: 'booking-details' },
-    { question: 'Can I cancel after I’ve paid?', categoryId: 'bookings', subId: 'cancel-booking' },
-    { question: 'How do I ask for my money back?', categoryId: 'refunds', subId: 'request-refund' },
-    { question: 'How do I change my phone number or password?', categoryId: 'account', subId: 'account-security' },
+    { question: 'What do I submit during onboarding?', categoryId: 'browse', subId: 'onboarding-steps' },
+    { question: 'When can families book my services?', categoryId: 'browse', subId: 'listing-approval' },
+    { question: 'Why are paid bookings held in escrow?', categoryId: 'payments', subId: 'escrow-hold' },
+    { question: 'How do booking statuses work?', categoryId: 'bookings', subId: 'booking-statuses' },
+    { question: 'How do I reach seller support?', categoryId: 'account', subId: 'contact-support' },
   ];
 
   const popularQuestionsBranded = useMemo(

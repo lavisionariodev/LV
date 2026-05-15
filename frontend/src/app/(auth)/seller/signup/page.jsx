@@ -88,7 +88,7 @@ const Step1EmailInput = ({ systemName, email, setEmail, onNext, currentStep, onS
       </div>
 
       <p className={styles.terms}>
-        By signing up, you agree to {systemName}&apos;s <a href="#">Terms of Service</a> & <a href="#">Privacy Policy</a>
+        By signing up, you agree to {systemName}&apos;s <a href="/policies">Terms of Service</a> & <a href="/policies">Privacy Policy</a>
       </p>
 
       <p className={styles.loginLink}>
@@ -808,21 +808,21 @@ const Page = () => {
       <section className={styles.heroSection} style={heroSectionStyle}>
         <div className={styles.heroContainer}>
           <div className={styles.heroLeft}>
-            <p className={styles.marketplaceLabel}>{systemName} Marketplace</p>
-            <h1 className={styles.heroTitle}>Grow your business and Sell more</h1>
+            <p className={styles.marketplaceLabel}>{systemName} for Providers</p>
+            <h1 className={styles.heroTitle}>Reach families who need compassionate care</h1>
             
             <div className={styles.featuresList}>
               <div className={styles.featureItem}>
                 <div className={styles.featureIcon}><FaStore /></div>
-                <p>Leading e-commerce platform in Southeast Asia and Taiwan</p>
+                <p>Funeral and memorial services marketplace built for Filipino families</p>
               </div>
               <div className={styles.featureItem}>
                 <div className={styles.featureIcon}><FaGift /></div>
-                <p>Growing global presence</p>
+                <p>List chapel, cremation, burial, transport, and memorial packages in one place</p>
               </div>
               <div className={styles.featureItem}>
                 <div className={styles.featureIcon}><FaHandshake /></div>
-                <p>#1 shopping app for both iOS and Android in the Philippines</p>
+                <p>Secure bookings and escrow-protected payouts through PayMongo</p>
               </div>
             </div>
           </div>
@@ -888,15 +888,15 @@ const Page = () => {
               <span className={styles.percentIcon}>0%</span>
             </div>
             <h3>No registration fees</h3>
-            <p>Start selling on {systemName} Marketplace easily!</p>
+            <p>Apply as a verified funeral service provider on {systemName} at no signup cost.</p>
           </div>
 
           <div className={styles.benefitCard}>
             <div className={styles.benefitIconLarge}>
               <div className={styles.megaphoneIcon}><FaBullhorn /></div>
             </div>
-            <h3>In-app marketing tools</h3>
-            <p>Boost traffic and sales with attractive discounts, flash deals, livestreams, and more.</p>
+            <h3>Reach families online</h3>
+            <p>Appear on our shop, partners directory, and public provider profiles when families search for services.</p>
           </div>
 
           <div className={styles.benefitCard}>
@@ -904,8 +904,8 @@ const Page = () => {
               <div className={styles.truckIcon}><FaTruck /></div>
               <span className={styles.freeBadge}>Free</span>
             </div>
-            <h3>Hassle-free shipping</h3>
-            <p>Arrange, track and deliver your orders easily with {systemName} Supported Logistics</p>
+            <h3>Manage bookings in one place</h3>
+            <p>Confirm service dates, track order status, and coordinate with families from Seller Centre.</p>
           </div>
 
           <div className={styles.benefitCard}>
@@ -913,24 +913,24 @@ const Page = () => {
               <div className={styles.basketIcon}><FaShoppingBasket /></div>
               <span className={styles.badge99}>9.9</span>
             </div>
-            <h3>High-impact campaigns</h3>
-            <p>Be part of {systemName}&apos;s mega activations through monthly campaigns such as our 9.9 Super Shopping Day and 11.11 Big Sale!</p>
+            <h3>List services & packages</h3>
+            <p>Publish chapel, cremation, burial, transport, and memorial offerings—with clear inclusions and admin-reviewed listings.</p>
           </div>
 
           <div className={styles.benefitCard}>
             <div className={styles.benefitIconLarge}>
               <div className={styles.chartIcon}><FaChartLine /></div>
             </div>
-            <h3>Extensive seller support</h3>
-            <p>Access tools from {systemName} Seller Centre, our one-stop hub that helps you sell effectively, manage customers, and track your shop performance.</p>
+            <h3>Escrow-protected payouts</h3>
+            <p>Family payments are held securely until services are fulfilled, then released toward your payout account via PayMongo.</p>
           </div>
 
           <div className={styles.benefitCard}>
             <div className={styles.benefitIconLarge}>
               <div className={styles.storeIcon}><FaWarehouse /></div>
             </div>
-            <h3>Robust seller community</h3>
-            <p>Connect and grow together with your fellow {systemName} sellers. Gain access to webinars, courses, seller tips, campaign updates, and more!</p>
+            <h3>Seller help & onboarding</h3>
+            <p>Use Help in Seller Centre for FAQs and support requests, plus guided onboarding until your shop is approved.</p>
           </div>
         </div>
       </section>
@@ -940,23 +940,23 @@ const Page = () => {
         <div className={styles.stepsContainer}>
           <div className={styles.stepCard}>
             <div className={styles.stepNumber}>01</div>
-            <h3>Create a {systemName} account</h3>
-            <p>Select Sign Up via the Me tab on {systemName} App. Then, sign up with your email.</p>
+            <h3>Create your seller account</h3>
+            <p>Sign up with your email on this page, verify the code we send, then create your password.</p>
           </div>
           <div className={styles.stepCard}>
             <div className={styles.stepNumber}>02</div>
-            <h3>Set up shipping information</h3>
-            <p>Add your address via My Addresses in Account Settings. Then, enable shipping channels via My Shipping on the My Shop page.</p>
+            <h3>Complete onboarding</h3>
+            <p>Submit your business profile, shop details, specialties, address, and required compliance documents for admin review.</p>
           </div>
           <div className={styles.stepCard}>
             <div className={styles.stepNumber}>03</div>
-            <h3>Upload product listings</h3>
-            <p>Select Start Selling, followed by Add Products. Then, fill in product information and publish!</p>
+            <h3>Add service listings</h3>
+            <p>After approval, create services and packages in Seller Centre. Listings are reviewed before families can book them.</p>
           </div>
           <div className={styles.stepCard}>
             <div className={styles.stepNumber}>04</div>
-            <h3>Add payment information</h3>
-            <p>Set up Seller Balance via the My Shop page to receive payment from orders. Link your bank account to facilitate withdrawal of income.</p>
+            <h3>Receive bookings & payouts</h3>
+            <p>Families book and pay through Lavisionario. Manage orders in Seller Centre and set payout details under Settings → Payouts.</p>
           </div>
         </div>
       </section>
@@ -966,17 +966,17 @@ const Page = () => {
         <div className={styles.programsGrid}>
           <div className={styles.programCard}>
             <div className={`${styles.programHeader} ${styles.premiumHeader}`}>
-              <div className={styles.shopeeMallLogo}>{systemName} Premium</div>
+              <div className={styles.shopeeMallLogo}>Verified Partner</div>
             </div>
             <div className={styles.programContent}>
-              <h3>{systemName} Premium</h3>
-              <p className={styles.programDesc}>A premium business-to-consumer retail space for selected brand owners and authorised distributors.</p>
+              <h3>Verified Partner</h3>
+              <p className={styles.programDesc}>For established funeral homes, memorial parks, and service providers who meet our verification standards.</p>
               <ul className={styles.programFeatures}>
-                <li>Access to premium {systemName} Mall promotional tools and customer loyalty program</li>
-                <li>Exclusive {systemName} Mall campaigns and vouchers to boost sales</li>
-                <li>3 - 5 % commission fee applies only on successful orders (excluding GST)</li>
+                <li>Featured on the Partners directory and spotlight when selected by admin</li>
+                <li>Public provider profile families can view before booking</li>
+                <li>Priority consideration for directory placement and trust badges</li>
               </ul>
-              <p className={styles.feeNote}>* Standard transaction fees and Mall service fees apply.</p>
+              <p className={styles.feeNote}>* Platform commission and payout terms apply to completed bookings.</p>
               <button className={`${styles.signUpButton} ${styles.premiumBtn}`}>Sign Up Now</button>
             </div>
           </div>
@@ -988,13 +988,13 @@ const Page = () => {
               </div>
             </div>
             <div className={styles.programContent}>
-              <h3>{systemName} Marketplace</h3>
-              <p className={styles.programDesc}>Open to all sellers who operate in the Philippines, including part-time sellers and resellers.</p>
+              <h3>Service Provider</h3>
+              <p className={styles.programDesc}>Open to funeral homes, chapels, crematoriums, transport providers, and memorial suppliers operating in the Philippines.</p>
               <ul className={styles.programFeatures}>
-                <li>No registration fees</li>
-                <li>Access to wide range of seller marketing tools</li>
-                <li>Access to integrated logistics partners</li>
-                <li>Free business tools and powerful Seller Centre with access to data of Shop&apos;s performance</li>
+                <li>No registration fees to apply</li>
+                <li>List services and packages with admin approval</li>
+                <li>Manage bookings, customers, and reviews in Seller Centre</li>
+                <li>Analytics, escrow summary, and payout settings after account activation</li>
               </ul>
               <button className={`${styles.signUpButton} ${styles.marketplaceBtn}`}>Sign Up Now</button>
             </div>
@@ -1009,32 +1009,32 @@ const Page = () => {
             <div className={styles.supportIconWrapper}>
               <div className={styles.supportIcon}><FaGraduationCap /></div>
             </div>
-            <h3>Seller Education Hub</h3>
-            <p>One-stop portal with self-help guides to help you sell successfully on {systemName}.</p>
+            <h3>Seller Help Centre</h3>
+            <p>Browse FAQs on bookings, listings, payouts, and compliance—or submit a support request after you sign in.</p>
           </div>
 
           <div className={styles.supportCard}>
             <div className={styles.supportIconWrapper}>
               <div className={styles.supportIcon}><FaFacebook /></div>
             </div>
-            <h3>{systemName} Uni Facebook Group</h3>
-            <p>Get tips and tricks and connect with fellow sellers in the {systemName} community.</p>
+            <h3>Pre-signup help</h3>
+            <p>Questions before you apply? Use Need help? at the top of this page for guides on signup and onboarding.</p>
           </div>
 
           <div className={styles.supportCard}>
             <div className={styles.supportIconWrapper}>
               <div className={styles.supportIcon}><FaYoutube /></div>
             </div>
-            <h3>{systemName} Uni Youtube</h3>
-            <p>Learn more about {systemName}&apos;s latest programs, updates, and activities for sellers.</p>
+            <h3>How it works for families</h3>
+            <p>See how families browse, compare, and book on {systemName} so you know what to expect when orders arrive.</p>
           </div>
 
           <div className={styles.supportCard}>
             <div className={styles.supportIconWrapper}>
               <div className={styles.supportIcon}><FaViber /></div>
             </div>
-            <h3>{systemName} Uni Viber Group</h3>
-            <p>A seller announcements group with the latest {systemName} updates to enhance your selling experience.</p>
+            <h3>Partner with us</h3>
+            <p>Learn about our trusted provider network on the Partners page before you complete your application.</p>
           </div>
         </div>
       </section>

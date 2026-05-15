@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase/client';
@@ -9,8 +10,16 @@ import { inferCanChangePassword } from '@/lib/auth/inferCanChangePassword';
 import styles from '../profile.module.css';
 
 export default function ProfilePasswordPage() {
+  const router = useRouter();
   const { user, authLoading } = useAuth();
   const { showToast } = useToast();
+
+  // On mobile: sheet in layout.jsx handles password editing.
+  useEffect(() => {
+    if (window.matchMedia('(max-width: 768px)').matches) {
+      router.replace('/profile?sheet=password');
+    }
+  }, [router]);
   const canChangePassword = useMemo(() => {
     if (authLoading) return null;
     return inferCanChangePassword(user);
