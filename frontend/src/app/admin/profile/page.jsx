@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -249,28 +249,45 @@ export default function AdminProfilePage() {
 
   if (loading) {
     return (
-      <div className={styles.page} role="status" aria-live="polite" aria-busy="true" aria-label="Loading your profile">
-        <nav className={styles.settingsSkTabRow} aria-hidden style={{ marginBottom: 12 }}>
-          {[0, 1, 2, 3, 4].map((i) => (
-            <span key={i} className={`${styles.settingsSkBar} ${styles.settingsSkTabPill}`} />
-          ))}
-        </nav>
-        <div className={`${styles.contentArea} ${styles.grid}`}>
-          <section className={`${styles.card} ${styles.full}`}>
-            <div className={styles.settingsSkCardHead}>
-              <span className={`${styles.settingsSkBar} ${styles.settingsSkTitle}`} />
-              <span className={`${styles.settingsSkBar} ${styles.settingsSkSubtitle}`} />
-            </div>
-            <div className={styles.settingsSkAvatarRow}>
-              <span className={`${styles.settingsSkBar} ${styles.settingsSkAvatar}`} />
-              <div className={styles.settingsSkFields} style={{ flex: 1 }}>
-                <span className={`${styles.settingsSkBar} ${styles.settingsSkFieldLabel}`} />
-                <span className={`${styles.settingsSkBar} ${styles.settingsSkField}`} />
-                <span className={`${styles.settingsSkBar} ${styles.settingsSkFieldLabel}`} />
-                <span className={`${styles.settingsSkBar} ${styles.settingsSkField}`} />
+      <div className={styles.page} data-portal-profile-hub role="status" aria-live="polite" aria-busy="true" aria-label="Loading your profile">
+        <div className={styles.mobileSettingsFlow} aria-hidden>
+          <div className={styles.mobileSettings}>
+            <div className={styles.settingsSkMobileHero}>
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkMobileAvatar}`} />
+              <div className={styles.settingsSkMobileHeroText}>
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkMobileName}`} />
+                <span className={`${styles.settingsSkBar} ${styles.settingsSkMobileEmail}`} />
               </div>
             </div>
-          </section>
+
+            <div className={styles.settingsSkMobileSection}>
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkMobileSectionLabel}`} />
+              <div className={styles.settingsSkMobileMenuGroup}>
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <div key={`acct-sk-${i}`} className={styles.settingsSkMobileMenuItem}>
+                    <span className={`${styles.settingsSkBar} ${styles.settingsSkMobileMenuIcon}`} />
+                    <span className={`${styles.settingsSkBar} ${styles.settingsSkMobileMenuLabel}`} />
+                    <span className={`${styles.settingsSkBar} ${styles.settingsSkMobileMenuArrow}`} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.settingsSkMobileSection}>
+              <span className={`${styles.settingsSkBar} ${styles.settingsSkMobileSectionLabel}`} />
+              <div className={styles.settingsSkMobileMenuGroup}>
+                {[0, 1].map((i) => (
+                  <div key={`sup-sk-${i}`} className={styles.settingsSkMobileMenuItem}>
+                    <span className={`${styles.settingsSkBar} ${styles.settingsSkMobileMenuIcon}`} />
+                    <span className={`${styles.settingsSkBar} ${styles.settingsSkMobileMenuLabel}`} />
+                    {i === 0 ? (
+                      <span className={`${styles.settingsSkBar} ${styles.settingsSkMobileMenuArrow}`} />
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -643,7 +660,7 @@ export default function AdminProfilePage() {
                   </button>
                 )}
                 <span className={styles.sheetAvatarHint}>
-                  PNG, JPG, or WEBP · Max {AVATAR_MAX_MB}MB
+                  PNG, JPG, or WEBP ? Max {AVATAR_MAX_MB}MB
                 </span>
                 <input
                   ref={fileRef}
@@ -750,7 +767,7 @@ export default function AdminProfilePage() {
                 disabled={passwordSaving}
                 aria-busy={passwordSaving}
               >
-                {passwordSaving ? 'SavingΓÇª' : 'Save'}
+                {passwordSaving ? 'SavingG?' : 'Save'}
               </button>
             </div>
 

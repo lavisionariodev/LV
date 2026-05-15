@@ -387,7 +387,8 @@
     padding-left: 16px;
     padding-right: 16px;
     gap: 12px;
-    border-bottom: 1px solid #eef0f4;
+    border-bottom: none;
+    box-shadow: none;
   }
   .pageTitle {
     font-size: 18px;
