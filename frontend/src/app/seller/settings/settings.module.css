@@ -905,27 +905,6 @@
     font-size: 11px;
   }
 
-  .shopSubTabsShell {
-    margin-left: -14px;
-    margin-right: -14px;
-    padding-left: 14px;
-    padding-right: 14px;
-  }
-
-  .shopSubTabBar {
-    margin: 0 -14px;
-    padding: 0 10px;
-  }
-
-  .shopBody {
-    margin-left: -14px;
-    margin-right: -14px;
-    margin-bottom: -14px;
-    padding-left: 14px;
-    padding-right: 14px;
-    padding-bottom: 14px;
-  }
-
   .notifPrefRow {
     flex-direction: column;
     align-items: stretch;
@@ -1223,6 +1202,10 @@
 }
 
 @media (max-width: 520px) {
+  .shopSubTab {
+    padding: 10px 10px 8px;
+    font-size: 11px;
+  }
 
   .shopSpecialtyAddBtn {
     width: 100%;
@@ -1238,6 +1221,66 @@
   .shopCoverToolbar .dangerBtn {
     width: 100%;
     justify-content: center;
+  }
+}
+
+/*
+ * Shop information mobile layout (must follow base .shop* rules above).
+ * Edge-bleed negative margins (-26px) were overriding the old 700px tweaks and
+ * misaligned with .card padding (14px below 700px), causing tabs/fields to overlap.
+ */
+@media (max-width: 860px) {
+  .shopSubTabsShell {
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 12px;
+    padding-left: 0;
+    padding-right: 0;
+    min-width: 0;
+  }
+
+  .shopSubTabBar {
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .shopSubTab {
+    padding: 10px 12px 8px;
+    font-size: 12px;
+  }
+
+  .shopBody {
+    margin: 0;
+    padding: 16px 0 0;
+    border-radius: 0;
+    min-width: 0;
+  }
+
+  .shopFieldGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .shopGridField {
+    min-width: 0;
+  }
+
+  .shopGridField .input,
+  .shopGridField .textarea,
+  .shopGridField input[type='date'] {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .shopInfoCard {
+    padding: 14px 16px 16px;
   }
 }
 

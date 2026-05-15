@@ -1,7 +1,6 @@
 /**
  * @typedef {{
  *   id: string,
- *   authSessionId: string,
  *   deviceLabel: string,
  *   lastSeenAt: string,
  *   createdAt: string,
@@ -10,7 +9,7 @@
  */
 
 /**
- * @returns {Promise<{ sessions: SellerPortalSession[], currentSessionId: string | null, error: string | null }>}
+ * @returns {Promise<{ sessions: SellerPortalSession[], error: string | null }>}
  */
 export async function fetchSellerPortalSessions() {
   try {
@@ -19,20 +18,17 @@ export async function fetchSellerPortalSessions() {
     if (!response.ok) {
       return {
         sessions: [],
-        currentSessionId: null,
         error: payload?.error || 'Could not load signed-in browsers.',
       }
     }
 
     return {
       sessions: Array.isArray(payload?.sessions) ? payload.sessions : [],
-      currentSessionId: typeof payload?.currentSessionId === 'string' ? payload.currentSessionId : null,
       error: null,
     }
   } catch {
     return {
       sessions: [],
-      currentSessionId: null,
       error: 'Could not load signed-in browsers.',
     }
   }

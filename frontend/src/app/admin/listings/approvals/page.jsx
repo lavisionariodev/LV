@@ -407,6 +407,33 @@ function RejectReasonDialog({
   )
 }
 
+function ListingsMobileCardSkeleton() {
+  return (
+    <div className={styles.listingsSkMobileCard} aria-hidden>
+      <div className={styles.listingsSkMobileCardHeader}>
+        <span className={`${styles.listingsSkBar} ${styles.listingsSkTitle}`} />
+        <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 56, height: 20, flexShrink: 0 }} />
+      </div>
+      <div className={styles.listingsSkMobileCardSection}>
+        <span className={`${styles.listingsSkBar} ${styles.listingsSkSub}`} style={{ width: '88%' }} />
+      </div>
+      <div className={styles.listingsSkMobileCardSection}>
+        <div className={styles.listingsSkMobileCardBadges}>
+          <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} />
+          <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 72 }} />
+        </div>
+      </div>
+      <div className={styles.listingsSkMobileCardSection}>
+        <span className={`${styles.listingsSkBar}`} style={{ width: 120, height: 12, display: 'block' }} />
+      </div>
+      <div className={styles.listingsSkMobileCardFooter}>
+        <span className={`${styles.listingsSkBar} ${styles.listingsSkActionBtn}`} />
+        <span className={`${styles.listingsSkBar} ${styles.listingsSkActionBtn}`} />
+      </div>
+    </div>
+  )
+}
+
 /* ── Mobile card row (used on small screens instead of table) ── */
 function MobileListingCard({ row, moderationBusyId, onApprove, onReject }) {
   const busy = moderationBusyId === row.id
@@ -422,41 +449,49 @@ function MobileListingCard({ row, moderationBusyId, onApprove, onReject }) {
     hasPendingSellerChanges(row)
 
   return (
-    <div className={styles.mobileCard}>
-      <div className={styles.mobileCardTop}>
-        <div className={styles.mobileCardInfo}>
-          <p className={styles.mobileCardName}>{row.listing_name || 'Untitled'}</p>
-          <div className={styles.mobileCardSellerRow}>
-            <SellerAvatarMark
-              src={row.seller_avatar_url}
-              initialsSource={row.seller_business_name || row.seller_email}
-              listingStyles={styles}
-            />
-            <p className={styles.mobileCardSeller}>{sellerLine}</p>
-          </div>
+    <article className={styles.mobileCard}>
+      <div className={styles.mobileCardHeader}>
+        <div className={styles.mobileHeaderMain}>
+          <p className={styles.mobileTitle}>{row.listing_name || 'Untitled'}</p>
         </div>
-        <div className={styles.mobileCardMeta}>
+        <div className={styles.mobileCardHeaderMeta}>
           <span className={styles.reviewPrice}>{formatPhpAmount(row.base_price)}</span>
           <KindPill kind={kindLabelFromRow(row)} />
         </div>
       </div>
 
-      <div className={styles.mobileCardBadges}>
+      <div className={styles.mobileCardSection} data-mobile-label="Seller">
+        <div className={styles.mobileCardSellerRow}>
+          <SellerAvatarMark
+            src={row.seller_avatar_url}
+            initialsSource={row.seller_business_name || row.seller_email}
+            listingStyles={styles}
+          />
+          <p className={styles.mobileCardSeller}>{sellerLine}</p>
+        </div>
+      </div>
+
+      <div className={styles.mobileCardSection} data-mobile-label="Status">
+        <div className={styles.mobileCardBadges}>
         <StatusBadge status={row.status} />
         <ApprovalBadge approvalStatus={row.approval_status} />
         {hasPendingSellerChanges(row) && (
           <span className={styles.stagedTag}>Staged update</span>
         )}
+        </div>
       </div>
 
-      <div className={styles.mobileCardFooter}>
+      <div className={styles.mobileCardSection} data-mobile-label="Submitted">
         <span className={styles.mobileCardDate}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
           </svg>
           {formatDateTime(row.submitted_at)}
         </span>
-        {canModerate && (
+      </div>
+
+      {canModerate ? (
+        <div className={styles.mobileCardFooter}>
           <div className={styles.mobileCardActions}>
             <button
               type="button"
@@ -475,9 +510,9 @@ function MobileListingCard({ row, moderationBusyId, onApprove, onReject }) {
               Reject
             </button>
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      ) : null}
+    </article>
   )
 }
 
@@ -685,14 +720,7 @@ function ApprovalsTableSection({
             </table>
             <div className={`${styles.mobileCardList} ${styles.mobileOnly}`}>
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={`pend-m-sk-${i}`} className={styles.listingsSkMobileCard}>
-                  <span className={`${styles.listingsSkBar} ${styles.listingsSkTitle}`} />
-                  <span className={`${styles.listingsSkBar} ${styles.listingsSkSub}`} />
-                  <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-                    <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} />
-                    <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 80 }} />
-                  </div>
-                </div>
+                <ListingsMobileCardSkeleton key={`pend-m-sk-${i}`} />
               ))}
             </div>
           </div>
@@ -1074,14 +1102,7 @@ export default function AdminListingsApprovalsPage() {
               </table>
               <div className={`${styles.mobileCardList} ${styles.mobileOnly}`}>
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={`ap-sk-am-${i}`} className={styles.listingsSkMobileCard}>
-                    <span className={`${styles.listingsSkBar} ${styles.listingsSkTitle}`} />
-                    <span className={`${styles.listingsSkBar} ${styles.listingsSkSub}`} />
-                    <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-                      <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} />
-                      <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 80 }} />
-                    </div>
-                  </div>
+                  <ListingsMobileCardSkeleton key={`ap-sk-am-${i}`} />
                 ))}
               </div>
             </div>
@@ -1120,14 +1141,7 @@ export default function AdminListingsApprovalsPage() {
               </table>
               <div className={`${styles.mobileCardList} ${styles.mobileOnly}`}>
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={`ap-sk-bm-${i}`} className={styles.listingsSkMobileCard}>
-                    <span className={`${styles.listingsSkBar} ${styles.listingsSkTitle}`} />
-                    <span className={`${styles.listingsSkBar} ${styles.listingsSkSub}`} />
-                    <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
-                      <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} />
-                      <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 88 }} />
-                    </div>
-                  </div>
+                  <ListingsMobileCardSkeleton key={`ap-sk-bm-${i}`} />
                 ))}
               </div>
             </div>

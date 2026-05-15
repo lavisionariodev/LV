@@ -1287,11 +1287,48 @@
 .listingsSkMobileCard {
   border: 1px solid #e9e9ef;
   border-radius: 12px;
-  padding: 14px 16px;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
   background: #fff;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.listingsSkMobileCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-bottom: 1px solid #e9e9ef;
+}
+
+.listingsSkMobileCardSection {
+  padding: 0.85rem 1rem 0.75rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.listingsSkMobileCardBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.listingsSkMobileCardFooter {
+  display: flex;
+  gap: 8px;
+  padding: 0.85rem 1rem 1rem;
+}
+
+.listingsSkActionBtn {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 44px;
+  border-radius: 12px;
+  display: block;
 }
 
 .loadError {
@@ -1375,6 +1412,20 @@
 
 /* ── Responsive ── */
 @media (max-width: 860px) {
+  /* Match sellers / buyers mobile horizontal inset (12px) */
+  .pageRoot {
+    padding: 0 12px;
+    box-sizing: border-box;
+  }
+
+  .toolbar {
+    padding: 12px 0 14px;
+  }
+
+  .cardList {
+    padding: 12px 0 0;
+  }
+
   .toolbarTopRow {
     flex-direction: column;
     align-items: stretch;
@@ -2690,58 +2741,91 @@
 .desktopOnly { display: table; }
 .mobileOnly  { display: none;  }
 
-/* ── Mobile card list ── */
+/* ── Mobile card list (sectioned cards — matches admin disputes / payouts mobile) ── */
 .mobileCardList {
   display: flex;
   flex-direction: column;
+  gap: 1rem;
+  padding: 12px 0 16px;
 }
 
 .mobileCard {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px 18px;
-  border-top: 0.5px solid #f1f5f9;
-  transition: background 0.1s;
+  gap: 0;
+  padding: 0;
+  background: #fff;
+  border: 1px solid #e9e9ef;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-.mobileCard:first-child { border-top: none; }
-/* Hover effects disabled on touch devices */
-
-.mobileCardTop {
+.mobileCardHeader {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 0.65rem;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-bottom: 1px solid #e9e9ef;
 }
 
-.mobileCardInfo { flex: 1; min-width: 0; }
-
-.mobileCardName {
-  margin: 0 0 2px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #0f172a;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.mobileHeaderMain {
+  flex: 1;
+  min-width: 0;
 }
 
-.mobileCardSeller {
+.mobileTitle {
   margin: 0;
-  font-size: 12px;
-  color: #94a3b8;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #102820;
+  line-height: 1.25;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.mobileCardMeta {
+.mobileCardHeaderMeta {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 5px;
   flex-shrink: 0;
+}
+
+.mobileCardHeaderMeta .reviewPrice {
+  color: #102820;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.mobileCardSection {
+  min-width: 0;
+  padding: 0.85rem 1rem 0.75rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.mobileCardSection[data-mobile-label]::before {
+  content: attr(data-mobile-label);
+  display: block;
+  font-weight: 600;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  margin-bottom: 0.35rem;
+}
+
+.mobileCardSeller {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #475569;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mobileCardBadges {
@@ -2751,24 +2835,34 @@
   flex-wrap: wrap;
 }
 
-.mobileCardFooter {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
 .mobileCardDate {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 12px;
-  color: #94a3b8;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #166534;
 }
 
 .mobileCardDate svg { flex-shrink: 0; opacity: 0.6; }
 
-.mobileCardActions { display: flex; gap: 6px; }
+.mobileCardFooter {
+  padding: 0.85rem 1rem 1rem;
+}
+
+.mobileCardActions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.mobileCardActions .mobileApproveBtn,
+.mobileCardActions .mobileRejectBtn {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  border-radius: 12px;
+}
 
 .mobileApproveBtn,
 .mobileRejectBtn {
@@ -2843,6 +2937,10 @@
 
   .reviewHeader { padding: 14px 18px 12px; }
   .tableWrap { padding: 0; }
+
+  .mobileCardList {
+    padding: 12px 0 16px;
+  }
 
   /* Seller avatar — smaller on mobile */
   .sellerAvatar {

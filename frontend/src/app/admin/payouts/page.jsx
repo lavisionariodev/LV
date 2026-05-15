@@ -22,6 +22,7 @@ import { formatCount, formatPHPMobile } from '@/shared/utils/formatCount'
 import { Dropdown } from '@/components/ui'
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 import confirmModalStyles from '@/components/ui/Modal/ConfirmModal.module.css'
+import adminStyles from '../admin.module.css'
 
 import styles from './payouts.module.css'
 import StuckRefundsStrip from './StuckRefundsStrip'
@@ -771,18 +772,30 @@ function PayoutsMobileTransactionSkeleton() {
           className={`${styles.mobileCard} ${styles.mobileCardSkeleton}`}
           aria-hidden
         >
-          <div className={styles.mobileCardTop}>
+          <div className={styles.mobileCardHeader}>
             <span className={`${styles.tableSkeletonBar} ${styles.mobileSkOrder}`} />
             <span className={`${styles.tableSkeletonBar} ${styles.mobileSkAmount}`} />
           </div>
-          <span className={`${styles.tableSkeletonBar} ${styles.mobileSkService}`} />
-          <div className={styles.mobileCardMeta}>
-            <span className={`${styles.tableSkeletonBar} ${styles.mobileSkBuyer}`} />
-            <span className={`${styles.tableSkeletonBar} ${styles.mobileSkDate}`} />
+          <div className={styles.mobileCardSection}>
+            <span className={`${styles.tableSkeletonBar} ${styles.mobileSkService}`} />
           </div>
-          <div className={styles.mobileCardStatuses}>
-            <span className={`${styles.tableSkeletonBar} ${styles.mobileSkPill}`} />
-            <span className={`${styles.tableSkeletonBar} ${styles.mobileSkPill}`} />
+          <div className={styles.mobileCardSection}>
+            <div className={styles.mobileCardMetaRow}>
+              <span className={`${styles.tableSkeletonBar} ${styles.mobileSkBuyer}`} />
+              <span className={`${styles.tableSkeletonBar} ${styles.mobileSkDate}`} />
+            </div>
+          </div>
+          <div className={styles.mobileCardSection}>
+            <div className={styles.mobileCardStatuses}>
+              <span className={`${styles.tableSkeletonBar} ${styles.mobileSkPill}`} />
+              <span className={`${styles.tableSkeletonBar} ${styles.mobileSkPill}`} />
+            </div>
+          </div>
+          <div className={styles.mobileCardSection}>
+            <span className={`${styles.tableSkeletonBar} ${styles.mobileSkBreakdown}`} />
+          </div>
+          <div className={styles.mobileCardFooter}>
+            <span className={`${styles.tableSkeletonBar} ${styles.mobileSkDetailsBtn}`} />
           </div>
         </div>
       ))}
@@ -2813,20 +2826,11 @@ export default function AdminPayoutsPage() {
                   setSelectedRows(new Set())
                 }}
                 disabled={payoutsBulkBusy}
-                style={{
-                  marginLeft: 'auto',
-                  padding: '6px 12px',
-                  background: '#ffffff',
-                  color: '#0f172a',
-                  border: '1px solid #0f172a',
-                  borderRadius: 6,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: payoutsBulkBusy ? 'not-allowed' : 'pointer',
-                  opacity: payoutsBulkBusy ? 0.5 : 1,
-                }}
+                className={adminStyles.bulkClearSelectionBtn}
+                aria-label="Clear selection"
               >
-                Clear selection
+                <span className={adminStyles.bulkClearSelectionLabel}>Clear selection</span>
+                <TbX className={adminStyles.bulkClearSelectionIcon} aria-hidden />
               </button>
             </div>
           ) : null}
@@ -2856,17 +2860,9 @@ export default function AdminPayoutsPage() {
               paginatedRows.map((t) => {
                 const { commission, sellerEarnings } = getTxnCommissionParts(t, commissionSettings)
                 return (
-                  <div key={t.id} className={styles.mobileCard}>
-                    <div className={styles.mobileCardTop}>
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          gap: 8,
-                          flex: 1,
-                          minWidth: 0,
-                        }}
-                      >
+                  <article key={t.id} className={styles.mobileCard}>
+                    <div className={styles.mobileCardHeader}>
+                      <div className={styles.mobileCardHeaderMain}>
                         <input
                           type="checkbox"
                           className={styles.rowCheckbox}
@@ -2884,45 +2880,60 @@ export default function AdminPayoutsPage() {
                           }}
                           aria-label={`Select order ${t.orderId || t.orderUuid || ''}`}
                         />
-                        <div style={{ minWidth: 0 }}>
-                          <p className={styles.orderId}>{t.orderId}</p>
+                        <div className={styles.mobileHeaderMain}>
+                          <p className={styles.mobileTitle}>{t.orderId}</p>
                         </div>
                       </div>
                       <p className={styles.mobileCardAmount}>{formatPHP(t.amount)}</p>
                     </div>
-                    <p className={styles.mobileCardService}>{t.service}</p>
-                    <div className={styles.mobileCardMeta}>
-                      <span className={styles.mobileCardBuyer}>{t.buyerName}</span>
-                      <span className={styles.mobileCardDate}>{t.date}</span>
+
+                    <div className={styles.mobileCardSection} data-mobile-label="Service">
+                      <p className={styles.mobileCardService}>{t.service}</p>
                     </div>
-                    <div className={styles.mobileCardStatuses}>
+
+                    <div className={styles.mobileCardSection} data-mobile-label="Buyer">
+                      <div className={styles.mobileCardMetaRow}>
+                        <span className={styles.mobileCardBuyer}>{t.buyerName}</span>
+                        <span className={styles.mobileCardDate}>{t.date}</span>
+                      </div>
+                    </div>
+
+                    <div className={styles.mobileCardSection} data-mobile-label="Status">
+                      <div className={styles.mobileCardStatuses}>
                       <Badge type="payment" value={t.paymentStatus}/>
                       <Badge type="payout" value={t.payoutStatus}/>
                       {shouldShowDisbursementBadge(t.disbursementState, t.payoutStatus) ? (
                         <Badge type="disbursement" value={t.disbursementState} />
                       ) : null}
+                      </div>
                     </div>
-                    <div className={styles.mobileCardBreakdown}>
-                      <span className={styles.mobileCardBreakdownItem}>Platform <strong>{formatPHP(commission)}</strong></span>
-                      <span className={styles.mobileCardBreakdownDivider}>·</span>
-                      <span className={styles.mobileCardBreakdownItem}>Seller <strong className={styles.mobileCardEarnings}>{formatPHP(sellerEarnings)}</strong></span>
+
+                    <div className={styles.mobileCardSection} data-mobile-label="Breakdown">
+                      <div className={styles.mobileCardBreakdown}>
+                        <span className={styles.mobileCardBreakdownItem}>Platform <strong>{formatPHP(commission)}</strong></span>
+                        <span className={styles.mobileCardBreakdownDivider}>·</span>
+                        <span className={styles.mobileCardBreakdownItem}>Seller <strong className={styles.mobileCardEarnings}>{formatPHP(sellerEarnings)}</strong></span>
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      className={styles.mobileCardDetailsBtn}
-                      onClick={() => {
-                        setMobileFiltersOpen(false)
-                        setMobileDetailModalId((cur) => (cur === t.id ? null : t.id))
-                      }}
-                      aria-haspopup="dialog"
-                      aria-expanded={mobileDetailModalId === t.id}
-                      aria-controls={
-                        mobileDetailModalId === t.id ? 'payoutsMobileTxnDetail' : undefined
-                      }
-                    >
-                      Details
-                    </button>
-                  </div>
+
+                    <div className={styles.mobileCardFooter}>
+                      <button
+                        type="button"
+                        className={styles.mobileCardDetailsBtn}
+                        onClick={() => {
+                          setMobileFiltersOpen(false)
+                          setMobileDetailModalId((cur) => (cur === t.id ? null : t.id))
+                        }}
+                        aria-haspopup="dialog"
+                        aria-expanded={mobileDetailModalId === t.id}
+                        aria-controls={
+                          mobileDetailModalId === t.id ? 'payoutsMobileTxnDetail' : undefined
+                        }
+                      >
+                        View Details
+                      </button>
+                    </div>
+                  </article>
                 )
               })
             )}

@@ -7,6 +7,7 @@ import { FiRotateCcw } from 'react-icons/fi';
 import { TbX } from 'react-icons/tb';
 import { LuSettings2 } from 'react-icons/lu';
 import styles from './sellers.module.css';
+import adminStyles from '../admin.module.css';
 import {
   listSellersForAdmin,
   rejectSellerApplication,
@@ -1295,20 +1296,11 @@ export default function AdminSellersPage() {
               type="button"
               onClick={() => setSelectedRows(new Set())}
               disabled={bulkBusy}
-              style={{
-                marginLeft: 'auto',
-                padding: '6px 12px',
-                background: '#ffffff',
-                color: '#0f172a',
-                border: '1px solid #0f172a',
-                borderRadius: 6,
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: bulkBusy ? 'not-allowed' : 'pointer',
-                opacity: bulkBusy ? 0.5 : 1,
-              }}
+              className={adminStyles.bulkClearSelectionBtn}
+              aria-label="Clear selection"
             >
-              Clear selection
+              <span className={adminStyles.bulkClearSelectionLabel}>Clear selection</span>
+              <TbX className={adminStyles.bulkClearSelectionIcon} aria-hidden />
             </button>
           </div>
         ) : null}

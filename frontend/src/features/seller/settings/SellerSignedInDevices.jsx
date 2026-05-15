@@ -127,7 +127,7 @@ export default function SellerSignedInDevices({ variant = 'settings' }) {
         <p className={styles.sessionError}>{error}</p>
       ) : sessions.length === 0 ? (
         <p className={styles.settingsRowDesc}>
-          No other browsers are listed yet. Each browser appears here after you open Seller Centre on it.
+          No other devices are listed yet. Each device or network appears here after you open Seller Centre on it.
         </p>
       ) : (
         sessions.map((session) => (
@@ -136,7 +136,7 @@ export default function SellerSignedInDevices({ variant = 'settings' }) {
               <p className={styles.sessionDevice}>{session.deviceLabel}</p>
               <p className={styles.sessionSeen}>Last active {formatLastSeen(session.lastSeenAt)}</p>
             </div>
-            {session.isCurrent ? <span className={styles.sessionBadge}>This browser</span> : null}
+            {session.isCurrent ? <span className={styles.sessionBadge}>This device</span> : null}
           </div>
         ))
       )}
@@ -161,7 +161,7 @@ export default function SellerSignedInDevices({ variant = 'settings' }) {
         <div className={styles.sessionCompactHead}>
           <h3 className={styles.sessionCompactTitle}>Signed-in browsers</h3>
           <p className={styles.settingsRowDesc}>
-            Each browser keeps its own Seller Centre session. Changing your password also signs out other browsers.
+            Devices that have opened Seller Centre on your account. Repeat logins on the same device stay one entry.
           </p>
         </div>
         {list}
@@ -177,7 +177,7 @@ export default function SellerSignedInDevices({ variant = 'settings' }) {
           <p className={styles.settingsRowTitle}>Signed-in browsers</p>
         </div>
         <p className={styles.settingsRowDesc}>
-          Browsers that have opened Seller Centre on your account. Approving sign-in on another device adds another session here.
+          Devices and networks that have opened Seller Centre on your account. Repeat logins on the same device stay one entry.
         </p>
       </div>
       <div className={`${styles.settingsRowControl} ${styles.profileControl}`}>

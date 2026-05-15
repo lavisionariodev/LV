@@ -7,6 +7,13 @@
   background: #ffffff;
 }
 
+/* Match seller settings + portal mobile layout (≤860px): avoid stretching past content */
+@media (max-width: 860px) {
+  .page {
+    min-height: 0;
+  }
+}
+
 .pageMobileSubpage {
   overflow: hidden;
 }

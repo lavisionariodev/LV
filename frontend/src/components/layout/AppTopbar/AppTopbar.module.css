@@ -445,6 +445,7 @@
     height: calc(56px + env(safe-area-inset-top, 0px));
     padding-left: 14px;
     padding-right: 14px;
+    /* Safe area is in height; extra 6px only nudges bar content (matches layout --*-topbar-h). */
     padding-top: calc(6px + env(safe-area-inset-top, 0px));
     gap: 8px;
   }

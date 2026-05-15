@@ -11,6 +11,7 @@ import ForgotPasswordModal from "@/components/ui/Modal/ForgotPasswordModal";
 import styles from "./administrator.module.css";
 import { useSiteContent } from "@/lib/siteContent/client";
 import { useAuthToast } from "@/contexts/ToastContext";
+import PortalBootstrapLoader from "@/components/ui/Loader/PortalBootstrapLoader";
 
 function formatAdminAuthError(message, fallback = "Login failed. Please check your email and password.") {
   if (!message || typeof message !== "string") return fallback;
@@ -38,6 +39,7 @@ export default function AdminLoginPage() {
   const toast = useAuthToast();
   const [signInData, setSignInData] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
+  const [enteringPortal, setEnteringPortal] = useState(false);
   const [error, setError] = useState("");
 
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
@@ -79,10 +81,14 @@ export default function AdminLoginPage() {
       setLoading(false);
       return;
     }
-    setLoading(false);
     toast.success("Welcome back to Administrator Centre!");
+    setEnteringPortal(true);
     router.push("/admin");
   };
+
+  if (enteringPortal) {
+    return <PortalBootstrapLoader variant="admin" />;
+  }
 
   return (
     <div className={styles.pageWrapper}>
