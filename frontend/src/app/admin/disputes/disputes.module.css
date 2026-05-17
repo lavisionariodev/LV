@@ -1087,16 +1087,35 @@
     overflow-wrap: anywhere;
   }
 
-  .mobileBadgeWrap {
+  .mobileHeaderMeta {
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
+    text-align: right;
   }
 
-  .statusBadge {
-    font-size: 11px;
-    padding: 5px 11px;
+  .mobileCardValue {
+    display: block;
+    margin: 0;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: #334155;
+    line-height: 1.45;
+    word-break: break-word;
+    overflow-wrap: anywhere;
   }
+
+  .mobileHeaderMeta .mobileCardValue {
+    display: inline;
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+
+  .mobileStatus_open         { color: #b91c1c; }
+  .mobileStatus_under_review { color: #b45309; }
+  .mobileStatus_resolved     { color: #15803d; }
+  .mobileStatus_closed       { color: #64748b; }
+  .mobileStatus_default      { color: #64748b; }
 
   /* Labeled content sections */
   .mobileCardSection {
@@ -1119,12 +1138,6 @@
   .mobileCardSection .partyName {
     white-space: normal;
     word-break: break-word;
-  }
-
-  .mobileCardSection .dateCell {
-    font-size: 0.88rem;
-    font-weight: 600;
-    color: #166534;
   }
 
   .mobileCardFooter {
@@ -1235,8 +1248,8 @@
 
 .disputesSkBadge {
   width: 72px;
-  height: 24px;
-  border-radius: 999px;
+  height: 12px;
+  border-radius: 6px;
   flex-shrink: 0;
 }
 
@@ -1274,9 +1287,10 @@
 
 .disputesSkReason {
   display: block;
-  height: 24px;
-  width: 128px;
-  border-radius: 999px;
+  height: 13px;
+  width: 85%;
+  max-width: 220px;
+  border-radius: 6px;
 }
 
 .disputesSkDate {

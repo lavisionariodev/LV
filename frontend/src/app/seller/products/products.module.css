@@ -327,6 +327,11 @@
   color: #b42318;
 }
 
+.productsTableStatusPending {
+  background: #fff7ed;
+  color: #9a3412;
+}
+
 .productsTableHint {
   margin: 0;
   font-size: 0.78rem;
@@ -924,6 +929,95 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.submissionViewModal {
+  max-width: 32rem;
+}
+
+.submissionViewStatusRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+}
+
+.submissionViewStatusLabel {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+}
+
+.submissionViewFieldList {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: #374151;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.submissionViewFeedback {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 10px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+}
+
+.submissionViewFeedbackLabel {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #991b1b;
+}
+
+.submissionViewFeedbackText {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: #7f1d1d;
+}
+
+.submissionViewNote {
+  margin: 1rem 0 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: #6b7280;
+}
+
+.submissionViewFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  padding: 0.9rem 1.25rem 1.15rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.submissionViewCloseBtn,
+.submissionViewDismissBtn {
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 0.5rem 0.95rem;
+  cursor: pointer;
+}
+
+.submissionViewCloseBtn {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+}
+
+.submissionViewDismissBtn {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b42318;
 }
 
 .productModalHeader {

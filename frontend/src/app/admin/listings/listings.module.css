@@ -1731,8 +1731,8 @@
 
 .expandedPanel {
   background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  border: 2px solid #dfe1e6;
+  border-radius: 16px;
   overflow: hidden;
 }
 
@@ -1751,6 +1751,19 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #94a3b8;
+}
+
+.expandPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.expandPanelHeader .expandPanelTitle {
+  margin: 0;
+  color: #122e1f;
 }
 
 .expandShopGrid {
@@ -1944,6 +1957,28 @@
   white-space: nowrap;
 }
 
+.sellerCellText {
+  min-width: 0;
+}
+
+.sellerCell:has(.sellerCellText) {
+  align-items: flex-start;
+}
+
+.sellerCell:has(.sellerCellText) .sellerAvatar {
+  margin-top: 2px;
+}
+
+.reviewSellerEmail {
+  margin: 2px 0 0;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Price */
 .reviewPrice {
   color: #0f172a;
@@ -1969,6 +2004,9 @@
 .actionsCell {
   position: relative;
   vertical-align: middle;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
 }
 
 /* See more footer link */

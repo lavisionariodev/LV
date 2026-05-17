@@ -1,4 +1,8 @@
-import { hasPendingSellerChanges } from '@/lib/seller-listings/pendingChanges'
+import {
+  hasPendingSellerChanges,
+  hasStagedRejection,
+  sellerShowsInUpdatesPending,
+} from '@/lib/seller-listings/pendingChanges'
 import { readEnum } from '@/shared/utils/queryParams'
 
 export const LISTING_TAB_IDS = ['active', 'under_review', 'updates_pending']
@@ -6,7 +10,7 @@ export const LISTING_TAB_IDS = ['active', 'under_review', 'updates_pending']
 export const LISTING_TABS = [
   { id: 'active', label: 'Active' },
   { id: 'under_review', label: 'Under review' },
-  { id: 'updates_pending', label: 'Updates pending' },
+  { id: 'updates_pending', label: 'Submitted updates' },
 ]
 
 export const DEFAULT_LISTING_TAB = 'active'
@@ -24,17 +28,29 @@ export function listingHasStagedChanges(row) {
   return hasPendingSellerChanges(row)
 }
 
+export function listingHasStagedRejection(row) {
+  if (row?.stagedRejectionReason != null) {
+    return typeof row.stagedRejectionReason === 'string' && row.stagedRejectionReason.trim().length > 0
+  }
+  return hasStagedRejection(row)
+}
+
+export function listingShowsInUpdatesPending(row) {
+  if (row?.showsInUpdatesPending != null) return Boolean(row.showsInUpdatesPending)
+  return sellerShowsInUpdatesPending(row)
+}
+
 export function canCancelListingReview(row) {
   const approval = getListingApprovalStatus(row)
   if (approval === 'pending' || approval === 'rejected') return true
-  if (approval === 'approved' && listingHasStagedChanges(row)) return true
+  if (approval === 'approved' && listingShowsInUpdatesPending(row)) return true
   return false
 }
 
 export function classifyListingRow(row) {
   const approval = getListingApprovalStatus(row)
   if (approval === 'pending' || approval === 'rejected') return 'under_review'
-  if (approval === 'approved' && listingHasStagedChanges(row)) return 'updates_pending'
+  if (approval === 'approved' && listingShowsInUpdatesPending(row)) return 'updates_pending'
   if (approval === 'draft' || approval === 'approved') return 'active'
   return 'active'
 }
@@ -65,6 +81,13 @@ export function listingsReviewAlertHref(rows) {
   return '/seller/products/catalog'
 }
 
+/** Short status for the submitted-updates tab table and submission view modal. */
+export function submittedUpdateStatusLabel(product) {
+  if (product?.stagedRejectionReason) return 'Rejected'
+  if (product?.hasPendingUpdate) return 'Pending'
+  return '—'
+}
+
 export function isProductShopActive(product) {
   return product?.status === 'active' && product?.approvalStatus === 'approved'
 }
@@ -75,7 +98,8 @@ export function productStateLabel(product) {
   if (approval === 'pending') return 'Pending review'
   if (approval === 'rejected') return 'Rejected'
   if (status === 'archived') return 'Archived'
-  if (approval === 'approved' && product?.hasPendingUpdate) return 'Changes pending review'
+  if (approval === 'approved' && product?.stagedRejectionReason) return 'Rejected'
+  if (approval === 'approved' && product?.hasPendingUpdate) return 'Pending'
   if (isProductShopActive(product)) return 'Active'
   return 'Draft'
 }

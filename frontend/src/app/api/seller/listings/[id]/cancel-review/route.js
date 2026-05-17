@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
-import { hasPendingSellerChanges } from '@/lib/seller-listings/pendingChanges'
+import { hasPendingSellerChanges, hasStagedRejection } from '@/lib/seller-listings/pendingChanges'
 
 async function requireOwnedListing(listingId) {
   const supabase = await createClient()
@@ -37,8 +37,9 @@ async function requireOwnedListing(listingId) {
 function buildCancelReviewPayload(row) {
   const approval = String(row?.approval_status || 'draft').toLowerCase()
   const hasStaged = hasPendingSellerChanges(row)
+  const hasRejectedStaged = hasStagedRejection(row)
 
-  if (approval === 'approved' && hasStaged) {
+  if (approval === 'approved' && (hasStaged || hasRejectedStaged)) {
     return {
       pending_changes: {},
       pending_changes_submitted_at: null,

@@ -83,7 +83,7 @@ function payoutTxnRowKey(t) {
 
 function shouldShowDisbursementBadge(disbursementState) {
   if (!disbursementState || disbursementState === 'none') return false
-  return disbursementState === 'wallet_credited' || disbursementState === 'legacy_paid'
+  return disbursementState === 'legacy_paid'
 }
 
 function buildPayoutQueryString({

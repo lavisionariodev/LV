@@ -129,6 +129,14 @@ function getSellerDisplayLine(row) {
   return row.seller_email?.trim() || '—'
 }
 
+function getSellerShopName(row) {
+  return row.seller_business_name?.trim() || '—'
+}
+
+function getSellerEmail(row) {
+  return row.seller_email?.trim() || ''
+}
+
 function ExpandChevronButton({ isExpanded, onToggle, label }) {
   return (
     <button
@@ -152,7 +160,14 @@ function ExpandChevronButton({ isExpanded, onToggle, label }) {
   )
 }
 
-function StagedExpandedPanel({ row, onShowAllChanges }) {
+function StagedExpandedPanel({
+  row,
+  isUpdating,
+  onApprove,
+  onReject,
+  onViewDetails,
+  onShowAllChanges,
+}) {
   const lines = summarizeStagedChanges(row)
   const previewLines = lines.slice(0, STAGED_CHANGES_EXPAND_PREVIEW)
   const hasMore = lines.length > STAGED_CHANGES_EXPAND_PREVIEW
@@ -160,28 +175,16 @@ function StagedExpandedPanel({ row, onShowAllChanges }) {
   return (
     <div className={styles.expandedPanel}>
       <div className={styles.expandPanelSection}>
-        <p className={styles.expandPanelTitle}>Shop information</p>
-        <dl className={styles.expandShopGrid}>
-          <div className={styles.expandShopItem}>
-            <dt>Shop</dt>
-            <dd>{row.seller_business_name?.trim() || '—'}</dd>
-          </div>
-          <div className={styles.expandShopItem}>
-            <dt>Contact email</dt>
-            <dd>{row.seller_email?.trim() || '—'}</dd>
-          </div>
-          <div className={styles.expandShopItem}>
-            <dt>Listing</dt>
-            <dd>{row.listing_name?.trim() || 'Untitled'}</dd>
-          </div>
-          <div className={styles.expandShopItem}>
-            <dt>Submitted</dt>
-            <dd>{formatDateTime(row.submitted_at)}</dd>
-          </div>
-        </dl>
-      </div>
-      <div className={styles.expandPanelSection}>
-        <p className={styles.expandPanelTitle}>Submitted changes</p>
+        <div className={styles.expandPanelHeader}>
+          <p className={styles.expandPanelTitle}>Submitted changes</p>
+          <RowActions
+            row={row}
+            isUpdating={isUpdating}
+            onApprove={onApprove}
+            onReject={onReject}
+            onViewDetails={onViewDetails}
+          />
+        </div>
         {previewLines.length === 0 ? (
           <p className={styles.stagedSummaryText}>No field changes recorded.</p>
         ) : (
@@ -278,6 +281,19 @@ function formatDateTime(raw) {
       hour: '2-digit',
       minute: '2-digit',
     }).format(new Date(raw))
+  } catch {
+    return String(raw)
+  }
+}
+
+function formatDateShort(raw) {
+  if (!raw) return '—'
+  try {
+    const d = new Date(raw)
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    const yyyy = d.getFullYear()
+    return `${mm}/${dd}/${yyyy}`
   } catch {
     return String(raw)
   }
@@ -760,12 +776,12 @@ function StagedUpdatesSection({
             <tbody>
               {rows.map((row) => {
                 const busy = moderationBusyId === row.id
-                const shop = getSellerDisplayLine(row)
+                const shopName = getSellerShopName(row)
+                const sellerEmail = getSellerEmail(row)
                 const merged = mergePendingChangesIntoListingRow(row)
                 const listingTitle = merged.listing_name || 'Untitled'
                 const lines = summarizeStagedChanges(row)
                 const isExpanded = expandedRowId === row.id
-                const firstChange = lines[0]
 
                 return (
                   <Fragment key={row.id}>
@@ -777,40 +793,31 @@ function StagedUpdatesSection({
                             initialsSource={row.seller_business_name || row.seller_email}
                             listingStyles={styles}
                           />
-                          <p className={styles.reviewSellerText}>{shop}</p>
+                          <div className={styles.sellerCellText}>
+                            <p className={styles.reviewSellerText}>{shopName}</p>
+                            {sellerEmail ? (
+                              <p className={styles.reviewSellerEmail}>{sellerEmail}</p>
+                            ) : null}
+                          </div>
                         </div>
                       </td>
                       <td>
                         <p className={styles.reviewListingName}>{listingTitle}</p>
                       </td>
                       <td>
-                        <span className={styles.reviewSubmitted}>{formatDateTime(row.submitted_at)}</span>
+                        <span className={styles.reviewSubmitted}>{formatDateShort(row.submitted_at)}</span>
                       </td>
                       <td>
                         <p className={styles.stagedSummaryText}>
                           {lines.length} field{lines.length === 1 ? '' : 's'} updated
                         </p>
-                        {firstChange ? (
-                          <p className={styles.stagedSummaryMeta}>
-                            {firstChange.label}: {firstChange.before} → {firstChange.after}
-                          </p>
-                        ) : null}
                       </td>
                       <td className={styles.actionsCell}>
-                        <div className={styles.rowActionsEnd}>
-                          <RowActions
-                            row={row}
-                            isUpdating={busy}
-                            onApprove={() => onApprove(row)}
-                            onReject={() => onReject(row)}
-                            onViewDetails={() => onViewDetails(row)}
-                          />
-                          <ExpandChevronButton
-                            isExpanded={isExpanded}
-                            onToggle={() => setExpandedRowId(isExpanded ? null : row.id)}
-                            label={`${isExpanded ? 'Collapse' : 'Expand'} details for ${listingTitle}`}
-                          />
-                        </div>
+                        <ExpandChevronButton
+                          isExpanded={isExpanded}
+                          onToggle={() => setExpandedRowId(isExpanded ? null : row.id)}
+                          label={`${isExpanded ? 'Collapse' : 'Expand'} details for ${listingTitle}`}
+                        />
                       </td>
                     </tr>
                     {isExpanded ? (
@@ -818,6 +825,10 @@ function StagedUpdatesSection({
                         <td colSpan={colCount} className={styles.expandedTd}>
                           <StagedExpandedPanel
                             row={row}
+                            isUpdating={busy}
+                            onApprove={() => onApprove(row)}
+                            onReject={() => onReject(row)}
+                            onViewDetails={() => onViewDetails(row)}
                             onShowAllChanges={() => setAllChangesRow(row)}
                           />
                         </td>
