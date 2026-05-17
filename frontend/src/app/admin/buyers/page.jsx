@@ -12,13 +12,26 @@ import { useDebouncedEffect, useMediaQuery } from '@/shared/hooks'
 import { Dropdown } from '@/components/ui'
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { readEnum, readString, replaceUrlQuery } from '@/shared/utils/queryParams'
+import { readEnum, readInt, readString, replaceUrlQuery } from '@/shared/utils/queryParams'
 import { bulkStatusActionApplies } from '@/lib/admin/bulkEligibility'
 
+const ROWS_PER_PAGE = 10
+
+function buildVisiblePages(currentPage, totalPages) {
+  if (totalPages <= 0) return []
+  return Array.from({ length: totalPages }, (_, i) => i + 1)
+    .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+    .reduce((acc, p, idx, arr) => {
+      if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...')
+      acc.push(p)
+      return acc
+    }, [])
+}
+
 const STATUS_FILTER_OPTIONS = [
-  { value: 'all', label: 'All statuses', color: 'slate' },
-  { value: 'active', label: 'Active', color: 'green' },
-  { value: 'suspended', label: 'Suspended', color: 'red' },
+  { value: 'all', label: 'All statuses' },
+  { value: 'active', label: 'Active' },
+  { value: 'suspended', label: 'Suspended' },
 ]
 
 const Icon = {
@@ -303,6 +316,7 @@ export default function AdminBuyersPage() {
   const [busyId, setBusyId] = useState(null)
   const [bulkBusy, setBulkBusy] = useState(false)
   const [statusConfirm, setStatusConfirm] = useState(null)
+  const [currentPage, setCurrentPage] = useState(() => Math.max(1, readInt(searchParams, 'page', 1)))
 
   useEffect(() => {
     const nextQ = readString(searchParams, 'q', '')
@@ -312,9 +326,11 @@ export default function AdminBuyersPage() {
       STATUS_FILTER_OPTIONS.map((o) => o.value),
       'all',
     )
+    const nextPage = Math.max(1, readInt(searchParams, 'page', 1))
     queueMicrotask(() => {
       if (nextQ !== search) setSearch(nextQ)
       if (nextStatus !== statusFilter) setStatusFilter(nextStatus)
+      if (nextPage !== currentPage) setCurrentPage(nextPage)
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
@@ -324,11 +340,16 @@ export default function AdminBuyersPage() {
       replaceUrlQuery(router, pathname, searchParams, {
         q: search,
         status: { value: statusFilter, omitIf: 'all' },
+        page: { value: currentPage, omitIf: 1 },
       })
     },
-    [search, statusFilter, router, pathname, searchParams],
+    [search, statusFilter, currentPage, router, pathname, searchParams],
     300,
   )
+
+  useEffect(() => {
+    queueMicrotask(() => setCurrentPage(1))
+  }, [search, statusFilter])
 
   useEffect(() => {
     if (!isMobile || !filtersOpen) return
@@ -508,11 +529,23 @@ export default function AdminBuyersPage() {
     })
   }, [buyers, search, statusFilter])
 
+  const totalPages = Math.ceil(filtered.length / ROWS_PER_PAGE) || 1
+  const paginatedRows = filtered.slice(
+    (currentPage - 1) * ROWS_PER_PAGE,
+    currentPage * ROWS_PER_PAGE,
+  )
+
+  useEffect(() => {
+    if (totalPages <= 0) return
+    if (currentPage > totalPages) queueMicrotask(() => setCurrentPage(totalPages))
+  }, [currentPage, totalPages])
+
   const hasFilters = Boolean(search.trim()) || statusFilter !== 'all'
 
   const clearFilters = () => {
     setSearch('')
     setStatusFilter('all')
+    setCurrentPage(1)
   }
 
   const statusLabel =
@@ -912,21 +945,21 @@ export default function AdminBuyersPage() {
                       type="checkbox"
                       className={styles.rowCheckbox}
                       checked={
-                        filtered.length > 0 &&
-                        filtered.every((b) => selectedRows.has(b.id))
+                        paginatedRows.length > 0 &&
+                        paginatedRows.every((b) => selectedRows.has(b.id))
                       }
                       onChange={(e) => {
                         setSelectedRows((prev) => {
                           const next = new Set(prev)
                           if (e.target.checked) {
-                            filtered.forEach((b) => next.add(b.id))
+                            paginatedRows.forEach((b) => next.add(b.id))
                           } else {
-                            filtered.forEach((b) => next.delete(b.id))
+                            paginatedRows.forEach((b) => next.delete(b.id))
                           }
                           return next
                         })
                       }}
-                      aria-label="Select all buyers in view"
+                      aria-label="Select all buyers on this page"
                     />
                   </th>
                   <th>Buyer</th>
@@ -938,7 +971,7 @@ export default function AdminBuyersPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((buyer) => (
+                {paginatedRows.map((buyer) => (
                   <tr key={buyer.id} className={styles.primaryRow}>
                     <td className={styles.checkboxCell}>
                       <input
@@ -1058,8 +1091,46 @@ export default function AdminBuyersPage() {
         </div>
 
         {!isLoading && !error && filtered.length > 0 && (
-          <div className={styles.tableFooter}>
-            Showing <strong>{filtered.length}</strong> of <strong>{buyers.length}</strong> buyers
+          <div className={styles.pagination}>
+            <div className={styles.paginationControls} role="navigation" aria-label="Buyers table pagination">
+              <button
+                type="button"
+                className={`${styles.pageBtn} ${currentPage === 1 ? styles.pageBtnDisabled : ''}`}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                ‹ Previous
+              </button>
+              {buildVisiblePages(currentPage, totalPages).map((p, idx) =>
+                p === '...' ? (
+                  <span key={`ellipsis-${idx}`} className={styles.pageEllipsis}>
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={p}
+                    type="button"
+                    className={`${styles.pageBtn} ${currentPage === p ? styles.pageBtnActive : ''}`}
+                    onClick={() => setCurrentPage(p)}
+                  >
+                    {p}
+                  </button>
+                ),
+              )}
+              <button
+                type="button"
+                className={`${styles.pageBtn} ${currentPage === totalPages ? styles.pageBtnDisabled : ''}`}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next ›
+              </button>
+            </div>
+            <p className={styles.paginationInfo}>
+              Showing{' '}
+              <strong>{(currentPage - 1) * ROWS_PER_PAGE + 1}–{Math.min(currentPage * ROWS_PER_PAGE, filtered.length)}</strong>{' '}
+              of <strong>{filtered.length}</strong> buyers
+            </p>
           </div>
         )}
       </section>

@@ -586,7 +586,10 @@
 }
 
 .input {
+  display: block;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   height: 42px;
   padding: 0 12px;
   border: 1px solid var(--color-border);
@@ -595,6 +598,27 @@
   font-size: 13px;
   background: color-mix(in srgb, var(--color-cream) 30%, #ffffff 70%);
   color: var(--color-text-primary);
+  box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Native date inputs render as a wide button on mobile; constrain like text fields */
+.input[type='date'] {
+  appearance: none;
+  -webkit-appearance: none;
+  -webkit-min-logical-width: 0;
+  padding-right: 44px;
+}
+
+.input[type='date']::-webkit-date-and-time-value {
+  min-width: 0;
+  text-align: left;
+}
+
+.input[type='date']::-webkit-calendar-picker-indicator {
+  opacity: 0.7;
+  cursor: pointer;
 }
 
 .input:focus {
@@ -1055,11 +1079,15 @@
   flex-direction: column;
   gap: 6px;
   min-width: 0;
+  max-width: 100%;
 }
 
 .shopGridField .input,
-.shopGridField .textarea {
+.shopGridField .textarea,
+.shopGridField .input[type='date'] {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   box-sizing: border-box;
 }
 
@@ -1272,11 +1300,16 @@
 
   .shopGridField .input,
   .shopGridField .textarea,
-  .shopGridField input[type='date'] {
+  .shopGridField .input[type='date'] {
     width: 100%;
     max-width: 100%;
     min-width: 0;
+    -webkit-min-logical-width: 0;
     box-sizing: border-box;
+  }
+
+  .input[type='date'] {
+    padding-right: 40px;
   }
 
   .shopInfoCard {

@@ -22,15 +22,28 @@ import confirmModalStyles from '@/components/ui/Modal/ConfirmModal.module.css';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useDebouncedEffect } from '@/shared/hooks';
-import { readEnum, readString, replaceUrlQuery } from '@/shared/utils/queryParams';
+import { readEnum, readInt, readString, replaceUrlQuery } from '@/shared/utils/queryParams';
 import { bulkStatusActionApplies } from '@/lib/admin/bulkEligibility';
 
+const ROWS_PER_PAGE = 10;
+
+function buildVisiblePages(currentPage, totalPages) {
+  if (totalPages <= 0) return [];
+  return Array.from({ length: totalPages }, (_, i) => i + 1)
+    .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+    .reduce((acc, p, idx, arr) => {
+      if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...');
+      acc.push(p);
+      return acc;
+    }, []);
+}
+
 const STATUS_FILTER_OPTIONS = [
-  { value: 'all', label: 'All statuses', color: 'slate' },
-  { value: 'active', label: 'Active', color: 'green' },
-  { value: 'pending', label: 'Pending', color: 'amber' },
-  { value: 'rejected', label: 'Rejected', color: 'rose' },
-  { value: 'suspended', label: 'Suspended', color: 'red' },
+  { value: 'all', label: 'All statuses' },
+  { value: 'active', label: 'Active' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'rejected', label: 'Rejected' },
+  { value: 'suspended', label: 'Suspended' },
 ];
 
 const MIN_REJECTION_REASON_LENGTH = 12;
@@ -753,14 +766,17 @@ export default function AdminSellersPage() {
   const [rejectReasonInput, setRejectReasonInput] = useState('');
   const [rejectSubmitting, setRejectSubmitting] = useState(false);
   const [platformDefaultCommissionPct, setPlatformDefaultCommissionPct] = useState(10);
+  const [currentPage, setCurrentPage] = useState(() => Math.max(1, readInt(searchParams, 'page', 1)));
 
   // Sync state <- URL (back/forward, shared links)
   useEffect(() => {
     const nextQ = readString(searchParams, 'q', '')
     const nextStatus = readEnum(searchParams, 'status', STATUS_FILTER_OPTIONS.map((o) => o.value), 'all')
+    const nextPage = Math.max(1, readInt(searchParams, 'page', 1))
     queueMicrotask(() => {
       if (nextQ !== search) setSearch(nextQ)
       if (nextStatus !== statusFilter) setStatusFilter(nextStatus)
+      if (nextPage !== currentPage) setCurrentPage(nextPage)
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
@@ -770,8 +786,13 @@ export default function AdminSellersPage() {
     replaceUrlQuery(router, pathname, searchParams, {
       q: search,
       status: { value: statusFilter, omitIf: 'all' },
+      page: { value: currentPage, omitIf: 1 },
     })
-  }, [search, statusFilter, router, pathname, searchParams], 300)
+  }, [search, statusFilter, currentPage, router, pathname, searchParams], 300)
+
+  useEffect(() => {
+    queueMicrotask(() => setCurrentPage(1))
+  }, [search, statusFilter])
 
   useEffect(() => {
     if (!isMobile || !filtersOpen) return;
@@ -854,11 +875,23 @@ export default function AdminSellersPage() {
       });
   }, [sellers, statusFilter, search]);
 
+  const totalPages = Math.ceil(filtered.length / ROWS_PER_PAGE) || 1
+  const paginatedRows = filtered.slice(
+    (currentPage - 1) * ROWS_PER_PAGE,
+    currentPage * ROWS_PER_PAGE,
+  )
+
+  useEffect(() => {
+    if (totalPages <= 0) return
+    if (currentPage > totalPages) queueMicrotask(() => setCurrentPage(totalPages))
+  }, [currentPage, totalPages])
+
   const hasFilters = Boolean(search.trim()) || statusFilter !== 'all';
 
   const clearFilters = () => {
     setSearch('');
     setStatusFilter('all');
+    setCurrentPage(1);
   };
 
   const statusLabel =
@@ -1387,21 +1420,21 @@ export default function AdminSellersPage() {
                       type="checkbox"
                       className={styles.rowCheckbox}
                       checked={
-                        filtered.length > 0 &&
-                        filtered.every((s) => selectedRows.has(s.user_id || s.id))
+                        paginatedRows.length > 0 &&
+                        paginatedRows.every((s) => selectedRows.has(s.user_id || s.id))
                       }
                       onChange={(e) => {
                         setSelectedRows((prev) => {
                           const next = new Set(prev);
                           if (e.target.checked) {
-                            filtered.forEach((s) => next.add(s.user_id || s.id));
+                            paginatedRows.forEach((s) => next.add(s.user_id || s.id));
                           } else {
-                            filtered.forEach((s) => next.delete(s.user_id || s.id));
+                            paginatedRows.forEach((s) => next.delete(s.user_id || s.id));
                           }
                           return next;
                         });
                       }}
-                      aria-label="Select all sellers in view"
+                      aria-label="Select all sellers on this page"
                     />
                   </th>
                   <th>Shop</th>
@@ -1413,7 +1446,7 @@ export default function AdminSellersPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((seller) => {
+                {paginatedRows.map((seller) => {
                   const sellerId = seller.user_id || seller.id
                   const overrideRaw = seller.commission_percent_override
                   const hasOverride =
@@ -1561,8 +1594,46 @@ export default function AdminSellersPage() {
         </div>
 
         {!loading && filtered.length > 0 && (
-          <div className={styles.tableFooter}>
-            Showing <strong>{filtered.length}</strong> of <strong>{sellers.length}</strong> sellers
+          <div className={styles.pagination}>
+            <div className={styles.paginationControls} role="navigation" aria-label="Sellers table pagination">
+              <button
+                type="button"
+                className={`${styles.pageBtn} ${currentPage === 1 ? styles.pageBtnDisabled : ''}`}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                ‹ Previous
+              </button>
+              {buildVisiblePages(currentPage, totalPages).map((p, idx) =>
+                p === '...' ? (
+                  <span key={`ellipsis-${idx}`} className={styles.pageEllipsis}>
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={p}
+                    type="button"
+                    className={`${styles.pageBtn} ${currentPage === p ? styles.pageBtnActive : ''}`}
+                    onClick={() => setCurrentPage(p)}
+                  >
+                    {p}
+                  </button>
+                ),
+              )}
+              <button
+                type="button"
+                className={`${styles.pageBtn} ${currentPage === totalPages ? styles.pageBtnDisabled : ''}`}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next ›
+              </button>
+            </div>
+            <p className={styles.paginationInfo}>
+              Showing{' '}
+              <strong>{(currentPage - 1) * ROWS_PER_PAGE + 1}–{Math.min(currentPage * ROWS_PER_PAGE, filtered.length)}</strong>{' '}
+              of <strong>{filtered.length}</strong> sellers
+            </p>
           </div>
         )}
       </section>
