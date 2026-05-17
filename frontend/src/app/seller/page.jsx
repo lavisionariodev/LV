@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import styles from './seller.module.css'
-import BodyPortal from '@/components/ui/Modal/BodyPortal'
+import { createPortal } from 'react-dom'
 import { useSellerAnalyticsData } from '@/lib/seller/useSellerAnalyticsData'
 import { formatPhpWholeAmount } from '@/lib/cart/formatPhp'
 import {
@@ -606,8 +606,7 @@ export default function SellerDashboardPage() {
         </div>
       </section>
 
-      {activeAlert && (
-        <BodyPortal>
+      {activeAlert && typeof document !== 'undefined' && createPortal(
         <div className={styles.modalOverlay} role="dialog" aria-modal="true" aria-labelledby="resolve-title">
           <div className={styles.modalCard}>
             <h3 id="resolve-title" className={styles.modalTitle}>
@@ -634,11 +633,11 @@ export default function SellerDashboardPage() {
             </div>
           </div>
         </div>
-        </BodyPortal>
+        ,
+        document.body
       )}
 
-      {activeDetailAlert && (
-        <BodyPortal>
+      {activeDetailAlert && typeof document !== 'undefined' && createPortal(
         <div className={styles.modalOverlay} role="dialog" aria-modal="true" aria-labelledby="alert-details-title">
           <div className={styles.modalCard}>
             <h3 id="alert-details-title" className={styles.modalTitle}>
@@ -692,7 +691,8 @@ export default function SellerDashboardPage() {
             </div>
           </div>
         </div>
-        </BodyPortal>
+        ,
+        document.body
       )}
     </div>
   )

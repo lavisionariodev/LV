@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
-import { evaluateSellerPayoutSettingsForDisbursement } from '@/lib/payments/disbursementConfig'
+import {
+  evaluateSellerPayoutSettingsForDisbursement,
+  validateSellerPayoutSettingsRow,
+} from '@/lib/payments/disbursementConfig'
 
 function clean(body) {
   const method = String(body?.payoutMethod || body?.payout_method || 'bank').trim().toLowerCase()
@@ -25,22 +28,7 @@ function mask(value) {
 }
 
 function validate(payload) {
-  if (payload.payout_method === 'bank') {
-    if (!payload.account_holder_name) return 'Account holder name is required for bank payouts.'
-    if (!payload.bank_name) return 'Bank name is required for bank payouts.'
-    if (!payload.account_number) return 'Account number is required for bank payouts.'
-  }
-  if (payload.payout_method === 'gcash') {
-    if (!payload.gcash_name) return 'GCash account name is required.'
-    if (!payload.gcash_number) return 'GCash number is required.'
-  }
-  if (payload.payout_method === 'manual' && !payload.notes) {
-    return 'Please add admin notes for manual payout instructions.'
-  }
-  if (payload.payout_email && !/^\S+@\S+\.\S+$/.test(payload.payout_email)) {
-    return 'Please enter a valid payout email.'
-  }
-  return ''
+  return validateSellerPayoutSettingsRow(payload)
 }
 
 async function requireSeller(userId) {
@@ -114,6 +102,20 @@ export async function PUT(request) {
 
   const body = await request.json().catch(() => ({}))
   const cleaned = clean(body)
+
+  const { data: existing } = await supabase
+    .from('seller_payout_settings')
+    .select('*')
+    .eq('seller_user_id', user.id)
+    .maybeSingle()
+
+  if (cleaned.payout_method === 'bank' && !cleaned.account_number && existing?.account_number) {
+    cleaned.account_number = existing.account_number
+  }
+  if (cleaned.payout_method === 'gcash' && !cleaned.gcash_number && existing?.gcash_number) {
+    cleaned.gcash_number = existing.gcash_number
+  }
+
   const validationError = validate(cleaned)
   if (validationError) return NextResponse.json({ error: validationError }, { status: 400 })
   const payload = { seller_user_id: user.id, ...cleaned }

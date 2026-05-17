@@ -22,7 +22,7 @@ import {
   TbPhoto,
 } from 'react-icons/tb'
 import styles from './orders.module.css'
-import BodyPortal from '@/components/ui/Modal/BodyPortal'
+import { createPortal } from 'react-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase/client'
 import { formatCount } from '@/shared/utils/formatCount'
@@ -1061,8 +1061,7 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
         </table>
       </div>
 
-      {selectedOrder && (
-        <BodyPortal>
+      {selectedOrder && typeof document !== 'undefined' && createPortal(
         <div
           className={styles.modalOverlay}
           role="dialog"
@@ -1417,11 +1416,11 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
             </div>
           </div>
         </div>
-        </BodyPortal>
+        ,
+        document.body
       )}
 
-      {showUpdateStatus && orderForUpdateStatus && (
-        <BodyPortal>
+      {showUpdateStatus && orderForUpdateStatus && typeof document !== 'undefined' && createPortal(
         <div
           className={styles.updateStatusWrap}
           role="dialog"
@@ -1504,11 +1503,11 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
             </div>
           </div>
         </div>
-        </BodyPortal>
+        ,
+        document.body
       )}
 
-      {cancelUnpaidOrder && (
-        <BodyPortal>
+      {cancelUnpaidOrder && typeof document !== 'undefined' && createPortal(
         <div
           className={styles.updateStatusWrap}
           role="dialog"
@@ -1562,11 +1561,11 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
             </div>
           </div>
         </div>
-        </BodyPortal>
+        ,
+        document.body
       )}
 
-      {declineOrder && (
-        <BodyPortal>
+      {declineOrder && typeof document !== 'undefined' && createPortal(
         <div
           className={styles.updateStatusWrap}
           role="dialog"
@@ -1619,11 +1618,11 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
             </div>
           </div>
         </div>
-        </BodyPortal>
+        ,
+        document.body
       )}
 
-      {previewAttachment && (
-        <BodyPortal>
+      {previewAttachment && typeof document !== 'undefined' && createPortal(
         <div
           className={styles.modalOverlay}
           role="dialog"
@@ -1683,7 +1682,8 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
             </div>
           </div>
         </div>
-        </BodyPortal>
+        ,
+        document.body
       )}
     </div>
   )

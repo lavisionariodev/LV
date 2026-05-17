@@ -53,7 +53,6 @@ import {
 } from '@/lib/seller-listings/pendingChanges'
 import { formatCount } from '@/shared/utils/formatCount'
 import { useDebouncedEffect } from '@/shared/hooks'
-import BodyPortal from '@/components/ui/Modal/BodyPortal'
 import { readEnum, readString, replaceUrlQuery } from '@/shared/utils/queryParams'
 
 const ARCHIVE_PATH = '/seller/products/archive'
@@ -458,6 +457,7 @@ function updatesPendingSubmittedAt(product) {
 
 function SubmittedUpdateViewModal({ product, onClose, onDismissRequest }) {
   if (!product) return null
+  if (typeof document === 'undefined') return null
 
   const status = submittedUpdateStatusLabel(product)
   const isRejected = Boolean(product.stagedRejectionReason?.trim())
@@ -465,8 +465,7 @@ function SubmittedUpdateViewModal({ product, onClose, onDismissRequest }) {
   const submittedAt = updatesPendingSubmittedAt(product)
   const canDismiss = Boolean(onDismissRequest)
 
-  return (
-    <BodyPortal>
+  return createPortal(
       <div
         className={styles.productModalOverlay}
         onClick={(e) => {
@@ -562,7 +561,8 @@ function SubmittedUpdateViewModal({ product, onClose, onDismissRequest }) {
           </div>
         </div>
       </div>
-    </BodyPortal>
+    ,
+    document.body
   )
 }
 
@@ -1519,8 +1519,7 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
         )}
       </section>
 
-      {selectedProduct && modalMode && (
-        <BodyPortal>
+      {selectedProduct && modalMode && typeof document !== 'undefined' && createPortal(
         <div
           className={styles.productModalOverlay}
           onClick={(e) => {
@@ -1779,11 +1778,11 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
             </div>
           </div>
         </div>
-        </BodyPortal>
+        ,
+        document.body
       )}
 
-      {productPendingRemoval && (
-        <BodyPortal>
+      {productPendingRemoval && typeof document !== 'undefined' && createPortal(
         <div
           className={styles.removeConfirmOverlay}
           onClick={(e) => {
@@ -1836,7 +1835,8 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
             </div>
           </div>
         </div>
-        </BodyPortal>
+        ,
+        document.body
       )}
       <SubmittedUpdateViewModal
         product={submissionViewProduct}
@@ -1848,8 +1848,8 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
         }
       />
 
-      {productPendingCancel ? (
-        <BodyPortal>
+      {productPendingCancel && typeof document !== 'undefined'
+        ? createPortal(
         <div
           className={styles.removeConfirmOverlay}
           onClick={(e) => {
@@ -1909,9 +1909,10 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
               </div>
             </div>
           </div>
-        </div>
-        </BodyPortal>
-      ) : null}
+        </div>,
+        document.body
+        )
+      : null}
     </div>
   )
 }

@@ -860,7 +860,7 @@ export default function SellerSettingsProvider({ children }) {
       if (!payoutForm.gcashNumber.trim()) return 'GCash number is required.'
     }
     if (payoutForm.payoutMethod === 'manual' && !payoutForm.notes.trim()) {
-      return 'Please add admin notes for manual payout instructions.'
+      return 'Please add payout instructions for manual payout.'
     }
     if (payoutForm.payoutEmail.trim() && !/^\S+@\S+\.\S+$/.test(payoutForm.payoutEmail.trim())) {
       return 'Please enter a valid payout email.'

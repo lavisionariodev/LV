@@ -1,8 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import styles from './Logout.module.css'
-import BodyPortal from './BodyPortal'
 import { LuLogOut } from 'react-icons/lu'
 
 export default function Logout({ open, onConfirm, onCancel }) {
@@ -28,11 +28,11 @@ export default function Logout({ open, onConfirm, onCancel }) {
   }, [isLoggingOut, onConfirm])
 
   if (!open) return null
+  if (typeof document === 'undefined') return null
 
   const stop = (e) => e.stopPropagation()
 
-  return (
-    <BodyPortal>
+  return createPortal(
       <div
         className={styles.overlay}
         role="dialog"
@@ -60,7 +60,7 @@ export default function Logout({ open, onConfirm, onCancel }) {
           </button>
         </div>
       </div>
-    </div>
-    </BodyPortal>
+    </div>,
+    document.body
   )
 }

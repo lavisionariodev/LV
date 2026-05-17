@@ -5,7 +5,6 @@ import { useMemo } from 'react'
 import { TbChartLine, TbCurrencyPeso, TbUsers, TbChartBar } from 'react-icons/tb'
 import styles from './analytics.module.css'
 import { useSellerAnalyticsData } from '@/lib/seller/useSellerAnalyticsData'
-import SellerAnalyticsLoadError from './SellerAnalyticsLoadError'
 import { formatPhpWholeAmount } from '@/lib/cart/formatPhp'
 import {
   listingsApprovedCount,
@@ -83,7 +82,14 @@ export default function SellerAnalyticsPage() {
   }
 
   if (error) {
-    return <SellerAnalyticsLoadError onRetry={() => reload()} />
+    return (
+      <div className={styles.pageWrap} role="alert">
+        <p className={styles.pageError}>Couldn&apos;t load analytics.</p>
+        <button type="button" className={styles.pageRetryBtn} onClick={() => reload()}>
+          Try again
+        </button>
+      </div>
+    )
   }
 
   return (

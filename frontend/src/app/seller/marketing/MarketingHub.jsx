@@ -13,7 +13,7 @@ import {
   YAxis,
 } from 'recharts'
 import styles from './marketing.module.css'
-import BodyPortal from '@/components/ui/Modal/BodyPortal'
+import { createPortal } from 'react-dom'
 import { Toast } from '@/components/ui'
 
 function StatusPill({ status }) {
@@ -107,9 +107,9 @@ function ConversionBars() {
 
 function Drawer({ open, title, onClose, children }) {
   if (!open) return null
+  if (typeof document === 'undefined') return null
 
-  return (
-    <BodyPortal>
+  return createPortal(
     <div className={styles.drawerOverlay} role="dialog" aria-modal="true" onClick={onClose}>
       <div className={styles.drawer} onClick={(e) => e.stopPropagation()}>
         <div className={styles.drawerHeader}>
@@ -120,8 +120,8 @@ function Drawer({ open, title, onClose, children }) {
         </div>
         <div className={styles.drawerBody}>{children}</div>
       </div>
-    </div>
-    </BodyPortal>
+    </div>,
+    document.body
   )
 }
 

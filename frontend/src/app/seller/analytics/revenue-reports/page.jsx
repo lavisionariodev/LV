@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { TbCurrencyPeso, TbDownload } from 'react-icons/tb'
 import styles from '../analytics.module.css'
 import { useSellerAnalyticsData } from '@/lib/seller/useSellerAnalyticsData'
-import SellerAnalyticsLoadError from '../SellerAnalyticsLoadError'
 import {
   averagePaidBookingValueLastNMonths,
   bestMonthLabelLastNMonths,
@@ -13,8 +12,9 @@ import {
   revenueThisCalendarMonth,
   revenuePreviousCalendarMonth,
 } from '@/lib/seller/sellerOrderAnalytics'
-import SellerWithdrawPanel from '../SellerWithdrawPanel'
-import { formatPhpWholeAmount } from '@/lib/cart/formatPhp'
+import Link from 'next/link'
+import { formatPhpAmount, formatPhpWholeAmount } from '@/lib/cart/formatPhp'
+import { formatSellerLedgerEntry } from '@/lib/payments/walletLedgerDisplay'
 
 const REVENUE_SUMMARY_SOFT = [
   styles.summaryCardSoftGreen,
@@ -22,6 +22,57 @@ const REVENUE_SUMMARY_SOFT = [
   styles.summaryCardSoftBlue,
   styles.summaryCardSoftAmber,
 ]
+
+function formatLedgerDate(value) {
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' })
+}
+
+function formatLedgerAmount(row) {
+  const n = Number(row.displayAmount) || 0
+  const formatted = formatPhpAmount(Math.abs(n))
+  if (n > 0) return { text: `+${formatted}`, sign: row.amountSign }
+  if (n < 0) return { text: `−${formatted}`, sign: row.amountSign }
+  return { text: formatted, sign: row.amountSign }
+}
+
+function WalletLedgerActivityList({ entries }) {
+  return (
+    <ul className={styles.ledgerActivityList}>
+      {entries.map((entry) => {
+        const row = formatSellerLedgerEntry(entry)
+        const amt = formatLedgerAmount(row)
+        const amountClass =
+          amt.sign === 'negative'
+            ? styles.ledgerAmountNegative
+            : amt.sign === 'positive'
+              ? styles.ledgerAmountPositive
+              : styles.ledgerAmountPending
+
+        return (
+          <li key={entry.id} className={styles.ledgerActivityItem}>
+            <div className={styles.ledgerActivityMain}>
+              <span className={styles.ledgerTypeBadge}>{row.label}</span>
+              <p className={styles.ledgerDescription}>{row.description}</p>
+              <time className={styles.ledgerDate} dateTime={entry.createdAt || undefined}>
+                {formatLedgerDate(entry.createdAt)}
+              </time>
+            </div>
+            <div className={styles.ledgerActivityAside}>
+              <span className={`${styles.ledgerAmount} ${amountClass}`}>{amt.text}</span>
+              {row.orderId ? (
+                <Link href={`/seller/orders?orderId=${encodeURIComponent(row.orderId)}`} className={styles.ledgerOrderLink}>
+                  View order
+                </Link>
+              ) : null}
+            </div>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
 
 function SellerAnalyticsRevenueReportsSkeleton() {
   return (
@@ -110,7 +161,14 @@ export default function SellerAnalyticsRevenueReportsPage() {
   }
 
   if (error) {
-    return <SellerAnalyticsLoadError onRetry={() => reload()} />
+    return (
+      <div className={styles.pageWrap} role="alert">
+        <p className={styles.pageError}>Couldn&apos;t load analytics.</p>
+        <button type="button" className={styles.pageRetryBtn} onClick={() => reload()}>
+          Try again
+        </button>
+      </div>
+    )
   }
 
   return (
@@ -273,35 +331,37 @@ export default function SellerAnalyticsRevenueReportsPage() {
       ) : null}
 
       {ledgerEntries.length > 0 ? (
-        <section className={styles.chartCard} aria-label="Wallet ledger history">
+        <section className={styles.chartCard} aria-label="Recent wallet activity">
           <div className={styles.chartHeader}>
             <div className={styles.chartTitleGroup}>
-              <h2 className={styles.chartTitle}>Wallet ledger</h2>
-              <p className={styles.chartSubtitle}>Recent wallet movements tied to orders, refunds, and payouts.</p>
+              <h2 className={styles.chartTitle}>Recent wallet activity</h2>
+              <p className={styles.chartSubtitle}>
+                How payments move from buyer checkout to escrow, your wallet, and withdrawals.
+              </p>
             </div>
+            <Link href="/seller/wallet" className={styles.downloadButton}>
+              Full wallet
+            </Link>
           </div>
           <div className={styles.chartBody}>
-            <ul className={styles.chartLegend}>
-              {ledgerEntries.map((entry) => (
-                <li key={entry.id} className={styles.legendItem}>
-                  <span className={styles.legendLabel}>
-                    {entry.entryType} · {formatPhpWholeAmount(entry.amountPhp || 0)}
-                    {entry.orderId ? ` · order ${entry.orderId}` : ''}
-                    {entry.createdAt
-                      ? ` · ${new Date(entry.createdAt).toLocaleString('en-PH', {
-                          dateStyle: 'medium',
-                          timeStyle: 'short',
-                        })}`
-                      : ''}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <WalletLedgerActivityList entries={ledgerEntries} />
           </div>
         </section>
       ) : null}
 
-      <SellerWithdrawPanel />
+      <section className={styles.chartCard} aria-label="Seller wallet">
+        <div className={styles.chartHeader}>
+          <div className={styles.chartTitleGroup}>
+            <h2 className={styles.chartTitle}>Withdrawals & wallet</h2>
+            <p className={styles.chartSubtitle}>
+              View balances, transaction history, and withdraw funds after admin release.
+            </p>
+          </div>
+          <Link href="/seller/wallet" className={styles.downloadButton}>
+            Open wallet
+          </Link>
+        </div>
+      </section>
     </div>
   )
 }
