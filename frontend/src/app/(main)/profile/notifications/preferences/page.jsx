@@ -5,12 +5,12 @@ import {
   BUYER_NOTIFICATION_BUCKETS,
   defaultBucketChannels,
   mergeBuyerNotificationPreferences,
+  NOTIFICATION_PREFERENCE_CHANNELS,
 } from '@/lib/notifications/preferenceSchema'
 import {
   fetchBuyerNotificationPreferences,
   saveBuyerNotificationPreferences,
 } from '@/lib/notifications/preferencesClient'
-import { NOTIFICATION_PREFERENCE_CHANNELS } from '@/lib/notifications/notificationPreferenceChannels'
 import { NotificationPrefSwitch } from '@/lib/notifications/NotificationPrefSwitch'
 import { useNotificationPreferences } from '@/lib/notifications/useNotificationPreferences'
 import profileStyles from '@/app/(main)/profile/profile.module.css'

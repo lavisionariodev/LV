@@ -3,16 +3,46 @@
  * Used by the seller dashboard and analytics routes.
  */
 
-import { hasPendingSellerChanges, sellerShowsInUpdatesPending } from '@/lib/seller-listings/pendingChanges'
-import { formatPhpWholeAmount } from '@/lib/cart/formatPhp'
-import {
-  fulfillmentStatus,
-  orderIsPaid,
-  pendingFulfillmentCount,
-  resolvePaymentStatus,
-} from '@/lib/seller/sellerOrderPaymentStatus'
+import { sellerShowsInUpdatesPending } from '../seller-listings/pendingChanges.js'
+import { formatPhpWholeAmount } from '../cart/formatPhp.js'
 
-export { fulfillmentStatus, orderIsPaid, pendingFulfillmentCount, resolvePaymentStatus }
+/**
+ * Payment and fulfillment helpers for seller order aggregates (no app path aliases).
+ */
+
+/**
+ * @param {{ payment_status?: string|null, status?: string|null }} row
+ * @returns {string}
+ */
+export function resolvePaymentStatus(row) {
+  const ps = row.payment_status
+  if (ps) return String(ps).toLowerCase()
+  const st = row.status
+  if (st === 'paid') return 'paid'
+  if (st === 'failed') return 'failed'
+  return 'unpaid'
+}
+
+/**
+ * @param {{ payment_status?: string|null, status?: string|null }} row
+ */
+export function orderIsPaid(row) {
+  return resolvePaymentStatus(row) === 'paid'
+}
+
+/**
+ * @param {{ fulfillment_status?: string|null }} row
+ */
+export function fulfillmentStatus(row) {
+  return String(row.fulfillment_status || 'pending').toLowerCase()
+}
+
+/**
+ * @param {Array<{ payment_status?: string|null, status?: string|null, fulfillment_status?: string|null }>} orders
+ */
+export function pendingFulfillmentCount(orders) {
+  return orders.filter((o) => orderIsPaid(o) && fulfillmentStatus(o) === 'pending').length
+}
 
 /** @typedef {{ id: string, buyer_id?: string|null, order_number?: string|null, created_at: string, preferred_date?: string|null, fulfillment_status?: string|null, payment_status?: string|null, status?: string|null, subtotal?: number|null, refund_status?: string|null, refund_requested_at?: string|null, contact_name?: string|null, order_items?: { name?: string|null, quantity?: number|null }[]|null }} SellerOrderRow */
 

@@ -1,7 +1,61 @@
 import { createHash } from 'crypto'
-import { getAccessTokenSessionId } from '@/lib/auth/accessToken'
-import { describeUserAgent } from '@/lib/auth/describeUserAgent'
 import { getClientIp } from '@/lib/rate-limit/memoryRateLimit'
+
+/**
+ * @param {string | null | undefined} accessToken
+ * @returns {string | null}
+ */
+function getAccessTokenSessionId(accessToken) {
+  if (!accessToken || typeof accessToken !== 'string') return null
+
+  const parts = accessToken.split('.')
+  if (parts.length < 2) return null
+
+  try {
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=')
+    const payload = JSON.parse(atob(padded))
+    return typeof payload.session_id === 'string' && payload.session_id.trim()
+      ? payload.session_id.trim()
+      : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * @param {string | null | undefined} userAgent
+ * @returns {string}
+ */
+function describeUserAgent(userAgent) {
+  const ua = String(userAgent || '').trim()
+  if (!ua) return 'Unknown browser'
+
+  const isMobile = /Mobile|Android|iPhone|iPad|iPod/i.test(ua)
+  const platform = /iPhone|iPad|iPod/i.test(ua)
+    ? 'iOS'
+    : /Android/i.test(ua)
+      ? 'Android'
+      : /Windows/i.test(ua)
+        ? 'Windows'
+        : /Mac OS X|Macintosh/i.test(ua)
+          ? 'macOS'
+          : /Linux/i.test(ua)
+            ? 'Linux'
+            : 'Unknown platform'
+
+  const browser = /Edg\//i.test(ua)
+    ? 'Edge'
+    : /Chrome\//i.test(ua) && !/Edg\//i.test(ua)
+      ? 'Chrome'
+      : /Firefox\//i.test(ua)
+        ? 'Firefox'
+        : /Safari\//i.test(ua) && !/Chrome\//i.test(ua)
+          ? 'Safari'
+          : 'Browser'
+
+  return isMobile ? `${browser} on ${platform} (mobile)` : `${browser} on ${platform}`
+}
 
 /**
  * @param {import('@supabase/supabase-js').Session | null | undefined} session

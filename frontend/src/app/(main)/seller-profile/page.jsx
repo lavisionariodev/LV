@@ -12,7 +12,7 @@ import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/contexts/ToastContext'
 import ContactSellerModal from '@/components/ui/Modal/ContactSellerModal'
-import { providerServiceAggPairSegments } from '@/lib/ratings/providerServiceAggPairSegments'
+import { providerServiceAggPairSegments } from '@/lib/ratings/listingRatingAggregates'
 import { formatPhpWholeAmount } from '@/lib/cart/formatPhp'
 import styles from './seller-profile.module.css'
 

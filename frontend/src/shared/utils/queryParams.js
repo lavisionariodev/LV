@@ -19,11 +19,11 @@ export function readInt(searchParams, key, defaultValue) {
   return Number.isFinite(n) ? n : defaultValue
 }
 
-export function toMutableParams(searchParams) {
+function toMutableParams(searchParams) {
   return new URLSearchParams(searchParams?.toString?.() || '')
 }
 
-export function setParam(params, key, value, { omitIf = undefined } = {}) {
+function setParam(params, key, value, { omitIf = undefined } = {}) {
   if (value == null) {
     params.delete(key)
     return

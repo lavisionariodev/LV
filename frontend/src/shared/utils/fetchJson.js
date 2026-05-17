@@ -2,7 +2,7 @@
  * Parse JSON from a fetch Response; returns null when the body is empty or invalid.
  * @param {Response} res
  */
-export async function parseJsonResponse(res) {
+async function parseJsonResponse(res) {
   return res.json().catch(() => null)
 }
 

@@ -6,6 +6,11 @@ export const BUYER_NOTIFICATION_BUCKETS = ['service', 'payment', 'reminder', 'ac
 
 export const NOTIFICATION_CHANNELS = ['push', 'email']
 
+export const NOTIFICATION_PREFERENCE_CHANNELS = Object.freeze([
+  { id: 'push', label: 'In-app', hint: 'Notification inbox' },
+  { id: 'email', label: 'Email', hint: null },
+])
+
 /** @returns {{ push: boolean, email: boolean }} */
 export function defaultBucketChannels() {
   return { push: true, email: true }

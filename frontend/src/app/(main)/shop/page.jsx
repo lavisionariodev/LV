@@ -18,7 +18,7 @@ import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/contexts/ToastContext'
 import { formatPhpAmount } from '@/lib/cart/formatPhp'
-import { providerServiceAggPairSegments } from '@/lib/ratings/providerServiceAggPairSegments'
+import { providerServiceAggPairSegments } from '@/lib/ratings/listingRatingAggregates'
 import styles from './shop.module.css'
 
 function serviceLabelFromId(serviceId) {

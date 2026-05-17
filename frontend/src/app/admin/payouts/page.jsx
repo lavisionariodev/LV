@@ -7,7 +7,7 @@ import { TbCreditCardPay, TbPlayerPause, TbX } from 'react-icons/tb'
 import { LuSettings2 } from 'react-icons/lu'
 
 import { readEnum, readInt, readString, replaceUrlQuery } from '@/shared/utils/queryParams'
-import { useDebouncedEffect } from '@/shared/hooks/useDebouncedEffect'
+import { useDebouncedEffect } from '@/shared/hooks'
 import {
   formatPHP,
   formatDateRangeLabel,

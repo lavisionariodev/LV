@@ -7,8 +7,8 @@ import {
   insertFavorite as supabaseInsertFavorite,
   deleteFavorite as supabaseDeleteFavorite,
   deleteFavoriteByListing as supabaseDeleteByListing,
+  buildFavoriteInsertFromListing,
 } from '@/lib/favorites/supabaseFavorites'
-import { buildFavoriteInsertFromListing } from '@/lib/favorites/fromListing'
 import { useAuth } from '@/contexts/AuthContext'
 
 const FavoritesContext = createContext(null)

@@ -11,13 +11,13 @@ import { getOAuthRedirectUrl, linkOAuthIdentity, unlinkOAuthIdentity } from '@/l
 import {
   defaultBucketChannels,
   mergeSellerNotificationPreferences,
+  NOTIFICATION_PREFERENCE_CHANNELS,
   SELLER_NOTIFICATION_BUCKETS,
 } from '@/lib/notifications/preferenceSchema'
 import {
   fetchSellerNotificationPreferences,
   saveSellerNotificationPreferences,
 } from '@/lib/notifications/preferencesClient'
-import { NOTIFICATION_PREFERENCE_CHANNELS } from '@/lib/notifications/notificationPreferenceChannels'
 import { NotificationPrefSwitch } from '@/lib/notifications/NotificationPrefSwitch'
 import { useNotificationPreferences } from '@/lib/notifications/useNotificationPreferences'
 import {
