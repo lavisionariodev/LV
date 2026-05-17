@@ -1,10 +1,9 @@
+import { isUuidLike } from '@/shared/utils'
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireActiveBuyerApiUser } from '@/lib/auth/requireApiUser'
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
 import { getClientIp, takeToken } from '@/lib/rate-limit/memoryRateLimit'
-import { isUuidLike } from '@/shared/utils/uuidLike'
-
 const ALLOWED_RATING_MIN = 1
 const ALLOWED_RATING_MAX = 5
 const MAX_REVIEW_TEXT_CHARS = 2000

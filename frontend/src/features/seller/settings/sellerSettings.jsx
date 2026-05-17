@@ -1,5 +1,6 @@
 'use client'
 
+import { resolveStoredAvatar, shouldUseUnoptimizedAvatarSrc } from '@/shared/utils'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
@@ -31,7 +32,6 @@ import {
   validateSellerTagline,
 } from '@/lib/sellers/client'
 import { normalizeSellerSocialLinks, validateSellerSocialLinks } from '@/lib/sellers/socialLinks'
-import { resolveStoredAvatar, shouldUseUnoptimizedAvatarSrc } from '@/shared/utils/avatarImage'
 import { useMediaQuery } from '@/shared/hooks'
 
 async function fetchCurrentSellerProfile() {

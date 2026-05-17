@@ -1,7 +1,7 @@
+import { computeCommissionSnapshot } from '@/shared/utils'
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireAdminApiUser } from '@/lib/auth/requireAdminRoute'
-import { computeCommissionSnapshot } from '@/shared/utils/commissionSnapshot'
 import { recordCommissionChangeLog } from '@/lib/admin/commissionChangeLog'
 
 /**

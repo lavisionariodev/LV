@@ -258,6 +258,78 @@ a.btnSecondary {
   color: #3730a3;
 }
 
+/* ── Pagination ── */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-top: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 0.5rem;
+}
+
+.paginationControls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.pageBtn {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid #d4dde6;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+  transition: border-color 0.14s, background 0.14s, color 0.14s;
+  white-space: nowrap;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pageBtn:hover:not(:disabled) {
+    border-color: #94a3b8;
+    background: #f1f5f9;
+  }
+}
+
+.pageBtnActive {
+  color: #102820;
+  border-color: #102820;
+  font-weight: 700;
+  background: #f0f7f4;
+}
+
+.pageBtnDisabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.pageEllipsis {
+  font-size: 13px;
+  color: #94a3b8;
+  padding: 0 6px;
+  line-height: 28px;
+}
+
+.paginationInfo {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.paginationInfo strong {
+  color: #102820;
+  font-weight: 700;
+}
+
 .typeAdjustment {
   background: #fef3c7;
   color: #92400e;
@@ -308,6 +380,11 @@ a.btnSecondary {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+.cellType,
+.cellAmount {
+  vertical-align: middle;
 }
 
 .modalOverlay {
@@ -503,12 +580,26 @@ a.btnSecondary {
 }
 
 .walletSkMobileCard {
-  padding: 1rem 1.1rem;
-  border-bottom: 1px solid #eef2f6;
+  padding: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  background: #fff;
 }
 
 .walletSkMobileCard:last-child {
-  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.walletSkMobileCardHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #f8f7f5;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .walletSkMobileCardTop {
@@ -529,7 +620,7 @@ a.btnSecondary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .dataTableWrap {
+  .dataTableWrap:not(.txTableWrap) {
     display: none;
   }
 
@@ -543,6 +634,7 @@ a.btnSecondary {
 
   .walletSkMobileOnly {
     display: block;
+    padding: 0 1rem 1rem;
   }
 
   .walletSkActionBtn,
@@ -550,6 +642,103 @@ a.btnSecondary {
     flex: 1;
     min-width: 0;
     width: auto;
+  }
+
+  /* Transactions table → card list (matches seller orders mobile pattern) */
+  .txTableWrap {
+    overflow-x: visible;
+    padding: 0 1rem 1rem;
+    background: transparent;
+    border: none;
+  }
+
+  .txTableWrap .dataTable {
+    display: block;
+  }
+
+  .txTableWrap .dataTable thead {
+    display: none;
+  }
+
+  .txTableWrap .dataTable tbody {
+    display: block;
+  }
+
+  .txTableWrap .dataTable tr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    padding: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+  }
+
+  .txTableWrap .dataTable tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .txTableWrap .dataTable td {
+    display: block;
+    padding: 0.6rem 1rem;
+    font-size: 0.875rem;
+    border: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    color: #1f2937;
+  }
+
+  .txTableWrap .dataTable td:last-child {
+    border-bottom: none;
+  }
+
+  .txTableWrap .dataTable td::before {
+    content: attr(data-label);
+    display: block;
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6b7280;
+    margin-bottom: 0.2rem;
+  }
+
+  .txTableWrap .dataTable td[data-label='Type'] {
+    grid-column: 1;
+    grid-row: 1;
+    background: #f8f7f5;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .txTableWrap .dataTable td[data-label='Type']::before {
+    display: none;
+  }
+
+  .txTableWrap .dataTable td[data-label='Amount'] {
+    grid-column: 2;
+    grid-row: 1;
+    background: #f8f7f5;
+    padding: 0.75rem 1rem 0.75rem 0;
+    border-bottom: 1px solid #e5e7eb;
+    align-self: center;
+    text-align: right;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .txTableWrap .dataTable td[data-label='Amount']::before {
+    display: none;
+  }
+
+  .txTableWrap .dataTable td[data-label='Description'],
+  .txTableWrap .dataTable td[data-label='Date'],
+  .txTableWrap .dataTable td[data-label='Status'] {
+    grid-column: 1 / -1;
   }
 }
 
@@ -567,5 +756,27 @@ a.btnSecondary {
   .btnSecondary {
     justify-content: center;
     width: 100%;
+  }
+
+  .txTableWrap {
+    padding: 0 0.75rem 0.85rem;
+  }
+
+  .txTableWrap .dataTable tr {
+    margin-bottom: 0.85rem;
+  }
+
+  .txTableWrap .dataTable td {
+    padding: 0.5rem 0.85rem;
+    font-size: 0.85rem;
+  }
+
+  .txTableWrap .dataTable td[data-label='Type'],
+  .txTableWrap .dataTable td[data-label='Amount'] {
+    padding: 0.65rem 0.75rem;
+  }
+
+  .txTableWrap .dataTable td::before {
+    font-size: 0.65rem;
   }
 }

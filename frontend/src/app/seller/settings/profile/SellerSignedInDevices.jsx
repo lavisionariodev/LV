@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   fetchSellerPortalSessions,
   registerSellerPortalSession,
@@ -8,6 +8,39 @@ import {
 } from '@/lib/auth/sellerPortalSessionsClient'
 import { useAuthToast } from '@/contexts/ToastContext'
 import styles from '@/app/seller/settings/settings.module.css'
+
+const ROWS_PER_PAGE = 10
+
+function buildVisiblePages(currentPage, totalPages) {
+  if (totalPages <= 0) return []
+  return Array.from({ length: totalPages }, (_, i) => i + 1)
+    .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+    .reduce((acc, p, idx, arr) => {
+      if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...')
+      acc.push(p)
+      return acc
+    }, [])
+}
+
+function SessionsPagination({ currentPage, totalPages, totalItems, onPageChange }) {
+  if (totalPages <= 1 || totalItems === 0) return null
+  const start = (currentPage - 1) * ROWS_PER_PAGE + 1
+  const end = Math.min(currentPage * ROWS_PER_PAGE, totalItems)
+  return (
+    <div className={styles.settingsPagination}>
+      <div className={styles.settingsPaginationControls} role="navigation" aria-label="Signed-in browsers pagination">
+        <button type="button" className={`${styles.settingsPageBtn} ${currentPage === 1 ? styles.settingsPageBtnDisabled : ''}`} onClick={() => onPageChange(Math.max(1, currentPage - 1))} disabled={currentPage === 1}>‹ Previous</button>
+        {buildVisiblePages(currentPage, totalPages).map((p, idx) =>
+          p === '...' ? <span key={`e-${idx}`} className={styles.settingsPageEllipsis}>…</span> : (
+            <button key={p} type="button" className={`${styles.settingsPageBtn} ${currentPage === p ? styles.settingsPageBtnActive : ''}`} onClick={() => onPageChange(p)} aria-current={currentPage === p ? 'page' : undefined}>{p}</button>
+          ),
+        )}
+        <button type="button" className={`${styles.settingsPageBtn} ${currentPage === totalPages ? styles.settingsPageBtnDisabled : ''}`} onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages}>Next ›</button>
+      </div>
+      <p className={styles.settingsPaginationInfo}>Showing <strong>{start}–{end}</strong> of <strong>{totalItems}</strong> browsers</p>
+    </div>
+  )
+}
 
 /**
  * @param {string | null | undefined} value
@@ -50,6 +83,21 @@ export default function SellerSignedInDevices({ variant = 'settings' }) {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const totalPages = Math.ceil(sessions.length / ROWS_PER_PAGE) || 1
+  const paginatedSessions = useMemo(() => {
+    const start = (currentPage - 1) * ROWS_PER_PAGE
+    return sessions.slice(start, start + ROWS_PER_PAGE)
+  }, [sessions, currentPage])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [sessions.length])
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages)
+  }, [currentPage, totalPages])
 
   const refreshSessions = useCallback(async ({ showLoading = false } = {}) => {
     if (showLoading) {
@@ -130,15 +178,23 @@ export default function SellerSignedInDevices({ variant = 'settings' }) {
           No other devices are listed yet. Each device or network appears here after you open Seller Centre on it.
         </p>
       ) : (
-        sessions.map((session) => (
-          <div key={session.id} className={styles.sessionRow}>
-            <div className={styles.sessionRowMeta}>
-              <p className={styles.sessionDevice}>{session.deviceLabel}</p>
-              <p className={styles.sessionSeen}>Last active {formatLastSeen(session.lastSeenAt)}</p>
+        <>
+          {paginatedSessions.map((session) => (
+            <div key={session.id} className={styles.sessionRow}>
+              <div className={styles.sessionRowMeta}>
+                <p className={styles.sessionDevice}>{session.deviceLabel}</p>
+                <p className={styles.sessionSeen}>Last active {formatLastSeen(session.lastSeenAt)}</p>
+              </div>
+              {session.isCurrent ? <span className={styles.sessionBadge}>This device</span> : null}
             </div>
-            {session.isCurrent ? <span className={styles.sessionBadge}>This device</span> : null}
-          </div>
-        ))
+          ))}
+          <SessionsPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={sessions.length}
+            onPageChange={setCurrentPage}
+          />
+        </>
       )}
     </div>
   )

@@ -9,7 +9,6 @@ import { isRefundInFlight } from '@/lib/payments/orderMoneyState'
  * Seller responds to buyer pre-confirmation cancellation (refund pipeline).
  * - approve: creates PayMongo refund; sets processing + paymongo_refund_id (terminal completion via webhook).
  * - decline: restores paid booking.
- * - complete: deprecated — refund completion is automatic when PayMongo sends payment.refunded / payment.refund.updated (succeeded).
  */
 export async function POST(request) {
   const { user, supabaseAdmin, responseError } = await requireActiveSellerApiUser()
@@ -27,18 +26,8 @@ export async function POST(request) {
       { status: 400 },
     )
   }
-  if (!['approve', 'decline', 'complete'].includes(decision)) {
+  if (!['approve', 'decline'].includes(decision)) {
     return NextResponse.json({ error: 'Invalid action.' }, { status: 400 })
-  }
-
-  if (decision === 'complete') {
-    return NextResponse.json(
-      {
-        error:
-          'Refunds are completed automatically once confirmed by the payment provider. If a refund appears stuck, please contact support.',
-      },
-      { status: 410 },
-    )
   }
 
   const { data: order, error: orderErr } = await supabaseAdmin

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { GiReceiveMoney } from 'react-icons/gi'
 import { TbHistory, TbInfoCircle, TbWallet } from 'react-icons/tb'
@@ -51,6 +51,65 @@ function formatTxAmount(amount) {
 }
 
 const ORDER_LINK_TYPES = new Set(['ORDER_EARNING', 'REFUND', 'FEE'])
+const ROWS_PER_PAGE = 10
+
+function buildVisiblePages(currentPage, totalPages) {
+  if (totalPages <= 0) return []
+  return Array.from({ length: totalPages }, (_, i) => i + 1)
+    .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+    .reduce((acc, p, idx, arr) => {
+      if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...')
+      acc.push(p)
+      return acc
+    }, [])
+}
+
+function SellerPagination({ currentPage, totalPages, totalItems, onPageChange, itemLabel, ariaLabel }) {
+  if (totalPages <= 1 || totalItems === 0) return null
+  const start = (currentPage - 1) * ROWS_PER_PAGE + 1
+  const end = Math.min(currentPage * ROWS_PER_PAGE, totalItems)
+
+  return (
+    <div className={styles.pagination}>
+      <div className={styles.paginationControls} role="navigation" aria-label={ariaLabel}>
+        <button
+          type="button"
+          className={`${styles.pageBtn} ${currentPage === 1 ? styles.pageBtnDisabled : ''}`}
+          onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+          disabled={currentPage === 1}
+        >
+          ‹ Previous
+        </button>
+        {buildVisiblePages(currentPage, totalPages).map((p, idx) =>
+          p === '...' ? (
+            <span key={`ellipsis-${idx}`} className={styles.pageEllipsis}>…</span>
+          ) : (
+            <button
+              key={p}
+              type="button"
+              className={`${styles.pageBtn} ${currentPage === p ? styles.pageBtnActive : ''}`}
+              onClick={() => onPageChange(p)}
+              aria-current={currentPage === p ? 'page' : undefined}
+            >
+              {p}
+            </button>
+          ),
+        )}
+        <button
+          type="button"
+          className={`${styles.pageBtn} ${currentPage === totalPages ? styles.pageBtnDisabled : ''}`}
+          onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+          disabled={currentPage === totalPages}
+        >
+          Next ›
+        </button>
+      </div>
+      <p className={styles.paginationInfo}>
+        Showing <strong>{start}–{end}</strong> of <strong>{totalItems}</strong> {itemLabel}
+      </p>
+    </div>
+  )
+}
 
 function TransactionDescription({ tx }) {
   const orderId = tx?.orderId ? String(tx.orderId).trim() : ''
@@ -144,13 +203,17 @@ export function SellerWalletLoadingFallback() {
         <div className={styles.walletSkMobileOnly} aria-hidden>
           {Array.from({ length: 4 }).map((_, i) => (
             <article key={`tx-mob-${i}`} className={styles.walletSkMobileCard}>
-              <div className={styles.walletSkMobileCardTop}>
+              <div className={styles.walletSkMobileCardHeader}>
                 <span className={styles.walletSkBar} style={{ width: 72, height: 20, borderRadius: 999 }} />
                 <span className={styles.walletSkBar} style={{ width: 64, height: 14 }} />
               </div>
-              <span className={`${styles.walletSkBar} ${styles.walletSkMobileCardLine}`} />
-              <div className={styles.walletSkMobileCardTop} style={{ marginTop: 8 }}>
+              <div style={{ padding: '0.6rem 1rem' }}>
+                <span className={`${styles.walletSkBar} ${styles.walletSkMobileCardLine}`} />
+              </div>
+              <div style={{ padding: '0.6rem 1rem', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
                 <span className={styles.walletSkBar} style={{ width: '55%', height: 10 }} />
+              </div>
+              <div style={{ padding: '0.6rem 1rem', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
                 <span className={styles.walletSkBar} style={{ width: 56, height: 10 }} />
               </div>
             </article>
@@ -195,6 +258,36 @@ export default function WalletContent() {
   const [submitting, setSubmitting] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [amount, setAmount] = useState('')
+  const [txPage, setTxPage] = useState(1)
+  const [wdPage, setWdPage] = useState(1)
+
+  const txTotalPages = Math.ceil(transactions.length / ROWS_PER_PAGE) || 1
+  const paginatedTransactions = useMemo(() => {
+    const start = (txPage - 1) * ROWS_PER_PAGE
+    return transactions.slice(start, start + ROWS_PER_PAGE)
+  }, [transactions, txPage])
+
+  const wdTotalPages = Math.ceil(withdrawals.length / ROWS_PER_PAGE) || 1
+  const paginatedWithdrawals = useMemo(() => {
+    const start = (wdPage - 1) * ROWS_PER_PAGE
+    return withdrawals.slice(start, start + ROWS_PER_PAGE)
+  }, [withdrawals, wdPage])
+
+  useEffect(() => {
+    setTxPage(1)
+  }, [transactions.length])
+
+  useEffect(() => {
+    if (txPage > txTotalPages) setTxPage(txTotalPages)
+  }, [txPage, txTotalPages])
+
+  useEffect(() => {
+    setWdPage(1)
+  }, [withdrawals.length])
+
+  useEffect(() => {
+    if (wdPage > wdTotalPages) setWdPage(wdTotalPages)
+  }, [wdPage, wdTotalPages])
 
   const loadAll = useCallback(async () => {
     setLoading(true)
@@ -393,33 +486,35 @@ export default function WalletContent() {
           <p className={styles.emptyState}>No wallet transactions yet.</p>
         ) : (
           <>
-            <div className={styles.dataTableWrap}>
+            <div className={`${styles.dataTableWrap} ${styles.txTableWrap}`}>
               <table className={styles.dataTable}>
                 <thead>
                   <tr>
-                    <th>Date</th>
                     <th>Type</th>
-                    <th>Description</th>
                     <th>Amount</th>
+                    <th>Description</th>
+                    <th>Date</th>
                     <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {transactions.map((tx) => {
+                  {paginatedTransactions.map((tx) => {
                     const amt = formatTxAmount(tx.amount)
                     return (
-                      <tr key={tx.id}>
-                        <td>{formatDate(tx.date)}</td>
-                        <td>
+                      <tr key={tx.id} className={styles.txRow}>
+                        <td className={styles.cellType} data-label="Type">
                           <span className={`${styles.typeBadge} ${typeBadgeClass(tx.type)}`}>
                             {TX_TYPE_LABEL[tx.type] || tx.type}
                           </span>
                         </td>
-                        <td>
+                        <td className={`${styles.cellAmount} ${amt.className}`} data-label="Amount">
+                          {amt.text}
+                        </td>
+                        <td data-label="Description">
                           <TransactionDescription tx={tx} />
                         </td>
-                        <td className={amt.className}>{amt.text}</td>
-                        <td>
+                        <td data-label="Date">{formatDate(tx.date)}</td>
+                        <td data-label="Status">
                           <span className={styles.statusChip}>{tx.statusLabel || tx.status}</span>
                         </td>
                       </tr>
@@ -428,28 +523,14 @@ export default function WalletContent() {
                 </tbody>
               </table>
             </div>
-            <div className={styles.mobileCardList}>
-              {transactions.map((tx) => {
-                const amt = formatTxAmount(tx.amount)
-                return (
-                  <article key={tx.id} className={styles.mobileCard}>
-                    <div className={styles.mobileCardRow}>
-                      <span className={`${styles.typeBadge} ${typeBadgeClass(tx.type)}`}>
-                        {TX_TYPE_LABEL[tx.type] || tx.type}
-                      </span>
-                      <span className={amt.className}>{amt.text}</span>
-                    </div>
-                    <p className={styles.mobileCardRow}>
-                      <TransactionDescription tx={tx} />
-                    </p>
-                    <div className={styles.mobileCardRow}>
-                      <span>{formatDate(tx.date)}</span>
-                      <span className={styles.statusChip}>{tx.statusLabel || tx.status}</span>
-                    </div>
-                  </article>
-                )
-              })}
-            </div>
+            <SellerPagination
+              currentPage={txPage}
+              totalPages={txTotalPages}
+              totalItems={transactions.length}
+              onPageChange={setTxPage}
+              itemLabel="transactions"
+              ariaLabel="Wallet transactions pagination"
+            />
           </>
         )}
       </section>
@@ -479,7 +560,7 @@ export default function WalletContent() {
                   </tr>
                 </thead>
                 <tbody>
-                  {withdrawals.map((row) => (
+                  {paginatedWithdrawals.map((row) => (
                     <tr key={row.id}>
                       <td>{formatDate(row.createdAt)}</td>
                       <td>{formatPhpAmount(row.amountPhp)}</td>
@@ -496,7 +577,7 @@ export default function WalletContent() {
               </table>
             </div>
             <div className={styles.mobileCardList}>
-              {withdrawals.map((row) => (
+              {paginatedWithdrawals.map((row) => (
                 <article key={row.id} className={styles.mobileCard}>
                   <div className={styles.mobileCardRow}>
                     <strong>{formatPhpAmount(row.amountPhp)}</strong>
@@ -514,6 +595,14 @@ export default function WalletContent() {
                 </article>
               ))}
             </div>
+            <SellerPagination
+              currentPage={wdPage}
+              totalPages={wdTotalPages}
+              totalItems={withdrawals.length}
+              onPageChange={setWdPage}
+              itemLabel="withdrawals"
+              ariaLabel="Wallet withdrawals pagination"
+            />
           </>
         )}
       </section>

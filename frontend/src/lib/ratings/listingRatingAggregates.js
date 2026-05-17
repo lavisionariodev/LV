@@ -1,4 +1,4 @@
-import { isUuidLike } from '@/shared/utils/uuidLike'
+import { isUuidLike } from '@/shared/utils'
 
 /** API `pairs` segment and `aggregatesByPair` lookup key for listing-scoped ratings. */
 export function providerServiceAggPairSegments(listing) {

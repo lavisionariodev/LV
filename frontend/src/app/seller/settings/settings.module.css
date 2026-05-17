@@ -1871,6 +1871,66 @@
   width: 100%;
 }
 
+.settingsPagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0 0;
+  margin-top: 12px;
+  border-top: 1px solid var(--color-border);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.settingsPaginationControls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.settingsPageBtn {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.settingsPageBtnActive {
+  color: #102820;
+  border-color: #102820;
+  font-weight: 700;
+  background: #f0f7f4;
+}
+
+.settingsPageBtnDisabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.settingsPageEllipsis {
+  font-size: 13px;
+  color: #94a3b8;
+  padding: 0 6px;
+}
+
+.settingsPaginationInfo {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.settingsPaginationInfo strong {
+  color: #102820;
+  font-weight: 700;
+}
+
 .sessionRow {
   display: flex;
   align-items: center;

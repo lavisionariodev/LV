@@ -1,5 +1,6 @@
 'use client'
 
+import { shouldUseUnoptimizedAvatarSrc } from '@/shared/utils'
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -13,7 +14,67 @@ import {
 import styles from '../analytics/analytics.module.css'
 import reviewStyles from './reviews.module.css'
 import SellerPortalSelect from '../products/components/SellerPortalSelect'
-import { shouldUseUnoptimizedAvatarSrc } from '@/shared/utils/avatarImage'
+const ROWS_PER_PAGE = 10
+
+function buildVisiblePages(currentPage, totalPages) {
+  if (totalPages <= 0) return []
+  return Array.from({ length: totalPages }, (_, i) => i + 1)
+    .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+    .reduce((acc, p, idx, arr) => {
+      if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...')
+      acc.push(p)
+      return acc
+    }, [])
+}
+
+function SellerPagination({ currentPage, totalPages, totalItems, onPageChange, itemLabel, ariaLabel }) {
+  if (totalPages <= 1 || totalItems === 0) return null
+  const start = (currentPage - 1) * ROWS_PER_PAGE + 1
+  const end = Math.min(currentPage * ROWS_PER_PAGE, totalItems)
+
+  return (
+    <div className={reviewStyles.pagination}>
+      <div className={reviewStyles.paginationControls} role="navigation" aria-label={ariaLabel}>
+        <button
+          type="button"
+          className={`${reviewStyles.pageBtn} ${currentPage === 1 ? reviewStyles.pageBtnDisabled : ''}`}
+          onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+          disabled={currentPage === 1}
+        >
+          ‹ Previous
+        </button>
+        {buildVisiblePages(currentPage, totalPages).map((p, idx) =>
+          p === '...' ? (
+            <span key={`ellipsis-${idx}`} className={reviewStyles.pageEllipsis}>
+              …
+            </span>
+          ) : (
+            <button
+              key={p}
+              type="button"
+              className={`${reviewStyles.pageBtn} ${currentPage === p ? reviewStyles.pageBtnActive : ''}`}
+              onClick={() => onPageChange(p)}
+              aria-current={currentPage === p ? 'page' : undefined}
+            >
+              {p}
+            </button>
+          ),
+        )}
+        <button
+          type="button"
+          className={`${reviewStyles.pageBtn} ${currentPage === totalPages ? reviewStyles.pageBtnDisabled : ''}`}
+          onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+          disabled={currentPage === totalPages}
+        >
+          Next ›
+        </button>
+      </div>
+      <p className={reviewStyles.paginationInfo}>
+        Showing <strong>{start}–{end}</strong> of <strong>{totalItems}</strong> {itemLabel}
+      </p>
+    </div>
+  )
+}
 
 const RATING_FILTERS = [
   { id: 'all', label: 'All ratings' },
@@ -245,6 +306,7 @@ export default function SellerReviewsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [ratingFilter, setRatingFilter] = useState('all')
   const [serviceFilter, setServiceFilter] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
 
   useEffect(() => {
     let cancelled = false
@@ -339,6 +401,20 @@ export default function SellerReviewsPage() {
       return true
     })
   }, [reviews, searchQuery, ratingFilter, activeServiceFilter])
+
+  const reviewTotalPages = Math.ceil(filteredReviews.length / ROWS_PER_PAGE) || 1
+  const paginatedReviews = useMemo(() => {
+    const start = (currentPage - 1) * ROWS_PER_PAGE
+    return filteredReviews.slice(start, start + ROWS_PER_PAGE)
+  }, [filteredReviews, currentPage])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, ratingFilter, activeServiceFilter])
+
+  useEffect(() => {
+    if (currentPage > reviewTotalPages) setCurrentPage(reviewTotalPages)
+  }, [currentPage, reviewTotalPages])
 
   const trimmedQuery = searchQuery.trim()
   const showNoMatches =
@@ -481,8 +557,9 @@ export default function SellerReviewsPage() {
         ) : null}
 
         {!loading && !error && filteredReviews.length > 0 ? (
+          <>
           <div className={reviewStyles.reviewList}>
-            {filteredReviews.map((review) => (
+            {paginatedReviews.map((review) => (
               <article key={review.id} className={reviewStyles.reviewRow}>
                 <div className={reviewStyles.reviewHead}>
                   <div className={reviewStyles.reviewerBlock}>
@@ -549,6 +626,15 @@ export default function SellerReviewsPage() {
               </article>
             ))}
           </div>
+          <SellerPagination
+            currentPage={currentPage}
+            totalPages={reviewTotalPages}
+            totalItems={filteredReviews.length}
+            onPageChange={setCurrentPage}
+            itemLabel="reviews"
+            ariaLabel="Reviews list pagination"
+          />
+          </>
         ) : null}
       </section>
     </div>

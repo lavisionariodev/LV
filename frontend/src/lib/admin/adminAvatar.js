@@ -1,4 +1,4 @@
-import { pathFromAvatarsPublicUrl } from '@/shared/utils/avatarImage'
+import { pathFromAvatarsPublicUrl } from '@/shared/utils'
 
 const AVATARS_BUCKET = 'avatars'
 

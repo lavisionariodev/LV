@@ -1,11 +1,11 @@
 'use client'
 
+import { isUuidLike } from '@/shared/utils'
 import { useState, useMemo, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { fetchActiveShopListings, mergeShopListings } from '@/lib/shop-listings/client'
 import { fetchPublicSellerProfile, normalizeSellerSpecialties } from '@/lib/sellers/client'
 import { fetchActivePartnersDirectory, pickTopRatedSellerUserIdFromDirectory } from '@/lib/partners/client'
-import { isUuidLike } from '@/shared/utils/uuidLike'
 import { buildCartPayloadFromListing } from '@/lib/cart/fromListing'
 import { assertListingReadyForCart } from '@/lib/cart/bookNow'
 import { useCart } from '@/contexts/CartContext'

@@ -7,6 +7,39 @@ import { useSiteContent } from '@/lib/siteContent/client'
 import styles from './help.module.css'
 import { createPortal } from 'react-dom'
 
+const ROWS_PER_PAGE = 10
+
+function buildVisiblePages(currentPage, totalPages) {
+  if (totalPages <= 0) return []
+  return Array.from({ length: totalPages }, (_, i) => i + 1)
+    .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+    .reduce((acc, p, idx, arr) => {
+      if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...')
+      acc.push(p)
+      return acc
+    }, [])
+}
+
+function SellerPagination({ currentPage, totalPages, totalItems, onPageChange, itemLabel, ariaLabel }) {
+  if (totalPages <= 1 || totalItems === 0) return null
+  const start = (currentPage - 1) * ROWS_PER_PAGE + 1
+  const end = Math.min(currentPage * ROWS_PER_PAGE, totalItems)
+  return (
+    <div className={styles.pagination}>
+      <div className={styles.paginationControls} role="navigation" aria-label={ariaLabel}>
+        <button type="button" className={`${styles.pageBtn} ${currentPage === 1 ? styles.pageBtnDisabled : ''}`} onClick={() => onPageChange(Math.max(1, currentPage - 1))} disabled={currentPage === 1}>‹ Previous</button>
+        {buildVisiblePages(currentPage, totalPages).map((p, idx) =>
+          p === '...' ? <span key={`e-${idx}`} className={styles.pageEllipsis}>…</span> : (
+            <button key={p} type="button" className={`${styles.pageBtn} ${currentPage === p ? styles.pageBtnActive : ''}`} onClick={() => onPageChange(p)} aria-current={currentPage === p ? 'page' : undefined}>{p}</button>
+          ),
+        )}
+        <button type="button" className={`${styles.pageBtn} ${currentPage === totalPages ? styles.pageBtnDisabled : ''}`} onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages}>Next ›</button>
+      </div>
+      <p className={styles.paginationInfo}>Showing <strong>{start}–{end}</strong> of <strong>{totalItems}</strong> {itemLabel}</p>
+    </div>
+  )
+}
+
 const CATEGORY_TABS = [
   'Getting Started',
   'Bookings & Service Dates',
@@ -116,6 +149,8 @@ export default function SellerHelpPage() {
   const [isSubmittingEmail, setIsSubmittingEmail] = useState(false)
   const [supportRequests, setSupportRequests] = useState([])
   const [supportLoading, setSupportLoading] = useState(true)
+  const [faqPage, setFaqPage] = useState(1)
+  const [supportPage, setSupportPage] = useState(1)
 
   const faqByTab = useMemo(() => {
     const merged = { ...FAQ_BY_TAB }
@@ -187,6 +222,34 @@ export default function SellerHelpPage() {
       return haystack.includes(q)
     })
   }, [resolvedActiveTab, categoryTabs, faqByTab, query])
+
+  const faqTotalPages = Math.ceil(filteredFaqs.length / ROWS_PER_PAGE) || 1
+  const paginatedFaqs = useMemo(() => {
+    const start = (faqPage - 1) * ROWS_PER_PAGE
+    return filteredFaqs.slice(start, start + ROWS_PER_PAGE)
+  }, [filteredFaqs, faqPage])
+
+  const supportTotalPages = Math.ceil(supportRequests.length / ROWS_PER_PAGE) || 1
+  const paginatedSupportRequests = useMemo(() => {
+    const start = (supportPage - 1) * ROWS_PER_PAGE
+    return supportRequests.slice(start, start + ROWS_PER_PAGE)
+  }, [supportRequests, supportPage])
+
+  useEffect(() => {
+    setFaqPage(1)
+  }, [query, resolvedActiveTab])
+
+  useEffect(() => {
+    if (faqPage > faqTotalPages) setFaqPage(faqTotalPages)
+  }, [faqPage, faqTotalPages])
+
+  useEffect(() => {
+    setSupportPage(1)
+  }, [supportRequests.length])
+
+  useEffect(() => {
+    if (supportPage > supportTotalPages) setSupportPage(supportTotalPages)
+  }, [supportPage, supportTotalPages])
 
   const handleSendSupportEmail = async (e) => {
     e.preventDefault()
@@ -270,7 +333,7 @@ export default function SellerHelpPage() {
               {query.trim() ? 'Search results' : `${resolvedActiveTab} FAQs`}
             </h2>
             <div className={styles.faqAccordion}>
-              {filteredFaqs.map((item) => {
+              {paginatedFaqs.map((item) => {
                 const isOpen = Boolean(openFaqs[item.id])
                 return (
                   <article key={item.id} className={styles.faqItem}>
@@ -293,6 +356,14 @@ export default function SellerHelpPage() {
                 )
               })}
             </div>
+            <SellerPagination
+              currentPage={faqPage}
+              totalPages={faqTotalPages}
+              totalItems={filteredFaqs.length}
+              onPageChange={setFaqPage}
+              itemLabel="FAQs"
+              ariaLabel="FAQ list pagination"
+            />
           </div>
         </div>
 
@@ -305,17 +376,27 @@ export default function SellerHelpPage() {
             ) : supportRequests.length === 0 ? (
               <p className={styles.supportMeta}>No support requests yet.</p>
             ) : (
-              <ul className={styles.supportHistoryList}>
-                {supportRequests.map((request) => (
-                  <li key={request.id} className={styles.supportHistoryItem}>
-                    <p className={styles.supportHistorySubject}>{request.subject}</p>
-                    <p className={styles.supportHistoryMeta}>
-                      {request.status} · {new Date(request.created_at).toLocaleString('en-PH')}
-                    </p>
-                    <p className={styles.supportHistoryMessage}>{request.message}</p>
-                  </li>
-                ))}
-              </ul>
+              <>
+                <ul className={styles.supportHistoryList}>
+                  {paginatedSupportRequests.map((request) => (
+                    <li key={request.id} className={styles.supportHistoryItem}>
+                      <p className={styles.supportHistorySubject}>{request.subject}</p>
+                      <p className={styles.supportHistoryMeta}>
+                        {request.status} · {new Date(request.created_at).toLocaleString('en-PH')}
+                      </p>
+                      <p className={styles.supportHistoryMessage}>{request.message}</p>
+                    </li>
+                  ))}
+                </ul>
+                <SellerPagination
+                  currentPage={supportPage}
+                  totalPages={supportTotalPages}
+                  totalItems={supportRequests.length}
+                  onPageChange={setSupportPage}
+                  itemLabel="requests"
+                  ariaLabel="Support requests pagination"
+                />
+              </>
             )}
           </div>
 

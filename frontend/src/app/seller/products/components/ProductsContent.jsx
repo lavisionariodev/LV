@@ -1,5 +1,6 @@
 'use client'
 
+import { formatCount, readEnum, readString, replaceUrlQuery } from '@/shared/utils'
 import { useState, useMemo, useEffect, useRef, useCallback, useId } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
@@ -51,12 +52,71 @@ import {
   getPendingChangeFieldLabels,
   sellerShowsInUpdatesPending,
 } from '@/lib/seller-listings/pendingChanges'
-import { formatCount } from '@/shared/utils/formatCount'
 import { useDebouncedEffect } from '@/shared/hooks'
-import { readEnum, readString, replaceUrlQuery } from '@/shared/utils/queryParams'
-
 const ARCHIVE_PATH = '/seller/products/archive'
 const CATALOG_PATH = '/seller/products/catalog'
+const LIST_ITEMS_PER_PAGE = 12
+const TABLE_ROWS_PER_PAGE = 10
+
+function buildVisiblePages(currentPage, totalPages) {
+  if (totalPages <= 0) return []
+  return Array.from({ length: totalPages }, (_, i) => i + 1)
+    .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+    .reduce((acc, p, idx, arr) => {
+      if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...')
+      acc.push(p)
+      return acc
+    }, [])
+}
+
+function SellerPagination({ currentPage, totalPages, totalItems, onPageChange, itemLabel, ariaLabel, perPage }) {
+  if (totalPages <= 1 || totalItems === 0) return null
+  const start = (currentPage - 1) * perPage + 1
+  const end = Math.min(currentPage * perPage, totalItems)
+
+  return (
+    <div className={styles.pagination}>
+      <div className={styles.paginationControls} role="navigation" aria-label={ariaLabel}>
+        <button
+          type="button"
+          className={`${styles.pageBtn} ${currentPage === 1 ? styles.pageBtnDisabled : ''}`}
+          onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+          disabled={currentPage === 1}
+        >
+          ‹ Previous
+        </button>
+        {buildVisiblePages(currentPage, totalPages).map((p, idx) =>
+          p === '...' ? (
+            <span key={`ellipsis-${idx}`} className={styles.pageEllipsis}>
+              …
+            </span>
+          ) : (
+            <button
+              key={p}
+              type="button"
+              className={`${styles.pageBtn} ${currentPage === p ? styles.pageBtnActive : ''}`}
+              onClick={() => onPageChange(p)}
+              aria-current={currentPage === p ? 'page' : undefined}
+            >
+              {p}
+            </button>
+          ),
+        )}
+        <button
+          type="button"
+          className={`${styles.pageBtn} ${currentPage === totalPages ? styles.pageBtnDisabled : ''}`}
+          onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+          disabled={currentPage === totalPages}
+        >
+          Next ›
+        </button>
+      </div>
+      <p className={styles.paginationInfo}>
+        Showing <strong>{start}–{end}</strong> of <strong>{totalItems}</strong> {itemLabel}
+      </p>
+    </div>
+  )
+}
 
 // ---------------------------------------------------------------------------
 // List chrome (toolbar, lifecycle tabs, grids, review table, route fallback)
@@ -911,6 +971,7 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
   const [searchQuery, setSearchQuery] = useState(() => readString(searchParams, 'q', ''))
   const [typeFilter, setTypeFilter] = useState(() => readEnum(searchParams, 'kind', allowedKinds, defaultKind))
   const [activeTab, setActiveTab] = useState(() => readListingTab(searchParams, LISTING_TAB_IDS))
+  const [listPage, setListPage] = useState(1)
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [modalMode, setModalMode] = useState(null) // 'view' | 'edit'
   const [submissionViewProduct, setSubmissionViewProduct] = useState(null)
@@ -1057,6 +1118,22 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
 
     return list
   }, [tabProducts, typeFilter, searchQuery])
+
+  const listUsesGrid = isArchiveView || activeTab === 'active'
+  const listPerPage = listUsesGrid ? LIST_ITEMS_PER_PAGE : TABLE_ROWS_PER_PAGE
+  const listTotalPages = Math.ceil(filteredProducts.length / listPerPage) || 1
+  const paginatedProducts = useMemo(() => {
+    const start = (listPage - 1) * listPerPage
+    return filteredProducts.slice(start, start + listPerPage)
+  }, [filteredProducts, listPage, listPerPage])
+
+  useEffect(() => {
+    setListPage(1)
+  }, [activeTab, typeFilter, searchQuery, isArchiveView])
+
+  useEffect(() => {
+    if (listPage > listTotalPages) setListPage(listTotalPages)
+  }, [listPage, listTotalPages])
 
   const total = scopedProducts.length
   const activeCount = scopedProducts.filter((p) => isProductShopActive(p)).length
@@ -1493,29 +1570,62 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
             </p>
           </div>
         ) : isArchiveView ? (
-          <ProductsActiveGrid
-            products={filteredProducts}
-            onOpenEdit={handleOpenEdit}
-            onOpenView={handleOpenView}
-            onRequestRemove={handleRequestRemove}
-          />
+          <>
+            <ProductsActiveGrid
+              products={paginatedProducts}
+              onOpenEdit={handleOpenEdit}
+              onOpenView={handleOpenView}
+              onRequestRemove={handleRequestRemove}
+            />
+            <SellerPagination
+              currentPage={listPage}
+              totalPages={listTotalPages}
+              totalItems={filteredProducts.length}
+              onPageChange={setListPage}
+              itemLabel="listings"
+              ariaLabel="Archived listings pagination"
+              perPage={listPerPage}
+            />
+          </>
         ) : activeTab === 'active' ? (
-          <ProductsActiveGrid
-            products={filteredProducts}
-            onOpenEdit={handleOpenEdit}
-            onOpenView={handleOpenView}
-            onRequestRemove={handleRequestRemove}
-          />
+          <>
+            <ProductsActiveGrid
+              products={paginatedProducts}
+              onOpenEdit={handleOpenEdit}
+              onOpenView={handleOpenView}
+              onRequestRemove={handleRequestRemove}
+            />
+            <SellerPagination
+              currentPage={listPage}
+              totalPages={listTotalPages}
+              totalItems={filteredProducts.length}
+              onPageChange={setListPage}
+              itemLabel="listings"
+              ariaLabel="Active listings pagination"
+              perPage={listPerPage}
+            />
+          </>
         ) : (
-          <ProductsReviewTable
-            variant={activeTab}
-            products={filteredProducts}
-            onOpenView={
-              activeTab === 'updates_pending' ? handleOpenSubmissionView : handleOpenView
-            }
-            onOpenEdit={handleOpenEdit}
-            onCancelRequest={handleRequestCancelReview}
-          />
+          <>
+            <ProductsReviewTable
+              variant={activeTab}
+              products={paginatedProducts}
+              onOpenView={
+                activeTab === 'updates_pending' ? handleOpenSubmissionView : handleOpenView
+              }
+              onOpenEdit={handleOpenEdit}
+              onCancelRequest={handleRequestCancelReview}
+            />
+            <SellerPagination
+              currentPage={listPage}
+              totalPages={listTotalPages}
+              totalItems={filteredProducts.length}
+              onPageChange={setListPage}
+              itemLabel="listings"
+              ariaLabel="Listing review table pagination"
+              perPage={listPerPage}
+            />
+          </>
         )}
       </section>
 

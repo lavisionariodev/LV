@@ -1,5 +1,6 @@
 'use client'
 
+import { formatCount, readEnum, readString, replaceUrlQuery } from '@/shared/utils'
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -25,9 +26,7 @@ import styles from './orders.module.css'
 import { createPortal } from 'react-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase/client'
-import { formatCount } from '@/shared/utils/formatCount'
 import { useDebouncedEffect } from '@/shared/hooks'
-import { readEnum, readString, replaceUrlQuery } from '@/shared/utils/queryParams'
 import {
   canCancelUnpaidBooking,
   canDeclinePaidBooking,
@@ -39,6 +38,68 @@ import {
   getTimelineProgressForStatus,
   hasSellerFulfillmentActions,
 } from '@/lib/orders/fulfillmentTransitions'
+
+const ROWS_PER_PAGE = 10
+
+function buildVisiblePages(currentPage, totalPages) {
+  if (totalPages <= 0) return []
+  return Array.from({ length: totalPages }, (_, i) => i + 1)
+    .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+    .reduce((acc, p, idx, arr) => {
+      if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...')
+      acc.push(p)
+      return acc
+    }, [])
+}
+
+function SellerPagination({ currentPage, totalPages, totalItems, onPageChange, itemLabel, ariaLabel }) {
+  if (totalPages <= 1 || totalItems === 0) return null
+  const start = (currentPage - 1) * ROWS_PER_PAGE + 1
+  const end = Math.min(currentPage * ROWS_PER_PAGE, totalItems)
+
+  return (
+    <div className={styles.pagination}>
+      <div className={styles.paginationControls} role="navigation" aria-label={ariaLabel}>
+        <button
+          type="button"
+          className={`${styles.pageBtn} ${currentPage === 1 ? styles.pageBtnDisabled : ''}`}
+          onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+          disabled={currentPage === 1}
+        >
+          ‹ Previous
+        </button>
+        {buildVisiblePages(currentPage, totalPages).map((p, idx) =>
+          p === '...' ? (
+            <span key={`ellipsis-${idx}`} className={styles.pageEllipsis}>
+              …
+            </span>
+          ) : (
+            <button
+              key={p}
+              type="button"
+              className={`${styles.pageBtn} ${currentPage === p ? styles.pageBtnActive : ''}`}
+              onClick={() => onPageChange(p)}
+              aria-current={currentPage === p ? 'page' : undefined}
+            >
+              {p}
+            </button>
+          ),
+        )}
+        <button
+          type="button"
+          className={`${styles.pageBtn} ${currentPage === totalPages ? styles.pageBtnDisabled : ''}`}
+          onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+          disabled={currentPage === totalPages}
+        >
+          Next ›
+        </button>
+      </div>
+      <p className={styles.paginationInfo}>
+        Showing <strong>{start}–{end}</strong> of <strong>{totalItems}</strong> {itemLabel}
+      </p>
+    </div>
+  )
+}
 
 const ORDER_STATUSES = [
   { id: 'all', label: 'All Orders' },
@@ -265,6 +326,9 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false)
   const [previewAttachment, setPreviewAttachment] = useState(null)
   const filterDropdownRef = useRef(null)
+  const [ordersPage, setOrdersPage] = useState(1)
+  const [refundPage, setRefundPage] = useState(1)
+  const [helpPage, setHelpPage] = useState(1)
 
   const showOrderNotice = useCallback((type, message) => {
     const text = String(message || '').trim()
@@ -430,6 +494,48 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
     () => orders.filter((o) => o.helpRequest),
     [orders]
   )
+
+  const ordersTotalPages = Math.ceil(filteredOrders.length / ROWS_PER_PAGE) || 1
+  const paginatedOrders = useMemo(() => {
+    const start = (ordersPage - 1) * ROWS_PER_PAGE
+    return filteredOrders.slice(start, start + ROWS_PER_PAGE)
+  }, [filteredOrders, ordersPage])
+
+  const refundTotalPages = Math.ceil(refundRequests.length / ROWS_PER_PAGE) || 1
+  const paginatedRefundRequests = useMemo(() => {
+    const start = (refundPage - 1) * ROWS_PER_PAGE
+    return refundRequests.slice(start, start + ROWS_PER_PAGE)
+  }, [refundRequests, refundPage])
+
+  const helpTotalPages = Math.ceil(helpRequests.length / ROWS_PER_PAGE) || 1
+  const paginatedHelpRequests = useMemo(() => {
+    const start = (helpPage - 1) * ROWS_PER_PAGE
+    return helpRequests.slice(start, start + ROWS_PER_PAGE)
+  }, [helpRequests, helpPage])
+
+  useEffect(() => {
+    setOrdersPage(1)
+  }, [activeTab, searchQuery])
+
+  useEffect(() => {
+    if (ordersPage > ordersTotalPages) setOrdersPage(ordersTotalPages)
+  }, [ordersPage, ordersTotalPages])
+
+  useEffect(() => {
+    setRefundPage(1)
+  }, [refundRequests.length])
+
+  useEffect(() => {
+    if (refundPage > refundTotalPages) setRefundPage(refundTotalPages)
+  }, [refundPage, refundTotalPages])
+
+  useEffect(() => {
+    setHelpPage(1)
+  }, [helpRequests.length])
+
+  useEffect(() => {
+    if (helpPage > helpTotalPages) setHelpPage(helpTotalPages)
+  }, [helpPage, helpTotalPages])
 
   const closeAdvanceModal = useCallback(() => {
     clearOrderDeepLinkParams()
@@ -798,7 +904,7 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
             <span className={styles.refundListCount}>{formatCount(refundRequests.length)} pending</span>
           </div>
           <div className={styles.refundCards}>
-            {refundRequests.map((order) => (
+            {paginatedRefundRequests.map((order) => (
               <article key={order.id} className={styles.refundCard}>
                 <header className={styles.refundCardHeader}>
                   <div>
@@ -884,6 +990,14 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
               </article>
             ))}
           </div>
+          <SellerPagination
+            currentPage={refundPage}
+            totalPages={refundTotalPages}
+            totalItems={refundRequests.length}
+            onPageChange={setRefundPage}
+            itemLabel="refund requests"
+            ariaLabel="Refund requests pagination"
+          />
         </section>
       )}
 
@@ -894,7 +1008,7 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
             <span className={styles.refundListCount}>{formatCount(helpRequests.length)} open</span>
           </div>
           <div className={styles.refundCards}>
-            {helpRequests.map((order) => (
+            {paginatedHelpRequests.map((order) => (
               <article key={order.helpRequest.id} className={styles.refundCard}>
                 <header className={styles.refundCardHeader}>
                   <div>
@@ -956,6 +1070,14 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
               </article>
             ))}
           </div>
+          <SellerPagination
+            currentPage={helpPage}
+            totalPages={helpTotalPages}
+            totalItems={helpRequests.length}
+            onPageChange={setHelpPage}
+            itemLabel="help requests"
+            ariaLabel="Help requests pagination"
+          />
         </section>
       )}
 
@@ -987,7 +1109,7 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
                 </td>
               </tr>
             ) : (
-              filteredOrders.map((order) => {
+              paginatedOrders.map((order) => {
                 const paymentBadge = sellerPaymentBadge(order.paymentStatus)
                 return (
                 <tr key={order.id} className={styles.orderRow}>
@@ -1059,6 +1181,16 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
             )}
           </tbody>
         </table>
+        {ordersReady && filteredOrders.length > 0 ? (
+          <SellerPagination
+            currentPage={ordersPage}
+            totalPages={ordersTotalPages}
+            totalItems={filteredOrders.length}
+            onPageChange={setOrdersPage}
+            itemLabel="orders"
+            ariaLabel="Orders table pagination"
+          />
+        ) : null}
       </div>
 
       {selectedOrder && typeof document !== 'undefined' && createPortal(

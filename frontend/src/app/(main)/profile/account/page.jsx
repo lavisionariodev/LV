@@ -1,13 +1,9 @@
 'use client';
 
+import { PROFILE_DOB_MONTHS, dobPartsFromIso, isoFromDobParts } from '@/shared/utils'
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProfile } from '@/contexts/ProfileContext';
-import {
-  PROFILE_DOB_MONTHS,
-  dobPartsFromIso,
-  isoFromDobParts,
-} from '@/shared/utils/profileDob';
 import styles from '../profile.module.css';
 
 const GENDER_OPTIONS = ['Male', 'Female', 'Other'];

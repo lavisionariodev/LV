@@ -1,15 +1,76 @@
 'use client'
 
+import { formatCount, readString, replaceUrlQuery } from '@/shared/utils'
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { TbSearch, TbUser, TbPhone, TbMail, TbX, TbReceipt } from 'react-icons/tb'
 import styles from './customers.module.css'
 import { createPortal } from 'react-dom'
-import { formatCount } from '@/shared/utils/formatCount'
 import { useDebouncedEffect } from '@/shared/hooks'
-import { readString, replaceUrlQuery } from '@/shared/utils/queryParams'
 import { useAuth } from '@/contexts/AuthContext'
+
+const ROWS_PER_PAGE = 10
+
+function buildVisiblePages(currentPage, totalPages) {
+  if (totalPages <= 0) return []
+  return Array.from({ length: totalPages }, (_, i) => i + 1)
+    .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+    .reduce((acc, p, idx, arr) => {
+      if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...')
+      acc.push(p)
+      return acc
+    }, [])
+}
+
+function SellerPagination({ currentPage, totalPages, totalItems, onPageChange, itemLabel, ariaLabel }) {
+  if (totalPages <= 1 || totalItems === 0) return null
+  const start = (currentPage - 1) * ROWS_PER_PAGE + 1
+  const end = Math.min(currentPage * ROWS_PER_PAGE, totalItems)
+
+  return (
+    <div className={styles.pagination}>
+      <div className={styles.paginationControls} role="navigation" aria-label={ariaLabel}>
+        <button
+          type="button"
+          className={`${styles.pageBtn} ${currentPage === 1 ? styles.pageBtnDisabled : ''}`}
+          onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+          disabled={currentPage === 1}
+        >
+          ‹ Previous
+        </button>
+        {buildVisiblePages(currentPage, totalPages).map((p, idx) =>
+          p === '...' ? (
+            <span key={`ellipsis-${idx}`} className={styles.pageEllipsis}>
+              …
+            </span>
+          ) : (
+            <button
+              key={p}
+              type="button"
+              className={`${styles.pageBtn} ${currentPage === p ? styles.pageBtnActive : ''}`}
+              onClick={() => onPageChange(p)}
+              aria-current={currentPage === p ? 'page' : undefined}
+            >
+              {p}
+            </button>
+          ),
+        )}
+        <button
+          type="button"
+          className={`${styles.pageBtn} ${currentPage === totalPages ? styles.pageBtnDisabled : ''}`}
+          onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+          disabled={currentPage === totalPages}
+        >
+          Next ›
+        </button>
+      </div>
+      <p className={styles.paginationInfo}>
+        Showing <strong>{start}–{end}</strong> of <strong>{totalItems}</strong> {itemLabel}
+      </p>
+    </div>
+  )
+}
 
 function formatDate(dateString) {
   if (!dateString) return '—'
@@ -67,6 +128,8 @@ function SellerCustomersPageContent() {
 
   const [searchQuery, setSearchQuery] = useState(() => readString(searchParams, 'q', ''))
   const [selectedCustomer, setSelectedCustomer] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [bookingPage, setBookingPage] = useState(1)
 
   const loadCustomers = useCallback(
     async ({ signal, showLoading = false } = {}) => {
@@ -153,6 +216,27 @@ function SellerCustomersPageContent() {
     if (!trimmedQuery) return customers
     return customers.filter((c) => customerMatchesSearchQuery(c, trimmedQuery))
   }, [customers, trimmedQuery])
+
+  const customerTotalPages = Math.ceil(filteredCustomers.length / ROWS_PER_PAGE) || 1
+
+  const paginatedCustomers = useMemo(() => {
+    const start = (currentPage - 1) * ROWS_PER_PAGE
+    return filteredCustomers.slice(start, start + ROWS_PER_PAGE)
+  }, [filteredCustomers, currentPage])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [trimmedQuery])
+
+  useEffect(() => {
+    if (currentPage > customerTotalPages) {
+      setCurrentPage(customerTotalPages)
+    }
+  }, [currentPage, customerTotalPages])
+
+  useEffect(() => {
+    setBookingPage(1)
+  }, [selectedCustomer?.id])
 
   const { totalCustomers, returningCustomers, newCustomersThisMonth, activeClients } = useMemo(() => {
     const today = new Date()
@@ -304,7 +388,7 @@ function SellerCustomersPageContent() {
                   </td>
                 </tr>
               ) : (
-                filteredCustomers.map((customer) => {
+                paginatedCustomers.map((customer) => {
                   const initial = ((customer.name || '').trim().charAt(0) || '?').toUpperCase()
                   return (
                     <tr key={customer.id}>
@@ -360,6 +444,16 @@ function SellerCustomersPageContent() {
             </tbody>
           </table>
         </div>
+        {tablePlaceholder === null && filteredCustomers.length > 0 ? (
+          <SellerPagination
+            currentPage={currentPage}
+            totalPages={customerTotalPages}
+            totalItems={filteredCustomers.length}
+            onPageChange={setCurrentPage}
+            itemLabel="customers"
+            ariaLabel="Customers table pagination"
+          />
+        ) : null}
       </section>
 
       {selectedCustomer && typeof document !== 'undefined' && createPortal(
@@ -447,8 +541,14 @@ function SellerCustomersPageContent() {
                     No bookings recorded for this customer yet.
                   </p>
                 ) : (
+                  <>
                   <ul className={styles.bookingHistoryList}>
-                    {selectedCustomer.bookings.map((booking) => (
+                    {selectedCustomer.bookings
+                      .slice(
+                        (bookingPage - 1) * ROWS_PER_PAGE,
+                        bookingPage * ROWS_PER_PAGE,
+                      )
+                      .map((booking) => (
                       <li key={booking.id} className={styles.bookingHistoryItem}>
                         <div className={styles.bookingIcon}>
                           <TbReceipt size={18} />
@@ -474,6 +574,15 @@ function SellerCustomersPageContent() {
                       </li>
                     ))}
                   </ul>
+                  <SellerPagination
+                    currentPage={bookingPage}
+                    totalPages={Math.ceil(selectedCustomer.bookings.length / ROWS_PER_PAGE) || 1}
+                    totalItems={selectedCustomer.bookings.length}
+                    onPageChange={setBookingPage}
+                    itemLabel="bookings"
+                    ariaLabel="Customer booking history pagination"
+                  />
+                  </>
                 )}
               </div>
             </div>

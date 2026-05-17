@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   TbAlertTriangle,
   TbBellOff,
@@ -21,6 +21,69 @@ import {
   sellerNotificationFilterBucket,
 } from '@/lib/notifications/types'
 import styles from '@/app/admin/notifications/notifications.module.css'
+import listStyles from './notifications.module.css'
+
+const ROWS_PER_PAGE = 10
+
+function buildVisiblePages(currentPage, totalPages) {
+  if (totalPages <= 0) return []
+  return Array.from({ length: totalPages }, (_, i) => i + 1)
+    .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+    .reduce((acc, p, idx, arr) => {
+      if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...')
+      acc.push(p)
+      return acc
+    }, [])
+}
+
+function SellerPagination({ currentPage, totalPages, totalItems, onPageChange }) {
+  if (totalPages <= 1 || totalItems === 0) return null
+  const start = (currentPage - 1) * ROWS_PER_PAGE + 1
+  const end = Math.min(currentPage * ROWS_PER_PAGE, totalItems)
+
+  return (
+    <div className={listStyles.pagination}>
+      <div className={listStyles.paginationControls} role="navigation" aria-label="Notifications pagination">
+        <button
+          type="button"
+          className={`${listStyles.pageBtn} ${currentPage === 1 ? listStyles.pageBtnDisabled : ''}`}
+          onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+          disabled={currentPage === 1}
+          aria-label="Previous page"
+        >
+          ‹
+        </button>
+        {buildVisiblePages(currentPage, totalPages).map((p, idx) =>
+          p === '...' ? (
+            <span key={`ellipsis-${idx}`} className={listStyles.pageEllipsis}>…</span>
+          ) : (
+            <button
+              key={p}
+              type="button"
+              className={`${listStyles.pageNumBtn} ${currentPage === p ? listStyles.pageNumBtnActive : ''}`}
+              onClick={() => onPageChange(p)}
+              aria-current={currentPage === p ? 'page' : undefined}
+            >
+              {p}
+            </button>
+          ),
+        )}
+        <button
+          type="button"
+          className={`${listStyles.pageBtn} ${currentPage === totalPages ? listStyles.pageBtnDisabled : ''}`}
+          onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+          disabled={currentPage === totalPages}
+          aria-label="Next page"
+        >
+          ›
+        </button>
+      </div>
+      <p className={listStyles.paginationInfo}>
+        Showing <strong>{start}–{end}</strong> of <strong>{totalItems}</strong> notifications
+      </p>
+    </div>
+  )
+}
 
 function normalizePriority(value, bucket) {
   const p = String(value || '').trim().toLowerCase()
@@ -303,6 +366,7 @@ export default function SellerNotificationsPage() {
   } = useInAppNotificationFeed({ limit: 100, enabled: true })
 
   const [activeFilter, setActiveFilter] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
   const [deleteConfirmId, setDeleteConfirmId] = useState(null)
   const [clearAllOpen, setClearAllOpen] = useState(false)
   const [clearResolvedOpen, setClearResolvedOpen] = useState(false)
@@ -339,6 +403,20 @@ export default function SellerNotificationsPage() {
       return n.filterBucket === activeFilter
     })
   }, [notifications, activeFilter])
+
+  const totalPages = Math.ceil(filtered.length / ROWS_PER_PAGE) || 1
+  const paginated = useMemo(() => {
+    const start = (currentPage - 1) * ROWS_PER_PAGE
+    return filtered.slice(start, start + ROWS_PER_PAGE)
+  }, [filtered, currentPage])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [activeFilter])
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages)
+  }, [currentPage, totalPages])
 
   const resolvedCount = notifications.filter((n) => n.resolved).length
   const highPriorityCount = notifications.filter((n) => n.priority === 'high').length
@@ -396,19 +474,27 @@ export default function SellerNotificationsPage() {
               <p className={styles.emptyText}>You&apos;re all caught up!</p>
             </div>
           ) : (
+            <>
             <div className={styles.notifList}>
-              {filtered.map((notif, i) => (
+              {paginated.map((notif, i) => (
                 <NotificationRow
                   key={notif.id}
                   notif={notif}
                   variant="desktop"
-                  isLast={i === filtered.length - 1}
+                  isLast={i === paginated.length - 1}
                   onMarkRead={markRead}
                   onResolve={resolveOne}
                   onRequestDelete={setDeleteConfirmId}
                 />
               ))}
             </div>
+            <SellerPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filtered.length}
+              onPageChange={setCurrentPage}
+            />
+            </>
           )}
         </div>
       </div>
@@ -461,8 +547,9 @@ export default function SellerNotificationsPage() {
             <p className={styles.emptyText}>You&apos;re all caught up!</p>
           </div>
         ) : (
+          <>
           <div className={styles.mobileList}>
-            {filtered.map((notif) => (
+            {paginated.map((notif) => (
               <NotificationRow
                 key={notif.id}
                 notif={notif}
@@ -474,6 +561,13 @@ export default function SellerNotificationsPage() {
               />
             ))}
           </div>
+          <SellerPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filtered.length}
+            onPageChange={setCurrentPage}
+          />
+          </>
         )}
       </div>
 

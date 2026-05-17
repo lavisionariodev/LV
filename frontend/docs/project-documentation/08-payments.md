@@ -1,19 +1,31 @@
 # 08 — Payments
 
-**Provider:** PayMongo (Philippines-oriented; orders default **PHP** in schema).
+**Provider:** PayMongo (Philippines-oriented). Orders default to **PHP** in schema.
 
-## Flow
+## Money flow
 
-1. Buyer pays via PayMongo checkout → funds held in platform escrow (`order_escrows`).
-2. Admin **release payout** credits the seller platform wallet (`payout_release` ledger).
-3. Seller **withdraws** from Seller Settings / Revenue → PayMongo transfer to bank or GCash (`seller_withdrawals`).
+```
+Buyer pays (PayMongo checkout)
+    → order_escrows (platform escrow)
+    → Admin release payout → seller_wallet_ledger (payout_release)
+    → Seller withdraws → seller_withdrawals → PayMongo transfer (bank/GCash)
+```
 
-Legacy per-order PayMongo releases (before migration 110) remain in `payout_disbursements` for reconciliation only.
+Legacy per-order PayMongo releases (before migration `110`) remain in `payout_disbursements` for reconciliation only.
+
+## Seller wallet portal
+
+- **UI:** `/seller/wallet`
+- **APIs:** `/api/seller/wallet`, `.../transactions`, `.../withdrawals`, `.../withdraw`
+- **Settings:** `/seller/settings/payouts` — destination account; migration `111` links withdrawals to `seller_payout_settings`
+- **Fees:** `seller_withdrawals.fee_php` / `net_amount_php` (migration `111`)
+
+Withdrawals run when `PAYMONGO_DISBURSEMENT_ENABLED=true` and webhook settles transfer status.
 
 ## Webhook (required for live behavior)
 
 - **URL:** `https://<your-host>/api/payments/paymongo/webhook`
-- **Secret:** `PAYMONGO_WEBHOOK_SECRET` — signature verification on the route handler.
+- **Secret:** `PAYMONGO_WEBHOOK_SECRET` — HMAC verification on the route handler.
 
 Paid/failed checkout, refunds, and withdrawal transfer settlement are **webhook-driven**, not only the success page.
 
@@ -27,4 +39,4 @@ Paid/failed checkout, refunds, and withdrawal transfer settlement are **webhook-
 | `PAYMONGO_WALLET_SOURCE_*`, `PAYMONGO_DEFAULT_DESTINATION_BIC` | Platform wallet source + destination config |
 | `ADMIN_NOTIFY_EVERY_PAID_ORDER` | Email admins on each paid order (when `true`) |
 
-Details: `frontend/README.md`. Implementation: `src/lib/paymongo/`, `src/lib/payments/`, `src/app/api/payments/paymongo/webhook/`.
+Details: `frontend/README.md`. Code: `src/lib/paymongo/`, `src/lib/payments/`, `src/lib/seller/walletClient.js`.

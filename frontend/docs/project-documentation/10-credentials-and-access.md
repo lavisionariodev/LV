@@ -24,8 +24,10 @@
 ## Handover checklist
 
 - [ ] Client org access to Supabase + hosting + PayMongo  
+- [ ] All migrations applied through `111` (wallet portal enhancements)  
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` rotated or confirmed custody  
 - [ ] Production webhook URL + `PAYMONGO_WEBHOOK_SECRET` match  
-- [ ] SMTP send tested  
+- [ ] SMTP send tested (if email notifications required)  
 - [ ] `NEXT_PUBLIC_APP_URL` matches production  
 - [ ] At least one `public.admins` user for break-glass  
+- [ ] Seller withdrawal path tested (`PAYMONGO_DISBURSEMENT_ENABLED`, payout settings, `/seller/wallet`)  

@@ -1,4 +1,4 @@
-import { fetchJson } from '@/shared/utils/fetchJson'
+import { fetchJson } from '@/shared/utils'
 
 /**
  * Wallet API fetch — uses shared fetchJson; coerces null bodies to {} (legacy parseJsonResponse behavior).

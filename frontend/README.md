@@ -6,7 +6,7 @@ Next.js App Router application for the Lavisionario marketplace (buyer, seller, 
 
 - Node.js 18+
 - npm
-- Supabase project with migrations applied from `supabase/migrations/`
+- Supabase project (schema already applied on the hosted instance; see `supabase/migrations/` for reference)
 
 ## Setup
 
@@ -47,15 +47,11 @@ Create `frontend/.env.local` (or configure the same keys in your host). Public k
 
 Without `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `/admin/**` routes redirect to `/administrator` (fail closed). Admin API routes still enforce `requireAdminApiUser()`.
 
-## Database migrations
+## Database
 
-SQL migrations live in `supabase/migrations/`. Apply them to your Supabase project in order (filename prefix). Notable recent migrations:
+Schema scripts live in `supabase/migrations/` and are **already applied** on the hosted Supabase project. For a new database only, run them in filename-prefix order.
 
-- `107_wallet_ledger_disbursements.sql` — `payout_disbursements`, `seller_wallet_ledger`
-- `108_buyer_notification_prefs_commission_log.sql` — buyer notification preferences, commission change log
-- `110_seller_withdrawals_wallet_flow.sql` — `seller_withdrawals` (PayMongo bank/GCash payouts)
-
-Wallet summaries and seller withdrawals depend on migrations 107+110 and service-role access. Admin release credits the seller wallet; sellers withdraw via PayMongo when `PAYMONGO_DISBURSEMENT_ENABLED=true`.
+Seller wallet: admin payout release credits the ledger; sellers withdraw at `/seller/wallet` when `PAYMONGO_DISBURSEMENT_ENABLED=true` (service role + PayMongo webhook).
 
 ## PayMongo webhook
 
@@ -64,10 +60,6 @@ Configure PayMongo to send events to:
 `https://<your-host>/api/payments/paymongo/webhook`
 
 Set `PAYMONGO_WEBHOOK_SECRET` to the signing secret from PayMongo. Checkout payment confirmation, refunds, and withdrawal settlement are driven by this webhook, not by client-side success pages.
-
-## Integration gap tracker
-
-Open [docs/integration-gap-tracker.md](docs/integration-gap-tracker.md) for a working checklist of partial, unwired, and ops-dependent features across portals.
 
 ## Scripts
 

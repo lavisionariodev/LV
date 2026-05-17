@@ -1,5 +1,6 @@
 'use client'
 
+import { formatCount } from '@/shared/utils'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -16,7 +17,6 @@ import {
   mergePendingChangesIntoListingRow,
   PENDING_CHANGE_KEYS,
 } from '@/lib/seller-listings/pendingChanges'
-import { formatCount } from '@/shared/utils/formatCount'
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 
 /** `seller_avatar_url` comes from listSellerListingsForAdmin (batch `profiles.avatar_url`). */
