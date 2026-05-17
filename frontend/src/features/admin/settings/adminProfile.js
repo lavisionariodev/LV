@@ -1,10 +1,9 @@
 'use client'
 
+import { resolveStoredAvatar, validateAvatarImage } from '@/shared/utils'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase as browserSupabase } from '@/lib/supabase/client'
 import { removeAdminAvatar, uploadAdminAvatar } from '@/lib/admin/adminAvatar'
-import { validateAvatarImage, resolveStoredAvatar } from '@/shared/utils/avatarImage'
-
 /**
  * Loads the current admin row + avatar public URL for topbar / settings / dashboard.
  * Uses the shared browser Supabase client.

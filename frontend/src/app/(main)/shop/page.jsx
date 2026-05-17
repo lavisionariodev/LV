@@ -1,11 +1,11 @@
 'use client'
 
+import { readString, replaceUrlQuery } from '@/shared/utils'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useDebouncedEffect } from '@/shared/hooks'
-import { readString, replaceUrlQuery } from '@/shared/utils/queryParams'
 import { categoryLabelFromListings } from '@/lib/shop/categories'
 import {
   fetchActiveShopListings,
@@ -18,7 +18,7 @@ import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/contexts/ToastContext'
 import { formatPhpAmount } from '@/lib/cart/formatPhp'
-import { providerServiceAggPairSegments } from '@/lib/ratings/providerServiceAggPairSegments'
+import { providerServiceAggPairSegments } from '@/lib/ratings/listingRatingAggregates'
 import styles from './shop.module.css'
 
 function serviceLabelFromId(serviceId) {

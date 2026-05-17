@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { FaFacebook, FaFacebookMessenger, FaWhatsapp, FaPhoneAlt, FaEnvelope } from 'react-icons/fa'
 import styles from './ContactSellerModal.module.css'
-import BodyPortal from './BodyPortal'
 import { buildSellerContactOptions } from '@/lib/sellers/socialLinks'
 
 function iconForPlatform(platform) {
@@ -39,12 +39,12 @@ export default function ContactSellerModal({
   )
 
   if (!open) return null
+  if (typeof document === 'undefined') return null
 
   const stop = (e) => e.stopPropagation()
   const initial = (sellerName || 'S').trim().charAt(0).toUpperCase()
 
-  return (
-    <BodyPortal>
+  return createPortal(
     <div className={styles.overlay} role="dialog" aria-modal="true" onClick={onClose}>
       <div className={styles.modal} onClick={stop}>
         <div className={styles.head}>
@@ -99,8 +99,8 @@ export default function ContactSellerModal({
           )}
         </div>
       </div>
-    </div>
-    </BodyPortal>
+    </div>,
+    document.body
   )
 }
 

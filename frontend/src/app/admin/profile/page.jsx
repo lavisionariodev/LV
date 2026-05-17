@@ -1,5 +1,6 @@
 'use client'
 
+import { AVATAR_ALLOWED_TYPES, AVATAR_MAX_MB, shouldUseUnoptimizedAvatarSrc } from '@/shared/utils'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
@@ -17,7 +18,7 @@ import { HiOutlineNewspaper } from 'react-icons/hi'
 import { changePasswordWithReauth } from '@/lib/auth/changePassword'
 import { useAuthToast } from '@/contexts/ToastContext'
 import { useAdminPersonalProfile } from '@/features/admin/settings/adminProfile'
-import { AVATAR_ALLOWED_TYPES, AVATAR_MAX_MB, shouldUseUnoptimizedAvatarSrc } from '@/shared/utils/avatarImage'
+
 import { useMediaQuery } from '@/shared/hooks'
 import { ADMIN_SETTINGS_NAV, getSettingsSectionFromPathname } from '../settings/adminSettingsNav'
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal'

@@ -59,6 +59,7 @@ const PAGE_TITLES = {
   seller: {
     '/seller': 'Dashboard',
     '/seller/orders': 'Orders',
+    '/seller/wallet': 'Wallet',
     '/seller/products': 'Products',
     '/seller/products/services': 'Services',
     '/seller/products/packages': 'Packages',

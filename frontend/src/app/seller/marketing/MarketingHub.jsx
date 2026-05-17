@@ -13,7 +13,7 @@ import {
   YAxis,
 } from 'recharts'
 import styles from './marketing.module.css'
-import BodyPortal from '@/components/ui/Modal/BodyPortal'
+import { createPortal } from 'react-dom'
 import { Toast } from '@/components/ui'
 
 function StatusPill({ status }) {
@@ -29,6 +29,46 @@ function StatusPill({ status }) {
             : styles.statusNeutral
 
   return <span className={`${styles.statusPill} ${cls}`}>{status}</span>
+}
+
+
+const ROWS_PER_PAGE = 10
+
+function buildVisiblePages(currentPage, totalPages) {
+  if (totalPages <= 0) return []
+  return Array.from({ length: totalPages }, (_, i) => i + 1)
+    .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+    .reduce((acc, p, idx, arr) => {
+      if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...')
+      acc.push(p)
+      return acc
+    }, [])
+}
+
+function slicePage(items, page) {
+  const start = (page - 1) * ROWS_PER_PAGE
+  return items.slice(start, start + ROWS_PER_PAGE)
+}
+
+function MarketingPagination({ page, setPage, totalItems, itemLabel, ariaLabel }) {
+  const totalPages = Math.ceil(totalItems / ROWS_PER_PAGE) || 1
+  if (totalPages <= 1 || totalItems === 0) return null
+  const start = (page - 1) * ROWS_PER_PAGE + 1
+  const end = Math.min(page * ROWS_PER_PAGE, totalItems)
+  return (
+    <div className={styles.pagination}>
+      <div className={styles.paginationControls} role="navigation" aria-label={ariaLabel}>
+        <button type="button" className={`${styles.pageBtn} ${page === 1 ? styles.pageBtnDisabled : ''}`} onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1}>‹ Previous</button>
+        {buildVisiblePages(page, totalPages).map((p, idx) =>
+          p === '...' ? <span key={`e-${idx}`} className={styles.pageEllipsis}>…</span> : (
+            <button key={p} type="button" className={`${styles.pageBtn} ${page === p ? styles.pageBtnActive : ''}`} onClick={() => setPage(p)} aria-current={page === p ? 'page' : undefined}>{p}</button>
+          ),
+        )}
+        <button type="button" className={`${styles.pageBtn} ${page === totalPages ? styles.pageBtnDisabled : ''}`} onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page === totalPages}>Next ›</button>
+      </div>
+      <p className={styles.paginationInfo}>Showing <strong>{start}–{end}</strong> of <strong>{totalItems}</strong> {itemLabel}</p>
+    </div>
+  )
 }
 
 function TrendChart() {
@@ -107,9 +147,9 @@ function ConversionBars() {
 
 function Drawer({ open, title, onClose, children }) {
   if (!open) return null
+  if (typeof document === 'undefined') return null
 
-  return (
-    <BodyPortal>
+  return createPortal(
     <div className={styles.drawerOverlay} role="dialog" aria-modal="true" onClick={onClose}>
       <div className={styles.drawer} onClick={(e) => e.stopPropagation()}>
         <div className={styles.drawerHeader}>
@@ -120,8 +160,8 @@ function Drawer({ open, title, onClose, children }) {
         </div>
         <div className={styles.drawerBody}>{children}</div>
       </div>
-    </div>
-    </BodyPortal>
+    </div>,
+    document.body
   )
 }
 
@@ -256,6 +296,18 @@ export default function MarketingHub({ initialTab = 'centre' }) {
   const searchParams = useSearchParams()
   const tabParam = searchParams.get('tab')
   const [toast, setToast] = useState(null)
+  const [marketingListPages, setMarketingListPages] = useState({
+    centreCampaigns: 1,
+    centreDiscounts: 1,
+    centreVouchers: 1,
+    centreSegments: 1,
+    centreAlerts: 1,
+    tabDiscounts: 1,
+    tabVouchers: 1,
+    tabCampaigns: 1,
+  })
+  const setMarketingPage = (key, page) =>
+    setMarketingListPages((prev) => ({ ...prev, [key]: page }))
 
   const [drawer, setDrawer] = useState({ open: false, type: null })
 
@@ -532,7 +584,7 @@ export default function MarketingHub({ initialTab = 'centre' }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {managementCampaigns.map((campaign) => (
+                      {slicePage(managementCampaigns, marketingListPages.centreCampaigns).map((campaign) => (
                         <tr key={campaign.id}>
                           <td className={styles.tdMain}>{campaign.name}</td>
                           <td>{campaign.type}</td>
@@ -591,6 +643,7 @@ export default function MarketingHub({ initialTab = 'centre' }) {
                     </tbody>
                   </table>
                 </div>
+                <MarketingPagination page={marketingListPages.centreCampaigns} setPage={(p) => setMarketingPage('centreCampaigns', p)} totalItems={managementCampaigns.length} itemLabel="campaigns" ariaLabel="Campaign management pagination" />
               </div>
 
               <div className={styles.rowGap}>
@@ -614,7 +667,7 @@ export default function MarketingHub({ initialTab = 'centre' }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {discountsData.map((d) => (
+                        {slicePage(discountsData, marketingListPages.centreDiscounts).map((d) => (
                           <tr key={d.id}>
                             <td className={styles.tdMain}>{d.name}</td>
                             <td>{d.type === 'percentage' ? 'Percentage' : 'Fixed'}</td>
@@ -664,6 +717,7 @@ export default function MarketingHub({ initialTab = 'centre' }) {
                         ))}
                       </tbody>
                     </table>
+                <MarketingPagination page={marketingListPages.centreDiscounts} setPage={(p) => setMarketingPage('centreDiscounts', p)} totalItems={discountsData.length} itemLabel="centre discounts" ariaLabel="centre discounts pagination" />
                   </div>
                 </div>
 
@@ -686,7 +740,7 @@ export default function MarketingHub({ initialTab = 'centre' }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {vouchersData.map((v) => (
+                        {slicePage(vouchersData, marketingListPages.centreVouchers).map((v) => (
                           <tr key={v.id}>
                             <td className={styles.tdMain}>
                               <code className={styles.code}>{v.code}</code>
@@ -737,6 +791,7 @@ export default function MarketingHub({ initialTab = 'centre' }) {
                         ))}
                       </tbody>
                     </table>
+                <MarketingPagination page={marketingListPages.centreVouchers} setPage={(p) => setMarketingPage('centreVouchers', p)} totalItems={vouchersData.length} itemLabel="centre vouchers" ariaLabel="centre vouchers pagination" />
                   </div>
                 </div>
               </div>
@@ -785,7 +840,7 @@ export default function MarketingHub({ initialTab = 'centre' }) {
                   </div>
                   <div className={styles.dividerThin} />
                   <div className={styles.list}>
-                    {audienceSegments.map((segment) => (
+                    {slicePage(audienceSegments, marketingListPages.centreSegments).map((segment) => (
                       <div key={segment.id} className={styles.segmentRow}>
                         <div>
                           <div className={styles.listItemName}>{segment.name}</div>
@@ -795,6 +850,7 @@ export default function MarketingHub({ initialTab = 'centre' }) {
                       </div>
                     ))}
                   </div>
+                  <MarketingPagination page={marketingListPages.centreSegments} setPage={(p) => setMarketingPage('centreSegments', p)} totalItems={audienceSegments.length} itemLabel="segments" ariaLabel="Audience segments pagination" />
                 </div>
 
                 <div className={styles.card}>
@@ -809,7 +865,7 @@ export default function MarketingHub({ initialTab = 'centre' }) {
                   </div>
                   <div className={styles.dividerThin} />
                   <div className={styles.list}>
-                    {alerts.map((alert) => (
+                    {slicePage(alerts, marketingListPages.centreAlerts).map((alert) => (
                       <div key={alert.id} className={styles.alertRow}>
                         <div className={styles.alertLeft}>
                           <span
@@ -832,6 +888,7 @@ export default function MarketingHub({ initialTab = 'centre' }) {
                       </div>
                     ))}
                   </div>
+                  <MarketingPagination page={marketingListPages.centreAlerts} setPage={(p) => setMarketingPage('centreAlerts', p)} totalItems={alerts.length} itemLabel="alerts" ariaLabel="Alerts pagination" />
                 </div>
               </div>
             </>
@@ -857,7 +914,7 @@ export default function MarketingHub({ initialTab = 'centre' }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {discountsData.map((d) => (
+                    {slicePage(discountsData, marketingListPages.tabDiscounts).map((d) => (
                       <tr key={d.id}>
                         <td className={styles.tdMain}>{d.name}</td>
                         <td>{d.type === 'percentage' ? 'Percentage' : 'Fixed'}</td>
@@ -907,6 +964,7 @@ export default function MarketingHub({ initialTab = 'centre' }) {
                     ))}
                   </tbody>
                 </table>
+                <MarketingPagination page={marketingListPages.tabDiscounts} setPage={(p) => setMarketingPage('tabDiscounts', p)} totalItems={discountsData.length} itemLabel="discounts" ariaLabel="discounts pagination" />
               </div>
               </div>
             </>
@@ -935,7 +993,7 @@ export default function MarketingHub({ initialTab = 'centre' }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {vouchersData.map((v) => (
+                    {slicePage(vouchersData, marketingListPages.tabVouchers).map((v) => (
                       <tr key={v.id}>
                         <td className={styles.tdMain}>
                           <code className={styles.code}>{v.code}</code>
@@ -986,6 +1044,7 @@ export default function MarketingHub({ initialTab = 'centre' }) {
                     ))}
                   </tbody>
                 </table>
+                <MarketingPagination page={marketingListPages.tabVouchers} setPage={(p) => setMarketingPage('tabVouchers', p)} totalItems={vouchersData.length} itemLabel="vouchers" ariaLabel="vouchers pagination" />
               </div>
 
               <div className={styles.footerHint}>Tip: Use copy to share a single voucher code quickly.</div>
@@ -1015,7 +1074,7 @@ export default function MarketingHub({ initialTab = 'centre' }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {campaignsData.map((c) => (
+                    {slicePage(campaignsData, marketingListPages.tabCampaigns).map((c) => (
                       <tr key={c.id}>
                         <td className={styles.tdMain}>{c.name}</td>
                         <td>
@@ -1027,6 +1086,7 @@ export default function MarketingHub({ initialTab = 'centre' }) {
                     ))}
                   </tbody>
                 </table>
+                <MarketingPagination page={marketingListPages.tabCampaigns} setPage={(p) => setMarketingPage('tabCampaigns', p)} totalItems={campaignsData.length} itemLabel="campaigns" ariaLabel="campaigns pagination" />
               </div>
             </div>
           )}

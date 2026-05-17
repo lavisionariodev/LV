@@ -1,7 +1,7 @@
 /**
  * Default shape for `public.profiles` row used in client state (snake_case keys).
  */
-export const EMPTY_PROFILE_ROW = {
+const EMPTY_PROFILE_ROW = {
   full_name: '',
   avatar_url: '',
   username: '',

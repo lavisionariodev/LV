@@ -1,4 +1,4 @@
-import { isUuidLike } from '@/shared/utils/uuidLike'
+import { isUuidLike } from '@/shared/utils'
 
 /**
  * @param {import('@supabase/supabase-js').SupabaseClient} supabaseAdmin

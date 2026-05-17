@@ -113,11 +113,17 @@ export async function processSellerWithdrawal(supabaseAdmin, input) {
     return { ok: false, error: payoutDestination.error, status: 400 }
   }
 
+  const feePhp = 0
+  const netAmountPhp = Math.max(0, amountPhp - feePhp)
+
   const { data: withdrawal, error: insertErr } = await supabaseAdmin
     .from('seller_withdrawals')
     .insert({
       seller_user_id: sellerUserId,
       amount_php: amountPhp,
+      fee_php: feePhp,
+      net_amount_php: netAmountPhp,
+      payout_settings_seller_user_id: payoutSettings?.seller_user_id ?? sellerUserId,
       currency: summary.currency || 'PHP',
       destination_snapshot: snapshotPayoutSettings(payoutSettings),
       status: 'pending',

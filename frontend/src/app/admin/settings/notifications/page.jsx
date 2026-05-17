@@ -5,12 +5,12 @@ import {
   ADMIN_NOTIFICATION_BUCKETS,
   defaultBucketChannels,
   mergeAdminNotificationPreferences,
+  NOTIFICATION_PREFERENCE_CHANNELS,
 } from '@/lib/notifications/preferenceSchema'
 import {
   fetchAdminNotificationPreferences,
   saveAdminNotificationPreferences,
 } from '@/lib/notifications/preferencesClient'
-import { NOTIFICATION_PREFERENCE_CHANNELS } from '@/lib/notifications/notificationPreferenceChannels'
 import { NotificationPrefSwitch } from '@/lib/notifications/NotificationPrefSwitch'
 import {
   useNotificationPreferences,

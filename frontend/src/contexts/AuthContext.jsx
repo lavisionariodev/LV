@@ -1,11 +1,10 @@
 'use client';
 
+import { mapProfileRow } from '@/shared/utils'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { getUser, onAuthStateChange } from '@/lib/auth/session';
 import { getUserRole, getBuyerAccountStatus, isBuyerRole, isSellerRole } from '@/lib/auth/roles';
-import { mapProfileRow } from '@/shared/utils/profileDefaults';
-
 const PROFILE_SELECT =
   'full_name, avatar_url, username, username_locked, phone, gender, date_of_birth, address_street, address_city, address_province, address_zip';
 

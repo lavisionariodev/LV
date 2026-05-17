@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import styles from './onboarding.module.css'
 import { useAuth } from '@/contexts/AuthContext'
-import SellerComplianceDocuments from '@/features/seller/compliance/SellerComplianceDocuments'
+import SellerComplianceDocuments from './components/SellerComplianceDocuments'
 import {
   SELLER_BUSINESS_TYPE_OTHER,
   SELLER_BUSINESS_TYPE_PRESETS,

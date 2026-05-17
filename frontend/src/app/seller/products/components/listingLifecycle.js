@@ -1,10 +1,9 @@
+import { readEnum } from '@/shared/utils'
 import {
   hasPendingSellerChanges,
   hasStagedRejection,
   sellerShowsInUpdatesPending,
 } from '@/lib/seller-listings/pendingChanges'
-import { readEnum } from '@/shared/utils/queryParams'
-
 export const LISTING_TAB_IDS = ['active', 'under_review', 'updates_pending']
 
 export const LISTING_TABS = [

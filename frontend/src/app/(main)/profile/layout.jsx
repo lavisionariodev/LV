@@ -1,5 +1,6 @@
 'use client';
 
+import { PROFILE_DOB_MONTHS, dobPartsFromIso, isoFromDobParts } from '@/shared/utils'
 import { useEffect, useLayoutEffect, useState, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, useSelectedLayoutSegment, useSearchParams } from 'next/navigation';
@@ -17,12 +18,6 @@ import { inferCanChangePassword } from '@/lib/auth/inferCanChangePassword';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/contexts/ToastContext';
 import LogoutModal from '@/components/ui/Modal/Logout';
-import {
-  PROFILE_DOB_MONTHS,
-  dobPartsFromIso,
-  isoFromDobParts,
-} from '@/shared/utils/profileDob';
-
 /* ─────────────────────────────────────────
    Hook — detect mobile viewport
 ───────────────────────────────────────── */

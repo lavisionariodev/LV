@@ -21,6 +21,7 @@ import {
   TbLayoutGrid,
   TbClipboardCheck,
   TbMessageStar,
+  TbWallet,
 } from 'react-icons/tb'
 import { LuUserCheck } from 'react-icons/lu'
 import { BsPerson } from 'react-icons/bs'
@@ -103,6 +104,7 @@ const SIDEBAR_CONFIG = {
     navItems: [
       { href: '/seller', label: 'Dashboard', icon: TbLayoutDashboardFilled },
       { href: '/seller/orders', label: 'Orders', icon: TbShoppingBag },
+      { href: '/seller/wallet', label: 'Wallet', icon: TbWallet },
       {
         label: 'Products',
         icon: TbPackage,

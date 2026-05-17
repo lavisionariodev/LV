@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 
 import styles from './ConfirmModal.module.css'
-import BodyPortal from './BodyPortal'
 
 export default function ConfirmModal({
   open,
@@ -56,6 +56,7 @@ export default function ConfirmModal({
   }, [open, actionsDisabled, onCancel])
 
   if (!open) return null
+  if (typeof document === 'undefined') return null
 
   const handleOverlayClick = () => {
     if (actionsDisabled) return
@@ -96,8 +97,7 @@ export default function ConfirmModal({
   const subtitleClass =
     subtitleAlign === 'left' ? `${styles.subtitle} ${styles.subtitleLeft}` : styles.subtitle
 
-  return (
-    <BodyPortal>
+  return createPortal(
       <div
         className={styles.overlay}
         role="dialog"
@@ -134,8 +134,8 @@ export default function ConfirmModal({
           </button>
         </div>
       </div>
-    </div>
-    </BodyPortal>
+    </div>,
+    document.body
   )
 }
 

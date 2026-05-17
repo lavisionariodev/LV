@@ -46,7 +46,7 @@ export async function fetchSellerWithdrawalsForSeller(supabaseAdmin, sellerUserI
   const { data, error } = await supabaseAdmin
     .from('seller_withdrawals')
     .select(
-      'id,seller_user_id,amount_php,currency,status,failure_reason,paymongo_batch_id,paymongo_transfer_id,submitted_at,settled_at,created_at',
+      'id,seller_user_id,amount_php,fee_php,net_amount_php,currency,status,failure_reason,paymongo_batch_id,paymongo_transfer_id,submitted_at,settled_at,created_at',
     )
     .eq('seller_user_id', sellerUserId)
     .order('created_at', { ascending: false })

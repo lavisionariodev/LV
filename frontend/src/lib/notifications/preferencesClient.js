@@ -1,4 +1,4 @@
-import { fetchJson } from '@/shared/utils/fetchJson'
+import { fetchJson } from '@/shared/utils'
 
 export async function fetchAdminNotificationPreferences() {
   const body = await fetchJson('/api/admin/notification-preferences', { cache: 'no-store' }, {

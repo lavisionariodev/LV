@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { pendingFulfillmentCount } from './sellerOrderPaymentStatus.js'
+import { pendingFulfillmentCount } from './sellerOrderAnalytics.js'
 
 test('pendingFulfillmentCount counts only paid orders awaiting confirmation', () => {
   const orders = [

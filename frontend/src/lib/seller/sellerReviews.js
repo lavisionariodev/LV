@@ -1,8 +1,7 @@
+import { resolveStoredAvatar } from '@/shared/utils'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
 import { listingIdFromOrderItemProductId } from '@/lib/orders/listingIdFromProductId'
-import { resolveStoredAvatar } from '@/shared/utils/avatarImage'
-
 function computeInitials(fullName) {
   const s = String(fullName ?? '').trim()
   if (!s) return ''

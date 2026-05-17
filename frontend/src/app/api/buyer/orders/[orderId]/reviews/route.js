@@ -1,10 +1,9 @@
+import { isUuidLike } from '@/shared/utils'
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireActiveBuyerApiUser } from '@/lib/auth/requireApiUser'
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
 import { getClientIp, takeToken } from '@/lib/rate-limit/memoryRateLimit'
-import { isUuidLike } from '@/shared/utils/uuidLike'
-
 export async function GET(request, { params }) {
   const ip = getClientIp(request)
   const rl = takeToken(`buyer:reviews:get:${ip}`, { windowMs: 15 * 60_000, max: 80 })

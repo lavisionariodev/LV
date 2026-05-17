@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/lib/supabase/client";
 import { isValidEmail } from "@/lib/validators/authSchemas";
 import styles from "./ForgotPasswordModal.module.css";
-import BodyPortal from "./BodyPortal";
 
 const VALID_PORTALS = ["buyer", "seller", "administrator"];
 
@@ -69,9 +69,9 @@ export default function ForgotPasswordModal({
   };
 
   if (!isOpen) return null;
+  if (typeof document === "undefined") return null;
 
-  return (
-    <BodyPortal>
+  return createPortal(
     <div className={styles.modalOverlay}>
       <div className={styles.modalContent}>
         {!submitted ? (
@@ -198,7 +198,7 @@ export default function ForgotPasswordModal({
           </>
         )}
       </div>
-    </div>
-    </BodyPortal>
+    </div>,
+    document.body
   );
 }

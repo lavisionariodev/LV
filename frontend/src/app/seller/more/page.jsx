@@ -5,6 +5,12 @@ import styles from './more.module.css'
 
 const moreLinks = [
   {
+    href: '/seller/wallet',
+    title: 'Wallet',
+    description: 'Balances, transactions, and withdrawals after admin release.',
+    badge: 'Payouts',
+  },
+  {
     href: '/seller/analytics',
     title: 'Analytics',
     description: 'Sales overview, revenue reports, and product performance.',

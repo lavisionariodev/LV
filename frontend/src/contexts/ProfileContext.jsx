@@ -1,5 +1,6 @@
 'use client';
 
+import { buildProfileUpsert, mapProfileRow } from '@/shared/utils'
 import {
   createContext,
   useCallback,
@@ -13,8 +14,6 @@ import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal';
-import { buildProfileUpsert, mapProfileRow } from '@/shared/utils/profileDefaults';
-
 const ProfileContext = createContext(null);
 
 export function ProfileProvider({ children }) {

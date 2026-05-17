@@ -1,5 +1,6 @@
 'use client'
 
+import { resolveStoredAvatar, shouldUseUnoptimizedAvatarSrc } from '@/shared/utils'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
@@ -8,17 +9,16 @@ import productSelectStyles from '@/app/seller/products/products.module.css'
 import { supabase } from '@/lib/supabase/client'
 import { changePasswordWithReauth } from '@/lib/auth/changePassword'
 import { getOAuthRedirectUrl, linkOAuthIdentity, unlinkOAuthIdentity } from '@/lib/auth/client'
-import { fetchCurrentSellerProfile } from '@/features/seller/settings/sellerProfile'
 import {
   defaultBucketChannels,
   mergeSellerNotificationPreferences,
+  NOTIFICATION_PREFERENCE_CHANNELS,
   SELLER_NOTIFICATION_BUCKETS,
 } from '@/lib/notifications/preferenceSchema'
 import {
   fetchSellerNotificationPreferences,
   saveSellerNotificationPreferences,
 } from '@/lib/notifications/preferencesClient'
-import { NOTIFICATION_PREFERENCE_CHANNELS } from '@/lib/notifications/notificationPreferenceChannels'
 import { NotificationPrefSwitch } from '@/lib/notifications/NotificationPrefSwitch'
 import { useNotificationPreferences } from '@/lib/notifications/useNotificationPreferences'
 import {
@@ -32,8 +32,38 @@ import {
   validateSellerTagline,
 } from '@/lib/sellers/client'
 import { normalizeSellerSocialLinks, validateSellerSocialLinks } from '@/lib/sellers/socialLinks'
-import { shouldUseUnoptimizedAvatarSrc } from '@/shared/utils/avatarImage'
 import { useMediaQuery } from '@/shared/hooks'
+
+async function fetchCurrentSellerProfile() {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    throw new Error('Not authenticated.')
+  }
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, full_name, email, avatar_url')
+    .eq('id', user.id)
+    .single()
+
+  if (error) {
+    throw error
+  }
+
+  const { avatarPath, avatarUrl } = resolveStoredAvatar(supabase, data.avatar_url)
+
+  return {
+    id: data.id,
+    fullName: data.full_name || '',
+    email: data.email || '',
+    avatarPath,
+    avatarUrl,
+  }
+}
 
 const PAYOUT_METHOD_OPTIONS = [
   { value: 'bank', label: 'Bank transfer' },
@@ -860,7 +890,7 @@ export default function SellerSettingsProvider({ children }) {
       if (!payoutForm.gcashNumber.trim()) return 'GCash number is required.'
     }
     if (payoutForm.payoutMethod === 'manual' && !payoutForm.notes.trim()) {
-      return 'Please add admin notes for manual payout instructions.'
+      return 'Please add payout instructions for manual payout.'
     }
     if (payoutForm.payoutEmail.trim() && !/^\S+@\S+\.\S+$/.test(payoutForm.payoutEmail.trim())) {
       return 'Please enter a valid payout email.'

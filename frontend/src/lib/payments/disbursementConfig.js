@@ -40,6 +40,68 @@ export function getPaymongoDisbursementEnvStatus() {
 }
 
 /**
+ * Seller-facing validation for saved payout_settings row (snake_case DB shape).
+ * @param {Record<string, unknown> | null | undefined} row
+ * @returns {string} Error message, or empty string if complete.
+ */
+export function validateSellerPayoutSettingsRow(row) {
+  const method = String(row?.payout_method || 'bank').trim().toLowerCase()
+  if (method === 'bank') {
+    if (!String(row?.account_holder_name || '').trim()) {
+      return 'Account holder name is required for bank payouts.'
+    }
+    if (!String(row?.bank_name || '').trim()) return 'Bank name is required for bank payouts.'
+    if (!String(row?.account_number || '').trim()) return 'Account number is required for bank payouts.'
+  }
+  if (method === 'gcash') {
+    if (!String(row?.gcash_name || '').trim()) return 'GCash account name is required.'
+    if (!String(row?.gcash_number || '').trim()) return 'GCash number is required.'
+  }
+  if (method === 'manual' && !String(row?.notes || '').trim()) {
+    return 'Please add payout instructions for manual payout.'
+  }
+  const email = String(row?.payout_email || '').trim()
+  if (email && !/^\S+@\S+\.\S+$/.test(email)) return 'Please enter a valid payout email.'
+  return ''
+}
+
+/**
+ * Withdraw + payout readiness for seller wallet UI.
+ * @param {Record<string, unknown> | null | undefined} payoutSettings
+ */
+export function getSellerWithdrawReadiness(payoutSettings) {
+  const env = getPaymongoDisbursementEnvStatus()
+  const payoutMethod = String(payoutSettings?.payout_method || 'bank').trim().toLowerCase()
+  const isManualPayout = payoutMethod === 'manual'
+  const missingRow = !payoutSettings
+  const validationError = missingRow
+    ? 'Add your bank or GCash payout details before you can withdraw.'
+    : validateSellerPayoutSettingsRow(payoutSettings)
+  const payoutSettingsComplete = !validationError
+
+  const disbursement = evaluateSellerPayoutSettingsForDisbursement(payoutSettings)
+  let disbursementError = null
+  if (payoutSettingsComplete && !disbursement.ok && disbursement.error) {
+    disbursementError = disbursement.error
+  }
+
+  const manualPayoutOnly = isManualPayout && payoutSettingsComplete
+  const withdrawReady =
+    env.automatedReady && payoutSettingsComplete && disbursement.ok && !isManualPayout
+
+  return {
+    ...env,
+    payoutMethod,
+    isManualPayout,
+    manualPayoutOnly,
+    payoutSettingsComplete,
+    payoutSettingsError: validationError || disbursementError,
+    disbursementError,
+    withdrawReady,
+  }
+}
+
+/**
  * @param {Record<string, unknown> | null | undefined} payoutSettings
  */
 export function evaluateSellerPayoutSettingsForDisbursement(payoutSettings) {

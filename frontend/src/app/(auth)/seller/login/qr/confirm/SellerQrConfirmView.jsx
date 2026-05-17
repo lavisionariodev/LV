@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import SellerQrConfirmPanel from '@/features/seller/auth/SellerQrConfirmPanel'
+import SellerQrConfirmPanel from '../components/SellerQrConfirmPanel'
 import styles from '../qrFlow.module.css'
 
 /**

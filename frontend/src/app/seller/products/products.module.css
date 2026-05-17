@@ -3553,6 +3553,80 @@
   gap: 8px;
 }
 
+/* ── Pagination ── */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-top: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+  gap: 10px;
+  background: #fff;
+  border-radius: 0 0 12px 12px;
+  margin-top: 0.5rem;
+}
+
+.paginationControls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.pageBtn {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid #d4dde6;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+  transition: border-color 0.14s, background 0.14s, color 0.14s;
+  white-space: nowrap;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pageBtn:hover:not(:disabled) {
+    border-color: #94a3b8;
+    background: #f1f5f9;
+  }
+}
+
+.pageBtnActive {
+  color: #102820;
+  border-color: #102820;
+  font-weight: 700;
+  background: #f0f7f4;
+}
+
+.pageBtnDisabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.pageEllipsis {
+  font-size: 13px;
+  color: #94a3b8;
+  padding: 0 6px;
+  line-height: 28px;
+}
+
+.paginationInfo {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.paginationInfo strong {
+  color: #102820;
+  font-weight: 700;
+}
+
 @media (max-width: 860px) {
   .productModalOverlay {
     align-items: center;

@@ -1,9 +1,8 @@
 'use client'
 
+import { relativeNotificationTime } from '@/shared/utils'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
-
-import { relativeNotificationTime } from '@/shared/utils/relativeTime'
 
 export { relativeNotificationTime }
 
