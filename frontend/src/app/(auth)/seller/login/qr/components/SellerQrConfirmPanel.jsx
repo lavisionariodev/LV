@@ -7,7 +7,7 @@ import { onAuthStateChange } from '@/lib/auth/session'
 import { approveSellerQrChallenge, denySellerQrChallenge, pollSellerQrApprovalForApprover, SELLER_QR_LOGIN_POLL_INTERVAL_MS } from '@/lib/auth/qrLoginClient'
 import { useAuthToast } from '@/contexts/ToastContext'
 import { buildSellerLinkDeviceProfileHref } from '@/lib/auth/sellerLinkDeviceState'
-import styles from '@/app/(auth)/seller/login/qr/qrFlow.module.css'
+import styles from '../qrFlow.module.css'
 
 /**
  * @param {{

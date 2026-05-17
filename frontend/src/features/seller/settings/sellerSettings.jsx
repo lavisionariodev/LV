@@ -8,7 +8,6 @@ import productSelectStyles from '@/app/seller/products/products.module.css'
 import { supabase } from '@/lib/supabase/client'
 import { changePasswordWithReauth } from '@/lib/auth/changePassword'
 import { getOAuthRedirectUrl, linkOAuthIdentity, unlinkOAuthIdentity } from '@/lib/auth/client'
-import { fetchCurrentSellerProfile } from '@/features/seller/settings/sellerProfile'
 import {
   defaultBucketChannels,
   mergeSellerNotificationPreferences,
@@ -32,8 +31,39 @@ import {
   validateSellerTagline,
 } from '@/lib/sellers/client'
 import { normalizeSellerSocialLinks, validateSellerSocialLinks } from '@/lib/sellers/socialLinks'
-import { shouldUseUnoptimizedAvatarSrc } from '@/shared/utils/avatarImage'
+import { resolveStoredAvatar, shouldUseUnoptimizedAvatarSrc } from '@/shared/utils/avatarImage'
 import { useMediaQuery } from '@/shared/hooks'
+
+async function fetchCurrentSellerProfile() {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    throw new Error('Not authenticated.')
+  }
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, full_name, email, avatar_url')
+    .eq('id', user.id)
+    .single()
+
+  if (error) {
+    throw error
+  }
+
+  const { avatarPath, avatarUrl } = resolveStoredAvatar(supabase, data.avatar_url)
+
+  return {
+    id: data.id,
+    fullName: data.full_name || '',
+    email: data.email || '',
+    avatarPath,
+    avatarUrl,
+  }
+}
 
 const PAYOUT_METHOD_OPTIONS = [
   { value: 'bank', label: 'Bank transfer' },

@@ -21,7 +21,7 @@ import {
   productStateLabel,
   readListingTab,
   submittedUpdateStatusLabel,
-} from '@/features/seller/products/listingLifecycle'
+} from './listingLifecycle'
 import {
   buildSellerListingPayload,
   ALLOWED_IMAGE_MIME,

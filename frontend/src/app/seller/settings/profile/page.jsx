@@ -9,10 +9,10 @@ import { TbCamera, TbTrash } from 'react-icons/tb'
 import { FiEdit, FiSave } from 'react-icons/fi'
 import { MdDevices } from 'react-icons/md'
 import { RiQrScan2Line } from 'react-icons/ri'
-import SellerQrConfirmPanel from '@/features/seller/auth/SellerQrConfirmPanel'
-import SellerQrLoginScanner from '@/features/seller/auth/SellerQrLoginScanner'
+import SellerQrConfirmPanel from '@/app/(auth)/seller/login/qr/components/SellerQrConfirmPanel'
+import SellerQrLoginScanner from './SellerQrLoginScanner'
 import { ALLOWED, MAX_MB, useSellerSettings } from '@/features/seller/settings/sellerSettings'
-import SellerSignedInDevices from '@/features/seller/settings/SellerSignedInDevices'
+import SellerSignedInDevices from './SellerSignedInDevices'
 import {
   clearSellerLinkDeviceScanTarget,
   persistSellerLinkDeviceScanTarget,
