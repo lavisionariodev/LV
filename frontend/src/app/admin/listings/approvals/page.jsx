@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
@@ -46,6 +46,8 @@ function SellerAvatarMark({ src, initialsSource, listingStyles: styleMod }) {
     </span>
   )
 }
+
+const STAGED_CHANGES_EXPAND_PREVIEW = 4
 
 const PENDING_FIELD_LABELS = {
   listing_name: 'Title',
@@ -118,6 +120,157 @@ function summarizeStagedChanges(row) {
   }))
 }
 
+function getSellerDisplayLine(row) {
+  if (row.seller_business_name?.trim()) {
+    return row.seller_email?.trim()
+      ? `${row.seller_business_name.trim()} · ${row.seller_email.trim()}`
+      : row.seller_business_name.trim()
+  }
+  return row.seller_email?.trim() || '—'
+}
+
+function getSellerShopName(row) {
+  return row.seller_business_name?.trim() || '—'
+}
+
+function getSellerEmail(row) {
+  return row.seller_email?.trim() || ''
+}
+
+function ExpandChevronButton({ isExpanded, onToggle, label }) {
+  return (
+    <button
+      type="button"
+      className={`${styles.expandBtn} ${isExpanded ? styles.expandBtnOpen : ''}`}
+      onClick={onToggle}
+      aria-expanded={isExpanded}
+      title={isExpanded ? 'Collapse details' : 'Expand details'}
+      aria-label={label}
+    >
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden>
+        <path
+          d="M9 18l6-6-6-6"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </button>
+  )
+}
+
+function StagedExpandedPanel({
+  row,
+  isUpdating,
+  onApprove,
+  onReject,
+  onViewDetails,
+  onShowAllChanges,
+}) {
+  const lines = summarizeStagedChanges(row)
+  const previewLines = lines.slice(0, STAGED_CHANGES_EXPAND_PREVIEW)
+  const hasMore = lines.length > STAGED_CHANGES_EXPAND_PREVIEW
+
+  return (
+    <div className={styles.expandedPanel}>
+      <div className={styles.expandPanelSection}>
+        <div className={styles.expandPanelHeader}>
+          <p className={styles.expandPanelTitle}>Submitted changes</p>
+          <RowActions
+            row={row}
+            isUpdating={isUpdating}
+            onApprove={onApprove}
+            onReject={onReject}
+            onViewDetails={onViewDetails}
+          />
+        </div>
+        {previewLines.length === 0 ? (
+          <p className={styles.stagedSummaryText}>No field changes recorded.</p>
+        ) : (
+          <>
+            <table className={styles.expandDiffTable}>
+              <thead>
+                <tr>
+                  <th>Field</th>
+                  <th>Current</th>
+                  <th>Submitted update</th>
+                </tr>
+              </thead>
+              <tbody>
+                {previewLines.map(({ label, before, after }, idx) => (
+                  <tr key={`${label}-${idx}`} className={styles.expandDiffRow}>
+                    <td className={styles.expandDiffField}>{label}</td>
+                    <td className={styles.expandDiffBefore}>{before}</td>
+                    <td className={styles.expandDiffAfter}>{after}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {hasMore ? (
+              <button type="button" className={styles.stagedShowMoreBtn} onClick={onShowAllChanges}>
+                Show all {lines.length} changes
+              </button>
+            ) : null}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function StagedAllChangesModal({ row, onClose }) {
+  if (!row) return null
+  const lines = summarizeStagedChanges(row)
+
+  return (
+    <div
+      className={styles.detailsOverlay}
+      role="dialog"
+      aria-modal="true"
+      aria-label="All submitted changes"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose()
+      }}
+    >
+      <div className={styles.detailsCard} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.detailsHeader}>
+          <div className={styles.detailsHeaderLeft}>
+            <span className={styles.detailsKicker}>Staged update</span>
+            <p className={styles.detailsTitle}>{row.listing_name || 'Untitled'}</p>
+            <p className={styles.detailsSeller}>{getSellerDisplayLine(row)}</p>
+          </div>
+          <button type="button" className={styles.detailsClose} onClick={onClose} aria-label="Close">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+        <p className={styles.detailsSectionLabel}>All submitted changes</p>
+        <table className={styles.detailsDiffTable}>
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Current</th>
+              <th>Submitted update</th>
+            </tr>
+          </thead>
+          <tbody>
+            {lines.map(({ label, before, after }, idx) => (
+              <tr key={idx} className={styles.detailsDiffRow}>
+                <td className={styles.detailsDiffField}>{label}</td>
+                <td className={styles.detailsDiffBefore}>{before}</td>
+                <td className={styles.detailsDiffAfter}>{after}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 function formatDateTime(raw) {
   if (!raw) return '—'
   try {
@@ -128,6 +281,19 @@ function formatDateTime(raw) {
       hour: '2-digit',
       minute: '2-digit',
     }).format(new Date(raw))
+  } catch {
+    return String(raw)
+  }
+}
+
+function formatDateShort(raw) {
+  if (!raw) return '—'
+  try {
+    const d = new Date(raw)
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    const yyyy = d.getFullYear()
+    return `${mm}/${dd}/${yyyy}`
   } catch {
     return String(raw)
   }
@@ -530,6 +696,10 @@ function StagedUpdatesSection({
   onViewDetails,
   accentClass,
 }) {
+  const [expandedRowId, setExpandedRowId] = useState(null)
+  const [allChangesRow, setAllChangesRow] = useState(null)
+  const colCount = 5
+
   return (
     <section className={`${styles.reviewPanel} ${accentClass || ''}`}>
       <div className={styles.reviewHeader}>
@@ -550,14 +720,16 @@ function StagedUpdatesSection({
             <colgroup>
               <col className={styles.colSeller} />
               <col className={styles.colListing} />
-              <col className={styles.colChangedFields} />
+              <col className={styles.colSubmitted} />
+              <col className={styles.colSummary} />
               <col className={styles.colActions} />
             </colgroup>
             <thead>
               <tr>
                 <th>Seller</th>
                 <th>Listing</th>
-                <th>Changed Fields</th>
+                <th>Submitted</th>
+                <th>Summary</th>
                 <th className={styles.actionsTh}>Actions</th>
               </tr>
             </thead>
@@ -566,7 +738,8 @@ function StagedUpdatesSection({
                 <tr key={`staged-sk-${i}`} className={styles.primaryRow}>
                   <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 140 }} aria-hidden /></td>
                   <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 200 }} aria-hidden /></td>
-                  <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 280, height: 36 }} aria-hidden /></td>
+                  <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 100 }} aria-hidden /></td>
+                  <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 120 }} aria-hidden /></td>
                   <td className={styles.actionsCell}><span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 88, height: 28 }} aria-hidden /></td>
                 </tr>
               ))}
@@ -587,70 +760,89 @@ function StagedUpdatesSection({
             <colgroup>
               <col className={styles.colSeller} />
               <col className={styles.colListing} />
-              <col className={styles.colChangedFields} />
+              <col className={styles.colSubmitted} />
+              <col className={styles.colSummary} />
               <col className={styles.colActions} />
             </colgroup>
             <thead>
               <tr>
                 <th>Seller</th>
                 <th>Listing</th>
-                <th>Changed Fields</th>
+                <th>Submitted</th>
+                <th>Summary</th>
                 <th className={styles.actionsTh}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((row) => {
                 const busy = moderationBusyId === row.id
-                const shop =
-                  row.seller_business_name?.trim() || row.seller_email?.trim() || '—'
+                const shopName = getSellerShopName(row)
+                const sellerEmail = getSellerEmail(row)
                 const merged = mergePendingChangesIntoListingRow(row)
                 const listingTitle = merged.listing_name || 'Untitled'
                 const lines = summarizeStagedChanges(row)
+                const isExpanded = expandedRowId === row.id
+
                 return (
-                  <tr key={row.id} className={styles.primaryRow}>
-                    <td>
-                      <div className={styles.sellerCell}>
-                        <SellerAvatarMark
-                          src={row.seller_avatar_url}
-                          initialsSource={row.seller_business_name || row.seller_email}
-                          listingStyles={styles}
-                        />
-                        <p className={styles.reviewSellerText}>{shop}</p>
-                      </div>
-                    </td>
-                    <td>
-                      <div className={styles.reviewListingCell}>
+                  <Fragment key={row.id}>
+                    <tr className={`${styles.primaryRow} ${isExpanded ? styles.primaryRowOpen : ''}`}>
+                      <td>
+                        <div className={styles.sellerCell}>
+                          <SellerAvatarMark
+                            src={row.seller_avatar_url}
+                            initialsSource={row.seller_business_name || row.seller_email}
+                            listingStyles={styles}
+                          />
+                          <div className={styles.sellerCellText}>
+                            <p className={styles.reviewSellerText}>{shopName}</p>
+                            {sellerEmail ? (
+                              <p className={styles.reviewSellerEmail}>{sellerEmail}</p>
+                            ) : null}
+                          </div>
+                        </div>
+                      </td>
+                      <td>
                         <p className={styles.reviewListingName}>{listingTitle}</p>
-                        <span className={styles.stagedTag}>Staged update</span>
-                      </div>
-                    </td>
-                    <td>
-                      <div className={styles.stagedFieldPills}>
-                        {lines.map(({ label, after }, idx) => (
-                          <span key={`${row.id}-${label}-${idx}`} className={styles.stagedFieldPill}>
-                            <span className={styles.stagedFieldName}>{label}</span>
-                            <span className={styles.stagedFieldArrow}>→</span>
-                            <span className={styles.stagedFieldNew}>{after}</span>
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className={styles.actionsCell}>
-                      <RowActions
-                        row={row}
-                        isUpdating={busy}
-                        onApprove={() => onApprove(row)}
-                        onReject={() => onReject(row)}
-                        onViewDetails={() => onViewDetails(row)}
-                      />
-                    </td>
-                  </tr>
+                      </td>
+                      <td>
+                        <span className={styles.reviewSubmitted}>{formatDateShort(row.submitted_at)}</span>
+                      </td>
+                      <td>
+                        <p className={styles.stagedSummaryText}>
+                          {lines.length} field{lines.length === 1 ? '' : 's'} updated
+                        </p>
+                      </td>
+                      <td className={styles.actionsCell}>
+                        <ExpandChevronButton
+                          isExpanded={isExpanded}
+                          onToggle={() => setExpandedRowId(isExpanded ? null : row.id)}
+                          label={`${isExpanded ? 'Collapse' : 'Expand'} details for ${listingTitle}`}
+                        />
+                      </td>
+                    </tr>
+                    {isExpanded ? (
+                      <tr className={styles.expandedRow}>
+                        <td colSpan={colCount} className={styles.expandedTd}>
+                          <StagedExpandedPanel
+                            row={row}
+                            isUpdating={busy}
+                            onApprove={() => onApprove(row)}
+                            onReject={() => onReject(row)}
+                            onViewDetails={() => onViewDetails(row)}
+                            onShowAllChanges={() => setAllChangesRow(row)}
+                          />
+                        </td>
+                      </tr>
+                    ) : null}
+                  </Fragment>
                 )
               })}
             </tbody>
           </table>
         )}
       </div>
+
+      <StagedAllChangesModal row={allChangesRow} onClose={() => setAllChangesRow(null)} />
     </section>
   )
 }
@@ -693,6 +885,7 @@ function ApprovalsTableSection({
                 <col className={styles.colKind} />
                 <col className={styles.colPrice} />
                 <col className={styles.colSubmitted} />
+                <col className={styles.colApproval} />
                 <col className={styles.colActions} />
               </colgroup>
               <thead>
@@ -702,6 +895,7 @@ function ApprovalsTableSection({
                   <th>Kind</th>
                   <th>Price</th>
                   <th>Submitted</th>
+                  <th>Approval</th>
                   <th className={styles.actionsTh}>Actions</th>
                 </tr>
               </thead>
@@ -713,6 +907,7 @@ function ApprovalsTableSection({
                     <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} aria-hidden /></td>
                     <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 72 }} aria-hidden /></td>
                     <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 100 }} aria-hidden /></td>
+                    <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 72 }} aria-hidden /></td>
                     <td className={styles.actionsCell}><span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 100, height: 28 }} aria-hidden /></td>
                   </tr>
                 ))}
@@ -744,6 +939,7 @@ function ApprovalsTableSection({
                 <col className={styles.colKind} />
                 <col className={styles.colPrice} />
                 <col className={styles.colSubmitted} />
+                <col className={styles.colApproval} />
                 <col className={styles.colActions} />
               </colgroup>
               <thead>
@@ -753,31 +949,18 @@ function ApprovalsTableSection({
                   <th>Kind</th>
                   <th>Price</th>
                   <th>Submitted</th>
+                  <th>Approval</th>
                   <th className={styles.actionsTh}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => {
-                  const sellerLine =
-                    row.seller_business_name?.trim()
-                      ? row.seller_email?.trim()
-                        ? `${row.seller_business_name.trim()} · ${row.seller_email.trim()}`
-                        : row.seller_business_name.trim()
-                      : row.seller_email?.trim() || '—'
+                  const sellerLine = getSellerDisplayLine(row)
                   const busy = moderationBusyId === row.id
                   return (
                     <tr key={row.id} className={styles.primaryRow}>
                       <td>
-                        <div className={styles.reviewListingCell}>
-                          <p className={styles.reviewListingName}>{row.listing_name || 'Untitled'}</p>
-                          <div className={styles.reviewBadges}>
-                            <StatusBadge status={row.status} />
-                            <ApprovalBadge approvalStatus={row.approval_status} />
-                            {hasPendingSellerChanges(row) ? (
-                              <span className={styles.stagedTag}>Staged update</span>
-                            ) : null}
-                          </div>
-                        </div>
+                        <p className={styles.reviewListingName}>{row.listing_name || 'Untitled'}</p>
                       </td>
                       <td>
                         <div className={styles.sellerCell}>
@@ -799,6 +982,9 @@ function ApprovalsTableSection({
                         <span className={styles.reviewSubmitted}>
                           {formatDateTime(row.submitted_at)}
                         </span>
+                      </td>
+                      <td>
+                        <ApprovalBadge approvalStatus={row.approval_status} />
                       </td>
                       <td className={styles.actionsCell}>
                         <RowActions
@@ -1075,6 +1261,7 @@ export default function AdminListingsApprovalsPage() {
                   <col className={styles.colKind} />
                   <col className={styles.colPrice} />
                   <col className={styles.colSubmitted} />
+                  <col className={styles.colApproval} />
                   <col className={styles.colActions} />
                 </colgroup>
                 <thead>
@@ -1084,6 +1271,7 @@ export default function AdminListingsApprovalsPage() {
                     <th>Kind</th>
                     <th>Price</th>
                     <th>Submitted</th>
+                    <th>Approval</th>
                     <th className={styles.actionsTh}>Actions</th>
                   </tr>
                 </thead>
@@ -1095,6 +1283,7 @@ export default function AdminListingsApprovalsPage() {
                       <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} /></td>
                       <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 64 }} /></td>
                       <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 88 }} /></td>
+                      <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 72 }} /></td>
                       <td className={styles.actionsCell}><span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 92, height: 26 }} /></td>
                     </tr>
                   ))}
@@ -1117,14 +1306,16 @@ export default function AdminListingsApprovalsPage() {
                 <colgroup>
                   <col className={styles.colSeller} />
                   <col className={styles.colListing} />
-                  <col className={styles.colChangedFields} />
+                  <col className={styles.colSubmitted} />
+                  <col className={styles.colSummary} />
                   <col className={styles.colActions} />
                 </colgroup>
                 <thead>
                   <tr>
                     <th>Seller</th>
                     <th>Listing</th>
-                    <th>Changed Fields</th>
+                    <th>Submitted</th>
+                    <th>Summary</th>
                     <th className={styles.actionsTh}>Actions</th>
                   </tr>
                 </thead>
@@ -1133,7 +1324,8 @@ export default function AdminListingsApprovalsPage() {
                     <tr key={`ap-sk-b-${i}`} className={styles.primaryRow}>
                       <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 120 }} /></td>
                       <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 180 }} /></td>
-                      <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 260, height: 32 }} /></td>
+                      <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 88 }} /></td>
+                      <td><span className={`${styles.listingsSkBar} ${styles.listingsSkTdBar}`} style={{ maxWidth: 140 }} /></td>
                       <td className={styles.actionsCell}><span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 80, height: 26 }} /></td>
                     </tr>
                   ))}

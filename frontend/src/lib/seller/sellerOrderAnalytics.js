@@ -3,7 +3,7 @@
  * Used by the seller dashboard and analytics routes.
  */
 
-import { hasPendingSellerChanges } from '@/lib/seller-listings/pendingChanges'
+import { hasPendingSellerChanges, sellerShowsInUpdatesPending } from '@/lib/seller-listings/pendingChanges'
 import { formatPhpWholeAmount } from '@/lib/cart/formatPhp'
 import {
   fulfillmentStatus,
@@ -581,7 +581,7 @@ export function listingsPendingReviewCount(listingRows) {
   return (Array.isArray(listingRows) ? listingRows : []).filter((r) => {
     const s = String(r.approval_status || '').toLowerCase()
     if (s === 'pending' || s === 'rejected') return true
-    return s === 'approved' && hasPendingSellerChanges(r)
+    return s === 'approved' && sellerShowsInUpdatesPending(r)
   }).length
 }
 
@@ -591,7 +591,7 @@ export function listingsReviewAlertHref(listingRows) {
   for (const row of Array.isArray(listingRows) ? listingRows : []) {
     const s = String(row?.approval_status || '').toLowerCase()
     if (s === 'pending' || s === 'rejected') underReview += 1
-    else if (s === 'approved' && hasPendingSellerChanges(row)) updatesPending += 1
+    else if (s === 'approved' && sellerShowsInUpdatesPending(row)) updatesPending += 1
   }
   if (underReview > 0) return '/seller/products/catalog?tab=under_review'
   if (updatesPending > 0) return '/seller/products/catalog?tab=updates_pending'

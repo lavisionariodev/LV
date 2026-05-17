@@ -680,8 +680,12 @@ export default function AdminDisputesPage() {
                   <div className={styles.mobileTitle}>{d.orderRef}</div>
                   {refLbl ? <div className={styles.mobileSubtitle}>{refLbl}</div> : null}
                 </div>
-                <div className={styles.mobileBadgeWrap}>
-                  <StatusBadge status={d.status} />
+                <div className={styles.mobileHeaderMeta}>
+                  <span
+                    className={`${styles.mobileCardValue} ${styles[`mobileStatus_${d.status}`] || styles.mobileStatus_default}`}
+                  >
+                    {STATUS_LABEL[d.status] || d.status}
+                  </span>
                 </div>
               </div>
 
@@ -698,11 +702,11 @@ export default function AdminDisputesPage() {
               </div>
 
               <div className={styles.mobileCardSection} data-mobile-label="Reason">
-                <span className={styles.reasonTag}>{d.reason}</span>
+                <p className={styles.mobileCardValue}>{d.reason}</p>
               </div>
 
               <div className={styles.mobileCardSection} data-mobile-label="Date">
-                <span className={styles.dateCell}>{formatDisputeTableDate(d.openedAtIso)}</span>
+                <span className={styles.mobileCardValue}>{formatDisputeTableDate(d.openedAtIso)}</span>
               </div>
 
               <div className={styles.mobileCardFooter}>

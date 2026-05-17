@@ -20,6 +20,7 @@ import {
   LISTING_TABS,
   productStateLabel,
   readListingTab,
+  submittedUpdateStatusLabel,
 } from '@/features/seller/products/listingLifecycle'
 import {
   buildSellerListingPayload,
@@ -44,7 +45,12 @@ import {
 import { getSellerByUserId } from '@/lib/sellers/client'
 import { supabase } from '@/lib/supabase/client'
 import { formatPhpAmount, roundPhpAmount } from '@/lib/cart/formatPhp'
-import { hasPendingSellerChanges, mergePendingChangesIntoListingRow, getPendingChangeFieldLabels } from '@/lib/seller-listings/pendingChanges'
+import {
+  hasPendingSellerChanges,
+  mergePendingChangesIntoListingRow,
+  getPendingChangeFieldLabels,
+  sellerShowsInUpdatesPending,
+} from '@/lib/seller-listings/pendingChanges'
 import { formatCount } from '@/shared/utils/formatCount'
 import { useDebouncedEffect } from '@/shared/hooks'
 import BodyPortal from '@/components/ui/Modal/BodyPortal'
@@ -442,10 +448,122 @@ function ProductsReviewTableRowMenu({
   )
 }
 
-function formatSubmittedChanges(product) {
-  const fields = Array.isArray(product?.pendingChangeFields) ? product.pendingChangeFields : []
-  if (fields.length === 0) return '—'
-  return fields.join(', ')
+function updatesPendingSubmittedAt(product) {
+  return (
+    product?.pendingChangesSubmittedAt ||
+    (product?.stagedRejectionReason ? product?.reviewedAt : null) ||
+    null
+  )
+}
+
+function SubmittedUpdateViewModal({ product, onClose, onDismissRequest }) {
+  if (!product) return null
+
+  const status = submittedUpdateStatusLabel(product)
+  const isRejected = Boolean(product.stagedRejectionReason?.trim())
+  const fields = Array.isArray(product.pendingChangeFields) ? product.pendingChangeFields : []
+  const submittedAt = updatesPendingSubmittedAt(product)
+  const canDismiss = Boolean(onDismissRequest)
+
+  return (
+    <BodyPortal>
+      <div
+        className={styles.productModalOverlay}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onClose()
+        }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="submission-view-title"
+      >
+        <div
+          className={`${styles.productModal} ${styles.submissionViewModal}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className={styles.productModalHeader}>
+            <div>
+              <p className={styles.productModalKicker}>Submitted update</p>
+              <h2 id="submission-view-title" className={styles.productModalTitle}>
+                {product.name}
+              </h2>
+              <p className={styles.productModalSubtitle}>
+                {product.category} · {formatKindLabel(product.kind)}
+              </p>
+            </div>
+            <button
+              type="button"
+              className={styles.productModalClose}
+              onClick={onClose}
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+
+          <div className={styles.productModalBody}>
+            <div className={styles.submissionViewStatusRow}>
+              <span className={styles.submissionViewStatusLabel}>Status</span>
+              <span
+                className={`${styles.productsTableStatus} ${
+                  isRejected ? styles.productsTableStatusRejected : styles.productsTableStatusPending
+                }`}
+              >
+                {status}
+              </span>
+            </div>
+
+            <dl className={styles.productModalAttrs}>
+              <div className={styles.productModalAttrRow}>
+                <dt>Submitted</dt>
+                <dd>{formatSubmittedAt(submittedAt)}</dd>
+              </div>
+              {isRejected && product.reviewedAt ? (
+                <div className={styles.productModalAttrRow}>
+                  <dt>Reviewed</dt>
+                  <dd>{formatSubmittedAt(product.reviewedAt)}</dd>
+                </div>
+              ) : null}
+              {!isRejected && fields.length > 0 ? (
+                <div className={styles.productModalAttrRow}>
+                  <dt>Fields updated</dt>
+                  <dd>
+                    <ul className={styles.submissionViewFieldList}>
+                      {fields.map((field) => (
+                        <li key={field}>{field}</li>
+                      ))}
+                    </ul>
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+
+            {isRejected ? (
+              <div className={styles.submissionViewFeedback} role="status">
+                <p className={styles.submissionViewFeedbackLabel}>Administrator feedback</p>
+                <p className={styles.submissionViewFeedbackText}>{product.stagedRejectionReason}</p>
+              </div>
+            ) : (
+              <p className={styles.submissionViewNote}>
+                Your live listing on the shop still shows the last approved details until this update is
+                approved.
+              </p>
+            )}
+          </div>
+
+          <div className={styles.submissionViewFooter}>
+            <button type="button" className={styles.submissionViewCloseBtn} onClick={onClose}>
+              Close
+            </button>
+            {canDismiss ? (
+              <button type="button" className={styles.submissionViewDismissBtn} onClick={onDismissRequest}>
+                Dismiss
+              </button>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </BodyPortal>
+  )
 }
 
 function ProductsReviewTable({
@@ -476,7 +594,7 @@ function ProductsReviewTable({
               scope="col"
               className={isUpdatesPending ? styles.productsTableSubmittedChangesCol : undefined}
             >
-              {isUpdatesPending ? 'Submitted changes' : 'Status'}
+              Status
             </th>
             <th scope="col" className={styles.productsTableActionsCol}>
               Actions
@@ -495,17 +613,23 @@ function ProductsReviewTable({
               </td>
               <td data-label="Submitted" className={styles.productsTableSubmittedCol}>
                 {formatSubmittedAt(
-                  isUpdatesPending ? product.pendingChangesSubmittedAt : product.submittedAt,
+                  isUpdatesPending ? updatesPendingSubmittedAt(product) : product.submittedAt,
                 )}
               </td>
               <td
-                data-label={isUpdatesPending ? 'Submitted changes' : 'Status'}
+                data-label="Status"
                 className={isUpdatesPending ? styles.productsTableSubmittedChangesCol : undefined}
               >
                 {isUpdatesPending ? (
-                  <p className={styles.productsTableSubmittedChanges}>
-                    {formatSubmittedChanges(product)}
-                  </p>
+                  <span
+                    className={`${styles.productsTableStatus} ${
+                      product.stagedRejectionReason
+                        ? styles.productsTableStatusRejected
+                        : styles.productsTableStatusPending
+                    }`}
+                  >
+                    {submittedUpdateStatusLabel(product)}
+                  </span>
                 ) : (
                   <span
                     className={`${styles.productsTableStatus} ${
@@ -759,6 +883,7 @@ function normalizeListingRowToProduct(row) {
     packageOptions: normalizePackageOptionsFromDb(effective.package_options),
     stockStatus: effective.stock_status ?? null,
     hasPendingUpdate: hasPendingSellerChanges(row),
+    showsInUpdatesPending: sellerShowsInUpdatesPending(row),
     stagedRejectionReason: row?.staged_rejection_reason ?? row?.stagedRejectionReason ?? null,
     pendingChangesSubmittedAt:
       row?.pending_changes_submitted_at ?? row?.pendingChangesSubmittedAt ?? null,
@@ -788,6 +913,7 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
   const [activeTab, setActiveTab] = useState(() => readListingTab(searchParams, LISTING_TAB_IDS))
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [modalMode, setModalMode] = useState(null) // 'view' | 'edit'
+  const [submissionViewProduct, setSubmissionViewProduct] = useState(null)
   const [editGallery, setEditGallery] = useState([])
   const [pendingImageFiles, setPendingImageFiles] = useState([])
   const [products, setProducts] = useState([])
@@ -944,6 +1070,14 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
     setModalMode('view')
   }
 
+  const handleOpenSubmissionView = (product) => {
+    setSubmissionViewProduct(product)
+  }
+
+  const handleCloseSubmissionView = () => {
+    setSubmissionViewProduct(null)
+  }
+
   const handleOpenEdit = (product) => {
     setSelectedProduct(product)
     setModalMode('edit')
@@ -1078,6 +1212,7 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
   const handleRequestCancelReview = (product) => {
     setCancelError(null)
     handleCloseModal()
+    handleCloseSubmissionView()
     setProductPendingCancel(product)
   }
 
@@ -1109,6 +1244,9 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
       }
 
       setProductPendingCancel(null)
+      if (submissionViewProduct?.id === id) {
+        handleCloseSubmissionView()
+      }
     } finally {
       setCancelInProgress(false)
     }
@@ -1273,7 +1411,7 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
             <div className={styles.statCard}>
               <p className={styles.statLabel}>Awaiting admin</p>
               <p className={styles.statValue}>{formatCount(pendingCount)}</p>
-              <p className={styles.statHint}>Under review or updates pending</p>
+              <p className={styles.statHint}>Under review or submitted updates</p>
             </div>
           </>
         )}
@@ -1295,7 +1433,7 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
             : activeTab === 'under_review'
               ? 'Listings under review'
               : activeTab === 'updates_pending'
-                ? 'Updates pending approval'
+                ? 'Submitted updates'
                 : 'Active listings'
         }
         id={showLifecycleTabs ? `products-panel-${activeTab}` : undefined}
@@ -1333,7 +1471,7 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
                 : activeTab === 'under_review'
                   ? 'No listings under review match your filters'
                   : activeTab === 'updates_pending'
-                    ? 'No updates pending approval match your filters'
+                    ? 'No submitted updates match your filters'
                     : 'No listings match your filters'}
             </p>
             <p className={styles.emptyText}>
@@ -1342,7 +1480,7 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
               ) : activeTab === 'under_review' ? (
                 'Submitted and rejected listings awaiting administrator review appear here.'
               ) : activeTab === 'updates_pending' ? (
-                'Approved listings with staged edits waiting for administrator approval appear here.'
+                'Submitted listing edits awaiting approval or recently rejected appear here. Open an item to view details and administrator feedback.'
               ) : (
                 <>
                   Adjust the search or type filter to see more of your services and packages, or{' '}
@@ -1372,7 +1510,9 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
           <ProductsReviewTable
             variant={activeTab}
             products={filteredProducts}
-            onOpenView={handleOpenView}
+            onOpenView={
+              activeTab === 'updates_pending' ? handleOpenSubmissionView : handleOpenView
+            }
             onOpenEdit={handleOpenEdit}
             onCancelRequest={handleRequestCancelReview}
           />
@@ -1415,19 +1555,6 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
                 <div className={styles.shopVisibilityBanner} role="status" style={{ marginBottom: 16 }}>
                   <strong>Review pending:</strong> Your latest edits are waiting for an administrator. The
                   public shop still shows your last approved details until those changes are approved.
-                </div>
-              ) : null}
-              {modalMode === 'view' && selectedProduct?.stagedRejectionReason ? (
-                <div
-                  className={styles.shopVisibilityBanner}
-                  role="status"
-                  style={{
-                    marginBottom: 16,
-                    borderColor: '#fecaca',
-                    background: '#fef2f2',
-                  }}
-                >
-                  <strong>Staged update not approved:</strong> {selectedProduct.stagedRejectionReason}
                 </div>
               ) : null}
               {modalMode === 'view' ? (
@@ -1711,6 +1838,16 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
         </div>
         </BodyPortal>
       )}
+      <SubmittedUpdateViewModal
+        product={submissionViewProduct}
+        onClose={handleCloseSubmissionView}
+        onDismissRequest={
+          submissionViewProduct?.stagedRejectionReason
+            ? () => handleRequestCancelReview(submissionViewProduct)
+            : undefined
+        }
+      />
+
       {productPendingCancel ? (
         <BodyPortal>
         <div
@@ -1733,13 +1870,17 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
                 <h2 id="cancel-review-confirm-title" className={styles.removeConfirmTitle}>
                   {productPendingCancel.hasPendingUpdate
                     ? 'Cancel update request?'
-                    : 'Cancel submission?'}
+                    : productPendingCancel.stagedRejectionReason
+                      ? 'Dismiss rejected update?'
+                      : 'Cancel submission?'}
                 </h2>
               </div>
               <p id="cancel-review-confirm-desc" className={styles.removeConfirmText}>
                 {productPendingCancel.hasPendingUpdate
                   ? 'Your proposed changes will be withdrawn. The live listing stays on the shop and will no longer appear in the admin review queue.'
-                  : 'This listing will return to draft and will no longer appear in the admin review queue.'}
+                  : productPendingCancel.stagedRejectionReason
+                    ? 'This clears the rejection notice from Submitted updates. Your live listing on the shop is unchanged.'
+                    : 'This listing will return to draft and will no longer appear in the admin review queue.'}
               </p>
               {cancelError ? (
                 <p className={styles.removeConfirmError} role="alert">

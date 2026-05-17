@@ -83,7 +83,7 @@ function payoutTxnRowKey(t) {
 
 function shouldShowDisbursementBadge(disbursementState) {
   if (!disbursementState || disbursementState === 'none') return false
-  return disbursementState === 'wallet_credited' || disbursementState === 'legacy_paid'
+  return disbursementState === 'legacy_paid'
 }
 
 function buildPayoutQueryString({
@@ -2644,7 +2644,7 @@ export default function AdminPayoutsPage() {
                       ariaLabel="Escrow status"
                       options={[
                         DEFAULT_PAYOUT_OPTION,
-                        ...Object.entries(PAYOUT_STATUS_META).map(([k, v]) => ({ value: k, label: v.label, color: v.color }))
+                        ...Object.entries(PAYOUT_STATUS_META).map(([k, v]) => ({ value: k, label: v.label }))
                       ]}
                       placeholder="All"
                     />
@@ -2696,7 +2696,7 @@ export default function AdminPayoutsPage() {
                     ariaLabel="Payment status"
                     options={[
                       DEFAULT_PAYMENT_OPTION,
-                      ...Object.entries(PAYMENT_STATUS_META).map(([k, v]) => ({ value: k, label: v.label, color: v.color }))
+                      ...Object.entries(PAYMENT_STATUS_META).map(([k, v]) => ({ value: k, label: v.label }))
                     ]}
                     placeholder="All"
                   />

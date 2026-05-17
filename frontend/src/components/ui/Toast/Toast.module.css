@@ -1,13 +1,16 @@
 .wrapper {
   position: fixed;
-  bottom: 28px;
+  bottom: max(28px, calc(16px + env(safe-area-inset-bottom, 0px)));
   left: 50%;
   transform: translateX(-50%);
   z-index: 9999;
-  width: calc(100vw - 32px);
+  width: min(560px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
   display: flex;
   justify-content: center;
   pointer-events: none;
+  padding: 0 max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px));
+  box-sizing: border-box;
 }
 
 .card {
@@ -124,8 +127,8 @@
 /* Login / signup — matches frontend/toast.md + toast-js.md (curtain card, icon column, title + body) */
 .wrapperAuth {
   position: fixed;
-  right: 1.5rem;
-  bottom: 1.5rem;
+  right: max(1.5rem, env(safe-area-inset-right, 0px));
+  bottom: max(1.5rem, calc(16px + env(safe-area-inset-bottom, 0px)));
   z-index: 9999;
   max-width: min(420px, calc(100vw - 2rem));
   display: flex;
@@ -309,24 +312,89 @@
   border-color: rgba(184, 150, 46, 0.22);
 }
 
-@media (max-width: 640px) {
+/* Admin / seller mobile shells use a fixed bottom nav ([data-bottom-nav]). */
+:global(body:has([data-bottom-nav])) .wrapper {
+  bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+}
+
+:global(body:has([data-bottom-nav])) .wrapperAuth {
+  right: 1rem;
+  left: 1rem;
+  bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  max-width: none;
+  width: auto;
+  align-items: stretch;
+}
+
+:global(body:has([data-bottom-nav])) .cardAuth {
+  width: 100%;
+  max-width: none;
+}
+
+@media (max-width: 860px) {
+  .wrapper {
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+    padding: 0 max(12px, env(safe-area-inset-right, 0px)) 0 max(12px, env(safe-area-inset-left, 0px));
+  }
+
   .card {
     width: 100%;
+    max-width: 100%;
     justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+  }
+
+  .content {
+    flex: 1;
+    align-items: flex-start;
+    flex-wrap: wrap;
   }
 
   .message {
     white-space: normal;
+    word-break: break-word;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .closeBtn,
+  .checkBadge {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
   }
 
   .wrapperAuth {
-    right: 1rem;
-    bottom: 1rem;
-    max-width: calc(100vw - 2rem);
+    right: max(12px, env(safe-area-inset-right, 0px));
+    left: max(12px, env(safe-area-inset-left, 0px));
+    bottom: max(16px, calc(12px + env(safe-area-inset-bottom, 0px)));
+    max-width: none;
+    align-items: stretch;
   }
 
   .cardAuth {
     width: 100%;
-    max-width: 100%;
+    max-width: none;
+    padding: 1rem 1rem 1rem 1.125rem;
+  }
+
+  .authMessage {
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .actionBtn {
+    width: 100%;
+    margin-top: 4px;
+    min-height: 36px;
+  }
+
+  .actionBtnAuth {
+    min-height: 36px;
   }
 }

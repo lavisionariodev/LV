@@ -56,6 +56,28 @@ export function hasPendingSellerChanges(row) {
 }
 
 /**
+ * Admin rejected staged edits; `pending_changes` is cleared but reason is kept for seller visibility.
+ *
+ * @param {unknown} row
+ * @returns {boolean}
+ */
+export function hasStagedRejection(row) {
+  if (!row || String(row.approval_status || '').toLowerCase() !== 'approved') return false
+  const reason = row.staged_rejection_reason ?? row.stagedRejectionReason
+  return typeof reason === 'string' && reason.trim().length > 0
+}
+
+/**
+ * Listing should appear in seller "Updates pending" (awaiting review or recently rejected).
+ *
+ * @param {unknown} row
+ * @returns {boolean}
+ */
+export function sellerShowsInUpdatesPending(row) {
+  return hasPendingSellerChanges(row) || hasStagedRejection(row)
+}
+
+/**
  * Merge staged `pending_changes` onto a listing row for seller UI / edit forms.
  * Public shop reads live columns only (no merge).
  *
