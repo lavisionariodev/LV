@@ -12,6 +12,7 @@ import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/contexts/ToastContext'
 import ContactSellerModal from '@/components/ui/Modal/ContactSellerModal'
+import ReviewMediaGallery from '@/components/reviews/ReviewMediaGallery'
 import { providerServiceAggPairSegments } from '@/lib/ratings/listingRatingAggregates'
 import { formatPhpWholeAmount } from '@/lib/cart/formatPhp'
 import styles from './seller-profile.module.css'
@@ -608,6 +609,11 @@ function SellerProfileView({ seller, listings = [], reviews = [] }) {
                           </div>
                         </div>
                         <p className={styles.reviewText}>{review.text}</p>
+                        <ReviewMediaGallery
+                          images={review.images}
+                          videos={review.videos}
+                          size="sm"
+                        />
                       </div>
                     ))}
                   </div>

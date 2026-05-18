@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { use, useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import ContactSellerModal from '@/components/ui/Modal/ContactSellerModal'
+import ReviewMediaGallery from '@/components/reviews/ReviewMediaGallery'
 import { getRecommendedSimilarServices, getDynamicServicesFromListings } from '@/lib/shop/similarServices'
 import { fetchActiveShopListings, mergeShopListings, stockAvailabilityLabel } from '@/lib/shop-listings/client'
 import { buildCartPayloadFromListing } from '@/lib/cart/fromListing'
@@ -1477,35 +1478,7 @@ function ReviewsSection({ reviews = [], styles }) {
                       </div>
                       {review.title && <p className={styles.reviewTitle}>{review.title}</p>}
                       <p className={styles.reviewBody}>{review.body}</p>
-
-                      {/* ── Images ── */}
-                      {hasImages && (
-                        <div className={styles.reviewMedia}>
-                          {review.images.map((src, i) => (
-                            <a key={i} href={src} target="_blank" rel="noopener noreferrer" className={styles.reviewMediaThumb}>
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={src} alt={`Review image ${i + 1}`} className={styles.reviewMediaImg} />
-                              <span className={styles.reviewMediaBadge}>
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                              </span>
-                            </a>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* ── Videos ── */}
-                      {hasVideos && (
-                        <div className={styles.reviewMedia}>
-                          {review.videos.map((src, i) => (
-                            <div key={i} className={styles.reviewMediaThumb}>
-                              <video src={src} className={styles.reviewMediaImg} muted playsInline preload="metadata" />
-                              <span className={`${styles.reviewMediaBadge} ${styles.reviewMediaBadgeVideo}`}>
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      <ReviewMediaGallery images={review.images} videos={review.videos} />
                     </div>
                   )
                 })}

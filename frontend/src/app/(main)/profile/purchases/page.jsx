@@ -8,6 +8,7 @@ import { getUserRole, getBuyerAccountStatus, ROLE_BUYER, ROLE_SELLER } from '@/l
 import { expandPurchaseCardsByLineItem, mapBuyerOrderCard } from '@/lib/profile/mapBuyerOrderCard';
 import styles from '../profile.module.css';
 import purchaseStyles from './purchases.module.css';
+import ReviewMediaUploader from '@/components/reviews/ReviewMediaUploader';
 
 /** Purchases toolbar tabs — match buyer-facing `purchase.status`. */
 const PURCHASE_FILTER_TABS = [
@@ -532,7 +533,7 @@ function LeaveReviewModal({
   const [loadError, setLoadError] = useState('');
   const [submitError, setSubmitError] = useState('');
 
-  /** @type {Array<{ orderItemId: string, rating: number, reviewText: string }>} */
+  /** @type {Array<{ orderItemId: string, rating: number, reviewText: string, imageUrls: string[], videoUrls: string[] }>} */
   const [draft, setDraft] = useState([]);
 
   useEffect(() => {
@@ -563,6 +564,8 @@ function LeaveReviewModal({
               orderItemId: String(item.orderItemId),
               rating: hit?.rating ? Number(hit.rating) : 0,
               reviewText: hit?.reviewText ? String(hit.reviewText) : '',
+              imageUrls: Array.isArray(hit?.imageUrls) ? hit.imageUrls.map(String) : [],
+              videoUrls: Array.isArray(hit?.videoUrls) ? hit.videoUrls.map(String) : [],
             };
           }),
         );
@@ -636,6 +639,8 @@ function LeaveReviewModal({
           orderItemId: d.orderItemId,
           rating: d.rating,
           reviewText: d.reviewText,
+          imageUrls: Array.isArray(d.imageUrls) ? d.imageUrls : [],
+          videoUrls: Array.isArray(d.videoUrls) ? d.videoUrls : [],
         })),
       };
 
@@ -724,6 +729,8 @@ function LeaveReviewModal({
                 const hit = draft.find((d) => String(d.orderItemId) === String(item.orderItemId));
                 const rating = hit?.rating ?? 0;
                 const reviewText = hit?.reviewText ?? '';
+                const imageUrls = hit?.imageUrls ?? [];
+                const videoUrls = hit?.videoUrls ?? [];
                 const noun = reviewKindNoun(item.kind);
                 const reviewCount = reviewText.length;
 
@@ -786,6 +793,32 @@ function LeaveReviewModal({
                           {reviewCount}/{REVIEW_MAX_CHARS}
                         </span>
                       </div>
+                    </div>
+
+                    <div className={purchaseStyles.reviewSection}>
+                      <label className={purchaseStyles.reviewFieldLabel}>
+                        Photos &amp; video
+                        <span className={purchaseStyles.reviewFieldLabelOptional}>(Optional)</span>
+                      </label>
+                      <ReviewMediaUploader
+                        orderItemId={String(item.orderItemId)}
+                        imageUrls={imageUrls}
+                        videoUrls={videoUrls}
+                        disabled={submitting}
+                        onChange={({ imageUrls: nextImages, videoUrls: nextVideos }) =>
+                          setDraft((prev) =>
+                            prev.map((x) =>
+                              x.orderItemId === item.orderItemId
+                                ? {
+                                    ...x,
+                                    imageUrls: nextImages,
+                                    videoUrls: nextVideos,
+                                  }
+                                : x,
+                            ),
+                          )
+                        }
+                      />
                     </div>
                   </div>
                 );
@@ -1680,3 +1713,4 @@ export default function PurchasesPage() {
     </div>
   );
 }
+

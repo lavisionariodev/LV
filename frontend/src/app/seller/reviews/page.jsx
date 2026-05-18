@@ -14,6 +14,7 @@ import {
 import styles from '../analytics/analytics.module.css'
 import reviewStyles from './reviews.module.css'
 import SellerPortalSelect from '../products/components/SellerPortalSelect'
+import ReviewMediaGallery from '@/components/reviews/ReviewMediaGallery'
 const ROWS_PER_PAGE = 10
 
 function buildVisiblePages(currentPage, totalPages) {
@@ -603,6 +604,12 @@ export default function SellerReviewsPage() {
                     {review.text}
                   </p>
                 ) : null}
+
+                <ReviewMediaGallery
+                  images={review.images}
+                  videos={review.videos}
+                  size="sm"
+                />
 
                 <div className={reviewStyles.reviewActions}>
                   {review.shopHref ? (

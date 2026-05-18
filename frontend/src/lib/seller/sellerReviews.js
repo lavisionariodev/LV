@@ -169,7 +169,7 @@ export async function loadSellerReviews(sellerId) {
   const { data: reviewRows, error: reviewsErr } = await supabaseAdmin
     .from('order_item_reviews')
     .select(
-      'order_item_id,order_id,buyer_id,service_id,rating,review_text,listing_label,created_at,updated_at',
+      'order_item_id,order_id,buyer_id,service_id,rating,review_text,listing_label,image_urls,video_urls,created_at,updated_at',
     )
     .eq('seller_user_id', sellerId)
     .order('created_at', { ascending: false })
@@ -250,6 +250,8 @@ export async function loadSellerReviews(sellerId) {
       edited,
       service: String(r.listing_label ?? ''),
       text: String(r.review_text ?? ''),
+      images: Array.isArray(r.image_urls) ? r.image_urls.filter(Boolean) : [],
+      videos: Array.isArray(r.video_urls) ? r.video_urls.filter(Boolean) : [],
     }
   })
 

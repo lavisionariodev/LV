@@ -4,6 +4,9 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireActiveBuyerApiUser } from '@/lib/auth/requireApiUser'
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
 import { getClientIp, takeToken } from '@/lib/rate-limit/memoryRateLimit'
+import { assertReviewOrderEligible } from '@/lib/reviews/assertReviewOrderEligible'
+import { validateReviewMediaUrlArrays } from '@/lib/reviews/validateReviewMediaUrls'
+import { removeOrphanedReviewMedia } from '@/lib/reviews/reviewMediaStorage'
 const ALLOWED_RATING_MIN = 1
 const ALLOWED_RATING_MAX = 5
 const MAX_REVIEW_TEXT_CHARS = 2000
@@ -20,12 +23,18 @@ function normalizeServiceId(raw) {
   return 'memorial-planning'
 }
 
+function toUpsertCandidateIds(reviewsPayload) {
+  return reviewsPayload
+    .map((r) => String(r?.orderItemId ?? '').trim())
+    .filter((id) => isUuidLike(id))
+}
+
 /**
  * POST — upsert buyer reviews per order_item for an order (edit/update later).
  * Body:
  *  {
  *    orderId: string,
- *    reviews: Array<{ orderItemId: string, rating: number, reviewText?: string }>
+ *    reviews: Array<{ orderItemId: string, rating: number, reviewText?: string, imageUrls?: string[], videoUrls?: string[] }>
  *  }
  */
 export async function POST(request) {
@@ -104,30 +113,9 @@ export async function POST(request) {
     apiLog('buyer.reviews.forbidden', { orderId })
     return NextResponse.json({ error: 'Not allowed.' }, { status: 403 })
   }
-  if (order.fulfillment_status !== 'completed') {
-    return NextResponse.json({ error: 'Order is not completed yet.' }, { status: 400 })
-  }
-  const paymentStatus = String(order.payment_status ?? '').trim().toLowerCase()
-  const legacyStatus = String(order.status ?? '').trim().toLowerCase()
-  const refundStatus = String(order.refund_status ?? '').trim().toLowerCase()
-  const paid = paymentStatus === 'paid' || legacyStatus === 'paid'
-  if (!paid) {
-    return NextResponse.json(
-      { error: 'Order must be paid before you can leave a review.' },
-      { status: 400 },
-    )
-  }
-  if (order.fulfillment_status === 'cancelled' || legacyStatus === 'cancelled') {
-    return NextResponse.json({ error: 'Cancelled orders cannot be reviewed.' }, { status: 400 })
-  }
-  if (
-    paymentStatus === 'refund_pending' ||
-    paymentStatus === 'refunded' ||
-    refundStatus === 'requested' ||
-    refundStatus === 'processing' ||
-    refundStatus === 'completed'
-  ) {
-    return NextResponse.json({ error: 'Refunded orders cannot be reviewed.' }, { status: 400 })
+  const eligibility = assertReviewOrderEligible(order)
+  if (!eligibility.ok) {
+    return NextResponse.json({ error: eligibility.error }, { status: eligibility.status })
   }
 
   const orderItemsIds = reviewsPayload
@@ -178,6 +166,28 @@ export async function POST(request) {
     }
   }
 
+  const existingItemIds = toUpsertCandidateIds(reviewsPayload)
+  /** @type {Map<string, { image_urls: string[], video_urls: string[] }>} */
+  const existingMediaByItemId = new Map()
+  if (existingItemIds.length > 0) {
+    const { data: existingRows, error: existingErr } = await supabaseAdmin
+      .from('order_item_reviews')
+      .select('order_item_id,image_urls,video_urls')
+      .eq('buyer_id', user.id)
+      .in('order_item_id', existingItemIds)
+
+    if (existingErr) {
+      apiLog('buyer.reviews.existing_media_load_failed', { err: errorMessage(existingErr) })
+    } else {
+      for (const row of existingRows ?? []) {
+        existingMediaByItemId.set(String(row.order_item_id), {
+          image_urls: Array.isArray(row.image_urls) ? row.image_urls : [],
+          video_urls: Array.isArray(row.video_urls) ? row.video_urls : [],
+        })
+      }
+    }
+  }
+
   /** @type {Array<any>} */
   const toUpsert = []
 
@@ -208,6 +218,23 @@ export async function POST(request) {
 
     const serviceId = normalizeServiceId(rawService)
 
+    const mediaCheck = validateReviewMediaUrlArrays(
+      payloadReview?.imageUrls,
+      payloadReview?.videoUrls,
+      user.id,
+      orderItemId,
+    )
+    if (!mediaCheck.ok) {
+      return NextResponse.json({ error: mediaCheck.error }, { status: 400 })
+    }
+
+    const previous = existingMediaByItemId.get(orderItemId) ?? { image_urls: [], video_urls: [] }
+    const previousImageUrls = (previous.image_urls ?? []).map(String)
+    const previousVideoUrls = (previous.video_urls ?? []).map(String)
+
+    await removeOrphanedReviewMedia(supabaseAdmin, previousImageUrls, mediaCheck.imageUrls)
+    await removeOrphanedReviewMedia(supabaseAdmin, previousVideoUrls, mediaCheck.videoUrls)
+
     toUpsert.push({
       buyer_id: user.id,
       order_id: actualOrderId,
@@ -217,6 +244,8 @@ export async function POST(request) {
       listing_label: String(item.name ?? '').trim() || 'Service',
       rating: ratingInt,
       review_text: reviewText,
+      image_urls: mediaCheck.imageUrls,
+      video_urls: mediaCheck.videoUrls,
     })
   }
 

@@ -86,7 +86,7 @@ export async function GET(request, { params }) {
 
   const { data: rows, error: reviewsErr } = await supabaseAdmin
     .from('order_item_reviews')
-    .select('order_item_id,rating,review_text,updated_at,created_at')
+    .select('order_item_id,rating,review_text,image_urls,video_urls,updated_at,created_at')
     .eq('order_id', actualOrderId)
     .eq('buyer_id', user.id)
 
@@ -104,6 +104,8 @@ export async function GET(request, { params }) {
         orderItemId: r.order_item_id,
         rating: r.rating,
         reviewText: r.review_text,
+        imageUrls: Array.isArray(r.image_urls) ? r.image_urls : [],
+        videoUrls: Array.isArray(r.video_urls) ? r.video_urls : [],
         createdAt: r.created_at,
         updatedAt: r.updated_at,
       })),
