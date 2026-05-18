@@ -608,12 +608,14 @@
   appearance: none;
   -webkit-appearance: none;
   -webkit-min-logical-width: 0;
+  padding-left: 44px;
   padding-right: 44px;
+  text-align: center;
 }
 
 .input[type='date']::-webkit-date-and-time-value {
   min-width: 0;
-  text-align: left;
+  text-align: center;
 }
 
 .input[type='date']::-webkit-calendar-picker-indicator {
@@ -1309,6 +1311,7 @@
   }
 
   .input[type='date'] {
+    padding-left: 40px;
     padding-right: 40px;
   }
 
