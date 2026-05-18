@@ -632,10 +632,81 @@ button.logoGroup {
   font-family: "Roboto", "Open Sans", sans-serif;
 }
 
+/* Mobile article view: stacked layout + collapsible topics */
+.mobileArticleToolbar {
+  display: none;
+}
+
+.mobileTopicsToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #f7f7f7;
+  color: #1A1A1A;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  font-family: "Roboto", "Open Sans", sans-serif;
+  cursor: pointer;
+}
+
+.mobileTopicsToggleIcon {
+  width: 0.75rem;
+  height: 0.75rem;
+  flex-shrink: 0;
+  color: #6B6B6B;
+}
+
+.sidebarHiddenMobile {
+  display: none;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .heroTitle {
     font-size: 1.5rem;
+  }
+
+  .hero {
+    padding: 2rem 1rem 2.5rem;
+  }
+
+  .navContent {
+    padding: 0.75rem 1rem;
+    gap: 0.5rem;
+  }
+
+  .logoGroup {
+    flex: 1;
+    min-width: 0;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.5rem;
+  }
+
+  .logoText {
+    font-size: 1rem;
+  }
+
+  .helpCenterText {
+    font-size: 0.875rem;
+    margin-left: 0;
+  }
+
+  .policiesLink {
+    flex-shrink: 0;
+    font-size: 0.875rem;
+  }
+
+  .advisoryBanner {
+    padding: 0.875rem 2.5rem 0.875rem 1rem;
+  }
+
+  .advisoryText {
+    font-size: 0.8125rem;
+    text-align: left;
   }
 
   .categoriesGrid {
@@ -650,6 +721,19 @@ button.logoGroup {
     padding: 0 1rem 3rem;
   }
 
+  .sectionTitle {
+    font-size: 1.25rem;
+  }
+
+  .questionItem {
+    padding: 1rem;
+    align-items: flex-start;
+  }
+
+  .questionText {
+    line-height: 1.5;
+  }
+
   .contactGrid {
     grid-template-columns: 1fr;
   }
@@ -660,6 +744,71 @@ button.logoGroup {
 
   .contactStripTitle {
     font-size: 1.125rem;
+  }
+
+  /* Article view: single column, full-width content */
+  .articleLayout {
+    flex-direction: column;
+    padding: 0 1rem;
+  }
+
+  .mobileArticleToolbar {
+    display: block;
+    width: 100%;
+    padding: 1rem 0 0.75rem;
+    position: sticky;
+    top: calc(var(--need-help-nav-height, 57px));
+    z-index: 10;
+    background: #FFFFFF;
+  }
+
+  .sidebar {
+    width: 100%;
+    flex-shrink: 1;
+    border-right: none;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 0.5rem 0 1rem;
+    max-height: min(50vh, 360px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sidebarCategoryBtn,
+  .sidebarSubItem {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .sidebarSubList {
+    padding-left: 1rem;
+  }
+
+  .articlePanel {
+    flex: none;
+    width: 100%;
+    padding: 1.25rem 0 2.5rem;
+  }
+
+  .articleTitle {
+    font-size: 1.25rem;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+  }
+
+  .articleContent,
+  .articleNote {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+  }
+
+  .articleNote {
+    padding: 0.875rem 1rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .helpCenterText {
+    flex-basis: 100%;
   }
 }
 
