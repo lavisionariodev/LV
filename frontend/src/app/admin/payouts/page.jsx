@@ -1,7 +1,8 @@
 'use client'
 
-import { DISBURSEMENT_STATE_META, PAYMENT_STATUS_META, PAYOUT_STATUS_META, computeCommissionSnapshot, formatCount, formatDateRangeLabel, formatPHP, formatPHPMobile, getTxnCommissionParts, readEnum, readInt, readString, replaceUrlQuery } from '@/shared/utils'
+import { DISBURSEMENT_STATE_META, PAYMENT_STATUS_META, PAYOUT_STATUS_META, computeCommissionSnapshot, formatCount, formatDateRangeLabel, formatPHP, formatPHPMobile, getTxnCommissionParts, readEnum, readInt, readString, replaceUrlQuery, shouldUseUnoptimizedAvatarSrc } from '@/shared/utils'
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { FiArrowUp, FiArrowDown, FiRotateCcw, FiUnlock } from 'react-icons/fi'
 import { TbCreditCardPay, TbPlayerPause, TbX } from 'react-icons/tb'
@@ -15,6 +16,37 @@ import adminStyles from '../admin.module.css'
 
 import styles from './payouts.module.css'
 import StuckRefundsStrip from './StuckRefundsStrip'
+
+/** Seller avatar from `profiles.avatar_url` (via payouts API); initials when missing. */
+function SellerAvatarMark({ src, name, className, customClassName, size = 38 }) {
+  const [failed, setFailed] = useState(false)
+  const label = String(name ?? 'Seller').trim() || 'Seller'
+  const url = typeof src === 'string' ? src.trim() : ''
+  const showImg = url.length > 0 && !failed
+  const initial = (label.charAt(0) || '?').toUpperCase()
+
+  return (
+    <div
+      className={`${className}${showImg ? ` ${styles.sellerAvatarHasImage}` : ''}${customClassName ? ` ${customClassName}` : ''}`}
+      title={label}
+      aria-hidden={showImg || undefined}
+    >
+      {showImg ? (
+        <Image
+          src={url}
+          alt=""
+          width={size}
+          height={size}
+          className={styles.sellerAvatarImg}
+          onError={() => setFailed(true)}
+          unoptimized={shouldUseUnoptimizedAvatarSrc(url)}
+        />
+      ) : (
+        initial
+      )}
+    </div>
+  )
+}
 
 // ─── Admin payouts page data hook (formerly useAdminPayoutsPage.js) ──────────
 
@@ -2054,7 +2086,13 @@ function CommissionPanel({
                   <div key={seller.id} className={`${styles.sellerOverrideRow} ${isCustom ? styles.sellerOverrideRowActive : ''}`}>
                     {/* Left: avatar + info */}
                     <div className={styles.sellerOverrideInfo}>
-                      <div className={`${styles.sellerAvatar} ${isCustom ? styles.sellerAvatarCustom : ''}`}>{seller.name[0]}</div>
+                      <SellerAvatarMark
+                        src={seller.avatarUrl}
+                        name={seller.name}
+                        className={styles.sellerAvatar}
+                        customClassName={isCustom ? styles.sellerAvatarCustom : ''}
+                        size={36}
+                      />
                       <div className={styles.sellerOverrideTextBlock}>
                         <div className={styles.sellerOverrideNameRow}>
                           <p className={styles.sellerOverrideName}>{seller.name}</p>
@@ -2171,13 +2209,37 @@ function CommissionPanel({
 
 // ─── Seller Earnings Panel ────────────────────────────────────────────────────
 
+const SELLER_EARNINGS_BALANCES = [
+  {
+    key: 'pendingRelease',
+    totalKey: 'pending',
+    label: 'Pending release',
+    shortLabel: 'Pending',
+    tone: 'pending',
+    valClass: 'seBalAvailable',
+  },
+  { key: 'onHold', totalKey: 'onHold', label: 'On hold', shortLabel: 'On hold', tone: 'hold', valClass: 'seBalPending' },
+  {
+    key: 'released',
+    totalKey: 'released',
+    label: 'Released (net)',
+    shortLabel: 'Released',
+    tone: 'released',
+    valClass: 'seBalWithdrawn',
+  },
+]
+
 function SellerEarningsPanel({ transactions }) {
   const sellers = useMemo(() => {
     const m = new Map()
     for (const t of transactions ?? []) {
       if (!t?.sellerId) continue
       if (!m.has(t.sellerId)) {
-        m.set(t.sellerId, { id: t.sellerId, name: String(t.sellerName || 'Seller').trim() || 'Seller' })
+        m.set(t.sellerId, {
+          id: t.sellerId,
+          name: String(t.sellerName || 'Seller').trim() || 'Seller',
+          avatarUrl: t.sellerAvatarUrl || null,
+        })
       }
     }
     return [...m.values()]
@@ -2197,49 +2259,111 @@ function SellerEarningsPanel({ transactions }) {
         else if (t.payoutStatus === 'escrowed') pendingRelease += net
       })
 
-      return { ...seller, pendingRelease, onHold, released, txnCount: sellerTxns.length }
+      const totalTracked = pendingRelease + onHold + released
+      return { ...seller, pendingRelease, onHold, released, totalTracked, txnCount: sellerTxns.length }
     })
   }, [transactions, sellers])
 
-  const initial = (name) => (name?.trim()?.charAt(0) || '?').toUpperCase()
+  const totals = useMemo(
+    () =>
+      earnings.reduce(
+        (acc, s) => ({
+          pending: acc.pending + s.pendingRelease,
+          onHold: acc.onHold + s.onHold,
+          released: acc.released + s.released,
+        }),
+        { pending: 0, onHold: 0, released: 0 },
+      ),
+    [earnings],
+  )
+
+  const sortedEarnings = useMemo(() => {
+    return [...earnings].sort((a, b) => {
+      if (b.pendingRelease !== a.pendingRelease) return b.pendingRelease - a.pendingRelease
+      if (b.totalTracked !== a.totalTracked) return b.totalTracked - a.totalTracked
+      return a.name.localeCompare(b.name)
+    })
+  }, [earnings])
 
   return (
-    <div className={styles.sellerEarningsPanel}>
-      <div className={styles.sePanelHeader}>
-        <p className={styles.sePanelTitle}>Seller Earnings Tracker</p>
-        <p className={styles.sePanelSub}>Totals from escrow snapshots on this payout list</p>
-      </div>
-      <div className={styles.seGrid}>
-        {earnings.length === 0 && (
-          <p className={styles.emptyHint}>No escrow rows loaded yet.</p>
+    <section className={styles.sellerEarningsPanel} aria-label="Seller earnings tracker">
+      <header className={styles.sePanelHeader}>
+        <div className={styles.sePanelHeaderMain}>
+          <div className={styles.sePanelTitleRow}>
+            <h2 className={styles.sePanelTitle}>Seller Earnings Tracker</h2>
+            {sortedEarnings.length > 0 && (
+              <span className={styles.seCountBadge}>
+                {formatCount(sortedEarnings.length)}{' '}
+                {sortedEarnings.length === 1 ? 'seller' : 'sellers'}
+              </span>
+            )}
+          </div>
+          <p className={styles.sePanelSub}>
+            Net seller amounts from escrows on your current payout list
+          </p>
+        </div>
+        {sortedEarnings.length > 0 && (
+          <div className={styles.seSummary} role="group" aria-label="Totals across all sellers">
+            {SELLER_EARNINGS_BALANCES.map((row) => (
+              <div key={row.key} className={styles.seSummaryItem} data-tone={row.tone}>
+                <span className={styles.seSummaryLabel}>{row.shortLabel}</span>
+                <span className={styles.seSummaryVal}>{formatPHP(totals[row.totalKey])}</span>
+              </div>
+            ))}
+          </div>
         )}
-        {earnings.map((s) => (
-          <div key={s.id} className={styles.seCard}>
+      </header>
+      <div className={styles.seGrid}>
+        {sortedEarnings.length === 0 ? (
+          <div className={styles.seEmpty}>
+            <p className={styles.emptyTitle}>No seller earnings yet</p>
+            <p className={styles.emptyHint}>
+              Escrow rows will show here once transactions are loaded on this page.
+            </p>
+          </div>
+        ) : (
+          sortedEarnings.map((s) => (
+          <article key={s.id} className={styles.seCard}>
             <div className={styles.seCardTop}>
-              <div className={styles.seAvatar}>{initial(s.name)}</div>
-              <div>
-                <p className={styles.seName}>{s.name}</p>
-                <p className={styles.seTxnCount}>{s.txnCount} transactions</p>
+              <SellerAvatarMark
+                src={s.avatarUrl}
+                name={s.name}
+                className={styles.seAvatar}
+                size={40}
+              />
+              <div className={styles.seCardIdentity}>
+                <p className={styles.seName} title={s.name}>
+                  {s.name}
+                </p>
+                <p className={styles.seTxnCount}>
+                  {formatCount(s.txnCount)}{' '}
+                  {s.txnCount === 1 ? 'transaction' : 'transactions'}
+                </p>
+              </div>
+              <div className={styles.seCardTotal} title="Total tracked net for this seller">
+                <span className={styles.seCardTotalLabel}>Total</span>
+                <span className={styles.seCardTotalVal}>{formatPHP(s.totalTracked)}</span>
               </div>
             </div>
             <div className={styles.seBalances}>
-              <div className={styles.seBalanceItem}>
-                <span className={styles.seBalLabel}>Pending release</span>
-                <span className={`${styles.seBalVal} ${styles.seBalAvailable}`}>{formatPHP(s.pendingRelease)}</span>
-              </div>
-              <div className={styles.seBalanceItem}>
-                <span className={styles.seBalLabel}>On hold</span>
-                <span className={`${styles.seBalVal} ${styles.seBalPending}`}>{formatPHP(s.onHold)}</span>
-              </div>
-              <div className={styles.seBalanceItem}>
-                <span className={styles.seBalLabel}>Released (net)</span>
-                <span className={`${styles.seBalVal} ${styles.seBalWithdrawn}`}>{formatPHP(s.released)}</span>
-              </div>
+              {SELLER_EARNINGS_BALANCES.map((row) => (
+                <div key={row.key} className={styles.seBalanceItem} data-tone={row.tone}>
+                  <span className={styles.seBalLabel}>
+                    <span className={styles.seStatusDot} data-tone={row.tone} aria-hidden />
+                    <span className={styles.seBalLabelLong}>{row.label}</span>
+                    <span className={styles.seBalLabelShort}>{row.shortLabel}</span>
+                  </span>
+                  <span className={`${styles.seBalVal} ${styles[row.valClass]}`}>
+                    {formatPHP(s[row.key])}
+                  </span>
+                </div>
+              ))}
             </div>
-          </div>
-        ))}
+          </article>
+          ))
+        )}
       </div>
-    </div>
+    </section>
   )
 }
 

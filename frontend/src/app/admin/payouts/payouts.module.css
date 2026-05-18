@@ -3348,6 +3348,7 @@
   font-size: 14px;
   font-weight: 800;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .sellerOverrideName {
@@ -3500,6 +3501,17 @@
   border-bottom: 1px solid #f1f5f9;
 }
 
+.sePanelHeaderMain {
+  min-width: 0;
+}
+
+.sePanelTitleRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .sePanelTitle {
   margin: 0;
   font-size: 15px;
@@ -3507,10 +3519,82 @@
   color: #0f172a;
 }
 
+.seCountBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.02em;
+}
+
 .sePanelSub {
   margin: 4px 0 0;
   font-size: 13px;
   color: #64748b;
+  line-height: 1.45;
+}
+
+.seSummary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.seSummaryItem {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  min-width: 0;
+}
+
+.seSummaryLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.35px;
+}
+
+.seSummaryVal {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.seSummaryItem[data-tone='pending'] .seSummaryVal {
+  color: #059669;
+}
+
+.seSummaryItem[data-tone='hold'] .seSummaryVal {
+  color: #b45309;
+}
+
+.seSummaryItem[data-tone='released'] .seSummaryVal {
+  color: #475569;
+}
+
+.seEmpty {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 40px 20px;
+  text-align: center;
 }
 
 .seGrid {
@@ -3536,8 +3620,37 @@
 
 .seCardTop {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.seCardIdentity {
+  flex: 1;
+  min-width: 0;
+}
+
+.seCardTotal {
+  flex-shrink: 0;
+  text-align: right;
+  padding-left: 8px;
+}
+
+.seCardTotalLabel {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.35px;
+}
+
+.seCardTotalVal {
+  display: block;
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
 }
 
 .seAvatar {
@@ -3552,6 +3665,20 @@
   font-size: 16px;
   font-weight: 800;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.sellerAvatarHasImage {
+  background: #f1f5f9;
+  padding: 0;
+}
+
+.sellerAvatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: inherit;
 }
 
 .seName {
@@ -3559,6 +3686,10 @@
   font-size: 14px;
   font-weight: 700;
   color: #0f172a;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .seTxnCount {
@@ -3577,24 +3708,67 @@
   background: #fff;
   border: 1px solid #f1f5f9;
   border-radius: 10px;
-  padding: 10px;
+  padding: 10px 10px 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
+  min-width: 0;
+  border-left-width: 3px;
+  border-left-style: solid;
+}
+
+.seBalanceItem[data-tone='pending'] {
+  border-left-color: #10b981;
+}
+
+.seBalanceItem[data-tone='hold'] {
+  border-left-color: #f59e0b;
+}
+
+.seBalanceItem[data-tone='released'] {
+  border-left-color: #94a3b8;
 }
 
 .seBalLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 10px;
   font-weight: 700;
   color: #94a3b8;
   text-transform: uppercase;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.35px;
+  line-height: 1.2;
+}
+
+.seBalLabelShort {
+  display: none;
+}
+
+.seStatusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.seStatusDot[data-tone='pending'] {
+  background: #10b981;
+}
+
+.seStatusDot[data-tone='hold'] {
+  background: #f59e0b;
+}
+
+.seStatusDot[data-tone='released'] {
+  background: #94a3b8;
 }
 
 .seBalVal {
   font-size: 13px;
   font-weight: 800;
-  
+  line-height: 1.2;
+  word-break: break-word;
 }
 
 .seBalAvailable  { color: #059669; }
@@ -4936,6 +5110,7 @@
   font-size: 14px;
   font-weight: 800;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .sellerAvatarCustom {
@@ -5845,6 +6020,25 @@
   }
 
   /* ── Seller earnings panel ───────────────────────────────────────────────── */
+  .sePanelHeader {
+    padding: 14px 14px 12px;
+  }
+
+  .seSummary {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+  }
+
+  .seSummaryItem {
+    padding: 8px 10px;
+  }
+
+  .seSummaryVal {
+    font-size: 12px;
+  }
+
   .seGrid {
     grid-template-columns: 1fr;
     padding: 12px;
@@ -5856,13 +6050,46 @@
     border-radius: 14px;
   }
 
+  .seCardTop {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .seCardTotal {
+    width: 100%;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px;
+    margin-top: 2px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    text-align: left;
+  }
+
+  .seCardTotalLabel,
+  .seCardTotalVal {
+    display: inline;
+    margin-top: 0;
+  }
+
   .seBalances {
     grid-template-columns: repeat(3, 1fr);
     gap: 6px;
   }
 
   .seBalanceItem {
-    padding: 10px 8px;
+    padding: 8px 8px 8px 10px;
+  }
+
+  .seBalLabelLong {
+    display: none;
+  }
+
+  .seBalLabelShort {
+    display: inline;
   }
 
   .seBalLabel {

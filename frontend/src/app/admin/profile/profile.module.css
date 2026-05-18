@@ -27,30 +27,20 @@
   gap: 0;
 }
 
-/* Cancel admin `.content` horizontal inset so detail cards use the scroll width; keep card padding as-is. */
+/* Match profile hub menu + sellers/buyers mobile side inset (16px). */
 @media (max-width: 640px) {
   .profileDetailPage {
-    margin-left: -16px;
-    margin-right: -16px;
-    width: calc(100% + 32px);
+    width: 100%;
     max-width: none;
     box-sizing: border-box;
   }
 
   .profileDetailBody {
-    padding: 0;
+    padding: 0 16px 20px;
   }
 
   .profileDetailBodyInner {
     max-width: none;
     margin: 0;
-  }
-}
-
-@media (max-width: 600px) {
-  .profileDetailPage {
-    margin-left: -14px;
-    margin-right: -14px;
-    width: calc(100% + 28px);
   }
 }

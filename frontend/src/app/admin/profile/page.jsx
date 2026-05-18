@@ -365,11 +365,11 @@ export default function AdminProfilePage() {
               <div className={styles.mobileSection}>
                 <p className={styles.mobileSectionLabel}>Support</p>
                 <div className={styles.mobileMenuGroup}>
-                  <a href="/admin/help" className={styles.mobileMenuItem}>
+                  <Link href="/admin/help" className={styles.mobileMenuItem}>
                     <span className={styles.mobileMenuIcon}><TbMessage2Question /></span>
                     <span className={styles.mobileMenuLabel}>Help Center</span>
                     <MobileMenuArrow />
-                  </a>
+                  </Link>
                   <button
                     type="button"
                     className={`${styles.mobileMenuItem} ${styles.mobileMenuItemDanger}`}
