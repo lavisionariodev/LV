@@ -208,11 +208,11 @@ function StagedChangesDiffView({ lines, previewLimit }) {
 
 function StagedExpandedPanel({
   row,
+  onShowAllChanges,
   isUpdating,
   onApprove,
   onReject,
   onViewDetails,
-  onShowAllChanges,
 }) {
   const lines = summarizeStagedChanges(row)
   const hasMore = lines.length > STAGED_CHANGES_EXPAND_PREVIEW
@@ -220,22 +220,22 @@ function StagedExpandedPanel({
   return (
     <div className={styles.expandedPanel}>
       <div className={styles.expandPanelSection}>
-        <div className={styles.expandPanelHeader}>
-          <p className={styles.expandPanelTitle}>Submitted changes</p>
-          <RowActions
-            row={row}
-            isUpdating={isUpdating}
-            onApprove={onApprove}
-            onReject={onReject}
-            onViewDetails={onViewDetails}
-          />
-        </div>
+        <p className={styles.expandPanelTitle}>Submitted changes</p>
         <StagedChangesDiffView lines={lines} previewLimit={STAGED_CHANGES_EXPAND_PREVIEW} />
         {hasMore ? (
           <button type="button" className={styles.stagedShowMoreBtn} onClick={onShowAllChanges}>
             Show all {lines.length} changes
           </button>
         ) : null}
+      </div>
+      <div className={`${styles.expandPanelSection} ${styles.expandPanelActions}`}>
+        <RowActions
+          row={row}
+          isUpdating={isUpdating}
+          onApprove={onApprove}
+          onReject={onReject}
+          onViewDetails={onViewDetails}
+        />
       </div>
     </div>
   )
@@ -343,18 +343,22 @@ function KindPill({ kind }) {
   )
 }
 
-function RowActions({ row, isUpdating, onApprove, onReject, onViewDetails }) {
+function RowActions({ row, isUpdating, onApprove, onReject, onViewDetails, showView = true }) {
   const canModerate =
     String(row?.approval_status || 'draft').toLowerCase() === 'pending' || hasPendingSellerChanges(row)
 
   return (
     <div className={styles.rowActions}>
-      <button type="button" className={styles.rowActionView} onClick={onViewDetails}>
-        View
-      </button>
+      {showView ? (
+        <>
+          <button type="button" className={styles.rowActionView} onClick={onViewDetails}>
+            View
+          </button>
+          {canModerate ? <span className={styles.rowActionDivider} /> : null}
+        </>
+      ) : null}
       {canModerate && (
         <>
-          <span className={styles.rowActionDivider} />
           <button
             type="button"
             className={styles.rowActionApprove}
@@ -689,34 +693,6 @@ function MobileListingCard({ row, moderationBusyId, onApprove, onReject }) {
   )
 }
 
-function MobileStagedModerationActions({ row, isUpdating, onApprove, onReject, onViewDetails }) {
-  return (
-    <div className={styles.mobileStagedActions}>
-      <button type="button" className={styles.mobileStagedViewBtn} onClick={() => onViewDetails(row)}>
-        View details
-      </button>
-      <div className={styles.mobileCardActions}>
-        <button
-          type="button"
-          className={styles.mobileApproveBtn}
-          disabled={isUpdating}
-          onClick={() => !isUpdating && onApprove(row)}
-        >
-          {isUpdating ? '…' : 'Approve'}
-        </button>
-        <button
-          type="button"
-          className={styles.mobileRejectBtn}
-          disabled={isUpdating}
-          onClick={() => !isUpdating && onReject(row)}
-        >
-          Reject
-        </button>
-      </div>
-    </div>
-  )
-}
-
 function StagedMobileCard({
   row,
   isExpanded,
@@ -728,7 +704,6 @@ function StagedMobileCard({
   onShowAllChanges,
 }) {
   const shopName = getSellerShopName(row)
-  const sellerEmail = getSellerEmail(row)
   const merged = mergePendingChangesIntoListingRow(row)
   const listingTitle = merged.listing_name || 'Untitled'
   const lines = summarizeStagedChanges(row)
@@ -736,69 +711,54 @@ function StagedMobileCard({
 
   return (
     <article className={`${styles.mobileCard} ${styles.mobileCardStaged}`}>
-      <div className={styles.mobileCardHeader}>
-        <div className={styles.mobileHeaderMain}>
-          <p className={styles.mobileTitle}>{listingTitle}</p>
-          <span className={styles.stagedTag}>Staged update</span>
+      <div className={styles.mobileStagedRow}>
+        <div className={styles.mobileStagedRowMain}>
+          <div className={styles.mobileHeaderMain}>
+            <p className={styles.mobileTitle}>{listingTitle}</p>
+            <span className={styles.stagedTag}>Staged update</span>
+          </div>
+          <p className={styles.mobileStagedSummary}>
+            {lines.length} field{lines.length === 1 ? '' : 's'} updated
+          </p>
+          <p className={styles.mobileStagedMeta}>
+            <SellerAvatarMark
+              src={row.seller_avatar_url}
+              initialsSource={row.seller_business_name || row.seller_email}
+              listingStyles={styles}
+            />
+            <span>
+              {shopName} · {formatDateShort(row.submitted_at)}
+            </span>
+          </p>
         </div>
-        <p className={styles.mobileStagedSummary}>
-          {lines.length} field{lines.length === 1 ? '' : 's'} updated
-        </p>
-      </div>
-
-      <div className={styles.mobileCardSection} data-mobile-label="Seller">
-        <div className={styles.mobileCardSellerRow}>
-          <SellerAvatarMark
-            src={row.seller_avatar_url}
-            initialsSource={row.seller_business_name || row.seller_email}
-            listingStyles={styles}
+        <div className={styles.mobileStagedRowActions}>
+          <ExpandChevronButton
+            isExpanded={isExpanded}
+            onToggle={onToggleExpand}
+            label={`${isExpanded ? 'Collapse' : 'Expand'} submitted changes for ${listingTitle}`}
           />
-          <div className={styles.mobileCardSellerText}>
-            <p className={styles.mobileCardSeller}>{shopName}</p>
-            {sellerEmail ? <p className={styles.mobileCardSellerEmail}>{sellerEmail}</p> : null}
-          </div>
         </div>
       </div>
 
-      <div className={styles.mobileCardSection} data-mobile-label="Submitted">
-        <span className={styles.mobileCardDate}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
-          </svg>
-          {formatDateTime(row.submitted_at)}
-        </span>
-      </div>
-
-      <div className={styles.mobileCardSection}>
-        <button
-          type="button"
-          className={styles.mobileStagedToggleBtn}
-          onClick={onToggleExpand}
-          aria-expanded={isExpanded}
-        >
-          {isExpanded ? 'Hide submitted changes' : 'View submitted changes'}
-        </button>
-        {isExpanded ? (
-          <div className={styles.mobileCardExpandBody}>
-            <StagedChangesDiffView lines={lines} previewLimit={STAGED_CHANGES_EXPAND_PREVIEW} />
-            {hasMore ? (
-              <button type="button" className={styles.stagedShowMoreBtn} onClick={onShowAllChanges}>
-                Show all {lines.length} changes
-              </button>
-            ) : null}
+      {isExpanded ? (
+        <div className={styles.mobileCardExpandBody}>
+          <StagedChangesDiffView lines={lines} previewLimit={STAGED_CHANGES_EXPAND_PREVIEW} />
+          {hasMore ? (
+            <button type="button" className={styles.stagedShowMoreBtn} onClick={onShowAllChanges}>
+              Show all {lines.length} changes
+            </button>
+          ) : null}
+          <div className={styles.expandPanelActions}>
+            <RowActions
+              row={row}
+              isUpdating={isUpdating}
+              onApprove={() => onApprove(row)}
+              onReject={() => onReject(row)}
+              onViewDetails={() => onViewDetails(row)}
+            />
           </div>
-        ) : null}
-      </div>
-
-      <div className={styles.mobileCardFooter}>
-        <MobileStagedModerationActions
-          row={row}
-          isUpdating={isUpdating}
-          onApprove={onApprove}
-          onReject={onReject}
-          onViewDetails={onViewDetails}
-        />
-      </div>
+        </div>
+      ) : null}
     </article>
   )
 }
@@ -942,11 +902,13 @@ function StagedUpdatesSection({
                         </p>
                       </td>
                       <td className={styles.actionsCell}>
-                        <ExpandChevronButton
-                          isExpanded={isExpanded}
-                          onToggle={() => setExpandedRowId(isExpanded ? null : row.id)}
-                          label={`${isExpanded ? 'Collapse' : 'Expand'} details for ${listingTitle}`}
-                        />
+                        <div className={styles.stagedRowActions}>
+                          <ExpandChevronButton
+                            isExpanded={isExpanded}
+                            onToggle={() => setExpandedRowId(isExpanded ? null : row.id)}
+                            label={`${isExpanded ? 'Collapse' : 'Expand'} details for ${listingTitle}`}
+                          />
+                        </div>
                       </td>
                     </tr>
                     {isExpanded ? (
@@ -954,11 +916,11 @@ function StagedUpdatesSection({
                         <td colSpan={colCount} className={styles.expandedTd}>
                           <StagedExpandedPanel
                             row={row}
+                            onShowAllChanges={() => setAllChangesRow(row)}
                             isUpdating={busy}
                             onApprove={() => onApprove(row)}
                             onReject={() => onReject(row)}
                             onViewDetails={() => onViewDetails(row)}
-                            onShowAllChanges={() => setAllChangesRow(row)}
                           />
                         </td>
                       </tr>

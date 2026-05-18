@@ -23,6 +23,7 @@ import {
   TbPhoto,
 } from 'react-icons/tb'
 import styles from './orders.module.css'
+import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 import { createPortal } from 'react-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase/client'
@@ -1639,120 +1640,48 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
         document.body
       )}
 
-      {cancelUnpaidOrder && typeof document !== 'undefined' && createPortal(
-        <div
-          className={styles.updateStatusWrap}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="cancel-unpaid-order-title"
-          onClick={() => {
-            if (!cancelUnpaidBusy) setCancelUnpaidOrder(null)
-          }}
-        >
-          <div className={styles.updateStatusCard} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.updateStatusHeader}>
-              <h2 id="cancel-unpaid-order-title" className={styles.updateStatusTitle}>
-                Cancel booking
-              </h2>
-              <button
-                type="button"
-                className={styles.modalClose}
-                onClick={() => setCancelUnpaidOrder(null)}
-                disabled={cancelUnpaidBusy}
-                aria-label="Close"
-              >
-                <TbX size={22} />
-              </button>
-            </div>
-            <div className={styles.updateStatusBody}>
-              <p className={styles.updateStatusPrompt}>
-                Cancel unpaid booking{' '}
-                <span className={styles.updateStatusOrderId}>
-                  {cancelUnpaidOrder.displayId || cancelUnpaidOrder.id}
-                </span>
-                ? No refund is required because payment has not been completed.
-              </p>
-              <div className={styles.declineConfirmActions}>
-                <button
-                  type="button"
-                  className={styles.declineConfirmSecondary}
-                  onClick={() => setCancelUnpaidOrder(null)}
-                  disabled={cancelUnpaidBusy}
-                >
-                  Keep booking
-                </button>
-                <button
-                  type="button"
-                  className={styles.declineConfirmDanger}
-                  onClick={handleConfirmCancelUnpaidOrder}
-                  disabled={cancelUnpaidBusy}
-                >
-                  {cancelUnpaidBusy ? 'Cancelling...' : 'Cancel booking'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        ,
-        document.body
-      )}
+      <ConfirmModal
+        open={cancelUnpaidOrder != null}
+        variant="danger"
+        title="Cancel booking"
+        message={
+          cancelUnpaidOrder
+            ? `Cancel unpaid booking ${cancelUnpaidOrder.displayId || cancelUnpaidOrder.id}? No refund is required because payment has not been completed.`
+            : ''
+        }
+        subtitleAlign="left"
+        confirmLabel="Cancel booking"
+        confirmLoadingLabel="Cancelling..."
+        cancelLabel="Keep booking"
+        loading={cancelUnpaidBusy}
+        onCancel={() => setCancelUnpaidOrder(null)}
+        onConfirm={handleConfirmCancelUnpaidOrder}
+      />
 
-      {declineOrder && typeof document !== 'undefined' && createPortal(
-        <div
-          className={styles.updateStatusWrap}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="decline-order-title"
-          onClick={() => {
-            if (!declineBusy) setDeclineOrder(null)
-          }}
-        >
-          <div className={styles.updateStatusCard} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.updateStatusHeader}>
-              <h2 id="decline-order-title" className={styles.updateStatusTitle}>
-                Decline and refund order
-              </h2>
-              <button
-                type="button"
-                className={styles.modalClose}
-                onClick={() => setDeclineOrder(null)}
-                disabled={declineBusy}
-                aria-label="Close"
-              >
-                <TbX size={22} />
-              </button>
-            </div>
-            <div className={styles.updateStatusBody}>
-              <p className={styles.updateStatusPrompt}>
-                Declining order <span className={styles.updateStatusOrderId}>{declineOrder.displayId || declineOrder.id}</span> will cancel the booking, initiate a buyer refund to the original payment method, and prevent seller payout for this order.
-              </p>
-              <p className={styles.updateStatusNote}>
-                Refund completion depends on the payment provider webhook. The order will stay refund pending until PayMongo confirms the refund.
-              </p>
-              <div className={styles.declineConfirmActions}>
-                <button
-                  type="button"
-                  className={styles.declineConfirmSecondary}
-                  onClick={() => setDeclineOrder(null)}
-                  disabled={declineBusy}
-                >
-                  Keep order
-                </button>
-                <button
-                  type="button"
-                  className={styles.declineConfirmDanger}
-                  onClick={handleConfirmDeclineOrder}
-                  disabled={declineBusy}
-                >
-                  {declineBusy ? 'Starting refund...' : 'Decline and refund buyer'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        ,
-        document.body
-      )}
+      <ConfirmModal
+        open={declineOrder != null}
+        variant="danger"
+        title="Decline and refund order"
+        message={
+          declineOrder
+            ? `Declining order ${declineOrder.displayId || declineOrder.id} will cancel the booking, initiate a buyer refund to the original payment method, and prevent seller payout for this order.`
+            : ''
+        }
+        extra={
+          declineOrder ? (
+            <p className={styles.updateStatusNote}>
+              Refund completion depends on the payment provider webhook. The order will stay refund pending until PayMongo confirms the refund.
+            </p>
+          ) : null
+        }
+        subtitleAlign="left"
+        confirmLabel="Decline and refund buyer"
+        confirmLoadingLabel="Starting refund..."
+        cancelLabel="Keep order"
+        loading={declineBusy}
+        onCancel={() => setDeclineOrder(null)}
+        onConfirm={handleConfirmDeclineOrder}
+      />
 
       {previewAttachment && typeof document !== 'undefined' && createPortal(
         <div

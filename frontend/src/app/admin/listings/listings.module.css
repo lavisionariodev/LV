@@ -1766,6 +1766,16 @@
   color: #122e1f;
 }
 
+.expandPanelActions {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid #f1f5f9;
+}
+
+.expandPanelActions .rowActions {
+  flex-wrap: wrap;
+}
+
 .expandShopGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -2930,7 +2940,7 @@
 
 /* ── Mobile card list (sectioned cards — matches admin disputes / payouts mobile) ── */
 .mobileCardList {
-  display: flex;
+  display: none;
   flex-direction: column;
   gap: 1rem;
   padding: 12px 0 16px;
@@ -3106,6 +3116,49 @@
   text-overflow: unset;
 }
 
+.stagedRowActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.mobileStagedRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.mobileStagedRowMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.mobileStagedRowActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.mobileStagedMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.mobileStagedMeta span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .mobileStagedSummary {
   margin: 0;
   font-size: 0.82rem;
@@ -3144,7 +3197,13 @@
 
 .mobileCardExpandBody {
   margin-top: 0.75rem;
-  padding-top: 0.75rem;
+  padding: 0.75rem 1rem 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.mobileCardExpandBody .expandPanelActions {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
   border-top: 1px solid #e5e7eb;
 }
 
@@ -3264,6 +3323,7 @@
   }
 
   .mobileCardList {
+    display: flex !important;
     padding: 12px 14px 16px;
   }
 

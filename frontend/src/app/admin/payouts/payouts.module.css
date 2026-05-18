@@ -2250,6 +2250,12 @@
   border-radius: 999px;
 }
 
+.mobileSkStatus {
+  width: 72px;
+  height: 14px;
+  border-radius: 4px;
+}
+
 .mobileSkBreakdown {
   display: block;
   width: 100%;
@@ -3539,46 +3545,6 @@
   line-height: 1.45;
 }
 
-.seSummary {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid #f1f5f9;
-}
-
-.seSummaryItem {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  min-width: 0;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-}
-
-.seSummaryLabel {
-  display: block;
-  font-size: 11px;
-  font-weight: 600;
-  color: #64748b;
-  line-height: 1.25;
-}
-
-.seSummaryVal {
-  display: block;
-  margin-top: 4px;
-  font-size: 18px;
-  font-weight: 800;
-  color: #0f172a;
-  line-height: 1.2;
-  word-break: break-word;
-}
-
 .seEmpty {
   grid-column: 1 / -1;
   display: flex;
@@ -3715,23 +3681,31 @@
   color: #0f172a;
 }
 
+/* Compact icon box for per-seller metric tiles (smaller than dashboard statCardIcon) */
 .seBalIconBox {
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
+  color: #166534;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  font-size: 15px;
 }
 
-.seBalIcon {
-  width: 18px;
-  height: 18px;
-  color: #16a34a;
-  stroke-width: 1.75;
+.seBalIconBox svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* Tablet / narrow: stack per-seller metrics for readability */
+@media (max-width: 768px) {
+  .seBalances {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ── Mobile Mode Bar + Content Panes ────────────────────────────────────── */
@@ -4015,9 +3989,42 @@
   .commissionDisplayRow { margin-top: 4px; }
   .commissionEditRow { flex-wrap: wrap; }
 
-  /* Seller Earnings grid: 1 col */
-  .seGrid { grid-template-columns: 1fr; padding: 12px 14px; gap: 10px; }
-  .seBalances { grid-template-columns: repeat(3, 1fr); }
+  /* Seller Earnings — single column cards + stacked metric tiles */
+  .sellerEarningsPanel {
+    border-radius: 14px;
+  }
+
+  .sePanelHeader {
+    padding: 14px 12px 12px;
+  }
+
+  .sePanelTitle {
+    font-size: 14px;
+  }
+
+  .sePanelSub {
+    font-size: 12px;
+  }
+
+  .seGrid {
+    grid-template-columns: 1fr;
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .seBalances {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .seName {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
 
   /* Modal: full-width bottom sheet style */
   .modalOverlay {
@@ -4165,6 +4172,42 @@
   gap: 8px;
   flex-wrap: wrap;
 }
+
+.mobileCardStatusRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.mobileCardStatusItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.mobileCardStatusKey {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+/* Plain text status (mobile cards) — font color only */
+.statusText {
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.statusText_green  { color: #15803d; }
+.statusText_amber  { color: #b45309; }
+.statusText_red    { color: #b91c1c; }
+.statusText_blue   { color: #1d4ed8; }
+.statusText_slate  { color: #475569; }
 
 .mobileCardBreakdown {
   display: flex;
@@ -5624,6 +5667,14 @@
     gap: 6px;
   }
 
+  .mobileCardStatusRow {
+    gap: 16px;
+  }
+
+  .statusText {
+    font-size: 13px;
+  }
+
   .mobileCardBreakdown {
     padding: 10px 12px;
     border-radius: 10px;
@@ -5980,22 +6031,22 @@
 
   /* ── Seller earnings panel ───────────────────────────────────────────────── */
   .sePanelHeader {
-    padding: 14px 14px 12px;
+    padding: 14px 12px 12px;
   }
 
-  .seSummary {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    margin-top: 12px;
-    padding-top: 12px;
-  }
-
-  .seSummaryItem {
-    padding: 8px 10px;
-  }
-
-  .seSummaryVal {
+  .sePanelTitle {
     font-size: 14px;
+  }
+
+  .sePanelSub {
+    font-size: 12px;
+  }
+
+  .seBalanceItem {
+    padding: 12px;
+    gap: 10px;
+    min-height: 52px;
+    align-items: center;
   }
 
   .seGrid {
@@ -6007,33 +6058,29 @@
   .seCard {
     padding: 14px;
     border-radius: 14px;
+    gap: 12px;
   }
 
   .seCardTop {
-    flex-wrap: wrap;
     gap: 10px;
+    align-items: center;
   }
 
   .seBalances {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-  }
-
-  .seBalanceItem,
-  .seSummaryItem {
-    padding: 10px;
-    gap: 6px;
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
 
   .seBalIconBox {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     border-radius: 7px;
+    font-size: 14px;
   }
 
-  .seBalIcon {
-    width: 16px;
-    height: 16px;
+  .seBalIconBox svg {
+    width: 14px;
+    height: 14px;
   }
 
   .seBalLabelLong {
@@ -6045,16 +6092,24 @@
   }
 
   .seBalLabel {
-    font-size: 9px;
+    font-size: 10px;
   }
 
-  .seBalVal,
-  .seSummaryVal {
-    font-size: 14px;
+  .seBalVal {
+    font-size: 15px;
   }
 
-  .seSummaryVal {
-    margin-top: 2px;
+  .seName {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
+
+  .seEmpty {
+    padding: 32px 16px;
   }
 
   /* ── Expanded panel ──────────────────────────────────────────────────────── */
@@ -6226,11 +6281,9 @@
 
   .mobileCardAmount { font-size: 17px; }
 
-  .seBalances {
-    grid-template-columns: repeat(3, 1fr);
+  .seBalVal {
+    font-size: 14px;
   }
-
-  .seBalVal { font-size: 13px; }
 
   .globalImpactGrid {
     grid-template-columns: repeat(2, 1fr);
@@ -6275,8 +6328,13 @@
     font-size: 12px;
   }
 
-  .seBalances {
-    grid-template-columns: 1fr 1fr 1fr;
+  .seBalanceItem {
+    padding: 10px;
+    min-height: 48px;
+  }
+
+  .seBalVal {
+    font-size: 13px;
   }
 
   .globalImpactGrid {

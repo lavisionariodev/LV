@@ -8,7 +8,7 @@ import { FiArrowUp, FiArrowDown, FiClock, FiRotateCcw, FiUnlock } from 'react-ic
 import { TbCoins, TbCreditCardPay, TbPlayerPause, TbX } from 'react-icons/tb'
 import { LuSettings2 } from 'react-icons/lu'
 
-import { useDebouncedEffect } from '@/shared/hooks'
+import { useDebouncedEffect, useMediaQuery } from '@/shared/hooks'
 import { Dropdown } from '@/components/ui'
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 import confirmModalStyles from '@/components/ui/Modal/ConfirmModal.module.css'
@@ -762,6 +762,28 @@ function Badge({ type, value }) {
   return <span className={`${styles.badge} ${paymentCls || ''}`}>{label}</span>
 }
 
+/** Plain text status for mobile cards — color only, no pill/dot. */
+function StatusText({ type, value }) {
+  const raw = value == null || value === '' ? '' : String(value).trim()
+  const key = raw.toLowerCase()
+
+  let meta
+  let label
+  if (type === 'disbursement') {
+    meta = DISBURSEMENT_STATE_META[key] || DISBURSEMENT_STATE_META.none
+    label = meta.label
+  } else if (type === 'payment') {
+    meta = PAYMENT_STATUS_META[key]
+    label = meta?.label ?? (raw ? raw : '—')
+  } else {
+    meta = PAYOUT_STATUS_META[key]
+    label = meta?.label ?? (raw ? raw : '—')
+  }
+
+  const colorCls = styles[`statusText_${meta?.color || 'slate'}`] || styles.statusText_slate
+  return <span className={`${styles.statusText} ${colorCls}`}>{label}</span>
+}
+
 const PAYOUTS_TABLE_SKELETON_ROWS = 6
 const PAYOUTS_MOBILE_SKELETON_CARDS = 4
 
@@ -796,9 +818,9 @@ function PayoutsMobileTransactionSkeleton() {
             </div>
           </div>
           <div className={styles.mobileCardSection}>
-            <div className={styles.mobileCardStatuses}>
-              <span className={`${styles.tableSkeletonBar} ${styles.mobileSkPill}`} />
-              <span className={`${styles.tableSkeletonBar} ${styles.mobileSkPill}`} />
+            <div className={styles.mobileCardStatusRow}>
+              <span className={`${styles.tableSkeletonBar} ${styles.mobileSkStatus}`} />
+              <span className={`${styles.tableSkeletonBar} ${styles.mobileSkStatus}`} />
             </div>
           </div>
           <div className={styles.mobileCardSection}>
@@ -2212,22 +2234,28 @@ function CommissionPanel({
 const SELLER_EARNINGS_BALANCES = [
   {
     key: 'pendingRelease',
-    totalKey: 'pending',
     label: 'Pending release',
     shortLabel: 'Pending',
     Icon: FiClock,
   },
-  { key: 'onHold', totalKey: 'onHold', label: 'On hold', shortLabel: 'On hold', Icon: TbPlayerPause },
+  { key: 'onHold', label: 'On hold', shortLabel: 'On hold', Icon: TbPlayerPause },
   {
     key: 'released',
-    totalKey: 'released',
     label: 'Released (net)',
     shortLabel: 'Released',
     Icon: TbCoins,
   },
 ]
 
-function SellerEarningsMetricTile({ row, amount, labelClassName, valueClassName, tileClassName }) {
+function SellerEarningsMetricTile({
+  row,
+  amount,
+  labelClassName,
+  valueClassName,
+  tileClassName,
+  iconClassName = styles.seBalIconBox,
+  formatAmount = formatPHP,
+}) {
   const Icon = row.Icon
   return (
     <div className={tileClassName}>
@@ -2236,16 +2264,19 @@ function SellerEarningsMetricTile({ row, amount, labelClassName, valueClassName,
           <span className={styles.seBalLabelLong}>{row.label}</span>
           <span className={styles.seBalLabelShort}>{row.shortLabel}</span>
         </span>
-        <span className={valueClassName}>{formatPHP(amount)}</span>
+        <span className={valueClassName}>{formatAmount(amount)}</span>
       </div>
-      <span className={styles.seBalIconBox} aria-hidden>
-        <Icon className={styles.seBalIcon} strokeWidth={1.75} />
+      <span className={iconClassName} aria-hidden>
+        <Icon />
       </span>
     </div>
   )
 }
 
 function SellerEarningsPanel({ transactions }) {
+  const isMobile = useMediaQuery('(max-width: 640px)')
+  const formatAmount = isMobile ? formatPHPMobile : formatPHP
+
   const sellers = useMemo(() => {
     const m = new Map()
     for (const t of transactions ?? []) {
@@ -2280,19 +2311,6 @@ function SellerEarningsPanel({ transactions }) {
     })
   }, [transactions, sellers])
 
-  const totals = useMemo(
-    () =>
-      earnings.reduce(
-        (acc, s) => ({
-          pending: acc.pending + s.pendingRelease,
-          onHold: acc.onHold + s.onHold,
-          released: acc.released + s.released,
-        }),
-        { pending: 0, onHold: 0, released: 0 },
-      ),
-    [earnings],
-  )
-
   const sortedEarnings = useMemo(() => {
     return [...earnings].sort((a, b) => {
       if (b.pendingRelease !== a.pendingRelease) return b.pendingRelease - a.pendingRelease
@@ -2318,20 +2336,6 @@ function SellerEarningsPanel({ transactions }) {
             Net seller amounts from escrows on your current payout list
           </p>
         </div>
-        {sortedEarnings.length > 0 && (
-          <div className={styles.seSummary} role="group" aria-label="Totals across all sellers">
-            {SELLER_EARNINGS_BALANCES.map((row) => (
-              <SellerEarningsMetricTile
-                key={row.key}
-                row={row}
-                amount={totals[row.totalKey]}
-                tileClassName={styles.seSummaryItem}
-                labelClassName={styles.seSummaryLabel}
-                valueClassName={styles.seSummaryVal}
-              />
-            ))}
-          </div>
-        )}
       </header>
       <div className={styles.seGrid}>
         {sortedEarnings.length === 0 ? (
@@ -2367,6 +2371,7 @@ function SellerEarningsPanel({ transactions }) {
                   key={row.key}
                   row={row}
                   amount={s[row.key]}
+                  formatAmount={formatAmount}
                   tileClassName={styles.seBalanceItem}
                   labelClassName={styles.seBalLabel}
                   valueClassName={styles.seBalVal}
@@ -2972,13 +2977,19 @@ export default function AdminPayoutsPage() {
                       </div>
                     </div>
 
-                    <div className={styles.mobileCardSection} data-mobile-label="Status">
-                      <div className={styles.mobileCardStatuses}>
-                      <Badge type="payment" value={t.paymentStatus}/>
-                      <Badge type="payout" value={t.payoutStatus}/>
-                      {shouldShowDisbursementBadge(t.disbursementState) ? (
-                        <Badge type="disbursement" value={t.disbursementState} />
-                      ) : null}
+                    <div className={styles.mobileCardSection}>
+                      <div className={styles.mobileCardStatusRow}>
+                        <div className={styles.mobileCardStatusItem}>
+                          <span className={styles.mobileCardStatusKey}>Payment</span>
+                          <StatusText type="payment" value={t.paymentStatus} />
+                        </div>
+                        <div className={styles.mobileCardStatusItem}>
+                          <span className={styles.mobileCardStatusKey}>Escrow</span>
+                          <StatusText type="payout" value={t.payoutStatus} />
+                          {shouldShowDisbursementBadge(t.disbursementState) ? (
+                            <StatusText type="disbursement" value={t.disbursementState} />
+                          ) : null}
+                        </div>
                       </div>
                     </div>
 
