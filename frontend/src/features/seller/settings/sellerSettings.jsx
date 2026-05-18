@@ -24,6 +24,7 @@ import { useNotificationPreferences } from '@/lib/notifications/useNotificationP
 import {
   SELLER_BUSINESS_TYPE_OTHER,
   SELLER_BUSINESS_TYPE_PRESETS,
+  businessTypeLabelFromFormState,
   businessTypeLabelToFormState,
   getSellerByUserId,
   validateSellerBusinessTypeForm,
@@ -1284,7 +1285,7 @@ export default function SellerSettingsProvider({ children }) {
 
   const profileTabId = 'seller-settings-tab-profile'
   const passwordTabId = 'seller-settings-tab-password'
-  const shopTabId = 'seller-settings-tab-shop'
+  const shopTabId = 'seller-settings-tab-shop-information'
   const payoutsTabId = 'seller-settings-tab-payouts'
   const documentsTabId = 'seller-settings-tab-documents'
   const notificationsTabId = 'seller-settings-tab-notifications'
