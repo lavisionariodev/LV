@@ -13,7 +13,8 @@ import { TbSettings, TbMessage2Question } from 'react-icons/tb'
 import { Logout } from '@/components/ui'
 import { useAuth } from '@/contexts/AuthContext'
 import { fetchCurrentAdminProfile } from '@/features/admin/settings/adminProfile'
-import { useInAppNotificationFeed, relativeNotificationTime } from '@/lib/notifications/useInAppNotificationFeed'
+import { relativeNotificationTime } from '@/lib/notifications/useInAppNotificationFeed'
+import { usePortalInAppNotificationFeed } from '@/contexts/PortalInAppNotificationFeedContext'
 
 const TOPBAR_CONFIG = {
   admin: {
@@ -121,13 +122,12 @@ export default function AppTopbar({ variant, onLogout, isMobile, sidebarCollapse
   const pathname = usePathname()
 
   const {
-    notifications: topbarNotifRows,
+    notifications: portalNotifRows,
     unreadCount: topbarUnreadCount,
     markRead: markTopbarNotifRead,
-  } = useInAppNotificationFeed({
-    limit: 8,
-    enabled: Boolean(user),
-  })
+  } = usePortalInAppNotificationFeed()
+
+  const topbarNotifRows = portalNotifRows.slice(0, 8)
 
   const topbarNotifications = topbarNotifRows.map((n) => ({
     id: n.id,

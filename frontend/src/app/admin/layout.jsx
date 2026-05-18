@@ -6,6 +6,7 @@ import { AppSidebar, AppTopbar } from '@/components/layout'
 import { useMediaQuery } from '@/shared/hooks'
 import { requireAdmin } from '@/lib/auth/guards'
 import { signOut } from '@/lib/auth/session'
+import { PortalInAppNotificationFeedProvider } from '@/contexts/PortalInAppNotificationFeedContext'
 import styles from './admin.module.css'
 import { Poppins } from 'next/font/google'
 
@@ -45,6 +46,7 @@ export default function AdminLayout({ children }) {
   }
 
   return (
+    <PortalInAppNotificationFeedProvider>
     <div
       className={`${styles.shell} ${
         collapsed ? styles.shellCollapsed : ''
@@ -70,5 +72,6 @@ export default function AdminLayout({ children }) {
         <div className={styles.content}>{children}</div>
       </div>
     </div>
+    </PortalInAppNotificationFeedProvider>
   )
 }

@@ -11,10 +11,8 @@ import {
   TbTrash,
 } from 'react-icons/tb'
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
-import {
-  relativeNotificationTime,
-  useInAppNotificationFeed,
-} from '@/lib/notifications/useInAppNotificationFeed'
+import { relativeNotificationTime } from '@/lib/notifications/useInAppNotificationFeed'
+import { usePortalInAppNotificationFeed } from '@/contexts/PortalInAppNotificationFeedContext'
 import { getNotificationDisplay } from '@/lib/notifications/notificationDisplay'
 import {
   SELLER_NOTIFICATION_FILTER_TABS,
@@ -363,7 +361,7 @@ export default function SellerNotificationsPage() {
     deleteOne,
     clearAll,
     clearResolved,
-  } = useInAppNotificationFeed({ limit: 100, enabled: true })
+  } = usePortalInAppNotificationFeed()
 
   const [activeFilter, setActiveFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
