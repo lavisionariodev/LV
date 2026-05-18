@@ -2,10 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { TbChevronLeft } from 'react-icons/tb'
-import { useMediaQuery } from '@/shared/hooks'
 import styles from './help.module.css'
-import settingsStyles from '../settings/settings.module.css'
 import {
   LuScale,
   LuUserCheck,
@@ -260,19 +257,9 @@ function AdminHelpSkeleton() {
 
 export default function AdminHelpCenterPage() {
   const [openFaq, setOpenFaq] = useState(0)
-  const isMobile = useMediaQuery('(max-width: 640px)')
 
   return (
-    <div {...(isMobile ? { 'data-portal-inner-page': '' } : {})}>
-      {isMobile ? (
-        <header className={settingsStyles.mobileSubpageHeader}>
-          <Link href="/admin/profile" className={settingsStyles.mobileSubpageBack}>
-            <TbChevronLeft aria-hidden />
-            Profile
-          </Link>
-          <h1 className={settingsStyles.mobileSubpageTitle}>Help Center</h1>
-        </header>
-      ) : null}
+    <div data-portal-inner-page>
       <div className={styles.wrap}>
 
       <section className={styles.grid}>

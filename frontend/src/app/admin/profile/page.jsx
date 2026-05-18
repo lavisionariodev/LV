@@ -3,7 +3,7 @@
 import { AVATAR_ALLOWED_TYPES, AVATAR_MAX_MB, shouldUseUnoptimizedAvatarSrc } from '@/shared/utils'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase/client'
 import { signOut } from '@/lib/auth/session'
@@ -20,68 +20,10 @@ import { useAuthToast } from '@/contexts/ToastContext'
 import { useAdminPersonalProfile } from '@/features/admin/settings/adminProfile'
 
 import { useMediaQuery } from '@/shared/hooks'
-import { ADMIN_SETTINGS_NAV, getSettingsSectionFromPathname } from '../settings/adminSettingsNav'
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 
 function MobileMenuArrow() {
   return <TbChevronRight className={styles.mobileMenuArrow} aria-hidden />
-}
-
-function ProfileMobileTabBar({
-  activeAccountSheet = false,
-  passwordSheetOpen = false,
-  onAccountTab,
-  onPasswordTab,
-}) {
-  const pathname = usePathname()
-  const routeSection = getSettingsSectionFromPathname(pathname)
-  let activeId = pathname === '/admin/profile' ? 'account' : routeSection ?? 'account'
-  if (passwordSheetOpen) activeId = 'password'
-  else if (activeAccountSheet && pathname === '/admin/profile') activeId = 'account'
-
-  return (
-    <nav className={styles.tabBar} aria-label="Settings sections">
-      {ADMIN_SETTINGS_NAV.map((tab) => {
-        const isActive = activeId === tab.id
-        if (tab.id === 'account' && typeof onAccountTab === 'function') {
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              className={`${styles.tabItem} ${isActive ? styles.tabItemActive : ''}`}
-              onClick={onAccountTab}
-              aria-current={isActive ? 'page' : undefined}
-            >
-              <span className={styles.tabLabel}>{tab.label}</span>
-            </button>
-          )
-        }
-        if (tab.id === 'password' && typeof onPasswordTab === 'function') {
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              className={`${styles.tabItem} ${isActive ? styles.tabItemActive : ''}`}
-              onClick={onPasswordTab}
-              aria-current={isActive ? 'page' : undefined}
-            >
-              <span className={styles.tabLabel}>{tab.label}</span>
-            </button>
-          )
-        }
-        return (
-          <Link
-            key={tab.id}
-            href={tab.href}
-            className={`${styles.tabItem} ${isActive ? styles.tabItemActive : ''}`}
-            aria-current={isActive ? 'page' : undefined}
-          >
-            <span className={styles.tabLabel}>{tab.label}</span>
-          </Link>
-        )
-      })}
-    </nav>
-  )
 }
 
 export default function AdminProfilePage() {
@@ -384,13 +326,6 @@ export default function AdminProfilePage() {
           </div>
         </div>
       </div>
-
-      <ProfileMobileTabBar
-        activeAccountSheet={isEditingPersonal}
-        passwordSheetOpen={showPasswordSheet}
-        onAccountTab={onStartPersonalEdit}
-        onPasswordTab={onOpenPasswordSheet}
-      />
 
       <div className={`${styles.contentArea} ${styles.grid}`}>
         {activeTab === 'profile' && (

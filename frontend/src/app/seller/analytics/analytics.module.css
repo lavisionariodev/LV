@@ -752,10 +752,14 @@
   .downloadRow {
     position: fixed;
     right: 1.1rem;
-    bottom: 4.25rem; /* sits just above bottom nav */
+    /* Match seller shell bottom nav height (60px + safe area), not a fixed rem offset */
+    bottom: calc(
+      var(--seller-mobile-bottom-nav-h, calc(60px + env(safe-area-inset-bottom, 0px))) + 0.75rem
+    );
     margin-bottom: 0;
     padding: 0;
-    z-index: 40;
+    /* Above AppMobileBottomNav (z-index 50), below modals */
+    z-index: 55;
   }
 
   .downloadRow .downloadButton {

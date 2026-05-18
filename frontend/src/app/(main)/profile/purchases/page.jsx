@@ -511,6 +511,77 @@ function OpenDisputeModal({ open, rawOrderId, onClose, onSubmit, submitting }) {
 
 const REVIEW_MAX_CHARS = 2000;
 
+/** Skeleton placeholder matching LeaveReviewModal field layout while existing reviews load. */
+function LeaveReviewModalSkeleton({ itemCount = 1 }) {
+  const count = Math.max(1, Math.min(6, Number(itemCount) || 1));
+
+  return (
+    <div className={purchaseStyles.reviewSkWrap} aria-busy="true" aria-live="polite">
+      <p className={styles.visuallyHidden}>Loading your previous ratings…</p>
+      {Array.from({ length: count }, (_, idx) => (
+        <div key={idx}>
+          {idx > 0 ? <div className={purchaseStyles.reviewSectionDivider} /> : null}
+
+          <div className={purchaseStyles.reviewSkSection}>
+            <div
+              className={`${purchaseStyles.reviewSkBlock} ${purchaseStyles.reviewSkLabel}`}
+              aria-hidden="true"
+            />
+            <div className={purchaseStyles.reviewSkStarRow}>
+              {Array.from({ length: 5 }, (_, starIdx) => (
+                <div
+                  key={starIdx}
+                  className={`${purchaseStyles.reviewSkBlock} ${purchaseStyles.reviewSkStar}`}
+                  aria-hidden="true"
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className={purchaseStyles.reviewSkSection}>
+            <div
+              className={`${purchaseStyles.reviewSkBlock} ${purchaseStyles.reviewSkLabel} ${purchaseStyles.reviewSkLabelWide}`}
+              aria-hidden="true"
+            />
+            <div
+              className={`${purchaseStyles.reviewSkBlock} ${purchaseStyles.reviewSkItemName}`}
+              aria-hidden="true"
+            />
+          </div>
+
+          <div className={purchaseStyles.reviewSkSection}>
+            <div
+              className={`${purchaseStyles.reviewSkBlock} ${purchaseStyles.reviewSkLabel} ${purchaseStyles.reviewSkLabelWide}`}
+              aria-hidden="true"
+            />
+            <div
+              className={`${purchaseStyles.reviewSkBlock} ${purchaseStyles.reviewSkTextarea}`}
+              aria-hidden="true"
+            />
+          </div>
+
+          <div className={purchaseStyles.reviewSkSection}>
+            <div
+              className={`${purchaseStyles.reviewSkBlock} ${purchaseStyles.reviewSkLabel}`}
+              aria-hidden="true"
+            />
+            <div className={purchaseStyles.reviewSkMediaRow}>
+              <div
+                className={`${purchaseStyles.reviewSkBlock} ${purchaseStyles.reviewSkMediaBtn}`}
+                aria-hidden="true"
+              />
+              <div
+                className={`${purchaseStyles.reviewSkBlock} ${purchaseStyles.reviewSkMediaBtn} ${purchaseStyles.reviewSkMediaBtnWide}`}
+                aria-hidden="true"
+              />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function LeaveReviewModal({
   open,
   orderId,
@@ -718,9 +789,7 @@ function LeaveReviewModal({
 
         <div className={purchaseStyles.reviewBody}>
           {loadingExisting ? (
-            <p className={purchaseStyles.reviewHint} style={{ marginTop: 4 }}>
-              Loading your previous ratings…
-            </p>
+            <LeaveReviewModalSkeleton itemCount={reviewItems.length} />
           ) : loadError ? (
             <p className={purchaseStyles.reviewError}>{loadError}</p>
           ) : (

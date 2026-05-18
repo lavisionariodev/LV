@@ -608,14 +608,18 @@
   appearance: none;
   -webkit-appearance: none;
   -webkit-min-logical-width: 0;
-  padding-left: 44px;
-  padding-right: 44px;
-  text-align: center;
+  padding: 0 12px;
+  text-align: left;
+  line-height: 42px;
 }
 
 .input[type='date']::-webkit-date-and-time-value {
   min-width: 0;
-  text-align: center;
+  text-align: left;
+  line-height: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
 }
 
 .input[type='date']::-webkit-calendar-picker-indicator {
@@ -1311,8 +1315,7 @@
   }
 
   .input[type='date'] {
-    padding-left: 40px;
-    padding-right: 40px;
+    padding: 0 12px;
   }
 
   .shopInfoCard {

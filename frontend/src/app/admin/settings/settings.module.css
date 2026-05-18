@@ -2106,16 +2106,10 @@
       display: none;
     }
 
-    /* Profile hub uses the menu list; settings subpages keep horizontal tabs. */
-    .page[data-portal-profile-hub] .tabBar {
-      display: none;
-    }
-
+    /* Profile hub and settings subpages use the mobile menu list; tabs are desktop-only. */
+    .page[data-portal-profile-hub] .tabBar,
     .page[data-portal-inner-page] > .tabBar {
-      display: flex;
-      flex-shrink: 0;
-      margin: 0 16px 12px;
-      box-sizing: border-box;
+      display: none;
     }
 
     .page:not([data-portal-inner-page]):not([data-portal-profile-hub]) .tabBar {

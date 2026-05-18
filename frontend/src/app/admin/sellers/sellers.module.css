@@ -1217,6 +1217,35 @@
   gap: 6px;
 }
 
+/* Status badges on dark green header — light text for contrast */
+.detailModalHeader .statusBadge {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.detailModalHeader .status_active {
+  border-color: rgba(187, 247, 208, 0.8);
+  color: #ecfdf5;
+}
+
+.detailModalHeader .status_pending {
+  border-color: rgba(254, 240, 138, 0.8);
+  color: #fef9c3;
+}
+
+.detailModalHeader .status_rejected {
+  border-color: rgba(251, 207, 232, 0.8);
+  color: #fce7f3;
+}
+
+.detailModalHeader .status_suspended {
+  border-color: rgba(254, 202, 202, 0.8);
+  color: #fee2e2;
+}
+
+.detailModalHeader .statusDot {
+  opacity: 1;
+}
+
 .detailSpotlightBadge {
   font-size: 10px;
   font-weight: 700;
@@ -1420,7 +1449,7 @@
 }
 
 .detailRow:nth-child(even) {
-  background: #f5f1ea;
+  background: #f6faf7;
 }
 
 .detailRow:last-child {

@@ -2335,7 +2335,7 @@
 .detailsMetaItem:nth-child(2),
 .detailsMetaItem:nth-child(4),
 .detailsMetaItem:nth-child(6) {
-  background: #f5f1ea;
+  background: #f6faf7;
 }
 
 .detailsMetaLabel {
@@ -2400,7 +2400,7 @@
 }
 
 .detailsDiffRow:nth-child(even) {
-  background: #f5f1ea;
+  background: #f6faf7;
 }
 
 .detailsDiffRow:first-child {
