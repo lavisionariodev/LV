@@ -1566,6 +1566,14 @@
   }
 }
 
+/* Match sellers / buyers / listings mobile horizontal inset (12px) */
+@media (max-width: 860px) {
+  .dashWrap[data-admin-analytics] {
+    padding: 0 12px;
+    box-sizing: border-box;
+  }
+}
+
 /* =========================
    SKELETON SHIMMER (admin shell + dashboard + analytics)
    ========================= */

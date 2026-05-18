@@ -91,7 +91,14 @@ export default function AdminAnalyticsPage() {
 
   if (loading) {
     return (
-      <div className={layoutStyles.dashWrap} role="status" aria-live="polite" aria-busy="true" aria-label="Loading analytics">
+      <div
+        className={layoutStyles.dashWrap}
+        data-admin-analytics
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+        aria-label="Loading analytics"
+      >
         <section className={layoutStyles.analyticsSkPanel}>
           <div className={layoutStyles.analyticsSkPanelHead}>
             <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 16, width: 180 }} />
@@ -142,7 +149,7 @@ export default function AdminAnalyticsPage() {
   }
 
   return (
-    <div className={layoutStyles.dashWrap}>
+    <div className={layoutStyles.dashWrap} data-admin-analytics>
       {metricsError ? (
         <div className={layoutStyles.metricsLoadBanner} role="alert">
           <p className={layoutStyles.metricsLoadBannerText}>{metricsError}</p>

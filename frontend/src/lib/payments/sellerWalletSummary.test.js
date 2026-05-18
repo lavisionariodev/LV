@@ -1,10 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {
-  buildSellerWalletSummary,
-  resolveEscrowDisbursementState,
-  isPaymongoDisbursementEnabled,
-} from './sellerWalletSummary.js'
+import { isPaymongoDisbursementEnabled } from './disbursement.js'
+import { buildSellerWalletSummary, resolveEscrowDisbursementState } from './wallet.js'
 
 test('buildSellerWalletSummary derives held, wallet, and withdrawal totals', () => {
   const escrows = [

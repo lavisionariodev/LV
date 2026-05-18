@@ -351,6 +351,13 @@ function SellerDetailModal({ seller, onClose }) {
   const [rejectDocTarget, setRejectDocTarget] = useState(null);
   const [rejectDocReason, setRejectDocReason] = useState('');
   const [rejectDocError, setRejectDocError] = useState('');
+  const [payoutSettings, setPayoutSettings] = useState(null);
+  const [payoutLoading, setPayoutLoading] = useState(false);
+  const [payoutError, setPayoutError] = useState('');
+  const [payoutBusy, setPayoutBusy] = useState(false);
+  const [rejectPayoutOpen, setRejectPayoutOpen] = useState(false);
+  const [rejectPayoutReason, setRejectPayoutReason] = useState('');
+  const [rejectPayoutError, setRejectPayoutError] = useState('');
 
   const sellerUuidForDocs = seller?.user_id || seller?.id || null;
 
@@ -378,11 +385,61 @@ function SellerDetailModal({ seller, onClose }) {
     }
   }, [sellerUuidForDocs]);
 
+  const loadPayoutSettings = useCallback(async () => {
+    if (!sellerUuidForDocs) {
+      setPayoutSettings(null);
+      return;
+    }
+    setPayoutLoading(true);
+    setPayoutError('');
+    try {
+      const res = await fetch(
+        `/api/admin/sellers/${encodeURIComponent(sellerUuidForDocs)}/payout-settings`,
+        { cache: 'no-store' },
+      );
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(body?.error || 'Failed to load payout settings.');
+      }
+      setPayoutSettings(body?.settings ?? null);
+    } catch (err) {
+      setPayoutSettings(null);
+      setPayoutError(err?.message || 'Failed to load payout settings.');
+    } finally {
+      setPayoutLoading(false);
+    }
+  }, [sellerUuidForDocs]);
+
   useEffect(() => {
     queueMicrotask(() => {
       loadComplianceDocs();
+      loadPayoutSettings();
     });
-  }, [loadComplianceDocs]);
+  }, [loadComplianceDocs, loadPayoutSettings]);
+
+  const reviewPayoutSettings = async (action, reason = '') => {
+    if (!sellerUuidForDocs) return false;
+    setPayoutBusy(true);
+    try {
+      const res = await fetch(
+        `/api/admin/sellers/${encodeURIComponent(sellerUuidForDocs)}/payout-settings/review`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action, reason }),
+        },
+      );
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        window.alert(body?.error || 'Could not update payout settings.');
+        return false;
+      }
+      await loadPayoutSettings();
+      return true;
+    } finally {
+      setPayoutBusy(false);
+    }
+  };
 
   const reviewComplianceDoc = async (documentId, action, reason = '') => {
     if (!sellerUuidForDocs) return false;
@@ -625,6 +682,83 @@ function SellerDetailModal({ seller, onClose }) {
                     {...panelA11y('compliance', 'Compliance documents')}
                   >
                     <section className={styles.detailSection}>
+                      <h3 className={styles.detailSectionTitle}>Payout destination</h3>
+                      <div className={`${styles.detailGroup} ${styles.detailGroupTabPanel}`}>
+                        {payoutLoading ? <p className={styles.detailEmpty}>Loading payout settings…</p> : null}
+                        {!payoutLoading && payoutError ? (
+                          <p className={styles.detailEmpty}>{payoutError}</p>
+                        ) : null}
+                        {!payoutLoading && !payoutError && !payoutSettings ? (
+                          <p className={styles.detailEmpty}>Seller has not saved payout settings yet.</p>
+                        ) : null}
+                        {!payoutLoading && !payoutError && payoutSettings ? (
+                          <div className={styles.detailRowMultiline}>
+                            <DetailRow
+                              label="Method"
+                              value={String(payoutSettings.payoutMethod || '—').replace(/_/g, ' ')}
+                            />
+                            {payoutSettings.payoutMethod === 'bank' ? (
+                              <>
+                                <DetailRow label="Account holder" value={payoutSettings.accountHolderName || '—'} />
+                                <DetailRow label="Bank" value={payoutSettings.bankName || '—'} />
+                                <DetailRow
+                                  label="Account number"
+                                  value={payoutSettings.accountNumber || payoutSettings.maskedAccountNumber || '—'}
+                                />
+                              </>
+                            ) : null}
+                            {payoutSettings.payoutMethod === 'gcash' ? (
+                              <>
+                                <DetailRow label="GCash name" value={payoutSettings.gcashName || '—'} />
+                                <DetailRow
+                                  label="GCash number"
+                                  value={payoutSettings.gcashNumber || payoutSettings.maskedGcashNumber || '—'}
+                                />
+                              </>
+                            ) : null}
+                            {payoutSettings.payoutMethod === 'manual' ? (
+                              <DetailRow label="Instructions" value={payoutSettings.notes || '—'} multiline />
+                            ) : null}
+                            <DetailRow
+                              label="Verification"
+                              value={`${payoutSettings.verificationStatus || 'pending_review'}${
+                                payoutSettings.verificationRejectionReason
+                                  ? ` · ${payoutSettings.verificationRejectionReason}`
+                                  : ''
+                              }`}
+                              multiline
+                            />
+                            {payoutSettings.payoutMethod !== 'manual' &&
+                            payoutSettings.verificationStatus === 'pending_review' ? (
+                              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+                                <button
+                                  type="button"
+                                  className={styles.actionMenuItem}
+                                  disabled={payoutBusy}
+                                  onClick={() => reviewPayoutSettings('approve')}
+                                >
+                                  Approve payout details
+                                </button>
+                                <button
+                                  type="button"
+                                  className={`${styles.actionMenuItem} ${styles.actionMenuItemWarn}`}
+                                  disabled={payoutBusy}
+                                  onClick={() => {
+                                    setRejectPayoutError('');
+                                    setRejectPayoutReason('');
+                                    setRejectPayoutOpen(true);
+                                  }}
+                                >
+                                  Reject payout details
+                                </button>
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
+                    </section>
+                    <section className={styles.detailSection}>
+                      <h3 className={styles.detailSectionTitle}>Compliance documents</h3>
                       <div className={`${styles.detailGroup} ${styles.detailGroupTabPanel}`}>
                         {complianceLoading ? <p className={styles.detailEmpty}>Loading documents…</p> : null}
                         {!complianceLoading && complianceError ? (
@@ -691,6 +825,52 @@ function SellerDetailModal({ seller, onClose }) {
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        open={rejectPayoutOpen}
+        variant="danger"
+        title="Reject payout details?"
+        message="Tell the seller what to fix before they can withdraw to this account."
+        extra={
+          <>
+            <textarea
+              className={confirmModalStyles.modalTextarea}
+              value={rejectPayoutReason}
+              onChange={(e) => {
+                setRejectPayoutReason(e.target.value);
+                setRejectPayoutError('');
+              }}
+              rows={4}
+              placeholder="At least 12 characters"
+            />
+            {rejectPayoutError ? <p className={confirmModalStyles.modalFieldError}>{rejectPayoutError}</p> : null}
+          </>
+        }
+        subtitleAlign="left"
+        confirmLabel="Reject payout details"
+        confirmLoadingLabel="Rejecting..."
+        cancelLabel="Cancel"
+        loading={payoutBusy}
+        onCancel={() => {
+          if (payoutBusy) return;
+          setRejectPayoutOpen(false);
+          setRejectPayoutReason('');
+          setRejectPayoutError('');
+        }}
+        onConfirm={async () => {
+          const trimmed = rejectPayoutReason.trim();
+          if (trimmed.length < 12) {
+            setRejectPayoutError('Please enter at least 12 characters.');
+            return;
+          }
+          const ok = await reviewPayoutSettings('reject', trimmed);
+          if (ok) {
+            setRejectPayoutOpen(false);
+            setRejectPayoutReason('');
+            setRejectPayoutError('');
+          }
+        }}
+      />
 
       <ConfirmModal
         open={rejectDocTarget != null}

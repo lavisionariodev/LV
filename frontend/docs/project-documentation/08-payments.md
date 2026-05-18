@@ -18,9 +18,10 @@ Legacy per-order PayMongo releases (before migration `110`) remain in `payout_di
 - **UI:** `/seller/wallet`
 - **APIs:** `/api/seller/wallet`, `.../transactions`, `.../withdrawals`, `.../withdraw`
 - **Settings:** `/seller/settings/payouts` — destination account; migration `111` links withdrawals to `seller_payout_settings`
-- **Fees:** `seller_withdrawals.fee_php` / `net_amount_php` (migration `111`)
+- **Verification:** migration `112` adds `verification_status` on `seller_payout_settings`. Bank/GCash details require **admin approval** before automated withdraw (`/admin/sellers` → Compliance tab). Seller API returns **masked** account numbers only.
+- **Fees:** `seller_withdrawals.fee_php` / `net_amount_php` (migration `111`). Platform fee from `PLATFORM_WITHDRAWAL_FEE_PHP` (default `0`, deducted from gross before PayMongo transfer). **PayMongo processor fees** are absorbed by the platform separately.
 
-Withdrawals run when `PAYMONGO_DISBURSEMENT_ENABLED=true` and webhook settles transfer status.
+Withdrawals run when `PAYMONGO_DISBURSEMENT_ENABLED=true`, payout settings are **approved**, and webhook settles transfer status. Only one `pending`/`submitted` withdrawal per seller at a time (DB partial unique index).
 
 ## Webhook (required for live behavior)
 
@@ -37,6 +38,7 @@ Paid/failed checkout, refunds, and withdrawal transfer settlement are **webhook-
 | `PAYMONGO_WEBHOOK_SECRET` | Webhook verification |
 | `PAYMONGO_DISBURSEMENT_ENABLED` | Toggle automated **seller withdrawals** |
 | `PAYMONGO_WALLET_SOURCE_*`, `PAYMONGO_DEFAULT_DESTINATION_BIC` | Platform wallet source + destination config |
+| `PLATFORM_WITHDRAWAL_FEE_PHP` | Optional platform fee deducted from seller gross withdrawal (default `0`) |
 | `ADMIN_NOTIFY_EVERY_PAID_ORDER` | Email admins on each paid order (when `true`) |
 
 Details: `frontend/README.md`. Code: `src/lib/paymongo/`, `src/lib/payments/`, `src/lib/seller/walletClient.js`.

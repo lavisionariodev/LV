@@ -1104,6 +1104,94 @@
   line-height: 1.45;
 }
 
+/* ── Leave-a-review modal loading skeleton ── */
+
+@keyframes reviewSkShimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.reviewSkBlock {
+  border-radius: 6px;
+  background: linear-gradient(90deg, #e8e4df 0%, #f3efe8 45%, #dcd8d2 80%, #e8e4df 100%);
+  background-size: 200% 100%;
+  animation: reviewSkShimmer 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reviewSkBlock {
+    animation: none;
+    background: #e8e4df;
+  }
+}
+
+.reviewSkWrap {
+  margin-top: 2px;
+}
+
+.reviewSkSection {
+  margin-bottom: 16px;
+}
+
+.reviewSkSection:last-child {
+  margin-bottom: 4px;
+}
+
+.reviewSkLabel {
+  height: 11px;
+  width: 72px;
+  margin-bottom: 8px;
+}
+
+.reviewSkLabelWide {
+  width: 108px;
+}
+
+.reviewSkStarRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.reviewSkStar {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.reviewSkItemName {
+  height: 42px;
+  width: 100%;
+  border-radius: 8px;
+}
+
+.reviewSkTextarea {
+  height: 110px;
+  width: 100%;
+  border-radius: 8px;
+}
+
+.reviewSkMediaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.reviewSkMediaBtn {
+  height: 36px;
+  width: 108px;
+  border-radius: 6px;
+}
+
+.reviewSkMediaBtnWide {
+  width: 96px;
+}
+
 .disputeInfoNote {
   margin: 0 22px 14px;
   padding: 10px 12px;
@@ -1220,6 +1308,11 @@
     width: 40px;
     height: 40px;
     font-size: 18px;
+  }
+
+  .reviewSkStar {
+    width: 40px;
+    height: 40px;
   }
 
   .reviewActions {

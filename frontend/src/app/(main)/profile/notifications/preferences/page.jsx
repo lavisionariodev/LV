@@ -6,7 +6,7 @@ import {
   defaultBucketChannels,
   mergeBuyerNotificationPreferences,
   NOTIFICATION_PREFERENCE_CHANNELS,
-} from '@/lib/notifications/preferenceSchema'
+} from '@/lib/notifications/preferences'
 import {
   fetchBuyerNotificationPreferences,
   saveBuyerNotificationPreferences,

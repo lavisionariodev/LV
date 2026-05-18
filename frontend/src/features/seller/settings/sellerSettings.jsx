@@ -14,7 +14,7 @@ import {
   mergeSellerNotificationPreferences,
   NOTIFICATION_PREFERENCE_CHANNELS,
   SELLER_NOTIFICATION_BUCKETS,
-} from '@/lib/notifications/preferenceSchema'
+} from '@/lib/notifications/preferences'
 import {
   fetchSellerNotificationPreferences,
   saveSellerNotificationPreferences,
@@ -34,6 +34,11 @@ import {
 } from '@/lib/sellers/client'
 import { normalizeSellerSocialLinks, validateSellerSocialLinks } from '@/lib/sellers/socialLinks'
 import { useMediaQuery } from '@/shared/hooks'
+import {
+  PH_BANK_OPTIONS,
+  normalizeGcashNumber,
+  resolvePhBank,
+} from '@/lib/payments/payout'
 
 async function fetchCurrentSellerProfile() {
   const {
@@ -402,10 +407,16 @@ const EMPTY_PAYOUT_FORM = {
   accountHolderName: '',
   bankName: '',
   accountNumber: '',
+  hasAccountNumber: false,
+  maskedAccountNumber: '',
   gcashName: '',
   gcashNumber: '',
+  hasGcashNumber: false,
+  maskedGcashNumber: '',
   payoutEmail: '',
   notes: '',
+  verificationStatus: 'pending_review',
+  verificationRejectionReason: '',
 }
 
 function SellerSettingsSkeletonHead({ showAction = false }) {
@@ -727,6 +738,7 @@ export default function SellerSettingsProvider({ children }) {
   const [shopSubTab, setShopSubTab] = useState('storefront')
   const documentFileRef = useRef(null)
   const [payoutForm, setPayoutForm] = useState(EMPTY_PAYOUT_FORM)
+  const [payoutDisbursement, setPayoutDisbursement] = useState(null)
   const [payoutSaving, setPayoutSaving] = useState(false)
   const [documents, setDocuments] = useState([])
   const [documentType, setDocumentType] = useState('business_permit')
@@ -827,8 +839,16 @@ export default function SellerSettingsProvider({ children }) {
           payoutRes.json().catch(() => null),
           docsRes.json().catch(() => null),
         ])
-        if (!cancelled && payoutRes.ok && payoutBody?.settings) {
-          setPayoutForm({ ...EMPTY_PAYOUT_FORM, ...payoutBody.settings })
+        if (!cancelled && payoutRes.ok) {
+          if (payoutBody?.settings) {
+            setPayoutForm({
+              ...EMPTY_PAYOUT_FORM,
+              ...payoutBody.settings,
+              accountNumber: '',
+              gcashNumber: '',
+            })
+          }
+          setPayoutDisbursement(payoutBody?.disbursement ?? null)
         }
         if (!cancelled && docsRes.ok) {
           setDocuments(Array.isArray(docsBody?.documents) ? docsBody.documents : [])
@@ -884,11 +904,15 @@ export default function SellerSettingsProvider({ children }) {
     if (payoutForm.payoutMethod === 'bank') {
       if (!payoutForm.accountHolderName.trim()) return 'Account holder name is required for bank payouts.'
       if (!payoutForm.bankName.trim()) return 'Bank name is required for bank payouts.'
-      if (!payoutForm.accountNumber.trim()) return 'Account number is required for bank payouts.'
+      if (!payoutForm.hasAccountNumber && !payoutForm.accountNumber.trim()) {
+        return 'Account number is required for bank payouts.'
+      }
     }
     if (payoutForm.payoutMethod === 'gcash') {
       if (!payoutForm.gcashName.trim()) return 'GCash account name is required.'
-      if (!payoutForm.gcashNumber.trim()) return 'GCash number is required.'
+      if (!payoutForm.hasGcashNumber && !payoutForm.gcashNumber.trim()) {
+        return 'GCash number is required.'
+      }
     }
     if (payoutForm.payoutMethod === 'manual' && !payoutForm.notes.trim()) {
       return 'Please add payout instructions for manual payout.'
@@ -896,6 +920,34 @@ export default function SellerSettingsProvider({ children }) {
     if (payoutForm.payoutEmail.trim() && !/^\S+@\S+\.\S+$/.test(payoutForm.payoutEmail.trim())) {
       return 'Please enter a valid payout email.'
     }
+
+    if (payoutForm.payoutMethod === 'bank') {
+      if (payoutForm.accountHolderName.trim().length < 2) {
+        return 'Account holder name must be at least 2 characters.'
+      }
+      if (payoutForm.bankName.trim()) {
+        const { known } = resolvePhBank(payoutForm.bankName)
+        if (!known) return 'Please select a supported bank from the list.'
+      }
+      if (payoutForm.accountNumber.trim()) {
+        const acct = payoutForm.accountNumber.replace(/\D/g, '')
+        if (acct.length < 8 || acct.length > 16) {
+          return 'Bank account number must be 8–16 digits.'
+        }
+      }
+    }
+    if (payoutForm.payoutMethod === 'gcash') {
+      if (payoutForm.gcashName.trim().length < 2) {
+        return 'GCash account name must be at least 2 characters.'
+      }
+      if (payoutForm.gcashNumber.trim()) {
+        const gcash = normalizeGcashNumber(payoutForm.gcashNumber)
+        if (!/^09\d{9}$/.test(gcash)) {
+          return 'GCash number must be a valid Philippine mobile number (09XXXXXXXXX).'
+        }
+      }
+    }
+
     return ''
   }
 
@@ -916,8 +968,21 @@ export default function SellerSettingsProvider({ children }) {
       })
       const body = await res.json().catch(() => null)
       if (!res.ok) throw new Error(body?.error || 'Failed to save payout settings.')
-      setPayoutForm({ ...EMPTY_PAYOUT_FORM, ...(body?.settings || {}) })
-      notifyToast('success', 'Payout settings saved.')
+      if (body?.settings) {
+        setPayoutForm({
+          ...EMPTY_PAYOUT_FORM,
+          ...body.settings,
+          accountNumber: '',
+          gcashNumber: '',
+        })
+      }
+      setPayoutDisbursement(body?.disbursement ?? null)
+      const vs = String(body?.settings?.verificationStatus || '').toLowerCase()
+      if (vs === 'pending_review' && body?.settings?.payoutMethod !== 'manual') {
+        notifyToast('success', 'Payout settings saved and submitted for admin review.')
+      } else {
+        notifyToast('success', 'Payout settings saved.')
+      }
     } catch (err) {
       notifyToast('error', err.message || 'Failed to save payout settings.')
     } finally {
@@ -1323,9 +1388,11 @@ export default function SellerSettingsProvider({ children }) {
     onRemoveShopCover,
     coverFileRef,
     payoutForm,
+    payoutDisbursement,
     payoutSaving,
     onPayoutFieldChange,
     handleSavePayout,
+    phBankOptions: PH_BANK_OPTIONS,
     documents,
     documentType,
     setDocumentType,
@@ -1390,6 +1457,7 @@ export {
   SellerSettingsPanelSkeleton,
   SellerNotificationPreferencesPanel,
   PAYOUT_METHOD_OPTIONS,
+  PH_BANK_OPTIONS,
   DOCUMENT_TYPE_OPTIONS,
   SHOP_BUSINESS_TYPE_OPTIONS,
   EMPTY_PAYOUT_FORM,

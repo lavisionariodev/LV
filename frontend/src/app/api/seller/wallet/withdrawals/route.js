@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireActiveSellerApiUser } from '@/lib/auth/requireApiUser'
-import { fetchSellerWithdrawalsForSeller } from '@/lib/payments/walletLedger'
-import { mapWithdrawalForApi } from '@/lib/payments/sellerWalletTransactions'
+import { fetchSellerWithdrawalsForSeller, mapWithdrawalForApi } from '@/lib/payments/wallet'
 
 function parsePositiveInt(value, fallback, max) {
   const n = parseInt(String(value ?? ''), 10)

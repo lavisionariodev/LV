@@ -608,14 +608,18 @@
   appearance: none;
   -webkit-appearance: none;
   -webkit-min-logical-width: 0;
-  padding-left: 44px;
-  padding-right: 44px;
-  text-align: center;
+  padding: 0 12px;
+  text-align: left;
+  line-height: 42px;
 }
 
 .input[type='date']::-webkit-date-and-time-value {
   min-width: 0;
-  text-align: center;
+  text-align: left;
+  line-height: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
 }
 
 .input[type='date']::-webkit-calendar-picker-indicator {
@@ -1311,8 +1315,7 @@
   }
 
   .input[type='date'] {
-    padding-left: 40px;
-    padding-right: 40px;
+    padding: 0 12px;
   }
 
   .shopInfoCard {
@@ -1753,6 +1756,51 @@
 
 .walletCtaBtn:hover {
   filter: brightness(1.05);
+}
+
+.payoutNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(15, 118, 110, 0.25);
+  background: rgba(15, 118, 110, 0.06);
+}
+
+.payoutNoticeSuccess {
+  border-color: rgba(22, 163, 74, 0.3);
+  background: rgba(22, 163, 74, 0.08);
+}
+
+.payoutNoticeError {
+  border-color: rgba(220, 38, 38, 0.3);
+  background: rgba(220, 38, 38, 0.06);
+}
+
+.payoutNoticeIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--primary, #0f766e);
+}
+
+.payoutNoticeError .payoutNoticeIcon {
+  color: #dc2626;
+}
+
+.payoutNoticeText {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--color-text, #1e293b);
+}
+
+.fieldHint {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: var(--muted, var(--color-text-secondary));
 }
 
 .notifPrefPanel {

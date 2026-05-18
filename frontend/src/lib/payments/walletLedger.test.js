@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { insertWalletLedgerEntry } from './walletLedger.js'
+import { insertWalletLedgerEntry } from './wallet.js'
 
 function createMockSupabaseAdmin() {
   const inserted = []

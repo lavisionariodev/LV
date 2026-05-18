@@ -4,7 +4,7 @@ import crypto from 'crypto'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { apiLog } from '@/lib/observability/apiLog'
 import { reconcilePaymongoRefundEvent } from '@/lib/payments/refundReconcile'
-import { reconcilePaymongoDisbursementEvent } from '@/lib/payments/disbursementReconcile'
+import { reconcilePaymongoDisbursementEvent } from '@/lib/payments/withdrawal'
 import { notifyUser, notifyAllAdmins, notifySeller } from '@/lib/notifications/inAppServer'
 import {
   fetchPlatformDefaultCommissionPercent,
