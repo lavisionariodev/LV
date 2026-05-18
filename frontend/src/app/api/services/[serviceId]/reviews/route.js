@@ -46,7 +46,7 @@ export async function GET(request, { params }) {
 
   let reviewsQuery = supabaseAdmin
     .from('order_item_reviews')
-    .select('order_item_id,buyer_id,rating,review_text,listing_label,created_at')
+    .select('order_item_id,buyer_id,rating,review_text,listing_label,image_urls,video_urls,created_at')
     .eq('service_id', serviceId)
   if (sellerId) reviewsQuery = reviewsQuery.eq('seller_user_id', sellerId)
   const { data: reviewRows, error: reviewsErr } = await reviewsQuery.order('created_at', { ascending: false })
@@ -106,8 +106,8 @@ export async function GET(request, { params }) {
     date: formatISODate(r.created_at),
     title: String(r.listing_label ?? ''),
     body: String(r.review_text ?? ''),
-    images: [],
-    videos: [],
+    images: Array.isArray(r.image_urls) ? r.image_urls.filter(Boolean) : [],
+    videos: Array.isArray(r.video_urls) ? r.video_urls.filter(Boolean) : [],
   }))
 
   return NextResponse.json(
