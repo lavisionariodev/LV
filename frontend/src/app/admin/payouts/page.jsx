@@ -4,8 +4,8 @@ import { DISBURSEMENT_STATE_META, PAYMENT_STATUS_META, PAYOUT_STATUS_META, compu
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { FiArrowUp, FiArrowDown, FiRotateCcw, FiUnlock } from 'react-icons/fi'
-import { TbCreditCardPay, TbPlayerPause, TbX } from 'react-icons/tb'
+import { FiArrowUp, FiArrowDown, FiClock, FiRotateCcw, FiUnlock } from 'react-icons/fi'
+import { TbCoins, TbCreditCardPay, TbPlayerPause, TbX } from 'react-icons/tb'
 import { LuSettings2 } from 'react-icons/lu'
 
 import { useDebouncedEffect } from '@/shared/hooks'
@@ -2215,19 +2215,35 @@ const SELLER_EARNINGS_BALANCES = [
     totalKey: 'pending',
     label: 'Pending release',
     shortLabel: 'Pending',
-    tone: 'pending',
-    valClass: 'seBalAvailable',
+    Icon: FiClock,
   },
-  { key: 'onHold', totalKey: 'onHold', label: 'On hold', shortLabel: 'On hold', tone: 'hold', valClass: 'seBalPending' },
+  { key: 'onHold', totalKey: 'onHold', label: 'On hold', shortLabel: 'On hold', Icon: TbPlayerPause },
   {
     key: 'released',
     totalKey: 'released',
     label: 'Released (net)',
     shortLabel: 'Released',
-    tone: 'released',
-    valClass: 'seBalWithdrawn',
+    Icon: TbCoins,
   },
 ]
+
+function SellerEarningsMetricTile({ row, amount, labelClassName, valueClassName, tileClassName }) {
+  const Icon = row.Icon
+  return (
+    <div className={tileClassName}>
+      <div className={styles.seBalContent}>
+        <span className={labelClassName}>
+          <span className={styles.seBalLabelLong}>{row.label}</span>
+          <span className={styles.seBalLabelShort}>{row.shortLabel}</span>
+        </span>
+        <span className={valueClassName}>{formatPHP(amount)}</span>
+      </div>
+      <span className={styles.seBalIconBox} aria-hidden>
+        <Icon className={styles.seBalIcon} strokeWidth={1.75} />
+      </span>
+    </div>
+  )
+}
 
 function SellerEarningsPanel({ transactions }) {
   const sellers = useMemo(() => {
@@ -2305,10 +2321,14 @@ function SellerEarningsPanel({ transactions }) {
         {sortedEarnings.length > 0 && (
           <div className={styles.seSummary} role="group" aria-label="Totals across all sellers">
             {SELLER_EARNINGS_BALANCES.map((row) => (
-              <div key={row.key} className={styles.seSummaryItem} data-tone={row.tone}>
-                <span className={styles.seSummaryLabel}>{row.shortLabel}</span>
-                <span className={styles.seSummaryVal}>{formatPHP(totals[row.totalKey])}</span>
-              </div>
+              <SellerEarningsMetricTile
+                key={row.key}
+                row={row}
+                amount={totals[row.totalKey]}
+                tileClassName={styles.seSummaryItem}
+                labelClassName={styles.seSummaryLabel}
+                valueClassName={styles.seSummaryVal}
+              />
             ))}
           </div>
         )}
@@ -2340,23 +2360,17 @@ function SellerEarningsPanel({ transactions }) {
                   {s.txnCount === 1 ? 'transaction' : 'transactions'}
                 </p>
               </div>
-              <div className={styles.seCardTotal} title="Total tracked net for this seller">
-                <span className={styles.seCardTotalLabel}>Total</span>
-                <span className={styles.seCardTotalVal}>{formatPHP(s.totalTracked)}</span>
-              </div>
             </div>
             <div className={styles.seBalances}>
               {SELLER_EARNINGS_BALANCES.map((row) => (
-                <div key={row.key} className={styles.seBalanceItem} data-tone={row.tone}>
-                  <span className={styles.seBalLabel}>
-                    <span className={styles.seStatusDot} data-tone={row.tone} aria-hidden />
-                    <span className={styles.seBalLabelLong}>{row.label}</span>
-                    <span className={styles.seBalLabelShort}>{row.shortLabel}</span>
-                  </span>
-                  <span className={`${styles.seBalVal} ${styles[row.valClass]}`}>
-                    {formatPHP(s[row.key])}
-                  </span>
-                </div>
+                <SellerEarningsMetricTile
+                  key={row.key}
+                  row={row}
+                  amount={s[row.key]}
+                  tileClassName={styles.seBalanceItem}
+                  labelClassName={styles.seBalLabel}
+                  valueClassName={styles.seBalVal}
+                />
               ))}
             </div>
           </article>

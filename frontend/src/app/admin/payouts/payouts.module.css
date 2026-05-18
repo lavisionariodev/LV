@@ -3550,41 +3550,33 @@
 
 .seSummaryItem {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 10px 12px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
   min-width: 0;
+  background: #fff;
+  border: 1px solid #e2e8f0;
 }
 
 .seSummaryLabel {
-  font-size: 10px;
-  font-weight: 700;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 0.35px;
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  line-height: 1.25;
 }
 
 .seSummaryVal {
-  font-size: 14px;
+  display: block;
+  margin-top: 4px;
+  font-size: 18px;
   font-weight: 800;
   color: #0f172a;
   line-height: 1.2;
   word-break: break-word;
-}
-
-.seSummaryItem[data-tone='pending'] .seSummaryVal {
-  color: #059669;
-}
-
-.seSummaryItem[data-tone='hold'] .seSummaryVal {
-  color: #b45309;
-}
-
-.seSummaryItem[data-tone='released'] .seSummaryVal {
-  color: #475569;
 }
 
 .seEmpty {
@@ -3627,30 +3619,6 @@
 .seCardIdentity {
   flex: 1;
   min-width: 0;
-}
-
-.seCardTotal {
-  flex-shrink: 0;
-  text-align: right;
-  padding-left: 8px;
-}
-
-.seCardTotalLabel {
-  display: block;
-  font-size: 10px;
-  font-weight: 700;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 0.35px;
-}
-
-.seCardTotalVal {
-  display: block;
-  margin-top: 2px;
-  font-size: 14px;
-  font-weight: 800;
-  color: #0f172a;
-  line-height: 1.2;
 }
 
 .seAvatar {
@@ -3705,75 +3673,66 @@
 }
 
 .seBalanceItem {
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
   background: #fff;
-  border: 1px solid #f1f5f9;
-  border-radius: 10px;
-  padding: 10px 10px 10px 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.seBalContent {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  min-width: 0;
-  border-left-width: 3px;
-  border-left-style: solid;
-}
-
-.seBalanceItem[data-tone='pending'] {
-  border-left-color: #10b981;
-}
-
-.seBalanceItem[data-tone='hold'] {
-  border-left-color: #f59e0b;
-}
-
-.seBalanceItem[data-tone='released'] {
-  border-left-color: #94a3b8;
+  gap: 4px;
 }
 
 .seBalLabel {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
+  display: block;
   font-size: 10px;
   font-weight: 700;
   color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.35px;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 .seBalLabelShort {
   display: none;
 }
 
-.seStatusDot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.seStatusDot[data-tone='pending'] {
-  background: #10b981;
-}
-
-.seStatusDot[data-tone='hold'] {
-  background: #f59e0b;
-}
-
-.seStatusDot[data-tone='released'] {
-  background: #94a3b8;
-}
-
 .seBalVal {
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 800;
   line-height: 1.2;
   word-break: break-word;
+  color: #0f172a;
 }
 
-.seBalAvailable  { color: #059669; }
-.seBalPending    { color: #b45309; }
-.seBalWithdrawn  { color: #475569; }
+.seBalIconBox {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.seBalIcon {
+  width: 18px;
+  height: 18px;
+  color: #16a34a;
+  stroke-width: 1.75;
+}
 
 /* ── Mobile Mode Bar + Content Panes ────────────────────────────────────── */
 
@@ -6036,7 +5995,7 @@
   }
 
   .seSummaryVal {
-    font-size: 12px;
+    font-size: 14px;
   }
 
   .seGrid {
@@ -6055,33 +6014,26 @@
     gap: 10px;
   }
 
-  .seCardTotal {
-    width: 100%;
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 8px 10px;
-    margin-top: 2px;
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    text-align: left;
-  }
-
-  .seCardTotalLabel,
-  .seCardTotalVal {
-    display: inline;
-    margin-top: 0;
-  }
-
   .seBalances {
     grid-template-columns: repeat(3, 1fr);
     gap: 6px;
   }
 
-  .seBalanceItem {
-    padding: 8px 8px 8px 10px;
+  .seBalanceItem,
+  .seSummaryItem {
+    padding: 10px;
+    gap: 6px;
+  }
+
+  .seBalIconBox {
+    width: 32px;
+    height: 32px;
+    border-radius: 7px;
+  }
+
+  .seBalIcon {
+    width: 16px;
+    height: 16px;
   }
 
   .seBalLabelLong {
@@ -6096,8 +6048,13 @@
     font-size: 9px;
   }
 
-  .seBalVal {
-    font-size: 12px;
+  .seBalVal,
+  .seSummaryVal {
+    font-size: 14px;
+  }
+
+  .seSummaryVal {
+    margin-top: 2px;
   }
 
   /* ── Expanded panel ──────────────────────────────────────────────────────── */
@@ -6273,7 +6230,7 @@
     grid-template-columns: repeat(3, 1fr);
   }
 
-  .seBalVal { font-size: 11px; }
+  .seBalVal { font-size: 13px; }
 
   .globalImpactGrid {
     grid-template-columns: repeat(2, 1fr);
