@@ -352,22 +352,39 @@ export default function NotificationsPage() {
                     {ICON_MAP[notif.iconKey] || ICON_MAP.account_profile}
                   </div>
                   <div className={notifStyles.notifContent}>
-                    <div className={notifStyles.notifTitle}>
-                      {notif.title}
-                      <span className={`${notifStyles.tag} ${notifStyles[`tag_${notif.variant}`]}`}>{notif.tag}</span>
+                    <div className={notifStyles.notifHead}>
+                      <div className={notifStyles.notifTitle}>
+                        {notif.title}
+                        <span className={`${notifStyles.tag} ${notifStyles[`tag_${notif.variant}`]}`}>{notif.tag}</span>
+                      </div>
+                      <button
+                        type="button"
+                        className={notifStyles.inboxDeleteBtn}
+                        aria-label={`Delete notification: ${notif.title}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteOne(notif.id);
+                        }}
+                      >
+                        <svg
+                          className={notifStyles.inboxDeleteIcon}
+                          viewBox="0 0 16 16"
+                          fill="none"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M3 4.5h10M6.5 4.5V3.25A.75.75 0 017.25 2.5h1.5a.75.75 0 01.75.75V4.5M6 7.25v4.5M10 7.25v4.5M4.75 4.5l.5 8.25a.75.75 0 00.75.75h4a.75.75 0 00.75-.75l.5-8.25"
+                            stroke="currentColor"
+                            strokeWidth="1.2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        <span className={notifStyles.inboxDeleteLabel}>Delete</span>
+                      </button>
                     </div>
                     <p className={notifStyles.notifBody}>{notif.body}</p>
                     <span className={notifStyles.notifTime}>{notif.time}</span>
-                    <button
-                      type="button"
-                      className={notifStyles.inboxDeleteBtn}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteOne(notif.id);
-                      }}
-                    >
-                      Delete
-                    </button>
                   </div>
                 </div>
               ))}

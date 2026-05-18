@@ -6,6 +6,7 @@ import { Poppins } from 'next/font/google'
 import { AppSidebar, AppTopbar, AppMobileBottomNav } from '@/components/layout'
 import { useMediaQuery } from '@/shared/hooks'
 import { CartProvider } from '@/contexts/CartContext'
+import { PortalInAppNotificationFeedProvider } from '@/contexts/PortalInAppNotificationFeedContext'
 import { requireSeller } from '@/lib/auth/guards'
 import { registerSellerPortalSession } from '@/lib/auth/sellerPortalSessionsClient'
 import { signOut } from '@/lib/auth/session'
@@ -66,6 +67,7 @@ export default function SellerLayout({ children }) {
 
   return (
     <CartProvider>
+      <PortalInAppNotificationFeedProvider>
       <div
         className={`${styles.shell} ${
           collapsed ? styles.shellCollapsed : ''
@@ -93,6 +95,7 @@ export default function SellerLayout({ children }) {
           ) : null}
         </div>
       </div>
+      </PortalInAppNotificationFeedProvider>
     </CartProvider>
   )
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireAdminApiUser } from '@/lib/auth/requireAdminRoute'
+import { resolveStoredAvatar } from '@/shared/utils'
 import {
   pickOrder,
   utcDateKeysLastN,
@@ -115,12 +116,16 @@ export async function GET(request) {
   const orderIds = rows.map((r) => r.order_id).filter(Boolean)
   const escrowIds = rows.map((r) => r.id).filter(Boolean)
 
-  const [buyerUsersRes, profilesRes, sellersRes, itemsRes, disbursementsRes] = await Promise.all([
+  const [buyerUsersRes, buyerProfilesRes, sellerProfilesRes, sellersRes, itemsRes, disbursementsRes] =
+    await Promise.all([
     buyerIds.length
       ? supabaseAdmin.from('users').select('id,email').in('id', buyerIds)
       : Promise.resolve({ data: [] }),
     buyerIds.length
       ? supabaseAdmin.from('profiles').select('id,full_name').in('id', buyerIds)
+      : Promise.resolve({ data: [] }),
+    sellerUserIds.length
+      ? supabaseAdmin.from('profiles').select('id, avatar_url').in('id', sellerUserIds)
       : Promise.resolve({ data: [] }),
     sellerUserIds.length
       ? supabaseAdmin
@@ -139,7 +144,13 @@ export async function GET(request) {
   const disbursementByEscrowId = indexDisbursementsByEscrowId(disbursementsRes)
 
   const emailByBuyer = new Map((buyerUsersRes.data ?? []).map((u) => [u.id, u.email]))
-  const nameByBuyer = new Map((profilesRes.data ?? []).map((p) => [p.id, p.full_name]))
+  const nameByBuyer = new Map((buyerProfilesRes.data ?? []).map((p) => [p.id, p.full_name]))
+  const avatarBySellerUserId = new Map(
+    (sellerProfilesRes.data ?? []).map((p) => {
+      const { avatarUrl } = resolveStoredAvatar(supabaseAdmin, p.avatar_url)
+      return [p.id, avatarUrl || null]
+    }),
+  )
   const sellerByUserId = new Map(
     (sellersRes.data ?? []).map((s) => [s.user_id, s]),
   )
@@ -158,6 +169,7 @@ export async function GET(request) {
     return {
       id,
       name: s?.business_name || `Seller ${String(id).slice(0, 8)}`,
+      avatarUrl: avatarBySellerUserId.get(id) ?? null,
       commissionPercentOverride:
         overrideNum != null && Number.isFinite(overrideNum) ? overrideNum : null,
     }
@@ -211,6 +223,7 @@ export async function GET(request) {
       orderId: orderLabel,
       sellerId: e.seller_user_id,
       sellerName: sel?.business_name || 'Seller',
+      sellerAvatarUrl: avatarBySellerUserId.get(e.seller_user_id) ?? null,
       sellerEmail: sel?.email || '',
       sellerPhone: sel?.phone || '',
       buyerId,

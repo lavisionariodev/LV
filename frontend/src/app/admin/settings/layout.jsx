@@ -25,20 +25,25 @@ export default function AdminSettingsLayout({ children }) {
     }
   }, [isMobile, pathname, router])
 
-  const tabNav = !isMobile ? (
+  const tabNav = (
     <nav className={styles.tabBar} aria-label="Settings sections">
-      {ADMIN_SETTINGS_NAV.map((tab) => (
-        <Link
-          key={tab.id}
-          href={tab.href}
-          className={`${styles.tabItem} ${activeId === tab.id ? styles.tabItemActive : ''}`}
-          aria-current={activeId === tab.id ? 'page' : undefined}
-        >
-          <span className={styles.tabLabel}>{tab.label}</span>
-        </Link>
-      ))}
+      {ADMIN_SETTINGS_NAV.map((tab) => {
+        let href = tab.href
+        if (isMobile && tab.id === 'account') href = '/admin/profile?sheet=account'
+        if (isMobile && tab.id === 'password') href = '/admin/profile?sheet=password'
+        return (
+          <Link
+            key={tab.id}
+            href={href}
+            className={`${styles.tabItem} ${activeId === tab.id ? styles.tabItemActive : ''}`}
+            aria-current={activeId === tab.id ? 'page' : undefined}
+          >
+            <span className={styles.tabLabel}>{tab.label}</span>
+          </Link>
+        )
+      })}
     </nav>
-  ) : null
+  )
 
   if (isMobile) {
     return (

@@ -1,12 +1,14 @@
 'use client'
 
 import { formatCount, readEnum, readString, replaceUrlQuery } from '@/shared/utils'
-import { useState, useMemo, useEffect, useRef, useCallback, useId } from 'react'
+import { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback, useId } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { TbCircleX, TbPlus, TbTrash, TbChevronDown, TbSearch, TbDots } from 'react-icons/tb'
+import { TbPlus, TbChevronDown, TbSearch, TbDots } from 'react-icons/tb'
+import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
+import confirmModalStyles from '@/components/ui/Modal/ConfirmModal.module.css'
 import { FiArchive } from 'react-icons/fi'
 import { MdArrowBackIos } from 'react-icons/md'
 import styles from '../products.module.css'
@@ -380,20 +382,37 @@ function ProductsReviewTableRowMenu({
 
   const updateMenuPosition = useCallback(() => {
     const trigger = triggerRef.current
+    const dropdown = dropdownRef.current
     if (!trigger) return
 
     const rect = trigger.getBoundingClientRect()
-    setMenuPosition({
-      top: rect.bottom + 6,
-      right: Math.max(8, window.innerWidth - rect.right),
-      minWidth: Math.max(148, rect.width),
-    })
+    const padding = 8
+    const gap = 6
+    const minWidth = Math.max(168, rect.width)
+    const menuWidth = dropdown?.offsetWidth || minWidth
+    const menuHeight = dropdown?.offsetHeight || 132
+
+    let top = rect.bottom + gap
+    if (top + menuHeight > window.innerHeight - padding) {
+      top = Math.max(padding, rect.top - menuHeight - gap)
+    }
+
+    let left = rect.right - menuWidth
+    if (left < padding) left = padding
+    if (left + menuWidth > window.innerWidth - padding) {
+      left = window.innerWidth - padding - menuWidth
+    }
+
+    setMenuPosition({ top, left, minWidth })
   }, [])
+
+  useLayoutEffect(() => {
+    if (!open) return
+    updateMenuPosition()
+  }, [open, updateMenuPosition])
 
   useEffect(() => {
     if (!open) return
-
-    updateMenuPosition()
 
     const handleScrollOrResize = () => updateMenuPosition()
     window.addEventListener('resize', handleScrollOrResize)
@@ -437,7 +456,7 @@ function ProductsReviewTableRowMenu({
             role="menu"
             style={{
               top: `${menuPosition.top}px`,
-              right: `${menuPosition.right}px`,
+              left: `${menuPosition.left}px`,
               minWidth: `${menuPosition.minWidth}px`,
             }}
           >
@@ -483,6 +502,31 @@ function ProductsReviewTableRowMenu({
 
   return (
     <div className={styles.productsTableActions}>
+      <div className={styles.productsTableActionsInline} role="group" aria-label={`Actions for ${product.name}`}>
+        <button
+          type="button"
+          className={styles.productActionGhost}
+          onClick={() => onOpenView(product)}
+        >
+          View
+        </button>
+        <button
+          type="button"
+          className={styles.productActionPrimary}
+          onClick={() => onOpenEdit(product)}
+        >
+          Edit
+        </button>
+        {showCancelRequest ? (
+          <button
+            type="button"
+            className={`${styles.productActionDanger} ${styles.productsTableActionCancelFull}`}
+            onClick={() => onCancelRequest(product)}
+          >
+            Cancel request
+          </button>
+        ) : null}
+      </div>
       <button
         ref={triggerRef}
         type="button"
@@ -1892,62 +1936,26 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
         document.body
       )}
 
-      {productPendingRemoval && typeof document !== 'undefined' && createPortal(
-        <div
-          className={styles.removeConfirmOverlay}
-          onClick={(e) => {
-            if (removeInProgress) return
-            if (e.target === e.currentTarget) handleCancelRemove()
-          }}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="remove-listing-confirm-title"
-          aria-describedby="remove-listing-confirm-desc"
-        >
-          <div className={styles.removeConfirmCard} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.removeConfirmCardBody}>
-              <div className={styles.removeConfirmHeader}>
-                <div className={styles.removeConfirmIconBadge} aria-hidden>
-                  <TbTrash size={16} strokeWidth={1.65} />
-                </div>
-                <h2 id="remove-listing-confirm-title" className={styles.removeConfirmTitle}>
-                  Remove listing?
-                </h2>
-              </div>
-              <p id="remove-listing-confirm-desc" className={styles.removeConfirmText}>
-                This listing will be removed from your products. You can add it again later if needed.
-              </p>
-              {removeError ? (
-                <p className={styles.removeConfirmError} role="alert">
-                  {removeError}
-                </p>
-              ) : null}
-            </div>
-            <div className={styles.removeConfirmFooter}>
-              <div className={styles.removeConfirmActions}>
-                <button
-                  type="button"
-                  className={styles.removeConfirmCancel}
-                  onClick={handleCancelRemove}
-                  disabled={removeInProgress}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className={styles.removeConfirmDelete}
-                  onClick={handleConfirmRemove}
-                  disabled={removeInProgress}
-                >
-                  {removeInProgress ? 'Removing…' : 'Yes, remove'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        ,
-        document.body
-      )}
+      <ConfirmModal
+        open={productPendingRemoval != null}
+        variant="danger"
+        title="Remove listing?"
+        message="This listing will be removed from your products. You can add it again later if needed."
+        extra={
+          removeError ? (
+            <p className={confirmModalStyles.modalFieldError} role="alert">
+              {removeError}
+            </p>
+          ) : null
+        }
+        subtitleAlign="left"
+        confirmLabel="Yes, remove"
+        confirmLoadingLabel="Removing..."
+        cancelLabel="Cancel"
+        loading={removeInProgress}
+        onCancel={handleCancelRemove}
+        onConfirm={handleConfirmRemove}
+      />
       <SubmittedUpdateViewModal
         product={submissionViewProduct}
         onClose={handleCloseSubmissionView}
@@ -1958,71 +1966,38 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
         }
       />
 
-      {productPendingCancel && typeof document !== 'undefined'
-        ? createPortal(
-        <div
-          className={styles.removeConfirmOverlay}
-          onClick={(e) => {
-            if (cancelInProgress) return
-            if (e.target === e.currentTarget) handleCancelCancelReview()
-          }}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="cancel-review-confirm-title"
-          aria-describedby="cancel-review-confirm-desc"
-        >
-          <div className={styles.removeConfirmCard} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.removeConfirmCardBody}>
-              <div className={styles.removeConfirmHeader}>
-                <div className={styles.removeConfirmIconBadge} aria-hidden>
-                  <TbCircleX size={16} strokeWidth={1.65} />
-                </div>
-                <h2 id="cancel-review-confirm-title" className={styles.removeConfirmTitle}>
-                  {productPendingCancel.hasPendingUpdate
-                    ? 'Cancel update request?'
-                    : productPendingCancel.stagedRejectionReason
-                      ? 'Dismiss rejected update?'
-                      : 'Cancel submission?'}
-                </h2>
-              </div>
-              <p id="cancel-review-confirm-desc" className={styles.removeConfirmText}>
-                {productPendingCancel.hasPendingUpdate
-                  ? 'Your proposed changes will be withdrawn. The live listing stays on the shop and will no longer appear in the admin review queue.'
-                  : productPendingCancel.stagedRejectionReason
-                    ? 'This clears the rejection notice from Submitted updates. Your live listing on the shop is unchanged.'
-                    : 'This listing will return to draft and will no longer appear in the admin review queue.'}
-              </p>
-              {cancelError ? (
-                <p className={styles.removeConfirmError} role="alert">
-                  {cancelError}
-                </p>
-              ) : null}
-            </div>
-            <div className={styles.removeConfirmFooter}>
-              <div className={styles.removeConfirmActions}>
-                <button
-                  type="button"
-                  className={styles.removeConfirmCancel}
-                  onClick={handleCancelCancelReview}
-                  disabled={cancelInProgress}
-                >
-                  Keep request
-                </button>
-                <button
-                  type="button"
-                  className={styles.removeConfirmDelete}
-                  onClick={handleConfirmCancelReview}
-                  disabled={cancelInProgress}
-                >
-                  {cancelInProgress ? 'Cancelling…' : 'Yes, cancel request'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-        )
-      : null}
+      <ConfirmModal
+        open={productPendingCancel != null}
+        variant="danger"
+        title={
+          productPendingCancel?.hasPendingUpdate
+            ? 'Cancel update request?'
+            : productPendingCancel?.stagedRejectionReason
+              ? 'Dismiss rejected update?'
+              : 'Cancel submission?'
+        }
+        message={
+          productPendingCancel?.hasPendingUpdate
+            ? 'Your proposed changes will be withdrawn. The live listing stays on the shop and will no longer appear in the admin review queue.'
+            : productPendingCancel?.stagedRejectionReason
+              ? 'This clears the rejection notice from Submitted updates. Your live listing on the shop is unchanged.'
+              : 'This listing will return to draft and will no longer appear in the admin review queue.'
+        }
+        extra={
+          cancelError ? (
+            <p className={confirmModalStyles.modalFieldError} role="alert">
+              {cancelError}
+            </p>
+          ) : null
+        }
+        subtitleAlign="left"
+        confirmLabel="Yes, cancel request"
+        confirmLoadingLabel="Cancelling..."
+        cancelLabel="Keep request"
+        loading={cancelInProgress}
+        onCancel={handleCancelCancelReview}
+        onConfirm={handleConfirmCancelReview}
+      />
     </div>
   )
 }

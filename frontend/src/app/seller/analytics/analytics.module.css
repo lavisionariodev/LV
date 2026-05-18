@@ -81,7 +81,8 @@
 }
 
 @media (max-width: 640px) {
-  .downloadButton {
+  /* Icon-only FAB: CSV download in .downloadRow (has icon + span) */
+  .downloadRow .downloadButton {
     width: 40px;
     height: 40px;
     padding: 0;
@@ -91,7 +92,7 @@
     margin-top: 0.5rem;
   }
 
-  .downloadButton span {
+  .downloadRow .downloadButton span {
     display: none;
   }
 
@@ -757,7 +758,7 @@
     z-index: 40;
   }
 
-  .downloadButton {
+  .downloadRow .downloadButton {
     width: 32px;
     height: 32px;
     padding: 0;
@@ -765,11 +766,12 @@
     border-radius: 999px;
   }
 
-  .downloadButton span {
+  .downloadRow .downloadButton span {
     display: none;
   }
 
-  .payoutRequestOpenBtn {
+  .payoutRequestOpenBtn,
+  .chartHeader .downloadButton {
     width: auto;
     height: auto;
     padding: 0.4rem 0.9rem;
@@ -794,11 +796,13 @@
     align-items: flex-start;
   }
 
-  .chartHeader .payoutRequestOpenBtn {
+  .chartHeader .payoutRequestOpenBtn,
+  .chartHeader .downloadButton {
     width: 100%;
     justify-content: center;
     margin-left: 0;
-    margin-top: 0;
+    margin-top: 0.35rem;
+    white-space: nowrap;
   }
 
   .payoutRequestModalOverlay {
@@ -1370,12 +1374,128 @@
   color: #163a2a;
 }
 
-@media (max-width: 560px) {
+/* Mobile card list — matches seller wallet transaction cards (@860px) */
+@media (max-width: 860px) {
+  .chartBody:has(.ledgerActivityList) {
+    min-height: 0;
+    justify-content: flex-start;
+  }
+
+  .ledgerActivityList {
+    gap: 1rem;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+    background: transparent;
+  }
+
+  .ledgerActivityItem {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'type amount'
+      'desc desc'
+      'date date'
+      'action action';
+    gap: 0;
+    padding: 0;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    background: #ffffff;
+  }
+
+  .ledgerActivityItem:last-child {
+    border-bottom: none;
+  }
+
+  .ledgerActivityMain,
   .ledgerActivityAside {
-    flex: 1 1 100%;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    text-align: left;
+    display: contents;
+  }
+
+  .ledgerTypeBadge {
+    grid-area: type;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f8f7f5;
+    padding: 0.75rem 1rem;
+    align-self: center;
+    min-width: 0;
+  }
+
+  .ledgerAmount {
+    grid-area: amount;
+    padding: 0.75rem 1rem 0.75rem 0;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f8f7f5;
+    text-align: right;
+    align-self: center;
+    font-size: 0.95rem;
+  }
+
+  .ledgerDescription {
+    grid-area: desc;
+    margin: 0;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    font-size: 0.875rem;
+  }
+
+  .ledgerDescription::before {
+    content: 'Description';
+    display: block;
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6b7280;
+    margin-bottom: 0.2rem;
+  }
+
+  .ledgerDate {
+    grid-area: date;
+    margin: 0;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    font-size: 0.875rem;
+  }
+
+  .ledgerDate::before {
+    content: 'Date';
+    display: block;
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6b7280;
+    margin-bottom: 0.2rem;
+  }
+
+  .ledgerActivityItem:not(:has(.ledgerOrderLink)) .ledgerDate {
+    border-bottom: none;
+  }
+
+  .ledgerOrderLink {
+    grid-area: action;
+    display: block;
+    padding: 0.6rem 1rem;
+    font-size: 0.875rem;
+    text-decoration: none;
+  }
+
+  .ledgerOrderLink::before {
+    content: 'Order';
+    display: block;
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6b7280;
+    margin-bottom: 0.2rem;
+    text-decoration: none;
   }
 }

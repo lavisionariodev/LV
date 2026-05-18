@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useMediaQuery } from '@/shared/hooks';
 import {
   FaCircleInfo,
   FaMagnifyingGlassPlus,
@@ -104,10 +105,13 @@ const categories = [
 ];
 
 export default function NeedHelpPage() {
+  const isMobile = useMediaQuery('(max-width: 768px)');
   const [searchQuery, setSearchQuery] = useState('');
   const [articleView, setArticleView] = useState(false);
   const [expandedCategoryId, setExpandedCategoryId] = useState(null);
   const [selectedArticle, setSelectedArticle] = useState(null);
+  const [topicsOpen, setTopicsOpen] = useState(false);
+  const articlePanelRef = useRef(null);
 
   const { data: siteContent } = useSiteContent();
   const systemName = siteContent?.systemName || 'La Visionario';
@@ -168,6 +172,13 @@ export default function NeedHelpPage() {
 
   const [advisoryDismissed, setAdvisoryDismissed] = useState(false);
 
+  const openArticleView = (categoryId, subId) => {
+    setExpandedCategoryId(categoryId);
+    setSelectedArticle({ categoryId, subId });
+    setArticleView(true);
+    if (isMobile) setTopicsOpen(false);
+  };
+
   const handleSearch = (e) => {
     e.preventDefault();
     const q = searchQuery.trim().toLowerCase();
@@ -179,9 +190,7 @@ export default function NeedHelpPage() {
           s.article.content.toLowerCase().includes(q)
       );
       if (sub) {
-        setExpandedCategoryId(cat.id);
-        setSelectedArticle({ categoryId: cat.id, subId: sub.id });
-        setArticleView(true);
+        openArticleView(cat.id, sub.id);
         return;
       }
     }
@@ -190,9 +199,7 @@ export default function NeedHelpPage() {
   const handleCategoryClick = (categoryId) => {
     const cat = categoriesWithArticlesBranded.find((c) => c.id === categoryId);
     if (cat?.subCategories?.length) {
-      setExpandedCategoryId(categoryId);
-      setSelectedArticle({ categoryId, subId: cat.subCategories[0].id });
-      setArticleView(true);
+      openArticleView(categoryId, cat.subCategories[0].id);
     }
   };
 
@@ -202,6 +209,7 @@ export default function NeedHelpPage() {
 
   const selectSubArticle = (categoryId, subId) => {
     setSelectedArticle({ categoryId, subId });
+    if (isMobile) setTopicsOpen(false);
   };
 
   const currentArticleData = selectedArticle && (() => {
@@ -211,10 +219,13 @@ export default function NeedHelpPage() {
   })();
 
   const handleQuestionClick = (categoryId, subId) => {
-    setExpandedCategoryId(categoryId);
-    setSelectedArticle({ categoryId, subId });
-    setArticleView(true);
+    openArticleView(categoryId, subId);
   };
+
+  useEffect(() => {
+    if (!isMobile || !articleView || topicsOpen || !selectedArticle) return;
+    articlePanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [isMobile, articleView, topicsOpen, selectedArticle]);
 
   return (
     <div className={styles.container}>
@@ -226,7 +237,10 @@ export default function NeedHelpPage() {
               <button
                 type="button"
                 className={styles.logoGroup}
-                onClick={() => setArticleView(false)}
+                onClick={() => {
+                  setArticleView(false);
+                  setTopicsOpen(false);
+                }}
               >
                 <span className={styles.logoIcon} aria-hidden><span className={styles.logoLetter}>L</span></span>
                 <span className={styles.logoText}>{systemName}</span>
@@ -284,9 +298,28 @@ export default function NeedHelpPage() {
         )}
 
         {articleView ? (
-          /* Article view: sidebar (dropdown categories) + article content */
           <div className={styles.articleLayout}>
-            <aside className={styles.sidebar}>
+            {isMobile ? (
+              <div className={styles.mobileArticleToolbar}>
+                <button
+                  type="button"
+                  className={styles.mobileTopicsToggle}
+                  onClick={() => setTopicsOpen((open) => !open)}
+                  aria-expanded={topicsOpen}
+                >
+                  {topicsOpen ? (
+                    <FaChevronDown className={styles.mobileTopicsToggleIcon} aria-hidden />
+                  ) : (
+                    <FaChevronRight className={styles.mobileTopicsToggleIcon} aria-hidden />
+                  )}
+                  <span>{topicsOpen ? 'Hide topics' : 'Browse topics'}</span>
+                </button>
+              </div>
+            ) : null}
+            <aside
+              className={`${styles.sidebar} ${isMobile && !topicsOpen ? styles.sidebarHiddenMobile : ''}`}
+              aria-hidden={isMobile && !topicsOpen ? true : undefined}
+            >
               {categoriesWithArticlesBranded.map((cat) => {
                 const isExpanded = expandedCategoryId === cat.id;
                 return (
@@ -327,7 +360,7 @@ export default function NeedHelpPage() {
                 );
               })}
             </aside>
-            <div className={styles.articlePanel}>
+            <div ref={articlePanelRef} className={styles.articlePanel}>
               {currentArticleData ? (
                 <>
                   <h1 className={styles.articleTitle}>{currentArticleData.title}</h1>
@@ -339,7 +372,9 @@ export default function NeedHelpPage() {
                   )}
                 </>
               ) : (
-                <p className={styles.articlePlaceholder}>Pick a topic on the left to read more.</p>
+                <p className={styles.articlePlaceholder}>
+                  {isMobile ? 'Tap Browse topics above to choose an article.' : 'Pick a topic on the left to read more.'}
+                </p>
               )}
             </div>
           </div>

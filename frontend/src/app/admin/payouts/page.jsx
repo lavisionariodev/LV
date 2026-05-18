@@ -1,13 +1,14 @@
 'use client'
 
-import { DISBURSEMENT_STATE_META, PAYMENT_STATUS_META, PAYOUT_STATUS_META, computeCommissionSnapshot, formatCount, formatDateRangeLabel, formatPHP, formatPHPMobile, getTxnCommissionParts, readEnum, readInt, readString, replaceUrlQuery } from '@/shared/utils'
+import { DISBURSEMENT_STATE_META, PAYMENT_STATUS_META, PAYOUT_STATUS_META, computeCommissionSnapshot, formatCount, formatDateRangeLabel, formatPHP, formatPHPMobile, getTxnCommissionParts, readEnum, readInt, readString, replaceUrlQuery, shouldUseUnoptimizedAvatarSrc } from '@/shared/utils'
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { FiArrowUp, FiArrowDown, FiRotateCcw, FiUnlock } from 'react-icons/fi'
-import { TbCreditCardPay, TbPlayerPause, TbX } from 'react-icons/tb'
+import { FiArrowUp, FiArrowDown, FiClock, FiRotateCcw, FiUnlock } from 'react-icons/fi'
+import { TbCoins, TbCreditCardPay, TbPlayerPause, TbX } from 'react-icons/tb'
 import { LuSettings2 } from 'react-icons/lu'
 
-import { useDebouncedEffect } from '@/shared/hooks'
+import { useDebouncedEffect, useMediaQuery } from '@/shared/hooks'
 import { Dropdown } from '@/components/ui'
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 import confirmModalStyles from '@/components/ui/Modal/ConfirmModal.module.css'
@@ -15,6 +16,37 @@ import adminStyles from '../admin.module.css'
 
 import styles from './payouts.module.css'
 import StuckRefundsStrip from './StuckRefundsStrip'
+
+/** Seller avatar from `profiles.avatar_url` (via payouts API); initials when missing. */
+function SellerAvatarMark({ src, name, className, customClassName, size = 38 }) {
+  const [failed, setFailed] = useState(false)
+  const label = String(name ?? 'Seller').trim() || 'Seller'
+  const url = typeof src === 'string' ? src.trim() : ''
+  const showImg = url.length > 0 && !failed
+  const initial = (label.charAt(0) || '?').toUpperCase()
+
+  return (
+    <div
+      className={`${className}${showImg ? ` ${styles.sellerAvatarHasImage}` : ''}${customClassName ? ` ${customClassName}` : ''}`}
+      title={label}
+      aria-hidden={showImg || undefined}
+    >
+      {showImg ? (
+        <Image
+          src={url}
+          alt=""
+          width={size}
+          height={size}
+          className={styles.sellerAvatarImg}
+          onError={() => setFailed(true)}
+          unoptimized={shouldUseUnoptimizedAvatarSrc(url)}
+        />
+      ) : (
+        initial
+      )}
+    </div>
+  )
+}
 
 // ─── Admin payouts page data hook (formerly useAdminPayoutsPage.js) ──────────
 
@@ -730,6 +762,28 @@ function Badge({ type, value }) {
   return <span className={`${styles.badge} ${paymentCls || ''}`}>{label}</span>
 }
 
+/** Plain text status for mobile cards — color only, no pill/dot. */
+function StatusText({ type, value }) {
+  const raw = value == null || value === '' ? '' : String(value).trim()
+  const key = raw.toLowerCase()
+
+  let meta
+  let label
+  if (type === 'disbursement') {
+    meta = DISBURSEMENT_STATE_META[key] || DISBURSEMENT_STATE_META.none
+    label = meta.label
+  } else if (type === 'payment') {
+    meta = PAYMENT_STATUS_META[key]
+    label = meta?.label ?? (raw ? raw : '—')
+  } else {
+    meta = PAYOUT_STATUS_META[key]
+    label = meta?.label ?? (raw ? raw : '—')
+  }
+
+  const colorCls = styles[`statusText_${meta?.color || 'slate'}`] || styles.statusText_slate
+  return <span className={`${styles.statusText} ${colorCls}`}>{label}</span>
+}
+
 const PAYOUTS_TABLE_SKELETON_ROWS = 6
 const PAYOUTS_MOBILE_SKELETON_CARDS = 4
 
@@ -764,9 +818,9 @@ function PayoutsMobileTransactionSkeleton() {
             </div>
           </div>
           <div className={styles.mobileCardSection}>
-            <div className={styles.mobileCardStatuses}>
-              <span className={`${styles.tableSkeletonBar} ${styles.mobileSkPill}`} />
-              <span className={`${styles.tableSkeletonBar} ${styles.mobileSkPill}`} />
+            <div className={styles.mobileCardStatusRow}>
+              <span className={`${styles.tableSkeletonBar} ${styles.mobileSkStatus}`} />
+              <span className={`${styles.tableSkeletonBar} ${styles.mobileSkStatus}`} />
             </div>
           </div>
           <div className={styles.mobileCardSection}>
@@ -2054,7 +2108,13 @@ function CommissionPanel({
                   <div key={seller.id} className={`${styles.sellerOverrideRow} ${isCustom ? styles.sellerOverrideRowActive : ''}`}>
                     {/* Left: avatar + info */}
                     <div className={styles.sellerOverrideInfo}>
-                      <div className={`${styles.sellerAvatar} ${isCustom ? styles.sellerAvatarCustom : ''}`}>{seller.name[0]}</div>
+                      <SellerAvatarMark
+                        src={seller.avatarUrl}
+                        name={seller.name}
+                        className={styles.sellerAvatar}
+                        customClassName={isCustom ? styles.sellerAvatarCustom : ''}
+                        size={36}
+                      />
                       <div className={styles.sellerOverrideTextBlock}>
                         <div className={styles.sellerOverrideNameRow}>
                           <p className={styles.sellerOverrideName}>{seller.name}</p>
@@ -2171,13 +2231,62 @@ function CommissionPanel({
 
 // ─── Seller Earnings Panel ────────────────────────────────────────────────────
 
+const SELLER_EARNINGS_BALANCES = [
+  {
+    key: 'pendingRelease',
+    label: 'Pending release',
+    shortLabel: 'Pending',
+    Icon: FiClock,
+  },
+  { key: 'onHold', label: 'On hold', shortLabel: 'On hold', Icon: TbPlayerPause },
+  {
+    key: 'released',
+    label: 'Released (net)',
+    shortLabel: 'Released',
+    Icon: TbCoins,
+  },
+]
+
+function SellerEarningsMetricTile({
+  row,
+  amount,
+  labelClassName,
+  valueClassName,
+  tileClassName,
+  iconClassName = styles.seBalIconBox,
+  formatAmount = formatPHP,
+}) {
+  const Icon = row.Icon
+  return (
+    <div className={tileClassName}>
+      <div className={styles.seBalContent}>
+        <span className={labelClassName}>
+          <span className={styles.seBalLabelLong}>{row.label}</span>
+          <span className={styles.seBalLabelShort}>{row.shortLabel}</span>
+        </span>
+        <span className={valueClassName}>{formatAmount(amount)}</span>
+      </div>
+      <span className={iconClassName} aria-hidden>
+        <Icon />
+      </span>
+    </div>
+  )
+}
+
 function SellerEarningsPanel({ transactions }) {
+  const isMobile = useMediaQuery('(max-width: 640px)')
+  const formatAmount = isMobile ? formatPHPMobile : formatPHP
+
   const sellers = useMemo(() => {
     const m = new Map()
     for (const t of transactions ?? []) {
       if (!t?.sellerId) continue
       if (!m.has(t.sellerId)) {
-        m.set(t.sellerId, { id: t.sellerId, name: String(t.sellerName || 'Seller').trim() || 'Seller' })
+        m.set(t.sellerId, {
+          id: t.sellerId,
+          name: String(t.sellerName || 'Seller').trim() || 'Seller',
+          avatarUrl: t.sellerAvatarUrl || null,
+        })
       }
     }
     return [...m.values()]
@@ -2197,49 +2306,83 @@ function SellerEarningsPanel({ transactions }) {
         else if (t.payoutStatus === 'escrowed') pendingRelease += net
       })
 
-      return { ...seller, pendingRelease, onHold, released, txnCount: sellerTxns.length }
+      const totalTracked = pendingRelease + onHold + released
+      return { ...seller, pendingRelease, onHold, released, totalTracked, txnCount: sellerTxns.length }
     })
   }, [transactions, sellers])
 
-  const initial = (name) => (name?.trim()?.charAt(0) || '?').toUpperCase()
+  const sortedEarnings = useMemo(() => {
+    return [...earnings].sort((a, b) => {
+      if (b.pendingRelease !== a.pendingRelease) return b.pendingRelease - a.pendingRelease
+      if (b.totalTracked !== a.totalTracked) return b.totalTracked - a.totalTracked
+      return a.name.localeCompare(b.name)
+    })
+  }, [earnings])
 
   return (
-    <div className={styles.sellerEarningsPanel}>
-      <div className={styles.sePanelHeader}>
-        <p className={styles.sePanelTitle}>Seller Earnings Tracker</p>
-        <p className={styles.sePanelSub}>Totals from escrow snapshots on this payout list</p>
-      </div>
+    <section className={styles.sellerEarningsPanel} aria-label="Seller earnings tracker">
+      <header className={styles.sePanelHeader}>
+        <div className={styles.sePanelHeaderMain}>
+          <div className={styles.sePanelTitleRow}>
+            <h2 className={styles.sePanelTitle}>Seller Earnings Tracker</h2>
+            {sortedEarnings.length > 0 && (
+              <span className={styles.seCountBadge}>
+                {formatCount(sortedEarnings.length)}{' '}
+                {sortedEarnings.length === 1 ? 'seller' : 'sellers'}
+              </span>
+            )}
+          </div>
+          <p className={styles.sePanelSub}>
+            Net seller amounts from escrows on your current payout list
+          </p>
+        </div>
+      </header>
       <div className={styles.seGrid}>
-        {earnings.length === 0 && (
-          <p className={styles.emptyHint}>No escrow rows loaded yet.</p>
-        )}
-        {earnings.map((s) => (
-          <div key={s.id} className={styles.seCard}>
+        {sortedEarnings.length === 0 ? (
+          <div className={styles.seEmpty}>
+            <p className={styles.emptyTitle}>No seller earnings yet</p>
+            <p className={styles.emptyHint}>
+              Escrow rows will show here once transactions are loaded on this page.
+            </p>
+          </div>
+        ) : (
+          sortedEarnings.map((s) => (
+          <article key={s.id} className={styles.seCard}>
             <div className={styles.seCardTop}>
-              <div className={styles.seAvatar}>{initial(s.name)}</div>
-              <div>
-                <p className={styles.seName}>{s.name}</p>
-                <p className={styles.seTxnCount}>{s.txnCount} transactions</p>
+              <SellerAvatarMark
+                src={s.avatarUrl}
+                name={s.name}
+                className={styles.seAvatar}
+                size={40}
+              />
+              <div className={styles.seCardIdentity}>
+                <p className={styles.seName} title={s.name}>
+                  {s.name}
+                </p>
+                <p className={styles.seTxnCount}>
+                  {formatCount(s.txnCount)}{' '}
+                  {s.txnCount === 1 ? 'transaction' : 'transactions'}
+                </p>
               </div>
             </div>
             <div className={styles.seBalances}>
-              <div className={styles.seBalanceItem}>
-                <span className={styles.seBalLabel}>Pending release</span>
-                <span className={`${styles.seBalVal} ${styles.seBalAvailable}`}>{formatPHP(s.pendingRelease)}</span>
-              </div>
-              <div className={styles.seBalanceItem}>
-                <span className={styles.seBalLabel}>On hold</span>
-                <span className={`${styles.seBalVal} ${styles.seBalPending}`}>{formatPHP(s.onHold)}</span>
-              </div>
-              <div className={styles.seBalanceItem}>
-                <span className={styles.seBalLabel}>Released (net)</span>
-                <span className={`${styles.seBalVal} ${styles.seBalWithdrawn}`}>{formatPHP(s.released)}</span>
-              </div>
+              {SELLER_EARNINGS_BALANCES.map((row) => (
+                <SellerEarningsMetricTile
+                  key={row.key}
+                  row={row}
+                  amount={s[row.key]}
+                  formatAmount={formatAmount}
+                  tileClassName={styles.seBalanceItem}
+                  labelClassName={styles.seBalLabel}
+                  valueClassName={styles.seBalVal}
+                />
+              ))}
             </div>
-          </div>
-        ))}
+          </article>
+          ))
+        )}
       </div>
-    </div>
+    </section>
   )
 }
 
@@ -2834,13 +2977,19 @@ export default function AdminPayoutsPage() {
                       </div>
                     </div>
 
-                    <div className={styles.mobileCardSection} data-mobile-label="Status">
-                      <div className={styles.mobileCardStatuses}>
-                      <Badge type="payment" value={t.paymentStatus}/>
-                      <Badge type="payout" value={t.payoutStatus}/>
-                      {shouldShowDisbursementBadge(t.disbursementState) ? (
-                        <Badge type="disbursement" value={t.disbursementState} />
-                      ) : null}
+                    <div className={styles.mobileCardSection}>
+                      <div className={styles.mobileCardStatusRow}>
+                        <div className={styles.mobileCardStatusItem}>
+                          <span className={styles.mobileCardStatusKey}>Payment</span>
+                          <StatusText type="payment" value={t.paymentStatus} />
+                        </div>
+                        <div className={styles.mobileCardStatusItem}>
+                          <span className={styles.mobileCardStatusKey}>Escrow</span>
+                          <StatusText type="payout" value={t.payoutStatus} />
+                          {shouldShowDisbursementBadge(t.disbursementState) ? (
+                            <StatusText type="disbursement" value={t.disbursementState} />
+                          ) : null}
+                        </div>
                       </div>
                     </div>
 

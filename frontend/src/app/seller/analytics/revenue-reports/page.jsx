@@ -5,8 +5,6 @@ import { TbCurrencyPeso, TbDownload } from 'react-icons/tb'
 import styles from '../analytics.module.css'
 import { useSellerAnalyticsData } from '@/lib/seller/useSellerAnalyticsData'
 import {
-  averagePaidBookingValueLastNMonths,
-  bestMonthLabelLastNMonths,
   monthlyPaidRevenueBarPercents,
   percentChange,
   revenueThisCalendarMonth,
@@ -18,9 +16,11 @@ import { formatSellerLedgerEntry } from '@/lib/payments/walletLedgerDisplay'
 
 const REVENUE_SUMMARY_SOFT = [
   styles.summaryCardSoftGreen,
+  styles.summaryCardSoftGreen,
   styles.summaryCardSoftIndigo,
   styles.summaryCardSoftBlue,
   styles.summaryCardSoftAmber,
+  styles.summaryCardSoftGreen,
 ]
 
 function formatLedgerDate(value) {
@@ -147,9 +147,6 @@ export default function SellerAnalyticsRevenueReportsPage() {
   const prevMonth = revenuePreviousCalendarMonth(orders)
   const monthDelta = percentChange(thisMonth, prevMonth)
 
-  const best = bestMonthLabelLastNMonths(orders, 12)
-  const avg12 = averagePaidBookingValueLastNMonths(orders, 12)
-
   const monthlyBars = useMemo(() => monthlyPaidRevenueBarPercents(orders, 6), [orders])
   const maxAmt = useMemo(
     () => Math.max(...monthlyBars.map((m) => m.amount), 1),
@@ -232,7 +229,7 @@ export default function SellerAnalyticsRevenueReportsPage() {
           </p>
         </article>
 
-        <article className={`${styles.summaryCard} ${styles.summaryCardSoftGreen}`}>
+        <article className={`${styles.summaryCard} ${styles.summaryCardSoftAmber}`}>
           <p className={styles.summaryLabel}>Pending withdrawal</p>
           <div className={styles.summaryValueRow}>
             <p className={styles.summaryValue}>{formatPhpWholeAmount(escrowSummary?.pendingWithdrawalNet || 0)}</p>
@@ -248,13 +245,6 @@ export default function SellerAnalyticsRevenueReportsPage() {
           <p className={styles.summaryHint}>Sent to your bank or GCash</p>
         </article>
 
-        <article className={`${styles.summaryCard} ${styles.summaryCardSoftAmber}`}>
-          <p className={styles.summaryLabel}>Avg booking value</p>
-          <div className={styles.summaryValueRow}>
-            <p className={styles.summaryValue}>{formatPhpWholeAmount(avg12)}</p>
-          </div>
-          <p className={styles.summaryHint}>Best month: {best.amount > 0 ? `${best.label} · ${formatPhpWholeAmount(best.amount)}` : 'No paid revenue yet'}</p>
-        </article>
       </section>
 
       <section aria-label="Revenue charts" className={styles.chartsGridSingle}>

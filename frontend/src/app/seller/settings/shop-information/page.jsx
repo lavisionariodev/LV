@@ -6,11 +6,7 @@ import { FaUpload } from 'react-icons/fa6'
 import { TbTrash } from 'react-icons/tb'
 import { FiEdit, FiPlus, FiSave } from 'react-icons/fi'
 import { MdErrorOutline } from 'react-icons/md'
-import {
-  SELLER_BUSINESS_TYPE_OTHER,
-  businessTypeLabelFromFormState,
-  normalizeSellerSpecialties,
-} from '@/lib/sellers/client'
+import { SELLER_BUSINESS_TYPE_OTHER, normalizeSellerSpecialties } from '@/lib/sellers/client'
 import {
   MAX_MB,
   SellerPortalSelect,

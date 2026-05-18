@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { TbBellOff, TbBellRinging, TbCheck, TbTrash, TbAlertTriangle, TbDots } from 'react-icons/tb'
 import styles from './notifications.module.css'
-import { useInAppNotificationFeed, relativeNotificationTime } from '@/lib/notifications/useInAppNotificationFeed'
+import { relativeNotificationTime } from '@/lib/notifications/useInAppNotificationFeed'
+import { usePortalInAppNotificationFeed } from '@/contexts/PortalInAppNotificationFeedContext'
 import { adminNotificationFilterBucket, ADMIN_NOTIFICATION_FILTER_TABS } from '@/lib/notifications/types'
 import { getNotificationDisplay } from '@/lib/notifications/notificationDisplay'
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
@@ -170,7 +171,7 @@ export default function NotificationsPage() {
     markAllRead,
     deleteOne,
     clearAll,
-  } = useInAppNotificationFeed({ limit: 100, enabled: true })
+  } = usePortalInAppNotificationFeed()
 
   const [activeFilter, setActiveFilter] = useState('all')
   const [deleteConfirmId, setDeleteConfirmId] = useState(null)

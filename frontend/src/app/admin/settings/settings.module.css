@@ -2105,8 +2105,32 @@
     .grid {
       display: none;
     }
-    .tabBar {
+
+    /* Profile hub uses the menu list; settings subpages keep horizontal tabs. */
+    .page[data-portal-profile-hub] .tabBar {
       display: none;
+    }
+
+    .page[data-portal-inner-page] > .tabBar {
+      display: flex;
+      flex-shrink: 0;
+      margin: 0 16px 12px;
+      box-sizing: border-box;
+    }
+
+    .page:not([data-portal-inner-page]):not([data-portal-profile-hub]) .tabBar {
+      display: none;
+    }
+
+    .page[data-portal-inner-page] .card.cardBorderless {
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    .page[data-portal-inner-page] .settingsProgram.settingsProgramBorderless .settingsProgramHead,
+    .page[data-portal-inner-page] .settingsProgram.settingsProgramBorderless .settingsProgramBody {
+      padding-left: 0;
+      padding-right: 0;
     }
   
     .mobileOnly {

@@ -160,8 +160,8 @@
 /* ── Unread indicator (top-right) ────────────────────── */
 .unreadTopRight {
   position: absolute;
-  top: 10px;
-  right: 12px;
+  top: 12px;
+  right: 52px;
   width: 7px;
   height: 7px;
   border-radius: 50%;
@@ -215,10 +215,19 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
+}
+
+.notifHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .notifTitle {
+  flex: 1;
+  min-width: 0;
   font-size: 0.875rem;
   font-weight: 600;
   color: #1A1A1A;
@@ -380,45 +389,148 @@
 @media (max-width: 600px) {
   .headerTop {
     flex-direction: column;
+    align-items: stretch;
     gap: 10px;
+    padding-bottom: 10px;
   }
 
   .headerActions {
-    flex-direction: row;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
     width: 100%;
-    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .inboxToolbar {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .inboxActionBtn {
+    flex: 1;
+    min-height: 40px;
+    text-align: center;
+    justify-content: center;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .markAllBtn {
+    align-self: flex-start;
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
   }
 
   .filterRow {
-    margin: 0 -20px -16px;
-    padding: 0 20px;
+    margin: 0 -16px -16px;
+    padding: 0 16px;
   }
 
   .feed {
-    padding: 0 20px;
+    padding: 8px 16px 0;
   }
 
   .pagination {
-    padding: 14px 20px 18px;
+    padding: 14px 16px 18px;
+  }
+
+  .dayLabel {
+    padding: 12px 0 8px;
+  }
+
+  .notifItem {
+    gap: 10px;
+    padding: 12px;
+    margin-bottom: 8px;
+    border-bottom: none;
+    border-radius: 10px;
+    background: rgba(255, 252, 247, 0.95);
+    border: 1px solid rgba(168, 137, 74, 0.12);
+  }
+
+  .notifItem:hover {
+    padding: 12px;
+    background: rgba(255, 252, 247, 1);
+  }
+
+  .notifItemUnread {
+    background: rgba(234, 243, 222, 0.35);
+    border-color: rgba(32, 79, 56, 0.14);
+  }
+
+  .notifItemUnread:hover {
+    background: rgba(234, 243, 222, 0.5);
+  }
+
+  .unreadTopRight {
+    top: 10px;
+    left: 30px;
+    right: auto;
+  }
+
+  .notifHead {
+    gap: 8px;
   }
 
   .notifTitle {
     font-size: 0.82rem;
+    padding-right: 4px;
   }
 
   .notifBody {
     font-size: 0.78rem;
+    line-height: 1.5;
+  }
+
+  .notifTime {
+    margin-top: 2px;
   }
 
   .iconWrap {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
+    margin-top: 2px;
   }
 
   .iconWrap svg {
-    width: 14px;
-    height: 14px;
+    width: 15px;
+    height: 15px;
+  }
+
+  .inboxDeleteBtn {
+    min-width: 40px;
+    min-height: 40px;
+    border-radius: 10px;
+  }
+
+  .inboxDeleteIcon {
+    width: 17px;
+    height: 17px;
+  }
+}
+
+@media (min-width: 601px) {
+  .inboxDeleteBtn {
+    min-width: auto;
+    min-height: auto;
+    padding: 5px 9px;
+  }
+
+  .inboxDeleteLabel {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: nowrap;
+  }
+
+  .unreadTopRight {
+    top: 10px;
+    right: 52px;
+    left: auto;
   }
 }
 
@@ -530,10 +642,47 @@
 }
 
 .inboxDeleteBtn {
-  border: none;
-  background: transparent;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: 1px solid rgba(180, 35, 24, 0.18);
+  border-radius: 8px;
+  background: rgba(180, 35, 24, 0.05);
   color: #b42318;
   font-size: 0.76rem;
+  font-family: 'Lato', sans-serif;
   cursor: pointer;
-  padding: 4px 0;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.inboxDeleteBtn:hover {
+  background: rgba(180, 35, 24, 0.1);
+  border-color: rgba(180, 35, 24, 0.32);
+}
+
+.inboxDeleteBtn:active {
+  background: rgba(180, 35, 24, 0.14);
+}
+
+.inboxDeleteIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.inboxDeleteLabel {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
