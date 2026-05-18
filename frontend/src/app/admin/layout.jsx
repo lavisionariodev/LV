@@ -69,7 +69,9 @@ export default function AdminLayout({ children }) {
           isMobile={isMobile}
           sidebarCollapsed={collapsed}
         />
-        <div className={styles.content}>{children}</div>
+        <div className={styles.contentScroll}>
+          <div className={styles.content}>{children}</div>
+        </div>
       </div>
     </div>
     </PortalInAppNotificationFeedProvider>

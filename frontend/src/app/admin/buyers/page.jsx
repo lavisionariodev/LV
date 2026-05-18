@@ -210,23 +210,19 @@ function BuyerDetailModal({ buyer, onClose, onSuspend, onReactivate, busy }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className={styles.detailModalHeader}>
-          <div className={styles.detailModalHeaderText}>
-            <p className={styles.detailModalEyebrow}>Viewing details</p>
-            <h2 id="buyer-detail-title" className={styles.detailModalTitle}>
-              Buyer record
-            </h2>
+          <div className={styles.detailModalHeaderInner}>
+            <Avatar name={buyer.fullName} src={buyer.avatarUrl} />
+            <div className={styles.detailModalHeaderText}>
+              <p className={styles.detailModalEyebrow}>Viewing details</p>
+              <h2 id="buyer-detail-title" className={styles.detailModalTitle}>
+                {buyer.fullName}
+              </h2>
+              <p className={styles.detailModalSubtitle}>{buyer.email}</p>
+            </div>
           </div>
           <button type="button" className={styles.detailModalClose} onClick={onClose} aria-label="Close">
             <TbX aria-hidden size={18} strokeWidth={1.75} />
           </button>
-        </div>
-
-        <div className={styles.detailModalHero}>
-          <Avatar name={buyer.fullName} src={buyer.avatarUrl} />
-          <div className={styles.detailModalHeroText}>
-            <p className={styles.detailModalHeroName}>{buyer.fullName}</p>
-            <p className={styles.detailModalHeroEmail}>{buyer.email}</p>
-          </div>
         </div>
 
         <div className={styles.detailModalBody}>

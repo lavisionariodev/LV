@@ -89,7 +89,9 @@ export default function SellerLayout({ children }) {
             isMobile={isMobile}
             sidebarCollapsed={collapsed}
           />
-          <div className={styles.content}>{children}</div>
+          <div className={styles.contentScroll}>
+            <div className={styles.content}>{children}</div>
+          </div>
           {isMobile ? (
             <AppMobileBottomNav variant="seller" onMobileClose={() => setMobileMenuOpen(false)} />
           ) : null}

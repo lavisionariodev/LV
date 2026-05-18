@@ -23,6 +23,11 @@
   background: #ffffff;
 }
 
+.contentScroll {
+  width: 100%;
+  min-width: 0;
+}
+
 .content {
   max-width: 1200px;
   margin: 0 auto;
@@ -30,6 +35,31 @@
   width: 100%;
   box-sizing: border-box;
   padding-bottom: calc(18px + 28px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Desktop: lock shell to viewport; scroll full-width pane, content stays centered */
+@media (min-width: 861px) {
+  .shell,
+  .shellCollapsed {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+
+  .main {
+    height: 100dvh;
+    max-height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .contentScroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+  }
 }
 
 .pendingBanner {

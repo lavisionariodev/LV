@@ -23,6 +23,12 @@
 
 /* Desktop: overlapping collapse control must stack above sticky topbar (z-index 30 in AppTopbar). */
 @media (min-width: 861px) {
+  .sidebar {
+    height: 100dvh;
+    max-height: 100dvh;
+    align-self: stretch;
+  }
+
   .sidebar.collapsed {
     z-index: 35;
   }
