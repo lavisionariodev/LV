@@ -12,7 +12,7 @@ import {
 } from '@/lib/seller/sellerOrderAnalytics'
 import Link from 'next/link'
 import { formatPhpAmount, formatPhpWholeAmount } from '@/lib/cart/formatPhp'
-import { formatSellerLedgerEntry } from '@/lib/payments/walletLedgerDisplay'
+import { formatSellerLedgerEntry } from '@/lib/payments/wallet'
 
 const REVENUE_SUMMARY_SOFT = [
   styles.summaryCardSoftGreen,

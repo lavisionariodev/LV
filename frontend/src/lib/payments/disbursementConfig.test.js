@@ -4,9 +4,8 @@ import {
   evaluateSellerPayoutSettingsForDisbursement,
   getPaymongoDisbursementEnvStatus,
   getSellerWithdrawReadiness,
-  validatePayoutFormats,
-} from './disbursementConfig.js'
-import { normalizeGcashNumber } from './payoutValidation.js'
+} from './disbursement.js'
+import { normalizeGcashNumber, validatePayoutFormats } from './payout.js'
 
 test('getPaymongoDisbursementEnvStatus reports manual mode when env flag is off', () => {
   const previous = process.env.PAYMONGO_DISBURSEMENT_ENABLED

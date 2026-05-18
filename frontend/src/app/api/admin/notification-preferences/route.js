@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireAdminApiUser } from '@/lib/auth/requireAdminRoute'
-import { mergeAdminNotificationPreferences } from '@/lib/notifications/preferenceSchema'
+import { mergeAdminNotificationPreferences } from '@/lib/notifications/preferences'
 
 async function loadAdminNotificationPreferences(userId) {
   const supabaseAdmin = getSupabaseAdmin()

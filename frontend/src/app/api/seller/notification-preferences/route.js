@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
-import { mergeSellerNotificationPreferences } from '@/lib/notifications/preferenceSchema'
+import { mergeSellerNotificationPreferences } from '@/lib/notifications/preferences'
 
 async function requireSellerUser(supabase, userId) {
   const supabaseAdmin = getSupabaseAdmin()

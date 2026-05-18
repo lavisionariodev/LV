@@ -1,9 +1,11 @@
 import { buildPaymongoDestinationAccount } from '../paymongo/client.js'
-import { resolvePhBank } from './phBanks.js'
-import { normalizeGcashNumber, validatePayoutFormats } from './payoutValidation.js'
-import { isPaymongoDisbursementEnabled } from './sellerWalletSummary.js'
+import { normalizeGcashNumber, resolvePhBank, validatePayoutFormats } from './payout.js'
 
 export { normalizeGcashNumber, validatePayoutFormats }
+
+export function isPaymongoDisbursementEnabled() {
+  return String(process.env.PAYMONGO_DISBURSEMENT_ENABLED || '').toLowerCase() === 'true'
+}
 
 function hasPaymongoWalletSourceAccount() {
   const number = String(process.env.PAYMONGO_WALLET_SOURCE_ACCOUNT_NUMBER || '').trim()

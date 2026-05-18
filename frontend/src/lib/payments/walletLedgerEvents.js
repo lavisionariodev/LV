@@ -1,4 +1,4 @@
-import { insertWalletLedgerEntry } from './walletLedger.js'
+import { insertWalletLedgerEntry } from './wallet.js'
 
 /**
  * @param {import('@supabase/supabase-js').SupabaseClient} supabaseAdmin

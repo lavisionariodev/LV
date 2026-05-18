@@ -6,7 +6,7 @@ import { GiReceiveMoney } from 'react-icons/gi'
 import { TbHistory, TbInfoCircle, TbWallet } from 'react-icons/tb'
 import { useToast } from '@/contexts/ToastContext'
 import { formatPhpAmount } from '@/lib/cart/formatPhp'
-import { MIN_WITHDRAWAL_PHP } from '@/lib/payments/processSellerWithdrawal'
+import { MIN_WITHDRAWAL_PHP } from '@/lib/payments/payout'
 import {
   createSellerWithdrawal,
   fetchSellerWalletSummary,

@@ -6,7 +6,7 @@ import {
   defaultBucketChannels,
   mergeAdminNotificationPreferences,
   NOTIFICATION_PREFERENCE_CHANNELS,
-} from '@/lib/notifications/preferenceSchema'
+} from '@/lib/notifications/preferences'
 import {
   fetchAdminNotificationPreferences,
   saveAdminNotificationPreferences,

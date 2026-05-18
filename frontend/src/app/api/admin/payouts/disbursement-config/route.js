@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireAdminApiUser } from '@/lib/auth/requireAdminRoute'
-import { getPaymongoDisbursementEnvStatus } from '@/lib/payments/disbursementConfig'
+import { getPaymongoDisbursementEnvStatus } from '@/lib/payments/disbursement'
 
 /**
  * GET /api/admin/payouts/disbursement-config

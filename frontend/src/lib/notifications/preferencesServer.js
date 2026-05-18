@@ -3,14 +3,12 @@
  */
 import {
   ADMIN_NOTIFICATION_BUCKETS,
-  BUYER_NOTIFICATION_BUCKETS,
-  SELLER_NOTIFICATION_BUCKETS,
-} from '@/lib/notifications/preferenceSchema'
-import {
   adminNotificationFilterBucket,
+  BUYER_NOTIFICATION_BUCKETS,
   buyerNotificationFilterBucket,
+  SELLER_NOTIFICATION_BUCKETS,
   sellerNotificationFilterBucket,
-} from '@/lib/notifications/types'
+} from '@/lib/notifications/preferences'
 
 /**
  * @param {import('@supabase/supabase-js').SupabaseClient} supabaseAdmin

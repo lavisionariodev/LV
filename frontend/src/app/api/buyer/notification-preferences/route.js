@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireActiveBuyerApiUser } from '@/lib/auth/requireApiUser'
-import { mergeBuyerNotificationPreferences } from '@/lib/notifications/preferenceSchema'
+import { mergeBuyerNotificationPreferences } from '@/lib/notifications/preferences'
 
 export async function GET() {
   const { user, responseError } = await requireActiveBuyerApiUser()

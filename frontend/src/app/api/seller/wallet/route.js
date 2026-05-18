@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireActiveSellerApiUser } from '@/lib/auth/requireApiUser'
-import { handleSellerWalletGet } from '@/lib/payments/walletWithdrawHandler'
+import { handleSellerWalletGet } from '@/lib/payments/wallet'
 
 export async function GET() {
   const { user, supabaseAdmin, responseError } = await requireActiveSellerApiUser()

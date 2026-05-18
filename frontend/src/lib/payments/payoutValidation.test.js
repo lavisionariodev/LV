@@ -3,9 +3,10 @@ import assert from 'node:assert/strict'
 import {
   getPlatformWithdrawalFeePhp,
   normalizeGcashNumber,
+  normalizePayoutPayload,
+  sensitivePayoutFieldsChanged,
   validatePayoutFormats,
-} from './payoutValidation.js'
-import { sensitivePayoutFieldsChanged, normalizePayoutPayload } from './payoutSettings.js'
+} from './payout.js'
 
 test('getPlatformWithdrawalFeePhp defaults to zero', () => {
   const prev = process.env.PLATFORM_WITHDRAWAL_FEE_PHP

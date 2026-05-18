@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireAdminApiUser } from '@/lib/auth/requireAdminRoute'
-import { mapPayoutSettingsForAdmin } from '@/lib/payments/payoutSettings'
+import { mapPayoutSettingsForAdmin } from '@/lib/payments/payout'
 
 export async function GET(_request, { params }) {
   const { responseError } = await requireAdminApiUser()

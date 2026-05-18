@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireAdminApiUser } from '@/lib/auth/requireAdminRoute'
 import { notifySeller } from '@/lib/notifications/inAppServer'
-import { mapPayoutSettingsForAdmin } from '@/lib/payments/payoutSettings'
+import { mapPayoutSettingsForAdmin } from '@/lib/payments/payout'
 
 const REASON_MIN = 12
 const REASON_MAX = 2000

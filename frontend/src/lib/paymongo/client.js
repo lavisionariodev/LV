@@ -1,4 +1,4 @@
-import { resolvePhBank } from '../payments/phBanks.js'
+import { resolvePhBank } from '../payments/payout.js'
 
 /**
  * PayMongo REST helpers (server-only). Uses PAYMONGO_SECRET_KEY.

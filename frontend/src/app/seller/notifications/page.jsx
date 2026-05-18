@@ -17,7 +17,7 @@ import { getNotificationDisplay } from '@/lib/notifications/notificationDisplay'
 import {
   SELLER_NOTIFICATION_FILTER_TABS,
   sellerNotificationFilterBucket,
-} from '@/lib/notifications/types'
+} from '@/lib/notifications/preferences'
 import styles from '@/app/admin/notifications/notifications.module.css'
 import listStyles from './notifications.module.css'
 

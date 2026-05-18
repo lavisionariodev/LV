@@ -14,7 +14,7 @@ import {
   mergeSellerNotificationPreferences,
   NOTIFICATION_PREFERENCE_CHANNELS,
   SELLER_NOTIFICATION_BUCKETS,
-} from '@/lib/notifications/preferenceSchema'
+} from '@/lib/notifications/preferences'
 import {
   fetchSellerNotificationPreferences,
   saveSellerNotificationPreferences,
@@ -34,8 +34,11 @@ import {
 } from '@/lib/sellers/client'
 import { normalizeSellerSocialLinks, validateSellerSocialLinks } from '@/lib/sellers/socialLinks'
 import { useMediaQuery } from '@/shared/hooks'
-import { PH_BANK_OPTIONS, resolvePhBank } from '@/lib/payments/phBanks'
-import { normalizeGcashNumber } from '@/lib/payments/payoutValidation'
+import {
+  PH_BANK_OPTIONS,
+  normalizeGcashNumber,
+  resolvePhBank,
+} from '@/lib/payments/payout'
 
 async function fetchCurrentSellerProfile() {
   const {

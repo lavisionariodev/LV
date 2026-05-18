@@ -4,13 +4,13 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import {
   evaluateSellerPayoutSettingsForDisbursement,
   validateSellerPayoutSettingsRow,
-} from '@/lib/payments/disbursementConfig'
-import { normalizeGcashNumber } from '@/lib/payments/payoutValidation'
+} from '@/lib/payments/disbursement'
 import {
   mapPayoutSettingsForSeller,
+  normalizeGcashNumber,
   normalizePayoutPayload,
   sensitivePayoutFieldsChanged,
-} from '@/lib/payments/payoutSettings'
+} from '@/lib/payments/payout'
 
 function clean(body) {
   const method = String(body?.payoutMethod || body?.payout_method || 'bank').trim().toLowerCase()

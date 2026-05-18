@@ -5,7 +5,7 @@ import { TbBellOff, TbBellRinging, TbCheck, TbTrash, TbAlertTriangle, TbDots } f
 import styles from './notifications.module.css'
 import { relativeNotificationTime } from '@/lib/notifications/useInAppNotificationFeed'
 import { usePortalInAppNotificationFeed } from '@/contexts/PortalInAppNotificationFeedContext'
-import { adminNotificationFilterBucket, ADMIN_NOTIFICATION_FILTER_TABS } from '@/lib/notifications/types'
+import { adminNotificationFilterBucket, ADMIN_NOTIFICATION_FILTER_TABS } from '@/lib/notifications/preferences'
 import { getNotificationDisplay } from '@/lib/notifications/notificationDisplay'
 import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 import { useMediaQuery } from '@/shared/hooks'
