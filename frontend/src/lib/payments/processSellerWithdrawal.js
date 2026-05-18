@@ -1,4 +1,5 @@
-import { evaluateSellerPayoutSettingsForDisbursement } from '@/lib/payments/disbursementConfig'
+import { evaluateSellerPayoutSettingsForDisbursement, getPayoutVerificationError } from '@/lib/payments/disbursementConfig'
+import { getPlatformWithdrawalFeePhp } from '@/lib/payments/payoutValidation'
 import { buildSellerWalletSummary, isPaymongoDisbursementEnabled } from '@/lib/payments/sellerWalletSummary'
 import { finalizeSuccessfulWithdrawal } from '@/lib/payments/withdrawalReconcile'
 import {
@@ -9,6 +10,9 @@ import {
 import { createPaymongoBatchTransfer } from '@/lib/paymongo/client'
 
 export const MIN_WITHDRAWAL_PHP = 100
+export { getPlatformWithdrawalFeePhp }
+
+const IN_FLIGHT_WITHDRAWAL_STATUSES = ['pending', 'submitted']
 
 function snapshotPayoutSettings(row) {
   if (!row) return {}
@@ -21,6 +25,7 @@ function snapshotPayoutSettings(row) {
     gcash_number: row.gcash_number,
     payout_email: row.payout_email,
     notes: row.notes,
+    verification_status: row.verification_status,
   }
 }
 
@@ -34,6 +39,20 @@ async function loadSellerWalletContext(supabaseAdmin, sellerUserId) {
 
   const summary = buildSellerWalletSummary(escrows ?? [], disbursements, withdrawals, ledgerEntries)
   return { escrows: escrows ?? [], summary, disbursements, withdrawals, ledgerEntries }
+}
+
+async function findInFlightWithdrawal(supabaseAdmin, sellerUserId) {
+  const { data, error } = await supabaseAdmin
+    .from('seller_withdrawals')
+    .select('id, status')
+    .eq('seller_user_id', sellerUserId)
+    .in('status', IN_FLIGHT_WITHDRAWAL_STATUSES)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (error) throw error
+  return data
 }
 
 /**
@@ -89,6 +108,15 @@ export async function processSellerWithdrawal(supabaseAdmin, input) {
     }
   }
 
+  const inFlight = await findInFlightWithdrawal(supabaseAdmin, sellerUserId)
+  if (inFlight) {
+    return {
+      ok: false,
+      error: 'A withdrawal is already processing. Wait for it to complete before submitting another.',
+      status: 409,
+    }
+  }
+
   const { summary } = await loadSellerWalletContext(supabaseAdmin, sellerUserId)
   if (amountPhp > summary.availableNet + 0.001) {
     return {
@@ -108,13 +136,25 @@ export async function processSellerWithdrawal(supabaseAdmin, input) {
     return { ok: false, error: payoutErr.message || 'Could not load payout settings.', status: 500 }
   }
 
+  const verificationError = getPayoutVerificationError(payoutSettings)
+  if (verificationError) {
+    return { ok: false, error: verificationError, status: 400 }
+  }
+
   const payoutDestination = evaluateSellerPayoutSettingsForDisbursement(payoutSettings)
   if (!payoutDestination.ok) {
     return { ok: false, error: payoutDestination.error, status: 400 }
   }
 
-  const feePhp = 0
+  const feePhp = getPlatformWithdrawalFeePhp()
   const netAmountPhp = Math.max(0, amountPhp - feePhp)
+  if (netAmountPhp <= 0) {
+    return {
+      ok: false,
+      error: 'Withdrawal amount is too low after platform fee.',
+      status: 400,
+    }
+  }
 
   const { data: withdrawal, error: insertErr } = await supabaseAdmin
     .from('seller_withdrawals')
@@ -140,7 +180,15 @@ export async function processSellerWithdrawal(supabaseAdmin, input) {
         .eq('idempotency_key', idempotencyKey)
         .maybeSingle()
       if (again) {
-        return { ok: true, withdrawal: again, alreadyProcessed: String(again.status).toLowerCase() === 'succeeded' }
+        const st = String(again.status || '').toLowerCase()
+        if (st === 'pending' || st === 'submitted') {
+          return {
+            ok: false,
+            error: 'A withdrawal is already processing. Wait for it to complete before submitting another.',
+            status: 409,
+          }
+        }
+        return { ok: true, withdrawal: again, alreadyProcessed: st === 'succeeded' }
       }
     }
     return { ok: false, error: insertErr.message || 'Could not create withdrawal.', status: 500 }
@@ -151,7 +199,7 @@ export async function processSellerWithdrawal(supabaseAdmin, input) {
   }
 
   const transfer = await createPaymongoBatchTransfer({
-    amountPhp,
+    amountPhp: netAmountPhp,
     destination: payoutDestination.destination,
     referenceNumber: `lv_withdraw_${withdrawal.id}`,
     metadata: {

@@ -1403,6 +1403,15 @@
 }
 
 /* Grouped attribute list inside the modal body */
+.detailSectionTitle {
+  margin: 0 0 0.65rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--admin-muted, #64748b);
+}
+
 .detailSection {
   margin-bottom: 0;
   padding: 0;

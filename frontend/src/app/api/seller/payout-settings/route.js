@@ -5,33 +5,30 @@ import {
   evaluateSellerPayoutSettingsForDisbursement,
   validateSellerPayoutSettingsRow,
 } from '@/lib/payments/disbursementConfig'
+import { normalizeGcashNumber } from '@/lib/payments/payoutValidation'
+import {
+  mapPayoutSettingsForSeller,
+  normalizePayoutPayload,
+  sensitivePayoutFieldsChanged,
+} from '@/lib/payments/payoutSettings'
 
 function clean(body) {
   const method = String(body?.payoutMethod || body?.payout_method || 'bank').trim().toLowerCase()
+  const accountNumber = String(body?.accountNumber || body?.account_number || '').trim()
+  const gcashNumber = String(body?.gcashNumber || body?.gcash_number || '').trim()
   return {
     payout_method: ['bank', 'gcash', 'manual'].includes(method) ? method : 'bank',
     account_holder_name: String(body?.accountHolderName || '').trim() || null,
     bank_name: String(body?.bankName || '').trim() || null,
-    account_number: String(body?.accountNumber || '').trim() || null,
+    account_number: accountNumber ? accountNumber.replace(/\D/g, '') : null,
     gcash_name: String(body?.gcashName || '').trim() || null,
-    gcash_number: String(body?.gcashNumber || '').trim() || null,
+    gcash_number: gcashNumber ? normalizeGcashNumber(gcashNumber) : null,
     payout_email: String(body?.payoutEmail || '').trim() || null,
     notes: String(body?.notes || '').trim() || null,
   }
 }
 
-function mask(value) {
-  const s = String(value || '').trim()
-  if (!s) return ''
-  if (s.length <= 4) return '*'.repeat(s.length)
-  return `${'*'.repeat(Math.max(0, s.length - 4))}${s.slice(-4)}`
-}
-
-function validate(payload) {
-  return validateSellerPayoutSettingsRow(payload)
-}
-
-async function requireSeller(userId) {
+async function requireActiveSeller(userId) {
   const supabaseAdmin = getSupabaseAdmin()
   const { data: seller, error } = await supabaseAdmin
     .from('sellers')
@@ -41,27 +38,14 @@ async function requireSeller(userId) {
   if (error || !seller) {
     return NextResponse.json({ error: 'Seller account required.' }, { status: 403 })
   }
-  if (['rejected', 'suspended'].includes(String(seller.status || '').toLowerCase())) {
-    return NextResponse.json({ error: 'Seller account is not allowed to update payout settings.' }, { status: 403 })
+  const status = String(seller.status || '').toLowerCase()
+  if (status !== 'active') {
+    return NextResponse.json(
+      { error: 'Seller account is not allowed to update payout settings.' },
+      { status: 403 },
+    )
   }
   return null
-}
-
-function mapRow(row) {
-  if (!row) return null
-  return {
-    payoutMethod: row.payout_method || 'bank',
-    accountHolderName: row.account_holder_name || '',
-    bankName: row.bank_name || '',
-    accountNumber: row.account_number || '',
-    maskedAccountNumber: mask(row.account_number),
-    gcashName: row.gcash_name || '',
-    gcashNumber: row.gcash_number || '',
-    maskedGcashNumber: mask(row.gcash_number),
-    payoutEmail: row.payout_email || '',
-    notes: row.notes || '',
-    updatedAt: row.updated_at,
-  }
 }
 
 export async function GET() {
@@ -71,7 +55,7 @@ export async function GET() {
     error: userErr,
   } = await supabase.auth.getUser()
   if (userErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const sellerResponse = await requireSeller(user.id)
+  const sellerResponse = await requireActiveSeller(user.id)
   if (sellerResponse) return sellerResponse
 
   const { data, error } = await supabase
@@ -83,7 +67,7 @@ export async function GET() {
   if (error) return NextResponse.json({ error: error.message || 'Failed to load payout settings.' }, { status: 500 })
   return NextResponse.json(
     {
-      settings: mapRow(data),
+      settings: mapPayoutSettingsForSeller(data),
       disbursement: evaluateSellerPayoutSettingsForDisbursement(data),
     },
     { status: 200 },
@@ -97,11 +81,11 @@ export async function PUT(request) {
     error: userErr,
   } = await supabase.auth.getUser()
   if (userErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const sellerResponse = await requireSeller(user.id)
+  const sellerResponse = await requireActiveSeller(user.id)
   if (sellerResponse) return sellerResponse
 
   const body = await request.json().catch(() => ({}))
-  const cleaned = clean(body)
+  let cleaned = clean(body)
 
   const { data: existing } = await supabase
     .from('seller_payout_settings')
@@ -116,9 +100,36 @@ export async function PUT(request) {
     cleaned.gcash_number = existing.gcash_number
   }
 
-  const validationError = validate(cleaned)
+  cleaned = normalizePayoutPayload(cleaned)
+
+  const validationError = validateSellerPayoutSettingsRow(cleaned)
   if (validationError) return NextResponse.json({ error: validationError }, { status: 400 })
-  const payload = { seller_user_id: user.id, ...cleaned }
+
+  const needsReview =
+    cleaned.payout_method !== 'manual' &&
+    (sensitivePayoutFieldsChanged(existing, cleaned) || !existing)
+
+  const payload = {
+    seller_user_id: user.id,
+    ...cleaned,
+  }
+
+  if (cleaned.payout_method === 'manual') {
+    payload.verification_status = 'approved'
+    payload.verified_at = existing?.verified_at ?? new Date().toISOString()
+    payload.verified_by = existing?.verified_by ?? null
+    payload.verification_rejection_reason = null
+  } else if (needsReview) {
+    payload.verification_status = 'pending_review'
+    payload.verified_at = null
+    payload.verified_by = null
+    payload.verification_rejection_reason = null
+  } else {
+    payload.verification_status = existing?.verification_status ?? 'pending_review'
+    payload.verified_at = existing?.verified_at ?? null
+    payload.verified_by = existing?.verified_by ?? null
+    payload.verification_rejection_reason = existing?.verification_rejection_reason ?? null
+  }
 
   const { data, error } = await supabase
     .from('seller_payout_settings')
@@ -127,5 +138,11 @@ export async function PUT(request) {
     .maybeSingle()
 
   if (error) return NextResponse.json({ error: error.message || 'Failed to save payout settings.' }, { status: 500 })
-  return NextResponse.json({ settings: mapRow(data) }, { status: 200 })
+  return NextResponse.json(
+    {
+      settings: mapPayoutSettingsForSeller(data),
+      disbursement: evaluateSellerPayoutSettingsForDisbursement(data),
+    },
+    { status: 200 },
+  )
 }

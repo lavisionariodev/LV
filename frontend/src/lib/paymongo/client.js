@@ -1,3 +1,5 @@
+import { resolvePhBank } from '../payments/phBanks.js'
+
 /**
  * PayMongo REST helpers (server-only). Uses PAYMONGO_SECRET_KEY.
  * Amounts for PayMongo are in the smallest currency unit (centavos for PHP).
@@ -169,13 +171,17 @@ function getPaymongoSourceAccount() {
 
 function normalizeBankBic(bankName) {
   const normalized = String(bankName || '').trim().toLowerCase()
+  if (normalized.includes('gcash')) return DEFAULT_DESTINATION_BIC
+
+  const { bic, known } = resolvePhBank(bankName)
+  if (known && bic) return bic
+
   const map = {
     bdo: 'BNORPHMMXXX',
     bpi: 'BOPIPHMMXXX',
     metrobank: 'MBTCPHMMXXX',
     landbank: 'TLBPPHMMXXX',
     unionbank: 'UBPHPHMMXXX',
-    gcash: DEFAULT_DESTINATION_BIC,
   }
   for (const [key, bic] of Object.entries(map)) {
     if (normalized.includes(key)) return bic
