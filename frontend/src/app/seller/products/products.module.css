@@ -381,6 +381,11 @@
   width: 100%;
 }
 
+/* Touch-friendly actions on mobile cards (Under review / Submitted updates) */
+.productsTableActionsInline {
+  display: none;
+}
+
 .productsTableMenuBtn {
   width: 32px;
   height: 32px;
@@ -2261,6 +2266,47 @@
     letter-spacing: 0.04em;
     text-transform: uppercase;
     color: #6b7280;
+  }
+
+  .productsTable td.productsTableActionsCol {
+    padding-top: 0.35rem;
+  }
+
+  .productsTable td.productsTableActionsCol::before {
+    margin-bottom: 0.15rem;
+  }
+
+  .productsTableActions {
+    display: block;
+    width: 100%;
+  }
+
+  .productsTableActionsInline {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .productsTableActionsInline .productActionPrimary,
+  .productsTableActionsInline .productActionGhost,
+  .productsTableActionsInline .productActionDanger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+    padding: 0.65rem 0.85rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+  }
+
+  .productsTableActionCancelFull {
+    grid-column: 1 / -1;
+  }
+
+  .productsTableMenuBtn {
+    display: none;
   }
 
   .productModalOverlay {

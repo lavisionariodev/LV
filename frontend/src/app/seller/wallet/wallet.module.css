@@ -742,11 +742,31 @@ a.btnSecondary {
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 600px) {
   .summaryStrip {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
   }
 
+  .summaryCard {
+    padding: 0.75rem 0.85rem;
+  }
+
+  .summaryLabel {
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+  }
+
+  .summaryValue {
+    font-size: 1.2rem;
+  }
+
+  .summaryHint {
+    font-size: 0.72rem;
+  }
+}
+
+@media (max-width: 480px) {
   .actionsRow {
     flex-direction: column;
     align-items: stretch;

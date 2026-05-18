@@ -1,7 +1,7 @@
 'use client'
 
 import { formatCount, readEnum, readString, replaceUrlQuery } from '@/shared/utils'
-import { useState, useMemo, useEffect, useRef, useCallback, useId } from 'react'
+import { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback, useId } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -380,20 +380,37 @@ function ProductsReviewTableRowMenu({
 
   const updateMenuPosition = useCallback(() => {
     const trigger = triggerRef.current
+    const dropdown = dropdownRef.current
     if (!trigger) return
 
     const rect = trigger.getBoundingClientRect()
-    setMenuPosition({
-      top: rect.bottom + 6,
-      right: Math.max(8, window.innerWidth - rect.right),
-      minWidth: Math.max(148, rect.width),
-    })
+    const padding = 8
+    const gap = 6
+    const minWidth = Math.max(168, rect.width)
+    const menuWidth = dropdown?.offsetWidth || minWidth
+    const menuHeight = dropdown?.offsetHeight || 132
+
+    let top = rect.bottom + gap
+    if (top + menuHeight > window.innerHeight - padding) {
+      top = Math.max(padding, rect.top - menuHeight - gap)
+    }
+
+    let left = rect.right - menuWidth
+    if (left < padding) left = padding
+    if (left + menuWidth > window.innerWidth - padding) {
+      left = window.innerWidth - padding - menuWidth
+    }
+
+    setMenuPosition({ top, left, minWidth })
   }, [])
+
+  useLayoutEffect(() => {
+    if (!open) return
+    updateMenuPosition()
+  }, [open, updateMenuPosition])
 
   useEffect(() => {
     if (!open) return
-
-    updateMenuPosition()
 
     const handleScrollOrResize = () => updateMenuPosition()
     window.addEventListener('resize', handleScrollOrResize)
@@ -437,7 +454,7 @@ function ProductsReviewTableRowMenu({
             role="menu"
             style={{
               top: `${menuPosition.top}px`,
-              right: `${menuPosition.right}px`,
+              left: `${menuPosition.left}px`,
               minWidth: `${menuPosition.minWidth}px`,
             }}
           >
@@ -483,6 +500,31 @@ function ProductsReviewTableRowMenu({
 
   return (
     <div className={styles.productsTableActions}>
+      <div className={styles.productsTableActionsInline} role="group" aria-label={`Actions for ${product.name}`}>
+        <button
+          type="button"
+          className={styles.productActionGhost}
+          onClick={() => onOpenView(product)}
+        >
+          View
+        </button>
+        <button
+          type="button"
+          className={styles.productActionPrimary}
+          onClick={() => onOpenEdit(product)}
+        >
+          Edit
+        </button>
+        {showCancelRequest ? (
+          <button
+            type="button"
+            className={`${styles.productActionDanger} ${styles.productsTableActionCancelFull}`}
+            onClick={() => onCancelRequest(product)}
+          >
+            Cancel request
+          </button>
+        ) : null}
+      </div>
       <button
         ref={triggerRef}
         type="button"
