@@ -269,9 +269,11 @@ function StagedAllChangesModal({ row, onClose }) {
             </svg>
           </button>
         </div>
-        <p className={styles.detailsSectionLabel}>All submitted changes</p>
-        <div className={styles.detailsDiffWrap}>
-          <StagedChangesDiffView lines={lines} />
+        <div className={styles.detailsBody}>
+          <p className={styles.detailsSectionLabel}>All submitted changes</p>
+          <div className={styles.detailsDiffWrap}>
+            <StagedChangesDiffView lines={lines} />
+          </div>
         </div>
       </div>
     </div>
@@ -425,6 +427,7 @@ function ViewDetailsModal({ row, onClose }) {
           </button>
         </div>
 
+        <div className={styles.detailsBody}>
         {/* Meta row */}
         <div className={styles.detailsMeta}>
           <div className={styles.detailsMetaItem}>
@@ -455,6 +458,7 @@ function ViewDetailsModal({ row, onClose }) {
         {isStaged ? (
           <>
             <p className={styles.detailsSectionLabel}>Submitted Changes</p>
+            <div className={styles.detailsDiffWrap}>
             <table className={styles.detailsDiffTable}>
               <thead>
                 <tr>
@@ -473,10 +477,12 @@ function ViewDetailsModal({ row, onClose }) {
                 ))}
               </tbody>
             </table>
+            </div>
           </>
         ) : (
           <>
             <p className={styles.detailsSectionLabel}>Listing Information</p>
+            <div className={styles.detailsDiffWrap}>
             <table className={styles.detailsDiffTable}>
               <tbody>
                 {[
@@ -494,8 +500,10 @@ function ViewDetailsModal({ row, onClose }) {
                 ))}
               </tbody>
             </table>
+            </div>
           </>
         )}
+        </div>
       </div>
     </div>
   )

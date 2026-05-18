@@ -1122,7 +1122,7 @@
   line-height: 1.35;
 }
 
-/* ── Seller detail modal ────────────────────────────────────────────────── */
+/* ── Seller detail modal (aligned with seller products view modal) ─────── */
 
 .detailModalOverlay {
   position: fixed;
@@ -1131,8 +1131,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
-  background: rgba(15, 23, 42, 0.45);
+  padding: 1.5rem;
+  background: rgba(10, 22, 17, 0.6);
 }
 
 .detailModal {
@@ -1141,26 +1141,24 @@
   flex-direction: column;
   width: 100%;
   max-width: min(580px, calc(100vw - 48px));
-  max-height: min(88vh, 640px);
+  max-height: min(90vh, 640px);
   overflow: hidden;
-  background: #fff;
-  border-radius: 14px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+  background: #ffffff;
+  border-radius: 16px;
+  border: none;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
 }
 
 /* Header */
 .detailModalHeader {
   flex-shrink: 0;
-  position: relative;
-  z-index: 1;
   display: flex;
-  align-items: center;
-  gap: 12px;
-  /* Reserve space for absolutely positioned close (does not use header/body padding) */
-  padding: 16px 52px 16px 24px;
-  border-bottom: 1px solid #f1f5f9;
-  background: #fff;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.6rem 1rem;
+  border-bottom: 1px solid transparent;
+  background: #204f38;
 }
 
 .detailModalHeaderInner {
@@ -1168,6 +1166,7 @@
   align-items: flex-start;
   gap: 14px;
   min-width: 0;
+  flex: 1;
 }
 
 .detailModalHeaderText {
@@ -1181,6 +1180,7 @@
   font-size: 14px;
   border-radius: 50%;
   flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.35);
 }
 
 .detailModalHeaderInner .avatarIcon {
@@ -1189,19 +1189,19 @@
 }
 
 .detailModalEyebrow {
-  margin: 0 0 4px;
-  font-size: 11px;
+  margin: 0 0 0.25rem;
+  font-size: 0.7rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #94a3b8;
+  color: rgba(209, 213, 219, 0.9);
 }
 
 .detailModalTitle {
-  margin: 0 0 6px;
-  font-size: 17px;
+  margin: 0 0 0.35rem;
+  font-size: 1.3rem;
   font-weight: 600;
-  color: #0f172a;
+  color: #ffffff;
   line-height: 1.25;
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -1230,29 +1230,34 @@
 }
 
 .detailModalClose {
-  position: absolute;
-  top: 18px;
-  right: 18px;
-  z-index: 2;
-  width: 32px;
-  height: 32px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  background: #fff;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(243, 244, 246, 0.45);
+  background: rgba(15, 23, 42, 0.2);
   font-size: 0;
   line-height: 0;
-  color: #64748b;
+  color: #ffffff;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .detailModalClose:hover {
-    background: #f8fafc;
-    color: #334155;
+    background: rgba(15, 23, 42, 0.35);
+    color: #ffffff;
+    border-color: rgba(243, 244, 246, 0.8);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.28);
+    transform: translateY(-1px);
   }
 }
 
@@ -1264,7 +1269,7 @@
   min-height: 0;
   overflow: hidden;
   padding: 0;
-  background: linear-gradient(180deg, #fafbfc 0%, #fff 36px);
+  background: #ffffff;
 }
 
 .detailTabList {
@@ -1328,7 +1333,7 @@
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 16px 24px 22px;
+  padding: 1.25rem 1.6rem 1.25rem;
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
   -webkit-overflow-scrolling: touch;
@@ -1364,18 +1369,18 @@
 }
 
 .detailModalBodyEmpty {
-  padding: 20px 24px 28px;
+  padding: 1.25rem 1.6rem;
   overflow-y: auto;
 }
 
-/* Grouped “cards” inside the modal body */
+/* Grouped attribute list inside the modal body */
 .detailSection {
-  margin-bottom: 12px;
-  padding: 2px 16px 14px;
-  background: #fff;
-  border: 1px solid #eef2f7;
-  border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  margin-bottom: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .detailSection:last-of-type {
@@ -1384,34 +1389,46 @@
 
 /* Field groups */
 .detailGroup {
-  padding: 12px 0 0;
-  border-bottom: none;
+  margin: 0;
+  padding: 0;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  overflow: hidden;
 }
 
 .detailGroupTitle {
-  margin: 0 0 10px;
-  padding-bottom: 8px;
-  font-size: 11px;
-  font-weight: 700;
-  color: #64748b;
+  margin: 0;
+  padding: 0.65rem 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #374151;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  border-bottom: 1px solid #f1f5f9;
+  letter-spacing: 0.12em;
+  border-bottom: 1px solid rgba(209, 213, 219, 0.9);
+  background: #ffffff;
 }
 
-/* Each label–value row — aligned grid feel */
+/* Each label–value row */
 .detailRow {
-  display: grid;
-  grid-template-columns: minmax(112px, 34%) 1fr;
-  column-gap: 16px;
-  align-items: start;
-  padding: 10px 0;
-  border-bottom: 1px solid #f8fafc;
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid rgba(209, 213, 219, 0.9);
+  background: #ffffff;
+}
+
+.detailRow:nth-child(even) {
+  background: #f5f1ea;
 }
 
 .detailRow:last-child {
   border-bottom: none;
-  padding-bottom: 2px;
+}
+
+.detailRowMultiline {
+  align-items: flex-start;
 }
 
 .detailRowMultiline .detailRowValue {
@@ -1419,47 +1436,53 @@
 }
 
 .detailRowLabel {
-  font-size: 12px;
-  font-weight: 500;
-  color: #94a3b8;
+  width: 110px;
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
   line-height: 1.45;
-  padding-top: 1px;
 }
 
 .detailRowValue {
-  font-size: 13px;
-  color: #0f172a;
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9rem;
+  color: #4b5563;
   line-height: 1.5;
   word-break: break-word;
-  min-width: 0;
 }
 
 .detailRowLink {
   min-width: 0;
-  font-size: 13px;
+  font-size: 0.9rem;
   line-height: 1.5;
   word-break: break-word;
-  color: #1e293b;
+  color: #204f38;
   text-decoration: none;
+  font-weight: 500;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .detailRowLink:hover {
     text-decoration: underline;
-    color: #0f172a;
+    color: #163628;
   }
 }
 
 .detailEmpty {
-  margin: 8px 0 0;
-  padding: 28px 16px;
-  font-size: 13px;
-  color: #94a3b8;
+  margin: 0;
+  padding: 1.5rem 1rem;
+  font-size: 0.9rem;
+  color: #6b7280;
   text-align: center;
-  font-style: italic;
-  background: #f8fafc;
+  font-style: normal;
+  background: #f9fafb;
   border-radius: 12px;
-  border: 1px dashed #e2e8f0;
+  border: 1px dashed #e5e7eb;
 }
 
 /* ── Loading state ──────────────────────────────────────────────────────── */
@@ -2071,11 +2094,15 @@
     min-height: 46px;
   }
 
-  /* ── Seller detail modal — bottom sheet ─────────────────────────────── */
+  /* ── Seller detail modal — mobile ───────────────────────────────────── */
   .detailModalOverlay {
-    align-items: flex-end;
+    align-items: center;
     justify-content: center;
-    padding: 0;
+    padding: 0.5rem;
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+    padding-right: max(0.5rem, env(safe-area-inset-right));
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    padding-left: max(0.5rem, env(safe-area-inset-left));
   }
 
   .detailModal {
@@ -2083,34 +2110,13 @@
     flex-direction: column;
     max-width: 100%;
     width: 100%;
-    max-height: 90vh;
+    max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1rem));
     overflow: hidden;
-    border-radius: 20px 20px 0 0;
-    border-left: none;
-    border-right: none;
-    border-bottom: none;
-  }
-
-  .detailModal::before {
-    content: '';
-    display: block;
-    flex-shrink: 0;
-    width: 40px;
-    height: 4px;
-    background: #e2e8f0;
-    border-radius: 99px;
-    margin: 10px auto 0;
+    border-radius: 16px;
   }
 
   .detailModalHeader {
-    padding: 14px 52px 14px 20px;
-  }
-
-  .detailModalClose {
-    top: 16px;
-    right: 16px;
-    width: 32px;
-    height: 32px;
+    padding: 1.15rem 1.1rem 0.9rem;
   }
 
   .detailModalBody {
@@ -2127,38 +2133,22 @@
   }
 
   .detailTabPanels {
-    padding: 14px 16px 0;
+    padding: 1rem 1.1rem calc(1.1rem + env(safe-area-inset-bottom));
   }
 
   .detailModalBodyEmpty {
-    padding: 20px 16px 0;
-  }
-
-  .detailSection {
-    padding: 2px 14px 12px;
-    margin-bottom: 10px;
-    border-radius: 10px;
+    padding: 1rem 1.1rem;
   }
 
   .detailRow {
-    grid-template-columns: 1fr;
-    row-gap: 4px;
-    column-gap: 0;
-    padding: 12px 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    padding: 0.65rem 0.8rem;
   }
 
   .detailRowLabel {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: #94a3b8;
-    padding-top: 0;
-  }
-
-  .detailRowValue,
-  .detailRowLink {
-    font-size: 14px;
+    width: auto;
   }
 
   /* ── Pagination ─────────────────────────────────────────────────────── */
