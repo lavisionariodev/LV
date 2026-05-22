@@ -4,10 +4,6 @@ import { useCallback, useState } from 'react'
 import Link from 'next/link'
 import earningsStyles from './earnings.module.css'
 
-function statusRowClass(ok) {
-  return ok ? earningsStyles.healthRowOk : earningsStyles.healthRowWarn
-}
-
 const CHECK_COPY = [
   { key: 'secretKeyConfigured', desktop: 'PayMongo API key', mobile: 'API key' },
   { key: 'webhookSecretConfigured', desktop: 'Webhook secret', mobile: 'Webhook' },
@@ -15,6 +11,49 @@ const CHECK_COPY = [
   { key: 'sourceAccountConfigured', desktop: 'Wallet source account', mobile: 'Wallet source' },
   { key: 'withdrawReady', desktop: 'Seller withdraw ready', mobile: 'Withdraw ready' },
 ]
+
+/** @param {typeof CHECK_COPY} items */
+function pairCheckRows(items) {
+  const rows = []
+  for (let i = 0; i < items.length; i += 2) {
+    rows.push(items.slice(i, i + 2))
+  }
+  return rows
+}
+
+function StatusBadge({ ok }) {
+  return (
+    <span
+      className={`${earningsStyles.healthStatusBadge} ${
+        ok ? earningsStyles.healthStatusOk : earningsStyles.healthStatusWarn
+      }`}
+    >
+      {ok ? 'OK' : 'Missing'}
+    </span>
+  )
+}
+
+/**
+ * @param {{ check: { key: string, label: string, ok: boolean } | undefined }} props
+ */
+function CheckPairCells({ check }) {
+  if (!check) {
+    return (
+      <>
+        <span className={earningsStyles.healthRowFiller} aria-hidden />
+        <span className={earningsStyles.healthRowFiller} aria-hidden />
+      </>
+    )
+  }
+  return (
+    <>
+      <span className={earningsStyles.healthRowLabel}>{check.label}</span>
+      <span className={earningsStyles.healthStatusCell}>
+        <StatusBadge ok={check.ok} />
+      </span>
+    </>
+  )
+}
 
 /**
  * @param {{ opsHealth: Record<string, unknown> | null, isMobile?: boolean }} props
@@ -59,13 +98,17 @@ export default function PaymongoHealthPanel({ opsHealth, isMobile = false }) {
         : 'Needs attention'
 
   const checks = CHECK_COPY.map((c) => ({
+    key: c.key,
     label: isMobile ? c.mobile : c.desktop,
     ok: Boolean(opsHealth[c.key]),
   }))
 
+  const issues = Array.isArray(opsHealth.issues) ? opsHealth.issues : []
+  const checkRows = pairCheckRows(checks)
+
   return (
     <section className={`${earningsStyles.healthPanel} ${panelClass}`} aria-labelledby="paymongo-health-title">
-      <div className={earningsStyles.healthHead}>
+      <header className={earningsStyles.healthHead}>
         <h2 id="paymongo-health-title" className={earningsStyles.healthTitle}>
           {isMobile ? 'PayMongo' : 'PayMongo & payouts'}
         </h2>
@@ -73,48 +116,67 @@ export default function PaymongoHealthPanel({ opsHealth, isMobile = false }) {
           <span className={earningsStyles.healthPillDot} aria-hidden />
           {pillLabel}
         </span>
-      </div>
-      <ul className={earningsStyles.healthList}>
-        {checks.map((c) => (
-          <li key={c.label} className={earningsStyles.healthRow}>
-            <span className={earningsStyles.healthRowLabel}>{c.label}</span>
-            <span className={statusRowClass(c.ok)}>{c.ok ? 'OK' : 'Missing'}</span>
+      </header>
+
+      <div className={earningsStyles.healthBody}>
+        <ul className={earningsStyles.healthCheckTable} aria-label="PayMongo configuration checks">
+          <li className={earningsStyles.healthCheckHead}>
+            <span>Check</span>
+            <span>Status</span>
+            <span>Check</span>
+            <span>Status</span>
           </li>
-        ))}
-      </ul>
-      {Array.isArray(opsHealth.issues) && opsHealth.issues.length > 0 ? (
-        <ul className={earningsStyles.healthList} style={{ marginTop: 10 }}>
-          {opsHealth.issues.map((issue) => (
-            <li key={String(issue)} className={earningsStyles.healthRow}>
-              <span className={earningsStyles.healthRowWarn}>{String(issue)}</span>
+          {checkRows.map((pair, rowIndex) => (
+            <li
+              key={pair.map((c) => c.key).join('-') || `row-${rowIndex}`}
+              className={earningsStyles.healthRow}
+            >
+              <CheckPairCells check={pair[0]} />
+              <CheckPairCells check={pair[1]} />
             </li>
           ))}
         </ul>
-      ) : null}
-      <div className={earningsStyles.healthActions}>
-        <a
-          href={String(opsHealth.paymongoDashboardUrl || 'https://dashboard.paymongo.com/home')}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={earningsStyles.healthLink}
-        >
-          {isMobile ? 'PayMongo dashboard' : 'Open PayMongo dashboard'}
-        </a>
-        <Link href="/admin/payouts" className={earningsStyles.healthLink}>
-          {isMobile ? 'Payouts' : 'Payouts console'}
-        </Link>
+
+        {issues.length > 0 ? (
+          <ul className={earningsStyles.healthIssues} aria-label="Configuration issues">
+            {issues.map((issue) => (
+              <li key={String(issue)} className={earningsStyles.healthIssueItem}>
+                {String(issue)}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+
+        <footer className={earningsStyles.healthFooter}>
+          <div className={earningsStyles.healthActions}>
+            <a
+              href={String(opsHealth.paymongoDashboardUrl || 'https://dashboard.paymongo.com/home')}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={earningsStyles.healthLink}
+            >
+              {isMobile ? 'PayMongo dashboard' : 'Open PayMongo dashboard'}
+            </a>
+            <Link href="/admin/payouts" className={earningsStyles.healthLink}>
+              {isMobile ? 'Payouts' : 'Payouts console'}
+            </Link>
+          </div>
+
+          {opsHealth.webhookUrl ? (
+            <div className={earningsStyles.healthWebhook}>
+              <p className={earningsStyles.healthWebhookTitle}>
+                {isMobile ? 'Webhook' : 'Webhook URL'}
+              </p>
+              <div className={earningsStyles.healthWebhookRow}>
+                <p className={earningsStyles.webhookUrl}>{String(opsHealth.webhookUrl)}</p>
+                <button type="button" className={earningsStyles.copyBtn} onClick={copyWebhook}>
+                  {copied ? 'Copied' : 'Copy URL'}
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </footer>
       </div>
-      {opsHealth.webhookUrl ? (
-        <div style={{ marginTop: 12 }}>
-          <p className={earningsStyles.healthRowLabel} style={{ marginBottom: 4 }}>
-            {isMobile ? 'Webhook' : 'Webhook URL'}
-          </p>
-          <p className={earningsStyles.webhookUrl}>{String(opsHealth.webhookUrl)}</p>
-          <button type="button" className={earningsStyles.copyBtn} onClick={copyWebhook}>
-            {copied ? 'Copied' : 'Copy URL'}
-          </button>
-        </div>
-      ) : null}
     </section>
   )
 }

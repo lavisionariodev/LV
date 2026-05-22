@@ -88,8 +88,10 @@ function EarningsPageSkeleton() {
           <span className={`${layoutStyles.adminSkBar} ${earningsStyles.earningsSkHealthPill}`} />
         </div>
         <ul className={earningsStyles.earningsSkHealthList}>
-          {[0, 1, 2, 3, 4].map((i) => (
+          {[0, 1, 2].map((i) => (
             <li key={i} className={earningsStyles.earningsSkHealthRow}>
+              <span className={`${layoutStyles.adminSkBar} ${earningsStyles.earningsSkHealthRowLabel}`} />
+              <span className={`${layoutStyles.adminSkBar} ${earningsStyles.earningsSkHealthRowStatus}`} />
               <span className={`${layoutStyles.adminSkBar} ${earningsStyles.earningsSkHealthRowLabel}`} />
               <span className={`${layoutStyles.adminSkBar} ${earningsStyles.earningsSkHealthRowStatus}`} />
             </li>

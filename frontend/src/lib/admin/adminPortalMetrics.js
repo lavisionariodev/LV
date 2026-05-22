@@ -120,6 +120,96 @@ export async function fetchDailyCollectedGmvSeries(supabaseAdmin, chartDayKeys) 
  * @param {string} cutoffIso
  * @returns {Promise<{ name: string, value: number }[]>}
  */
+/** @param {any} embed */
+function pickSeller(embed) {
+  if (!embed) return null
+  return Array.isArray(embed) ? embed[0] ?? null : embed
+}
+
+/**
+ * @param {import('@supabase/supabase-js').SupabaseClient} supabaseAdmin
+ * @param {string} cutoffIso
+ * @returns {Promise<{ name: string, value: number }[]>}
+ */
+async function aggregateTopSellersByGmv(supabaseAdmin, cutoffIso) {
+  const { data: rows } = await supabaseAdmin
+    .from('order_escrows')
+    .select(
+      `
+      seller_user_id,
+      gross_amount,
+      orders ( payment_status ),
+      sellers ( business_name, contact_name )
+    `,
+    )
+    .gte('created_at', cutoffIso)
+
+  /** @type {Map<string, { name: string, value: number }>} */
+  const bySeller = new Map()
+  for (const r of rows ?? []) {
+    const ord = pickOrder(r.orders)
+    if (!ord || ord.payment_status !== 'paid') continue
+    const sellerId = String(r.seller_user_id || '')
+    if (!sellerId) continue
+    const seller = pickSeller(r.sellers)
+    const label =
+      String(seller?.business_name || '').trim() ||
+      String(seller?.contact_name || '').trim() ||
+      `Seller ${sellerId.slice(0, 8)}`
+    const prev = bySeller.get(sellerId)
+    const add = Number(r.gross_amount) || 0
+    if (prev) {
+      prev.value += add
+    } else {
+      bySeller.set(sellerId, { name: label, value: add })
+    }
+  }
+
+  return [...bySeller.values()].sort((a, b) => b.value - a.value).slice(0, 8)
+}
+
+/**
+ * Top booked products/listings by line totals (product_id + name).
+ * @param {import('@supabase/supabase-js').SupabaseClient} supabaseAdmin
+ * @param {string} cutoffIso
+ */
+async function aggregateTopListingsByGmv(supabaseAdmin, cutoffIso) {
+  const { data: orders } = await supabaseAdmin
+    .from('orders')
+    .select('id')
+    .eq('payment_status', 'paid')
+    .gte('created_at', cutoffIso)
+
+  const ids = (orders ?? []).map((o) => o.id)
+  if (ids.length === 0) return []
+
+  /** @type {Map<string, { name: string, value: number }>} */
+  const byProduct = new Map()
+  const chunkSize = 200
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    const chunk = ids.slice(i, i + chunkSize)
+    const { data: items } = await supabaseAdmin
+      .from('order_items')
+      .select('product_id, name, price, quantity')
+      .in('order_id', chunk)
+
+    for (const it of items ?? []) {
+      const productId = String(it.product_id || 'other').trim() || 'other'
+      const name = String(it.name || 'Other').trim() || 'Other'
+      const key = `${productId}::${name}`
+      const line = Number(it.price) * (Number(it.quantity) || 1)
+      const prev = byProduct.get(key)
+      if (prev) {
+        prev.value += line
+      } else {
+        byProduct.set(key, { name, value: line })
+      }
+    }
+  }
+
+  return [...byProduct.values()].sort((a, b) => b.value - a.value).slice(0, 8)
+}
+
 async function aggregateTopOrderLineItems(supabaseAdmin, cutoffIso) {
   const { data: orders } = await supabaseAdmin
     .from('orders')
@@ -196,10 +286,13 @@ export async function getAdminPortalMetrics(supabaseAdmin, options = {}) {
     sellersActiveRes,
     buyersTotalRes,
     paidOrders30Res,
+    paidOrdersRangeRes,
     escrowsLimitedRes,
     dailyReleasedCommission,
     dailyCollectedGmv,
     topLineItems,
+    topSellers,
+    topListings,
     recentOrdersRes,
     disputesAttentionCount,
   ] = await Promise.all([
@@ -213,6 +306,11 @@ export async function getAdminPortalMetrics(supabaseAdmin, options = {}) {
       .eq('payment_status', 'paid')
       .gte('created_at', cutoff30),
     supabaseAdmin
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .eq('payment_status', 'paid')
+      .gte('created_at', cutoff),
+    supabaseAdmin
       .from('order_escrows')
       .select(escrowSelect)
       .order('created_at', { ascending: false })
@@ -220,12 +318,14 @@ export async function getAdminPortalMetrics(supabaseAdmin, options = {}) {
     fetchDailyReleasedCommissionSeries(supabaseAdmin, chartDayKeys),
     fetchDailyCollectedGmvSeries(supabaseAdmin, chartDayKeys),
     aggregateTopOrderLineItems(supabaseAdmin, cutoff),
+    aggregateTopSellersByGmv(supabaseAdmin, cutoff),
+    aggregateTopListingsByGmv(supabaseAdmin, cutoff),
     supabaseAdmin
       .from('orders')
       .select('id, order_number, subtotal, payment_status, created_at')
       .eq('payment_status', 'paid')
       .order('created_at', { ascending: false })
-      .limit(12),
+      .limit(5),
     countOpenOrReviewDisputes(supabaseAdmin),
   ])
 
@@ -237,16 +337,32 @@ export async function getAdminPortalMetrics(supabaseAdmin, options = {}) {
   const escrowRows = escrowsLimitedRes.data ?? []
   const payoutAgg = summarizeEscrowsForPayoutStats(escrowRows)
 
+  const gmvTotalInRange = (dailyCollectedGmv ?? []).reduce(
+    (sum, d) => sum + (Number(d.total) || 0),
+    0,
+  )
+  const commissionReleasedInRange = (dailyReleasedCommission ?? []).reduce(
+    (sum, d) => sum + (Number(d.total) || 0),
+    0,
+  )
+  const paidOrdersInRange = paidOrdersRangeRes.count ?? 0
+  const avgOrderValueInRange =
+    paidOrdersInRange > 0 ? Math.round(gmvTotalInRange / paidOrdersInRange) : 0
+
   const recentActivity = (recentOrdersRes.data ?? []).map((o) => {
     const d = o.created_at ? String(o.created_at).slice(0, 10) : '—'
-    const ref = o.order_number?.trim()
-      ? o.order_number
+    const orderNumber = o.order_number?.trim()
+      ? o.order_number.trim()
       : `#${String(o.id).slice(0, 8)}`
+    const q = encodeURIComponent(orderNumber)
     return {
       id: String(o.id),
       date: d,
-      type: `Paid · ${ref}`,
+      type: `Paid · ${orderNumber}`,
+      orderNumber,
+      amount: Number(o.subtotal) || 0,
       status: 'Paid',
+      payoutsHref: `/admin/payouts?q=${q}`,
     }
   })
 
@@ -258,6 +374,12 @@ export async function getAdminPortalMetrics(supabaseAdmin, options = {}) {
     buyersTotal: buyersTotalRes.count ?? 0,
     paidOrdersLast30Days: paidOrders30Res.count ?? 0,
     rangeDays,
+    rangeSummary: {
+      gmvTotalInRange,
+      commissionReleasedInRange,
+      paidOrdersInRange,
+      avgOrderValueInRange,
+    },
     payoutSummary: {
       platformRevenue30d: payoutAgg.platformRevenue30d,
       pendingPayoutAmt: payoutAgg.pendingPayoutAmt,
@@ -267,6 +389,8 @@ export async function getAdminPortalMetrics(supabaseAdmin, options = {}) {
     dailyReleasedCommission,
     dailyCollectedGmv,
     topLineItems,
+    topSellers,
+    topListings,
     recentActivity,
   }
 }
