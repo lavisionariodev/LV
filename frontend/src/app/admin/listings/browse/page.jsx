@@ -171,6 +171,106 @@ function ListingThumb({ row, kind }) {
   return <KindThumb kind={kind} />
 }
 
+function KindPill({ kind }) {
+  const kindMap = {
+    Service: styles.kindService,
+    Package: styles.kindPackage,
+    Product: styles.kindProduct,
+  }
+  const label = kind || '—'
+  return (
+    <span className={`${styles.kindPill} ${kindMap[label] || ''}`}>
+      {label}
+    </span>
+  )
+}
+
+function BrowseMobileListingCard({ row }) {
+  const kind = kindKeyFromRow(row)
+  const shopHref = getShopHrefForSellerListingRow(row)
+  const business = row.seller_business_name?.trim() || ''
+  const email = row.seller_email?.trim() || ''
+  const statusLabel = String(row.status || 'draft').toLowerCase()
+  const kindLabel = kindLabelFromRow(row)
+  const isActive = statusLabel === 'active'
+  const approval = String(row.approval_status || 'draft').toLowerCase()
+  const isShopVisible = isActive && approval === 'approved'
+
+  return (
+    <article className={`${styles.mobileCard} ${styles.browseMobileCard}`}>
+      <div className={styles.mobileCardHeader}>
+        <div className={styles.mobileCardHeaderMain}>
+          <div className={styles.browseMobileThumbWrap}>
+            <ListingThumb row={row} kind={kind} />
+          </div>
+          <div className={styles.mobileHeaderMain}>
+            <p className={styles.mobileTitle}>{row.listing_name || 'Untitled'}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.mobileCardSection} data-mobile-label="Price">
+        <p className={styles.browseMobilePriceValue}>{formatPhpAmount(row.base_price)}</p>
+      </div>
+
+      <div className={styles.mobileCardSection} data-mobile-label="Seller">
+        <div className={styles.mobileCardSellerRow}>
+          <SellerAvatarMark
+            src={row.seller_avatar_url}
+            initialsSource={business || email || '?'}
+            listingStyles={styles}
+          />
+          <div className={styles.browseMobileSellerText}>
+            {business ? <p className={styles.browseMobileSellerName}>{business}</p> : null}
+            {email ? <p className={styles.browseMobileSellerEmail}>{email}</p> : null}
+            {!business && !email ? <p className={styles.browseMobileSellerName}>—</p> : null}
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.mobileCardSection} data-mobile-label="Listing">
+        <div className={styles.mobileCardStatusRow}>
+          <div className={styles.mobileCardStatusItem}>
+            <span className={styles.mobileCardStatusKey}>Status</span>
+            <span
+              className={`${styles.browseMobileMetaText} ${
+                styles[`browseMobileStatus_${statusLabel}`] || styles.browseMobileStatus_draft
+              }`}
+            >
+              {statusLabel}
+            </span>
+          </div>
+          <div className={styles.mobileCardStatusItem}>
+            <span className={styles.mobileCardStatusKey}>Kind</span>
+            <span
+              className={`${styles.browseMobileMetaText} ${
+                styles[`browseMobileKind_${kind}`] || styles.browseMobileKind_other
+              }`}
+            >
+              {kindLabel}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.mobileCardFooter}>
+        {isShopVisible ? (
+          <a
+            href={shopHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.mobileCardDetailsBtn}
+          >
+            View in shop
+          </a>
+        ) : (
+          <span className={styles.browseMobileUnavailable}>Not visible in shop</span>
+        )}
+      </div>
+    </article>
+  )
+}
+
 function ListingCard({ row }) {
   const kind = kindKeyFromRow(row)
   const shopHref = getShopHrefForSellerListingRow(row)
@@ -398,7 +498,7 @@ export default function AdminListingsBrowsePage() {
   }, [sortKey, kindFilter])
 
   return (
-    <div className={styles.pageRoot}>
+    <div className={`${styles.pageRoot} ${styles.browsePageRoot}`}>
       <nav className={styles.listingsMobileSwitch} aria-label="Listings navigation">
         <Link
           href="/admin/listings/browse"
@@ -658,25 +758,48 @@ export default function AdminListingsBrowsePage() {
       <div className={styles.cardList}>
         {isLoading && (
           <div role="status" aria-live="polite" aria-busy="true" aria-label="Loading approved listings" style={{ display: 'contents' }}>
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={`browse-sk-${i}`} className={styles.card}>
-                <div className={styles.cardMain}>
-                  <span className={`${styles.listingsSkBar} ${styles.listingsSkThumb}`} aria-hidden />
-                  <div className={styles.cardBody}>
-                    <span className={`${styles.listingsSkBar} ${styles.listingsSkTitle}`} aria-hidden />
-                    <span className={`${styles.listingsSkBar} ${styles.listingsSkSub}`} aria-hidden />
-                    <div className={styles.cardTags}>
-                      <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} aria-hidden />
-                      <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 96 }} aria-hidden />
+            {Array.from({ length: 6 }).map((_, i) =>
+              isMobile ? (
+                <div key={`browse-sk-${i}`} className={`${styles.mobileCard} ${styles.browseMobileCard} ${styles.browseMobileCardSkeleton}`}>
+                  <div className={styles.mobileCardHeader}>
+                    <div className={styles.mobileCardHeaderMain}>
+                      <span className={`${styles.listingsSkBar} ${styles.browseMobileSkThumb}`} aria-hidden />
+                      <span className={`${styles.listingsSkBar} ${styles.browseMobileSkTitle}`} aria-hidden />
                     </div>
                   </div>
-                  <div className={styles.cardRight}>
-                    <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} aria-hidden />
-                    <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 56 }} aria-hidden />
+                  <div className={styles.mobileCardSection} data-mobile-label="Price">
+                    <span className={`${styles.listingsSkBar} ${styles.browseMobileSkPrice}`} aria-hidden />
+                  </div>
+                  <div className={styles.mobileCardSection} data-mobile-label="Seller">
+                    <span className={`${styles.listingsSkBar} ${styles.browseMobileSkLine}`} aria-hidden />
+                  </div>
+                  <div className={styles.mobileCardSection}>
+                    <span className={`${styles.listingsSkBar} ${styles.browseMobileSkLine}`} style={{ width: '70%' }} aria-hidden />
+                  </div>
+                  <div className={styles.mobileCardFooter}>
+                    <span className={`${styles.listingsSkBar} ${styles.browseMobileSkBtn}`} aria-hidden />
                   </div>
                 </div>
-              </div>
-            ))}
+              ) : (
+                <div key={`browse-sk-${i}`} className={styles.card}>
+                  <div className={styles.cardMain}>
+                    <span className={`${styles.listingsSkBar} ${styles.listingsSkThumb}`} aria-hidden />
+                    <div className={styles.cardBody}>
+                      <span className={`${styles.listingsSkBar} ${styles.listingsSkTitle}`} aria-hidden />
+                      <span className={`${styles.listingsSkBar} ${styles.listingsSkSub}`} aria-hidden />
+                      <div className={styles.cardTags}>
+                        <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} aria-hidden />
+                        <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 96 }} aria-hidden />
+                      </div>
+                    </div>
+                    <div className={styles.cardRight}>
+                      <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} aria-hidden />
+                      <span className={`${styles.listingsSkBar} ${styles.listingsSkTag}`} style={{ width: 56 }} aria-hidden />
+                    </div>
+                  </div>
+                </div>
+              ),
+            )}
           </div>
         )}
 
@@ -691,9 +814,13 @@ export default function AdminListingsBrowsePage() {
         )}
 
         {!isLoading && !error && approvedFiltered.length > 0 &&
-          approvedFiltered.map((row) => (
-            <ListingCard key={row.id} row={row} />
-          ))}
+          approvedFiltered.map((row) =>
+            isMobile ? (
+              <BrowseMobileListingCard key={row.id} row={row} />
+            ) : (
+              <ListingCard key={row.id} row={row} />
+            ),
+          )}
 
         {!isLoading && !error && approvedFiltered.length === 0 && (
           <div className={`${styles.emptyState} ${styles.cardListEmptyState}`}>

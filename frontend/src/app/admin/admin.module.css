@@ -1543,6 +1543,11 @@
   color: #64748b;
 }
 
+.analyticsBreakdownBlock {
+  min-height: 240px;
+  min-width: 0;
+}
+
 @media (max-width: 1100px) {
   .analyticsStatsGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2061,6 +2066,23 @@
   display: grid;
   grid-template-columns: 1fr 1fr 100px;
   gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.analyticsSkActivityHead,
+.analyticsSkActivityRow {
+  display: grid;
+  grid-template-columns: 0.55fr 1.1fr 0.65fr 0.55fr;
+  gap: 12px;
+  padding: 10px 12px;
+}
+
+.analyticsSkActivityHead {
+  border-bottom: 1px solid #eef0f4;
+}
+
+.analyticsSkActivityRow {
   padding: 12px;
   border-bottom: 1px solid #f1f5f9;
 }

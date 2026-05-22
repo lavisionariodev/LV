@@ -1,0 +1,128 @@
+.intro {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.45;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.introLink {
+  color: #1f312b;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.analyticsKpiCard {
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .analyticsKpiCard:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  }
+}
+
+.trendsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  align-items: stretch;
+}
+
+.breakdownGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.chartEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  padding: 16px;
+  text-align: center;
+  font-size: 13px;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px dashed #e2e8f0;
+  border-radius: 10px;
+}
+
+.activityLimit {
+  margin: 0;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.activityTable {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.activityHead,
+.activityRow {
+  display: grid;
+  grid-template-columns: 0.55fr 1.1fr 0.65fr 0.55fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.activityHead {
+  font-size: 12px;
+  color: #64748b;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eef0f6;
+}
+
+.activityRow {
+  font-size: 13px;
+  padding: 10px 12px;
+  border: 1px solid #eef0f6;
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .activityRow:hover {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+  }
+}
+
+.activityOrder {
+  font-weight: 600;
+  color: #0f172a;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activityAmount {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+@media (max-width: 1100px) {
+  .breakdownGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .trendsGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}

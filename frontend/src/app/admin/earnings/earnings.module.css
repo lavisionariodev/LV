@@ -33,20 +33,23 @@
 /* PayMongo health panel */
 .healthPanel {
   margin-bottom: 20px;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid rgba(148, 163, 184, 0.35);
   background: #fff;
-  padding: 16px 18px;
+  padding: 18px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .healthPanelReady {
   border-color: rgba(22, 163, 74, 0.28);
-  background: rgba(240, 253, 244, 0.6);
+  background: linear-gradient(180deg, rgba(251, 255, 253, 0.95) 0%, rgba(245, 251, 249, 0.55) 100%);
 }
 
 .healthPanelAttention {
   border-color: rgba(217, 119, 6, 0.35);
-  background: rgba(255, 251, 235, 0.85);
+  background: linear-gradient(180deg, rgba(255, 251, 235, 0.95) 0%, rgba(254, 243, 199, 0.35) 100%);
 }
 
 .healthPanelDisabled {
@@ -57,27 +60,28 @@
 .healthHead {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
+  gap: 12px 16px;
 }
 
 .healthTitle {
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   color: #0f172a;
+  letter-spacing: -0.01em;
 }
 
 .healthPill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 5px 12px;
   font-size: 12px;
   font-weight: 600;
   border-radius: 999px;
+  flex-shrink: 0;
 }
 
 .healthPillReady {
@@ -103,45 +107,160 @@
   opacity: 0.85;
 }
 
-.healthList {
+.healthBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* Checklist — aligned label + status columns */
+.healthCheckTable {
   margin: 0;
   padding: 0;
   list-style: none;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.72);
+  overflow: hidden;
+}
+
+.healthPanelReady .healthCheckTable {
+  border-color: rgba(22, 163, 74, 0.18);
+}
+
+.healthPanelAttention .healthCheckTable {
+  border-color: rgba(217, 119, 6, 0.22);
+}
+
+.healthCheckHead,
+.healthRow {
   display: grid;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) 80px;
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+
+/* Desktop: two check/status pairs per row (4 columns) */
+@media (min-width: 720px) {
+  .healthCheckHead,
+  .healthRow {
+    grid-template-columns: minmax(0, 1fr) 76px minmax(0, 1fr) 76px;
+    column-gap: 12px 20px;
+    padding: 10px 16px;
+  }
+
+  .healthCheckHead > span:nth-child(3),
+  .healthRow > :nth-child(3) {
+    border-left: 1px solid rgba(226, 232, 240, 0.95);
+    padding-left: 20px;
+  }
+}
+
+.healthCheckHead {
+  background: rgba(248, 250, 252, 0.9);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.healthCheckHead > span:nth-child(2),
+.healthCheckHead > span:nth-child(4) {
+  text-align: center;
 }
 
 .healthRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 13px;
   color: #334155;
+  border-bottom: 1px solid rgba(241, 245, 249, 0.95);
+}
+
+.healthRow:last-child {
+  border-bottom: none;
+}
+
+.healthRowFiller {
+  display: block;
+  min-height: 1px;
 }
 
 .healthRowLabel {
   font-weight: 500;
+  color: #0f172a;
+  min-width: 0;
+  line-height: 1.35;
 }
 
-.healthRowOk {
-  color: #15803d;
-  font-weight: 600;
+.healthStatusCell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.healthRowWarn {
-  color: #b45309;
-  font-weight: 600;
+.healthStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 64px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+.healthStatusOk {
+  color: #166534;
+  background: #dcfce7;
+  border: 1px solid rgba(22, 163, 74, 0.2);
+}
+
+.healthStatusWarn {
+  color: #64748b;
+  background: #f1f5f9;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.healthIssues {
+  margin: 0;
+  padding: 10px 12px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: 8px;
+  background: rgba(254, 243, 199, 0.45);
+  border: 1px solid rgba(217, 119, 6, 0.2);
+}
+
+.healthIssueItem {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #92400e;
+  line-height: 1.4;
+}
+
+.healthFooter {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(226, 232, 240, 0.95);
 }
 
 .healthActions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid #e5e7eb;
+  align-items: center;
+  gap: 8px 20px;
 }
 
 .healthLink {
@@ -152,26 +271,65 @@
   text-underline-offset: 2px;
 }
 
-.webhookUrl {
+.healthWebhook {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.healthWebhookTitle {
+  margin: 0;
   font-size: 12px;
-  font-family: ui-monospace, monospace;
-  color: #475569;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.healthWebhookRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+}
+
+.webhookUrl {
+  flex: 1 1 200px;
+  min-width: 0;
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #334155;
+  line-height: 1.4;
   word-break: break-all;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
 }
 
 .copyBtn {
+  flex-shrink: 0;
   font-size: 12px;
   font-weight: 600;
-  padding: 4px 10px;
+  padding: 8px 14px;
   border: 1px solid #e5e7eb;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #fff;
   color: #334155;
   cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.copyBtn:hover {
-  background: #f8fafc;
+@media (hover: hover) and (pointer: fine) {
+  .copyBtn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+  }
 }
 
 /* Chart left, stat cards right — mirrors admin dashboard desktopDashGrid */
@@ -347,34 +505,47 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  display: grid;
-  gap: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 .earningsSkHealthRow {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 76px minmax(0, 1fr) 76px;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  column-gap: 12px 20px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+@media (max-width: 719px) {
+  .earningsSkHealthRow {
+    grid-template-columns: minmax(0, 1fr) 76px;
+  }
+}
+
+.earningsSkHealthRow:last-child {
+  border-bottom: none;
 }
 
 .earningsSkHealthRowLabel {
   height: 12px;
-  width: 52%;
-  max-width: 220px;
+  width: 72%;
+  max-width: 240px;
 }
 
 .earningsSkHealthRowStatus {
-  height: 12px;
-  width: 48px;
-  flex-shrink: 0;
+  height: 22px;
+  width: 72px;
+  justify-self: center;
+  border-radius: 999px;
 }
 
 .earningsSkHealthActions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-top: 2px;
   padding-top: 14px;
   border-top: 1px solid #e5e7eb;
 }
@@ -549,25 +720,63 @@
 
   .healthPanel {
     margin-bottom: 12px;
-    padding: 12px 14px;
+    padding: 14px 14px 16px;
+    gap: 12px;
   }
 
   .healthTitle {
     font-size: 14px;
   }
 
+  .healthCheckHead,
   .healthRow {
+    grid-template-columns: minmax(0, 1fr) 76px;
+    column-gap: 10px;
+    padding: 9px 12px;
     font-size: 12px;
   }
 
+  .healthCheckHead > span:nth-child(3),
+  .healthCheckHead > span:nth-child(4) {
+    display: none;
+  }
+
+  .healthCheckHead > span:nth-child(3),
+  .healthRow > :nth-child(3) {
+    border-left: none;
+    padding-left: 0;
+  }
+
+  .healthStatusBadge {
+    min-width: 64px;
+    padding: 3px 8px;
+    font-size: 10px;
+  }
+
+  .healthFooter {
+    padding-top: 12px;
+    gap: 12px;
+  }
+
   .healthActions {
-    margin-top: 10px;
-    padding-top: 10px;
-    gap: 8px;
+    gap: 8px 14px;
   }
 
   .healthLink {
     font-size: 12px;
+  }
+
+  .healthWebhook {
+    padding: 10px 12px;
+  }
+
+  .healthWebhookRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .copyBtn {
+    width: 100%;
   }
 
   .dashGrid {
