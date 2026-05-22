@@ -24,7 +24,7 @@
 ## Handover checklist
 
 - [ ] Client org access to Supabase + hosting + PayMongo  
-- [ ] All migrations applied through `111` (wallet portal enhancements)  
+- [ ] All migrations applied through `113` (platform billing settlement fields)  
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` rotated or confirmed custody  
 - [ ] Production webhook URL + `PAYMONGO_WEBHOOK_SECRET` match  
 - [ ] SMTP send tested (if email notifications required)  

@@ -19,7 +19,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
-import { TbReportSearch, TbUsers, TbSearch, TbCreditCard, TbX } from 'react-icons/tb'
+import { TbReportSearch, TbUsers, TbSearch, TbCreditCard, TbCoins, TbX } from 'react-icons/tb'
 import { LuUserCheck } from 'react-icons/lu'
 import { MdArrowOutward } from 'react-icons/md'
 
@@ -33,9 +33,9 @@ const RANGE_OPTIONS = [
 ]
 
 const NAV_ACTIONS = [
+  { id: 'earnings', label: 'Earnings', icon: TbCoins,        href: '/admin/earnings' },
   { id: 'sellers',  label: 'Sellers',  icon: LuUserCheck,    href: '/admin/sellers' },
   { id: 'buyers',   label: 'Buyers',   icon: TbUsers,        href: '/admin/buyers' },
-  { id: 'billing',  label: 'Billing',  icon: TbCreditCard,   href: '/admin/settings/billing' },
   { id: 'disputes', label: 'Disputes', icon: TbReportSearch, href: '/admin/disputes' },
 ]
 
@@ -135,6 +135,7 @@ export default function AdminDashboardPage() {
   const [disputesNeedingAttention, setDisputesNeedingAttention] = useState(0)
   const [metricsError, setMetricsError] = useState(null)
   const [metricsRetryTick, setMetricsRetryTick] = useState(0)
+  const [paymongoOpsStatus, setPaymongoOpsStatus] = useState('ready')
 
   useEffect(() => {
     let cancelled = false
@@ -176,6 +177,25 @@ export default function AdminDashboardPage() {
       cancelled = true
     }
   }, [rangeDays, metricsRetryTick])
+
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      try {
+        const res = await fetch('/api/admin/payouts/disbursement-config', { credentials: 'include' })
+        const body = await res.json().catch(() => null)
+        if (cancelled || !res.ok) return
+        const status = String(body?.opsHealth?.overallStatus || 'attention')
+        setPaymongoOpsStatus(status)
+      } catch {
+        if (!cancelled) setPaymongoOpsStatus('attention')
+      }
+    }
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -405,10 +425,22 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className={styles.welcomeRight}>
-          <div className={styles.welcomePill}>
+          <Link
+            href="/admin/earnings"
+            className={styles.welcomePill}
+            style={
+              paymongoOpsStatus === 'ready'
+                ? undefined
+                : { background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }
+            }
+          >
             <span className={styles.welcomePillDot} />
-            All systems operational
-          </div>
+            {paymongoOpsStatus === 'ready'
+              ? 'Payments ready'
+              : paymongoOpsStatus === 'disabled'
+                ? 'PayMongo not configured'
+                : 'Payments need attention'}
+          </Link>
         </div>
       </section>
 
@@ -502,7 +534,7 @@ export default function AdminDashboardPage() {
           <div className={styles.statCard}>
             <div className={styles.statCardTop}>
               <p className={styles.statLabel}>Platform revenue</p>
-              <Link href="/admin/payouts" className={styles.statCardArrow} aria-label="View platform revenue">
+              <Link href="/admin/earnings" className={styles.statCardArrow} aria-label="View platform earnings">
                 <MdArrowOutward />
               </Link>
             </div>

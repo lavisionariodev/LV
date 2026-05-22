@@ -6541,8 +6541,8 @@
 }
 
 .disbursementReminderModalManual {
-  border-color: rgba(220, 38, 38, 0.28);
-  background: rgba(254, 242, 242, 0.98);
+  border-color: rgba(217, 119, 6, 0.35);
+  background: rgba(255, 251, 235, 0.98);
 }
 
 .disbursementReminderModalAutomated {
@@ -6576,15 +6576,34 @@
   outline-offset: 2px;
 }
 
-.disbursementReminderTitle {
+.disbursementReminderTitleRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   margin: 0 0 6px;
+  padding-right: 8px;
+}
+
+.disbursementReminderTitleIcon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #d97706;
+}
+
+.disbursementReminderModalAutomated .disbursementReminderTitleIcon {
+  color: #16a34a;
+}
+
+.disbursementReminderTitle {
+  margin: 0;
   font-size: 15px;
   font-weight: 600;
   color: #0f172a;
+  line-height: 1.35;
 }
 
 .disbursementReminderModalManual .disbursementReminderTitle {
-  color: #991b1b;
+  color: #92400e;
 }
 
 .disbursementReminderModalAutomated .disbursementReminderTitle {

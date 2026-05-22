@@ -10,7 +10,7 @@
 |--------|-------------------|
 | Public / buyer | Shop catalog, compare, cart, PayMongo checkout, favorites, profile & purchases, receipts, reviews, disputes, notification prefs |
 | Seller | Onboarding & compliance docs, listings (catalog / packages / services), orders & fulfillment, analytics, customers, reviews, wallet & withdrawals, settings, QR login, device sessions |
-| Admin | Dashboard metrics, buyers & sellers, listing moderation, disputes, escrow payouts & commission, stuck refunds, site content CMS, notification prefs |
+| Admin | Dashboard metrics, platform earnings & PayMongo health, buyers & sellers, listing moderation, disputes, escrow payouts & commission, billing settlement, stuck refunds, site content CMS, notification prefs |
 
 ## Environments
 

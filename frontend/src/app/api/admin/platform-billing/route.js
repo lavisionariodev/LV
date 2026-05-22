@@ -2,9 +2,16 @@ import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireAdminApiUser } from '@/lib/auth/requireAdminRoute'
 import { recordCommissionChangeLog } from '@/lib/admin/commissionChangeLog'
+import {
+  SETTLEMENT_SELECT,
+  buildSettlementPatchFromBody,
+  mapPlatformBillingForAdmin,
+  sanitizeBillingRowForApi,
+  validatePlatformSettlementRow,
+} from '@/lib/admin/platformBillingSettlement'
 
 /**
- * GET — singleton `platform_billing` row (id=1): default commission %, legal fields, updated_at.
+ * GET — singleton `platform_billing` row (id=1): commission, legal, settlement.
  */
 export async function GET() {
   const { responseError } = await requireAdminApiUser()
@@ -13,9 +20,7 @@ export async function GET() {
   const supabaseAdmin = getSupabaseAdmin()
   const { data, error } = await supabaseAdmin
     .from('platform_billing')
-    .select(
-      'id,legal_name,address,tax_id,billing_email,settlement_notes,default_commission_percent,updated_at',
-    )
+    .select(SETTLEMENT_SELECT)
     .eq('id', 1)
     .maybeSingle()
 
@@ -23,13 +28,16 @@ export async function GET() {
     return NextResponse.json({ error: error.message ?? 'Failed to load platform billing.' }, { status: 500 })
   }
 
-  const defaultCommissionPercent =
-    data?.default_commission_percent != null ? Number(data.default_commission_percent) : 10
+  const mapped = mapPlatformBillingForAdmin(data)
+  const defaultCommissionPercent = Number.isFinite(mapped?.defaultCommissionPercent)
+    ? mapped.defaultCommissionPercent
+    : 10
 
   return NextResponse.json(
     {
-      row: data,
-      defaultCommissionPercent: Number.isFinite(defaultCommissionPercent) ? defaultCommissionPercent : 10,
+      row: sanitizeBillingRowForApi(data),
+      billing: mapped,
+      defaultCommissionPercent,
     },
     { status: 200 },
   )
@@ -37,11 +45,10 @@ export async function GET() {
 
 /**
  * PATCH — update the singleton `platform_billing` row (id=1).
- * Accepts any combination of: defaultCommissionPercent, legalName, address, taxId, billingEmail, settlementNotes.
  */
 export async function PATCH(request) {
   const { user, responseError } = await requireAdminApiUser()
-  if (responseError) return responseError
+  if (responseError || !user) return responseError
 
   const body = await request.json().catch(() => ({}))
   const patch = { updated_at: new Date().toISOString() }
@@ -68,7 +75,6 @@ export async function PATCH(request) {
     address: 'address',
     taxId: 'tax_id',
     billingEmail: 'billing_email',
-    settlementNotes: 'settlement_notes',
   }
 
   for (const [camel, snake] of Object.entries(camelToSnake)) {
@@ -92,12 +98,33 @@ export async function PATCH(request) {
     }
   }
 
+  const settlementResult = buildSettlementPatchFromBody(body)
+  if (settlementResult.error) {
+    return NextResponse.json({ error: settlementResult.error }, { status: 400 })
+  }
+  Object.assign(patch, settlementResult.patch)
+
   const fieldKeys = Object.keys(patch).filter((k) => k !== 'updated_at')
   if (fieldKeys.length === 0) {
     return NextResponse.json({ error: 'No fields to update.' }, { status: 400 })
   }
 
   const supabaseAdmin = getSupabaseAdmin()
+
+  const hasSettlementFields = Object.keys(settlementResult.patch).length > 0
+  if (hasSettlementFields) {
+    const { data: existing } = await supabaseAdmin
+      .from('platform_billing')
+      .select(SETTLEMENT_SELECT)
+      .eq('id', 1)
+      .maybeSingle()
+
+    const merged = { ...(existing ?? {}), ...patch }
+    const validationError = validatePlatformSettlementRow(merged)
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 })
+    }
+  }
 
   let previousDefaultPercent = null
   if (body?.defaultCommissionPercent !== undefined) {
@@ -116,15 +143,17 @@ export async function PATCH(request) {
     .from('platform_billing')
     .update(patch)
     .eq('id', 1)
-    .select('id,legal_name,address,tax_id,billing_email,settlement_notes,default_commission_percent,updated_at')
+    .select(SETTLEMENT_SELECT)
     .maybeSingle()
 
   if (error) {
     return NextResponse.json({ error: error.message ?? 'Update failed.' }, { status: 500 })
   }
 
-  const defaultCommissionPercent =
-    data?.default_commission_percent != null ? Number(data.default_commission_percent) : 10
+  const mapped = mapPlatformBillingForAdmin(data)
+  const defaultCommissionPercent = Number.isFinite(mapped?.defaultCommissionPercent)
+    ? mapped.defaultCommissionPercent
+    : 10
 
   if (body?.defaultCommissionPercent !== undefined) {
     await recordCommissionChangeLog(supabaseAdmin, {
@@ -132,15 +161,16 @@ export async function PATCH(request) {
       scope: 'global',
       label: 'Global rate',
       fromPercent: previousDefaultPercent,
-      toPercent: Number.isFinite(defaultCommissionPercent) ? defaultCommissionPercent : 10,
+      toPercent: defaultCommissionPercent,
     })
   }
 
   return NextResponse.json(
     {
       ok: true,
-      row: data,
-      defaultCommissionPercent: Number.isFinite(defaultCommissionPercent) ? defaultCommissionPercent : 10,
+      row: sanitizeBillingRowForApi(data),
+      billing: mapped,
+      defaultCommissionPercent,
     },
     { status: 200 },
   )

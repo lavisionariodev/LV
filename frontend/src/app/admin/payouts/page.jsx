@@ -5,7 +5,7 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { FiArrowUp, FiArrowDown, FiClock, FiRotateCcw, FiUnlock } from 'react-icons/fi'
-import { TbCoins, TbCreditCardPay, TbPlayerPause, TbX } from 'react-icons/tb'
+import { TbAlertTriangle, TbCoins, TbCreditCardPay, TbPlayerPause, TbX } from 'react-icons/tb'
 import { LuSettings2 } from 'react-icons/lu'
 
 import { useDebouncedEffect, useMediaQuery } from '@/shared/hooks'
@@ -3565,11 +3565,19 @@ export default function AdminPayoutsPage() {
             >
               <TbX size={18} strokeWidth={2} aria-hidden />
             </button>
-            <p id="payouts-disbursement-reminder-title" className={styles.disbursementReminderTitle}>
-              {disbursementConfig.automatedReady
-                ? 'Seller withdrawals use PayMongo'
-                : 'Seller withdrawals need PayMongo configuration'}
-            </p>
+            <div className={styles.disbursementReminderTitleRow}>
+              <TbAlertTriangle
+                size={20}
+                strokeWidth={2}
+                className={styles.disbursementReminderTitleIcon}
+                aria-hidden
+              />
+              <p id="payouts-disbursement-reminder-title" className={styles.disbursementReminderTitle}>
+                {disbursementConfig.automatedReady
+                  ? 'Seller withdrawals use PayMongo'
+                  : 'Seller withdrawals need PayMongo configuration'}
+              </p>
+            </div>
             <p className={styles.disbursementReminderSub}>
               {disbursementConfig.automatedReady
                 ? 'Admin release credits the seller wallet. Sellers withdraw to their bank or GCash when ready.'

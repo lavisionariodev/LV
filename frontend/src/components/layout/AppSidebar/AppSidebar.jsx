@@ -22,6 +22,7 @@ import {
   TbClipboardCheck,
   TbMessageStar,
   TbWallet,
+  TbCoins,
 } from 'react-icons/tb'
 import { LuUserCheck } from 'react-icons/lu'
 import { BsPerson } from 'react-icons/bs'
@@ -77,6 +78,8 @@ const SIDEBAR_CONFIG = {
     navItems: [
       { href: '/admin', label: 'Dashboard', icon: TbLayoutDashboardFilled },
       { href: '/admin/payouts', label: 'Payouts', icon: TbReportSearch },
+      { href: '/admin/earnings', label: 'Platform earnings', icon: TbCoins },
+      { href: '/admin/analytics', label: 'Analytics', icon: TbChartBar },
       {
         label: 'Accounts',
         icon: TbAddressBook,

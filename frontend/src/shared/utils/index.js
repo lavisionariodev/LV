@@ -15,7 +15,7 @@ export {
   getTxnCommissionParts,
 } from './adminPayouts'
 export { computeCommissionSnapshot } from './commissionSnapshot'
-export { formatCount, formatPHPMobile } from './formatCount'
+export { formatCount, formatPHPMobile, formatPHPDesktop } from './formatCount'
 export { fetchJson } from './fetchJson'
 export {
   PROFILE_DOB_MONTHS,
