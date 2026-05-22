@@ -59,6 +59,14 @@ export function filterByTab(rows, tab) {
   return (Array.isArray(rows) ? rows : []).filter((row) => classifyListingRow(row) === target)
 }
 
+/** Scope rows to a listing kind; `all` returns the full list (catalog / mixed views). */
+export function filterByListingKind(rows, kind = 'all') {
+  const target = String(kind || 'all').toLowerCase()
+  const list = Array.isArray(rows) ? rows : []
+  if (target === 'all') return list
+  return list.filter((row) => String(row?.kind ?? '').toLowerCase() === target)
+}
+
 export function countByTab(rows) {
   const counts = { active: 0, under_review: 0, updates_pending: 0 }
   for (const row of Array.isArray(rows) ? rows : []) {

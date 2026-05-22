@@ -10,22 +10,47 @@ export const LEGAL_TRANSITIONS = {
   cancelled: new Set([]),
 }
 
-const ADVANCE_LABELS = {
+const BOOKING_ADVANCE_LABELS = {
   confirmed: {
     label: 'Confirm booking',
     description: 'Accept this paid booking and begin preparation.',
-    successMessage: 'Order confirmed.',
+    successMessage: 'Booking confirmed.',
   },
   in_progress: {
     label: 'Mark in progress',
     description: 'Let the buyer know service work has started.',
-    successMessage: 'Order marked in progress.',
+    successMessage: 'Booking marked in progress.',
   },
   completed: {
     label: 'Mark completed',
     description: 'Close out the booking after service delivery.',
-    successMessage: 'Order marked completed.',
+    successMessage: 'Booking marked completed.',
   },
+}
+
+const PRODUCT_ADVANCE_LABELS = {
+  confirmed: {
+    label: 'Confirm order',
+    description: 'Accept this paid order and begin fulfillment.',
+    successMessage: 'Order confirmed.',
+  },
+  in_progress: {
+    label: 'Mark out for delivery',
+    description: 'Let the buyer know the order is on its way.',
+    successMessage: 'Order marked out for delivery.',
+  },
+  completed: {
+    label: 'Mark delivered',
+    description: 'Close the order after the buyer receives the items.',
+    successMessage: 'Order marked delivered.',
+  },
+}
+
+/**
+ * @param {{ isProductOrder?: boolean, orderLane?: string } | null | undefined} order
+ */
+function orderIsProductLane(order) {
+  return Boolean(order?.isProductOrder) || order?.orderLane === 'product'
 }
 
 /**
@@ -116,7 +141,8 @@ export function getSellerAdvanceAction(order) {
   const status = fulfillmentStatusFromOrder(order)
   const nextStatus = getForwardTransition(status, isPaidFulfillmentOrder(order))
   if (!nextStatus) return null
-  const copy = ADVANCE_LABELS[nextStatus]
+  const labels = orderIsProductLane(order) ? PRODUCT_ADVANCE_LABELS : BOOKING_ADVANCE_LABELS
+  const copy = labels[nextStatus]
   if (!copy) return null
   return {
     status: nextStatus,
@@ -131,19 +157,23 @@ export function getSellerAdvanceAction(order) {
  * @param {{ orderStatus?: string, fulfillment_status?: string, paymentStatus?: string, payment_status?: string, status?: string, refundStage?: string|null, refund_status?: string|null } | null | undefined} order
  */
 export function getSellerCancellationAction(order) {
+  const isProduct = orderIsProductLane(order)
   if (canDeclinePaidBooking(order)) {
     return {
       kind: 'declinePaid',
       label: 'Decline and refund',
-      description:
-        'Cancel the booking, refund the buyer to the original payment method, and prevent seller payout.',
+      description: isProduct
+        ? 'Cancel the order, refund the buyer to the original payment method, and prevent seller payout.'
+        : 'Cancel the booking, refund the buyer to the original payment method, and prevent seller payout.',
     }
   }
   if (canCancelUnpaidBooking(order)) {
     return {
       kind: 'cancelUnpaid',
-      label: 'Cancel booking',
-      description: 'Cancel this unpaid booking. No refund is required because payment has not been completed.',
+      label: isProduct ? 'Cancel order' : 'Cancel booking',
+      description: isProduct
+        ? 'Cancel this unpaid order. No refund is required because payment has not been completed.'
+        : 'Cancel this unpaid booking. No refund is required because payment has not been completed.',
     }
   }
   return null
@@ -160,7 +190,9 @@ export function getFulfillmentBlockedReason(order) {
     return 'This order has an active refund flow and cannot be advanced right now.'
   }
   if (status === 'pending' && !isPaidFulfillmentOrder(order)) {
-    return 'Awaiting buyer payment before you can confirm this booking.'
+    return orderIsProductLane(order)
+      ? 'Awaiting buyer payment before you can confirm this order.'
+      : 'Awaiting buyer payment before you can confirm this booking.'
   }
   return null
 }
@@ -184,8 +216,15 @@ export function getTimelineProgressForStatus(status) {
 /**
  * @param {string} status
  */
-export function fulfillmentStatusLabel(status) {
+export function fulfillmentStatusLabel(status, isProductOrder = false) {
   const normalized = String(status || 'pending').toLowerCase()
+  if (isProductOrder) {
+    if (normalized === 'completed') return 'Delivered'
+    if (normalized === 'in_progress') return 'Out for delivery'
+    if (normalized === 'confirmed') return 'Confirmed'
+    if (normalized === 'cancelled') return 'Cancelled'
+    return 'Awaiting seller'
+  }
   if (normalized === 'in_progress') return 'In progress'
   if (normalized === 'completed') return 'Completed'
   if (normalized === 'cancelled') return 'Cancelled'
