@@ -12,6 +12,8 @@ function rowToItem(row) {
     price: row.price ?? 0,
     description: row.description ?? '',
     qty: row.quantity ?? 1,
+    sellerName: row.seller_name ?? '',
+    sellerAvatarUrl: row.seller_avatar_url ?? '',
   }
 }
 
@@ -21,15 +23,32 @@ function rowToItem(row) {
  * @param {string} userId
  * @returns {Promise<{ items: Array<{ id, name, img, price, description, qty }>, error: Error | null }>}
  */
+const CART_SELECT_WITH_SELLER =
+  'product_id, name, image_url, price, description, quantity, seller_name, seller_avatar_url'
+const CART_SELECT_LEGACY = 'product_id, name, image_url, price, description, quantity'
+
+function isMissingSellerColumnError(error) {
+  const msg = String(error?.message || '').toLowerCase()
+  return msg.includes('seller_name') || msg.includes('seller_avatar_url')
+}
+
 export async function fetchCart(supabase, userId) {
-  const { data, error } = await supabase
+  let result = await supabase
     .from('cart_items')
-    .select('product_id, name, image_url, price, description, quantity')
+    .select(CART_SELECT_WITH_SELLER)
     .eq('user_id', userId)
     .order('created_at', { ascending: true })
 
-  if (error) return { items: [], error }
-  return { items: (data ?? []).map(rowToItem), error: null }
+  if (result.error && isMissingSellerColumnError(result.error)) {
+    result = await supabase
+      .from('cart_items')
+      .select(CART_SELECT_LEGACY)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true })
+  }
+
+  if (result.error) return { items: [], error: result.error }
+  return { items: (result.data ?? []).map(rowToItem), error: null }
 }
 
 /**
@@ -51,7 +70,12 @@ export async function addItem(supabase, userId, item) {
   if (existing) {
     const { error } = await supabase
       .from('cart_items')
-      .update({ quantity: newQty, updated_at: new Date().toISOString() })
+      .update({
+        quantity: newQty,
+        updated_at: new Date().toISOString(),
+        seller_name: item.sellerName ?? null,
+        seller_avatar_url: item.sellerAvatarUrl ?? null,
+      })
       .eq('id', existing.id)
     return { error }
   }
@@ -64,6 +88,8 @@ export async function addItem(supabase, userId, item) {
     price: item.price ?? null,
     description: item.description ?? null,
     quantity: newQty,
+    seller_name: item.sellerName ?? null,
+    seller_avatar_url: item.sellerAvatarUrl ?? null,
   })
   return { error }
 }
