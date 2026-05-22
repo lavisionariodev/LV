@@ -2,32 +2,39 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState, useMemo, useSyncExternalStore, useId } from 'react'
+import { useState, useMemo, useSyncExternalStore, useId, useEffect } from 'react'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { isBuyerRole } from '@/lib/auth/roles'
 import styles from './cart.module.css'
 import { formatPhpAmount } from '@/lib/cart/formatPhp'
+import { enrichCartItemsWithSellerMeta, mapCartItemToDisplayRow } from '@/lib/cart/fromListing'
+import { fetchActiveShopListings } from '@/lib/shop-listings/client'
 import { useSiteContent } from '@/lib/siteContent/client'
 
-/** Map Supabase cart line (CartContext) to table row fields for the UI. */
-function mapCartItemToRow(item) {
-  const desc = item.description || ''
-  const parts = desc.split(' · ')
-  const providerName = (parts[0] || '').trim() || 'Seller'
-  const detailLine = parts.length > 1 ? parts.slice(1).join(' · ').trim() : ''
-  return {
-    id: item.id,
-    name: item.name,
-    description: detailLine,
-    price: Number(item.price) || 0,
-    qty: item.qty ?? 1,
-    img: item.img,
-    provider: providerName,
-    providerInitial: providerName.charAt(0).toUpperCase(),
-    rating: null,
-    badge: null,
-  }
+function SellerCircleAvatar({ name, avatarUrl, className, imgClassName }) {
+  const [failed, setFailed] = useState(false)
+  const url = typeof avatarUrl === 'string' && avatarUrl.trim() ? avatarUrl.trim() : ''
+  const show = Boolean(url) && !failed
+  const initial = (name || 'S').charAt(0).toUpperCase()
+
+  return (
+    <div className={className}>
+      {show ? (
+        <Image
+          src={url}
+          alt=""
+          width={20}
+          height={20}
+          className={imgClassName}
+          onError={() => setFailed(true)}
+          unoptimized={url.startsWith('blob:')}
+        />
+      ) : (
+        initial
+      )}
+    </div>
+  )
 }
 
 // ─── Main Cart Page ──────────────────────────────────────────────────────────
@@ -46,17 +53,35 @@ export default function CartPage() {
   const [coupon, setCoupon] = useState('')
   const [couponApplied, setCouponApplied] = useState(false)
   const [qtyEdits, setQtyEdits] = useState({})
+  const [listingRows, setListingRows] = useState([])
+
+  useEffect(() => {
+    let cancelled = false
+    fetchActiveShopListings().then((rows) => {
+      if (!cancelled) setListingRows(Array.isArray(rows) ? rows : [])
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const enrichedItems = useMemo(
+    () => enrichCartItemsWithSellerMeta(cartItems, listingRows),
+    [cartItems, listingRows],
+  )
 
   const rows = useMemo(
     () =>
-      cartItems.map((item) => {
-        const base = mapCartItemToRow(item)
+      enrichedItems.map((item) => {
+        const base = mapCartItemToDisplayRow(item)
         return {
           ...base,
           subtotal: base.price * base.qty,
+          rating: null,
+          badge: null,
         }
       }),
-    [cartItems],
+    [enrichedItems],
   )
   const rowIdSet = useMemo(() => new Set(rows.map((r) => r.id)), [rows])
   const selectedVisible = useMemo(
@@ -708,22 +733,12 @@ function CartItemRow({ row, isSelected, onToggle, onUpdateQty, onRemove, qtyEdit
           )}
           {/* Provider mini row */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
-            <div style={{
-              width: 20,
-              height: 20,
-              borderRadius: '50%',
-              background: 'var(--color-green, #102820)',
-              color: '#fff',
-              fontSize: 10,
-              fontWeight: 700,
-              fontFamily: 'Cormorant Garamond, serif',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}>
-              {row.providerInitial}
-            </div>
+            <SellerCircleAvatar
+              name={row.sellerName}
+              avatarUrl={row.sellerAvatarUrl}
+              className={styles.providerMiniAvatar}
+              imgClassName={styles.providerMiniAvatarImg}
+            />
             <span style={{ fontSize: 12, color: '#888', fontFamily: 'Lato, sans-serif' }}>{row.provider}</span>
             {row.rating != null && (
             <span style={{ display: 'flex', alignItems: 'center', gap: 2, marginLeft: 4 }}>

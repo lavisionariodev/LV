@@ -1,6 +1,7 @@
  "use client"
 
  import { useEffect, useMemo, useState } from "react"
+ import Image from "next/image"
  import { useRouter, useSearchParams } from "next/navigation"
  import Link from "next/link"
  import styles from "./checkout.module.css"
@@ -8,7 +9,34 @@ import { useCart } from "@/contexts/CartContext"
 import { getUser } from "@/lib/auth/session"
 import { getBuyerAccountStatus, ROLE_BUYER } from "@/lib/auth/roles"
 import { formatPhpAmount } from "@/lib/cart/formatPhp"
+import { enrichCartItemsWithSellerMeta, mapCartItemToDisplayRow } from "@/lib/cart/fromListing"
+import { fetchActiveShopListings } from "@/lib/shop-listings/client"
 import { supabase } from "@/lib/supabase/client"
+
+function SellerCircleAvatar({ name, avatarUrl, className, imgClassName }) {
+  const [failed, setFailed] = useState(false)
+  const url = typeof avatarUrl === "string" && avatarUrl.trim() ? avatarUrl.trim() : ""
+  const show = Boolean(url) && !failed
+  const initial = (name || "S").charAt(0).toUpperCase()
+
+  return (
+    <div className={className}>
+      {show ? (
+        <Image
+          src={url}
+          alt=""
+          width={20}
+          height={20}
+          className={imgClassName}
+          onError={() => setFailed(true)}
+          unoptimized={url.startsWith("blob:")}
+        />
+      ) : (
+        initial
+      )}
+    </div>
+  )
+}
 
  export default function CheckoutPage() {
    const router = useRouter()
@@ -30,6 +58,17 @@ import { supabase } from "@/lib/supabase/client"
   const [notes, setNotes] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState("")
+  const [listingRows, setListingRows] = useState([])
+
+  useEffect(() => {
+    let cancelled = false
+    fetchActiveShopListings().then((rows) => {
+      if (!cancelled) setListingRows(Array.isArray(rows) ? rows : [])
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
    useEffect(() => {
      let mounted = true
@@ -70,17 +109,26 @@ import { supabase } from "@/lib/supabase/client"
 
    const filteredItems = useMemo(() => {
      const itemsParam = searchParams.get("items")
-     if (!itemsParam) return cartItems
-     const ids = new Set(
-       itemsParam
-         .split(",")
-         .map((v) => v.trim())
-         .filter(Boolean)
-     )
-     return cartItems.filter((item) => ids.has(String(item.id)))
-   }, [cartItems, searchParams])
+     const base = !itemsParam
+       ? cartItems
+       : cartItems.filter((item) => {
+           const ids = new Set(
+             itemsParam
+               .split(",")
+               .map((v) => v.trim())
+               .filter(Boolean)
+           )
+           return ids.has(String(item.id))
+         })
+     return enrichCartItemsWithSellerMeta(base, listingRows)
+   }, [cartItems, searchParams, listingRows])
 
-   const subtotal = filteredItems.reduce(
+   const summaryRows = useMemo(
+     () => filteredItems.map((item) => mapCartItemToDisplayRow(item)),
+     [filteredItems],
+   )
+
+   const subtotal = summaryRows.reduce(
      (sum, item) => sum + (item.price || 0) * (item.qty || 1),
      0
    )
@@ -143,7 +191,7 @@ import { supabase } from "@/lib/supabase/client"
     )
   }
 
-  const isEmpty = filteredItems.length === 0
+  const isEmpty = summaryRows.length === 0
 
   const productIds = filteredItems.map((i) => String(i.id))
 
@@ -384,18 +432,27 @@ import { supabase } from "@/lib/supabase/client"
              <aside className={styles.rightColumn}>
                <h2 className={styles.sectionTitle}>Summary</h2>
                <ul className={styles.itemsList}>
-                 {filteredItems.map((item) => (
-                   <li key={item.id} className={styles.itemRow}>
+                 {summaryRows.map((row) => (
+                   <li key={row.id} className={styles.itemRow}>
                      <div className={styles.itemMain}>
-                      <p className={styles.itemName}>{item.name}</p>
-                       {item.description && (
-                         <p className={styles.itemMeta}>{item.description}</p>
+                      <p className={styles.itemName}>{row.name}</p>
+                       {row.description && (
+                         <p className={styles.itemMeta}>{row.description}</p>
                        )}
+                       <div className={styles.itemProviderRow}>
+                         <SellerCircleAvatar
+                           name={row.sellerName}
+                           avatarUrl={row.sellerAvatarUrl}
+                           className={styles.itemProviderAvatar}
+                           imgClassName={styles.itemProviderAvatarImg}
+                         />
+                         <span className={styles.itemProviderName}>{row.provider}</span>
+                       </div>
                      </div>
                      <div className={styles.itemMetaRight}>
-                       <span className={styles.itemQty}>×{item.qty ?? 1}</span>
+                       <span className={styles.itemQty}>×{row.qty ?? 1}</span>
                        <span className={styles.itemPrice}>
-                         {formatPhpAmount((item.price || 0) * (item.qty || 1))}
+                         {formatPhpAmount((row.price || 0) * (row.qty || 1))}
                        </span>
                      </div>
                    </li>
