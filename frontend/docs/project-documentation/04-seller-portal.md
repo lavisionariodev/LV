@@ -19,7 +19,7 @@ Middleware public-path list: `middleware.js`.
 |------|-------|
 | Home | `/seller` |
 | Orders | `/seller/orders` |
-| Products | `/seller/products`, `catalog`, `new-listing`, `packages`, `services`, `archive` |
+| Listings | `/seller/listings`, `catalog`, `new-listing`, `packages`, `services`, `products`, `archive` |
 | Analytics | `/seller/analytics`, `revenue-reports`, `sales-overview`, `product-performance`, `customer-insights` |
 | Wallet | `/seller/wallet` — balance, ledger, withdraw (PayMongo when enabled) |
 | Customers · Reviews | `/seller/customers`, `/seller/reviews` |

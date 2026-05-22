@@ -20,9 +20,20 @@ Base: **`/`** and routes under **`src/app/(main)/`** (buyer auth under `(auth)/b
 
 ## Buyer flows
 
-1. Browse shop → add to cart (or book now) → checkout collects service/contact fields → `POST /api/checkout/create` then PayMongo.
-2. Payment confirmation is **webhook-driven** (`/api/payments/paymongo/webhook`), not only the success page.
-3. Purchases, cancel, refund request, disputes, and per-order reviews use `/api/buyer/*` and profile APIs.
+1. Browse shop → **add to cart** on any listing kind (service, package, or product).
+2. **Cart** groups **services & packages** (booking lane) separately from **products** (checkout lane). Only one lane can be selected at a time for payment.
+3. **Book now** (services/packages) or **Checkout** (products) on listing detail goes to `/checkout?items=…` with the same PayMongo path.
+4. **Checkout** copy and form fields depend on lane: booking collects preferred schedule and service location; product checkout hides those fields and uses order-focused labels.
+5. `POST /api/checkout/create` then PayMongo; payment confirmation is **webhook-driven** (`/api/payments/paymongo/webhook`), not only the success page.
+6. Purchases, cancel, refund request, disputes, and per-order reviews use `/api/buyer/*` and profile APIs.
+
+## Listing kinds (seller)
+
+| Kind | Seller form | Buyer primary CTA |
+|------|-------------|-------------------|
+| Service | Duration, coverage, optional package tiers | Book now |
+| Package | Package options (tiers) | Book now |
+| Product | Product details, stock; no duration/tiers | Checkout |
 
 ## Contact & messaging
 

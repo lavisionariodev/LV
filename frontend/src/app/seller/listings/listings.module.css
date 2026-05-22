@@ -2964,7 +2964,7 @@
 
 /* ==========================================================
    NEW LISTING PAGE — MOBILE RESPONSIVE (added)
-   Targets the full-page /seller/products/new-listing route only.
+   Targets the full-page /seller/listings/new-listing route only.
    All selectors are scoped to new-listing-specific classes
    so existing modal/product-list styles are not affected.
    ========================================================== */

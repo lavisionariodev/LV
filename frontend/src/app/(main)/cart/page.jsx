@@ -9,6 +9,7 @@ import { isBuyerRole } from '@/lib/auth/roles'
 import styles from './cart.module.css'
 import { formatPhpAmount } from '@/lib/cart/formatPhp'
 import { enrichCartItemsWithSellerMeta, mapCartItemToDisplayRow } from '@/lib/cart/fromListing'
+import { formatListingKindLabel } from '@/lib/listings/kind'
 import { fetchActiveShopListings } from '@/lib/shop-listings/client'
 import { useSiteContent } from '@/lib/siteContent/client'
 
@@ -76,6 +77,8 @@ export default function CartPage() {
         const base = mapCartItemToDisplayRow(item)
         return {
           ...base,
+          listingKind: item.listingKind ?? 'service',
+          checkoutLane: item.checkoutLane ?? 'booking',
           subtotal: base.price * base.qty,
           rating: null,
           badge: null,
@@ -83,25 +86,83 @@ export default function CartPage() {
       }),
     [enrichedItems],
   )
+  const bookingRows = useMemo(
+    () => rows.filter((r) => r.checkoutLane === 'booking'),
+    [rows],
+  )
+  const productRows = useMemo(
+    () => rows.filter((r) => r.checkoutLane === 'product'),
+    [rows],
+  )
+
+  const cartLaneGroups = useMemo(() => {
+    const groups = []
+    if (bookingRows.length > 0) {
+      groups.push({
+        key: 'booking',
+        title: 'Services & packages',
+        hint: 'Select items here to book. You cannot combine these with products in one checkout.',
+        rows: bookingRows,
+      })
+    }
+    if (productRows.length > 0) {
+      groups.push({
+        key: 'product',
+        title: 'Products',
+        hint: 'Select products to checkout. Book services separately from products.',
+        rows: productRows,
+      })
+    }
+    return groups
+  }, [bookingRows, productRows])
+
+  const hasMultipleLanes = cartLaneGroups.length > 1
   const rowIdSet = useMemo(() => new Set(rows.map((r) => r.id)), [rows])
   const selectedVisible = useMemo(
     () => new Set([...selected].filter((id) => rowIdSet.has(id))),
     [selected, rowIdSet],
   )
 
-  const allSelected = rows.length > 0 && rows.every((r) => selectedVisible.has(r.id))
-  const someSelected = selectedVisible.size > 0 && !allSelected
+  const selectedLane = useMemo(() => {
+    const first = rows.find((r) => selectedVisible.has(r.id))
+    return first?.checkoutLane ?? null
+  }, [rows, selectedVisible])
 
-  const toggleAll = () => {
-    if (allSelected) setSelected(new Set())
-    else setSelected(new Set(rows.map((r) => r.id)))
+  const isOtherLaneSelected = (lane) =>
+    selectedLane != null && selectedLane !== lane
+
+  const sectionAllSelected = (sectionRows) =>
+    sectionRows.length > 0 && sectionRows.every((r) => selectedVisible.has(r.id))
+  const sectionSomeSelected = (sectionRows) =>
+    sectionRows.some((r) => selectedVisible.has(r.id)) &&
+    !sectionAllSelected(sectionRows)
+
+  const toggleSection = (sectionRows) => {
+    if (sectionRows.length === 0) return
+    const lane = sectionRows[0]?.checkoutLane
+    if (sectionAllSelected(sectionRows)) {
+      setSelected((prev) => {
+        const next = new Set(prev)
+        sectionRows.forEach((r) => next.delete(r.id))
+        return next
+      })
+      return
+    }
+    if (lane && isOtherLaneSelected(lane)) return
+    setSelected(new Set(sectionRows.map((r) => r.id)))
   }
 
   const toggleItem = (id) => {
+    const row = rows.find((r) => r.id === id)
+    if (!row) return
     setSelected((prev) => {
       const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
+      if (next.has(id)) {
+        next.delete(id)
+        return next
+      }
+      if (isOtherLaneSelected(row.checkoutLane)) return prev
+      next.add(id)
       return next
     })
   }
@@ -134,8 +195,15 @@ export default function CartPage() {
   const total = subtotal - discount
   const checkoutHref =
     selectedVisible.size > 0
-      ? `/checkout?items=${encodeURIComponent([...selectedVisible].join(","))}`
-      : "/checkout"
+      ? `/checkout?items=${encodeURIComponent([...selectedVisible].join(','))}`
+      : null
+
+  const checkoutCtaLabel =
+    selectedVisible.size === 0
+      ? 'Select items to continue'
+      : selectedLane === 'product'
+        ? `Checkout (${selectedVisible.size} item${selectedVisible.size > 1 ? 's' : ''})`
+        : `Book now (${selectedVisible.size} item${selectedVisible.size > 1 ? 's' : ''})`
   const buyerSuspended = Boolean(user && isBuyerRole(role) && buyerAccountStatus?.status === 'suspended')
 
   const isEmpty = rows.length === 0
@@ -211,7 +279,7 @@ export default function CartPage() {
             <thead>
               <tr>
                 <th className={styles.receiptThNo}>#</th>
-                <th>Service / Package</th>
+                <th>Item</th>
                 <th className={styles.receiptThProvider}>Provider</th>
                 <th className={styles.receiptThRight}>Unit Price</th>
                 <th className={styles.receiptThRight}>Qty</th>
@@ -301,7 +369,7 @@ export default function CartPage() {
           <nav className={styles.breadcrumb} aria-label="Breadcrumb">
             <Link href="/" className={styles.crumb}>Home</Link>
             <span className={styles.slash}>/</span>
-            <Link href="/shop" className={styles.crumb}>Services</Link>
+            <Link href="/shop" className={styles.crumb}>Shop</Link>
             <span className={styles.slash}>/</span>
             <span className={styles.crumbActive}>Shopping Cart</span>
           </nav>
@@ -336,7 +404,7 @@ export default function CartPage() {
               </svg>
             </div>
             <h2 className={styles.emptyTitle}>Your cart is empty</h2>
-            <p className={styles.emptySub}>Add packages or services to see them here.</p>
+            <p className={styles.emptySub}>Add services, packages, or products to see them here.</p>
             {!user && (
               <p className={styles.emptySub} style={{ marginTop: 8 }}>
                 <Link href={`/buyer/login?redirect=${encodeURIComponent('/cart')}`} className={styles.emptyLink} style={{ display: 'inline' }}>
@@ -349,33 +417,14 @@ export default function CartPage() {
           </div>
         ) : (
           <>
-            {/* ── LEFT: Products Table ── */}
+            {/* ── LEFT: Cart sections by checkout lane ── */}
             <div className={styles.productsSection}>
 
-              {/* Table Header */}
-              <div className={styles.tableHeader}>
-                <span className={styles.thCheck}>
-                  <input
-                    type="checkbox"
-                    className={styles.checkbox}
-                    checked={allSelected}
-                    ref={(el) => { if (el) el.indeterminate = someSelected }}
-                    onChange={toggleAll}
-                    aria-label="Select all items"
-                  />
-                </span>
-                <span>Service / Package</span>
-                <span>Price</span>
-                <span>Quantity</span>
-                <span>Subtotal</span>
-                <span />
-              </div>
-
-              {/* Bulk Action Bar */}
               {selected.size > 0 && (
                 <div className={styles.bulkBar}>
                   <span className={styles.bulkCount}>
                     {selectedVisible.size} item{selectedVisible.size > 1 ? 's' : ''} selected
+                    {selectedLane === 'product' ? ' (products)' : selectedLane === 'booking' ? ' (bookings)' : ''}
                   </span>
                   <button type="button" className={styles.bulkDeleteBtn} onClick={removeSelected}>
                     <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -386,20 +435,59 @@ export default function CartPage() {
                 </div>
               )}
 
-              {/* Item Rows */}
-              {rows.map((row) => (
-                <CartItemRow
-                  key={row.id}
-                  row={row}
-                  isSelected={selected.has(row.id)}
-                  onToggle={() => toggleItem(row.id)}
-                  onUpdateQty={(val) => updateQty(row.id, val)}
-                  onRemove={() => removeItem(row.id)}
-                  qtyEdit={qtyEdits[row.id]}
-                  onQtyEdit={(val) => setQtyEdits((prev) => ({ ...prev, [row.id]: val }))}
-                  styles={styles}
-                />
-              ))}
+              <div className={styles.cartList}>
+                <div className={styles.tableHeader}>
+                  <span className={styles.thCheck}>
+                    {!hasMultipleLanes && rows.length > 0 ? (
+                      <input
+                        type="checkbox"
+                        className={styles.checkbox}
+                        checked={sectionAllSelected(rows)}
+                        ref={(el) => {
+                          if (el) el.indeterminate = sectionSomeSelected(rows)
+                        }}
+                        onChange={() => toggleSection(rows)}
+                        aria-label="Select all items"
+                      />
+                    ) : null}
+                  </span>
+                  <span>Item</span>
+                  <span>Price</span>
+                  <span>Quantity</span>
+                  <span>Subtotal</span>
+                  <span />
+                </div>
+
+                {cartLaneGroups.map((group) => (
+                  <div key={group.key} className={styles.cartLaneGroup}>
+                    {hasMultipleLanes ? (
+                      <CartLaneLabel
+                        title={group.title}
+                        hint={group.hint}
+                        sectionAllSelected={sectionAllSelected(group.rows)}
+                        sectionSomeSelected={sectionSomeSelected(group.rows)}
+                        selectDisabled={isOtherLaneSelected(group.key)}
+                        onToggleSection={() => toggleSection(group.rows)}
+                        styles={styles}
+                      />
+                    ) : null}
+                    {group.rows.map((row) => (
+                      <CartItemRow
+                        key={row.id}
+                        row={row}
+                        isSelected={selectedVisible.has(row.id)}
+                        selectDisabled={isOtherLaneSelected(row.checkoutLane)}
+                        onToggle={() => toggleItem(row.id)}
+                        onUpdateQty={(val) => updateQty(row.id, val)}
+                        onRemove={() => removeItem(row.id)}
+                        qtyEdit={qtyEdits[row.id]}
+                        onQtyEdit={(val) => setQtyEdits((prev) => ({ ...prev, [row.id]: val }))}
+                        styles={styles}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
 
               {/* Update Cart Footer */}
               <div className={styles.updateWrap}>
@@ -454,7 +542,8 @@ export default function CartPage() {
               </div>
             </div>
 
-            {/* ── RIGHT: Totals ── */}
+            {/* ── RIGHT: Totals (sticky with window scroll) ── */}
+            <div className={styles.totalsCol}>
             <aside className={styles.totalsSection}>
               <h2 className={styles.totalsTitle}>
                 {selectedVisible.size > 0 ? 'Selected Totals' : 'Cart Totals'}
@@ -494,20 +583,36 @@ export default function CartPage() {
                   </svg>
                   Print Invoice
                 </button>
-                <Link
-                  href={checkoutHref}
-                  className={styles.checkoutBtn}
-                  style={{ textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, textDecoration: 'none' }}
-                >
-                  <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M1 1h2l1.5 7.5h8l1.5-5H4.5" />
-                    <circle cx="7" cy="13.5" r="1" fill="currentColor" stroke="none" />
-                    <circle cx="12" cy="13.5" r="1" fill="currentColor" stroke="none" />
-                  </svg>
-                  {selectedVisible.size > 0
-                    ? `Book Now (${selectedVisible.size} item${selectedVisible.size > 1 ? 's' : ''})`
-                    : 'Proceed to Checkout'}
-                </Link>
+                {checkoutHref ? (
+                  <Link
+                    href={checkoutHref}
+                    className={styles.checkoutBtn}
+                    style={{ textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, textDecoration: 'none' }}
+                  >
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 1h2l1.5 7.5h8l1.5-5H4.5" />
+                      <circle cx="7" cy="13.5" r="1" fill="currentColor" stroke="none" />
+                      <circle cx="12" cy="13.5" r="1" fill="currentColor" stroke="none" />
+                    </svg>
+                    {checkoutCtaLabel}
+                  </Link>
+                ) : (
+                  <span
+                    className={styles.checkoutBtn}
+                    style={{
+                      textAlign: 'center',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      opacity: 0.55,
+                      cursor: 'not-allowed',
+                    }}
+                    aria-disabled="true"
+                  >
+                    {checkoutCtaLabel}
+                  </span>
+                )}
                 <Link
                   href="/shop"
                   style={{
@@ -560,6 +665,7 @@ export default function CartPage() {
                 </div>
               </div>
             </aside>
+            </div>
           </>
         )}
       </div>
@@ -633,33 +739,84 @@ function CartLoadingSkeleton() {
           </div>
         </div>
 
-        <aside className={styles.totalsSection} aria-hidden>
-          <div className={`${styles.skeletonBlock} ${styles.skTotalsTitle}`} />
-          <table className={styles.totalsTable}>
-            <tbody>
-              {[0, 1, 2].map((i) => (
-                <tr key={i}>
-                  <th><span className={`${styles.skeletonBlock} ${styles.skTotalsLabel}`} /></th>
-                  <td><span className={`${styles.skeletonBlock} ${styles.skTotalsValue}`} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className={styles.actions}>
-            <div className={`${styles.skeletonBlock} ${styles.skActionBtnSm}`} />
-            <div className={`${styles.skeletonBlock} ${styles.skActionBtnLg}`} />
-            <div className={`${styles.skeletonBlock} ${styles.skActionBtnSm}`} />
-          </div>
-        </aside>
+        <div className={styles.totalsCol}>
+          <aside className={styles.totalsSection} aria-hidden>
+            <div className={`${styles.skeletonBlock} ${styles.skTotalsTitle}`} />
+            <table className={styles.totalsTable}>
+              <tbody>
+                {[0, 1, 2].map((i) => (
+                  <tr key={i}>
+                    <th><span className={`${styles.skeletonBlock} ${styles.skTotalsLabel}`} /></th>
+                    <td><span className={`${styles.skeletonBlock} ${styles.skTotalsValue}`} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className={styles.actions}>
+              <div className={`${styles.skeletonBlock} ${styles.skActionBtnSm}`} />
+              <div className={`${styles.skeletonBlock} ${styles.skActionBtnLg}`} />
+              <div className={`${styles.skeletonBlock} ${styles.skActionBtnSm}`} />
+            </div>
+          </aside>
+        </div>
       </div>
     </section>
   )
 }
 
-// ─── CartItemRow ─────────────────────────────────────────────────────────────
-function CartItemRow({ row, isSelected, onToggle, onUpdateQty, onRemove, qtyEdit, onQtyEdit, styles }) {
+function CartLaneLabel({
+  title,
+  hint,
+  sectionAllSelected,
+  sectionSomeSelected,
+  selectDisabled,
+  onToggleSection,
+  styles,
+}) {
   return (
-    <div className={`${styles.itemRow} ${isSelected ? styles.itemRowSelected : ''}`}>
+    <div
+      className={`${styles.cartLaneLabel} ${selectDisabled ? styles.cartLaneLabelLocked : ''}`}
+      role="group"
+      aria-label={title}
+    >
+      <span className={styles.cartLaneLabelCheck}>
+        <input
+          type="checkbox"
+          className={styles.checkbox}
+          checked={sectionAllSelected}
+          disabled={selectDisabled}
+          ref={(el) => {
+            if (el) el.indeterminate = !selectDisabled && sectionSomeSelected
+          }}
+          onChange={onToggleSection}
+          aria-label={`Select all in ${title}`}
+          aria-disabled={selectDisabled || undefined}
+        />
+      </span>
+      <div className={styles.cartLaneLabelText}>
+        <h2 className={styles.cartLaneLabelTitle}>{title}</h2>
+        {hint ? <p className={styles.cartLaneLabelHint}>{hint}</p> : null}
+      </div>
+    </div>
+  )
+}
+
+// ─── CartItemRow ─────────────────────────────────────────────────────────────
+function CartItemRow({
+  row,
+  isSelected,
+  selectDisabled,
+  onToggle,
+  onUpdateQty,
+  onRemove,
+  qtyEdit,
+  onQtyEdit,
+  styles,
+}) {
+  return (
+    <div
+      className={`${styles.itemRow} ${isSelected ? styles.itemRowSelected : ''} ${selectDisabled ? styles.itemRowSelectLocked : ''}`}
+    >
 
       {/* Checkbox */}
       <div className={styles.itemCheck}>
@@ -667,8 +824,10 @@ function CartItemRow({ row, isSelected, onToggle, onUpdateQty, onRemove, qtyEdit
           type="checkbox"
           className={styles.checkbox}
           checked={isSelected}
+          disabled={selectDisabled}
           onChange={onToggle}
           aria-label={`Select ${row.name}`}
+          aria-disabled={selectDisabled || undefined}
         />
       </div>
 
@@ -726,6 +885,25 @@ function CartItemRow({ row, isSelected, onToggle, onUpdateQty, onRemove, qtyEdit
                 {row.badge}
               </span>
             )}
+            {row.listingKind ? (
+              <span
+                style={{
+                  fontSize: 9,
+                  fontWeight: 700,
+                  letterSpacing: 0.5,
+                  textTransform: 'uppercase',
+                  color: 'rgba(16,40,32,0.55)',
+                  background: 'rgba(16,40,32,0.06)',
+                  border: '1px solid rgba(16,40,32,0.12)',
+                  borderRadius: 100,
+                  padding: '2px 8px',
+                  fontFamily: 'Lato, sans-serif',
+                  flexShrink: 0,
+                }}
+              >
+                {formatListingKindLabel(row.listingKind)}
+              </span>
+            ) : null}
           </div>
           <h3 className={styles.productName}>{row.name}</h3>
           {row.description && (

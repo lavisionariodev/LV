@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import NewListingClient from '../components/SellerListingForm'
-import styles from '../products.module.css'
+import styles from '../listings.module.css'
 
 export const metadata = {
   title: 'Add New Listing',

@@ -12,6 +12,7 @@ import {
   resolveCommissionRate,
 } from '@/lib/admin/commissionRate'
 import { recordEscrowFundingLedgerEntries } from '@/lib/payments/walletLedgerEvents'
+import { resolveOrderLaneForOrderId } from '@/lib/orders/orderKindFromItems'
 
 function parseSignatureHeader(headerValue) {
   const out = {}
@@ -389,12 +390,16 @@ export async function POST(request) {
 
       for (const o of ordRows ?? []) {
         const ref = o.order_number || String(o.id).slice(0, 8)
+        const lane = await resolveOrderLaneForOrderId(supabaseAdmin, o.id)
+        const isProduct = lane === 'product'
         if (o.buyer_id) {
           await notifyUser(supabaseAdmin, {
             userId: o.buyer_id,
             type: 'payment_success',
             title: 'Payment received',
-            body: `Your payment for booking ${ref} was successful. Your provider will confirm your schedule soon.`,
+            body: isProduct
+              ? `Your payment for order ${ref} was successful. The seller will confirm your order soon.`
+              : `Your payment for booking ${ref} was successful. Your provider will confirm your schedule soon.`,
             metadata: { orderId: o.id, paymentId: paymentRow.id },
             dedupeKey: `payment_success:${o.id}`,
           })
@@ -402,8 +407,10 @@ export async function POST(request) {
         if (o.seller_user_id) {
           await notifySeller(supabaseAdmin, o.seller_user_id, {
             type: 'alerts',
-            title: 'New paid booking',
-            body: `Order ${ref} is paid and awaiting your confirmation.`,
+            title: isProduct ? 'New paid product order' : 'New paid booking',
+            body: isProduct
+              ? `Order ${ref} is paid and awaiting your confirmation before delivery.`
+              : `Order ${ref} is paid and awaiting your confirmation.`,
             metadata: { orderId: o.id, paymentId: paymentRow.id },
             dedupeKey: `seller_new_paid_order:${o.id}`,
           })
@@ -445,11 +452,15 @@ export async function POST(request) {
         for (const o of failedOrders ?? []) {
           if (!o.buyer_id) continue
           const ref = o.order_number || String(o.id).slice(0, 8)
+          const lane = await resolveOrderLaneForOrderId(supabaseAdmin, o.id)
+          const isProduct = lane === 'product'
           await notifyUser(supabaseAdmin, {
             userId: o.buyer_id,
             type: 'payment_failed',
             title: 'Payment did not go through',
-            body: `We could not complete payment for booking ${ref}. You can try again from your cart or checkout.`,
+            body: isProduct
+              ? `We could not complete payment for order ${ref}. You can try again from checkout.`
+              : `We could not complete payment for booking ${ref}. You can try again from your cart or checkout.`,
             metadata: { orderId: o.id, paymentId: paymentRow.id },
             dedupeKey: `payment_failed:${paymentRow.id}:${o.id}`,
           })

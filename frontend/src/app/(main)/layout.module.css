@@ -1,10 +1,12 @@
-/* Offset for fixed PublicNavbar: topBar + mainNav */
+/* Offset for fixed PublicNavbar — synced via --navbar-height from PublicNavbar */
 .main {
-  padding-top: 110px;
+  padding-top: var(--navbar-height, 110px);
+  /* Do not set overflow here — breaks position: sticky on cart/shop side panels */
+  overflow: visible;
 }
 
 @media (max-width: 768px) {
   .main {
-    padding-top: 96px; /* smaller, matching shorter mobile navbar */
+    padding-top: var(--navbar-height, 96px);
   }
 }

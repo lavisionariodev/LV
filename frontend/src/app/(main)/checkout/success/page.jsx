@@ -1,11 +1,16 @@
 "use client"
 
 import Link from "next/link"
+import { useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import styles from "../checkout.module.css"
 import { useCheckoutPaymentStatus } from "@/lib/checkout/useCheckoutPaymentStatus"
+import { clearCheckoutDraft } from "@/lib/checkout/checkoutDraft"
 
 export default function CheckoutSuccessPage() {
+  useEffect(() => {
+    clearCheckoutDraft()
+  }, [])
   const searchParams = useSearchParams()
   const paymentId = searchParams.get("payment")
   const { status, settled, loading, error, timedOut } = useCheckoutPaymentStatus(paymentId)

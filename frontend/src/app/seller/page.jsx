@@ -32,7 +32,7 @@ import {
 } from '@/lib/seller/sellerOrderAnalytics'
 
 const quickActions = [
-  { label: 'Add New Listing', href: '/seller/products/new-listing', icon: 'add' },
+  { label: 'Add New Listing', href: '/seller/listings/new-listing', icon: 'add' },
   { label: 'Manage Orders', href: '/seller/orders', icon: 'orders' },
   { label: 'Create Promotion', href: '/seller/marketing/campaign', icon: 'promo' },
   { label: 'Notifications', href: '/seller/notifications', icon: 'messages' },

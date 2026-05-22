@@ -5,6 +5,12 @@ import { requireActiveBuyerApiUser } from '@/lib/auth/requireApiUser'
 import { apiLog, errorMessage } from '@/lib/observability/apiLog'
 import { getClientIp, takeToken } from '@/lib/rate-limit/memoryRateLimit'
 import { createPaymongoCheckoutSession, phpToCentavos } from '@/lib/paymongo/client'
+import {
+  fetchActivePaymongoCheckoutByOrderId,
+  reconcileStaleCheckoutPayments,
+} from '@/lib/checkout/reconcileCheckoutPayments'
+import { resolveOrderLaneForOrderId } from '@/lib/orders/orderKindFromItems'
+import { paymongoCheckoutLineItemName } from '@/lib/orders/orderDisplayCopy'
 
 export async function POST(request) {
   const ip = getClientIp(request)
@@ -76,13 +82,18 @@ export async function POST(request) {
     )
   }
 
-  const checkoutAlreadyOpen = orders.some((o) => o.payment_status === 'pending')
-  if (checkoutAlreadyOpen) {
+  await reconcileStaleCheckoutPayments(supabaseAdmin, user.id, orderIds)
+
+  const activeCheckout = await fetchActivePaymongoCheckoutByOrderId(supabaseAdmin, orderIds)
+  if ([...activeCheckout.values()].some(Boolean)) {
     apiLog('checkout.pay.duplicate_session', {})
+    const lane = await resolveOrderLaneForOrderId(supabaseAdmin, orderIds[0])
     return NextResponse.json(
       {
         error:
-          'Payment is already in progress for this booking. Finish or close the PayMongo window, wait if it expires, then try Pay again.',
+          lane === 'product'
+            ? 'Payment is already in progress for this order. Finish or close the PayMongo window, then try again.'
+            : 'Payment is already in progress for this booking. Finish or close the PayMongo window, then try Pay again.',
       },
       { status: 409 },
     )
@@ -110,6 +121,8 @@ export async function POST(request) {
 
   const origin = new URL(request.url).origin
   const paymongoReference = `lv_${crypto.randomUUID()}`
+  const checkoutLane = await resolveOrderLaneForOrderId(supabaseAdmin, orderIds[0])
+  const lineItemName = paymongoCheckoutLineItemName(checkoutLane)
 
   const { data: paymentRow, error: paymentErr } = await supabaseAdmin
     .from('payments')
@@ -120,7 +133,7 @@ export async function POST(request) {
       amount: totalAmountPhp,
       currency,
       paymongo_reference: paymongoReference,
-      metadata: { order_ids: orderIds },
+      metadata: { order_ids: orderIds, checkout_lane: checkoutLane },
     })
     .select('*')
     .single()
@@ -159,32 +172,8 @@ export async function POST(request) {
     )
   }
 
-  const { error: ordersPendingErr } = await supabaseAdmin
-    .from('orders')
-    .update({ payment_status: 'pending', status: 'pending_payment' })
-    .in('id', orderIds)
-
-  if (ordersPendingErr) {
-    apiLog('checkout.pay.orders_pending_update_failed', { err: errorMessage(ordersPendingErr) })
-    await supabaseAdmin
-      .from('payments')
-      .update({
-        status: 'failed',
-        metadata: {
-          ...(paymentRow.metadata ?? {}),
-          order_update_error: ordersPendingErr.message ?? 'Failed to mark orders pending payment.',
-        },
-      })
-      .eq('id', paymentRow.id)
-
-    return NextResponse.json(
-      { error: ordersPendingErr.message ?? 'Failed to mark orders pending payment.' },
-      { status: 500 },
-    )
-  }
-
   const successUrl = `${origin}/checkout/success?payment=${encodeURIComponent(paymentRow.id)}`
-  const cancelUrl = `${origin}/checkout/failed?payment=${encodeURIComponent(paymentRow.id)}`
+  const cancelUrl = `${origin}/checkout?resume=1&payment=${encodeURIComponent(paymentRow.id)}`
 
   const paymongoResult = await createPaymongoCheckoutSession({
     amountCentavos,
@@ -192,9 +181,11 @@ export async function POST(request) {
     successUrl,
     cancelUrl,
     referenceNumber: paymongoReference,
+    lineItemName,
     metadata: {
       payment_id: paymentRow.id,
       order_ids: orderIds,
+      checkout_lane: checkoutLane,
     },
   })
 
@@ -210,11 +201,6 @@ export async function POST(request) {
         },
       })
       .eq('id', paymentRow.id)
-
-    await supabaseAdmin
-      .from('orders')
-      .update({ payment_status: 'failed', status: 'failed' })
-      .in('id', orderIds)
 
     return NextResponse.json({ error: 'Failed to create PayMongo checkout session.' }, { status: 502 })
   }
@@ -237,6 +223,9 @@ export async function POST(request) {
 
   apiLog('checkout.pay.checkout_created', {})
 
-  return NextResponse.json({ redirect_url: checkoutUrl }, { status: 200 })
+  return NextResponse.json(
+    { redirect_url: checkoutUrl, payment_id: paymentRow.id },
+    { status: 200 },
+  )
 }
 

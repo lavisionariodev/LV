@@ -2,6 +2,12 @@
  * Maps Supabase buyer order + joined order_items rows into Purchases UI card props.
  */
 
+import {
+  buyerCancelPurchaseHint,
+  buyerProviderRoleLabel,
+  fulfillmentToBuyerDisplayStatus,
+} from '@/lib/orders/orderDisplayCopy'
+
 const PHP_SYMBOL = '\u20B1'
 
 /** @type {Record<string, string>} */
@@ -49,19 +55,7 @@ export function formatMoneyReceiptPdf(amount, currencyCode) {
 
 /** @param {string | null | undefined} fulfillment */
 export function fulfillmentToDisplayStatus(fulfillment) {
-  const f = fulfillment || 'pending'
-  switch (f) {
-    case 'completed':
-      return 'Completed'
-    case 'in_progress':
-      return 'In Progress'
-    case 'confirmed':
-      return 'Confirmed'
-    case 'cancelled':
-      return 'Cancelled'
-    default:
-      return 'Pending'
-  }
+  return fulfillmentToBuyerDisplayStatus(fulfillment, false)
 }
 
 /**
@@ -136,11 +130,24 @@ export function canLeaveBuyerReview(order) {
 }
 
 /**
+ * UI lane for copy (booking vs product checkout). One order is usually one kind per seller.
+ * @param {Array<{ listing_kind?: string | null }>} orderItems
+ * @returns {'product' | 'booking'}
+ */
+export function resolveOrderDisplayLane(orderItems) {
+  const kinds = (orderItems ?? []).map((it) => pickKind(it.listing_kind)).filter(Boolean)
+  if (kinds.length > 0 && kinds.every((k) => k === 'product')) return 'product'
+  return 'booking'
+}
+
+/**
  * @param {Record<string, unknown>} o orders row from Supabase
- * @param {Array<{ id?: string; order_id: string; product_id?: string; name: string; quantity?: number; price?: number }>} orderItems
+ * @param {Array<{ id?: string; order_id: string; product_id?: string; name: string; quantity?: number; price?: number; listing_kind?: string | null }>} orderItems
  * @param {string} [providerDisplayName] from seller-names API
  */
 export function mapBuyerOrderCard(o, orderItems, providerDisplayName, disputeStatus) {
+  const displayLane = resolveOrderDisplayLane(orderItems)
+  const isProductOrder = displayLane === 'product'
   const fulfillment = o.fulfillment_status || 'pending'
   const refundRsRaw = o.refund_status == null ? null : String(o.refund_status)
 
@@ -152,8 +159,10 @@ export function mapBuyerOrderCard(o, orderItems, providerDisplayName, disputeSta
   let statusDetail = null
   let status
   if (fulfillment === 'pending' && refundRsRaw === 'declined') {
-    status = 'Active booking'
-    statusDetail = 'Refund request declined. Booking remains paid and awaiting provider confirmation.'
+    status = isProductOrder ? 'Active order' : 'Active booking'
+    statusDetail = isProductOrder
+      ? 'Refund request declined. Order remains paid and awaiting seller confirmation.'
+      : 'Refund request declined. Booking remains paid and awaiting provider confirmation.'
   } else if (fulfillment === 'cancelled') {
     const refundComplete =
       refundRsRaw === 'completed' || ps === 'refunded'
@@ -170,7 +179,7 @@ export function mapBuyerOrderCard(o, orderItems, providerDisplayName, disputeSta
       }
     }
   } else {
-    status = fulfillmentToDisplayStatus(fulfillment)
+    status = fulfillmentToBuyerDisplayStatus(fulfillment, isProductOrder)
   }
 
   const service =
@@ -178,7 +187,9 @@ export function mapBuyerOrderCard(o, orderItems, providerDisplayName, disputeSta
       ? orderItems[0].name
       : orderItems.length > 1
         ? `${orderItems.length} items`
-        : 'Booking'
+        : isProductOrder
+          ? 'Product order'
+          : 'Booking'
 
   const currency = o.currency || 'PHP'
   const price = Number(o.subtotal) || 0
@@ -204,8 +215,13 @@ export function mapBuyerOrderCard(o, orderItems, providerDisplayName, disputeSta
     kind: pickKind(it.listing_kind),
   }))
 
-  /** PayMongo checkout session opened (`payment_status` set to pending by `/api/checkout/pay`). Not the same as legacy `status: pending_payment` on new unpaid orders. */
-  const paymongoCheckoutActive = o.payment_status === 'pending'
+  /**
+   * Live PayMongo hosted checkout (payments.status pending, not stale).
+   * Prefer `active_paymongo_checkout` from listBuyerOrdersForApi; fall back for legacy rows.
+   */
+  const paymongoCheckoutActive =
+    o.active_paymongo_checkout === true ||
+    (o.active_paymongo_checkout !== false && o.payment_status === 'pending')
 
   const blockingRefundLifecycle =
     refundRsRaw === 'requested' ||
@@ -234,10 +250,9 @@ export function mapBuyerOrderCard(o, orderItems, providerDisplayName, disputeSta
 
   const showCancelPurchase = Boolean(eligibleCancelPurchase)
   const canSubmitCancelPurchase = Boolean(eligibleCancelPurchase && !paymongoCheckoutActive)
-  const cancelPurchaseHint =
-    eligibleCancelPurchase && paymongoCheckoutActive
-      ? 'Unavailable during checkout payment.'
-      : undefined
+  const cancelPurchaseHint = eligibleCancelPurchase
+    ? buyerCancelPurchaseHint({ isProductOrder, paymongoCheckoutActive })
+    : undefined
 
   const paymentMethodLine = paymongoCheckoutActive
     ? `${paymentSummaryLine(pd)} · finishing checkout`
@@ -254,10 +269,13 @@ export function mapBuyerOrderCard(o, orderItems, providerDisplayName, disputeSta
     id: o.order_number || o.id,
     rawOrderId: o.id,
     sellerUserId: o.seller_user_id,
+    displayLane,
+    isProductOrder,
     service,
     provider: providerDisplayName?.trim()
       ? providerDisplayName.trim()
-      : 'Provider',
+      : buyerProviderRoleLabel(isProductOrder),
+    providerRoleLabel: buyerProviderRoleLabel(isProductOrder),
     bookedDate: o.created_at,
     scheduledDate: o.preferred_date || o.created_at,
     status,
@@ -321,10 +339,15 @@ export function expandPurchaseCardsByLineItem(baseCard, orderItems, reviewedItem
     const unit = Number(it.price)
     const lineTotal = Number.isFinite(unit) && unit > 0 ? unit * qty : 0
     const itemId = String(it.id).trim()
-    const name = String(it.name || 'Service').trim() || 'Service'
+    const itemKind = pickKind(it.listing_kind)
+    const lineLane = itemKind === 'product' ? 'product' : baseCard.displayLane
+    const name = String(it.name || (lineLane === 'product' ? 'Product' : 'Service')).trim()
+      || (lineLane === 'product' ? 'Product' : 'Service')
     return {
       ...baseCard,
       listRowKey: `${baseCard.rawOrderId}:${itemId}`,
+      displayLane: lineLane,
+      isProductOrder: lineLane === 'product',
       service: name,
       price: lineTotal,
       formattedTotal: formatMoney(lineTotal, baseCard.currency),

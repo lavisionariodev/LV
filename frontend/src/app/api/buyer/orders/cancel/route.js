@@ -5,9 +5,10 @@ import { apiLog, errorMessage } from '@/lib/observability/apiLog'
 import { getClientIp, takeToken } from '@/lib/rate-limit/memoryRateLimit'
 import { insertOrderRefundEvent, insertUserNotification } from '@/lib/payments/refundReconcile'
 import { notifySeller } from '@/lib/notifications/inAppServer'
+import { resolveOrderLaneForOrderId } from '@/lib/orders/orderKindFromItems'
 
 /**
- * Buyer cancels purchase while provider has not confirmed (fulfillment pending).
+ * Buyer cancels purchase while provider/seller has not confirmed (fulfillment pending).
  * - Unpaid: order is cancelled outright.
  * - Paid: cancellation + refund request (timeline in UI — settlement is staged like marketplaces).
  */
@@ -76,11 +77,15 @@ export async function POST(request) {
       )
     }
 
+    const orderLane = await resolveOrderLaneForOrderId(supabaseAdmin, orderId)
+    const isProductOrder = orderLane === 'product'
+
     if (['confirmed', 'in_progress', 'completed'].includes(fulfillment)) {
       return NextResponse.json(
         {
-          error:
-            'This booking has already been confirmed and can no longer be cancelled. Please use Request help to escalate this concern.',
+          error: isProductOrder
+            ? 'This order has already been confirmed by the seller and can no longer be cancelled. Use Request help if you need support.'
+            : 'This booking has already been confirmed and can no longer be cancelled. Please use Request help to escalate this concern.',
         },
         { status: 400 },
       )
@@ -152,7 +157,9 @@ export async function POST(request) {
         .from('order_escrows')
         .update({
           status: 'on_hold',
-          hold_reason: 'Buyer cancelled before provider confirmation; refund requested.',
+          hold_reason: isProductOrder
+            ? 'Buyer cancelled before seller confirmation; refund requested.'
+            : 'Buyer cancelled before provider confirmation; refund requested.',
         })
         .eq('order_id', orderId)
 
@@ -175,7 +182,9 @@ export async function POST(request) {
         await notifySeller(supabaseAdmin, order.seller_user_id, {
           type: 'alerts',
           title: 'Refund request received',
-          body: `A buyer cancelled their booking before confirmation and has requested a refund. Please review and approve or decline.${refundReason ? ` Buyer note: ${refundReason}` : ''}`,
+          body: isProductOrder
+            ? `A buyer cancelled their product order before you confirmed it and has requested a refund. Please review and approve or decline.${refundReason ? ` Buyer note: ${refundReason}` : ''}`
+            : `A buyer cancelled their booking before confirmation and has requested a refund. Please review and approve or decline.${refundReason ? ` Buyer note: ${refundReason}` : ''}`,
           metadata: { orderId },
           dedupeKey: `seller_refund_requested:${orderId}`,
         })
@@ -187,8 +196,9 @@ export async function POST(request) {
         {
           ok: true,
           mode: 'refund_requested',
-          message:
-            'Your purchase has been cancelled and a refund request has been submitted. Once approved by the provider, refunds typically arrive within 5 to 15 business days, depending on your bank or e-wallet.',
+          message: isProductOrder
+            ? 'Your order has been cancelled and a refund request has been submitted. Once approved by the seller, refunds typically arrive within 5 to 15 business days, depending on your bank or e-wallet.'
+            : 'Your purchase has been cancelled and a refund request has been submitted. Once approved by the provider, refunds typically arrive within 5 to 15 business days, depending on your bank or e-wallet.',
         },
         { status: 200 },
       )
