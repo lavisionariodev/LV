@@ -45,6 +45,42 @@ export function getPaymongoDisbursementEnvStatus() {
   }
 }
 
+const PAYMONGO_DASHBOARD_URL = 'https://dashboard.paymongo.com/home'
+
+/**
+ * Ops health for admin treasury / payouts (never exposes secret values).
+ */
+export function getPaymongoOpsHealth() {
+  const config = getPaymongoDisbursementEnvStatus()
+  const webhookSecretConfigured = Boolean(String(process.env.PAYMONGO_WEBHOOK_SECRET || '').trim())
+  const appUrl = String(process.env.NEXT_PUBLIC_APP_URL || '').trim().replace(/\/$/, '')
+  const webhookUrl = appUrl
+    ? `${appUrl}/api/payments/paymongo/webhook`
+    : '/api/payments/paymongo/webhook'
+
+  const issues = [...(config.issues ?? [])]
+  if (!webhookSecretConfigured) {
+    issues.push('PAYMONGO_WEBHOOK_SECRET is not configured.')
+  }
+
+  let overallStatus = 'ready'
+  if (!config.secretKeyConfigured) {
+    overallStatus = 'disabled'
+  } else if (issues.length > 0) {
+    overallStatus = 'attention'
+  }
+
+  return {
+    ...config,
+    webhookSecretConfigured,
+    webhookUrl,
+    paymongoDashboardUrl: PAYMONGO_DASHBOARD_URL,
+    overallStatus,
+    issues,
+    withdrawReady: config.automatedReady && webhookSecretConfigured,
+  }
+}
+
 /**
  * Seller-facing validation for saved payout_settings row (snake_case DB shape).
  * @param {Record<string, unknown> | null | undefined} row

@@ -23,6 +23,13 @@ Legacy per-order PayMongo releases (before migration `110`) remain in `payout_di
 
 Withdrawals run when `PAYMONGO_DISBURSEMENT_ENABLED=true`, payout settings are **approved**, and webhook settles transfer status. Only one `pending`/`submitted` withdrawal per seller at a time (DB partial unique index).
 
+## Platform commission (business earnings)
+
+- **UI:** `/admin/earnings` — ledger-based commission totals, seller liability estimates, PayMongo health checklist.
+- **API:** `GET /api/admin/treasury?range=7d|30d`
+- **Settlement config:** Admin → Settings → Billing — company bank/GCash/manual destination (`platform_billing`, migration `113`). This is for reference and handover; **commission cash-out is via the PayMongo merchant dashboard**, not an in-app withdraw button.
+- Commission is fixed on `order_escrows` at payment; only **net** is credited to seller wallets on admin release.
+
 ## Webhook (required for live behavior)
 
 - **URL:** `https://<your-host>/api/payments/paymongo/webhook`

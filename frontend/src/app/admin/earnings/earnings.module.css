@@ -1,0 +1,700 @@
+.page {
+  width: 100%;
+  max-width: 100%;
+}
+
+.disclaimer {
+  margin: 0 0 20px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.45;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.disclaimerText {
+  flex: 1;
+  min-width: 0;
+}
+
+.disclaimerIcon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  align-self: stretch;
+  color: #64748b;
+}
+
+/* PayMongo health panel */
+.healthPanel {
+  margin-bottom: 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: #fff;
+  padding: 16px 18px;
+}
+
+.healthPanelReady {
+  border-color: rgba(22, 163, 74, 0.28);
+  background: rgba(240, 253, 244, 0.6);
+}
+
+.healthPanelAttention {
+  border-color: rgba(217, 119, 6, 0.35);
+  background: rgba(255, 251, 235, 0.85);
+}
+
+.healthPanelDisabled {
+  border-color: rgba(148, 163, 184, 0.35);
+  background: #f8fafc;
+}
+
+.healthHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.healthTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.healthPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 999px;
+}
+
+.healthPillReady {
+  background: #1f312b;
+  color: #fff;
+}
+
+.healthPillAttention {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.healthPillDisabled {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.healthPillDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.85;
+}
+
+.healthList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.healthRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  color: #334155;
+}
+
+.healthRowLabel {
+  font-weight: 500;
+}
+
+.healthRowOk {
+  color: #15803d;
+  font-weight: 600;
+}
+
+.healthRowWarn {
+  color: #b45309;
+  font-weight: 600;
+}
+
+.healthActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.healthLink {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f312b;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.webhookUrl {
+  font-size: 12px;
+  font-family: ui-monospace, monospace;
+  color: #475569;
+  word-break: break-all;
+}
+
+.copyBtn {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+}
+
+.copyBtn:hover {
+  background: #f8fafc;
+}
+
+/* Chart left, stat cards right — mirrors admin dashboard desktopDashGrid */
+.dashGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 2.2fr) minmax(320px, 1.1fr);
+  gap: 18px;
+  align-items: stretch;
+  margin-bottom: 20px;
+}
+
+.earningsStatsGrid {
+  grid-template-rows: auto;
+  align-items: stretch;
+}
+
+.earningsStatCard {
+  height: auto;
+  min-height: 0;
+  box-sizing: border-box;
+  /* Base statCard uses 16px top / 22px bottom — use equal vertical padding */
+  padding: 12px 16px;
+  gap: 4px;
+  overflow: visible;
+}
+
+.earningsStatCardTop {
+  min-height: 28px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Keeps header row aligned when a card has no arrow link */
+.earningsStatTopSpacer {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.earningsStatCardBody {
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  min-height: 0;
+}
+
+/* Icon box aligned to the stat value line, not the hint */
+.earningsStatValueRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.earningsStatValueRow p {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.earningsStatHint {
+  margin: 0;
+  padding-left: 52px; /* 40px icon + 12px gap */
+  line-height: 1.3;
+}
+
+@media (min-width: 1101px) {
+  .earningsStatsGrid {
+    height: auto;
+    grid-template-rows: auto;
+    align-content: start;
+  }
+}
+
+.settlementCard {
+  padding: 14px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.settlementCardTitle {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.settlementCardText {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.settlementCardLink {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f312b;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.loadError {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+}
+
+/* Loading skeleton — mirrors page layout; uses adminSkBar shimmer from admin.module.css */
+.earningsSkDisclaimer {
+  margin: 0 0 20px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.earningsSkDisclaimerIcon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.earningsSkDisclaimerText {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  border-radius: 6px;
+}
+
+.earningsSkHealth {
+  margin-bottom: 20px;
+  padding: 16px 18px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.earningsSkHealthHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.earningsSkHealthTitle {
+  height: 15px;
+  width: 140px;
+}
+
+.earningsSkHealthPill {
+  height: 26px;
+  width: 120px;
+  border-radius: 999px;
+}
+
+.earningsSkHealthList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.earningsSkHealthRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.earningsSkHealthRowLabel {
+  height: 12px;
+  width: 52%;
+  max-width: 220px;
+}
+
+.earningsSkHealthRowStatus {
+  height: 12px;
+  width: 48px;
+  flex-shrink: 0;
+}
+
+.earningsSkHealthActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 2px;
+  padding-top: 14px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.earningsSkHealthLink {
+  height: 12px;
+  width: 120px;
+}
+
+.earningsSkDashGrid {
+  margin-bottom: 20px;
+}
+
+.earningsSkChartPanel {
+  min-height: 280px;
+}
+
+.earningsSkChartHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.earningsSkChartTitle {
+  height: 15px;
+  width: 160px;
+}
+
+.earningsSkChartRange {
+  height: 28px;
+  width: 72px;
+  border-radius: 8px;
+}
+
+.earningsSkChartSubtitle {
+  height: 12px;
+  width: 62%;
+  max-width: 320px;
+}
+
+.earningsSkStatCard {
+  gap: 6px;
+}
+
+.earningsSkStatBody {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.earningsSkStatValueRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.earningsSkStatIconBox {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 12px;
+}
+
+.earningsSkStatValueLine {
+  flex: 1;
+  min-width: 0;
+  height: 22px;
+  max-width: 140px;
+}
+
+.earningsSkStatHintLine {
+  height: 10px;
+  width: 72%;
+  max-width: 200px;
+  margin-left: 52px;
+}
+
+.earningsSkSettlement {
+  padding: 14px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.earningsSkSettlementTitle {
+  height: 14px;
+  width: 160px;
+}
+
+.earningsSkSettlementText {
+  height: 12px;
+  width: 88%;
+  max-width: 420px;
+}
+
+.earningsSkSettlementLink {
+  height: 12px;
+  width: 140px;
+}
+
+/* Commission chart panel */
+.chartPanel {
+  display: flex;
+  flex-direction: column;
+}
+
+.chartPanelHead {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chartRangeGroup {
+  display: inline-flex;
+  gap: 4px;
+  padding: 2px;
+  background: #f1f5f9;
+  border-radius: 8px;
+}
+
+.chartRangeBtn {
+  border: none;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  background: transparent;
+  color: #334155;
+}
+
+.chartRangeBtnActive {
+  background: #1f312b;
+  color: #fff;
+  font-weight: 600;
+}
+
+.chartSubtitle {
+  margin: 0 0 8px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #374151;
+}
+
+.chartWrap {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Match sellers / buyers / payouts mobile horizontal inset (12px) */
+@media (max-width: 860px) {
+  .page {
+    padding: 0 12px;
+    box-sizing: border-box;
+  }
+
+  .disclaimer {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    font-size: 12px;
+    gap: 10px;
+  }
+
+  .disclaimerIcon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .healthPanel {
+    margin-bottom: 12px;
+    padding: 12px 14px;
+  }
+
+  .healthTitle {
+    font-size: 14px;
+  }
+
+  .healthRow {
+    font-size: 12px;
+  }
+
+  .healthActions {
+    margin-top: 10px;
+    padding-top: 10px;
+    gap: 8px;
+  }
+
+  .healthLink {
+    font-size: 12px;
+  }
+
+  .dashGrid {
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .chartPanel {
+    min-height: 260px;
+  }
+
+  .chartSubtitle {
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+
+  .earningsStatsGrid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .earningsStatCard {
+    padding: 10px 12px;
+  }
+
+  .earningsStatValueRow > span {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+    border-radius: 10px;
+  }
+
+  .earningsStatValueRow p {
+    font-size: 20px;
+  }
+
+  .earningsStatHint {
+    padding-left: 48px; /* 36px icon + 12px gap */
+    font-size: 10px;
+  }
+
+  .settlementCard {
+    padding: 12px 14px;
+  }
+
+  .settlementCardTitle {
+    font-size: 13px;
+  }
+
+  .settlementCardText,
+  .settlementCardLink {
+    font-size: 12px;
+  }
+
+  .loadError {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+
+  .earningsSkDisclaimer {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+  }
+
+  .earningsSkDisclaimerText {
+    height: 36px;
+  }
+
+  .earningsSkHealth {
+    margin-bottom: 12px;
+    padding: 12px 14px;
+  }
+
+  .earningsSkDashGrid {
+    margin-bottom: 12px;
+  }
+
+  .earningsSkChartPanel {
+    min-height: 260px;
+  }
+
+  .earningsSkStatIconBox {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+
+  .earningsSkStatHintLine {
+    margin-left: 48px;
+  }
+
+  .earningsSkSettlement {
+    padding: 12px 14px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .dashGrid,
+  .earningsSkDashGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .earningsStatsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto;
+    height: auto;
+  }
+
+  .earningsStatCard {
+    height: auto;
+    min-height: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .chartPanel,
+  .earningsSkChartPanel {
+    min-height: 220px;
+  }
+
+  .earningsStatCardTop {
+    min-height: 24px;
+  }
+
+  .earningsStatTopSpacer {
+    width: 24px;
+    height: 24px;
+  }
+}

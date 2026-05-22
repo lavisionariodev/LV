@@ -37,7 +37,9 @@
 | `/api/admin/payouts/hold`, `unhold` | Hold releases |
 | `/api/admin/payouts/commission` | Platform commission |
 | `/api/admin/payouts/ledger-adjustment` | Manual ledger adjustment |
-| `/api/admin/payouts/disbursement-config` | PayMongo disbursement toggles |
+| `/api/admin/payouts/disbursement-config` | PayMongo disbursement toggles + `opsHealth` |
+| `/api/admin/treasury` | Platform commission summary, chart series, PayMongo ops health |
+| `/api/admin/platform-billing` | Commission default, legal fields, settlement destination (bank/GCash/manual) |
 | `/api/admin/refunds/stuck` | Stuck refund reconciliation |
 
 Implementation roots: `src/lib/payments/`, `src/lib/paymongo/`, `src/lib/auth/requireApiUser.js`, `src/lib/auth/admin.js`.

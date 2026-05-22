@@ -76,3 +76,12 @@ export function formatPHPMobile(value) {
   if (value == null || !Number.isFinite(Number(value))) return '₱0'
   return `\u20B1${formatCount(Number(value))}`
 }
+
+/**
+ * Compact peso formatter for desktop stat values.
+ * Full digits below 1M; compact at 1M+ (e.g. ₱1.2M, ₱10M).
+ */
+export function formatPHPDesktop(value) {
+  if (value == null || !Number.isFinite(Number(value))) return '₱0'
+  return `\u20B1${formatCount(Number(value), { desktop: true })}`
+}

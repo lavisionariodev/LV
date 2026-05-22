@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useMediaQuery } from '@/shared/hooks'
+import { PH_BANK_OPTIONS } from '@/lib/payments/payout'
+import { SETTLEMENT_METHOD_OPTIONS } from '@/shared/constants/settlementMethods'
+import { settlementConfiguredSummary } from '@/lib/admin/platformBillingSettlement'
 import styles from '../settings.module.css'
 
 function formatRuleDate(isoDate) {
@@ -24,6 +27,7 @@ export default function Page() {
   const [defaultCommissionPercent, setDefaultCommissionPercent] = useState(10)
   const [billingUpdatedAt, setBillingUpdatedAt] = useState(null)
   const [row, setRow] = useState(null)
+  const [billing, setBilling] = useState(null)
 
   const [editingRate, setEditingRate] = useState(false)
   const [rateInput, setRateInput] = useState('10')
@@ -38,7 +42,15 @@ export default function Page() {
     billingEmail: '',
   })
   const [editingSettlement, setEditingSettlement] = useState(false)
-  const [settlementDraft, setSettlementDraft] = useState('')
+  const [settlementDraft, setSettlementDraft] = useState({
+    settlementMethod: 'bank',
+    settlementAccountHolderName: '',
+    settlementBankName: '',
+    settlementAccountNumber: '',
+    settlementGcashName: '',
+    settlementGcashNumber: '',
+    settlementNotes: '',
+  })
   const [panelBusy, setPanelBusy] = useState(false)
   const [panelError, setPanelError] = useState('')
 
@@ -51,6 +63,7 @@ export default function Page() {
     )
     setBillingUpdatedAt(body?.row?.updated_at ? String(body.row.updated_at) : null)
     setRow(body?.row ?? null)
+    setBilling(body?.billing ?? null)
   }
 
   useEffect(() => {
@@ -145,7 +158,15 @@ export default function Page() {
   }
 
   const startEditSettlement = () => {
-    setSettlementDraft(row?.settlement_notes || '')
+    setSettlementDraft({
+      settlementMethod: billing?.settlementMethod || 'bank',
+      settlementAccountHolderName: billing?.settlementAccountHolderName || '',
+      settlementBankName: billing?.settlementBankName || '',
+      settlementAccountNumber: '',
+      settlementGcashName: billing?.settlementGcashName || '',
+      settlementGcashNumber: '',
+      settlementNotes: billing?.settlementNotes || row?.settlement_notes || '',
+    })
     setPanelError('')
     setEditingSettlement(true)
   }
@@ -154,15 +175,28 @@ export default function Page() {
     setPanelError('')
     setPanelBusy(true)
     try {
+      const payload = {
+        settlementMethod: settlementDraft.settlementMethod,
+        settlementAccountHolderName: settlementDraft.settlementAccountHolderName,
+        settlementBankName: settlementDraft.settlementBankName,
+        settlementGcashName: settlementDraft.settlementGcashName,
+        settlementNotes: settlementDraft.settlementNotes,
+      }
+      if (settlementDraft.settlementAccountNumber.trim()) {
+        payload.settlementAccountNumber = settlementDraft.settlementAccountNumber
+      }
+      if (settlementDraft.settlementGcashNumber.trim()) {
+        payload.settlementGcashNumber = settlementDraft.settlementGcashNumber
+      }
       const res = await fetch('/api/admin/platform-billing', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ settlementNotes: settlementDraft }),
+        body: JSON.stringify(payload),
       })
       const body = await res.json().catch(() => null)
       if (!res.ok) {
-        setPanelError(body?.error || 'Failed to save settlement notes.')
+        setPanelError(body?.error || 'Failed to save settlement details.')
         return
       }
       applyResponse(body)
@@ -181,7 +215,8 @@ export default function Page() {
     Boolean(row?.address) ||
     Boolean(row?.tax_id) ||
     Boolean(row?.billing_email)
-  const hasSettlement = Boolean(row?.settlement_notes)
+  const settlementSummary = settlementConfiguredSummary(billing)
+  const hasSettlement = settlementSummary.configured
 
   return (
     <section className={wrapClass}>
@@ -322,17 +357,146 @@ export default function Page() {
         <div className={styles.billingSection}>
           <h3 className={styles.billingSectionTitle}>Settlement</h3>
           <p className={styles.billingSectionLead}>
-            Notes about where the platform commission settles (treasury account, bank, e-wallet,
-            etc.).
+            Where platform commission is settled (company treasury). Seller payouts use PayMongo
+            separately. Cash out commission via the PayMongo dashboard; this records your company
+            destination for reference.
           </p>
           {editingSettlement ? (
             <div className={styles.billingEditBlock}>
-              <textarea
-                value={settlementDraft}
-                onChange={(e) => setSettlementDraft(e.target.value)}
-                rows={4}
-                className={styles.settingsFieldTextarea}
-              />
+              <label className={styles.billingField}>
+                <span className={styles.billingFieldLabel}>Settlement method</span>
+                <select
+                  className={styles.settingsFieldInput}
+                  value={settlementDraft.settlementMethod}
+                  onChange={(e) =>
+                    setSettlementDraft((p) => ({ ...p, settlementMethod: e.target.value }))
+                  }
+                >
+                  {SETTLEMENT_METHOD_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {settlementDraft.settlementMethod === 'bank' ? (
+                <>
+                  <label className={styles.billingField}>
+                    <span className={styles.billingFieldLabel}>Account holder name</span>
+                    <input
+                      className={styles.settingsFieldInput}
+                      value={settlementDraft.settlementAccountHolderName}
+                      onChange={(e) =>
+                        setSettlementDraft((p) => ({
+                          ...p,
+                          settlementAccountHolderName: e.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <label className={styles.billingField}>
+                    <span className={styles.billingFieldLabel}>Bank</span>
+                    <select
+                      className={styles.settingsFieldInput}
+                      value={settlementDraft.settlementBankName}
+                      onChange={(e) =>
+                        setSettlementDraft((p) => ({ ...p, settlementBankName: e.target.value }))
+                      }
+                    >
+                      <option value="">Select bank</option>
+                      {PH_BANK_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className={styles.billingField}>
+                    <span className={styles.billingFieldLabel}>Account number</span>
+                    <input
+                      className={styles.settingsFieldInput}
+                      type="password"
+                      autoComplete="off"
+                      value={settlementDraft.settlementAccountNumber}
+                      onChange={(e) =>
+                        setSettlementDraft((p) => ({
+                          ...p,
+                          settlementAccountNumber: e.target.value,
+                        }))
+                      }
+                      placeholder={
+                        billing?.hasSettlementAccountNumber
+                          ? billing.maskedSettlementAccountNumber
+                          : 'Enter account number'
+                      }
+                    />
+                    {billing?.hasSettlementAccountNumber ? (
+                      <span className={styles.billingFieldHint}>
+                        Leave blank to keep the current account number.
+                      </span>
+                    ) : null}
+                  </label>
+                </>
+              ) : null}
+              {settlementDraft.settlementMethod === 'gcash' ? (
+                <>
+                  <label className={styles.billingField}>
+                    <span className={styles.billingFieldLabel}>GCash account name</span>
+                    <input
+                      className={styles.settingsFieldInput}
+                      value={settlementDraft.settlementGcashName}
+                      onChange={(e) =>
+                        setSettlementDraft((p) => ({ ...p, settlementGcashName: e.target.value }))
+                      }
+                    />
+                  </label>
+                  <label className={styles.billingField}>
+                    <span className={styles.billingFieldLabel}>GCash number</span>
+                    <input
+                      className={styles.settingsFieldInput}
+                      type="password"
+                      autoComplete="off"
+                      inputMode="numeric"
+                      value={settlementDraft.settlementGcashNumber}
+                      onChange={(e) =>
+                        setSettlementDraft((p) => ({
+                          ...p,
+                          settlementGcashNumber: e.target.value,
+                        }))
+                      }
+                      placeholder={
+                        billing?.hasSettlementGcashNumber
+                          ? billing.maskedSettlementGcashNumber
+                          : '09XXXXXXXXX'
+                      }
+                    />
+                    {billing?.hasSettlementGcashNumber ? (
+                      <span className={styles.billingFieldHint}>
+                        Leave blank to keep the current GCash number.
+                      </span>
+                    ) : (
+                      <span className={styles.billingFieldHint}>
+                        Philippine mobile format: 09XXXXXXXXX
+                      </span>
+                    )}
+                  </label>
+                </>
+              ) : null}
+              <label className={styles.billingField}>
+                <span className={styles.billingFieldLabel}>
+                  {settlementDraft.settlementMethod === 'manual'
+                    ? 'Settlement instructions'
+                    : 'Additional notes (optional)'}
+                </span>
+                <textarea
+                  value={settlementDraft.settlementNotes}
+                  onChange={(e) =>
+                    setSettlementDraft((p) => ({ ...p, settlementNotes: e.target.value }))
+                  }
+                  rows={3}
+                  className={styles.settingsFieldTextarea}
+                />
+              </label>
               <div className={styles.billingActions}>
                 <button
                   type="button"
@@ -354,14 +518,25 @@ export default function Page() {
             </div>
           ) : hasSettlement ? (
             <>
-              <p className={styles.billingNotes}>{row.settlement_notes}</p>
+              <dl className={styles.billingDl}>
+                <div className={styles.billingDlRow}>
+                  <dt>Destination</dt>
+                  <dd>{settlementSummary.label}</dd>
+                </div>
+                {billing?.settlementNotes ? (
+                  <div className={styles.billingDlRow}>
+                    <dt>Notes</dt>
+                    <dd className={styles.billingNotes}>{billing.settlementNotes}</dd>
+                  </div>
+                ) : null}
+              </dl>
               <div className={styles.billingActions}>
                 <button
                   type="button"
                   onClick={startEditSettlement}
                   className={styles.secondaryBtn}
                 >
-                  Edit settlement notes
+                  Edit settlement
                 </button>
               </div>
             </>
@@ -376,13 +551,13 @@ export default function Page() {
                   onClick={startEditSettlement}
                   className={styles.primaryBtn}
                 >
-                  Add settlement notes
+                  Configure settlement
                 </button>
               </div>
             </>
           )}
-          <Link href="/admin/payouts" className={styles.billingCta}>
-            View payout activity →
+          <Link href="/admin/earnings" className={styles.billingCta}>
+            View platform earnings →
           </Link>
         </div>
 
@@ -505,6 +680,10 @@ export default function Page() {
         <div className={styles.billingQuickLinks} aria-label="Related admin pages">
           <span className={styles.billingQuickLinksLabel}>Quick links</span>
           <div className={styles.billingQuickLinksRow}>
+            <Link href="/admin/earnings" className={styles.billingQuickLink}>
+              Platform earnings
+            </Link>
+            <span className={styles.billingQuickLinksSep} aria-hidden />
             <Link href="/admin/analytics" className={styles.billingQuickLink}>
               Analytics
             </Link>

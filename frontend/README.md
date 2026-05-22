@@ -53,6 +53,8 @@ Schema scripts live in `supabase/migrations/` and are **already applied** on the
 
 Seller wallet: admin payout release credits the ledger; sellers withdraw at `/seller/wallet` when `PAYMONGO_DISBURSEMENT_ENABLED=true` (service role + PayMongo webhook).
 
+Platform earnings: `/admin/earnings` (treasury view) and settlement destination in Admin → Settings → Billing (`113_platform_billing_settlement.sql`).
+
 ## PayMongo webhook
 
 Configure PayMongo to send events to:

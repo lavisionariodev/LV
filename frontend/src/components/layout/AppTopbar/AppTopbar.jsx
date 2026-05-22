@@ -41,6 +41,7 @@ const PAGE_TITLES = {
   admin: {
     '/admin': 'Dashboard',
     '/admin/payouts': 'Payouts',
+    '/admin/earnings': 'Platform earnings',
     '/admin/analytics': 'Analytics',
     '/admin/disputes': 'Disputes',
     '/admin/buyers': 'Buyers',

@@ -825,6 +825,14 @@
     color: #475569;
   }
 
+  .billingFieldHint {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.4;
+  }
+
   .billingPlaceholder {
     margin: 0 0 14px;
     padding: 12px 14px;

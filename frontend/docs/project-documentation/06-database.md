@@ -17,6 +17,7 @@
 | `109_seller_portal_sessions_per_device.sql` | Sessions keyed by device (IP hash) |
 | `110_seller_withdrawals_wallet_flow.sql` | `seller_withdrawals` (PayMongo bank/GCash) |
 | `111_seller_wallet_portal_enhancements.sql` | Withdrawal fee/net columns, payout-settings FK |
+| `113_platform_billing_settlement.sql` | Structured settlement fields on `platform_billing` |
 
 ## Core concepts
 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireAdminApiUser } from '@/lib/auth/requireAdminRoute'
-import { getPaymongoDisbursementEnvStatus } from '@/lib/payments/disbursement'
+import { getPaymongoDisbursementEnvStatus, getPaymongoOpsHealth } from '@/lib/payments/disbursement'
 
 /**
  * GET /api/admin/payouts/disbursement-config
@@ -12,12 +12,14 @@ export async function GET() {
   if (responseError) return responseError
 
   const config = getPaymongoDisbursementEnvStatus()
+  const opsHealth = getPaymongoOpsHealth()
   return NextResponse.json(
     {
       config: {
         ...config,
         withdrawReady: config.automatedReady,
       },
+      opsHealth,
     },
     { status: 200 },
   )
