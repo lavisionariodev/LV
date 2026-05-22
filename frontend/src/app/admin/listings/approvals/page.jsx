@@ -110,13 +110,31 @@ function formatFieldPreview(key, value) {
   return formatStagedValuePreview(key, value)
 }
 
+const WIDE_DIFF_FIELD_KEYS = new Set([
+  'description',
+  'inclusions',
+  'important_notes',
+  'who_this_is_for',
+  'package_options',
+])
+
+function normalizeImageUrls(value) {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((u) => (typeof u === 'string' ? u.trim() : ''))
+    .filter(Boolean)
+}
+
 function summarizeStagedChanges(row) {
   const p = row?.pending_changes
   if (!p || typeof p !== 'object' || Array.isArray(p)) return []
   return PENDING_CHANGE_KEYS.filter((k) => Object.prototype.hasOwnProperty.call(p, k)).map((key) => ({
+    key,
     label: PENDING_FIELD_LABELS[key] || key.replace(/_/g, ' '),
     before: formatFieldPreview(key, row[key]),
     after: formatFieldPreview(key, p[key]),
+    beforeRaw: row[key],
+    afterRaw: p[key],
   }))
 }
 
@@ -160,48 +178,199 @@ function ExpandChevronButton({ isExpanded, onToggle, label }) {
   )
 }
 
+function PhotoOverlayNavButton({ direction, onClick }) {
+  const label = direction === 'prev' ? 'Previous photo' : 'Next photo'
+  return (
+    <button
+      type="button"
+      className={direction === 'prev' ? styles.photoOverlayNavPrev : styles.photoOverlayNavNext}
+      onClick={onClick}
+      aria-label={label}
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        {direction === 'prev' ? (
+          <path d="M15 18l-6-6 6-6" />
+        ) : (
+          <path d="M9 18l6-6-6-6" />
+        )}
+      </svg>
+    </button>
+  )
+}
+
+function ListingPhotosOverlay({ title, urls, onClose }) {
+  const [activeIndex, setActiveIndex] = useState(0)
+
+  useEffect(() => {
+    setActiveIndex(0)
+  }, [urls])
+
+  useEffect(() => {
+    if (!urls?.length) return undefined
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose()
+        return
+      }
+      if (urls.length <= 1) return
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        setActiveIndex((i) => (i - 1 + urls.length) % urls.length)
+      }
+      if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        setActiveIndex((i) => (i + 1) % urls.length)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [urls, onClose])
+
+  if (!urls?.length) return null
+
+  const isCarousel = urls.length > 1
+  const activeUrl = urls[activeIndex]
+
+  const goPrev = () => setActiveIndex((i) => (i - 1 + urls.length) % urls.length)
+  const goNext = () => setActiveIndex((i) => (i + 1) % urls.length)
+
+  return (
+    <div
+      className={styles.photoOverlay}
+      role="dialog"
+      aria-modal="true"
+      aria-label={title || 'Listing photos'}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose()
+      }}
+    >
+      <div
+        className={`${styles.photoOverlayCard} ${isCarousel ? styles.photoOverlayCardCarousel : styles.photoOverlayCardSingle}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className={styles.photoOverlayHeader}>
+          <div className={styles.photoOverlayHeaderText}>
+            <p className={styles.photoOverlayTitle}>{title || 'Photos'}</p>
+            {isCarousel ? (
+              <p className={styles.photoOverlayCounter} aria-live="polite">
+                {activeIndex + 1} of {urls.length}
+              </p>
+            ) : null}
+          </div>
+          <button type="button" className={styles.photoOverlayClose} onClick={onClose} aria-label="Close">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+        <div className={styles.photoOverlayBody}>
+          {isCarousel ? (
+            <div className={styles.photoOverlayCarousel}>
+              <PhotoOverlayNavButton direction="prev" onClick={goPrev} />
+              <a
+                href={activeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.photoOverlayThumb}
+                title="Open full size in new tab"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={activeUrl} alt="" className={styles.photoOverlayImg} />
+              </a>
+              <PhotoOverlayNavButton direction="next" onClick={goNext} />
+            </div>
+          ) : (
+            <a
+              href={activeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.photoOverlayThumb}
+              title="Open full size in new tab"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={activeUrl} alt="" className={styles.photoOverlayImg} />
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function DiffFieldValue({ fieldKey, text, rawValue, sideLabel, onViewPhotos }) {
+  const urls = fieldKey === 'image_urls' ? normalizeImageUrls(rawValue) : []
+  const toneClass = sideLabel === 'before' ? styles.expandDiffValueBefore : styles.expandDiffValueAfter
+
+  if (fieldKey === 'image_urls' && urls.length > 0) {
+    return (
+      <div className={`${styles.expandDiffValueInner} ${toneClass}`}>
+        <span className={styles.expandDiffValueText}>{text}</span>
+        <button
+          type="button"
+          className={styles.viewPhotoBtn}
+          onClick={() => onViewPhotos(urls, sideLabel === 'before' ? 'Current photos' : 'Submitted photos')}
+        >
+          View photo{urls.length > 1 ? 's' : ''}
+        </button>
+      </div>
+    )
+  }
+
+  return <span className={`${styles.expandDiffValueText} ${toneClass}`}>{text}</span>
+}
+
 function StagedChangesDiffView({ lines, previewLimit }) {
+  const [photoViewer, setPhotoViewer] = useState(null)
   const preview = previewLimit ? lines.slice(0, previewLimit) : lines
 
   if (preview.length === 0) {
     return <p className={styles.stagedSummaryText}>No field changes recorded.</p>
   }
 
+  const openPhotos = (urls, title) => setPhotoViewer({ urls, title })
+
   return (
     <>
-      <table className={`${styles.expandDiffTable} ${styles.desktopOnly}`}>
-        <thead>
-          <tr>
-            <th>Field</th>
-            <th>Current</th>
-            <th>Submitted update</th>
-          </tr>
-        </thead>
-        <tbody>
-          {preview.map(({ label, before, after }, idx) => (
-            <tr key={`${label}-${idx}`} className={styles.expandDiffRow}>
-              <td className={styles.expandDiffField}>{label}</td>
-              <td className={styles.expandDiffBefore}>{before}</td>
-              <td className={styles.expandDiffAfter}>{after}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <ul className={`${styles.mobileDiffList} ${styles.mobileOnly}`}>
-        {preview.map(({ label, before, after }, idx) => (
-          <li key={`${label}-${idx}`} className={styles.mobileDiffItem}>
-            <p className={styles.mobileDiffField}>{label}</p>
-            <div className={styles.mobileDiffValueBlock}>
-              <span className={styles.mobileDiffLabel}>Current</span>
-              <span className={styles.mobileDiffBefore}>{before}</span>
+      <div className={styles.expandDiffGrid}>
+        {preview.map(({ key, label, before, after, beforeRaw, afterRaw }, idx) => (
+          <article
+            key={`${key}-${idx}`}
+            className={`${styles.expandDiffCard} ${WIDE_DIFF_FIELD_KEYS.has(key) ? styles.expandDiffCardWide : ''}`}
+          >
+            <p className={styles.expandDiffCardLabel}>{label}</p>
+            <div className={styles.expandDiffCardValues}>
+              <div className={styles.expandDiffValueCol}>
+                <span className={styles.expandDiffValueHeading}>Current</span>
+                <DiffFieldValue
+                  fieldKey={key}
+                  text={before}
+                  rawValue={beforeRaw}
+                  sideLabel="before"
+                  onViewPhotos={openPhotos}
+                />
+              </div>
+              <div className={styles.expandDiffValueCol}>
+                <span className={styles.expandDiffValueHeading}>Submitted</span>
+                <DiffFieldValue
+                  fieldKey={key}
+                  text={after}
+                  rawValue={afterRaw}
+                  sideLabel="after"
+                  onViewPhotos={openPhotos}
+                />
+              </div>
             </div>
-            <div className={styles.mobileDiffValueBlock}>
-              <span className={styles.mobileDiffLabel}>Submitted update</span>
-              <span className={styles.mobileDiffAfter}>{after}</span>
-            </div>
-          </li>
+          </article>
         ))}
-      </ul>
+      </div>
+      {photoViewer ? (
+        <ListingPhotosOverlay
+          title={photoViewer.title}
+          urls={photoViewer.urls}
+          onClose={() => setPhotoViewer(null)}
+        />
+      ) : null}
     </>
   )
 }
@@ -212,7 +381,6 @@ function StagedExpandedPanel({
   isUpdating,
   onApprove,
   onReject,
-  onViewDetails,
 }) {
   const lines = summarizeStagedChanges(row)
   const hasMore = lines.length > STAGED_CHANGES_EXPAND_PREVIEW
@@ -234,7 +402,7 @@ function StagedExpandedPanel({
           isUpdating={isUpdating}
           onApprove={onApprove}
           onReject={onReject}
-          onViewDetails={onViewDetails}
+          showView={false}
         />
       </div>
     </div>
@@ -404,7 +572,10 @@ function ViewDetailsModal({ row, onClose }) {
       aria-label="Listing details"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className={styles.detailsCard} onClick={(e) => e.stopPropagation()}>
+      <div
+        className={`${styles.detailsCard} ${isStaged ? styles.detailsCardStagedChanges : ''}`}
+        onClick={(e) => e.stopPropagation()}
+      >
 
         {/* Header */}
         <div className={styles.detailsHeader}>
@@ -428,7 +599,7 @@ function ViewDetailsModal({ row, onClose }) {
         </div>
 
         <div className={styles.detailsBody}>
-        {/* Meta row */}
+        {!isStaged ? (
         <div className={styles.detailsMeta}>
           <div className={styles.detailsMetaItem}>
             <span className={styles.detailsMetaLabel}>Kind</span>
@@ -446,60 +617,44 @@ function ViewDetailsModal({ row, onClose }) {
             <span className={styles.detailsMetaLabel}>Approval</span>
             <ApprovalBadge approvalStatus={row.approval_status} />
           </div>
-          {row.submitted_at && (
+          {row.submitted_at ? (
             <div className={styles.detailsMetaItem}>
               <span className={styles.detailsMetaLabel}>Submitted</span>
               <span className={styles.detailsMetaValue}>{formatDateTime(row.submitted_at)}</span>
             </div>
-          )}
+          ) : null}
         </div>
+        ) : null}
 
-        {/* Changes table (staged) or listing fields (pending) */}
         {isStaged ? (
           <>
             <p className={styles.detailsSectionLabel}>Submitted Changes</p>
             <div className={styles.detailsDiffWrap}>
-            <table className={styles.detailsDiffTable}>
-              <thead>
-                <tr>
-                  <th>Field</th>
-                  <th>Current</th>
-                  <th>Submitted Update</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lines.map(({ label, before, after }, idx) => (
-                  <tr key={idx} className={styles.detailsDiffRow}>
-                    <td className={styles.detailsDiffField}>{label}</td>
-                    <td className={styles.detailsDiffBefore}>{before}</td>
-                    <td className={styles.detailsDiffAfter}>{after}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+              <StagedChangesDiffView lines={lines} />
             </div>
           </>
         ) : (
           <>
             <p className={styles.detailsSectionLabel}>Listing Information</p>
             <div className={styles.detailsDiffWrap}>
-            <table className={styles.detailsDiffTable}>
-              <tbody>
+              <dl className={styles.expandShopGrid}>
                 {[
                   { label: 'Title', value: row.listing_name || '—' },
                   { label: 'Kind', value: kindLabelFromRow(row) },
                   { label: 'Price', value: formatPhpAmount(row.base_price) },
                   { label: 'Category', value: row.category || '—' },
                   { label: 'Location', value: row.location || '—' },
-                  { label: 'Description', value: row.description || '—' },
-                ].map(({ label, value }) => (
-                  <tr key={label} className={styles.detailsDiffRow}>
-                    <td className={styles.detailsDiffField}>{label}</td>
-                    <td className={styles.detailsDiffAfter} colSpan={2}>{value}</td>
-                  </tr>
+                  { label: 'Description', value: row.description || '—', wide: true },
+                ].map(({ label, value, wide }) => (
+                  <div
+                    key={label}
+                    className={`${styles.expandShopItem} ${wide ? styles.expandShopItemWide : ''}`}
+                  >
+                    <dt>{label}</dt>
+                    <dd>{value}</dd>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </dl>
             </div>
           </>
         )}
@@ -612,6 +767,7 @@ function ListingsMobileCardSkeleton() {
         <span className={`${styles.listingsSkBar}`} style={{ width: 120, height: 12, display: 'block' }} />
       </div>
       <div className={styles.listingsSkMobileCardFooter}>
+        <span className={`${styles.listingsSkBar} ${styles.listingsSkActionBtn}`} style={{ width: '100%' }} />
         <span className={`${styles.listingsSkBar} ${styles.listingsSkActionBtn}`} />
         <span className={`${styles.listingsSkBar} ${styles.listingsSkActionBtn}`} />
       </div>
@@ -620,21 +776,17 @@ function ListingsMobileCardSkeleton() {
 }
 
 /* ── Mobile card row (used on small screens instead of table) ── */
-function MobileListingCard({ row, moderationBusyId, onApprove, onReject }) {
+function MobileListingCard({ row, moderationBusyId, onApprove, onReject, onViewDetails }) {
   const busy = moderationBusyId === row.id
-  const sellerLine =
-    row.seller_business_name?.trim()
-      ? row.seller_email?.trim()
-        ? `${row.seller_business_name.trim()} · ${row.seller_email.trim()}`
-        : row.seller_business_name.trim()
-      : row.seller_email?.trim() || '—'
+  const shopName = row.seller_business_name?.trim() || '—'
+  const sellerEmail = row.seller_email?.trim() || ''
 
   const canModerate =
     String(row?.approval_status || 'draft').toLowerCase() === 'pending' ||
     hasPendingSellerChanges(row)
 
   return (
-    <article className={styles.mobileCard}>
+    <article className={`${styles.mobileCard} ${styles.approvalsMobileCard}`}>
       <div className={styles.mobileCardHeader}>
         <div className={styles.mobileHeaderMain}>
           <p className={styles.mobileTitle}>{row.listing_name || 'Untitled'}</p>
@@ -652,17 +804,17 @@ function MobileListingCard({ row, moderationBusyId, onApprove, onReject }) {
             initialsSource={row.seller_business_name || row.seller_email}
             listingStyles={styles}
           />
-          <p className={styles.mobileCardSeller}>{sellerLine}</p>
+          <div className={styles.mobileCardSellerText}>
+            <p className={styles.mobileCardSellerName}>{shopName}</p>
+            {sellerEmail ? <p className={styles.mobileCardSellerEmail}>{sellerEmail}</p> : null}
+          </div>
         </div>
       </div>
 
       <div className={styles.mobileCardSection} data-mobile-label="Status">
         <div className={styles.mobileCardBadges}>
-        <StatusBadge status={row.status} />
-        <ApprovalBadge approvalStatus={row.approval_status} />
-        {hasPendingSellerChanges(row) && (
-          <span className={styles.stagedTag}>Staged update</span>
-        )}
+          <StatusBadge status={row.status} />
+          <ApprovalBadge approvalStatus={row.approval_status} />
         </div>
       </div>
 
@@ -675,8 +827,15 @@ function MobileListingCard({ row, moderationBusyId, onApprove, onReject }) {
         </span>
       </div>
 
-      {canModerate ? (
-        <div className={styles.mobileCardFooter}>
+      <div className={styles.mobileCardFooter}>
+        <button
+          type="button"
+          className={styles.mobileCardDetailsBtn}
+          onClick={() => onViewDetails(row)}
+        >
+          View details
+        </button>
+        {canModerate ? (
           <div className={styles.mobileCardActions}>
             <button
               type="button"
@@ -695,78 +854,90 @@ function MobileListingCard({ row, moderationBusyId, onApprove, onReject }) {
               Reject
             </button>
           </div>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
     </article>
   )
 }
 
-function StagedMobileCard({
-  row,
-  isExpanded,
-  onToggleExpand,
-  isUpdating,
-  onApprove,
-  onReject,
-  onViewDetails,
-  onShowAllChanges,
-}) {
+function StagedMobileCard({ row, isUpdating, onApprove, onReject, onViewDetails }) {
   const shopName = getSellerShopName(row)
+  const sellerEmail = getSellerEmail(row)
   const merged = mergePendingChangesIntoListingRow(row)
   const listingTitle = merged.listing_name || 'Untitled'
   const lines = summarizeStagedChanges(row)
-  const hasMore = lines.length > STAGED_CHANGES_EXPAND_PREVIEW
+  const busy = isUpdating
+
+  const canModerate =
+    String(row?.approval_status || 'draft').toLowerCase() === 'pending' ||
+    hasPendingSellerChanges(row)
 
   return (
-    <article className={`${styles.mobileCard} ${styles.mobileCardStaged}`}>
-      <div className={styles.mobileStagedRow}>
-        <div className={styles.mobileStagedRowMain}>
-          <div className={styles.mobileHeaderMain}>
-            <p className={styles.mobileTitle}>{listingTitle}</p>
-            <span className={styles.stagedTag}>Staged update</span>
-          </div>
-          <p className={styles.mobileStagedSummary}>
-            {lines.length} field{lines.length === 1 ? '' : 's'} updated
-          </p>
-          <p className={styles.mobileStagedMeta}>
-            <SellerAvatarMark
-              src={row.seller_avatar_url}
-              initialsSource={row.seller_business_name || row.seller_email}
-              listingStyles={styles}
-            />
-            <span>
-              {shopName} · {formatDateShort(row.submitted_at)}
-            </span>
-          </p>
-        </div>
-        <div className={styles.mobileStagedRowActions}>
-          <ExpandChevronButton
-            isExpanded={isExpanded}
-            onToggle={onToggleExpand}
-            label={`${isExpanded ? 'Collapse' : 'Expand'} submitted changes for ${listingTitle}`}
-          />
+    <article className={`${styles.mobileCard} ${styles.approvalsMobileCard} ${styles.mobileCardStaged}`}>
+      <div className={styles.mobileCardHeader}>
+        <div className={styles.mobileHeaderMain}>
+          <p className={styles.mobileTitle}>{listingTitle}</p>
         </div>
       </div>
 
-      {isExpanded ? (
-        <div className={styles.mobileCardExpandBody}>
-          <StagedChangesDiffView lines={lines} previewLimit={STAGED_CHANGES_EXPAND_PREVIEW} />
-          {hasMore ? (
-            <button type="button" className={styles.stagedShowMoreBtn} onClick={onShowAllChanges}>
-              Show all {lines.length} changes
-            </button>
-          ) : null}
-          <div className={styles.expandPanelActions}>
-            <RowActions
-              row={row}
-              isUpdating={isUpdating}
-              onApprove={() => onApprove(row)}
-              onReject={() => onReject(row)}
-              onViewDetails={() => onViewDetails(row)}
-            />
+      <div className={styles.mobileCardSection} data-mobile-label="Seller">
+        <div className={styles.mobileCardSellerRow}>
+          <SellerAvatarMark
+            src={row.seller_avatar_url}
+            initialsSource={row.seller_business_name || row.seller_email}
+            listingStyles={styles}
+          />
+          <div className={styles.mobileCardSellerText}>
+            <p className={styles.mobileCardSellerName}>{shopName}</p>
+            {sellerEmail ? <p className={styles.mobileCardSellerEmail}>{sellerEmail}</p> : null}
           </div>
         </div>
-      ) : null}
+      </div>
+
+      <div className={styles.mobileCardSection} data-mobile-label="Summary">
+        <p className={styles.mobileStagedSummary}>
+          {lines.length} field{lines.length === 1 ? '' : 's'} updated
+        </p>
+      </div>
+
+      <div className={styles.mobileCardSection} data-mobile-label="Submitted">
+        <span className={styles.mobileCardDate}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          {formatDateShort(row.submitted_at)}
+        </span>
+      </div>
+
+      <div className={styles.mobileCardFooter}>
+        <button
+          type="button"
+          className={styles.mobileCardDetailsBtn}
+          onClick={() => onViewDetails(row)}
+        >
+          View details
+        </button>
+        {canModerate ? (
+          <div className={styles.mobileCardActions}>
+            <button
+              type="button"
+              className={styles.mobileApproveBtn}
+              disabled={busy}
+              onClick={() => !busy && onApprove(row)}
+            >
+              {busy ? '…' : 'Approve'}
+            </button>
+            <button
+              type="button"
+              className={styles.mobileRejectBtn}
+              disabled={busy}
+              onClick={() => !busy && onReject(row)}
+            >
+              Reject
+            </button>
+          </div>
+        ) : null}
+      </div>
     </article>
   )
 }
@@ -928,7 +1099,6 @@ function StagedUpdatesSection({
                             isUpdating={busy}
                             onApprove={() => onApprove(row)}
                             onReject={() => onReject(row)}
-                            onViewDetails={() => onViewDetails(row)}
                           />
                         </td>
                       </tr>
@@ -942,18 +1112,14 @@ function StagedUpdatesSection({
           <div className={`${styles.mobileCardList} ${styles.mobileOnly}`}>
             {rows.map((row) => {
               const busy = moderationBusyId === row.id
-              const isExpanded = expandedRowId === row.id
               return (
                 <StagedMobileCard
                   key={row.id}
                   row={row}
-                  isExpanded={isExpanded}
-                  onToggleExpand={() => setExpandedRowId(isExpanded ? null : row.id)}
                   isUpdating={busy}
                   onApprove={onApprove}
                   onReject={onReject}
                   onViewDetails={onViewDetails}
-                  onShowAllChanges={() => setAllChangesRow(row)}
                 />
               )
             })}
@@ -1130,6 +1296,7 @@ function ApprovalsTableSection({
                   moderationBusyId={moderationBusyId}
                   onApprove={onApprove}
                   onReject={onReject}
+                  onViewDetails={onViewDetails}
                 />
               ))}
             </div>

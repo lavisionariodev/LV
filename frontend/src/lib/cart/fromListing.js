@@ -1,3 +1,4 @@
+import { checkoutLaneFromKind, listingKindFromRpcRow } from '@/lib/listings/kind'
 import { listingIdFromOrderItemProductId } from '@/lib/orders/listingIdFromProductId'
 import { getListingProviderLogoUrl } from '@/lib/shop-listings/client'
 
@@ -14,10 +15,13 @@ export function buildSellerMetaByListingId(dbRows) {
     const id = String(row.listing_id ?? '').trim()
     if (!id) continue
     const avatarRaw = row.seller_avatar_url
+    const listingKind = listingKindFromRpcRow(row)
     map.set(id, {
       sellerName: (row.business_name || '').trim() || 'Seller',
       sellerAvatarUrl:
         typeof avatarRaw === 'string' && avatarRaw.trim() ? avatarRaw.trim() : '',
+      listingKind,
+      checkoutLane: checkoutLaneFromKind(listingKind),
     })
   }
   return map
@@ -55,6 +59,8 @@ export function mapCartItemToDisplayRow(item) {
     sellerName,
     sellerAvatarUrl: (item.sellerAvatarUrl || '').trim(),
     providerInitial: sellerName.charAt(0).toUpperCase(),
+    listingKind: item.listingKind,
+    checkoutLane: item.checkoutLane,
   }
 }
 
@@ -69,7 +75,14 @@ export function enrichCartItemsWithSellerMeta(items, listingRows) {
       parseProviderNameFromCartDescription(item.description)
     const sellerAvatarUrl =
       (item.sellerAvatarUrl || '').trim() || fromListing?.sellerAvatarUrl || ''
-    return { ...item, sellerName, sellerAvatarUrl }
+    const listingKind = fromListing?.listingKind ?? 'service'
+    return {
+      ...item,
+      sellerName,
+      sellerAvatarUrl,
+      listingKind,
+      checkoutLane: checkoutLaneFromKind(listingKind),
+    }
   })
 }
 

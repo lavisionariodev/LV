@@ -1,6 +1,9 @@
 import { supabase } from '@/lib/supabase/client'
 import { roundPhpAmount } from '@/lib/cart/formatPhp'
+import { formatListingKindLabel, listingKindFromRpcRow, normalizeListingKind } from '@/lib/listings/kind'
 import { normalizeSellerSpecialties } from '@/lib/sellers/client'
+
+export { formatListingKindLabel }
 
 const ALLOWED_SERVICE_IDS = new Set(['cremation', 'traditional-burial', 'memorial-planning'])
 
@@ -76,15 +79,6 @@ function parseSellerPackageOptions(raw) {
   return [...new Set(list)]
 }
 
-function formatListingKindLabel(kind) {
-  if (kind == null || typeof kind !== 'string') return ''
-  const k = kind.trim().toLowerCase()
-  if (k === 'service') return 'Service'
-  if (k === 'package') return 'Package'
-  const t = kind.trim()
-  return t ? t.charAt(0).toUpperCase() + t.slice(1) : ''
-}
-
 /**
  * Stock from `seller_listings.stock_status` ("In Stock" | "Out of Stock") or legacy numeric hints.
  */
@@ -148,9 +142,8 @@ function mapRpcRowToListing(row) {
   const duration = typeof row.duration === 'string' ? row.duration.trim() : ''
   const categoryLabel =
     typeof row.listing_category === 'string' ? row.listing_category.trim() : ''
-  const listingKindLabel = formatListingKindLabel(
-    typeof row.listing_kind === 'string' ? row.listing_kind : '',
-  )
+  const listingKind = listingKindFromRpcRow(row)
+  const listingKindLabel = formatListingKindLabel(listingKind)
   const coverage =
     (typeof row.listing_location === 'string' && row.listing_location.trim()) || ''
 
@@ -203,6 +196,7 @@ function mapRpcRowToListing(row) {
     importantNotes,
     duration,
     categoryLabel,
+    listingKind,
     listingKindLabel,
     coverage,
     sellerPackageOptions,

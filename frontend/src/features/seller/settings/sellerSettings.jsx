@@ -5,7 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import styles from '@/app/seller/settings/settings.module.css'
-import productSelectStyles from '@/app/seller/products/products.module.css'
+import productSelectStyles from '@/app/seller/listings/listings.module.css'
 import { supabase } from '@/lib/supabase/client'
 import { changePasswordWithReauth } from '@/lib/auth/changePassword'
 import { getOAuthRedirectUrl, linkOAuthIdentity, unlinkOAuthIdentity } from '@/lib/auth/client'

@@ -27,7 +27,7 @@ function getBasicAuthHeader(secretKey) {
  *   cancelUrl: string,
  *   referenceNumber: string,
  *   metadata?: Record<string, unknown>,
- *   lineItemName?: string,
+ *   lineItemName: string — required at call site: "Product order payment" vs "Service booking payment"
  * }} params
  * @returns {Promise<{ ok: true, checkoutId: string, checkoutUrl: string, raw: unknown } | { ok: false, error: string, status?: number, raw?: unknown }>}
  */
@@ -55,7 +55,7 @@ export async function createPaymongoCheckoutSession(params) {
         attributes: {
           line_items: [
             {
-              name: params.lineItemName || 'Booking payment',
+              name: params.lineItemName || 'Order payment',
               amount: amountCentavos,
               quantity: 1,
               currency,

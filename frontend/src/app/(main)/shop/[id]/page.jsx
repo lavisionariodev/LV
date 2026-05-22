@@ -452,6 +452,8 @@ export default function ServiceDetailPage({ params }) {
     }
   }
 
+  const isProductListing = selectedListing?.listingKind === 'product'
+
   const handleBookNow = async () => {
     if (!selectedListing || !service) return
     if (addBusy || bookBusy) return
@@ -473,7 +475,7 @@ export default function ServiceDetailPage({ params }) {
       heroImage: mainGallerySrc || listingGalleryUrls[0] || '',
     })
     if (buildErr || !payload) {
-      setAddError(buildErr || 'Could not start booking')
+      setAddError(buildErr || (isProductListing ? 'Could not buy now' : 'Could not start booking'))
       return
     }
 
@@ -482,7 +484,7 @@ export default function ServiceDetailPage({ params }) {
       const result = await persistCartPayload(addItem, payload, {
         router,
         next: 'checkout',
-        fallbackMessage: 'Could not start booking',
+        fallbackMessage: isProductListing ? 'Could not buy now' : 'Could not start booking',
       })
       if (!result.ok) {
         setAddError(result.message)
@@ -500,6 +502,17 @@ export default function ServiceDetailPage({ params }) {
     bookBusy ||
     selectedListing.inStock === false ||
     (buyerPackageOptions.length > 0 && !String(buyerPackage || '').trim())
+
+  const primaryActionLabel =
+    selectedListing?.inStock === false
+      ? 'Out of Stock'
+      : isProductListing
+        ? bookBusy
+          ? 'Buying…'
+          : 'Buy Now'
+        : bookBusy
+          ? 'Booking…'
+          : 'Book Now'
 
   if (fullCatalog === null) {
     return (
@@ -882,7 +895,7 @@ export default function ServiceDetailPage({ params }) {
                 disabled={cartActionsDisabled}
                 aria-busy={bookBusy}
               >
-                {bookBusy ? 'Booking…' : selectedListing?.inStock === false ? 'Out of Stock' : 'Book Now'}
+                {primaryActionLabel}
               </button>
               <div className={styles.cartSaveRow}>
                 <button
@@ -943,7 +956,7 @@ export default function ServiceDetailPage({ params }) {
           disabled={cartActionsDisabled}
           aria-busy={bookBusy}
         >
-          {bookBusy ? 'Booking…' : selectedListing?.inStock === false ? 'Out of Stock' : 'Book Now'}
+          {primaryActionLabel}
         </button>
         <button
           type="button"

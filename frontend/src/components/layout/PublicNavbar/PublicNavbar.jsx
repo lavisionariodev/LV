@@ -44,6 +44,7 @@ export default function PublicNavbar() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const headerRef = useRef(null)
   const profileRef = useRef(null)
   const notificationsRef = useRef(null)
   const mobileSearchInputRef = useRef(null)
@@ -55,6 +56,24 @@ export default function PublicNavbar() {
     queueMicrotask(() => {
       setHydrated(true)
     })
+  }, [])
+
+  /** Expose real fixed header height for sticky side panels (cart, checkout, shop). */
+  useEffect(() => {
+    function syncNavbarHeight() {
+      const height = headerRef.current?.getBoundingClientRect().height
+      if (!height) return
+      const px = `${Math.ceil(height)}px`
+      document.documentElement.style.setProperty('--navbar-height', px)
+    }
+    syncNavbarHeight()
+    const ro = new ResizeObserver(syncNavbarHeight)
+    if (headerRef.current) ro.observe(headerRef.current)
+    window.addEventListener('resize', syncNavbarHeight)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', syncNavbarHeight)
+    }
   }, [])
 
   const qFromShopUrl = readString(searchParams, 'q', '')
@@ -191,7 +210,7 @@ export default function PublicNavbar() {
   }
 
   return (
-    <header className={styles.header}>
+    <header ref={headerRef} className={styles.header}>
       {/* Top Bar with Social & User */}
       <div className={styles.topBar}>
         <div className={styles.topBarInner}>

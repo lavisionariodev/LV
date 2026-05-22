@@ -13,7 +13,8 @@ import {
 } from '@/lib/seller-listings/client'
 import { getSellerByUserId } from '@/lib/sellers/client'
 import { supabase } from '@/lib/supabase/client'
-import styles from '../products.module.css'
+import styles from '../listings.module.css'
+import { normalizeListingKind } from '@/lib/listings/kind'
 import { normalizeStockStatusValue } from '@/lib/shop-listings/client'
 import { formatPhpInputString, parsePhpAmountInputString } from '@/lib/cart/formatPhp'
 import SellerPortalSelect from './SellerPortalSelect'
@@ -80,6 +81,7 @@ function NewListingLoadingState() {
 const LISTING_KIND_OPTIONS = [
   { value: 'service', label: 'Service' },
   { value: 'package', label: 'Package' },
+  { value: 'product', label: 'Product' },
 ]
 
 const SHOP_CATEGORY_OPTIONS = [
@@ -283,20 +285,22 @@ export function buildSellerListingPayload({ formValues, selectedProduct, persist
   const priceRaw = String(formValues.base_price ?? '').trim().replace(/,/g, '')
   const parsedPrice = parsePhpAmountInputString(priceRaw)
   const price = Number.isFinite(parsedPrice) ? parsedPrice : 0
+  const listingKind = normalizeListingKind(formValues.kind)
 
   return {
     listing_name: safeName,
     category: safeCategory,
     funeral_category: fcSlug || null,
     description: String(formValues.description || '').trim() || null,
-    duration: String(formValues.duration || '').trim() || null,
+    duration: listingKind === 'product' ? null : String(formValues.duration || '').trim() || null,
     location: area || 'N/A',
-    listing_kind: String(formValues.kind || 'service').trim().toLowerCase() || 'service',
+    listing_kind: listingKind,
     base_price: price,
-    package_options: pkg.length ? pkg : [],
+    package_options: listingKind === 'product' ? [] : pkg.length ? pkg : [],
     stock_status: stock,
     inclusions: String(formValues.inclusions || '').trim() || null,
-    who_this_is_for: String(formValues.who_this_is_for || '').trim() || null,
+    who_this_is_for:
+      listingKind === 'product' ? null : String(formValues.who_this_is_for || '').trim() || null,
     important_notes: String(formValues.important_notes || '').trim() || null,
     status: safeStatus,
     image_urls: persistedImageUrls,
@@ -320,10 +324,14 @@ export function findFirstMissingRequiredField(formValues, editGallery = []) {
   if (rawPrice === '' || !Number.isFinite(parsedPrice)) {
     return { id: 'base_price', label: 'Starting price' }
   }
+  const listingKind = normalizeListingKind(formValues?.kind)
   if (!String(formValues?.inclusions || '').trim()) {
-    return { id: 'inclusions', label: "What's included" }
+    return {
+      id: 'inclusions',
+      label: listingKind === 'product' ? 'Product details' : "What's included",
+    }
   }
-  if (!String(formValues?.who_this_is_for || '').trim()) {
+  if (listingKind !== 'product' && !String(formValues?.who_this_is_for || '').trim()) {
     return { id: 'who_this_is_for', label: 'Who this is for' }
   }
   if (!String(formValues?.important_notes || '').trim()) {
@@ -338,8 +346,10 @@ function computeFixedSectionCompletion(formValues, listingGallery) {
   const rawPrice = String(formValues.base_price ?? '').trim().replace(/,/g, '')
   const parsedPrice = parsePhpAmountInputString(rawPrice)
   const priceOk = rawPrice !== '' && Number.isFinite(parsedPrice) && parsedPrice >= 0
+  const listingKind = normalizeListingKind(formValues?.kind)
   const incOk = String(formValues.inclusions || '').trim() !== ''
-  const whoOk = String(formValues.who_this_is_for || '').trim() !== ''
+  const whoOk =
+    listingKind === 'product' || String(formValues.who_this_is_for || '').trim() !== ''
   const notesOk = String(formValues.important_notes || '').trim() !== ''
   return {
     basic: nameOk && imagesOk,
@@ -401,6 +411,21 @@ export function SellerListingFormFields({
     imageUploadSubtitle != null && imageUploadSubtitle !== ''
       ? imageUploadSubtitle
       : `(${editGallery.length})`
+
+  const listingKind = normalizeListingKind(getFieldValue('kind'))
+  const isProduct = listingKind === 'product'
+  const showPackageOptions = listingKind === 'package' || listingKind === 'service'
+  const showServiceFields = !isProduct
+
+  const handleKindChange = (nextKind) => {
+    const normalized = normalizeListingKind(nextKind)
+    setFieldValue('kind', normalized)
+    if (normalized === 'product') {
+      setFieldValue('package_options', [])
+      setFieldValue('duration', '')
+      setFieldValue('who_this_is_for', '')
+    }
+  }
 
   const items = normalizeStringListValue(getFieldValue('package_options'))
 
@@ -503,7 +528,7 @@ export function SellerListingFormFields({
                     label="Listing type"
                     value={getFieldValue('kind')}
                     options={LISTING_KIND_OPTIONS}
-                    onChange={(v) => setFieldValue('kind', v)}
+                    onChange={handleKindChange}
                     placeholder="Type"
                   />
                 </div>
@@ -580,6 +605,7 @@ export function SellerListingFormFields({
                 </div>
               ) : null}
 
+              {showServiceFields ? (
               <div className={styles.listingFormRow}>
                 <div className={styles.listingFormLabelCol}>
                   <div className={styles.listingFormLabelText}>Duration</div>
@@ -595,23 +621,27 @@ export function SellerListingFormFields({
                   />
                 </div>
               </div>
+              ) : null}
 
               <div className={styles.listingFormRow}>
                 <div className={styles.listingFormLabelCol}>
-                  <div className={styles.listingFormLabelText}>Location / Coverage</div>
+                  <div className={styles.listingFormLabelText}>
+                    {isProduct ? 'Delivery area' : 'Location / Coverage'}
+                  </div>
                 </div>
                 <div className={styles.listingFormControlCol}>
                   <input
                     type="text"
                     className={styles.listingFormInput}
                     value={asInputValue(getFieldValue('location'))}
-                    placeholder="Service area or city"
+                    placeholder={isProduct ? 'Areas you deliver to' : 'Service area or city'}
                     onChange={(e) => setFieldValue('location', e.target.value)}
                     aria-label="Location"
                   />
                 </div>
               </div>
 
+              {showPackageOptions ? (
               <div className={styles.listingFormRow}>
                 <div className={styles.listingFormLabelCol}>
                   <div className={styles.listingFormLabelText}>Package options</div>
@@ -645,6 +675,7 @@ export function SellerListingFormFields({
                   </div>
                 </div>
               </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -698,7 +729,8 @@ export function SellerListingFormFields({
               <div className={styles.listingFormRow}>
                 <div className={styles.listingFormLabelCol}>
                   <div className={styles.listingFormLabelText}>
-                    <span className={styles.listingFormRequired}>*</span> What&apos;s included
+                    <span className={styles.listingFormRequired}>*</span>{' '}
+                    {isProduct ? 'Product details' : "What's included"}
                   </div>
                 </div>
                 <div className={styles.listingFormControlCol}>
@@ -714,16 +746,17 @@ export function SellerListingFormFields({
                     <textarea
                       className={styles.listingFormTextareaInShell}
                       value={asInputValue(getFieldValue('inclusions'))}
-                      placeholder="One item per line"
+                      placeholder={isProduct ? 'Specifications, materials, sizes…' : 'One item per line'}
                       onChange={(e) => setFieldValue('inclusions', e.target.value)}
                       maxLength={3000}
                       rows={4}
-                      aria-label="What is included"
+                      aria-label={isProduct ? 'Product details' : 'What is included'}
                     />
                   </div>
                 </div>
               </div>
 
+              {showServiceFields ? (
               <div className={styles.listingFormRow}>
                 <div className={styles.listingFormLabelCol}>
                   <div className={styles.listingFormLabelText}>
@@ -752,6 +785,7 @@ export function SellerListingFormFields({
                   </div>
                 </div>
               </div>
+              ) : null}
 
               <div className={styles.listingFormRow}>
                 <div className={styles.listingFormLabelCol}>
@@ -817,7 +851,7 @@ const STATIC_SECTIONS = [
 const FALLBACK_SECTION_TIPS = {
   basic: {
     title: 'Listing basics',
-    body: 'Use clear photos and a descriptive name so buyers know what they get. Add package options for tiers or add-ons; category, duration, and coverage help them compare and find you in search.',
+    body: 'Use clear photos and a descriptive name. Services and packages can include duration, coverage, and package tiers; products focus on details and stock.',
   },
   sales: {
     title: 'Pricing & options',
@@ -948,8 +982,9 @@ export default function NewListingClient() {
 
   useEffect(() => {
     const k = searchParams.get('kind')
-    if (k === 'service' || k === 'package') {
-      queueMicrotask(() => setFormValues((prev) => ({ ...prev, kind: k })))
+    const normalized = normalizeListingKind(k)
+    if (k && (normalized === 'service' || normalized === 'package' || normalized === 'product')) {
+      queueMicrotask(() => setFormValues((prev) => ({ ...prev, kind: normalized })))
     }
   }, [searchParams])
 
@@ -1132,7 +1167,7 @@ export default function NewListingClient() {
       intent === 'submit' ? 'Listing submitted for review.' : 'Draft saved successfully.',
     )
     await new Promise((resolve) => window.setTimeout(resolve, 950))
-    router.push('/seller/products/catalog')
+    router.push('/seller/listings/catalog')
   }
 
   const handleSubmit = async (e) => {
@@ -1201,7 +1236,7 @@ export default function NewListingClient() {
 
               <div className={styles.newListingFooter}>
                 <Link
-                  href="/seller/products/catalog"
+                  href="/seller/listings/catalog"
                   className={`${styles.productModalSecondary} ${styles.newListingFooterLink} ${styles.newListingFooterCancel}`}
                 >
                   Cancel

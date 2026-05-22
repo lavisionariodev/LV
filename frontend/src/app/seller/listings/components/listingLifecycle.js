@@ -75,9 +75,9 @@ export function awaitingAdminCount(rows) {
 
 export function listingsReviewAlertHref(rows) {
   const counts = countByTab(rows)
-  if (counts.under_review > 0) return '/seller/products/catalog?tab=under_review'
-  if (counts.updates_pending > 0) return '/seller/products/catalog?tab=updates_pending'
-  return '/seller/products/catalog'
+  if (counts.under_review > 0) return '/seller/listings/catalog?tab=under_review'
+  if (counts.updates_pending > 0) return '/seller/listings/catalog?tab=updates_pending'
+  return '/seller/listings/catalog'
 }
 
 /** Short status for the submitted-updates tab table and submission view modal. */

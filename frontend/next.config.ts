@@ -47,6 +47,16 @@ const nextConfig: NextConfig = {
         destination: '/admin/settings/site-content',
         permanent: true,
       },
+      {
+        source: '/seller/products',
+        destination: '/seller/listings/catalog',
+        permanent: true,
+      },
+      {
+        source: '/seller/products/:path*',
+        destination: '/seller/listings/:path*',
+        permanent: true,
+      },
     ]
   },
   images: {

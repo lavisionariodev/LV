@@ -13,7 +13,7 @@ import {
 } from 'react-icons/tb'
 import styles from '../analytics/analytics.module.css'
 import reviewStyles from './reviews.module.css'
-import SellerPortalSelect from '../products/components/SellerPortalSelect'
+import SellerPortalSelect from '../listings/components/SellerPortalSelect'
 import ReviewMediaGallery from '@/components/reviews/ReviewMediaGallery'
 const ROWS_PER_PAGE = 10
 

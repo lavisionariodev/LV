@@ -11,7 +11,7 @@ import ConfirmModal from '@/components/ui/Modal/ConfirmModal'
 import confirmModalStyles from '@/components/ui/Modal/ConfirmModal.module.css'
 import { FiArchive } from 'react-icons/fi'
 import { MdArrowBackIos } from 'react-icons/md'
-import styles from '../products.module.css'
+import styles from '../listings.module.css'
 import {
   awaitingAdminCount,
   canCancelListingReview,
@@ -55,8 +55,9 @@ import {
   sellerShowsInUpdatesPending,
 } from '@/lib/seller-listings/pendingChanges'
 import { useDebouncedEffect } from '@/shared/hooks'
-const ARCHIVE_PATH = '/seller/products/archive'
-const CATALOG_PATH = '/seller/products/catalog'
+import { formatListingKindLabel, normalizeListingKind } from '@/lib/listings/kind'
+const ARCHIVE_PATH = '/seller/listings/archive'
+const CATALOG_PATH = '/seller/listings/catalog'
 const LIST_ITEMS_PER_PAGE = 12
 const TABLE_ROWS_PER_PAGE = 10
 
@@ -277,7 +278,7 @@ function ProductsActiveGrid({
           <div className={styles.productHeader}>
             <div className={styles.productBadges}>
               <span className={styles.productKindBadge}>
-                {product.kind === 'service' ? 'Service' : 'Package'}
+                {formatListingKindLabel(product.kind)}
               </span>
               <span className={styles.productCategoryBadge}>{product.category}</span>
             </div>
@@ -352,10 +353,6 @@ function formatSubmittedAt(value) {
   } catch {
     return '—'
   }
-}
-
-function formatKindLabel(kind) {
-  return kind === 'package' ? 'Package' : 'Service'
 }
 
 function approvalStatusLabel(product) {
@@ -590,7 +587,7 @@ function SubmittedUpdateViewModal({ product, onClose, onDismissRequest }) {
                 {product.name}
               </h2>
               <p className={styles.productModalSubtitle}>
-                {product.category} · {formatKindLabel(product.kind)}
+                {product.category} · {formatListingKindLabel(product.kind)}
               </p>
             </div>
             <button
@@ -713,7 +710,7 @@ function ProductsReviewTable({
                 <p className={styles.productsTableMeta}>{product.category}</p>
               </td>
               <td data-label="Kind">
-                <span className={styles.productsTableKind}>{formatKindLabel(product.kind)}</span>
+                <span className={styles.productsTableKind}>{formatListingKindLabel(product.kind)}</span>
               </td>
               <td data-label="Submitted" className={styles.productsTableSubmittedCol}>
                 {formatSubmittedAt(
@@ -850,16 +847,6 @@ function revokeLocalPreviewUrls(entries) {
   })
 }
 
-/** Buyer-facing kind label — matches shop listing mapping. */
-function formatListingKindLabel(kind) {
-  if (kind == null || typeof kind !== 'string') return ''
-  const k = kind.trim().toLowerCase()
-  if (k === 'service') return 'Service'
-  if (k === 'package') return 'Package'
-  const t = kind.trim()
-  return t ? t.charAt(0).toUpperCase() + t.slice(1) : ''
-}
-
 const VIEW_MODAL_EMPTY = '—'
 
 function coerceDisplayString(v) {
@@ -938,10 +925,7 @@ function normalizeListingRowToProduct(row) {
   const location = areaRaw || 'N/A'
   const basePrice = effective.base_price != null ? roundPhpAmount(effective.base_price) : 0
   const status = effective.status || 'draft'
-  const kind =
-    String(effective.listing_kind == null || effective.listing_kind === '' ? 'service' : effective.listing_kind)
-      .trim()
-      .toLowerCase() || 'service'
+  const kind = normalizeListingKind(effective.listing_kind)
   const stock = effective.stock_status
   const availability =
     stock === 'Out of Stock' ? 'Out of Stock' : stock === 'In Stock' ? 'Available' : 'Available'
@@ -1003,6 +987,7 @@ const TYPE_FILTERS = [
   { id: 'all', label: 'All types' },
   { id: 'service', label: 'Services' },
   { id: 'package', label: 'Packages' },
+  { id: 'product', label: 'Products' },
 ]
 
 export default function ProductsContent({ initialKind = 'all', listingScope = 'active' }) {
@@ -1185,6 +1170,7 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
   const draftCount = scopedProducts.filter((p) => productStateLabel(p) === 'Draft').length
   const archivedServicesCount = scopedProducts.filter((p) => p.kind === 'service').length
   const archivedPackagesCount = scopedProducts.filter((p) => p.kind === 'package').length
+  const archivedProductsCount = scopedProducts.filter((p) => p.kind === 'product').length
 
   const handleOpenView = (product) => {
     setSelectedProduct(product)
@@ -1486,7 +1472,7 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
         typeOptions={TYPE_FILTERS}
         onTypeFilterChange={setTypeFilter}
         rightSlot={
-          <Link href="/seller/products/new-listing" className={styles.addListingMobile}>
+          <Link href="/seller/listings/new-listing" className={styles.addListingMobile}>
             <TbPlus size={18} aria-hidden />
             Add New Listing
           </Link>
@@ -1511,13 +1497,18 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
               <p className={styles.statValue}>{formatCount(archivedPackagesCount)}</p>
               <p className={styles.statHint}>Archived package listings</p>
             </div>
+            <div className={styles.statCard}>
+              <p className={styles.statLabel}>Products</p>
+              <p className={styles.statValue}>{formatCount(archivedProductsCount)}</p>
+              <p className={styles.statHint}>Archived product listings</p>
+            </div>
           </>
         ) : (
           <>
             <div className={styles.statCard}>
               <p className={styles.statLabel}>Total listings</p>
               <p className={styles.statValue}>{formatCount(total)}</p>
-              <p className={styles.statHint}>Services &amp; packages</p>
+              <p className={styles.statHint}>Services, packages &amp; products</p>
             </div>
             <div className={styles.statCard}>
               <p className={styles.statLabel}>Active</p>
@@ -1605,7 +1596,7 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
               ) : (
                 <>
                   Adjust the search or type filter to see more of your services and packages, or{' '}
-                  <Link href="/seller/products/new-listing" className={styles.emptyStateLink}>
+                  <Link href="/seller/listings/new-listing" className={styles.emptyStateLink}>
                     Add New Listing
                   </Link>
                   .

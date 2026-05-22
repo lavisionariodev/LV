@@ -25,7 +25,18 @@ function purchaseMatchesFilter(purchase, filterLabel) {
   if (filterLabel === 'All') return true;
   if (filterLabel === 'Refunded') return purchase.status === 'Refunded';
   if (filterLabel === 'Pending') {
-    return purchase.status === 'Pending' || purchase.status === 'Active booking';
+    return (
+      purchase.status === 'Pending' ||
+      purchase.status === 'Active booking' ||
+      purchase.status === 'Active order' ||
+      purchase.status === 'Awaiting seller'
+    );
+  }
+  if (filterLabel === 'In Progress') {
+    return purchase.status === 'In Progress' || purchase.status === 'Out for delivery';
+  }
+  if (filterLabel === 'Completed') {
+    return purchase.status === 'Completed' || purchase.status === 'Delivered';
   }
   return purchase.status === filterLabel;
 }
@@ -60,9 +71,13 @@ function PurchaseCardSkeleton() {
 const STATUS_CONFIG = {
   Pending: { color: '#A8894A', bg: 'rgba(168,137,74,0.10)' },
   'Active booking': { color: '#0f766e', bg: 'rgba(15,118,110,0.10)' },
+  'Active order': { color: '#0f766e', bg: 'rgba(15,118,110,0.10)' },
+  'Awaiting seller': { color: '#A8894A', bg: 'rgba(168,137,74,0.10)' },
   Confirmed: { color: '#204F38', bg: 'rgba(32,79,56,0.10)' },
   'In Progress': { color: '#2563EB', bg: 'rgba(37,99,235,0.09)' },
+  'Out for delivery': { color: '#2563EB', bg: 'rgba(37,99,235,0.09)' },
   Completed: { color: '#16a34a', bg: 'rgba(22,163,74,0.10)' },
+  Delivered: { color: '#16a34a', bg: 'rgba(22,163,74,0.10)' },
   Cancelled: { color: '#dc2626', bg: 'rgba(220,38,38,0.09)' },
   Refunded: { color: '#57534e', bg: 'rgba(87,83,78,0.10)' },
 };
@@ -127,6 +142,11 @@ function reviewKindNoun(kind) {
   const k = String(kind ?? '').trim().toLowerCase();
   if (k === 'product') return 'Product';
   return 'Service';
+}
+
+/** @param {{ isProductOrder?: boolean, displayLane?: string }} purchase */
+function purchaseIsProduct(purchase) {
+  return purchase?.displayLane === 'product' || Boolean(purchase?.isProductOrder);
 }
 
 function InfoModal({ open, title, message, buttonLabel = 'OK', onClose }) {
@@ -194,6 +214,7 @@ function InfoModal({ open, title, message, buttonLabel = 'OK', onClose }) {
  *   onConfirm: () => void,
  *   confirming: boolean,
  *   showsPaidRefundDisclaimer: boolean,
+ *   isProductOrder?: boolean,
  * }} CancelBookingModalProps
  */
 
@@ -205,6 +226,7 @@ function CancelBookingModal({
   onConfirm,
   confirming,
   showsPaidRefundDisclaimer = false,
+  isProductOrder = false,
 }) {
   const backdropRef = useRef(null);
   const keepBtnRef = useRef(null);
@@ -271,23 +293,26 @@ function CancelBookingModal({
         className={purchaseStyles.cancelConfirmPanel}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="cancel-booking-title"
-        aria-describedby="cancel-booking-desc"
+        aria-labelledby="cancel-purchase-title"
+        aria-describedby="cancel-purchase-desc"
       >
-        <h2 id="cancel-booking-title" className={purchaseStyles.cancelConfirmTitle}>
-          Cancel purchase?
+        <h2 id="cancel-purchase-title" className={purchaseStyles.cancelConfirmTitle}>
+          {isProductOrder ? 'Cancel order?' : 'Cancel purchase?'}
         </h2>
-        <div id="cancel-booking-desc" className={purchaseStyles.cancelConfirmBody}>
+        <div id="cancel-purchase-desc" className={purchaseStyles.cancelConfirmBody}>
           {showsPaidRefundDisclaimer ? (
             <>
               {orderLabel ? (
                 <p>
-                  This will cancel order <strong>{orderLabel}</strong> and submit a refund request to your
-                  provider for approval.
+                  This will cancel {isProductOrder ? 'order' : 'purchase'}{' '}
+                  <strong>{orderLabel}</strong> and submit a refund request to your{' '}
+                  {isProductOrder ? 'seller' : 'provider'} for approval.
                 </p>
               ) : (
                 <p>
-                  This will cancel your paid booking and submit a refund request to your provider for approval.
+                  {isProductOrder
+                    ? 'This will cancel your paid order and submit a refund request to the seller for approval.'
+                    : 'This will cancel your paid booking and submit a refund request to your provider for approval.'}
                 </p>
               )}
               <p className={purchaseStyles.cancelConfirmNote}>
@@ -300,7 +325,9 @@ function CancelBookingModal({
               {orderLabel
                 ? `This will cancel unpaid order ${orderLabel}.`
                 : 'This will cancel this unpaid purchase.'}{' '}
-              You may add the service back to your cart at any time.
+              {isProductOrder
+                ? 'You may add the product back to your cart at any time.'
+                : 'You may add the service back to your cart at any time.'}
             </p>
           )}
         </div>
@@ -934,6 +961,13 @@ function PurchaseCard({ purchase, cancellingOrderId, payingOrderId }) {
   const cancelling = cancellingOrderId === purchase.rawOrderId;
   const paying = payingOrderId === purchase.rawOrderId;
   const detail = purchase.detail || {};
+  const isProduct = purchaseIsProduct(purchase);
+  const hasScheduleDate =
+    Boolean(purchase.scheduledDate) &&
+    (!isProduct ||
+      (purchase.bookedDate &&
+        new Date(purchase.scheduledDate).toDateString() !==
+          new Date(purchase.bookedDate).toDateString()));
 
   return (
     <div className={purchaseStyles.card}>
@@ -941,8 +975,15 @@ function PurchaseCard({ purchase, cancellingOrderId, payingOrderId }) {
         <div className={purchaseStyles.cardTop}>
           <div className={purchaseStyles.cardInfo}>
             <span className={purchaseStyles.orderId}>{purchase.id}</span>
-            <h3 className={purchaseStyles.serviceName}>{purchase.service}</h3>
-            <span className={purchaseStyles.providerName}>{purchase.provider}</span>
+            <h3 className={purchaseStyles.serviceName}>
+              {purchase.service}
+              {isProduct ? (
+                <span className={purchaseStyles.productKindBadge}>Product</span>
+              ) : null}
+            </h3>
+            <span className={purchaseStyles.providerName}>
+              {purchase.providerRoleLabel || (isProduct ? 'Seller' : 'Provider')}: {purchase.provider}
+            </span>
             {purchase.isMultiItemCheckout && purchase.checkoutSiblingCount > 0 ? (
               <span className={purchaseStyles.checkoutBundleHint}>
                 Paid in one checkout with {purchase.checkoutSiblingCount} other listing
@@ -966,14 +1007,18 @@ function PurchaseCard({ purchase, cancellingOrderId, payingOrderId }) {
 
         <div className={purchaseStyles.cardMeta}>
           <span className={purchaseStyles.metaItem}>
-            <span className={purchaseStyles.metaLabel}>Booked</span>
+            <span className={purchaseStyles.metaLabel}>{isProduct ? 'Ordered' : 'Booked'}</span>
             {formatPurchaseDate(purchase.bookedDate)}
           </span>
-          <span className={purchaseStyles.metaDot} />
-          <span className={purchaseStyles.metaItem}>
-            <span className={purchaseStyles.metaLabel}>Scheduled</span>
-            {formatPurchaseDate(purchase.scheduledDate)}
-          </span>
+          {hasScheduleDate ? (
+            <>
+              <span className={purchaseStyles.metaDot} />
+              <span className={purchaseStyles.metaItem}>
+                <span className={purchaseStyles.metaLabel}>Scheduled</span>
+                {formatPurchaseDate(purchase.scheduledDate)}
+              </span>
+            </>
+          ) : null}
           <span className={purchaseStyles.metaDot} />
           <span className={purchaseStyles.price}>{purchase.formattedTotal}</span>
         </div>
@@ -981,7 +1026,9 @@ function PurchaseCard({ purchase, cancellingOrderId, payingOrderId }) {
 
       {expanded && (
         <div className={purchaseStyles.cardDetails}>
-          <p className={purchaseStyles.detailsHeading}>Included in this package</p>
+          <p className={purchaseStyles.detailsHeading}>
+            {isProduct ? 'Included in this order' : 'Included in this package'}
+          </p>
           <ul className={purchaseStyles.itemsList}>
             {purchase.itemsDetailed.map((row, i) => (
               <li key={i} className={purchaseStyles.itemsListItem}>
@@ -998,11 +1045,13 @@ function PurchaseCard({ purchase, cancellingOrderId, payingOrderId }) {
             detail.contactEmail ||
             detail.contactPhone) && (
             <>
-              <p className={purchaseStyles.detailsHeading}>Booking / contact</p>
+              <p className={purchaseStyles.detailsHeading}>
+                {isProduct ? 'Delivery & contact' : 'Booking / contact'}
+              </p>
               <dl className={purchaseStyles.detailGrid}>
                 {detail.serviceLocation ? (
                   <>
-                    <dt>Service location</dt>
+                    <dt>{isProduct ? 'Delivery address' : 'Service location'}</dt>
                     <dd>{detail.serviceLocation}</dd>
                   </>
                 ) : null}
@@ -1028,7 +1077,8 @@ function PurchaseCard({ purchase, cancellingOrderId, payingOrderId }) {
             </>
           )}
 
-          {(detail.deceasedName || detail.dateOfDeath || detail.wakeDurationDays != null) && (
+          {!isProduct &&
+          (detail.deceasedName || detail.dateOfDeath || detail.wakeDurationDays != null) && (
             <>
               <p className={purchaseStyles.detailsHeading}>Service details</p>
               <dl className={purchaseStyles.detailGrid}>
@@ -1496,6 +1546,12 @@ export default function PurchasesPage() {
     return p?.id ? String(p.id) : '';
   }, [cancelConfirmRawOrderId, purchases]);
 
+  const cancelConfirmIsProduct = useMemo(() => {
+    if (!cancelConfirmRawOrderId) return false;
+    const p = purchases.find((x) => x.rawOrderId === cancelConfirmRawOrderId);
+    return p ? purchaseIsProduct(p) : false;
+  }, [cancelConfirmRawOrderId, purchases]);
+
   const submitDispute = useCallback(
     async ({ reason, description }) => {
       const rawOrderId = disputeModalPurchase?.rawOrderId;
@@ -1652,7 +1708,10 @@ export default function PurchasesPage() {
       <header className={`${styles.profileHeader} ${purchaseStyles.desktopOnlyHeader}`}>
         <div className={styles.profileHeaderLeft}>
           <p className={styles.profileEyebrow}>My Purchases</p>
-          <p className={styles.profileSignedIn}>Review your previous and upcoming service bookings.</p>
+          <p className={styles.profileSignedIn}>
+            Track product deliveries and service bookings. Cancel product orders anytime before the seller
+            confirms them.
+          </p>
         </div>
       </header>
       <div className={purchaseStyles.purchasesBody}>
@@ -1662,7 +1721,7 @@ export default function PurchasesPage() {
               <circle cx="9" cy="9" r="6" stroke="currentColor" strokeWidth="1.6" />
               <path d="M14 14l3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
-            <input type="text" className={purchaseStyles.searchInput} placeholder="Search by listing, provider, or order ID…" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <input type="text" className={purchaseStyles.searchInput} placeholder="Search by product, service, seller, or order ID…" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           <div className={purchaseStyles.filters}>
             {PURCHASE_FILTER_TABS.map((s) => (
@@ -1727,6 +1786,7 @@ export default function PurchasesPage() {
         open={Boolean(cancelConfirmRawOrderId)}
         orderLabel={cancelConfirmLabel}
         showsPaidRefundDisclaimer={cancelShowsRefundDisclaimer}
+        isProductOrder={cancelConfirmIsProduct}
         onClose={() => {
           if (cancellingOrderId) return;
           setCancelConfirmRawOrderId(null);

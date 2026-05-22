@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useMediaQuery } from '@/shared/hooks'
-import styles from '../products.module.css'
+import styles from '../listings.module.css'
 
 function asInputValue(value) {
   if (value == null) return ''

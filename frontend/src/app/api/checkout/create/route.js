@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireActiveBuyerApiUser } from '@/lib/auth/requireApiUser'
+import { validateCheckoutContactPayload } from '@/lib/checkout/deliveryAddress'
+import {
+  buildListingKindById,
+  checkoutLaneFromCartItems,
+  resolveCartItemKind,
+} from '@/lib/listings/kind'
 import { phpToCentavos } from '@/lib/paymongo/client'
 
 export async function POST(request) {
@@ -24,6 +30,53 @@ export async function POST(request) {
     wake_duration_days: String(body?.contact?.wake_duration_days ?? '').trim(),
     preferred_date: String(body?.contact?.preferred_date ?? '').trim(),
     notes: String(body?.contact?.notes ?? '').trim(),
+  }
+
+  if (!productIds || productIds.length === 0) {
+    return NextResponse.json({ error: 'No items selected for checkout.' }, { status: 400 })
+  }
+
+  const listingIds = [
+    ...new Set(productIds.map((id) => String(id).split('::pkg::')[0].trim()).filter(Boolean)),
+  ]
+
+  const { data: listingRows, error: listingsErr } = await supabaseAdmin
+    .from('seller_listings')
+    .select('id, listing_kind')
+    .in('id', listingIds)
+
+  if (listingsErr) {
+    return NextResponse.json(
+      { error: listingsErr.message ?? 'Could not verify cart items.' },
+      { status: 400 },
+    )
+  }
+
+  const kindByListingId = buildListingKindById(
+    (listingRows || []).map((row) => ({
+      listing_id: row.id,
+      listing_kind: row.listing_kind,
+    })),
+  )
+  const cartItemsForLane = productIds.map((id) => ({
+    id,
+    listingKind: resolveCartItemKind(id, kindByListingId),
+  }))
+  const checkoutLane = checkoutLaneFromCartItems(cartItemsForLane, kindByListingId)
+
+  if (checkoutLane === 'mixed') {
+    return NextResponse.json(
+      { error: 'Services and products must be checked out separately.' },
+      { status: 400 },
+    )
+  }
+
+  const contactValidation = validateCheckoutContactPayload({
+    lane: checkoutLane === 'product' ? 'product' : 'booking',
+    contact,
+  })
+  if (!contactValidation.ok) {
+    return NextResponse.json({ error: contactValidation.message }, { status: 400 })
   }
 
   const { data: checkoutData, error: checkoutErr } = await supabaseAdmin.rpc(

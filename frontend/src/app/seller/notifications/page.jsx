@@ -103,7 +103,7 @@ function notificationHref(row) {
     if (disputeId) params.set('tab', 'all')
     return `/seller/orders?${params.toString()}`
   }
-  if (listingId || bucket === 'listing') return '/seller/products/catalog'
+  if (listingId || bucket === 'listing') return '/seller/listings/catalog'
   if (bucket === 'payment') return '/seller/analytics/revenue-reports'
   if (bucket === 'alert') return '/seller/orders'
   if (bucket === 'system') return '/seller/help'

@@ -623,9 +623,9 @@ export function listingsReviewAlertHref(listingRows) {
     if (s === 'pending' || s === 'rejected') underReview += 1
     else if (s === 'approved' && sellerShowsInUpdatesPending(row)) updatesPending += 1
   }
-  if (underReview > 0) return '/seller/products/catalog?tab=under_review'
-  if (updatesPending > 0) return '/seller/products/catalog?tab=updates_pending'
-  return '/seller/products/catalog'
+  if (underReview > 0) return '/seller/listings/catalog?tab=under_review'
+  if (updatesPending > 0) return '/seller/listings/catalog?tab=updates_pending'
+  return '/seller/listings/catalog'
 }
 
 /**

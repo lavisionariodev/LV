@@ -1,4 +1,8 @@
 import { listingIdFromOrderItemProductId } from '@/lib/orders/listingIdFromProductId'
+import {
+  fetchActivePaymongoCheckoutByOrderId,
+  reconcileStaleCheckoutPayments,
+} from '@/lib/checkout/reconcileCheckoutPayments'
 
 export const BUYER_ORDER_LIST_SELECT = [
   'id',
@@ -42,6 +46,27 @@ export async function listBuyerOrdersForApi(supabaseAdmin, buyerId) {
   if (!orderIds.length) {
     return { orders: orders ?? [], items: [], reviewedItemIdsByOrder: {}, error: null }
   }
+
+  await reconcileStaleCheckoutPayments(supabaseAdmin, buyerId, orderIds)
+
+  const { data: paymentFreshRows } = await supabaseAdmin
+    .from('orders')
+    .select('id,payment_status,status')
+    .in('id', orderIds)
+    .eq('buyer_id', buyerId)
+  const paymentFreshById = new Map((paymentFreshRows ?? []).map((r) => [r.id, r]))
+
+  const activeCheckoutByOrderId = await fetchActivePaymongoCheckoutByOrderId(supabaseAdmin, orderIds)
+
+  const ordersWithCheckoutFlag = (orders ?? []).map((o) => {
+    const fresh = paymentFreshById.get(o.id)
+    return {
+      ...o,
+      payment_status: fresh?.payment_status ?? o.payment_status,
+      status: fresh?.status ?? o.status,
+      active_paymongo_checkout: activeCheckoutByOrderId.get(o.id) === true,
+    }
+  })
 
   const [{ data: items, error: itemsErr }, { data: reviewRows, error: reviewsErr }] = await Promise.all([
     supabaseAdmin
@@ -100,7 +125,7 @@ export async function listBuyerOrdersForApi(supabaseAdmin, buyerId) {
   }
 
   return {
-    orders: orders ?? [],
+    orders: ordersWithCheckoutFlag,
     items: enrichedItems,
     reviewedItemIdsByOrder,
     error: null,
