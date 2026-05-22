@@ -1,3 +1,4 @@
+import { buildOrderLaneByOrderId } from '@/lib/orders/orderKindFromItems'
 import {
   mapSellerOrderForOrdersPage,
   SELLER_ORDER_DETAIL_SELECT,
@@ -88,10 +89,13 @@ export async function listSellerOrdersForApi(supabaseAdmin, sellerUserId) {
     }
   }
 
+  const laneByOrderId = await buildOrderLaneByOrderId(supabaseAdmin, orders ?? [])
+
   const mapped = (orders ?? []).map((row) => {
     const helpRequest = disputeByOrder.get(row.id) ?? null
     const payment = paymentByOrder.get(row.id) ?? null
     return mapSellerOrderForOrdersPage(row, {
+      orderLane: laneByOrderId.get(row.id) ?? 'booking',
       paymentMethod: paymentMethodLabel(payment),
       helpRequest,
       helpAttachments: mapDisputeAttachmentPaths(helpRequest),

@@ -17,6 +17,7 @@ import {
   canCancelListingReview,
   countByTab,
   DEFAULT_LISTING_TAB,
+  filterByListingKind,
   filterByTab,
   isProductShopActive,
   LISTING_TAB_IDS,
@@ -1127,7 +1128,10 @@ export default function ProductsContent({ initialKind = 'all', listingScope = 'a
     return products.filter((p) => String(p?.status || '').toLowerCase() !== 'archived')
   }, [products, isArchiveView])
 
-  const tabCounts = useMemo(() => countByTab(scopedProducts), [scopedProducts])
+  const tabCounts = useMemo(
+    () => countByTab(filterByListingKind(scopedProducts, typeFilter)),
+    [scopedProducts, typeFilter],
+  )
 
   const tabProducts = useMemo(() => {
     if (isArchiveView) return scopedProducts

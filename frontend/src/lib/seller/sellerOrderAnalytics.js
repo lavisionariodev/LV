@@ -53,7 +53,7 @@ export const SELLER_CUSTOMER_ORDER_SELECT =
   'id,buyer_id,order_number,created_at,preferred_date,fulfillment_status,contact_name,contact_email,contact_phone,service_location,order_items(name,quantity)'
 
 export const SELLER_ORDER_DETAIL_SELECT =
-  'id,buyer_id,order_number,status,fulfillment_status,payment_status,subtotal,created_at,preferred_date,refund_status,refund_reason,refund_requested_at,contact_name,contact_email,contact_phone,notes,service_location,deceased_name,date_of_death,wake_duration_days,order_items(name,quantity)'
+  'id,buyer_id,order_number,status,fulfillment_status,payment_status,subtotal,created_at,preferred_date,refund_status,refund_reason,refund_requested_at,contact_name,contact_email,contact_phone,notes,service_location,deceased_name,date_of_death,wake_duration_days,order_items(product_id,name,quantity,price)'
 
 /**
  * @param {{ name?: string|null, quantity?: number|null }[] | null | undefined} items
@@ -102,10 +102,18 @@ export function sellerRefundStage(row) {
 
 /**
  * @param {SellerOrderRow & Record<string, any>} row
- * @param {{ paymentMethod?: string, helpRequest?: any, helpAttachments?: any[] }} [opts]
+ * @param {{ paymentMethod?: string, helpRequest?: any, helpAttachments?: any[], orderLane?: 'product' | 'booking' }} [opts]
  */
 export function mapSellerOrderForOrdersPage(row, opts = {}) {
   const items = row.order_items ?? []
+  const orderLane = opts.orderLane === 'product' ? 'product' : 'booking'
+  const isProductOrder = orderLane === 'product'
+  const lineItems = items.map((it) => {
+    const qty = Math.max(1, Number(it.quantity) || 1)
+    const name = (it.name && String(it.name).trim()) || 'Item'
+    return { name, quantity: qty, label: `${name} ×${qty}` }
+  })
+  const preferredDeliveryDate = row.preferred_date ? String(row.preferred_date).slice(0, 10) : null
   const refundStage = sellerRefundStage(row)
   const buyerRefundReason =
     row.refund_reason == null ? '' : String(row.refund_reason).trim()
@@ -122,10 +130,16 @@ export function mapSellerOrderForOrdersPage(row, opts = {}) {
   return {
     id: row.id,
     displayId: row.order_number || row.id,
+    orderLane,
+    isProductOrder,
     customerName: row.contact_name || 'Buyer',
     servicePackage: sellerServicePackageLabel(items),
+    lineItems,
+    orderedAt: row.created_at ? String(row.created_at) : null,
+    preferredDeliveryDate,
     dateOfService: sellerOrderServiceDate(row) || '',
     location: row.service_location || '-',
+    deliveryAddress: row.service_location?.trim() || '-',
     totalPrice: Number(row.subtotal) || 0,
     paymentStatus: resolvePaymentStatus(row),
     orderStatus: sellerOrderStatusForUi(row),

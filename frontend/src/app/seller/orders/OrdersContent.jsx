@@ -39,6 +39,11 @@ import {
   getTimelineProgressForStatus,
   hasSellerFulfillmentActions,
 } from '@/lib/orders/fulfillmentTransitions'
+import {
+  sellerOrderKindLabel,
+  sellerOrderStatusForDisplay,
+  sellerTimelineSteps,
+} from '@/lib/orders/orderDisplayCopy'
 
 const ROWS_PER_PAGE = 10
 
@@ -112,13 +117,29 @@ const ORDER_STATUSES = [
   { id: 'refunded', label: 'Refunded' },
 ]
 
-const TIMELINE_STEPS = [
-  { id: 'received', label: 'Order Received', icon: TbPackage, description: 'Buyer placed the order and completed payment.' },
-  { id: 'confirmed', label: 'Confirmed', icon: TbCheck, description: 'You confirmed the booking. Preparation can begin.' },
-  { id: 'preparation', label: 'Preparation', icon: TbTools, description: 'Service is being prepared according to your request.' },
-  { id: 'ongoing', label: 'Service Ongoing', icon: TbTruck, description: 'Service is in progress.' },
-  { id: 'completed', label: 'Completed', icon: TbCircleCheck, description: 'Service has been completed.' },
-]
+const TIMELINE_STEP_ICONS = {
+  received: TbPackage,
+  confirmed: TbCheck,
+  preparation: TbTools,
+  ongoing: TbTruck,
+  completed: TbCircleCheck,
+}
+
+function orderIsProduct(order) {
+  return Boolean(order?.isProductOrder) || order?.orderLane === 'product'
+}
+
+function orderListingDate(order) {
+  if (orderIsProduct(order)) {
+    if (order.preferredDeliveryDate) return formatDate(order.preferredDeliveryDate)
+    if (order.orderedAt) {
+      const d = String(order.orderedAt).slice(0, 10)
+      return d ? formatDate(d) : '—'
+    }
+    return '—'
+  }
+  return formatDate(order.dateOfService)
+}
 
 function getStatusBadgeClass(status) {
   const map = {
@@ -284,8 +305,8 @@ function SellerOrdersShellSkeleton() {
             <tr>
               <th>Order ID</th>
               <th>Customer Name</th>
-              <th>Service Package</th>
-              <th>Date of Service</th>
+              <th>Listing / package</th>
+              <th>Date</th>
               <th>Location</th>
               <th>Total Price</th>
               <th>Payment Status</th>
@@ -600,7 +621,12 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
 
   const handleCancelUnpaidOrder = (order) => {
     if (!canCancelUnpaidBooking(order)) {
-      showOrderNotice('error', 'Only unpaid bookings that have not started can be cancelled here.')
+      showOrderNotice(
+        'error',
+        orderIsProduct(order)
+          ? 'Only unpaid orders that have not started can be cancelled here.'
+          : 'Only unpaid bookings that have not started can be cancelled here.',
+      )
       return
     }
     closeAdvanceModal()
@@ -618,14 +644,23 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
       })
       const body = await res.json().catch(() => null)
       if (!res.ok) {
-        showOrderNotice('error', body?.error || 'Unable to cancel this booking. Please try again.')
+        showOrderNotice(
+          'error',
+          body?.error ||
+            (orderIsProduct(cancelUnpaidOrder)
+              ? 'Unable to cancel this order. Please try again.'
+              : 'Unable to cancel this booking. Please try again.'),
+        )
         return
       }
       await loadOrders()
       setSelectedOrder((prev) => (prev?.id === cancelUnpaidOrder.id ? null : prev))
       setCancelUnpaidOrder(null)
       clearOrderDeepLinkParams()
-      showOrderNotice('success', 'Booking cancelled.')
+      showOrderNotice(
+        'success',
+        orderIsProduct(cancelUnpaidOrder) ? 'Order cancelled.' : 'Booking cancelled.',
+      )
     } catch (err) {
       showOrderNotice('error', err?.message || 'Unable to cancel this booking. Please try again.')
     } finally {
@@ -762,6 +797,8 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
     }
   }
 
+  const selectedIsProduct = selectedOrder ? orderIsProduct(selectedOrder) : false
+  const selectedTimelineSteps = selectedOrder ? sellerTimelineSteps(selectedIsProduct) : []
   const timelineProgress = selectedOrder
     ? getTimelineProgressForStatus(fulfillmentStatusFromOrder(selectedOrder))
     : {}
@@ -1088,8 +1125,8 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
             <tr>
               <th>Order ID</th>
               <th>Customer Name</th>
-              <th>Service Package</th>
-              <th>Date of Service</th>
+              <th>Listing / package</th>
+              <th>Date</th>
               <th>Location</th>
               <th>Total Price</th>
               <th>Payment Status</th>
@@ -1119,16 +1156,31 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
                     {order.helpRequest && <span className={`${styles.badge} ${styles.badgePending}`}>Help requested</span>}
                   </td>
                   <td data-label="Customer">{order.customerName}</td>
-                  <td data-label="Package">{order.servicePackage}</td>
-                  <td data-label="Date">{formatDate(order.dateOfService)}</td>
-                  <td data-label="Location">{order.location}</td>
+                  <td data-label="Package">
+                    <div className={styles.packageCellContent}>
+                      <span className={styles.packageCellName}>{order.servicePackage}</span>
+                      {orderIsProduct(order) ? (
+                        <span
+                          className={`${styles.orderKindBadge} ${styles.orderKindBadgeProduct}`}
+                        >
+                          Product
+                        </span>
+                      ) : null}
+                    </div>
+                  </td>
+                  <td data-label="Date">{orderListingDate(order)}</td>
+                  <td data-label="Location">
+                    <span className={styles.locationCellText} title={order.location}>
+                      {order.location}
+                    </span>
+                  </td>
                   <td data-label="Total">{formatPrice(order.totalPrice)}</td>
                   <td data-label="Payment">
                     <span className={`${styles.badge} ${paymentBadge.badgeClass}`}>{paymentBadge.label}</span>
                   </td>
                   <td data-label="Status">
                     <span className={`${styles.badge} ${getStatusBadgeClass(order.orderStatus)}`}>
-                      {order.orderStatus.replace('_', ' ')}
+                      {sellerOrderStatusForDisplay(order)}
                     </span>
                   </td>
                   <td data-label="Actions">
@@ -1146,7 +1198,7 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
                           type="button"
                           className={`${styles.btnIcon} ${styles.btnIconAccept} ${styles.hideOnMobile}`}
                           onClick={() => handleAcceptOrder(order)}
-                          title="Confirm booking"
+                          title={orderIsProduct(order) ? 'Confirm order' : 'Confirm booking'}
                         >
                           <TbCheck size={16} />
                         </button>
@@ -1209,9 +1261,18 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
         >
           <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h2 id="order-details-title" className={styles.modalTitle}>
-                Order {selectedOrder.displayId || selectedOrder.id}
-              </h2>
+              <div className={styles.modalTitleWrap}>
+                <h2 id="order-details-title" className={styles.modalTitle}>
+                  Order {selectedOrder.displayId || selectedOrder.id}
+                </h2>
+                <span
+                  className={`${styles.orderKindBadge} ${
+                    selectedIsProduct ? styles.orderKindBadgeProduct : styles.orderKindBadgeBooking
+                  }`}
+                >
+                  {sellerOrderKindLabel(selectedOrder)}
+                </span>
+              </div>
               <button
                 type="button"
                 className={styles.modalClose}
@@ -1232,9 +1293,9 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
                 <h3 className={styles.sectionTitle}>Progress</h3>
                 <div className={styles.timelineWrap}>
                   <div className={styles.timeline}>
-                    {TIMELINE_STEPS.map((step, i) => {
+                    {selectedTimelineSteps.map((step, i) => {
                       const isDone = timelineProgress[step.id]
-                      const Icon = step.icon
+                      const Icon = TIMELINE_STEP_ICONS[step.id] || TbPackage
                       return (
                         <div key={step.id} className={styles.timelineStep}>
                           <div
@@ -1253,7 +1314,7 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
                               <span className={styles.timelineStepDesc}>{step.description}</span>
                             )}
                           </div>
-                          {i < TIMELINE_STEPS.length - 1 && (
+                          {i < selectedTimelineSteps.length - 1 && (
                             <span
                               className={`${styles.timelineConnector} ${isDone ? styles.timelineConnectorDone : ''}`}
                             />
@@ -1298,51 +1359,118 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
                 </div>
               </div>
 
-              <div className={styles.section}>
-                <h3 className={styles.sectionTitle}>Deceased</h3>
-                <div className={styles.sectionBlock}>
-                <div className={styles.detailList}>
-                  <div className={styles.detailItem}>
-                    <span className={styles.detailLabel}>Name</span>
-                    <span className={styles.detailValue}>{selectedOrder.deceasedName}</span>
+              {selectedIsProduct ? (
+                <>
+                  <div className={styles.section}>
+                    <h3 className={styles.sectionTitle}>Order items</h3>
+                    <div className={styles.sectionBlock}>
+                      <ul className={styles.orderItemsList}>
+                        {(selectedOrder.lineItems?.length ? selectedOrder.lineItems : [{ label: selectedOrder.servicePackage }]).map(
+                          (item, idx) => (
+                            <li key={`${item.label}-${idx}`} className={styles.orderItemsListItem}>
+                              {item.label || item.name}
+                            </li>
+                          ),
+                        )}
+                      </ul>
+                    </div>
                   </div>
-                  <div className={styles.detailItem}>
-                    <span className={styles.detailLabel}>Date of death</span>
-                    <span className={styles.detailValue}>{formatDate(selectedOrder.dateOfDeath)}</span>
+
+                  <div className={styles.section}>
+                    <h3 className={styles.sectionTitle}>Delivery</h3>
+                    <div className={styles.sectionBlock}>
+                      <div className={styles.detailList}>
+                        <div className={styles.detailItem}>
+                          <span className={styles.detailLabel}>Delivery address</span>
+                          <span className={styles.detailValue}>{selectedOrder.deliveryAddress}</span>
+                        </div>
+                        <div className={styles.detailItem}>
+                          <span className={styles.detailLabel}>Ordered</span>
+                          <span className={styles.detailValue}>
+                            {selectedOrder.orderedAt ? formatDateTime(selectedOrder.orderedAt) : '—'}
+                          </span>
+                        </div>
+                        {selectedOrder.preferredDeliveryDate ? (
+                          <div className={styles.detailItem}>
+                            <span className={styles.detailLabel}>Target delivery</span>
+                            <span className={styles.detailValue}>
+                              {formatDate(selectedOrder.preferredDeliveryDate)}
+                            </span>
+                          </div>
+                        ) : null}
+                        {(selectedOrder.specialRequests != null && selectedOrder.specialRequests !== '') && (
+                          <div className={styles.detailItem}>
+                            <span className={styles.detailLabel}>Delivery notes</span>
+                            <span className={styles.detailValue}>{selectedOrder.specialRequests}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  {(selectedOrder.specialRequests != null && selectedOrder.specialRequests !== '') && (
-                    <div className={styles.detailItem}>
-                      <span className={styles.detailLabel}>Special requests</span>
-                      <span className={styles.detailValue}>{selectedOrder.specialRequests}</span>
+                </>
+              ) : (
+                <>
+                  {(selectedOrder.deceasedName ||
+                    selectedOrder.dateOfDeath ||
+                    (selectedOrder.specialRequests != null && selectedOrder.specialRequests !== '')) && (
+                    <div className={styles.section}>
+                      <h3 className={styles.sectionTitle}>Deceased</h3>
+                      <div className={styles.sectionBlock}>
+                        <div className={styles.detailList}>
+                          {selectedOrder.deceasedName ? (
+                            <div className={styles.detailItem}>
+                              <span className={styles.detailLabel}>Name</span>
+                              <span className={styles.detailValue}>{selectedOrder.deceasedName}</span>
+                            </div>
+                          ) : null}
+                          {selectedOrder.dateOfDeath ? (
+                            <div className={styles.detailItem}>
+                              <span className={styles.detailLabel}>Date of death</span>
+                              <span className={styles.detailValue}>{formatDate(selectedOrder.dateOfDeath)}</span>
+                            </div>
+                          ) : null}
+                          {selectedOrder.specialRequests != null && selectedOrder.specialRequests !== '' ? (
+                            <div className={styles.detailItem}>
+                              <span className={styles.detailLabel}>Special requests</span>
+                              <span className={styles.detailValue}>{selectedOrder.specialRequests}</span>
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
                     </div>
                   )}
-                </div>
-                </div>
-              </div>
 
-              <div className={styles.section}>
-                <h3 className={styles.sectionTitle}>Service</h3>
-                <div className={styles.sectionBlock}>
-                <div className={styles.detailList}>
-                  <div className={styles.detailItem}>
-                    <span className={styles.detailLabel}>Package</span>
-                    <span className={styles.detailValue}>{selectedOrder.servicePackage}</span>
+                  <div className={styles.section}>
+                    <h3 className={styles.sectionTitle}>Service booking</h3>
+                    <div className={styles.sectionBlock}>
+                      <div className={styles.detailList}>
+                        <div className={styles.detailItem}>
+                          <span className={styles.detailLabel}>Package</span>
+                          <span className={styles.detailValue}>{selectedOrder.servicePackage}</span>
+                        </div>
+                        <div className={styles.detailItem}>
+                          <span className={styles.detailLabel}>Date of service</span>
+                          <span className={styles.detailValue}>{formatDate(selectedOrder.dateOfService)}</span>
+                        </div>
+                        <div className={styles.detailItem}>
+                          <span className={styles.detailLabel}>Wake duration</span>
+                          <span className={styles.detailValue}>{selectedOrder.wakeDuration}</span>
+                        </div>
+                        <div className={styles.detailItem}>
+                          <span className={styles.detailLabel}>Service location</span>
+                          <span className={styles.detailValue}>{selectedOrder.burialLocation}</span>
+                        </div>
+                        <div className={styles.detailItem}>
+                          <span className={styles.detailLabel}>Add-ons</span>
+                          <span className={styles.detailValue}>
+                            {selectedOrder.addOns?.length ? selectedOrder.addOns.join(', ') : 'None'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className={styles.detailItem}>
-                    <span className={styles.detailLabel}>Wake duration</span>
-                    <span className={styles.detailValue}>{selectedOrder.wakeDuration}</span>
-                  </div>
-                  <div className={styles.detailItem}>
-                    <span className={styles.detailLabel}>Location</span>
-                    <span className={styles.detailValue}>{selectedOrder.burialLocation}</span>
-                  </div>
-                  <div className={styles.detailItem}>
-                    <span className={styles.detailLabel}>Add-ons</span>
-                    <span className={styles.detailValue}>{selectedOrder.addOns?.length ? selectedOrder.addOns.join(', ') : 'None'}</span>
-                  </div>
-                </div>
-                </div>
-              </div>
+                </>
+              )}
 
               <div className={styles.section}>
                 <h3 className={styles.sectionTitle}>Payment</h3>
@@ -1585,7 +1713,11 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
                 .
               </p>
               <p className={styles.updateStatusCurrent}>
-                Current: {fulfillmentStatusLabel(fulfillmentStatusFromOrder(orderForUpdateStatus))}
+                Current:{' '}
+                {fulfillmentStatusLabel(
+                  fulfillmentStatusFromOrder(orderForUpdateStatus),
+                  orderIsProduct(orderForUpdateStatus),
+                )}
               </p>
               {advanceOrderAction ? (
                 <div className={styles.updateStatusOptions}>
@@ -1643,16 +1775,18 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
       <ConfirmModal
         open={cancelUnpaidOrder != null}
         variant="danger"
-        title="Cancel booking"
+        title={cancelUnpaidOrder && orderIsProduct(cancelUnpaidOrder) ? 'Cancel order' : 'Cancel booking'}
         message={
           cancelUnpaidOrder
-            ? `Cancel unpaid booking ${cancelUnpaidOrder.displayId || cancelUnpaidOrder.id}? No refund is required because payment has not been completed.`
+            ? orderIsProduct(cancelUnpaidOrder)
+              ? `Cancel unpaid order ${cancelUnpaidOrder.displayId || cancelUnpaidOrder.id}? No refund is required because payment has not been completed.`
+              : `Cancel unpaid booking ${cancelUnpaidOrder.displayId || cancelUnpaidOrder.id}? No refund is required because payment has not been completed.`
             : ''
         }
         subtitleAlign="left"
-        confirmLabel="Cancel booking"
+        confirmLabel={cancelUnpaidOrder && orderIsProduct(cancelUnpaidOrder) ? 'Cancel order' : 'Cancel booking'}
         confirmLoadingLabel="Cancelling..."
-        cancelLabel="Keep booking"
+        cancelLabel={cancelUnpaidOrder && orderIsProduct(cancelUnpaidOrder) ? 'Keep order' : 'Keep booking'}
         loading={cancelUnpaidBusy}
         onCancel={() => setCancelUnpaidOrder(null)}
         onConfirm={handleConfirmCancelUnpaidOrder}
@@ -1664,7 +1798,9 @@ export default function OrdersContent({ initialOrderId, initialAction }) {
         title="Decline and refund order"
         message={
           declineOrder
-            ? `Declining order ${declineOrder.displayId || declineOrder.id} will cancel the booking, initiate a buyer refund to the original payment method, and prevent seller payout for this order.`
+            ? orderIsProduct(declineOrder)
+              ? `Declining order ${declineOrder.displayId || declineOrder.id} will cancel the product order, initiate a buyer refund to the original payment method, and prevent seller payout for this order.`
+              : `Declining order ${declineOrder.displayId || declineOrder.id} will cancel the booking, initiate a buyer refund to the original payment method, and prevent seller payout for this order.`
             : ''
         }
         extra={
