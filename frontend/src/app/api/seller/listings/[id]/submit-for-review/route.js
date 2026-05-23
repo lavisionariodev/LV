@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
 import { requireActiveSellerApiUser } from '@/lib/auth/requireApiUser'
-import { notifyAllAdmins } from '@/lib/notifications/inAppServer'
+import { notifyAdminsNewListingPendingReview } from '@/lib/notifications/listingAdminNotify'
 
 /**
  * POST — seller submits a listing for admin approval (replaces direct client updates so we can fan-out admin in-app rows).
@@ -60,14 +60,10 @@ export async function POST(_request, context) {
   }
 
   const supabaseAdmin = getSupabaseAdmin()
-  const name = updated.listing_name || existing.listing_name || 'A listing'
-  const submittedAt = String(updated.submitted_at || nowIso)
-  await notifyAllAdmins(supabaseAdmin, {
-    type: 'listing_pending_review',
-    title: 'Listing submitted for review',
-    body: `${name} is pending approval (seller submitted).`,
-    metadata: { listingId },
-    dedupeKey: `admin_listing_pending:${listingId}:${submittedAt}`,
+  await notifyAdminsNewListingPendingReview(supabaseAdmin, {
+    listingId,
+    listingName: updated.listing_name || existing.listing_name,
+    submittedAt: String(updated.submitted_at || nowIso),
   })
 
   return NextResponse.json({ data: updated }, { status: 200 })

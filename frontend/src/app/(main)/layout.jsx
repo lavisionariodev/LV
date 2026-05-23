@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import { PublicNavbar, PublicFooter } from '@/components/layout'
+import AdminPortalShopReturnOverlay from './AdminPortalShopReturnOverlay'
 import { CartProvider } from '@/contexts/CartContext'
 import { FavoritesProvider } from '@/contexts/FavoritesContext'
 import { BuyerInAppNotificationFeedProvider } from '@/contexts/BuyerInAppNotificationFeedContext'
@@ -20,6 +21,9 @@ export default function PublicLayout({ children }) {
         </Suspense>
       </main>
       <PublicFooter />
+      <Suspense fallback={null}>
+        <AdminPortalShopReturnOverlay />
+      </Suspense>
     </BuyerInAppNotificationFeedProvider>
     </FavoritesProvider>
     </CartProvider>

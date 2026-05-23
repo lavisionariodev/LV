@@ -106,6 +106,19 @@ function getStatusDotColor(status) {
   return '#94a3b8'
 }
 
+/** PayMongo ops label for dashboard header badges (style stays neutral; text only changes). */
+function paymongoOpsStatusLabel(status) {
+  if (status === 'ready') return 'Payments ready'
+  if (status === 'disabled') return 'PayMongo not configured'
+  return 'Payments need attention'
+}
+
+function paymongoSystemsStatusLabel(status) {
+  if (status === 'ready') return 'All systems operational'
+  if (status === 'disabled') return 'PayMongo not configured'
+  return 'Payments need attention'
+}
+
 // ── Sparkline ──────────────────────────────────────────────────────────────
 // Thin, very light smooth curve. No fill, no dots, no axes.
 // Sits on the right side of the stat card body as a decorative trend indicator.
@@ -425,21 +438,9 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className={styles.welcomeRight}>
-          <Link
-            href="/admin/earnings"
-            className={styles.welcomePill}
-            style={
-              paymongoOpsStatus === 'ready'
-                ? undefined
-                : { background: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }
-            }
-          >
+          <Link href="/admin/earnings" className={styles.welcomePill}>
             <span className={styles.welcomePillDot} />
-            {paymongoOpsStatus === 'ready'
-              ? 'Payments ready'
-              : paymongoOpsStatus === 'disabled'
-                ? 'PayMongo not configured'
-                : 'Payments need attention'}
+            {paymongoOpsStatusLabel(paymongoOpsStatus)}
           </Link>
         </div>
       </section>
@@ -631,7 +632,7 @@ export default function AdminDashboardPage() {
             </p>
             <p className={styles.mobileHeroBalanceSub}>
               <span className={styles.mobileHeroOnlineDot} />
-              All systems operational
+              {paymongoSystemsStatusLabel(paymongoOpsStatus)}
             </p>
           </div>
         </div>
