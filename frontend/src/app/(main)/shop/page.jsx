@@ -491,20 +491,6 @@ export default function ShopPage() {
     return filteredListings.slice(start, start + MOBILE_ITEMS_PER_PAGE)
   }, [filteredListings, mobileCurrentPage])
 
-  // Measure the real navbar height and expose it as a CSS variable so the
-  // fixed sidebar can sit exactly below it on desktop, regardless of the
-  // navbar's actual rendered height.
-  useEffect(() => {
-    function applyNavbarHeight() {
-      const navbar = document.querySelector('nav, header, [class*="nav"], [class*="header"], [class*="Navbar"], [class*="Header"]')
-      const height = navbar ? navbar.getBoundingClientRect().height : 0
-      document.documentElement.style.setProperty('--navbar-height', `${height}px`)
-    }
-    applyNavbarHeight()
-    window.addEventListener('resize', applyNavbarHeight)
-    return () => window.removeEventListener('resize', applyNavbarHeight)
-  }, [])
-
   // Derive unique locations from all providers
   const allLocations = useMemo(() => {
     const locs = allProviders.map((p) => p.location).filter(Boolean)

@@ -353,53 +353,30 @@
   display: grid;
   grid-template-columns: 220px 1fr;
   gap: 32px;
-  /* align-items: stretch lets .sideNavCol grow to match the main content
-     height. This is required for position:sticky to be bounded correctly —
-     the sticky element travels within its column and stops at the column's
-     bottom edge, so it never overlaps the footer below. */
-  align-items: stretch;
+  align-items: start;
   position: relative;
 }
 
 /* ─── Side Navigation ───────────────────────────────────────────────────────── */
 
-/* Sidebar column — a grid-flow column that also acts as the sticky
-   bounding context. It stretches to match the main content height
-   (align-self: stretch), so the sticky sidebar travels up to exactly
-   where this column ends and never bleeds into the footer below. */
 .sideNavCol {
   width: 220px;
-  align-self: stretch; /* let the column grow to match the grid row height */
-  position: relative;  /* establishes a containing block for any children that need it */
+  position: relative;
 }
 
-/* The sidebar panel uses position: sticky so it:
-   - stays in normal document flow (its column retains actual height)
-   - scrolls with the page until the top threshold is reached, then pins
-   - automatically stops at the bottom edge of its parent (.sideNavCol),
-     which means it can never visually overflow into the footer below.
-   The left offset is no longer needed — sticky is positioned within
-   the grid column, not relative to the viewport. */
+/* Filter panel scrolls with the page (sticky sidebar is cart/checkout only). */
 .sideNav {
-  position: sticky;
-  top: calc(var(--navbar-height, 64px) + 16px);
   width: 220px;
-  max-height: calc(100vh - var(--navbar-height, 64px) - 32px);
   background: #FFFFFF;
   border: 1px solid rgba(16, 40, 32, 0.09);
   border-radius: 8px;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
 
-/* Inner scroll container — scrolls independently; the "Categories" header
-   stays pinned above it because it lives in sideNavHeader outside this div. */
 .sideNavScroll {
-  flex: 1;
-  min-height: 0;
   border-radius: 0 0 8px 8px;
-  overflow-y: auto;
+  overflow-y: visible;
   scrollbar-width: thin;
   scrollbar-color: rgba(16, 40, 32, 0.15) transparent;
 }
@@ -2434,30 +2411,12 @@
 
 /* ─── Responsive ────────────────────────────────────────────────────────────── */
 
-/* Desktop — sticky positioning needs no left offset override; it sits
-   naturally inside its .sideNavCol grid column. The JS-measured
-   --navbar-height variable is still used for the top threshold above. */
-@media (min-width: 901px) {
-  /* Desktop: allow the full filter panel to expand naturally
-     so no internal sidebar scrollbar appears. */
-  .sideNav {
-    max-height: none;
-  }
-
-  .sideNavScroll {
-    flex: none;
-    min-height: auto;
-    overflow-y: visible;
-  }
-}
-
 @media (max-width: 900px) {
   .shopLayout {
     grid-template-columns: 1fr;
   }
 
-  /* Reset desktop sticky behaviour — sidebar is hidden on mobile anyway,
-     but explicitly clearing ensures no leakage if display rules ever change. */
+  /* Sidebar is hidden on mobile; reset layout props if display rules change. */
   .sideNavCol {
     position: static;
     align-self: auto;
