@@ -549,6 +549,10 @@
   color: #64748b;
 }
 
+.filterOptions + .filterSheetLabel {
+  margin-top: 12px;
+}
+
 .filterOptions {
   display: flex;
   flex-direction: column;
@@ -1557,22 +1561,30 @@
     margin-bottom: 2px;
   }
 
-  .browsePageRoot .filterRow {
-    flex-wrap: nowrap;
-    gap: 8px;
+  .browseMobileArchiveRow {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    box-sizing: border-box;
   }
 
-  .browsePageRoot .filterRowStart {
-    gap: 6px;
+  .browseMobileArchiveRow .browseArchivedLink,
+  .browseMobileArchiveRow .browseArchiveGoBackLink {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    justify-content: center;
+  }
+
+  .browsePageRoot .mobileSearchSection {
+    width: 100%;
+  }
+
+  .browsePageRoot .mobileSearchSection .mobileSearchWrap {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: none;
     min-width: 0;
-  }
-
-  .browsePageRoot .filterRow .mobileSearchWrap {
-    width: min(168px, 40vw);
-    max-width: 168px;
-    min-width: 120px;
-    height: 40px;
-    padding: 0 10px;
   }
 
   /* Cards: tighter padding */
