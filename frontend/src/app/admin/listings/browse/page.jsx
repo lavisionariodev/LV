@@ -4,9 +4,9 @@ import { readEnum, readString, replaceUrlQuery } from '@/shared/utils'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { FiExternalLink, FiRotateCcw } from 'react-icons/fi'
+import { FiArchive, FiExternalLink, FiRotateCcw } from 'react-icons/fi'
+import { MdArrowBackIos } from 'react-icons/md'
 import { VscSettings } from 'react-icons/vsc'
-import { LuSettings2 } from 'react-icons/lu'
 import styles from '../listings.module.css'
 import { listSellerListingsForAdmin } from '@/lib/seller-listings/client'
 import { getShopHrefForSellerListingRow } from '@/lib/shop-listings/client'
@@ -15,10 +15,9 @@ import { Dropdown } from '@/components/ui'
 import { useDebouncedEffect, useMediaQuery } from '@/shared/hooks'
 import { TbX } from 'react-icons/tb'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-const APPROVED_STATUS_TABS = [
-  { value: 'active', label: 'Active' },
-  { value: 'archived', label: 'Archived' },
-]
+import { withAdminPortalShopContext } from '@/lib/shop-listings/adminShopReturn'
+const BROWSE_PATH = '/admin/listings/browse'
+const ARCHIVE_PATH = '/admin/listings/archive'
 
 const KIND_FILTER_OPTIONS = [
   { value: 'all', label: 'All kinds' },
@@ -185,9 +184,42 @@ function KindPill({ kind }) {
   )
 }
 
-function BrowseMobileListingCard({ row }) {
+function BrowseArchiveControl({ isArchiveView }) {
+  if (isArchiveView) {
+    return (
+      <Link href={BROWSE_PATH} className={styles.browseArchiveGoBackLink}>
+        <MdArrowBackIos className={styles.browseArchiveGoBackIcon} aria-hidden />
+        Go back
+      </Link>
+    )
+  }
+
+  return (
+    <Link href={ARCHIVE_PATH} className={styles.browseArchivedLink}>
+      <FiArchive size={16} aria-hidden />
+      Archived
+    </Link>
+  )
+}
+
+function BrowseSortDropdown({ sortKey, onSortChange }) {
+  return (
+    <div className={styles.sortWrap}>
+      <Dropdown
+        value={sortKey}
+        onChange={onSortChange}
+        ariaLabel="Sort listings"
+        options={SORT_OPTIONS}
+        placeholder="Sort"
+        leadingIcon={<VscSettings />}
+      />
+    </div>
+  )
+}
+
+function BrowseMobileListingCard({ row, adminReturnPath }) {
   const kind = kindKeyFromRow(row)
-  const shopHref = getShopHrefForSellerListingRow(row)
+  const shopHref = withAdminPortalShopContext(getShopHrefForSellerListingRow(row), adminReturnPath)
   const business = row.seller_business_name?.trim() || ''
   const email = row.seller_email?.trim() || ''
   const statusLabel = String(row.status || 'draft').toLowerCase()
@@ -209,8 +241,23 @@ function BrowseMobileListingCard({ row }) {
         </div>
       </div>
 
-      <div className={styles.mobileCardSection} data-mobile-label="Price">
-        <p className={styles.browseMobilePriceValue}>{formatPhpAmount(row.base_price)}</p>
+      <div className={styles.mobileCardSection}>
+        <div className={styles.browseMobilePriceKindRow}>
+          <div className={styles.browseMobilePriceKindCol}>
+            <span className={styles.browseMobileFieldLabel}>Price</span>
+            <p className={styles.browseMobilePriceValue}>{formatPhpAmount(row.base_price)}</p>
+          </div>
+          <div className={styles.browseMobilePriceKindCol}>
+            <span className={styles.browseMobileFieldLabel}>Kind</span>
+            <span
+              className={`${styles.browseMobileMetaText} ${styles.browseMobileKindValue} ${
+                styles[`browseMobileKind_${kind}`] || styles.browseMobileKind_other
+              }`}
+            >
+              {kindLabel}
+            </span>
+          </div>
+        </div>
       </div>
 
       <div className={styles.mobileCardSection} data-mobile-label="Seller">
@@ -224,31 +271,6 @@ function BrowseMobileListingCard({ row }) {
             {business ? <p className={styles.browseMobileSellerName}>{business}</p> : null}
             {email ? <p className={styles.browseMobileSellerEmail}>{email}</p> : null}
             {!business && !email ? <p className={styles.browseMobileSellerName}>—</p> : null}
-          </div>
-        </div>
-      </div>
-
-      <div className={styles.mobileCardSection} data-mobile-label="Listing">
-        <div className={styles.mobileCardStatusRow}>
-          <div className={styles.mobileCardStatusItem}>
-            <span className={styles.mobileCardStatusKey}>Status</span>
-            <span
-              className={`${styles.browseMobileMetaText} ${
-                styles[`browseMobileStatus_${statusLabel}`] || styles.browseMobileStatus_draft
-              }`}
-            >
-              {statusLabel}
-            </span>
-          </div>
-          <div className={styles.mobileCardStatusItem}>
-            <span className={styles.mobileCardStatusKey}>Kind</span>
-            <span
-              className={`${styles.browseMobileMetaText} ${
-                styles[`browseMobileKind_${kind}`] || styles.browseMobileKind_other
-              }`}
-            >
-              {kindLabel}
-            </span>
           </div>
         </div>
       </div>
@@ -271,9 +293,9 @@ function BrowseMobileListingCard({ row }) {
   )
 }
 
-function ListingCard({ row }) {
+function ListingCard({ row, adminReturnPath }) {
   const kind = kindKeyFromRow(row)
-  const shopHref = getShopHrefForSellerListingRow(row)
+  const shopHref = withAdminPortalShopContext(getShopHrefForSellerListingRow(row), adminReturnPath)
   const business = row.seller_business_name?.trim() || ''
   const email = row.seller_email?.trim() || ''
   const sellerSubline =
@@ -334,21 +356,19 @@ function ListingCard({ row }) {
 export default function AdminListingsBrowsePage() {
   const router = useRouter()
   const pathname = usePathname()
+  const adminReturnPath = pathname?.startsWith('/admin') ? pathname : '/admin/listings/browse'
   const listingsPathClean = pathname?.split(/[?#]/)[0] || ''
+  const isArchiveView = listingsPathClean === ARCHIVE_PATH
   const isListingsApprovalsRoute = listingsPathClean.startsWith('/admin/listings/approvals')
   const searchParams = useSearchParams()
   const isMobile = useMediaQuery('(max-width: 860px)')
   const [search, setSearch] = useState(() => readString(searchParams, 'q', ''))
-  const [statusTab, setStatusTab] = useState(() =>
-    readEnum(searchParams, 'status', APPROVED_STATUS_TABS.map((t) => t.value), 'active')
-  )
   const [kindFilter, setKindFilter] = useState(() =>
     readEnum(searchParams, 'kind', KIND_FILTER_OPTIONS.map((o) => o.value), 'all')
   )
   const [sortKey, setSortKey] = useState(() =>
     readEnum(searchParams, 'sort', SORT_OPTIONS.map((o) => o.value), 'updated')
   )
-  const [filtersOpen, setFiltersOpen] = useState(false)
   const [approvedRows, setApprovedRows] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -356,12 +376,10 @@ export default function AdminListingsBrowsePage() {
   // Sync state <- URL (back/forward, shared links). Defer updates so this effect does not set state synchronously.
   useEffect(() => {
     const nextQ = readString(searchParams, 'q', '')
-    const nextStatus = readEnum(searchParams, 'status', APPROVED_STATUS_TABS.map((t) => t.value), 'active')
     const nextKind = readEnum(searchParams, 'kind', KIND_FILTER_OPTIONS.map((o) => o.value), 'all')
     const nextSort = readEnum(searchParams, 'sort', SORT_OPTIONS.map((o) => o.value), 'updated')
     queueMicrotask(() => {
       setSearch((s) => (nextQ !== s ? nextQ : s))
-      setStatusTab((t) => (nextStatus !== t ? nextStatus : t))
       setKindFilter((k) => (nextKind !== k ? nextKind : k))
       setSortKey((sk) => (nextSort !== sk ? nextSort : sk))
     })
@@ -371,28 +389,10 @@ export default function AdminListingsBrowsePage() {
   useDebouncedEffect(() => {
     replaceUrlQuery(router, pathname, searchParams, {
       q: search,
-      status: { value: statusTab, omitIf: 'active' },
       kind: { value: kindFilter, omitIf: 'all' },
       sort: { value: sortKey, omitIf: 'updated' },
     })
-  }, [search, statusTab, kindFilter, sortKey, router, pathname, searchParams], 300)
-
-  useEffect(() => {
-    if (!isMobile || !filtersOpen) return
-
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-
-    function onKeyDown(e) {
-      if (e.key === 'Escape') setFiltersOpen(false)
-    }
-    window.addEventListener('keydown', onKeyDown)
-
-    return () => {
-      document.body.style.overflow = prevOverflow
-      window.removeEventListener('keydown', onKeyDown)
-    }
-  }, [filtersOpen, isMobile])
+  }, [search, kindFilter, sortKey, router, pathname, searchParams], 300)
 
   useEffect(() => {
     let mounted = true
@@ -400,7 +400,7 @@ export default function AdminListingsBrowsePage() {
       setError(null)
       setIsLoading(true)
       const res = await listSellerListingsForAdmin({
-        statusIn: ['active', 'archived'],
+        statusIn: isArchiveView ? ['archived'] : ['active'],
         approvalStatusIn: ['approved'],
       })
       if (!mounted) return
@@ -416,22 +416,13 @@ export default function AdminListingsBrowsePage() {
     return () => {
       mounted = false
     }
-  }, [])
-
-  const statusCounts = useMemo(() => {
-    const counts = { active: 0, archived: 0 }
-    for (const r of approvedRows) {
-      const s = String(r?.status || '').toLowerCase()
-      if (s === 'active') counts.active += 1
-      if (s === 'archived') counts.archived += 1
-    }
-    return counts
-  }, [approvedRows])
+  }, [isArchiveView])
 
   const approvedFiltered = useMemo(() => {
+    const scopeStatus = isArchiveView ? 'archived' : 'active'
     let result = approvedRows.filter((row) => {
       const st = String(row.status || '').toLowerCase()
-      if (st !== statusTab) return false
+      if (st !== scopeStatus) return false
 
       const kk = kindKeyFromRow(row)
       if (kindFilter !== 'all' && kk !== kindFilter) return false
@@ -470,19 +461,13 @@ export default function AdminListingsBrowsePage() {
     }
 
     return result
-  }, [approvedRows, search, statusTab, kindFilter, sortKey])
+  }, [approvedRows, search, isArchiveView, kindFilter, sortKey])
 
   const hasFilters = Boolean(search.trim()) || kindFilter !== 'all'
 
   const clearFilters = () => {
     setSearch('')
     setKindFilter('all')
-  }
-
-  const clearAllMobile = () => {
-    clearFilters()
-    setSortKey('updated')
-    setFiltersOpen(false)
   }
 
   const mobileHasFilters = hasFilters || sortKey !== 'updated'
@@ -501,9 +486,9 @@ export default function AdminListingsBrowsePage() {
     <div className={`${styles.pageRoot} ${styles.browsePageRoot}`}>
       <nav className={styles.listingsMobileSwitch} aria-label="Listings navigation">
         <Link
-          href="/admin/listings/browse"
-          className={`${styles.listingsMobileSwitchLink} ${!isListingsApprovalsRoute ? styles.listingsMobileSwitchLinkActive : ''}`}
-          aria-current={!isListingsApprovalsRoute ? 'page' : undefined}
+          href={BROWSE_PATH}
+          className={`${styles.listingsMobileSwitchLink} ${!isListingsApprovalsRoute && !isArchiveView ? styles.listingsMobileSwitchLinkActive : ''}`}
+          aria-current={!isListingsApprovalsRoute && !isArchiveView ? 'page' : undefined}
         >
           Browse
         </Link>
@@ -517,46 +502,27 @@ export default function AdminListingsBrowsePage() {
       </nav>
 
       <div className={styles.toolbar}>
-        <div className={styles.toolbarTopRow}>
-          <div className={styles.tabsStack}>
-            <div className={styles.tabs}>
-              {APPROVED_STATUS_TABS.map(({ value, label }) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={`${styles.tab}${statusTab === value ? ` ${styles.active}` : ''}`}
-                  onClick={() => setStatusTab(value)}
-                >
-                  {label}
-                  <span className={styles.tabCount}>{statusCounts[value] ?? 0}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {!isMobile && (
-            <div className={styles.sortWrap}>
-              <Dropdown
-                value={sortKey}
-                onChange={setSortKey}
-                ariaLabel="Sort listings"
-                options={SORT_OPTIONS}
-                placeholder="Sort"
-                leadingIcon={<VscSettings />}
-              />
-            </div>
-          )}
+        <div className={styles.toolbarHeaderRow}>
+          <BrowseSortDropdown sortKey={sortKey} onSortChange={setSortKey} />
         </div>
 
-        {isMobile ? (
-          <div className={styles.mobileSearchSection}>
-            <div className={`${styles.mobileSearchWrap}${mobileHasFilters ? ` ${styles.mobileSearchWrapActive}` : ''}`}>
-              <span className={styles.mobileSearchIcon}>
+        <div className={styles.filterRow}>
+          <div className={styles.filterRowStart}>
+            <div
+              className={`${isMobile ? styles.mobileSearchWrap : styles.toolbarSearchWrap}${
+                isMobile && mobileHasFilters ? ` ${styles.mobileSearchWrapActive}` : ''
+              }`}
+            >
+              {isMobile ? (
+                <span className={styles.mobileSearchIcon}>
+                  <Icon.Search />
+                </span>
+              ) : (
                 <Icon.Search />
-              </span>
+              )}
               <input
                 aria-label="Search listings"
-                className={styles.mobileSearchInput}
+                className={isMobile ? styles.mobileSearchInput : styles.toolbarSearchInput}
                 type="search"
                 placeholder="Search title, seller, or email…"
                 value={search}
@@ -566,68 +532,7 @@ export default function AdminListingsBrowsePage() {
               {search.trim() ? (
                 <button
                   type="button"
-                  className={styles.mobileSearchClearBtn}
-                  onClick={() => setSearch('')}
-                  aria-label="Clear search"
-                >
-                  <TbX aria-hidden />
-                </button>
-              ) : null}
-              <div className={styles.mobileSearchDivider} />
-              <button
-                type="button"
-                className={styles.mobileFilterBtn}
-                onClick={() => setFiltersOpen(true)}
-                aria-haspopup="dialog"
-                aria-expanded={filtersOpen}
-                aria-label="Open filters"
-              >
-                <LuSettings2
-                  aria-hidden
-                  className={`${styles.mobileFilterIcon}${mobileHasFilters ? ` ${styles.mobileFilterIconActive}` : ''}`}
-                />
-              </button>
-            </div>
-            {activeFilterLabels.length > 0 && (
-              <div className={styles.mobileActivePillsRow} aria-label="Active filters">
-                {activeFilterLabels.map((label) => (
-                  <div key={label} className={styles.mobileActivePill}>
-                    <span className={styles.mobileActivePillLabel}>{label}</span>
-                    <button
-                      type="button"
-                      className={styles.mobileActivePillClear}
-                      onClick={() => {
-                        const sortLabel = (SORT_OPTIONS.find((o) => o.value === sortKey)?.label || sortKey).replace(/^Sort:\s*/i, '')
-                        const kindLabel = KIND_FILTER_OPTIONS.find((o) => o.value === kindFilter)?.label || kindFilter
-                        if (label === sortLabel) setSortKey('updated')
-                        if (label === kindLabel) setKindFilter('all')
-                      }}
-                      aria-label={`Clear ${label} filter`}
-                    >
-                      <TbX aria-hidden />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className={styles.filterRow}>
-            <div className={styles.toolbarSearchWrap}>
-              <Icon.Search />
-              <input
-                aria-label="Search listings"
-                className={styles.toolbarSearchInput}
-                type="search"
-                placeholder="Search title, seller, or email…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                autoComplete="off"
-              />
-              {search.trim() ? (
-                <button
-                  type="button"
-                  className={styles.toolbarSearchClearBtn}
+                  className={isMobile ? styles.mobileSearchClearBtn : styles.toolbarSearchClearBtn}
                   onClick={() => setSearch('')}
                   aria-label="Clear search"
                 >
@@ -644,116 +549,50 @@ export default function AdminListingsBrowsePage() {
               placeholder="All kinds"
             />
 
-            <button
-              type="button"
-              className={styles.toolbarClearAll}
-              onClick={clearFilters}
-              disabled={!hasFilters}
-            >
-              <FiRotateCcw className={styles.toolbarClearIcon} aria-hidden />
-              Clear
-            </button>
+            {!isMobile && (
+              <button
+                type="button"
+                className={styles.toolbarClearAll}
+                onClick={clearFilters}
+                disabled={!hasFilters}
+              >
+                <FiRotateCcw className={styles.toolbarClearIcon} aria-hidden />
+                Clear
+              </button>
+            )}
+          </div>
+
+          <div className={styles.toolbarArchiveEnd}>
+            <BrowseArchiveControl isArchiveView={isArchiveView} />
+          </div>
+        </div>
+
+        {isMobile && activeFilterLabels.length > 0 && (
+          <div className={styles.mobileActivePillsRow} aria-label="Active filters">
+            {activeFilterLabels.map((label) => (
+              <div key={label} className={styles.mobileActivePill}>
+                <span className={styles.mobileActivePillLabel}>{label}</span>
+                <button
+                  type="button"
+                  className={styles.mobileActivePillClear}
+                  onClick={() => {
+                    const sortLabel = (SORT_OPTIONS.find((o) => o.value === sortKey)?.label || sortKey).replace(
+                      /^Sort:\s*/i,
+                      '',
+                    )
+                    const kindLabel = KIND_FILTER_OPTIONS.find((o) => o.value === kindFilter)?.label || kindFilter
+                    if (label === sortLabel) setSortKey('updated')
+                    if (label === kindLabel) setKindFilter('all')
+                  }}
+                  aria-label={`Clear ${label} filter`}
+                >
+                  <TbX aria-hidden />
+                </button>
+              </div>
+            ))}
           </div>
         )}
       </div>
-
-      {isMobile && filtersOpen && (
-        <div
-          className={styles.filterSheetOverlay}
-          role="presentation"
-          onClick={() => setFiltersOpen(false)}
-        >
-          <div
-            className={styles.filterSheet}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Filters"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className={styles.filterSheetHandle} aria-hidden />
-            <div className={styles.filterSheetHeader}>
-              <p className={styles.filterSheetTitle}>Filters</p>
-              <button
-                type="button"
-                className={styles.filterSheetClose}
-                onClick={() => setFiltersOpen(false)}
-                aria-label="Close"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className={styles.filterSheetBody}>
-              <p className={styles.filterSheetLabel}>Sort</p>
-              <div className={styles.filterOptions}>
-                {SORT_OPTIONS.map((opt) => {
-                  const active = opt.value === sortKey
-                  const rawLabel = String(opt.label || '')
-                  const displayLabel =
-                    opt.value === 'updated'
-                      ? rawLabel
-                      : rawLabel.replace(/^Sort:\s*/i, '') || opt.label
-                  const isDefault = opt.value === 'updated'
-                  return (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      className={`${styles.filterOption} ${
-                        active ? (isDefault ? styles.filterOptionActiveDefault : styles.filterOptionActive) : ''
-                      }`}
-                      onClick={() => {
-                        setSortKey(opt.value)
-                        setFiltersOpen(false)
-                      }}
-                      aria-pressed={active}
-                    >
-                      <span>{displayLabel}</span>
-                      {active && <span className={styles.filterOptionCheck} aria-hidden />}
-                    </button>
-                  )
-                })}
-              </div>
-
-              <p className={styles.filterSheetLabel}>Kind</p>
-              <div className={styles.filterOptions}>
-                {KIND_FILTER_OPTIONS.map((opt) => {
-                  const active = opt.value === kindFilter
-                  const isDefault = opt.value === 'all'
-                  return (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      className={`${styles.filterOption} ${
-                        active ? (isDefault ? styles.filterOptionActiveDefault : styles.filterOptionActive) : ''
-                      }`}
-                      onClick={() => {
-                        setKindFilter(opt.value)
-                        setFiltersOpen(false)
-                      }}
-                      aria-pressed={active}
-                    >
-                      <span>{opt.label}</span>
-                      {active && <span className={styles.filterOptionCheck} aria-hidden />}
-                    </button>
-                  )
-                })}
-              </div>
-
-              <div className={styles.filterSheetFooter}>
-                <button
-                  type="button"
-                  className={styles.filterSheetClearAll}
-                  onClick={clearAllMobile}
-                  disabled={!mobileHasFilters}
-                >
-                  <FiRotateCcw className={styles.toolbarClearIcon} aria-hidden />
-                  Clear all
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className={styles.cardList}>
         {isLoading && (
@@ -767,14 +606,20 @@ export default function AdminListingsBrowsePage() {
                       <span className={`${styles.listingsSkBar} ${styles.browseMobileSkTitle}`} aria-hidden />
                     </div>
                   </div>
-                  <div className={styles.mobileCardSection} data-mobile-label="Price">
-                    <span className={`${styles.listingsSkBar} ${styles.browseMobileSkPrice}`} aria-hidden />
+                  <div className={styles.mobileCardSection}>
+                    <div className={styles.browseMobilePriceKindRow}>
+                      <div className={styles.browseMobilePriceKindCol}>
+                        <span className={`${styles.listingsSkBar} ${styles.browseMobileSkLabel}`} aria-hidden />
+                        <span className={`${styles.listingsSkBar} ${styles.browseMobileSkPrice}`} aria-hidden />
+                      </div>
+                      <div className={styles.browseMobilePriceKindCol}>
+                        <span className={`${styles.listingsSkBar} ${styles.browseMobileSkLabel}`} aria-hidden />
+                        <span className={`${styles.listingsSkBar} ${styles.browseMobileSkKind}`} aria-hidden />
+                      </div>
+                    </div>
                   </div>
                   <div className={styles.mobileCardSection} data-mobile-label="Seller">
                     <span className={`${styles.listingsSkBar} ${styles.browseMobileSkLine}`} aria-hidden />
-                  </div>
-                  <div className={styles.mobileCardSection}>
-                    <span className={`${styles.listingsSkBar} ${styles.browseMobileSkLine}`} style={{ width: '70%' }} aria-hidden />
                   </div>
                   <div className={styles.mobileCardFooter}>
                     <span className={`${styles.listingsSkBar} ${styles.browseMobileSkBtn}`} aria-hidden />
@@ -816,9 +661,9 @@ export default function AdminListingsBrowsePage() {
         {!isLoading && !error && approvedFiltered.length > 0 &&
           approvedFiltered.map((row) =>
             isMobile ? (
-              <BrowseMobileListingCard key={row.id} row={row} />
+              <BrowseMobileListingCard key={row.id} row={row} adminReturnPath={adminReturnPath} />
             ) : (
-              <ListingCard key={row.id} row={row} />
+              <ListingCard key={row.id} row={row} adminReturnPath={adminReturnPath} />
             ),
           )}
 
@@ -828,11 +673,17 @@ export default function AdminListingsBrowsePage() {
               <rect x="8" y="12" width="32" height="26" rx="3" stroke="currentColor" strokeWidth="2" />
               <path d="M8 20h32" stroke="currentColor" strokeWidth="2" />
             </svg>
-            <p className={styles.emptyTitle}>No listings found</p>
+            <p className={styles.emptyTitle}>
+              {isArchiveView ? 'No archived listings found' : 'No listings found'}
+            </p>
             <p className={styles.emptyText}>
               {approvedRows.length === 0
-                ? 'No seller listings in the database yet, or you may lack permission to read them.'
-                : 'No listings match your current filters.'}
+                ? isArchiveView
+                  ? 'No approved listings are archived yet.'
+                  : 'No seller listings in the database yet, or you may lack permission to read them.'
+                : isArchiveView
+                  ? 'No archived listings match your current filters.'
+                  : 'No listings match your current filters.'}
             </p>
             {hasFilters && (
               <button type="button" className={styles.clearBtn} onClick={clearFilters}>
@@ -855,7 +706,7 @@ export default function AdminListingsBrowsePage() {
       {!isLoading && !error && approvedFiltered.length > 0 && (
         <div className={styles.tableFooter}>
           Showing <strong>{approvedFiltered.length}</strong> of <strong>{approvedRows.length}</strong>{' '}
-          approved listings
+          {isArchiveView ? 'archived' : 'active'} approved listings
         </div>
       )}
     </div>

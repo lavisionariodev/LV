@@ -4,6 +4,7 @@ import {
   TbCalendarCheck,
   TbCircleCheck,
   TbClipboardList,
+  TbEdit,
   TbClock,
   TbCreditCardOff,
   TbFileX,
@@ -26,6 +27,7 @@ const NOTIFICATION_TYPE_DISPLAY = {
   listing_approval: { Icon: LuUserCheck, color: 'green' },
   listing_rejected: { Icon: TbFileX, color: 'red' },
   listing_pending_review: { Icon: TbClipboardList, color: 'gold' },
+  listing_staged_update: { Icon: TbEdit, color: 'blue' },
   alerts: { Icon: TbBellRinging, color: 'red' },
   reminder: { Icon: TbClock, color: 'gold' },
   system: { Icon: LuMegaphone, color: 'gold' },
@@ -73,6 +75,7 @@ export function getNotificationDisplay(apiType, fallbackBucket) {
 
   if (t.startsWith('listing_')) {
     if (t.includes('reject')) return NOTIFICATION_TYPE_DISPLAY.listing_rejected
+    if (t.includes('staged')) return NOTIFICATION_TYPE_DISPLAY.listing_staged_update
     if (t.includes('pending')) return NOTIFICATION_TYPE_DISPLAY.listing_pending_review
     return NOTIFICATION_TYPE_DISPLAY.listing_approval
   }

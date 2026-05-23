@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase/admin'
+import { notifyAdminsListingStagedUpdate } from '@/lib/notifications/listingAdminNotify'
+import { hasPendingSellerChanges } from '@/lib/seller-listings/pendingChanges'
 
 const PATCH_ALLOWED_KEYS = new Set([
   'listing_name',
@@ -43,7 +45,9 @@ async function requireOwnedListing(listingId) {
   const supabaseAdmin = getSupabaseAdmin()
   const { data: existing, error: fetchErr } = await supabaseAdmin
     .from('seller_listings')
-    .select('id,seller_user_id')
+    .select(
+      'id,seller_user_id,approval_status,listing_name,pending_changes,pending_changes_submitted_at',
+    )
     .eq('id', listingId)
     .maybeSingle()
 
@@ -86,6 +90,23 @@ export async function PATCH(request, context) {
 
   if (error || !data) {
     return NextResponse.json({ error: error?.message || 'Failed to update listing.' }, { status: 500 })
+  }
+
+  const prevStagedAt = auth.existing.pending_changes_submitted_at
+  const nextStagedAt = data.pending_changes_submitted_at
+  const stagedSubmission =
+    String(data.approval_status || '').toLowerCase() === 'approved' &&
+    hasPendingSellerChanges(data) &&
+    nextStagedAt &&
+    String(nextStagedAt) !== String(prevStagedAt || '')
+
+  if (stagedSubmission) {
+    await notifyAdminsListingStagedUpdate(auth.supabaseAdmin, {
+      listingId,
+      listingName: data.listing_name || auth.existing.listing_name,
+      submittedAt: String(nextStagedAt),
+      pendingChanges: data.pending_changes,
+    })
   }
 
   return NextResponse.json({ data }, { status: 200 })

@@ -97,8 +97,10 @@ export const IN_APP_NOTIFICATION_TYPES = /** @type {const} */ ([
   'account',
   'listing_approval',
   'listing_rejected',
-  // Admin: seller submitted seller_listings for approval (POST …/submit-for-review).
+  // Admin: seller submitted a new seller_listings row for approval (POST …/submit-for-review).
   'listing_pending_review',
+  // Admin: seller saved staged edits on an approved listing (PATCH …/listings/[id]).
+  'listing_staged_update',
   'system',
 ])
 
@@ -114,7 +116,14 @@ export function isKnownInAppNotificationType(t) {
 export function adminNotificationFilterBucket(apiType) {
   const t = String(apiType || '')
   if (t === 'payment_success' || t === 'payment_failed' || t === 'payment_refund') return 'order'
-  if (t === 'listing_approval' || t === 'listing_rejected' || t === 'listing_pending_review') return 'approval'
+  if (
+    t === 'listing_approval' ||
+    t === 'listing_rejected' ||
+    t === 'listing_pending_review' ||
+    t === 'listing_staged_update'
+  ) {
+    return 'approval'
+  }
   if (t === 'alerts' || t === 'service_alert') return 'alert'
   if (t === 'system') return 'announcement'
   if (t.startsWith('service')) return 'order'

@@ -47,6 +47,7 @@ const PAGE_TITLES = {
     '/admin/buyers': 'Buyers',
     '/admin/sellers': 'Sellers',
     '/admin/listings/browse': 'Browse listings',
+    '/admin/listings/archive': 'Archived listings',
     '/admin/listings/approvals': 'Listing approvals',
     '/admin/settings': 'Settings',
     '/admin/settings/account': 'Account',
