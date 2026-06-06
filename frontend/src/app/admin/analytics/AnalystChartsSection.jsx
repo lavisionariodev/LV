@@ -33,6 +33,34 @@ function ChartEmpty({ message }) {
   )
 }
 
+function pieSliceColor(entry, index) {
+  if (entry.isPlaceholder) return '#e2e8f0'
+  return CHART_BAR_COLORS[index % CHART_BAR_COLORS.length]
+}
+
+/**
+ * @param {{ active?: boolean, payload?: { name?: string, value?: number, payload?: { name?: string, value?: number, percent?: number } }[] }} props
+ */
+function RevenueMixTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null
+
+  const row = payload[0]?.payload ?? payload[0]
+  const name = String(row?.name || '—')
+  const value = Number(row?.value) || 0
+  const percent = Number(row?.percent) || 0
+
+  return (
+    <div className={analyticsStyles.revenueMixTooltip}>
+      <p className={analyticsStyles.revenueMixTooltipName}>{name}</p>
+      <p className={analyticsStyles.revenueMixTooltipMeta}>
+        ₱ {value.toLocaleString()}
+        <span aria-hidden> · </span>
+        {percent}% of mix
+      </p>
+    </div>
+  )
+}
+
 /**
  * @param {{ monthlyBookings?: { label: string, count: number }[], monthlyRevenue?: { label: string, amount: number }[], revenueMix?: { name: string, value: number }[] }} props
  */
@@ -55,8 +83,13 @@ export default function AnalystChartsSection({
   const mixTotal = revenueMix.reduce((s, r) => s + (Number(r.value) || 0), 0)
 
   const pieData = useMemo(() => {
-    if (mixTotal <= 0) return [{ name: '—', value: 1, isPlaceholder: true }]
-    return revenueMix.filter((r) => r.value > 0)
+    if (mixTotal <= 0) return [{ name: '—', value: 1, percent: 0, isPlaceholder: true }]
+    return revenueMix
+      .filter((r) => r.value > 0)
+      .map((r) => ({
+        ...r,
+        percent: mixTotal > 0 ? Math.round((r.value / mixTotal) * 100) : 0,
+      }))
   }, [revenueMix, mixTotal])
 
   return (
@@ -130,40 +163,60 @@ export default function AnalystChartsSection({
       <div className={`${layoutStyles.analyticsChartBlock} ${analyticsStyles.analystPieBlock}`}>
         <p className={layoutStyles.analyticsChartLabel}>Revenue mix by line item</p>
         <p className={layoutStyles.analyticsSubtitle} style={{ marginBottom: 12 }}>
-          Top services · last 12 months
+          Which funeral services and packages earned the most · paid orders · last 12 months
         </p>
         {mixTotal <= 0 ? (
           <ChartEmpty message="No line-item revenue in the last 12 months." />
         ) : (
-          <ResponsiveContainer width="100%" height={220}>
-            <PieChart>
-              <Pie
-                data={pieData}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                innerRadius={48}
-                outerRadius={78}
-                paddingAngle={2}
-              >
-                {pieData.map((entry, index) => (
-                  <Cell
-                    key={`${entry.name}-${index}`}
-                    fill={
-                      entry.isPlaceholder
-                        ? '#e2e8f0'
-                        : CHART_BAR_COLORS[index % CHART_BAR_COLORS.length]
-                    }
+          <div className={analyticsStyles.revenueMixLayout}>
+            <div className={analyticsStyles.revenueMixChart}>
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={52}
+                    outerRadius={78}
+                    paddingAngle={2}
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell key={`${entry.name}-${index}`} fill={pieSliceColor(entry, index)} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<RevenueMixTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+              <p className={analyticsStyles.revenueMixTotal} aria-label={`Total line-item revenue: ₱ ${mixTotal.toLocaleString()}`}>
+                <span className={analyticsStyles.revenueMixTotalLabel}>Total</span>
+                <span className={analyticsStyles.revenueMixTotalValue}>₱ {mixTotal.toLocaleString()}</span>
+              </p>
+            </div>
+
+            <ul className={analyticsStyles.revenueMixLegend} aria-label="Revenue share by service or package">
+              {pieData.map((entry, index) => (
+                <li key={`${entry.name}-${index}`} className={analyticsStyles.revenueMixLegendItem}>
+                  <span
+                    className={analyticsStyles.revenueMixLegendSwatch}
+                    style={{ background: pieSliceColor(entry, index) }}
+                    aria-hidden
                   />
-                ))}
-              </Pie>
-              <Tooltip
-                formatter={(value) => [`₱ ${Number(value).toLocaleString()}`, 'Revenue']}
-                contentStyle={rechartsTooltipStyle}
-              />
-            </PieChart>
-          </ResponsiveContainer>
+                  <span className={analyticsStyles.revenueMixLegendCopy}>
+                    <span className={analyticsStyles.revenueMixLegendName} title={entry.name}>
+                      {entry.name}
+                    </span>
+                    <span className={analyticsStyles.revenueMixLegendMeta}>
+                      ₱ {Number(entry.value).toLocaleString()}
+                      <span aria-hidden> · </span>
+                      {entry.percent}%
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
     </div>

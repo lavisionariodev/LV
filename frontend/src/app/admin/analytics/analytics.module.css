@@ -101,9 +101,115 @@
 
 .analystPieBlock {
   grid-column: 1 / -1;
-  max-width: 480px;
-  margin: 0 auto;
   width: 100%;
+}
+
+.revenueMixLayout {
+  display: grid;
+  grid-template-columns: minmax(200px, 280px) minmax(0, 1fr);
+  gap: 20px 28px;
+  align-items: center;
+}
+
+.revenueMixChart {
+  position: relative;
+  min-height: 220px;
+}
+
+.revenueMixTotal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+  text-align: center;
+  max-width: 88px;
+}
+
+.revenueMixTotalLabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.revenueMixTotalValue {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.revenueMixLegend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.revenueMixLegendItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.revenueMixLegendSwatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.revenueMixLegendCopy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.revenueMixLegendName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.revenueMixLegendMeta {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.revenueMixTooltip {
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+.revenueMixTooltipName {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  max-width: 220px;
+}
+
+.revenueMixTooltipMeta {
+  margin: 0;
+  font-size: 12px;
+  color: #475569;
 }
 
 .trendsGrid {
@@ -115,8 +221,8 @@
 
 .breakdownGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
 }
 
 .chartEmpty {
@@ -200,8 +306,15 @@
     grid-template-columns: 1fr;
   }
 
-  .analystPieBlock {
-    max-width: none;
+  .revenueMixLayout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .revenueMixChart {
+    max-width: 280px;
+    margin: 0 auto;
+    width: 100%;
   }
 
   .breakdownGrid {

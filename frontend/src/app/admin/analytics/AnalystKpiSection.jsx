@@ -46,7 +46,7 @@ export default function AnalystKpiSection({ analystSummary = EMPTY_SUMMARY }) {
       key: 'customers',
       label: 'New customers',
       value: formatCount(analystSummary.newCustomersThisMonth ?? 0, { desktop: true }),
-      hint: 'First paid order this month',
+      hint: 'This month',
       icon: TbUsers,
     },
     {

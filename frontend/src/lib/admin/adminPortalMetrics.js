@@ -171,47 +171,10 @@ async function aggregateTopSellersByGmv(supabaseAdmin, cutoffIso) {
 }
 
 /**
- * Top booked products/listings by line totals (product_id + name).
+ * Top line items by revenue (order_items.name).
  * @param {import('@supabase/supabase-js').SupabaseClient} supabaseAdmin
  * @param {string} cutoffIso
  */
-async function aggregateTopListingsByGmv(supabaseAdmin, cutoffIso) {
-  const { data: orders } = await supabaseAdmin
-    .from('orders')
-    .select('id')
-    .eq('payment_status', 'paid')
-    .gte('created_at', cutoffIso)
-
-  const ids = (orders ?? []).map((o) => o.id)
-  if (ids.length === 0) return []
-
-  /** @type {Map<string, { name: string, value: number }>} */
-  const byProduct = new Map()
-  const chunkSize = 200
-  for (let i = 0; i < ids.length; i += chunkSize) {
-    const chunk = ids.slice(i, i + chunkSize)
-    const { data: items } = await supabaseAdmin
-      .from('order_items')
-      .select('product_id, name, price, quantity')
-      .in('order_id', chunk)
-
-    for (const it of items ?? []) {
-      const productId = String(it.product_id || 'other').trim() || 'other'
-      const name = String(it.name || 'Other').trim() || 'Other'
-      const key = `${productId}::${name}`
-      const line = Number(it.price) * (Number(it.quantity) || 1)
-      const prev = byProduct.get(key)
-      if (prev) {
-        prev.value += line
-      } else {
-        byProduct.set(key, { name, value: line })
-      }
-    }
-  }
-
-  return [...byProduct.values()].sort((a, b) => b.value - a.value).slice(0, 8)
-}
-
 async function aggregateTopOrderLineItems(supabaseAdmin, cutoffIso) {
   const { data: orders } = await supabaseAdmin
     .from('orders')
@@ -294,7 +257,6 @@ export async function getAdminPortalMetrics(supabaseAdmin, options = {}) {
     dailyCollectedGmv,
     topLineItems,
     topSellers,
-    topListings,
     recentOrdersRes,
     disputesAttentionCount,
     analystMetrics,
@@ -322,7 +284,6 @@ export async function getAdminPortalMetrics(supabaseAdmin, options = {}) {
     fetchDailyCollectedGmvSeries(supabaseAdmin, chartDayKeys),
     aggregateTopOrderLineItems(supabaseAdmin, cutoff),
     aggregateTopSellersByGmv(supabaseAdmin, cutoff),
-    aggregateTopListingsByGmv(supabaseAdmin, cutoff),
     supabaseAdmin
       .from('orders')
       .select('id, order_number, subtotal, payment_status, created_at')
@@ -394,7 +355,6 @@ export async function getAdminPortalMetrics(supabaseAdmin, options = {}) {
     dailyCollectedGmv,
     topLineItems,
     topSellers,
-    topListings,
     recentActivity,
     analystSummary: analystMetrics.analystSummary,
     monthlyBookings: analystMetrics.monthlyBookings,
