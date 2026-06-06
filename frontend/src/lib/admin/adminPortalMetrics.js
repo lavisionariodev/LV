@@ -2,6 +2,8 @@
  * Aggregations for `/api/admin/metrics` and payout summary helpers.
  */
 
+import { getAdminAnalystMetrics } from './adminAnalystMetrics.js'
+
 /** @param {any} oEmbed */
 export function pickOrder(oEmbed) {
   if (!oEmbed) return null
@@ -295,6 +297,7 @@ export async function getAdminPortalMetrics(supabaseAdmin, options = {}) {
     topListings,
     recentOrdersRes,
     disputesAttentionCount,
+    analystMetrics,
   ] = await Promise.all([
     supabaseAdmin.from('platform_billing').select('default_commission_percent').eq('id', 1).maybeSingle(),
     supabaseAdmin.from('sellers').select('*', { count: 'exact', head: true }),
@@ -327,6 +330,7 @@ export async function getAdminPortalMetrics(supabaseAdmin, options = {}) {
       .order('created_at', { ascending: false })
       .limit(5),
     countOpenOrReviewDisputes(supabaseAdmin),
+    getAdminAnalystMetrics(supabaseAdmin),
   ])
 
   const defaultCommissionPercent =
@@ -392,5 +396,11 @@ export async function getAdminPortalMetrics(supabaseAdmin, options = {}) {
     topSellers,
     topListings,
     recentActivity,
+    analystSummary: analystMetrics.analystSummary,
+    monthlyBookings: analystMetrics.monthlyBookings,
+    monthlyRevenue: analystMetrics.monthlyRevenue,
+    monthlyNewCustomers: analystMetrics.monthlyNewCustomers,
+    revenueMix: analystMetrics.revenueMix,
+    insights: analystMetrics.insights,
   }
 }

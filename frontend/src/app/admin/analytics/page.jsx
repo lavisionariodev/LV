@@ -8,6 +8,11 @@ import { LuUserCheck } from 'react-icons/lu'
 import layoutStyles from '../admin.module.css'
 import earningsStyles from '../earnings/earnings.module.css'
 import analyticsStyles from './analytics.module.css'
+import AnalystKpiSection from './AnalystKpiSection'
+import AnalystChartsSection from './AnalystChartsSection'
+import InsightsPanel from './InsightsPanel'
+import ExportActions from './ExportActions'
+import { CHART_ACCENT, CHART_BAR_COLORS } from './chartTheme'
 import { formatCount, formatPHP } from '@/shared/utils'
 import {
   AreaChart,
@@ -22,8 +27,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 
-const BAR_COLORS = ['#1F312B', '#2D4A38', '#3D683A', '#4A7C47']
-const CHART_ACCENT = '#1F312B'
+const BAR_COLORS = CHART_BAR_COLORS
 const COMMISSION_ACCENT = '#2D4A38'
 const RECENT_ACTIVITY_MAX = 5
 const RANGE_OPTIONS = [
@@ -37,6 +41,14 @@ const EMPTY_RANGE_SUMMARY = {
   commissionReleasedInRange: 0,
   paidOrdersInRange: 0,
   avgOrderValueInRange: 0,
+}
+
+const EMPTY_ANALYST_SUMMARY = {
+  totalPaidOrders: 0,
+  bookingsThisMonth: 0,
+  revenueThisMonth: 0,
+  newCustomersThisMonth: 0,
+  bookingGrowthRate: { text: '—', up: true },
 }
 
 function utcLastNDaysSeriesZeros(n) {
@@ -210,7 +222,29 @@ function AnalyticsSkeleton() {
       aria-busy="true"
       aria-label="Loading analytics"
     >
-      <div className={layoutStyles.analyticsSkStats}>
+      <div className={analyticsStyles.analyticsStatsGridFive} aria-hidden>
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={i} className={layoutStyles.analyticsSkStatCard}>
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 12, width: '55%' }} />
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 24, width: '70%' }} />
+            <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 10, width: '45%' }} />
+          </div>
+        ))}
+      </div>
+
+      <section className={layoutStyles.analyticsSkPanel}>
+        <div className={layoutStyles.analyticsSkPanelHead}>
+          <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 16, width: 180 }} />
+          <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 28, width: 200 }} />
+        </div>
+        <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 72, width: '100%', borderRadius: 10 }} />
+        <div className={layoutStyles.analyticsSkChartGrid}>
+          <span className={`${layoutStyles.adminSkBar} ${layoutStyles.analyticsSkChart}`} />
+          <span className={`${layoutStyles.adminSkBar} ${layoutStyles.analyticsSkChart}`} />
+        </div>
+      </section>
+
+      <div className={layoutStyles.analyticsSkStats} aria-hidden>
         {[0, 1, 2, 3].map((i) => (
           <div key={i} className={layoutStyles.analyticsSkStatCard}>
             <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 12, width: '55%' }} />
@@ -312,6 +346,11 @@ export default function AdminAnalyticsPage() {
   const [topSellers, setTopSellers] = useState([])
   const [topListings, setTopListings] = useState([])
   const [recentActivity, setRecentActivity] = useState([])
+  const [analystSummary, setAnalystSummary] = useState(EMPTY_ANALYST_SUMMARY)
+  const [monthlyBookings, setMonthlyBookings] = useState([])
+  const [monthlyRevenue, setMonthlyRevenue] = useState([])
+  const [revenueMix, setRevenueMix] = useState([])
+  const [insights, setInsights] = useState([])
   const [metricsError, setMetricsError] = useState(null)
   const [metricsRetryTick, setMetricsRetryTick] = useState(0)
 
@@ -326,7 +365,7 @@ export default function AdminAnalyticsPage() {
         })
         const body = await res.json().catch(() => null)
         if (cancelled) return
-        if (!res.ok || !body?.rangeSummary) {
+        if (!res.ok || !body?.rangeSummary || !body?.analystSummary) {
           const msg =
             typeof body?.error === 'string'
               ? body.error
@@ -361,6 +400,20 @@ export default function AdminAnalyticsPage() {
         if (Array.isArray(body.recentActivity)) {
           setRecentActivity(body.recentActivity.slice(0, RECENT_ACTIVITY_MAX))
         }
+
+        if (body.analystSummary) {
+          setAnalystSummary({
+            totalPaidOrders: Number(body.analystSummary.totalPaidOrders) || 0,
+            bookingsThisMonth: Number(body.analystSummary.bookingsThisMonth) || 0,
+            revenueThisMonth: Number(body.analystSummary.revenueThisMonth) || 0,
+            newCustomersThisMonth: Number(body.analystSummary.newCustomersThisMonth) || 0,
+            bookingGrowthRate: body.analystSummary.bookingGrowthRate ?? { text: '—', up: true },
+          })
+        }
+        if (Array.isArray(body.monthlyBookings)) setMonthlyBookings(body.monthlyBookings)
+        if (Array.isArray(body.monthlyRevenue)) setMonthlyRevenue(body.monthlyRevenue)
+        if (Array.isArray(body.revenueMix)) setRevenueMix(body.revenueMix)
+        if (Array.isArray(body.insights)) setInsights(body.insights)
       } catch {
         if (!cancelled) {
           setMetricsError("Couldn't load analytics. Check your connection and try again.")
@@ -400,15 +453,27 @@ export default function AdminAnalyticsPage() {
 
       {!metricsError ? (
         <>
-          <p className={analyticsStyles.intro}>
-            Platform activity by UTC day. Settlement and PayMongo health live on{' '}
-            <Link href="/admin/earnings" className={analyticsStyles.introLink}>
-              Platform earnings
-            </Link>
-            .
-          </p>
+          <AnalystKpiSection analystSummary={analystSummary} />
 
-          <section className={layoutStyles.analyticsStatsGrid} aria-label="Summary metrics">
+          <section className={layoutStyles.panel}>
+            <div className={layoutStyles.panelHead}>
+              <div>
+                <p className={layoutStyles.panelTitle}>Analyst dashboard</p>
+                <p className={analyticsStyles.activityLimit}>12-month view · UTC · paid orders</p>
+              </div>
+              <ExportActions />
+            </div>
+
+            <InsightsPanel insights={insights} />
+
+            <AnalystChartsSection
+              monthlyBookings={monthlyBookings}
+              monthlyRevenue={monthlyRevenue}
+              revenueMix={revenueMix}
+            />
+          </section>
+
+          <section className={layoutStyles.analyticsStatsGrid} aria-label="Marketplace summary metrics">
             <KpiCard
               label="GMV collected"
               value={formatPHP(rangeSummary.gmvTotalInRange)}

@@ -99,7 +99,7 @@ const helpCenterFaqs = [
   },
   {
     q: 'What does the Analytics page actually show?',
-    a: 'It shows day-to-day signals you can trust: total providers and buyers, paid bookings in the last 30 days, a daily collected sales (GMV) chart that switches between 7, 30, and 90 day windows, top booked services, and recent activity. It is meant as a quick health check, not a deep report.',
+    a: 'At the top, the Analyst dashboard shows five KPIs (total paid orders, bookings and revenue this month, new customers, booking growth), monthly booking and revenue charts, a revenue-mix chart, rule-based insights, and CSV/Excel export. Below that, marketplace trends cover GMV and commission (7/30/90 day windows), top performers, and recent paid orders.',
   },
 ]
 
@@ -144,7 +144,7 @@ const helpCenterQuickLinks = [
   { title: 'Listings', description: 'Approve, reject, and browse what families can book.', href: '/admin/listings/approvals' },
   { title: 'Disputes', description: 'Handle cases between families and providers.', href: '/admin/disputes' },
   { title: 'Payouts', description: 'Track escrow, releases, and commission.', href: '/admin/payouts' },
-  { title: 'Analytics', description: 'A quick read on platform activity.', href: '/admin/analytics' },
+  { title: 'Analytics', description: 'Analyst KPIs, charts, insights, and CSV/Excel export.', href: '/admin/analytics' },
   { title: 'Notifications', description: 'Internal alerts and support messages from sellers.', href: '/admin/notifications' },
 ]
 

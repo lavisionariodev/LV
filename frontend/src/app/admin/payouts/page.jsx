@@ -5,7 +5,7 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { FiArrowUp, FiArrowDown, FiClock, FiRotateCcw, FiUnlock } from 'react-icons/fi'
-import { TbAlertTriangle, TbCoins, TbCreditCardPay, TbPlayerPause, TbX } from 'react-icons/tb'
+import { TbCoins, TbCreditCardPay, TbPlayerPause, TbX } from 'react-icons/tb'
 import { LuSettings2 } from 'react-icons/lu'
 
 import { useDebouncedEffect, useMediaQuery } from '@/shared/hooks'
@@ -145,7 +145,6 @@ function useAdminPayoutsPage() {
   const [listError, setListError] = useState(null)
   const [listTruncated, setListTruncated] = useState(false)
   const [summaryLoading, setSummaryLoading] = useState(true)
-  const [disbursementConfig, setDisbursementConfig] = useState(null)
 
   const [activeTab, setActiveTab] = useState(() => readEnum(searchParams, 'tab', TAB_VALUES, 'all'))
 
@@ -189,17 +188,6 @@ function useAdminPayoutsPage() {
     setSellerOptions(sellers)
     setTransactions(Array.isArray(payload.transactions) ? payload.transactions : [])
     setListTruncated(Boolean(payload.truncated))
-  }, [])
-
-  const fetchDisbursementConfig = useCallback(async () => {
-    try {
-      const res = await fetch('/api/admin/payouts/disbursement-config', { credentials: 'include' })
-      const body = await res.json().catch(() => null)
-      if (!res.ok) throw new Error(body?.error || 'Failed to load disbursement config')
-      setDisbursementConfig(body?.config && typeof body.config === 'object' ? body.config : null)
-    } catch {
-      setDisbursementConfig(null)
-    }
   }, [])
 
   const fetchSummary = useCallback(async () => {
@@ -265,9 +253,8 @@ function useAdminPayoutsPage() {
   useEffect(() => {
     queueMicrotask(() => {
       void fetchSummary()
-      void fetchDisbursementConfig()
     })
-  }, [fetchDisbursementConfig, fetchSummary])
+  }, [fetchSummary])
 
   useDebouncedEffect(
     () => {
@@ -381,8 +368,8 @@ function useAdminPayoutsPage() {
   )
 
   const refreshAll = useCallback(async () => {
-    await Promise.all([fetchSummary(), fetchTransactions(), fetchDisbursementConfig()])
-  }, [fetchDisbursementConfig, fetchSummary, fetchTransactions])
+    await Promise.all([fetchSummary(), fetchTransactions()])
+  }, [fetchSummary, fetchTransactions])
 
   const releaseOrder = useCallback(
     async (orderUuid, options = {}) => {
@@ -539,7 +526,6 @@ function useAdminPayoutsPage() {
     listLoading,
     listError,
     listTruncated,
-    disbursementConfig,
     paginatedRows,
     totalPages,
     dateSortDesc,
@@ -2421,7 +2407,6 @@ export default function AdminPayoutsPage() {
     listLoading,
     listError,
     listTruncated,
-    disbursementConfig,
     paginatedRows,
     totalPages,
     dateSortDesc,
@@ -2469,8 +2454,6 @@ export default function AdminPayoutsPage() {
   const [payoutsBulkReleaseConfirm, setPayoutsBulkReleaseConfirm] = useState(false)
   const [payoutsBulkUnholdConfirm, setPayoutsBulkUnholdConfirm] = useState(false)
   const [payoutsBulkBusy, setPayoutsBulkBusy] = useState(false)
-  const [disbursementReminderDismissed, setDisbursementReminderDismissed] = useState(false)
-
   const selectedPayoutTxns = useMemo(() => {
     if (selectedRows.size === 0) return []
     return transactions.filter((t) => {
@@ -3539,53 +3522,6 @@ export default function AdminPayoutsPage() {
           )}
         </>
       )}
-
-      {disbursementConfig && !disbursementReminderDismissed ? (
-        <div
-          className={`${styles.disbursementReminderHost}${
-            disbursementConfig.automatedReady ? '' : ` ${styles.disbursementReminderHostManual}`
-          }`}
-          role="dialog"
-          aria-modal="false"
-          aria-labelledby="payouts-disbursement-reminder-title"
-          aria-live="polite"
-        >
-          <div
-            className={`${styles.disbursementReminderModal} ${
-              disbursementConfig.automatedReady
-                ? styles.disbursementReminderModalAutomated
-                : styles.disbursementReminderModalManual
-            }`}
-          >
-            <button
-              type="button"
-              className={styles.disbursementReminderClose}
-              onClick={() => setDisbursementReminderDismissed(true)}
-              aria-label="Dismiss disbursement reminder"
-            >
-              <TbX size={18} strokeWidth={2} aria-hidden />
-            </button>
-            <div className={styles.disbursementReminderTitleRow}>
-              <TbAlertTriangle
-                size={20}
-                strokeWidth={2}
-                className={styles.disbursementReminderTitleIcon}
-                aria-hidden
-              />
-              <p id="payouts-disbursement-reminder-title" className={styles.disbursementReminderTitle}>
-                {disbursementConfig.automatedReady
-                  ? 'Seller withdrawals use PayMongo'
-                  : 'Seller withdrawals need PayMongo configuration'}
-              </p>
-            </div>
-            <p className={styles.disbursementReminderSub}>
-              {disbursementConfig.automatedReady
-                ? 'Admin release credits the seller wallet. Sellers withdraw to their bank or GCash when ready.'
-                : 'Admin release still credits the seller wallet in the app. Configure PayMongo wallet env vars before sellers can withdraw.'}
-            </p>
-          </div>
-        </div>
-      ) : null}
 
     </div>
   )

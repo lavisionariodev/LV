@@ -15,4 +15,6 @@ Minimal reference for **Lavisionario** (`frontend/`). Last reviewed against the 
 | 09 | [Deployment](./09-deployment.md) — build, pre-flight, hosting |
 | 10 | [Credentials & access](./10-credentials-and-access.md) — env names & handover checklist |
 
+**Analytics (portfolio / assessment):** [SQL queries](../analytics-queries.md) · [Case study](../analytics-case-study.md)
+
 **Setup:** [frontend/README.md](../../README.md) — env vars, migrations, webhook.

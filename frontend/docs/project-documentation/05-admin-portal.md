@@ -7,7 +7,7 @@
 
 | Area | Paths |
 |------|-------|
-| Dashboard / analytics | `/admin`, `/admin/analytics` (sidebar: Analytics) |
+| Dashboard / analytics | `/admin`, `/admin/analytics` (sidebar: Analytics) — analyst KPIs, charts, CSV/Excel export; see [Analytics queries](../analytics-queries.md) and [case study](../analytics-case-study.md) |
 | Platform earnings | `/admin/earnings` — commission treasury (view-only), PayMongo ops health |
 | Buyers · Sellers | `/admin/buyers`, `/admin/sellers` |
 | Listings | `/admin/listings/browse`, `/admin/listings/approvals` |
@@ -34,4 +34,4 @@ Permanent redirects (e.g. `/admin/settings/profile` → account) are in `next.co
 | Orders / money | Refund, payouts release (single/batch), hold/unhold, commission, disbursement config |
 | Treasury | `GET /api/admin/treasury` — platform commission summary + chart |
 | Disputes | List, detail, events, attention count |
-| Ops | Metrics, platform billing (incl. settlement bank/GCash), site content, notification prefs, stuck refunds |
+| Ops | Metrics (`GET /api/admin/metrics`, export `GET /api/admin/metrics/export?format=csv\|xlsx`), platform billing (incl. settlement bank/GCash), site content, notification prefs, stuck refunds |
