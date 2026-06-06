@@ -17,7 +17,6 @@ import { useMediaQuery } from '@/shared/hooks'
 import { formatPHPMobile, formatPHPDesktop } from '@/shared/utils'
 import layoutStyles from '../admin.module.css'
 import earningsStyles from './earnings.module.css'
-import PaymongoHealthPanel from './PaymongoHealthPanel'
 
 const CHART_ACCENT = '#1F312B'
 const RANGE_OPTIONS = [
@@ -80,27 +79,6 @@ function EarningsPageSkeleton() {
       <div className={earningsStyles.earningsSkDisclaimer}>
         <span className={`${layoutStyles.adminSkBar} ${earningsStyles.earningsSkDisclaimerIcon}`} />
         <span className={`${layoutStyles.adminSkBar} ${earningsStyles.earningsSkDisclaimerText}`} />
-      </div>
-
-      <div className={earningsStyles.earningsSkHealth}>
-        <div className={earningsStyles.earningsSkHealthHead}>
-          <span className={`${layoutStyles.adminSkBar} ${earningsStyles.earningsSkHealthTitle}`} />
-          <span className={`${layoutStyles.adminSkBar} ${earningsStyles.earningsSkHealthPill}`} />
-        </div>
-        <ul className={earningsStyles.earningsSkHealthList}>
-          {[0, 1, 2].map((i) => (
-            <li key={i} className={earningsStyles.earningsSkHealthRow}>
-              <span className={`${layoutStyles.adminSkBar} ${earningsStyles.earningsSkHealthRowLabel}`} />
-              <span className={`${layoutStyles.adminSkBar} ${earningsStyles.earningsSkHealthRowStatus}`} />
-              <span className={`${layoutStyles.adminSkBar} ${earningsStyles.earningsSkHealthRowLabel}`} />
-              <span className={`${layoutStyles.adminSkBar} ${earningsStyles.earningsSkHealthRowStatus}`} />
-            </li>
-          ))}
-        </ul>
-        <div className={earningsStyles.earningsSkHealthActions}>
-          <span className={`${layoutStyles.adminSkBar} ${earningsStyles.earningsSkHealthLink}`} />
-          <span className={`${layoutStyles.adminSkBar} ${earningsStyles.earningsSkHealthLink}`} />
-        </div>
       </div>
 
       <div className={`${earningsStyles.dashGrid} ${earningsStyles.earningsSkDashGrid}`}>
@@ -309,7 +287,6 @@ export default function AdminEarningsPage() {
   const [summary, setSummary] = useState(null)
   const [settlement, setSettlement] = useState(null)
   const [disclaimer, setDisclaimer] = useState('')
-  const [opsHealth, setOpsHealth] = useState(null)
   const [commissionChartSeries, setCommissionChartSeries] = useState(() => utcLastNDaysSeriesZeros(7))
 
   useEffect(() => {
@@ -328,7 +305,6 @@ export default function AdminEarningsPage() {
         setSummary(body.summary ?? null)
         setSettlement(body.settlement ?? null)
         setDisclaimer(body.disclaimer || '')
-        setOpsHealth(body.opsHealth ?? null)
         if (Array.isArray(body.commissionChartSeries) && body.commissionChartSeries.length > 0) {
           setCommissionChartSeries(body.commissionChartSeries)
         } else {
@@ -368,8 +344,6 @@ export default function AdminEarningsPage() {
           </span>
         </div>
       ) : null}
-
-      <PaymongoHealthPanel opsHealth={opsHealth} isMobile={isMobile} />
 
       <div className={earningsStyles.dashGrid}>
         <div className={layoutStyles.desktopChartsCol}>

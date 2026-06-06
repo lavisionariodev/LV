@@ -269,6 +269,14 @@
    RESPONSIVE
 ───────────────────────────── */
 
+@media (max-width: 860px) {
+  /* Match profile/help mobile side inset (admin .content has no horizontal pad until 600px). */
+  .page {
+    padding: 0 16px;
+    box-sizing: border-box;
+  }
+}
+
 @media (max-width: 640px) {
   .desktopLayout {
     display: none;

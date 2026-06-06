@@ -42,4 +42,13 @@
 | `/api/admin/platform-billing` | Commission default, legal fields, settlement destination (bank/GCash/manual) |
 | `/api/admin/refunds/stuck` | Stuck refund reconciliation |
 
-Implementation roots: `src/lib/payments/`, `src/lib/paymongo/`, `src/lib/auth/requireApiUser.js`, `src/lib/auth/admin.js`.
+## Admin analytics
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/api/admin/metrics` | Dashboard + analytics payload (`?range=7d\|30d\|90d`). Includes `analystSummary`, `monthlyBookings`, `monthlyRevenue`, `revenueMix`, `insights`, plus legacy GMV/commission series. |
+| GET | `/api/admin/metrics/export` | Download analyst report (`?format=csv\|xlsx`). Monthly summary rows + KPI snapshot. |
+
+SQL definitions: [analytics-queries.md](../analytics-queries.md).
+
+Implementation roots: `src/lib/payments/`, `src/lib/paymongo/`, `src/lib/auth/requireApiUser.js`, `src/lib/auth/admin.js`, `src/lib/admin/adminAnalystMetrics.js`.
