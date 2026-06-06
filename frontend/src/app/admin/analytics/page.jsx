@@ -181,7 +181,7 @@ function BreakdownBarChart({ rows, emptyMessage }) {
 
   return (
     <ResponsiveContainer width="100%" height={220}>
-      <BarChart data={chartData} layout="vertical" margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
+      <BarChart data={chartData} layout="vertical" margin={{ top: 4, right: 8, left: 4, bottom: 4 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
         <XAxis
           type="number"
@@ -193,7 +193,7 @@ function BreakdownBarChart({ rows, emptyMessage }) {
           type="category"
           dataKey="name"
           tick={{ fontSize: 11, fill: '#374151' }}
-          width={96}
+          width={140}
           tickLine={false}
           axisLine={false}
         />
