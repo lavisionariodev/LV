@@ -116,6 +116,12 @@
   min-height: 220px;
 }
 
+/* Keep the donut + tooltip above the centered total; the hole stays transparent. */
+.revenueMixChart > :first-child {
+  position: relative;
+  z-index: 1;
+}
+
 .revenueMixTotal {
   position: absolute;
   top: 50%;
@@ -129,6 +135,7 @@
   pointer-events: none;
   text-align: center;
   max-width: 88px;
+  z-index: 0;
 }
 
 .revenueMixTotalLabel {
