@@ -271,7 +271,7 @@ function AnalyticsSkeleton() {
           <span className={`${layoutStyles.adminSkBar} ${layoutStyles.adminSkLine}`} style={{ height: 16, width: 200 }} />
         </div>
         <div className={analyticsStyles.breakdownGrid}>
-          {[0, 1, 2].map((i) => (
+          {[0, 1].map((i) => (
             <span key={i} className={`${layoutStyles.adminSkBar} ${layoutStyles.analyticsSkChart}`} />
           ))}
         </div>
@@ -344,7 +344,6 @@ export default function AdminAnalyticsPage() {
   const [buyersTotal, setBuyersTotal] = useState(0)
   const [topLineItems, setTopLineItems] = useState([])
   const [topSellers, setTopSellers] = useState([])
-  const [topListings, setTopListings] = useState([])
   const [recentActivity, setRecentActivity] = useState([])
   const [analystSummary, setAnalystSummary] = useState(EMPTY_ANALYST_SUMMARY)
   const [monthlyBookings, setMonthlyBookings] = useState([])
@@ -396,7 +395,6 @@ export default function AdminAnalyticsPage() {
 
         if (Array.isArray(body.topLineItems)) setTopLineItems(body.topLineItems)
         if (Array.isArray(body.topSellers)) setTopSellers(body.topSellers)
-        if (Array.isArray(body.topListings)) setTopListings(body.topListings)
         if (Array.isArray(body.recentActivity)) {
           setRecentActivity(body.recentActivity.slice(0, RECENT_ACTIVITY_MAX))
         }
@@ -562,13 +560,6 @@ export default function AdminAnalyticsPage() {
                 <BreakdownBarChart
                   rows={topSellers}
                   emptyMessage={`No seller GMV in the last ${rangeDays} days.`}
-                />
-              </div>
-              <div className={layoutStyles.analyticsBreakdownBlock}>
-                <p className={layoutStyles.analyticsChartLabel}>Top listings / products</p>
-                <BreakdownBarChart
-                  rows={topListings}
-                  emptyMessage={`No listing revenue in the last ${rangeDays} days.`}
                 />
               </div>
             </div>
